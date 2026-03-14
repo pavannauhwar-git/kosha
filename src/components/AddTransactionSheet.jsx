@@ -158,7 +158,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
               {/* Investment vehicle */}
               {type === 'investment' && (
                 <>
-                  <p className="section-label mb-2">Vehicle</p>
+                  <p className="section-label mb-2">Investment</p>
                   <div className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
                     {INVESTMENT_VEHICLES.map(v => (
                       <button
