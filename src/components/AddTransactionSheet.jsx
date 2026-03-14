@@ -1,18 +1,33 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronRight, Calendar, CreditCard } from 'lucide-react'
-import { CATEGORIES, INVESTMENT_VEHICLES, PAYMENT_MODES } from '../lib/categories'
 import { addTransaction, updateTransaction } from '../hooks/useTransactions'
-import { todayStr } from '../lib/utils'
 import CategoryIcon from './CategoryIcon'
+import { CATEGORIES } from '../lib/categories'
 
 const TYPES = [
-  { id:'expense',    label:'Expense',    color:'text-expense-text', bg:'bg-expense-bg',  border:'border-expense-border',  active:'#FF3B30' },
-  { id:'income',     label:'Income',     color:'text-income-text',  bg:'bg-income-bg',   border:'border-income-border',   active:'#34C759' },
-  { id:'investment', label:'Invest',     color:'text-invest-text',  bg:'bg-invest-bg',   border:'border-invest-border',   active:'#007AFF' },
+  { id:'expense',    label:'Expense',    bg:'bg-expense-bg',  color:'text-expense-text',  border:'border-expense-border'  },
+  { id:'income',     label:'Income',     bg:'bg-income-bg',   color:'text-income-text',   border:'border-income-border'   },
+  { id:'investment', label:'Investment', bg:'bg-invest-bg',   color:'text-invest-text',   border:'border-invest-border'   },
 ]
 
-// ── Category picker sub-sheet ─────────────────────────────────────────────
+const PAYMENT_MODES = [
+  { id:'upi',   label:'UPI'   },
+  { id:'card',  label:'Card'  },
+  { id:'cash',  label:'Cash'  },
+  { id:'bank',  label:'Bank Transfer' },
+  { id:'other', label:'Other' },
+]
+
+const INVESTMENT_VEHICLES = [
+  'Mutual Fund','Stocks','Fixed Deposit','PPF','NPS','Gold','Real Estate','Crypto','Other',
+]
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0]
+}
+
+// ── Category picker ────────────────────────────────────────────────────────
 function CategoryPicker({ selected, onSelect, onClose }) {
   return (
     <>
@@ -22,7 +37,7 @@ function CategoryPicker({ selected, onSelect, onClose }) {
       />
       <motion.div
         className="fixed bottom-0 inset-x-0 bg-kosha-surface z-[60] rounded-t-3xl"
-        style={{ paddingBottom:'calc(1.5rem + env(safe-area-inset-bottom,0px))', maxHeight:'80dvh', overflowY:'auto' }}
+        style={{ paddingBottom:'calc(1.5rem + env(safe-area-inset-bottom,0px))' }}
         initial={{ y:'100%' }}
         animate={{ y:0, transition:{ type:'spring', stiffness:380, damping:32 } }}
         exit={{ y:'100%', transition:{ duration:0.22 } }}
@@ -34,8 +49,8 @@ function CategoryPicker({ selected, onSelect, onClose }) {
             <X size={16} className="text-ink-3" />
           </button>
         </div>
-        <div className="list-card mx-4">
-          {CATEGORIES.map((cat, i) => (
+        <div className="list-card mx-4 overflow-y-auto max-h-[55vh]">
+          {CATEGORIES.map(cat => (
             <button
               key={cat.id}
               onClick={() => { onSelect(cat.id); onClose() }}
@@ -98,7 +113,7 @@ function ModePicker({ selected, onSelect, onClose }) {
   )
 }
 
-// ── Vehicle picker ─────────────────────────────────────────────────────────
+// ── Investment vehicle picker ──────────────────────────────────────────────
 function VehiclePicker({ selected, onSelect, onClose }) {
   return (
     <>
@@ -115,7 +130,7 @@ function VehiclePicker({ selected, onSelect, onClose }) {
       >
         <div className="sheet-handle" />
         <div className="flex items-center justify-between px-5 mb-4">
-          <h3 className="text-[17px] font-semibold text-ink">Type of Investment</h3>
+          <h3 className="text-[17px] font-semibold text-ink">Investment Type</h3>
           <button onClick={onClose} className="close-btn">
             <X size={16} className="text-ink-3" />
           </button>
@@ -154,6 +169,9 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
   const [showCatPicker,  setShowCatPicker]  = useState(false)
   const [showModePicker, setShowModePicker] = useState(false)
   const [showVehPicker,  setShowVehPicker]  = useState(false)
+
+  // ── FIX: no autoFocus — only focus after the sheet animation settles ──
+  const amountRef = useRef(null)
 
   useEffect(() => {
     if (editTxn) {
@@ -197,9 +215,9 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
     }
   }
 
-  const activeType = TYPES.find(t => t.id === type)
-  const selectedCat = CATEGORIES.find(c => c.id === category)
-  const selectedMode = PAYMENT_MODES.find(m => m.id === mode)
+  const activeType    = TYPES.find(t => t.id === type)
+  const selectedCat   = CATEGORIES.find(c => c.id === category)
+  const selectedMode  = PAYMENT_MODES.find(m => m.id === mode)
 
   return (
     <AnimatePresence>
@@ -214,6 +232,10 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
             initial={{ y:'100%' }}
             animate={{ y:0, transition:{ type:'spring', stiffness:380, damping:32 } }}
             exit={{ y:'100%', transition:{ duration:0.22 } }}
+            // Focus the amount field only after the spring animation completes
+            onAnimationComplete={() => {
+              if (open) amountRef.current?.focus()
+            }}
           >
             <div className="sheet-handle" />
             <div className="px-4">
@@ -228,7 +250,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
                 </button>
               </div>
 
-              {/* Type selector — Apple Pay card style */}
+              {/* Type selector */}
               <div className="flex gap-2.5 mb-5">
                 {TYPES.map(t => (
                   <button
@@ -248,11 +270,14 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
               <div className="card mb-3 px-4 py-4 flex items-center gap-2">
                 <span className={`font-display text-2xl font-medium ${activeType.color}`}>₹</span>
                 <input
+                  ref={amountRef}
                   className="flex-1 bg-transparent font-display text-4xl text-ink outline-none placeholder-ink-4"
-                  type="number" inputMode="decimal" placeholder="0"
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="0"
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
-                  autoFocus
+                  // autoFocus REMOVED — keyboard was popping up before sheet finished animating
                 />
               </div>
 
@@ -266,7 +291,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
                 />
               </div>
 
-              {/* Options list — Apple Pay card style */}
+              {/* Options list */}
               <div className="list-card mb-3">
 
                 {/* Date */}

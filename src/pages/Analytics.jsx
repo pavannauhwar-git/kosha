@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useYearSummary } from '../hooks/useTransactions'
 import { fmt, savingsRate } from '../lib/utils'
@@ -9,6 +9,7 @@ import CategoryIcon from '../components/CategoryIcon'
 
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
+// ── Compact top-level KPI card ─────────────────────────────────────────────
 function KpiCard({ label, value, cls, bg, diff, diffLabel }) {
   const up      = diff > 0
   const neutral = diff === 0 || diff === null || diff === undefined
@@ -50,56 +51,166 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
-// Month summary cards replacing bar chart
+// ── Pill badge for MoM change ──────────────────────────────────────────────
+function DiffBadge({ diff }) {
+  if (diff === null || diff === undefined || diff === 0) return null
+  const up = diff > 0
+  const pct = Math.round(Math.abs(diff) / 100) // approximate, for display
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full
+      ${up ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}>
+      {up ? <ArrowUpRight size={8} /> : <ArrowDownRight size={8} />}
+      {fmt(Math.abs(diff))}
+    </span>
+  )
+}
+
+// ── Beautiful monthly card ─────────────────────────────────────────────────
+function MonthCard({ m, prev, isFirst }) {
+  const incDiff = prev ? m.income     - prev.income     : null
+  const expDiff = prev ? m.expense    - prev.expense    : null
+  const invDiff = prev ? m.investment - prev.investment : null
+
+  const savings = m.income - m.expense - m.investment
+  const savRate = m.income > 0 ? Math.round((savings / m.income) * 100) : 0
+  const savPositive = savings >= 0
+
+  const total = m.income + m.expense + m.investment
+  const incPct = total > 0 ? (m.income / total) * 100 : 0
+  const expPct = total > 0 ? (m.expense / total) * 100 : 0
+  const invPct = total > 0 ? (m.investment / total) * 100 : 0
+
+  return (
+    <motion.div
+      className="card overflow-hidden"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, delay: isFirst ? 0 : 0.05 }}
+    >
+      {/* Month header row */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-kosha-border">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center">
+            <span className="text-[11px] font-bold text-brand">{MONTH_SHORT[m.month-1]}</span>
+          </div>
+          <div>
+            <p className="text-[14px] font-bold text-ink leading-tight">
+              {MONTH_SHORT[m.month-1]}
+            </p>
+            <p className="text-[10px] text-ink-4 leading-none">
+              {m.income > 0 || m.expense > 0 ? 'Active' : 'No data'}
+            </p>
+          </div>
+        </div>
+
+        {/* Savings rate pill */}
+        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold
+          ${savPositive ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}>
+          {savPositive ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+          {savRate}% saved
+        </div>
+      </div>
+
+      {/* Three stat rows */}
+      <div className="px-4 py-3 space-y-2.5">
+
+        {/* Income row */}
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-income-text shrink-0" />
+          <span className="text-[12px] text-ink-3 w-14 shrink-0">Income</span>
+          {/* Progress bar */}
+          <div className="flex-1 h-1.5 bg-kosha-surface-2 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-income-text rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${incPct}%` }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+            />
+          </div>
+          <span className="text-[13px] font-semibold text-income-text tabular-nums w-20 text-right shrink-0">
+            {fmt(m.income)}
+          </span>
+          <div className="w-16 flex justify-end shrink-0">
+            <DiffBadge diff={incDiff} />
+          </div>
+        </div>
+
+        {/* Expense row */}
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-expense-text shrink-0" />
+          <span className="text-[12px] text-ink-3 w-14 shrink-0">Spent</span>
+          <div className="flex-1 h-1.5 bg-kosha-surface-2 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-expense-text rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${expPct}%` }}
+              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.05 }}
+            />
+          </div>
+          <span className="text-[13px] font-semibold text-expense-text tabular-nums w-20 text-right shrink-0">
+            {fmt(m.expense)}
+          </span>
+          <div className="w-16 flex justify-end shrink-0">
+            <DiffBadge diff={expDiff} />
+          </div>
+        </div>
+
+        {/* Investment row */}
+        {m.investment > 0 && (
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-invest-text shrink-0" />
+            <span className="text-[12px] text-ink-3 w-14 shrink-0">Invested</span>
+            <div className="flex-1 h-1.5 bg-kosha-surface-2 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-invest-text rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${invPct}%` }}
+                transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+              />
+            </div>
+            <span className="text-[13px] font-semibold text-invest-text tabular-nums w-20 text-right shrink-0">
+              {fmt(m.investment)}
+            </span>
+            <div className="w-16 flex justify-end shrink-0">
+              <DiffBadge diff={invDiff} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Net savings footer */}
+      <div className={`mx-4 mb-4 px-3 py-2 rounded-card flex items-center justify-between
+        ${savPositive ? 'bg-income-bg' : 'bg-expense-bg'}`}>
+        <span className="text-[11px] font-medium text-ink-3">Net savings</span>
+        <span className={`text-[13px] font-bold tabular-nums ${savPositive ? 'text-income-text' : 'text-expense-text'}`}>
+          {savings >= 0 ? '+' : ''}{fmt(savings)}
+        </span>
+      </div>
+    </motion.div>
+  )
+}
+
+// ── Monthly breakdown section ──────────────────────────────────────────────
 function MonthlySummaryCards({ monthly }) {
   const active = monthly.filter(m => m.income > 0 || m.expense > 0 || m.investment > 0)
   if (active.length === 0) return (
     <p className="text-ink-4 text-[13px] text-center py-4">No monthly data</p>
   )
   return (
-    <div className="space-y-2">
-      {active.map((m, i) => {
-        const prev = i > 0 ? active[i-1] : null
-        const incDiff  = prev ? m.income     - prev.income     : null
-        const expDiff  = prev ? m.expense    - prev.expense    : null
-        const invDiff  = prev ? m.investment - prev.investment : null
-        return (
-          <div key={m.month} className="card p-4">
-            {/* Month label */}
-            <p className="text-[12px] font-semibold text-ink-3 mb-3 tracking-wide">
-              {MONTH_SHORT[m.month-1].toUpperCase()}
-            </p>
-            {/* 3 stat cards in a row */}
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label:'Income',  val:m.income,     cls:'text-income-text',  bg:'bg-income-bg',  diff:incDiff },
-                { label:'Spent',   val:m.expense,    cls:'text-expense-text', bg:'bg-expense-bg', diff:expDiff },
-                { label:'Invest',  val:m.investment, cls:'text-invest-text',  bg:'bg-invest-bg',  diff:invDiff },
-              ].map(s => (
-                <div key={s.label} className={`rounded-card p-2.5 ${s.bg}`}>
-                  <p className="text-[10px] text-ink-3 font-medium mb-0.5">{s.label}</p>
-                  <p className={`text-[13px] font-bold tabular-nums ${s.cls}`}>{fmt(s.val)}</p>
-                  {s.diff !== null && s.diff !== 0 && (
-                    <div className="flex items-center gap-0.5 mt-0.5">
-                      {s.diff > 0
-                        ? <TrendingUp size={9} className="text-income-text" />
-                        : <TrendingDown size={9} className="text-expense-text" />
-                      }
-                      <span className={`text-[9px] font-medium ${s.diff > 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                        {fmt(Math.abs(s.diff))}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      })}
+    <div className="space-y-3">
+      {active.map((m, i) => (
+        <MonthCard
+          key={m.month}
+          m={m}
+          prev={i > 0 ? active[i-1] : null}
+          isFirst={i === 0}
+        />
+      ))}
     </div>
   )
 }
 
+// ── Main Analytics page ────────────────────────────────────────────────────
 export default function Analytics() {
   const now  = new Date()
   const [year, setYear] = useState(now.getFullYear())
@@ -113,25 +224,37 @@ export default function Analytics() {
       color: CATEGORIES.find(c=>c.id===id)?.color || '#007AFF',
     }))
 
-  const vehicleData    = Object.entries(data?.byVehicle || {}).sort((a,b) => b[1]-a[1])
-  const maxVehicle     = vehicleData[0]?.[1] || 1
-  const totalExpense   = data?.totalExpense || 0
+  const vehicleData  = Object.entries(data?.byVehicle || {}).sort((a,b) => b[1]-a[1])
+  const maxVehicle   = vehicleData[0]?.[1] || 1
+  const totalExpense = data?.totalExpense || 0
+
+  const fadeUp = {
+    hidden: { opacity:0, y:10 },
+    show:   { opacity:1, y:0, transition:{ duration:0.25 } },
+  }
 
   return (
     <div className="page">
-      {/* Year navigator */}
-      <div className="flex items-center justify-between mb-4 pt-2">
-        <button onClick={() => setYear(y=>y-1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                     flex items-center justify-center active:bg-kosha-surface-2">
-          <ChevronLeft size={18} className="text-ink-2" />
-        </button>
-        <h1 className="text-[28px] font-bold text-ink tracking-tight">{year}</h1>
-        <button onClick={() => setYear(y=>y+1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                     flex items-center justify-center active:bg-kosha-surface-2">
-          <ChevronRight size={18} className="text-ink-2" />
-        </button>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5 pt-1">
+        <h1 className="font-display text-display text-ink">Insights</h1>
+        {/* Year stepper */}
+        <div className="flex items-center gap-1 bg-kosha-surface-2 rounded-pill px-1 py-1">
+          <button
+            onClick={() => setYear(y => y - 1)}
+            className="w-7 h-7 flex items-center justify-center rounded-full active:bg-kosha-border transition-colors"
+          >
+            <ChevronLeft size={16} className="text-ink-2" />
+          </button>
+          <span className="text-[14px] font-semibold text-ink tabular-nums px-1">{year}</span>
+          <button
+            onClick={() => setYear(y => Math.min(y + 1, now.getFullYear()))}
+            disabled={year >= now.getFullYear()}
+            className="w-7 h-7 flex items-center justify-center rounded-full active:bg-kosha-border transition-colors disabled:opacity-30"
+          >
+            <ChevronRight size={16} className="text-ink-2" />
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -141,47 +264,51 @@ export default function Analytics() {
       ) : (
         <motion.div
           key={year}
-          initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }}
-          transition={{ duration:0.25 }}
+          initial="hidden"
+          animate="show"
+          variants={{ show: { transition: { staggerChildren: 0.07 } } }}
           className="space-y-4"
         >
-          {/* Year KPI grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <KpiCard
-              label="Total Earned"   value={data?.totalIncome     || 0}
-              cls="text-income-text"  bg="bg-income-bg"
-              diff={null}
-            />
-            <KpiCard
-              label="Total Spent"    value={data?.totalExpense    || 0}
-              cls="text-expense-text" bg="bg-expense-bg"
-              diff={null}
-            />
-            <KpiCard
-              label="Total Invested" value={data?.totalInvestment || 0}
-              cls="text-invest-text"  bg="bg-invest-bg"
-              diff={null}
-            />
-            <div className="card p-4">
-              <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center mb-2">
-                <span className="text-xs font-bold text-brand">%</span>
+          {/* ── Year KPI grid ── */}
+          <motion.div variants={fadeUp}>
+            <p className="section-label mb-3">Year at a Glance</p>
+            <div className="grid grid-cols-2 gap-3">
+              <KpiCard
+                label="Total Earned"   value={data?.totalIncome     || 0}
+                cls="text-income-text"  bg="bg-income-bg"
+                diff={null}
+              />
+              <KpiCard
+                label="Total Spent"    value={data?.totalExpense    || 0}
+                cls="text-expense-text" bg="bg-expense-bg"
+                diff={null}
+              />
+              <KpiCard
+                label="Total Invested" value={data?.totalInvestment || 0}
+                cls="text-invest-text"  bg="bg-invest-bg"
+                diff={null}
+              />
+              <div className="card p-4">
+                <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center mb-2">
+                  <span className="text-xs font-bold text-brand">%</span>
+                </div>
+                <p className="text-[11px] text-ink-3 font-medium">Avg Savings Rate</p>
+                <p className="text-[17px] font-bold text-brand mt-0.5">
+                  {data?.avgSavings || 0}%
+                </p>
               </div>
-              <p className="text-[11px] text-ink-3 font-medium">Avg Savings Rate</p>
-              <p className="text-[17px] font-bold text-brand mt-0.5">
-                {data?.avgSavings || 0}%
-              </p>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Monthly summary cards */}
-          <div>
+          {/* ── Monthly Breakdown ── */}
+          <motion.div variants={fadeUp}>
             <p className="section-label mb-3">Monthly Breakdown</p>
             <MonthlySummaryCards monthly={data?.monthly || []} />
-          </div>
+          </motion.div>
 
-          {/* Spending by category donut */}
+          {/* ── Spending by category donut ── */}
           {catData.length > 0 && (
-            <div className="card p-4">
+            <motion.div variants={fadeUp} className="card p-4">
               <p className="section-label mb-4">Spending by Category</p>
               <div className="flex gap-4 items-center">
                 <div className="shrink-0">
@@ -205,67 +332,45 @@ export default function Analytics() {
                 </div>
                 <div className="flex-1 space-y-2.5">
                   {catData.map(c => {
-                    const pct = totalExpense > 0 ? Math.round((c.val/totalExpense)*100) : 0
+                    const pct = totalExpense > 0 ? Math.round((c.val / totalExpense) * 100) : 0
                     return (
-                      <div key={c.id}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ background:c.color }} />
-                          <span className="text-[12px] text-ink flex-1 truncate">{c.name}</span>
-                          <span className="text-[12px] font-semibold text-ink tabular-nums">{fmt(c.val)}</span>
-                        </div>
-                        <div className="bar-light-track">
-                          <motion.div
-                            className="bar-light-fill"
-                            initial={{ width:0 }}
-                            animate={{ width:`${pct}%` }}
-                            transition={{ duration:0.6, ease:'easeOut' }}
-                          />
-                        </div>
+                      <div key={c.id} className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
+                        <span className="flex-1 text-[12px] text-ink truncate">{c.name}</span>
+                        <span className="text-[11px] font-semibold text-ink-3 tabular-nums">{pct}%</span>
                       </div>
                     )
                   })}
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
 
-          {/* Investment portfolio */}
+          {/* ── Investment portfolio ── */}
           {vehicleData.length > 0 && (
-            <div className="card p-4">
-              <p className="section-label mb-3">Investment Portfolio</p>
+            <motion.div variants={fadeUp} className="card p-4">
+              <p className="section-label mb-4">Portfolio Breakdown</p>
               <div className="space-y-3">
-                {vehicleData.map(([vehicle, amt]) => {
-                  const pct = Math.round((amt / maxVehicle) * 100)
-                  return (
-                    <div key={vehicle}>
-                      <div className="flex justify-between mb-1.5">
-                        <span className="text-[13px] font-medium text-ink">{vehicle}</span>
-                        <span className="text-[13px] font-semibold text-invest-text tabular-nums">
-                          {fmt(amt)}
-                        </span>
-                      </div>
-                      <div className="bar-light-track">
-                        <motion.div
-                          className="bar-light-fill"
-                          initial={{ width:0 }}
-                          animate={{ width:`${pct}%` }}
-                          transition={{ duration:0.6, ease:'easeOut' }}
-                        />
-                      </div>
+                {vehicleData.map(([vehicle, val]) => (
+                  <div key={vehicle}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[13px] text-ink">{vehicle}</span>
+                      <span className="text-[13px] font-semibold text-invest-text tabular-nums">{fmt(val)}</span>
                     </div>
-                  )
-                })}
+                    <div className="h-1.5 bg-kosha-surface-2 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-invest-text rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(val / maxVehicle) * 100}%` }}
+                        transition={{ duration: 0.6, ease: 'easeOut' }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            </motion.div>
           )}
 
-          {/* No data */}
-          {!data?.totalIncome && !data?.totalExpense && (
-            <div className="card p-8 text-center">
-              <p className="text-ink-2 text-[15px]">No data for {year}.</p>
-              <p className="text-ink-4 text-[13px] mt-1">Navigate to a year with transactions.</p>
-            </div>
-          )}
         </motion.div>
       )}
     </div>
