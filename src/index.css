@@ -3,20 +3,34 @@
 @tailwind utilities;
 
 /* Hide scrollbar */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 @layer base {
-  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-  html { font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+  * {
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+
   body {
     @apply bg-kosha-bg text-ink font-sans;
     min-height: 100dvh;
     overscroll-behavior: none;
   }
+
   :root {
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --nav-height: 72px;
+    --nav-height: calc(80px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -25,31 +39,47 @@
   /* -- Apple mesh gradient card ------------------------------------ */
   .card-hero {
     background:
-      radial-gradient(ellipse at 15% 25%, rgba(175,82,222,0.90) 0%, transparent 50%),
-      radial-gradient(ellipse at 85% 15%, rgba(255,149,0,0.85)  0%, transparent 45%),
-      radial-gradient(ellipse at 70% 80%, rgba(255,214,10,0.80) 0%, transparent 45%),
-      radial-gradient(ellipse at 10% 75%, rgba(255,45,85,0.70)  0%, transparent 45%),
-      radial-gradient(ellipse at 50% 50%, rgba(0,122,255,0.40)  0%, transparent 60%),
+      radial-gradient(ellipse at 15% 25%, rgba(175, 82, 222, 0.90) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 15%, rgba(255, 149, 0, 0.85) 0%, transparent 45%),
+      radial-gradient(ellipse at 70% 80%, rgba(255, 214, 10, 0.80) 0%, transparent 45%),
+      radial-gradient(ellipse at 10% 75%, rgba(255, 45, 85, 0.70) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 50%, rgba(0, 122, 255, 0.40) 0%, transparent 60%),
       #E8D5FF;
     @apply rounded-hero shadow-apple-card;
   }
 
   /* -- Standard floating card -------------------------------------- */
-  .card      { @apply bg-kosha-surface rounded-card shadow-card; }
-  .card-md   { @apply bg-kosha-surface rounded-card shadow-card-md; }
-  .card-inset{ @apply bg-kosha-surface-2 rounded-card; }
+  .card {
+    @apply bg-kosha-surface rounded-card shadow-card;
+  }
+
+  .card-md {
+    @apply bg-kosha-surface rounded-card shadow-card-md;
+  }
+
+  .card-inset {
+    @apply bg-kosha-surface-2 rounded-card;
+  }
 
   /* -- Bill urgency cards ------------------------------------------- */
-  .card-urgent { @apply bg-kosha-surface rounded-card shadow-urgent; }
-  .card-warn   { @apply bg-kosha-surface rounded-card shadow-warn; }
+  .card-urgent {
+    @apply bg-kosha-surface rounded-card shadow-urgent;
+  }
+
+  .card-warn {
+    @apply bg-kosha-surface rounded-card shadow-warn;
+  }
 
   /* -- Apple grouped list (rows in one card) ------------------------ */
-  .list-card { @apply bg-kosha-surface rounded-card shadow-card overflow-hidden; }
-  .list-row  {
-    @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface
-           active:bg-kosha-surface-2 transition-colors cursor-pointer;
+  .list-card {
+    @apply bg-kosha-surface rounded-card shadow-card overflow-hidden;
   }
-  .list-row + .list-row {
+
+  .list-row {
+    @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface active:bg-kosha-surface-2 transition-colors cursor-pointer;
+  }
+
+  .list-row+.list-row {
     border-top: 0.5px solid #E5E5EA;
   }
 
@@ -59,90 +89,154 @@
   }
 
   /* -- Type chips ---------------------------------------------------- */
-  .chip-income  { @apply bg-income-bg  text-income-text  text-xs font-semibold px-2.5 py-1 rounded-pill; }
-  .chip-expense { @apply bg-expense-bg text-expense-text text-xs font-semibold px-2.5 py-1 rounded-pill; }
-  .chip-invest  { @apply bg-invest-bg  text-invest-text  text-xs font-semibold px-2.5 py-1 rounded-pill; }
-  .chip-repay   { @apply bg-repay-bg   text-repay-text   text-xs font-semibold px-2.5 py-1 rounded-pill; }
-  .chip-neutral { @apply bg-brand-container text-brand-on text-xs font-semibold px-2.5 py-1 rounded-pill; }
+  .chip-income {
+    @apply bg-income-bg text-income-text text-xs font-semibold px-2.5 py-1 rounded-pill;
+  }
+
+  .chip-expense {
+    @apply bg-expense-bg text-expense-text text-xs font-semibold px-2.5 py-1 rounded-pill;
+  }
+
+  .chip-invest {
+    @apply bg-invest-bg text-invest-text text-xs font-semibold px-2.5 py-1 rounded-pill;
+  }
+
+  .chip-repay {
+    @apply bg-repay-bg text-repay-text text-xs font-semibold px-2.5 py-1 rounded-pill;
+  }
+
+  .chip-neutral {
+    @apply bg-brand-container text-brand-on text-xs font-semibold px-2.5 py-1 rounded-pill;
+  }
 
   /* -- Amount colours ------------------------------------------------ */
-  .amt-income  { @apply text-income-text  font-semibold; }
-  .amt-expense { @apply text-expense-text font-semibold; }
-  .amt-invest  { @apply text-invest-text  font-semibold; }
-  .amt-repay   { @apply text-repay-text   font-semibold; }
+  .amt-income {
+    @apply text-income-text font-semibold;
+  }
+
+  .amt-expense {
+    @apply text-expense-text font-semibold;
+  }
+
+  .amt-invest {
+    @apply text-invest-text font-semibold;
+  }
+
+  .amt-repay {
+    @apply text-repay-text font-semibold;
+  }
 
   /* -- Buttons ------------------------------------------------------- */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold
-           rounded-pill transition-all active:scale-95 select-none cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all active:scale-95 select-none cursor-pointer;
   }
-  .btn-primary  { @apply btn bg-brand text-white px-6 py-3 hover:bg-brand-dark; }
-  .btn-tonal    { @apply btn bg-brand-container text-brand-on px-6 py-3; }
-  .btn-ghost    { @apply btn text-brand px-4 py-2; }
-  .btn-danger   { @apply btn bg-expense-bg text-expense-text px-6 py-3 border border-expense-border; }
+
+  .btn-primary {
+    @apply btn bg-brand text-white px-6 py-3 hover:bg-brand-dark;
+  }
+
+  .btn-tonal {
+    @apply btn bg-brand-container text-brand-on px-6 py-3;
+  }
+
+  .btn-ghost {
+    @apply btn text-brand px-4 py-2;
+  }
+
+  .btn-danger {
+    @apply btn bg-expense-bg text-expense-text px-6 py-3 border border-expense-border;
+  }
 
   /* -- FAB ----------------------------------------------------------- */
   .fab {
-    @apply fixed bottom-24 right-4 w-14 h-14 bg-brand text-white
-           rounded-2xl shadow-fab flex items-center justify-center
-           active:scale-95 transition-transform z-40 cursor-pointer;
+    /* bottom-24 stays fine, but add safe area */
+    @apply fixed bottom-24 right-4 w-14 h-14 bg-brand text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform z-40 cursor-pointer;
     margin-bottom: var(--safe-bottom);
   }
 
   /* -- Apple frosted glass bottom nav ------------------------------- */
-  .nav-bar {
-    @apply fixed bottom-0 inset-x-0 border-t border-kosha-border
-           flex items-center justify-around z-30;
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    padding-bottom: calc(0.5rem + var(--safe-bottom));
-    padding-top: 0.5rem;
-    height: var(--nav-height);
+  /* Replace .nav-bar with these two new classes */
+
+  /* Outer wrapper — handles safe area + positions the pill */
+  .nav-float-wrap {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    justify-content: center;
+    padding-bottom: calc(1rem + var(--safe-bottom));
+    /* No background — fully transparent wrapper */
+    pointer-events: none;
+  }
+
+  /* The floating dark pill itself */
+  .nav-float {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 9999px;
+    background: rgba(30, 20, 50, 0.72);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.28),
+      0 2px 8px rgba(0, 0, 0, 0.20),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+    pointer-events: auto;
+  }
+
+  .nav-float-item {
+    @apply flex items-center justify-center cursor-pointer select-none active:scale-90 transition-transform;
+    background: none;
+    border: none;
+    padding: 0;
   }
 
   /* -- Input fields — Apple style ------------------------------------ */
   .input {
-    @apply w-full bg-kosha-surface-2 rounded-card px-4 py-3.5
-           text-ink placeholder-ink-4 text-base
-           border border-transparent
-           focus:outline-none focus:shadow-focus focus:bg-white
-           transition-all;
+    @apply w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-transparent focus:outline-none focus:shadow-focus focus:bg-white transition-all;
   }
 
   /* -- Apple Pay style sheet ----------------------------------------- */
   .sheet-backdrop {
     @apply fixed inset-0 z-40 animate-fade-in;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
+
   .sheet-panel {
-    @apply fixed bottom-0 inset-x-0 bg-kosha-surface z-50
-           shadow-[0_-2px_40px_rgba(0,0,0,0.15)];
+    @apply fixed bottom-0 inset-x-0 bg-kosha-surface z-50 shadow-[0_-2px_40px_rgba(0, 0, 0, 0.15)];
     border-radius: 20px 20px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     max-height: 94dvh;
     overflow-y: auto;
-    animation: sheet-in 0.40s cubic-bezier(0.32,0.72,0,1) forwards;
+    animation: sheet-in 0.40s cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
+
   .sheet-handle {
     @apply w-9 h-1 rounded-pill mx-auto mt-3 mb-5;
     background: #C7C7CC;
   }
 
   /* -- Page wrapper -------------------------------------------------- */
-  .page { @apply min-h-dvh pb-28 pt-4 px-4; }
+  .page {
+    @apply min-h-dvh pb-32 pt-4 px-4;
+  }
 
   /* -- Bar on dark (hero gradient card) ------------------------------ */
   /* White track + white semi-transparent fill - readable on dark bg   */
   .bar-dark-track {
     @apply h-3 rounded-pill w-full relative overflow-hidden;
-    background: rgba(255,255,255,0.20);
+    background: rgba(255, 255, 255, 0.20);
   }
+
   .bar-dark-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0 transition-all duration-700;
-    background: rgba(255,255,255,0.80);
+    background: rgba(255, 255, 255, 0.80);
   }
 
   /* -- Bar on light (white cards) ------------------------------------ */
@@ -151,18 +245,23 @@
     @apply h-3 rounded-pill w-full relative overflow-hidden;
     background: #E5E5EA;
   }
+
   .bar-light-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0 transition-all duration-700;
     background: linear-gradient(90deg, #FF9500 0%, #FF3B30 100%);
   }
 
   /* Legacy aliases so existing .savings-track/.savings-fill still work */
-  .savings-track { @apply bar-dark-track; }
-  .savings-fill  { @apply bar-dark-fill; }
+  .savings-track {
+    @apply bar-dark-track;
+  }
+
+  .savings-fill {
+    @apply bar-dark-fill;
+  }
 
   /* -- Apple close button -------------------------------------------- */
   .close-btn {
-    @apply w-9 h-9 rounded-pill flex items-center justify-center
-           bg-kosha-surface-2 active:bg-kosha-border transition-colors cursor-pointer;
+    @apply w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border transition-colors cursor-pointer;
   }
 }

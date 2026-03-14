@@ -220,7 +220,7 @@ export default function Dashboard() {
               <div className="bar-light-track my-2">
                 <motion.div
                   className="bar-light-fill"
-                  initial={{ width:'100%' }}
+                  initial={{ width:'0%' }}
                   animate={{ width:`${monthPct}%` }}
                   transition={{ duration:0.7, ease:'easeOut' }}
                 />
@@ -257,7 +257,7 @@ export default function Dashboard() {
                   <div className="bar-light-track mt-2">
                     <motion.div
                       className="bar-light-fill"
-                      initial={{ width:'100%' }}
+                      initial={{ width:'0%' }}
                       animate={{ width:`${topCatPct}%` }}
                       transition={{ duration:0.7, ease:'easeOut' }}
                     />
