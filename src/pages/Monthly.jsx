@@ -76,14 +76,14 @@ export default function Monthly() {
                 </p>
               </div>
               <div>
-                <p className="section-label mb-1" style={{ color:'rgba(255,255,255,0.7)' }}>Savings Rate</p>
-                <p className="font-display text-3xl text-white font-bold">{rate}%</p>
+                <p className="section-label text-on-grad-2 mb-1">Savings Rate</p>
+                <p className="font-display text-3xl text-income">{rate}%</p>
               </div>
             </div>
             <div className="mt-4">
-              <div className="savings-track">
+              <div className="bar-dark-track">
                 <motion.div
-                  className="savings-fill"
+                  className="bar-dark-fill"
                   initial={{ width:0 }}
                   animate={{ width:`${rate}%` }}
                   transition={{ duration:0.7, ease:'easeOut' }}
@@ -127,10 +127,9 @@ export default function Monthly() {
                         </span>
                         <span className="text-xs font-semibold amt-expense">{fmt(amt)}</span>
                       </div>
-                      <div className="h-1.5 rounded-pill bg-kosha-bg overflow-hidden">
+                      <div className="bar-light-track">
                         <motion.div
-                          className="h-full rounded-pill"
-                          style={{ background: cat?.color || '#6C47FF' }}
+                          className="bar-light-fill"
                           initial={{ width:0 }}
                           animate={{ width:`${pct}%` }}
                           transition={{ duration:0.6, ease:'easeOut' }}

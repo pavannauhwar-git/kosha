@@ -134,15 +134,31 @@
   /* -- Page wrapper -------------------------------------------------- */
   .page { @apply min-h-dvh pb-28 pt-4 px-4; }
 
-  /* -- Savings bar --------------------------------------------------- */
-  .savings-track {
-    @apply h-1.5 rounded-pill w-full;
-    background: rgba(255,255,255,0.25);
+  /* -- Bar on dark (hero gradient card) ------------------------------ */
+  /* White track + white semi-transparent fill - readable on dark bg   */
+  .bar-dark-track {
+    @apply h-2 rounded-pill w-full relative overflow-hidden;
+    background: rgba(255,255,255,0.20);
   }
-  .savings-fill {
-    @apply h-1.5 rounded-pill transition-all duration-700;
-    background: #34C759;
+  .bar-dark-fill {
+    @apply h-full rounded-pill absolute inset-y-0 left-0 transition-all duration-700;
+    background: rgba(255,255,255,0.80);
   }
+
+  /* -- Bar on light (white cards) ------------------------------------ */
+  /* Gradient track, white overlay from right = colored fill on white  */
+  .bar-light-track {
+    @apply h-2 rounded-pill w-full relative overflow-hidden;
+    background: linear-gradient(90deg, #FF9500 0%, #FF6B6B 50%, #FF2D55 100%);
+  }
+  .bar-light-fill {
+    @apply h-full rounded-pill absolute inset-y-0 right-0 transition-all duration-700;
+    background: rgba(242,242,247,0.85);
+  }
+
+  /* Legacy aliases so existing .savings-track/.savings-fill still work */
+  .savings-track { @apply bar-dark-track; }
+  .savings-fill  { @apply bar-dark-fill; }
 
   /* -- Apple close button -------------------------------------------- */
   .close-btn {

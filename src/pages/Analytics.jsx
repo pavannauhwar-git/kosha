@@ -165,9 +165,9 @@ export default function Analytics() {
                       <span className="text-xs text-ink">{vehicle}</span>
                       <span className="text-xs font-semibold amt-invest">{fmt(amt)}</span>
                     </div>
-                    <div className="h-1.5 rounded-pill bg-kosha-bg overflow-hidden">
+                    <div className="bar-light-track">
                       <motion.div
-                        className="h-full rounded-pill bg-brand"
+                        className="bar-light-fill"
                         initial={{ width:0 }}
                         animate={{ width:`${(amt/maxVehicle)*100}%` }}
                         transition={{ duration:0.6, ease:'easeOut' }}
