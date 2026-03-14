@@ -22,7 +22,7 @@ function MiniMonthCard({ month, year, isCurrent }) {
 
   return (
     <motion.div
-      className="rounded-card overflow-hidden relative w-full"  {/* ← removed shrink-0, width:148, made full-width */}
+      className="rounded-card overflow-hidden relative w-full"
       style={{
         background: (
           isCurrent
@@ -131,8 +131,6 @@ export default function Monthly() {
   const vehicleEntries = Object.entries(data?.byVehicle || {})
     .sort((a,b) => b[1]-a[1])
 
-  // ← removed monthWindow array entirely
-
   return (
     <div className="page">
       {/* Month navigator */}
@@ -152,8 +150,7 @@ export default function Monthly() {
         </button>
       </div>
 
-      {/* ── Single full-width current month card ── */}
-      <div className="mb-4">                                     {/* ← was horizontal scroll strip with monthWindow.map() */}
+      <div className="mb-4">
         <MiniMonthCard month={month} year={year} isCurrent={true} />
       </div>
 
@@ -167,7 +164,7 @@ export default function Monthly() {
           initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }}
           transition={{ duration:0.25 }} className="space-y-4"
         >
-          {/* ── Hero balance card ── */}
+
           <div className="card-hero p-5 relative overflow-hidden">
             <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full"
                  style={{ background:'rgba(108,71,255,0.2)' }} />
