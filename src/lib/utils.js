@@ -7,13 +7,13 @@ export function fmt(n, compact = false) {
     if (abs >= 1_000)    return `₹${(n / 1_000).toFixed(1)}K`
   }
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+    style: 'currency', currency: 'INR', maximumFractionDigits: 2,
   }).format(n)
 }
 
 export function fmtFull(n) {
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+    style: 'currency', currency: 'INR', minimumFractionDigits: 2,maximumFractionDigits: 2,
   }).format(n ?? 0)
 }
 
