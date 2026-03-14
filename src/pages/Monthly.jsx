@@ -53,12 +53,12 @@ function MiniMonthCard({ month, year, isCurrent }) {
             {/* Stats */}
             <div className="space-y-1.5 mb-3">
               {[
-                { label:'Income',  val:earned,   color: isCurrent ? '#9AFFC2' : '#1A7A35' },
-                { label:'Spent',   val:spent,    color: isCurrent ? '#FFB3AF' : '#CC0000' },
-                { label:'Invested',val:invested, color: isCurrent ? '#99CCFF' : '#0040A0' },
+                { label:'Income',  val:earned,   color: isCurrent ? '#FFFFFF' : '#1A7A35' },
+                { label:'Spent',   val:spent,    color: isCurrent ? '#FFFFFF' : '#CC0000' },
+                { label:'Invested',val:invested, color: isCurrent ? '#FFFFFF' : '#0040A0' },
               ].map(s => (
                 <div key={s.label} className="flex justify-between items-baseline">
-                  <span style={{ fontSize:10, color: isCurrent ? 'rgba(255,255,255,0.65)' : '#8E8E93' }}>
+                  <span style={{ fontSize:10, color: isCurrent ? 'rgba(255,255,255,0.75)' : '#8E8E93' }}>
                     {s.label}
                   </span>
                   <span style={{ fontSize:12, fontWeight:700, color:s.color,
@@ -159,7 +159,7 @@ export default function Monthly() {
       </div>
 
       {/* ── Horizontal scroll month cards ── */}
-      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4 mb-4">
+      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 mb-4 -mt-2">
         {monthWindow.map(({ month:m, year:y, isCurrent }) => (
           <MiniMonthCard key={`${y}-${m}`} month={m} year={y} isCurrent={isCurrent} />
         ))}
