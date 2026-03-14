@@ -41,7 +41,7 @@ function BottomNav() {
                     <motion.div
                       layoutId="nav-float-pill"
                       className="absolute inset-0 rounded-pill"
-                      style={{ background: '#EEEBFF' }}  {/* ← was rgba(255,255,255,0.18) */}
+                      style={{ background: '#EEEBFF' }}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 35 }}
@@ -51,7 +51,7 @@ function BottomNav() {
                 <item.Icon
                   size={22}
                   weight={isActive ? 'fill' : 'regular'}
-                  color={isActive ? '#6C47FF' : '#A09CC0'}  {/* ← was white/white */}
+                  color={isActive ? '#6C47FF' : '#A09CC0'}
                   style={{ position: 'relative', zIndex: 1 }}
                 />
               </div>
