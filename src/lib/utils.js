@@ -1,5 +1,5 @@
 // ── Number formatting ─────────────────────────────────────────────────────
-export function fmt(n, compact = false) {
+export function fmt(n, compact = true) {
   if (n === null || n === undefined) return '—'
   const abs = Math.abs(n)
   if (compact) {
@@ -7,13 +7,13 @@ export function fmt(n, compact = false) {
     if (abs >= 1_000)    return `₹${(n / 1_000).toFixed(1)}K`
   }
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 2,
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
   }).format(n)
 }
 
 export function fmtFull(n) {
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', minimumFractionDigits: 2,maximumFractionDigits: 2,
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
   }).format(n ?? 0)
 }
 
@@ -101,10 +101,10 @@ export function dueLabel(days) {
 }
 
 export function dueShadow(days) {
-  if (days < 0)   return 'card-hard-red'
-  if (days === 0) return 'card-hard-amber'
-  if (days <= 3)  return 'card-hard-amber'
-  return 'card-hard'
+  if (days < 0)   return 'card-urgent'
+  if (days === 0) return 'card-warn'
+  if (days <= 3)  return 'card-warn'
+  return 'card'
 }
 
 export function dueChipClass(days) {
