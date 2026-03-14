@@ -15,7 +15,6 @@ export default function Monthly() {
   const [year,  setYear]  = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const { data, loading } = useMonthSummary(year, month)
-  const { balance: runningBalance } = useRunningBalance(year, month)
 
   function prev() {
     if (month === 1) { setMonth(12); setYear(y => y - 1) }
@@ -72,9 +71,9 @@ export default function Monthly() {
                  style={{ background:'rgba(108,71,255,0.2)' }} />
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="section-label text-on-grad-2 mb-1">Running Balance</p>
+                <p className="section-label text-on-grad-2 mb-1">Balance</p>
                 <p className={`font-display text-3xl ${balance >= 0 ? 'text-on-grad' : 'text-expense'}`}>
-                  {fmt(runningBalance ?? balance)}
+                  {fmt(balance)}
                 </p>
               </div>
               <div>
