@@ -41,9 +41,9 @@ function MiniMonthCard({ month, year, isCurrent }) {
       animate={{ opacity:1, scale:1 }}
       transition={{ duration:0.25 }}
     >
-      <div className="p-4">
+      <div className="p-5">
         {/* Month label */}
-        <p className={`text-[10px] font-semibold tracking-widest uppercase mb-2
+        <p className={`text-[12px] font-semibold tracking-widest uppercase mb-2
           ${isCurrent ? 'text-white/70' : 'text-ink-3'}`}>
           {MONTH_NAMES[month-1].slice(0,3)} {year}
           {isCurrent && <span className="ml-1">· Now</span>}
@@ -52,17 +52,17 @@ function MiniMonthCard({ month, year, isCurrent }) {
         {hasData ? (
           <>
             {/* Stats */}
-            <div className="space-y-1.5 mb-3">
+            <div className="space-y-2 mb-4">
               {[
                 { label:'Income',  val:earned,   color: isCurrent ? '#FFFFFF' : '#1A7A35' },
                 { label:'Spent',   val:spent,    color: isCurrent ? '#FFFFFF' : '#CC0000' },
                 { label:'Invested',val:invested, color: isCurrent ? '#FFFFFF' : '#0040A0' },
               ].map(s => (
                 <div key={s.label} className="flex justify-between items-baseline">
-                  <span style={{ fontSize:10, color: isCurrent ? 'rgba(255,255,255,0.75)' : '#8E8E93' }}>
+                  <span style={{ fontSize:13, color: isCurrent ? 'rgba(255,255,255,0.75)' : '#8E8E93' }}>
                     {s.label}
                   </span>
-                  <span style={{ fontSize:12, fontWeight:700, color:s.color,
+                  <span style={{ fontSize:16, fontWeight:700, color:s.color,
                                  fontVariantNumeric:'tabular-nums' }}>
                     {fmt(s.val)}
                   </span>
@@ -73,7 +73,7 @@ function MiniMonthCard({ month, year, isCurrent }) {
             {/* Savings bar */}
             <div>
               <div className="flex justify-between mb-1">
-                <span style={{ fontSize:9, color: isCurrent ? 'rgba(255,255,255,0.55)' : '#C7C7CC' }}>
+                <span style={{ fontSize:12, color: isCurrent ? 'rgba(255,255,255,0.55)' : '#C7C7CC' }}>
                   Savings
                 </span>
                 <span style={{ fontSize:9, fontWeight:700,

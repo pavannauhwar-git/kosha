@@ -35,7 +35,7 @@ function BottomNav() {
               className="nav-float-item"
               onClick={() => navigate(item.path)}
             >
-              <div className="relative flex items-center justify-center w-12 h-9">
+              <div className="relative flex items-center justify-center w-14 h-11">
                 <AnimatePresence>
                   {isActive && (
                     <motion.div
@@ -49,7 +49,7 @@ function BottomNav() {
                   )}
                 </AnimatePresence>
                 <item.Icon
-                  size={22}
+                  size={26}
                   weight={isActive ? 'fill' : 'regular'}
                   color={isActive ? '#6C47FF' : '#A09CC0'}
                   style={{ position: 'relative', zIndex: 1 }}
