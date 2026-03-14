@@ -44,8 +44,9 @@ export default {
         'danger':              '#FF3B30',
       },
       fontFamily: {
-        display: ['"DM Serif Display"', 'Georgia', 'serif'],
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+      display: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
+      sans:    ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Text',    'Inter', 'system-ui', 'sans-serif'],
+      },
       },
       fontSize: {
         'hero':    ['44px', { lineHeight: '1.05', letterSpacing: '-0.02em' }],

@@ -5,7 +5,6 @@ import { useMonthSummary } from '../hooks/useTransactions'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, fmtFull, savingsRate } from '../lib/utils'
 import { CATEGORIES } from '../lib/categories'
-import { useRunningBalance } from '../hooks/useTransactions'
 
 const MONTH_NAMES = ['January','February','March','April','May','June',
                      'July','August','September','October','November','December']
@@ -77,8 +76,8 @@ export default function Monthly() {
                 </p>
               </div>
               <div>
-                <p className="section-label text-on-grad-2 mb-1">Savings Rate</p>
-                <p className="font-display text-3xl text-income">{rate}%</p>
+                <p className="section-label mb-1" style={{ color:'rgba(255,255,255,0.7)' }}>Savings Rate</p>
+                <p className="font-display text-3xl text-white font-bold">{rate}%</p>
               </div>
             </div>
             <div className="mt-4">

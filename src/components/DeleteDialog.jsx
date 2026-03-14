@@ -17,7 +17,7 @@ export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this 
             </Dialog.Overlay>
             <Dialog.Content asChild>
               <motion.div
-                className="fixed left-4 right-4 bottom-6 z-50 bg-kosha-surface rounded-hero p-6 shadow-[0_-4px_40px_rgba(108,71,255,0.15)]"
+                className="fixed left-4 right-4 bottom-6 z-50 bg-kosha-surface rounded-hero p-6 shadow-card-lg"
                 style={{ maxWidth: 480, margin: '0 auto' }}
                 initial={{ y:60, opacity:0 }}
                 animate={{ y:0, opacity:1, transition:{ type:'spring', stiffness:400, damping:30 } }}

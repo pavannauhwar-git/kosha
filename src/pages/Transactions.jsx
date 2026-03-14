@@ -142,7 +142,7 @@ export default function Transactions() {
         {groups.map(([date, txns]) => (
           <div key={date}>
             <p className="section-label mb-2">{dateLabel(date)}</p>
-            <div className="space-y-2">
+            <div className="list-card">
               {txns.map(t => (
                 <TransactionItem
                   key={t.id} txn={t}

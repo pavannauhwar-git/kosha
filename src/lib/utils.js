@@ -1,8 +1,5 @@
-// Opening balance on April 1, 2023 — the seed for running balance calculation
-export const OPENING_BALANCE = 12408.68
-
 // ── Number formatting ─────────────────────────────────────────────────────
-export function fmt(n, compact = false) {
+export function fmt(n, compact = true) {
   if (n === null || n === undefined) return '—'
   const abs = Math.abs(n)
   if (compact) {
@@ -10,13 +7,13 @@ export function fmt(n, compact = false) {
     if (abs >= 1_000)    return `₹${(n / 1_000).toFixed(1)}K`
   }
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
   }).format(n)
 }
 
 export function fmtFull(n) {
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
   }).format(n ?? 0)
 }
 
