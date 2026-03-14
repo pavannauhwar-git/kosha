@@ -22,7 +22,7 @@
 
 @layer components {
 
-  /* ── Apple mesh gradient card ──────────────────────────────────── */
+  /* -- Apple mesh gradient card ------------------------------------ */
   .card-hero {
     background:
       radial-gradient(ellipse at 15% 25%, rgba(175,82,222,0.90) 0%, transparent 50%),
@@ -34,16 +34,16 @@
     @apply rounded-hero shadow-apple-card;
   }
 
-  /* ── Standard floating card ────────────────────────────────────── */
+  /* -- Standard floating card -------------------------------------- */
   .card      { @apply bg-kosha-surface rounded-card shadow-card; }
   .card-md   { @apply bg-kosha-surface rounded-card shadow-card-md; }
   .card-inset{ @apply bg-kosha-surface-2 rounded-card; }
 
-  /* ── Bill urgency cards ─────────────────────────────────────────── */
+  /* -- Bill urgency cards ------------------------------------------- */
   .card-urgent { @apply bg-kosha-surface rounded-card shadow-urgent; }
   .card-warn   { @apply bg-kosha-surface rounded-card shadow-warn; }
 
-  /* ── Apple grouped list (rows in one card) ──────────────────────── */
+  /* -- Apple grouped list (rows in one card) ------------------------ */
   .list-card { @apply bg-kosha-surface rounded-card shadow-card overflow-hidden; }
   .list-row  {
     @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface
@@ -53,25 +53,25 @@
     border-top: 0.5px solid #E5E5EA;
   }
 
-  /* ── Section label (Apple style) ────────────────────────────────── */
+  /* -- Section label (Apple style) ---------------------------------- */
   .section-label {
     @apply text-label font-semibold uppercase tracking-widest text-ink-3;
   }
 
-  /* ── Type chips ──────────────────────────────────────────────────── */
+  /* -- Type chips ---------------------------------------------------- */
   .chip-income  { @apply bg-income-bg  text-income-text  text-xs font-semibold px-2.5 py-1 rounded-pill; }
   .chip-expense { @apply bg-expense-bg text-expense-text text-xs font-semibold px-2.5 py-1 rounded-pill; }
   .chip-invest  { @apply bg-invest-bg  text-invest-text  text-xs font-semibold px-2.5 py-1 rounded-pill; }
   .chip-repay   { @apply bg-repay-bg   text-repay-text   text-xs font-semibold px-2.5 py-1 rounded-pill; }
   .chip-neutral { @apply bg-brand-container text-brand-on text-xs font-semibold px-2.5 py-1 rounded-pill; }
 
-  /* ── Amount colours ──────────────────────────────────────────────── */
+  /* -- Amount colours ------------------------------------------------ */
   .amt-income  { @apply text-income-text  font-semibold; }
   .amt-expense { @apply text-expense-text font-semibold; }
   .amt-invest  { @apply text-invest-text  font-semibold; }
   .amt-repay   { @apply text-repay-text   font-semibold; }
 
-  /* ── Buttons ─────────────────────────────────────────────────────── */
+  /* -- Buttons ------------------------------------------------------- */
   .btn {
     @apply inline-flex items-center justify-center gap-2 font-semibold
            rounded-pill transition-all active:scale-95 select-none cursor-pointer;
@@ -81,7 +81,7 @@
   .btn-ghost    { @apply btn text-brand px-4 py-2; }
   .btn-danger   { @apply btn bg-expense-bg text-expense-text px-6 py-3 border border-expense-border; }
 
-  /* ── FAB ─────────────────────────────────────────────────────────── */
+  /* -- FAB ----------------------------------------------------------- */
   .fab {
     @apply fixed bottom-24 right-4 w-14 h-14 bg-brand text-white
            rounded-2xl shadow-fab flex items-center justify-center
@@ -89,7 +89,7 @@
     margin-bottom: var(--safe-bottom);
   }
 
-  /* ── Apple frosted glass bottom nav ─────────────────────────────── */
+  /* -- Apple frosted glass bottom nav ------------------------------- */
   .nav-bar {
     @apply fixed bottom-0 inset-x-0 border-t border-kosha-border
            flex items-center justify-around z-30;
@@ -101,7 +101,7 @@
     height: var(--nav-height);
   }
 
-  /* ── Input fields — Apple style ──────────────────────────────────── */
+  /* -- Input fields — Apple style ------------------------------------ */
   .input {
     @apply w-full bg-kosha-surface-2 rounded-card px-4 py-3.5
            text-ink placeholder-ink-4 text-base
@@ -110,7 +110,7 @@
            transition-all;
   }
 
-  /* ── Apple Pay style sheet ───────────────────────────────────────── */
+  /* -- Apple Pay style sheet ----------------------------------------- */
   .sheet-backdrop {
     @apply fixed inset-0 z-40 animate-fade-in;
     background: rgba(0,0,0,0.45);
@@ -131,10 +131,10 @@
     background: #C7C7CC;
   }
 
-  /* ── Page wrapper ────────────────────────────────────────────────── */
+  /* -- Page wrapper -------------------------------------------------- */
   .page { @apply min-h-dvh pb-28 pt-4 px-4; }
 
-  /* ── Savings bar ─────────────────────────────────────────────────── */
+  /* -- Savings bar --------------------------------------------------- */
   .savings-track {
     @apply h-1.5 rounded-pill w-full;
     background: rgba(255,255,255,0.25);
@@ -144,7 +144,7 @@
     background: #34C759;
   }
 
-  /* ── Apple close button ──────────────────────────────────────────── */
+  /* -- Apple close button -------------------------------------------- */
   .close-btn {
     @apply w-9 h-9 rounded-pill flex items-center justify-center
            bg-kosha-surface-2 active:bg-kosha-border transition-colors cursor-pointer;
