@@ -1,0 +1,52 @@
+import * as Dialog from '@radix-ui/react-dialog'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Trash } from '@phosphor-icons/react'
+
+export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this transaction' }) {
+  return (
+    <Dialog.Root open={open} onOpenChange={v => !v && onCancel()}>
+      <AnimatePresence>
+        {open && (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay asChild>
+              <motion.div
+                className="fixed inset-0 bg-ink/30 z-50"
+                style={{ backdropFilter: 'blur(2px)' }}
+                initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+              />
+            </Dialog.Overlay>
+            <Dialog.Content asChild>
+              <motion.div
+                className="fixed left-4 right-4 bottom-6 z-50 bg-kosha-surface rounded-hero p-6 shadow-[0_-4px_40px_rgba(108,71,255,0.15)]"
+                style={{ maxWidth: 480, margin: '0 auto' }}
+                initial={{ y:60, opacity:0 }}
+                animate={{ y:0, opacity:1, transition:{ type:'spring', stiffness:400, damping:30 } }}
+                exit={{ y:60, opacity:0, transition:{ duration:0.2 } }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-card bg-expense-bg flex items-center justify-center">
+                    <Trash size={20} color="#FF4757" weight="duotone" />
+                  </div>
+                  <Dialog.Title className="font-semibold text-ink text-base">
+                    Delete {label}?
+                  </Dialog.Title>
+                </div>
+                <Dialog.Description className="text-ink-2 text-sm mb-5">
+                  This cannot be undone. The transaction will be permanently removed.
+                </Dialog.Description>
+                <div className="flex gap-3">
+                  <button onClick={onCancel}  className="btn-ghost flex-1 py-3 rounded-card border border-kosha-border">
+                    Cancel
+                  </button>
+                  <button onClick={onConfirm} className="btn-danger flex-1 py-3 rounded-card">
+                    Delete
+                  </button>
+                </div>
+              </motion.div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        )}
+      </AnimatePresence>
+    </Dialog.Root>
+  )
+}

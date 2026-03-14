@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide scrollbar but keep scrollable */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@layer base {
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+
+  html { font-family: 'Inter', system-ui, sans-serif; }
+
+  body {
+    @apply bg-kosha-bg text-ink font-sans;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  :root {
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --nav-height: 68px;
+  }
+}
+
+@layer components {
+
+  /* ── Cards ─────────────────────────────────────────────────────── */
+  .card          { @apply bg-kosha-surface rounded-card shadow-card; }
+  .card-hard     { @apply bg-kosha-surface rounded-card shadow-hard; }
+  .card-hard-red { @apply bg-kosha-surface rounded-card shadow-hard-red; }
+  .card-hard-amber{ @apply bg-kosha-surface rounded-card shadow-hard-amber; }
+  .card-hero {
+    background: linear-gradient(135deg, #2D1B69 0%, #1A0F4E 50%, #0F0A2E 100%);
+    @apply rounded-hero;
+  }
+
+  /* ── Section label ─────────────────────────────────────────────── */
+  .section-label {
+    @apply text-label font-semibold uppercase tracking-widest text-ink-2;
+  }
+
+  /* ── Transaction left-border strips ────────────────────────────── */
+  .strip-income  { border-left: 3px solid #00C896; }
+  .strip-expense { border-left: 3px solid #FF4757; }
+  .strip-invest  { border-left: 3px solid #6C47FF; }
+  .strip-repay   { border-left: 3px solid #FF6B9D; }
+
+  /* ── Type chips ─────────────────────────────────────────────────── */
+  .chip-income  { @apply bg-income-bg  text-income-text  text-xs font-semibold px-2.5 py-1 rounded-chip; }
+  .chip-expense { @apply bg-expense-bg text-expense-text text-xs font-semibold px-2.5 py-1 rounded-chip; }
+  .chip-invest  { @apply bg-invest-bg  text-invest-text  text-xs font-semibold px-2.5 py-1 rounded-chip; }
+  .chip-repay   { @apply bg-repay-bg   text-repay-text   text-xs font-semibold px-2.5 py-1 rounded-chip; }
+  .chip-neutral { @apply bg-brand-container text-brand-on text-xs font-semibold px-2.5 py-1 rounded-chip; }
+
+  /* ── Amount colours ─────────────────────────────────────────────── */
+  .amt-income  { @apply text-income-text  font-semibold; }
+  .amt-expense { @apply text-expense-text font-semibold; }
+  .amt-invest  { @apply text-invest-text  font-semibold; }
+  .amt-repay   { @apply text-repay-text   font-semibold; }
+
+  /* ── Buttons ────────────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold
+           rounded-pill transition-all active:scale-95 select-none cursor-pointer;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white px-6 py-3
+           hover:bg-brand-dark active:bg-brand-dark;
+  }
+  .btn-tonal {
+    @apply btn bg-brand-container text-brand-on px-6 py-3;
+  }
+  .btn-ghost {
+    @apply btn text-ink-2 px-4 py-2 hover:bg-brand-container;
+  }
+  .btn-danger {
+    @apply btn bg-expense-bg text-expense-text px-6 py-3
+           border border-expense-border;
+  }
+
+  /* ── FAB ────────────────────────────────────────────────────────── */
+  .fab {
+    @apply fixed bottom-24 right-4 w-14 h-14 bg-brand text-white
+           rounded-2xl shadow-fab flex items-center justify-center
+           active:scale-95 transition-transform z-40 cursor-pointer;
+    margin-bottom: var(--safe-bottom);
+  }
+
+  /* ── Bottom nav ─────────────────────────────────────────────────── */
+  .nav-bar {
+    @apply fixed bottom-0 inset-x-0 bg-kosha-surface
+           border-t border-kosha-border
+           flex items-center justify-around z-30;
+    padding-bottom: calc(0.5rem + var(--safe-bottom));
+    padding-top: 0.5rem;
+    height: var(--nav-height);
+  }
+
+  /* ── Input fields ───────────────────────────────────────────────── */
+  .input {
+    @apply w-full bg-kosha-bg border border-kosha-border rounded-card
+           px-4 py-3 text-ink placeholder-ink-3 text-sm
+           focus:outline-none focus:border-brand focus:shadow-focus
+           transition-all;
+  }
+
+  /* ── Sheet / dialog ─────────────────────────────────────────────── */
+  .sheet-backdrop {
+    @apply fixed inset-0 bg-ink/20 z-40 animate-fade-in;
+    backdrop-filter: blur(2px);
+  }
+  .sheet-panel {
+    @apply fixed bottom-0 inset-x-0 bg-kosha-surface rounded-t-3xl
+           z-50 shadow-[0_-4px_40px_rgba(108,71,255,0.12)];
+    padding-bottom: calc(1.5rem + var(--safe-bottom));
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+  .sheet-handle {
+    @apply w-10 h-1 bg-kosha-border rounded-pill mx-auto mt-3 mb-5;
+  }
+
+  /* ── Page wrapper ───────────────────────────────────────────────── */
+  .page {
+    @apply min-h-dvh pb-24 pt-4 px-4;
+  }
+
+  /* ── Savings bar ────────────────────────────────────────────────── */
+  .savings-track {
+    @apply h-1.5 rounded-pill w-full;
+    background: rgba(255,255,255,0.2);
+  }
+  .savings-fill {
+    @apply h-1.5 rounded-pill bg-income transition-all duration-700;
+  }
+}
