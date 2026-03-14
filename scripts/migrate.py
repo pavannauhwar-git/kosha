@@ -42,8 +42,7 @@ BATCH_SIZE = 100
 
 # ── Category keyword rules ──────────────────────────────────────────────────
 CATEGORY_RULES = {
-    'vehicle':       ['car','petrol','fuel','parking','fastag','skoda','kushaq',
-                      'pnb car','rc renewal','service center','tyre'],
+    'vehicle':       ['petrol','fuel','parking','fastag','skoda','kushaq','pnb car','rc renewal','service center','tyre','car emi','car loan','car insurance','car wash'],
     'food':          ['zomato','swiggy','burger','pizza','restaurant','cafe',
                       'coffee','dunkin','kfc','mcdonalds','dominos','mcd','starbucks'],
     'groceries':     ['blinkit','zepto','bigbasket','dmart','grocer','vegetable',
@@ -60,8 +59,7 @@ CATEGORY_RULES = {
     'utilities':     ['airtel','jio','bsnl','electricity','water','gas',
                       'internet','broadband','wifi','maintenance','house maintenance'],
     'insurance':     ['lic','term plan','health insurance','car insurance','policy'],
-    'credit_card':   ['icici cc','hdfc cc','credit card','cc bill','cc payment',
-                      'apple wallet'],
+    'credit_card':   ['icici cc','hdfc cc','credit card','cc bill','cc payment','apple wallet','icici credit','hdfc credit','axis credit','sbi credit','card payment','card bill','creditcard'],
     'shopping':      ['amazon','flipkart','myntra','ajio','nykaa','meesho'],
     'education':     ['coursera','udemy','book','course','school','tuition'],
     'personal':      ['haircut','salon','spa','gym','fitness','grooming'],
