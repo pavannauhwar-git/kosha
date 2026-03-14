@@ -47,7 +47,6 @@ export default {
       display: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
       sans:    ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Text',    'Inter', 'system-ui', 'sans-serif'],
       },
-      },
       fontSize: {
         'hero':    ['44px', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
         'display': ['28px', { lineHeight: '1.15', letterSpacing: '-0.01em' }],
