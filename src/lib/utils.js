@@ -1,3 +1,6 @@
+// Opening balance on April 1, 2023 — the seed for running balance calculation
+export const OPENING_BALANCE = 12408.68
+
 // ── Number formatting ─────────────────────────────────────────────────────
 export function fmt(n, compact = false) {
   if (n === null || n === undefined) return '—'

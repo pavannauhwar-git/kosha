@@ -11,6 +11,7 @@ import DeleteDialog         from '../components/DeleteDialog'
 import { deleteTransaction } from '../hooks/useTransactions'
 import { fmt, monthStr, savingsRate, daysUntil, dueLabel, dueChipClass } from '../lib/utils'
 import { Plus } from '@phosphor-icons/react'
+import { useRunningBalance } from '../hooks/useTransactions'
 
 const stagger = { hidden:{}, show:{ transition:{ staggerChildren:0.07 } } }
 const fadeUp  = { hidden:{ opacity:0, y:10 }, show:{ opacity:1, y:0, transition:{ type:'spring', stiffness:300, damping:28 } } }
@@ -24,6 +25,7 @@ export default function Dashboard() {
 
   const { data: recent, refetch } = useTransactions({ limit: 5 })
   const { data: summary }         = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
+  const { balance: runningBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
   const { pending: bills }        = useLiabilities()
 
   const dueSoon   = bills.filter(b => daysUntil(b.due_date) <= 7)
@@ -81,10 +83,10 @@ export default function Dashboard() {
             initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }}
             transition={{ delay:0.15, duration:0.6 }}
           >
-            {fmt(balance)}
+            {runningBalance !== null ? fmt(runningBalance) : fmt(balance)}
           </motion.p>
           <p className="text-on-grad-2 text-xs mb-4">
-            {balance >= 0 ? 'Net balance' : 'Overspent this month'}
+            {balance >= 0 ? 'Running balance' : ''}
           </p>
 
           {/* Mini stat pills */}
