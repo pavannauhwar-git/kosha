@@ -76,8 +76,8 @@ export default function Monthly() {
                 </p>
               </div>
               <div>
-                <p className="section-label text-on-grad-2 mb-1">Savings Rate</p>
-                <p className="font-display text-3xl text-income">{rate}%</p>
+                <p className="text-[11px] font-semibold tracking-widest uppercase mb-1" style={{color:"rgba(255,255,255,0.7)"}}>Savings Rate</p>
+                <p className="font-display text-3xl text-white font-bold">{rate}%</p>
               </div>
             </div>
             <div className="mt-4">

@@ -137,7 +137,7 @@
   /* -- Bar on dark (hero gradient card) ------------------------------ */
   /* White track + white semi-transparent fill - readable on dark bg   */
   .bar-dark-track {
-    @apply h-2 rounded-pill w-full relative overflow-hidden;
+    @apply h-3 rounded-pill w-full relative overflow-hidden;
     background: rgba(255,255,255,0.20);
   }
   .bar-dark-fill {
@@ -146,14 +146,14 @@
   }
 
   /* -- Bar on light (white cards) ------------------------------------ */
-  /* Gradient track, white overlay from right = colored fill on white  */
+  /* Grey track, gradient fill grows from left = correct spend visual  */
   .bar-light-track {
-    @apply h-2 rounded-pill w-full relative overflow-hidden;
-    background: linear-gradient(90deg, #FF9500 0%, #FF6B6B 50%, #FF2D55 100%);
+    @apply h-3 rounded-pill w-full relative overflow-hidden;
+    background: #E5E5EA;
   }
   .bar-light-fill {
-    @apply h-full rounded-pill absolute inset-y-0 right-0 transition-all duration-700;
-    background: rgba(242,242,247,0.85);
+    @apply h-full rounded-pill absolute inset-y-0 left-0 transition-all duration-700;
+    background: linear-gradient(90deg, #FF9500 0%, #FF3B30 100%);
   }
 
   /* Legacy aliases so existing .savings-track/.savings-fill still work */
