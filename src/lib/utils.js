@@ -1,5 +1,5 @@
 // ── Number formatting ─────────────────────────────────────────────────────
-export function fmt(n, compact = true) {
+export function fmt(n, compact = false) {
   if (n === null || n === undefined) return '—'
   const abs = Math.abs(n)
   if (compact) {
