@@ -2,54 +2,52 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Bell, ArrowRight } from 'lucide-react'
-import { useTransactions }  from '../hooks/useTransactions'
-import { useMonthSummary }  from '../hooks/useTransactions'
-import { useLiabilities }   from '../hooks/useLiabilities'
-import AddTransactionSheet  from '../components/AddTransactionSheet'
-import TransactionItem      from '../components/TransactionItem'
-import DeleteDialog         from '../components/DeleteDialog'
-import { deleteTransaction } from '../hooks/useTransactions'
-import { fmt, monthStr, savingsRate, daysUntil, dueLabel, dueChipClass } from '../lib/utils'
-import { Plus } from '@phosphor-icons/react'
+import { useTransactions }   from '../hooks/useTransactions'
+import { useMonthSummary }   from '../hooks/useTransactions'
 import { useRunningBalance } from '../hooks/useTransactions'
+import { useLiabilities }    from '../hooks/useLiabilities'
+import AddTransactionSheet   from '../components/AddTransactionSheet'
+import TransactionItem       from '../components/TransactionItem'
+import DeleteDialog          from '../components/DeleteDialog'
+import { deleteTransaction } from '../hooks/useTransactions'
+import { fmt, monthStr, savingsRate, daysUntil } from '../lib/utils'
+import { Plus } from '@phosphor-icons/react'
 
-const stagger = { hidden:{}, show:{ transition:{ staggerChildren:0.07 } } }
-const fadeUp  = { hidden:{ opacity:0, y:10 }, show:{ opacity:1, y:0, transition:{ type:'spring', stiffness:300, damping:28 } } }
+const stagger = { hidden:{}, show:{ transition:{ staggerChildren:0.06 } } }
+const fadeUp  = {
+  hidden:{ opacity:0, y:12 },
+  show:{ opacity:1, y:0, transition:{ type:'spring', stiffness:280, damping:26 } }
+}
 
 export default function Dashboard() {
-  const navigate  = useNavigate()
-  const now       = new Date()
-  const [showAdd, setShowAdd]   = useState(false)
-  const [editTxn, setEditTxn]   = useState(null)
-  const [delId,   setDelId]     = useState(null)
+  const navigate = useNavigate()
+  const now      = new Date()
+  const [showAdd, setShowAdd] = useState(false)
+  const [editTxn, setEditTxn] = useState(null)
+  const [delId,   setDelId]   = useState(null)
 
-  const { data: recent, refetch } = useTransactions({ limit: 5 })
+  const { data: recent, refetch } = useTransactions({ limit: 6 })
   const { data: summary }         = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { balance: runningBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
   const { pending: bills }        = useLiabilities()
 
-  const dueSoon   = bills.filter(b => daysUntil(b.due_date) <= 7)
-  const earned    = summary?.earned     || 0
-  const spent     = summary?.expense    || 0
-  const invested  = summary?.investment || 0
-  const repaid    = summary?.repayments || 0
-  const balance   = summary?.balance    || 0
-  const rate      = savingsRate(earned, spent)
+  const dueSoon  = bills.filter(b => daysUntil(b.due_date) <= 7)
+  const earned   = summary?.earned     || 0
+  const spent    = summary?.expense    || 0
+  const invested = summary?.investment || 0
+  const rate     = savingsRate(earned, spent)
 
-  async function handleDelete(id) {
-    setDelId(id)
-  }
+  const hour     = now.getHours()
+  const greeting = hour < 12 ? 'Good morning'
+                 : hour < 17 ? 'Good afternoon'
+                 : hour < 21 ? 'Good evening'
+                 : 'Good night'
+
   async function confirmDelete() {
     await deleteTransaction(delId)
     setDelId(null)
     refetch()
   }
-
-const hour = now.getHours()
-const greeting = hour < 12 ? 'Good morning'
-               : hour < 17 ? 'Good afternoon'
-               : hour < 21 ? 'Good evening'
-               : 'Good night'
 
   return (
     <div className="page">
@@ -58,15 +56,17 @@ const greeting = hour < 12 ? 'Good morning'
         {/* ── Greeting ── */}
         <motion.div variants={fadeUp} className="flex items-center justify-between pt-2">
           <div>
-            <p className="text-xs text-ink-3 font-medium">
-              {now.toLocaleDateString('en-IN',{weekday:'long'})}
+            <p className="text-[13px] text-ink-3">
+              {now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' })}
             </p>
             <h1 className="font-display text-display text-ink">{greeting} 👋</h1>
           </div>
           {dueSoon.length > 0 && (
-            <button onClick={() => navigate('/bills')}
-              className="relative w-10 h-10 rounded-pill bg-warning-bg flex items-center justify-center">
-              <Bell size={18} className="text-warning-text" />
+            <button
+              onClick={() => navigate('/bills')}
+              className="relative w-10 h-10 rounded-pill bg-expense-bg flex items-center justify-center"
+            >
+              <Bell size={18} className="text-expense-text" />
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-expense rounded-pill
                                text-white text-[9px] font-bold flex items-center justify-center">
                 {dueSoon.length}
@@ -75,80 +75,93 @@ const greeting = hour < 12 ? 'Good morning'
           )}
         </motion.div>
 
-        {/* ── Hero Card ── */}
-        <motion.div variants={fadeUp} className="card-hero p-5 relative overflow-hidden">
-          {/* Decorative circles */}
-          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full"
-               style={{ background:'rgba(108,71,255,0.25)' }} />
-          <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full"
-               style={{ background:'rgba(108,71,255,0.15)' }} />
+        {/* ── Apple Card mesh gradient hero ── */}
+        <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
+          {/* Subtle noise texture overlay */}
+          <div className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+              backgroundSize: '128px 128px',
+            }}
+          />
 
-          <p className="section-label text-on-grad-2 mb-1">{monthStr(now).toUpperCase()}</p>
-          <motion.p
-            className="font-display text-hero text-on-grad leading-none mb-1"
-            initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }}
-            transition={{ delay:0.15, duration:0.6 }}
-          >
-            {runningBalance !== null ? fmt(runningBalance) : fmt(balance)}
-          </motion.p>
-          <p className="text-on-grad-2 text-xs mb-4">
-            {balance >= 0 ? 'Running Balance' : ''}
-          </p>
-
-          {/* Mini stat pills */}
-          <div className="flex gap-2 flex-wrap mb-4">
-            {[
-              { label:'Earned',   val:earned,   color:'#C8F5D8', text:'#006B50' },
-              { label:'Spent',    val:spent,    color:'#FFD0D4', text:'#93000A' },
-              { label:'Invested', val:invested, color:'#D8CFFF', text:'#2D1B69' },
-            ].map(s => (
-              <div key={s.label}
-                className="px-3 py-1.5 rounded-pill"
-                style={{ background:s.color }}>
-                <p className="text-[10px] font-medium" style={{ color:s.text }}>{s.label}</p>
-                <p className="text-xs font-bold" style={{ color:s.text }}>{fmt(s.val)}</p>
+          <div className="relative">
+            {/* Card header */}
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-[11px] font-semibold tracking-widest uppercase text-white/70 mb-1">
+                  {monthStr(now).toUpperCase()}
+                </p>
+                <motion.p
+                  className="font-display text-hero text-white leading-none"
+                  initial={{ opacity:0, y:8 }}
+                  animate={{ opacity:1, y:0 }}
+                  transition={{ delay:0.15, duration:0.5 }}
+                >
+                  {runningBalance !== null ? fmt(runningBalance) : '—'}
+                </motion.p>
+                <p className="text-[13px] text-white/60 mt-1">Running balance</p>
               </div>
-            ))}
-          </div>
-
-          {/* Savings bar */}
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-[11px] text-on-grad-2">Savings rate</span>
-              <span className="text-[11px] font-semibold text-on-grad">{rate}%</span>
+              <div className="text-right">
+                <p className="text-[11px] font-bold tracking-widest text-white/70">KOSHA</p>
+              </div>
             </div>
-            <div className="savings-track">
-              <motion.div
-                className="savings-fill"
-                initial={{ width:0 }}
-                animate={{ width:`${rate}%` }}
-                transition={{ duration:0.7, delay:0.3, ease:'easeOut' }}
-              />
+
+            {/* Stat pills — glass style */}
+            <div className="flex gap-2 flex-wrap mb-4">
+              {[
+                { label:'Earned',   val:earned,   bg:'rgba(52,199,89,0.25)',  text:'#FFFFFF' },
+                { label:'Spent',    val:spent,    bg:'rgba(255,59,48,0.25)',  text:'#FFFFFF' },
+                { label:'Invested', val:invested, bg:'rgba(0,122,255,0.25)', text:'#FFFFFF' },
+              ].map(s => (
+                <div key={s.label}
+                  className="px-3 py-1.5 rounded-pill"
+                  style={{ background:s.bg, backdropFilter:'blur(8px)' }}>
+                  <p className="text-[10px] font-medium text-white/70">{s.label}</p>
+                  <p className="text-[13px] font-bold text-white">{fmt(s.val)}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Savings bar */}
+            <div>
+              <div className="flex justify-between mb-1.5">
+                <span className="text-[11px] text-white/60">Savings rate</span>
+                <span className="text-[11px] font-semibold text-white">{rate}%</span>
+              </div>
+              <div className="savings-track">
+                <motion.div
+                  className="savings-fill"
+                  initial={{ width:0 }}
+                  animate={{ width:`${rate}%` }}
+                  transition={{ duration:0.7, delay:0.3, ease:'easeOut' }}
+                />
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* ── Bill Alert ── */}
+        {/* ── Bill alert ── */}
         {dueSoon.length > 0 && (
           <motion.div variants={fadeUp}>
             <button
               onClick={() => navigate('/bills')}
-              className="card-hard-amber w-full flex items-center justify-between px-4 py-3 text-left"
+              className="card-warn w-full flex items-center justify-between px-4 py-3.5 text-left"
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-chip bg-warning-bg flex items-center justify-center">
-                  <Bell size={16} className="text-warning-text" />
+                  <Bell size={15} className="text-warning-text" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-ink">
+                  <p className="text-[15px] font-semibold text-ink">
                     {dueSoon.length} bill{dueSoon.length > 1 ? 's' : ''} due soon
                   </p>
-                  <p className="text-xs text-ink-2">
+                  <p className="text-[13px] text-ink-3">
                     {dueSoon.slice(0,2).map(b => b.description).join(' · ')}
                   </p>
                 </div>
               </div>
-              <ArrowRight size={16} className="text-ink-3 shrink-0" />
+              <ArrowRight size={15} className="text-ink-4 shrink-0" />
             </button>
           </motion.div>
         )}
@@ -156,53 +169,60 @@ const greeting = hour < 12 ? 'Good morning'
         {/* ── Bento stats ── */}
         <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3">
           {[
-            { label:'Earned',  val:earned,  cls:'amt-income' },
-            { label:'Spent',   val:spent,   cls:'amt-expense' },
-            { label:'Invested',val:invested,cls:'amt-invest' },
+            { label:'Earned',   val:earned,   cls:'text-income-text' },
+            { label:'Spent',    val:spent,    cls:'text-expense-text' },
+            { label:'Invested', val:invested, cls:'text-invest-text' },
           ].map(s => (
-            <div key={s.label} className="card p-3">
-              <p className="text-[10px] text-ink-3 font-medium mb-1">{s.label}</p>
-              <p className={`text-sm font-bold ${s.cls}`}>{fmt(s.val)}</p>
+            <div key={s.label} className="card p-3.5">
+              <p className="text-[11px] text-ink-3 font-medium mb-1">{s.label}</p>
+              <p className={`text-[14px] font-bold tabular-nums ${s.cls}`}>{fmt(s.val)}</p>
             </div>
           ))}
         </motion.div>
 
-        {/* ── Recent transactions ── */}
+        {/* ── Recent transactions — Apple Wallet list card ── */}
         <motion.div variants={fadeUp}>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2.5">
             <p className="section-label">Recent</p>
-            <button onClick={() => navigate('/transactions')}
-              className="flex items-center gap-1 text-xs font-medium text-brand">
+            <button
+              onClick={() => navigate('/transactions')}
+              className="flex items-center gap-1 text-[13px] font-medium text-brand"
+            >
               See all <ArrowRight size={12} />
             </button>
           </div>
-          <div className="space-y-2">
-            {recent.length === 0 && (
-              <div className="card p-6 text-center">
-                <p className="text-ink-2 text-sm">No transactions yet.</p>
-                <p className="text-ink-3 text-xs mt-1">Tap + to add your first one.</p>
-              </div>
-            )}
-            {recent.map(t => (
-              <TransactionItem
-                key={t.id} txn={t}
-                onDelete={id => setDelId(id)}
-                onTap={t => { setEditTxn(t); setShowAdd(true) }}
-              />
-            ))}
-          </div>
+
+          {recent.length === 0 ? (
+            <div className="card p-8 text-center">
+              <p className="text-ink-3 text-[15px]">No transactions yet.</p>
+              <p className="text-ink-4 text-[13px] mt-1">Tap + to add your first one.</p>
+            </div>
+          ) : (
+            <div className="list-card">
+              {recent.map((t, i) => (
+                <TransactionItem
+                  key={t.id} txn={t}
+                  isLast={i === recent.length - 1}
+                  onDelete={id => setDelId(id)}
+                  onTap={t => { setEditTxn(t); setShowAdd(true) }}
+                />
+              ))}
+            </div>
+          )}
         </motion.div>
 
       </motion.div>
 
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setShowAdd(true) }}>
-        <Plus size={28} weight="bold" color="white" />
+        <Plus size={26} weight="bold" color="white" />
       </button>
 
       <AddTransactionSheet
-        open={showAdd} onClose={() => { setShowAdd(false); setEditTxn(null) }}
-        onSaved={refetch} editTxn={editTxn}
+        open={showAdd}
+        onClose={() => { setShowAdd(false); setEditTxn(null) }}
+        onSaved={refetch}
+        editTxn={editTxn}
       />
       <DeleteDialog
         open={!!delId} label="this transaction"
