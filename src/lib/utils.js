@@ -13,7 +13,7 @@ export function fmt(n, compact = false) {
 
 export function fmtFull(n) {
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', minimumFractionDigits: 2,maximumFractionDigits: 2,
+    style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(n ?? 0)
 }
 
