@@ -209,7 +209,8 @@
   }
 
   .sheet-panel {
-    @apply fixed bottom-0 inset-x-0 bg-kosha-surface z-50 shadow-[0_-2px_40px_rgba(0, 0, 0, 0.15)];
+    @apply fixed bottom-0 inset-x-0 bg-kosha-surface z-50;
+    box-shadow: 0 -2px 40px rgba(0, 0, 0, 0.15);
     border-radius: 20px 20px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     max-height: 94dvh;
