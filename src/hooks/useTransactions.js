@@ -125,3 +125,35 @@ export async function deleteTransaction(id) {
   const { error } = await supabase.from('transactions').delete().eq('id',id)
   if (error) throw error
 }
+
+// ── Running (cumulative) balance up to end of a given month ──────────────
+export function useRunningBalance(year, month) {
+  const [balance, setBalance] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      const endDate = `${year}-${String(month).padStart(2,'0')}-${new Date(year, month, 0).getDate()}`
+      const { data: rows } = await supabase
+        .from('transactions')
+        .select('type, amount, is_repayment')
+        .lte('date', endDate)
+
+      if (!rows) { setLoading(false); return }
+
+      const cumulative = rows.reduce((sum, r) => {
+        if (r.type === 'income')     return sum + +r.amount
+        if (r.type === 'expense')    return sum - +r.amount
+        if (r.type === 'investment') return sum - +r.amount
+        return sum
+      }, 12408.68)
+
+      setBalance(cumulative)
+      setLoading(false)
+    }
+    load()
+  }, [year, month])
+
+  return { balance, loading }
+}
