@@ -1,5 +1,5 @@
 // ── Number formatting ─────────────────────────────────────────────────────
-export function fmt(n, compact = true) {
+export function fmt(n, compact = false) {
   if (n === null || n === undefined) return '—'
   const abs = Math.abs(n)
   if (compact) {
@@ -7,13 +7,13 @@ export function fmt(n, compact = true) {
     if (abs >= 1_000)    return `₹${(n / 1_000).toFixed(1)}K`
   }
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+    style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(n)
 }
 
 export function fmtFull(n) {
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+    style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(n ?? 0)
 }
 
