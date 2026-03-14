@@ -86,7 +86,7 @@ export default function Dashboard() {
             {runningBalance !== null ? fmt(runningBalance) : fmt(balance)}
           </motion.p>
           <p className="text-on-grad-2 text-xs mb-4">
-            {balance >= 0 ? 'Running balance' : ''}
+            {balance >= 0 ? 'Running Balance' : ''}
           </p>
 
           {/* Mini stat pills */}
