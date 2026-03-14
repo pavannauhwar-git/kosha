@@ -45,6 +45,12 @@ export default function Dashboard() {
     refetch()
   }
 
+const hour = now.getHours()
+const greeting = hour < 12 ? 'Good morning'
+               : hour < 17 ? 'Good afternoon'
+               : hour < 21 ? 'Good evening'
+               : 'Good night'
+
   return (
     <div className="page">
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
@@ -55,7 +61,7 @@ export default function Dashboard() {
             <p className="text-xs text-ink-3 font-medium">
               {now.toLocaleDateString('en-IN',{weekday:'long'})}
             </p>
-            <h1 className="font-display text-display text-ink">Good morning 👋</h1>
+            <h1 className="font-display text-display text-ink">{greeting} 👋</h1>
           </div>
           {dueSoon.length > 0 && (
             <button onClick={() => navigate('/bills')}
