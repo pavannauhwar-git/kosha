@@ -22,16 +22,17 @@ function MiniMonthCard({ month, year, isCurrent }) {
 
   return (
     <motion.div
-      className="shrink-0 rounded-card overflow-hidden relative"
+      className="rounded-card overflow-hidden relative w-full"  {/* ← removed shrink-0, width:148, made full-width */}
       style={{
-        width: 148,
-        background: isCurrent
-          ? `radial-gradient(ellipse at 20% 30%, rgba(175,82,222,0.90) 0%, transparent 50%),
-             radial-gradient(ellipse at 85% 15%, rgba(255,149,0,0.85) 0%, transparent 45%),
-             radial-gradient(ellipse at 70% 80%, rgba(255,214,10,0.80) 0%, transparent 45%),
-             radial-gradient(ellipse at 10% 75%, rgba(255,45,85,0.70) 0%, transparent 45%),
-             #E8D5FF`
-          : '#FFFFFF',
+        background: (
+          isCurrent
+            ? `radial-gradient(ellipse at 20% 30%, rgba(175,82,222,0.90) 0%, transparent 50%),
+               radial-gradient(ellipse at 85% 15%, rgba(255,149,0,0.85) 0%, transparent 45%),
+               radial-gradient(ellipse at 70% 80%, rgba(255,214,10,0.80) 0%, transparent 45%),
+               radial-gradient(ellipse at 10% 75%, rgba(255,45,85,0.70) 0%, transparent 45%),
+               #E8D5FF`
+            : '#FFFFFF'
+        ),
         boxShadow: isCurrent
           ? '0 8px 24px rgba(108,71,255,0.25), 0 2px 8px rgba(0,0,0,0.08)'
           : '0 2px 8px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04)',
@@ -130,14 +131,7 @@ export default function Monthly() {
   const vehicleEntries = Object.entries(data?.byVehicle || {})
     .sort((a,b) => b[1]-a[1])
 
-  // Build 5-month window centred on current
-  const monthWindow = [-2,-1,0,1,2].map(offset => {
-    let m = month + offset
-    let y = year
-    if (m < 1)  { m += 12; y -= 1 }
-    if (m > 12) { m -= 12; y += 1 }
-    return { month: m, year: y, isCurrent: offset === 0 }
-  })
+  // ← removed monthWindow array entirely
 
   return (
     <div className="page">
@@ -158,11 +152,9 @@ export default function Monthly() {
         </button>
       </div>
 
-      {/* ── Horizontal scroll month cards ── */}
-      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 mb-4 -mt-2">
-        {monthWindow.map(({ month:m, year:y, isCurrent }) => (
-          <MiniMonthCard key={`${y}-${m}`} month={m} year={y} isCurrent={isCurrent} />
-        ))}
+      {/* ── Single full-width current month card ── */}
+      <div className="mb-4">                                     {/* ← was horizontal scroll strip with monthWindow.map() */}
+        <MiniMonthCard month={month} year={year} isCurrent={true} />
       </div>
 
       {loading ? (
