@@ -15,10 +15,16 @@ import { CATEGORIES } from '../lib/categories'
 import { Plus } from '@phosphor-icons/react'
 import CategoryIcon from '../components/CategoryIcon'
 
-const stagger = { hidden:{}, show:{ transition:{ staggerChildren:0.07 } } }
-const fadeUp  = {
-  hidden:{ opacity:0, y:10 },
-  show:{ opacity:1, y:0, transition:{ type:'spring', stiffness:280, damping:26 } }
+// Simple easeOut — not springs. Springs are for interactive gestures.
+// y:4 not y:12 — barely perceptible movement, just enough to feel alive.
+// stagger:0.04 — tight enough that sections feel like one motion.
+const fadeUp = {
+  hidden: { opacity: 0, y: 4 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
+}
+const stagger = {
+  hidden: {},
+  show:   { transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
 }
 
 export default function Dashboard() {
@@ -43,7 +49,6 @@ export default function Dashboard() {
   const invested = summary?.investment || 0
   const rate     = savingsRate(earned, spent)
 
-  // Month progress
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const dayOfMonth  = now.getDate()
   const monthPct    = Math.round((dayOfMonth / daysInMonth) * 100)
@@ -51,13 +56,11 @@ export default function Dashboard() {
   const onTrack     = spendPct <= monthPct
   const paceGap     = Math.abs(spendPct - monthPct)
 
-  // Top spend category
   const catEntries = Object.entries(summary?.byCategory || {}).sort((a, b) => b[1] - a[1])
   const topCat     = catEntries[0]
   const topCatPct  = topCat && spent > 0 ? Math.round((topCat[1] / spent) * 100) : 0
   const topCatInfo = topCat ? CATEGORIES.find(c => c.id === topCat[0]) : null
 
-  // Investment trend
   const lastInvested = lastSummary?.investment || 0
   const investDiff   = invested - lastInvested
   const investUp     = investDiff > 0
@@ -101,34 +104,24 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Hero card ─────────────────────────────────────────────────── */}
-        {/* Single source of truth for this month's numbers.               */}
-        {/* The 3-column stat grid that used to live below has been         */}
-        {/* removed — Earned / Spent / Invested are already here.          */}
+        {/* Balance is a plain <p> — parent motion handles the entry.       */}
+        {/* Removed the nested motion.p that was double-animating it.       */}
         <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
-          {/* Subtle noise texture */}
           <div className="absolute inset-0 opacity-[0.03]"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
               backgroundSize: '128px 128px',
             }}
           />
-
           <div className="relative">
-            {/* Month label + balance */}
             <p className="text-caption font-semibold tracking-widest uppercase text-white/60 mb-1">
               {monthStr(now).toUpperCase()}
             </p>
-            <motion.p
-              className="text-hero font-bold text-white leading-none tracking-tight mb-1"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.5 }}
-            >
+            <p className="text-hero font-bold text-white leading-none tracking-tight mb-1 tabular-nums">
               {runningBalance !== null ? fmt(runningBalance) : '—'}
-            </motion.p>
+            </p>
             <p className="text-caption text-white/50 mb-5">Running balance</p>
 
-            {/* Stat pills — Earned / Spent / Invested */}
             <div className="flex gap-2 flex-wrap mb-5">
               {[
                 { label: 'Earned',   val: earned,   bg: 'rgba(0,200,150,0.22)'  },
@@ -145,7 +138,6 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* Savings rate bar */}
             <div>
               <div className="flex justify-between mb-2">
                 <span className="text-caption text-white/60">Savings rate</span>
@@ -156,7 +148,7 @@ export default function Dashboard() {
                   className="bar-dark-fill"
                   initial={{ width: 0 }}
                   animate={{ width: `${rate}%` }}
-                  transition={{ duration: 0.7, delay: 0.3, ease: 'easeOut' }}
+                  transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
                 />
               </div>
             </div>
@@ -189,15 +181,9 @@ export default function Dashboard() {
         )}
 
         {/* ── Month at a glance ─────────────────────────────────────────── */}
-        {/* The old "This Month" stat grid has been removed — those numbers  */}
-        {/* are already in the hero card above. This section now focuses on  */}
-        {/* pace (are you on track?) and top spend (where is money going?).  */}
         <motion.div variants={fadeUp}>
           <p className="section-label mb-4">Month at a Glance</p>
-
           <div className="grid grid-cols-2 gap-3">
-
-            {/* Month Progress */}
             <div className="card p-4">
               <p className="text-caption text-ink-3 font-medium mb-2">Pace</p>
               <p className="text-value font-bold text-ink tabular-nums leading-none mb-1">
@@ -209,7 +195,7 @@ export default function Dashboard() {
                   className="bar-light-fill"
                   initial={{ width: '0%' }}
                   animate={{ width: `${monthPct}%` }}
-                  transition={{ duration: 0.7, ease: 'easeOut' }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
                 />
               </div>
               <p className={`text-caption font-semibold ${onTrack ? 'text-income-text' : 'text-expense-text'}`}>
@@ -217,7 +203,6 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* Top Spend */}
             <div
               className="card p-4 cursor-pointer active:opacity-80"
               onClick={() => navigate('/transactions')}
@@ -239,7 +224,7 @@ export default function Dashboard() {
                       className="bar-light-fill"
                       initial={{ width: '0%' }}
                       animate={{ width: `${topCatPct}%` }}
-                      transition={{ duration: 0.7, ease: 'easeOut' }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
                     />
                   </div>
                   <p className="text-caption text-ink-3">{topCatPct}% of total spend</p>
@@ -252,8 +237,6 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Investments ───────────────────────────────────────────────── */}
-        {/* Vehicle chips removed — too noisy for the dashboard.            */}
-        {/* Full breakdown lives in the Monthly / Analytics pages.          */}
         {invested > 0 && (
           <motion.div variants={fadeUp}>
             <div className="card p-5">
@@ -283,7 +266,7 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* ── Recent transactions ───────────────────────────────────────── */}
+        {/* ── Recent ────────────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
           <div className="flex items-center justify-between mb-4">
             <p className="section-label">Recent</p>
@@ -294,7 +277,6 @@ export default function Dashboard() {
               See all <ArrowRight size={13} />
             </button>
           </div>
-
           {recent.length === 0 ? (
             <div className="card p-8 text-center">
               <p className="text-body text-ink-3">No transactions yet.</p>
@@ -316,7 +298,6 @@ export default function Dashboard() {
 
       </motion.div>
 
-      {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setShowAdd(true) }}>
         <Plus size={26} weight="bold" color="white" />
       </button>

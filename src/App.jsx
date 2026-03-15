@@ -8,17 +8,21 @@ import Bills        from './pages/Bills'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
 
 const NAV = [
-  { path:'/',             label:'Home',    Icon:House        },
-  { path:'/transactions', label:'All',     Icon:List         },
-  { path:'/monthly',      label:'Monthly', Icon:CalendarDots },
-  { path:'/analytics',    label:'Insights',Icon:ChartBar     },
-  { path:'/bills',        label:'Bills',   Icon:Receipt      },
+  { path: '/',             label: 'Home',     Icon: House        },
+  { path: '/transactions', label: 'All',      Icon: List         },
+  { path: '/monthly',      label: 'Monthly',  Icon: CalendarDots },
+  { path: '/analytics',    label: 'Insights', Icon: ChartBar     },
+  { path: '/bills',        label: 'Bills',    Icon: Receipt      },
 ]
 
+// Opacity-only fade — no x/y translation, no mode="wait".
+// mode="wait" caused a dead pause between pages (exit must finish before
+// enter starts). Removing it means crossfade — instant and smooth.
+// 120ms enter, 80ms exit — fast enough to feel snappy on mobile.
 const pageVariants = {
-  initial: { opacity: 0, x: 16 },
-  animate: { opacity: 1, x: 0,  transition: { type:'spring', stiffness:500, damping:40 } },
-  exit:    { opacity: 0, x: -8, transition: { duration: 0.1 } },
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.12, ease: 'easeOut' } },
+  exit:    { opacity: 0, transition: { duration: 0.08, ease: 'easeIn'  } },
 }
 
 function BottomNav() {
@@ -44,16 +48,18 @@ function BottomNav() {
             >
               <div className="relative flex items-center justify-center w-14 h-11">
                 {isActive && (
-                  <div
+                  <motion.div
+                    layoutId="nav-pill"
                     className="absolute inset-0 rounded-pill"
                     style={{ background: '#EEEBFF' }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 36 }}
                   />
                 )}
                 <item.Icon
                   size={26}
                   weight={isActive ? 'fill' : 'regular'}
                   color={isActive ? '#6C47FF' : '#A09CC0'}
-                  style={{ position:'relative', zIndex:1 }}
+                  style={{ position: 'relative', zIndex: 1 }}
                 />
               </div>
             </button>
@@ -67,13 +73,14 @@ function BottomNav() {
 function PageTransition({ children }) {
   const location = useLocation()
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       <motion.div
         key={location.pathname}
         variants={pageVariants}
         initial="initial"
         animate="animate"
         exit="exit"
+        style={{ willChange: 'opacity' }}
       >
         {children}
       </motion.div>
