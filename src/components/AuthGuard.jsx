@@ -2,29 +2,16 @@ import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
-// ── AuthGuard ─────────────────────────────────────────────────────────────
-// Wraps all protected pages. Does three things:
-//
-// 1. If loading (session check in progress) — renders nothing.
-//    Prevents a flash of the login screen on refresh.
-//
-// 2. If no user — redirects to /login.
-//    The current path is saved so we can return after sign-in.
-//
-// 3. If user exists but onboarded = false — redirects to /onboarding.
-//    This catches new users who signed up via an invite link.
-//    Existing users (you) will have onboarded = true after back-fill.
-
 export default function AuthGuard({ children }) {
   const { user, profile, loading } = useAuth()
-  const navigate  = useNavigate()
-  const location  = useLocation()
+  const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     if (loading) return
 
+    // Not signed in — go to login
     if (!user) {
-      // Save the page they were trying to reach
       navigate('/login', {
         replace: true,
         state: { from: location.pathname },
@@ -32,7 +19,7 @@ export default function AuthGuard({ children }) {
       return
     }
 
-    // Profile loaded and onboarding not complete
+    // Profile loaded and onboarding not done — go to onboarding
     if (profile && !profile.onboarded) {
       const onboardingRoutes = ['/onboarding', '/login', '/join']
       const alreadyThere = onboardingRoutes.some(r => location.pathname.startsWith(r))
@@ -42,14 +29,26 @@ export default function AuthGuard({ children }) {
     }
   }, [user, profile, loading, navigate, location])
 
-  // Show nothing during the initial session check
+  // Still checking session — show nothing (no flash)
   if (loading) return null
 
-  // Show nothing while redirecting
+  // No user — redirect handled by useEffect above
   if (!user) return null
 
-  // Don't block the onboarding page itself
-  if (profile && !profile.onboarded && location.pathname !== '/onboarding') return null
+  // User exists but profile not yet loaded from DB — show subtle spinner
+  // This is the key fix: previously this returned null indefinitely if
+  // loadProfile was slow or failed. Now we wait with a visible indicator.
+  if (!profile) {
+    return (
+      <div className="min-h-dvh bg-kosha-bg flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+      </div>
+    )
+  }
 
+  // Profile loaded but onboarding incomplete — redirect handled by useEffect
+  if (!profile.onboarded && location.pathname !== '/onboarding') return null
+
+  // All good — render the page
   return children
 }
