@@ -1,15 +1,74 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { AuthProvider } from './hooks/useAuth'
 import { useAuth } from './hooks/useAuth'
-import AuthGuard from './components/AuthGuard'
-import BottomNav from './components/BottomNav'
-import Login from './pages/Login'
-import Onboarding from './pages/Onboarding'
-import Dashboard from './pages/Dashboard'
+import AuthGuard    from './components/AuthGuard'
+import Dashboard    from './pages/Dashboard'
 import Transactions from './pages/Transactions'
-import Monthly from './pages/Monthly'
-import Analytics from './pages/Analytics'
-import Bills from './pages/Bills'
+import Monthly      from './pages/Monthly'
+import Analytics    from './pages/Analytics'
+import Bills        from './pages/Bills'
+import Login        from './pages/Login'
+import Onboarding   from './pages/Onboarding'
+import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
+
+const NAV = [
+  { path: '/',             label: 'Home',     Icon: House        },
+  { path: '/transactions', label: 'All',      Icon: List         },
+  { path: '/monthly',      label: 'Monthly',  Icon: CalendarDots },
+  { path: '/analytics',    label: 'Insights', Icon: ChartBar     },
+  { path: '/bills',        label: 'Bills',    Icon: Receipt      },
+]
+
+// ── Bottom nav ────────────────────────────────────────────────────────────
+function BottomNav() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const hideOn = ['/login', '/onboarding', '/join', '/auth']
+  if (hideOn.some(p => location.pathname.startsWith(p))) return null
+
+  const active = NAV.findIndex(n =>
+    n.path === '/' ? location.pathname === '/' : location.pathname.startsWith(n.path)
+  )
+
+  return (
+    <div className="nav-float-wrap">
+      <nav className="nav-float">
+        {NAV.map((item, i) => {
+          const isActive = i === active
+          return (
+            <button
+              key={item.path}
+              className="nav-float-item"
+              onClick={() => {
+                if (navigator.vibrate) navigator.vibrate(8)
+                navigate(item.path)
+              }}
+            >
+              <div className="relative flex items-center justify-center w-14 h-11">
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    className="absolute inset-0 rounded-pill"
+                    style={{ background: '#EEEBFF' }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 36 }}
+                  />
+                )}
+                <item.Icon
+                  size={26}
+                  weight={isActive ? 'fill' : 'regular'}
+                  color={isActive ? '#6C47FF' : '#A09CC0'}
+                  style={{ position: 'relative', zIndex: 1 }}
+                />
+              </div>
+            </button>
+          )
+        })}
+      </nav>
+    </div>
+  )
+}
 
 // ── Auth callback ─────────────────────────────────────────────────────────
 function AuthCallback() {
@@ -24,9 +83,6 @@ function AuthCallback() {
 export default function App() {
   return (
     <BrowserRouter>
-      {/* AuthProvider ensures every component shares ONE auth state.
-          Previously useAuth() was a plain hook — each component got its
-          own isolated instance with its own getSession() call. */}
       <AuthProvider>
         <div className="min-h-dvh bg-kosha-bg">
           <Routes>
