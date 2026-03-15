@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
+import { useEffect } from 'react'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 8 },
   show:   { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
 }
 
+// ── Google logo SVG (official colours) ────────────────────────────────────
 function GoogleLogo() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -20,42 +22,26 @@ function GoogleLogo() {
 }
 
 export default function Login() {
-  const navigate  = useNavigate()
-  const location  = useLocation()
-  const { user, profile, loading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
-
-  const [mode,          setMode]          = useState('signin')
-  const [email,         setEmail]         = useState('')
-  const [password,      setPassword]      = useState('')
-  const [error,         setError]         = useState(null)
-  const [submitting,    setSubmitting]    = useState(false)
+  const navigate              = useNavigate()
+  const location              = useLocation()
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
+  
+  const [mode,     setMode]     = useState('signin')  // 'signin' | 'signup'
+  const [email,    setEmail]    = useState('')
+  const [password, setPassword] = useState('')
+  const [error,    setError]    = useState(null)
+  const [loading,  setLoading]  = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
+  // Where to go after successful sign-in
   const from = location.state?.from || '/'
-
-  // ── Redirect as soon as auth state is confirmed ───────────────────────
-  // This fires after onAuthStateChange updates user — the correct moment.
-  // Previously we called navigate() immediately after signInWithEmail()
-  // which was before the session was established in useAuth state.
-  useEffect(() => {
-    if (loading) return
-    if (!user)   return
-
-    // User is signed in — decide where to send them
-    if (profile && !profile.onboarded) {
-      navigate('/onboarding', { replace: true })
-    } else if (profile && profile.onboarded) {
-      navigate(from, { replace: true })
-    }
-    // If profile is null, wait — useAuth is still loading it
-  }, [user, profile, loading, navigate, from])
 
   async function handleGoogle() {
     setError(null)
     setGoogleLoading(true)
     try {
       await signInWithGoogle()
-      // Google redirects away — useEffect handles the rest on return
+      // Google redirects away — no navigate() needed here
     } catch (e) {
       setError(e.message)
       setGoogleLoading(false)
@@ -71,14 +57,15 @@ export default function Login() {
     if (mode === 'signup' && password.length < 8)
       return setError('Password must be at least 8 characters.')
 
-    setSubmitting(true)
+    setLoading(true)
     try {
       if (mode === 'signin') {
         await signInWithEmail(email, password)
-        // Don't navigate here — useEffect above fires when user state updates
+        navigate(from, { replace: true })
       } else {
         await signUpWithEmail(email, password)
-        // Same — useEffect handles redirect to /onboarding
+        // New user goes to onboarding
+        navigate('/onboarding', { replace: true })
       }
     } catch (e) {
       setError(
@@ -87,7 +74,7 @@ export default function Login() {
           : e.message
       )
     } finally {
-      setSubmitting(false)
+      setLoading(false)
     }
   }
 
@@ -100,7 +87,7 @@ export default function Login() {
         className="w-full max-w-sm"
       >
 
-        {/* Logo + heading */}
+        {/* ── Logo + heading ─────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl
                           bg-brand mb-5 shadow-fab">
@@ -116,11 +103,11 @@ export default function Login() {
           </p>
         </motion.div>
 
-        {/* Google button */}
+        {/* ── Google button ──────────────────────────────────────────── */}
         <motion.button
           variants={fadeUp}
           onClick={handleGoogle}
-          disabled={googleLoading || submitting}
+          disabled={googleLoading || loading}
           className="w-full flex items-center justify-center gap-3 py-3.5 rounded-card
                      bg-kosha-surface shadow-card border border-kosha-border
                      text-body font-semibold text-ink
@@ -131,14 +118,14 @@ export default function Login() {
           {googleLoading ? 'Redirecting…' : 'Continue with Google'}
         </motion.button>
 
-        {/* Divider */}
+        {/* ── Divider ────────────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-kosha-border" />
           <span className="text-caption text-ink-4 font-medium">or</span>
           <div className="flex-1 h-px bg-kosha-border" />
         </motion.div>
 
-        {/* Email / password form */}
+        {/* ── Email / password form ──────────────────────────────────── */}
         <motion.form variants={fadeUp} onSubmit={handleSubmit} className="space-y-3">
           <input
             className="input"
@@ -147,7 +134,7 @@ export default function Login() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             autoComplete="email"
-            disabled={submitting}
+            disabled={loading}
           />
           <input
             className="input"
@@ -156,9 +143,10 @@ export default function Login() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            disabled={submitting}
+            disabled={loading}
           />
 
+          {/* Error message */}
           <AnimatePresence>
             {error && (
               <motion.p
@@ -174,19 +162,19 @@ export default function Login() {
 
           <button
             type="submit"
-            disabled={submitting || googleLoading}
+            disabled={loading || googleLoading}
             className="w-full py-4 rounded-card bg-brand text-white
                        text-body font-semibold
                        active:scale-[0.98] transition-all duration-75
                        disabled:opacity-60"
           >
-            {submitting
+            {loading
               ? (mode === 'signin' ? 'Signing in…' : 'Creating account…')
               : (mode === 'signin' ? 'Sign in'     : 'Create account')}
           </button>
         </motion.form>
 
-        {/* Toggle */}
+        {/* ── Toggle sign in / sign up ───────────────────────────────── */}
         <motion.p variants={fadeUp} className="text-center mt-6 text-label text-ink-3">
           {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
           <button
