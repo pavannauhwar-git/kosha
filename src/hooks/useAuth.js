@@ -2,13 +2,12 @@ import { useState, useEffect, useCallback, createContext, useContext, createElem
 import { supabase } from '../lib/supabase'
 
 // ── Auth Context ──────────────────────────────────────────────────────────
-// All components share ONE auth state via this context.
 const AuthContext = createContext(null)
 
 // ── Synchronous localStorage pre-check ───────────────────────────────────
 // Supabase stores its session under sb-<project-ref>-auth-token.
-// If that key is absent, there is definitively no session — skip the
-// async getSession() call entirely and jump straight to login instantly.
+// If absent, there is no session — skip the async getSession() call
+// and go straight to login instantly.
 function hasStoredSession() {
   try {
     const projectRef = import.meta.env.VITE_SUPABASE_URL
@@ -17,8 +16,7 @@ function hasStoredSession() {
     if (!projectRef) return false
     return !!localStorage.getItem(`sb-${projectRef}-auth-token`)
   } catch {
-    // localStorage blocked (e.g. private browsing quirks) — fall through
-    return true
+    return true // localStorage blocked — fall through to getSession safely
   }
 }
 
@@ -26,9 +24,7 @@ function hasStoredSession() {
 function useAuthState() {
   const [user,    setUser]    = useState(null)
   const [profile, setProfile] = useState(null)
-  // If there's no stored session token, we already know the answer.
-  // Initialise loading=false so AuthGuard redirects to login instantly —
-  // no spinner, no async wait, no delay.
+  // No stored token = we already know loading is done, skip the spinner
   const [loading, setLoading] = useState(() => hasStoredSession())
 
   const loadProfile = useCallback(async (userId) => {
@@ -46,41 +42,9 @@ function useAuthState() {
   }, [])
 
   useEffect(() => {
-    // ── Fast path: no token in localStorage → already signed out ──────
-    // loading was initialised to false above, nothing async needed.
-    if (!hasStoredSession()) return
-
-    // ── Primary: getSession on mount ───────────────────────────────────
-    // Only reached when a Supabase token exists in localStorage.
-    // Refreshes it if expired. Wrapped in a 6s timeout so a hanging
-    // network call never leaves the app stuck.
-    async function init() {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth init timeout')), 6000)
-      )
-      try {
-        const { data: { session } } = await Promise.race([
-          supabase.auth.getSession(),
-          timeout,
-        ])
-        const u = session?.user ?? null
-        setUser(u)
-        if (u) await loadProfile(u.id)
-        else setProfile(null)
-      } catch {
-        // Token refresh failed, timed out, or network error —
-        // treat as signed-out so the app is never stuck.
-        setUser(null)
-        setProfile(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    init()
-
-    // ── Secondary: onAuthStateChange for live events ───────────────────
-    // Handles sign-in, sign-out, and token refresh AFTER initial load.
+    // ── onAuthStateChange is ALWAYS set up ────────────────────────────
+    // Critical: this must never be skipped. It handles sign-in after
+    // the user submits the login form, token refresh, and sign-out.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'TOKEN_REFRESHED') {
@@ -99,9 +63,42 @@ function useAuthState() {
           setUser(u)
           if (u) await loadProfile(u.id)
           else setProfile(null)
+          // Ensure loading is cleared in case getSession was skipped
+          setLoading(false)
         }
       }
     )
+
+    // ── Fast path: no token → already signed out, skip network call ───
+    // loading was initialised false above — just clean up and return.
+    if (!hasStoredSession()) {
+      return () => subscription.unsubscribe()
+    }
+
+    // ── Primary: getSession — only when a token exists ─────────────────
+    // Reads + refreshes the token if expired. 6s timeout as safety net.
+    async function init() {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Auth init timeout')), 6000)
+      )
+      try {
+        const { data: { session } } = await Promise.race([
+          supabase.auth.getSession(),
+          timeout,
+        ])
+        const u = session?.user ?? null
+        setUser(u)
+        if (u) await loadProfile(u.id)
+        else setProfile(null)
+      } catch {
+        setUser(null)
+        setProfile(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    init()
 
     return () => subscription.unsubscribe()
   }, [loadProfile])
