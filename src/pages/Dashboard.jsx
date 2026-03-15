@@ -29,7 +29,6 @@ const stagger = {
 function ProfileMenu({ profile, user, onSignOut }) {
   const [open, setOpen] = useState(false)
 
-  // Initial letter — from display_name or email
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
 
   return (
@@ -45,13 +44,7 @@ function ProfileMenu({ profile, user, onSignOut }) {
       <AnimatePresence>
         {open && (
           <>
-            {/* Backdrop — tap outside to close */}
-            <div
-              className="fixed inset-0 z-30"
-              onClick={() => setOpen(false)}
-            />
-
-            {/* Menu */}
+            <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -4 }}
               animate={{ opacity: 1, scale: 1,    y: 0 }}
@@ -59,17 +52,12 @@ function ProfileMenu({ profile, user, onSignOut }) {
               transition={{ duration: 0.12, ease: 'easeOut' }}
               className="absolute right-0 top-12 z-40 w-52 card p-1"
             >
-              {/* User info */}
               <div className="px-3 py-2.5 border-b border-kosha-border mb-1">
                 <p className="text-label font-semibold text-ink truncate">
                   {profile?.display_name || 'My Account'}
                 </p>
-                <p className="text-caption text-ink-3 truncate">
-                  {user?.email}
-                </p>
+                <p className="text-caption text-ink-3 truncate">{user?.email}</p>
               </div>
-
-              {/* Sign out */}
               <button
                 onClick={() => { setOpen(false); onSignOut() }}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
@@ -135,7 +123,6 @@ export default function Dashboard() {
 
   async function handleSignOut() {
     await signOut()
-    navigate('/login', { replace: true })
   }
 
   async function confirmDelete() {
@@ -146,21 +133,21 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-
-        {/* ── Greeting + profile menu ───────────────────────────────────── */}
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="show"
+        className="space-y-4"
+      >
+        {/* ── Greeting row ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="flex items-center justify-between pt-2">
           <div>
-            <p className="text-label text-ink-3">
-              {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-            <h1 className="text-display font-bold text-ink tracking-tight">
+            <h1 className="font-display text-display font-bold text-ink tracking-tight">
               {greeting}{profile?.display_name ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
             </h1>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Bill alert bell */}
             {dueSoon.length > 0 && (
               <button
                 onClick={() => navigate('/bills')}
@@ -174,65 +161,71 @@ export default function Dashboard() {
                 </span>
               </button>
             )}
-
-            {/* Profile avatar */}
-            <ProfileMenu
-              profile={profile}
-              user={user}
-              onSignOut={handleSignOut}
-            />
+            <ProfileMenu profile={profile} user={user} onSignOut={handleSignOut} />
           </div>
         </motion.div>
 
-        {/* ── Hero card ─────────────────────────────────────────────────── */}
+        {/* ── Hero card — Wise style ─────────────────────────────────────── */}
+        {/* Noise SVG removed (was an extra render pass on every repaint).   */}
+        {/* Stat chips use solid backgrounds — no backdropFilter needed.     */}
         <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-              backgroundSize: '128px 128px',
-            }}
-          />
-          <div className="relative">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-caption font-semibold tracking-widest uppercase text-white/60">
-                {monthStr(now).toUpperCase()}
-              </p>
-              <p className="text-caption font-bold tracking-widest text-white/50">KOSHA</p>
-            </div>
-            <p className="text-hero font-bold text-white leading-none tracking-tight mb-1 tabular-nums">
-              {runningBalance !== null ? fmt(runningBalance) : '—'}
+          {/* Month label + KOSHA brand */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-caption font-bold tracking-widest uppercase"
+               style={{ color: 'rgba(159,232,112,0.75)' }}>
+              {monthStr(now).toUpperCase()}
             </p>
-            <p className="text-caption text-white/50 mb-5">Running balance</p>
+            <p className="text-caption font-bold tracking-widest"
+               style={{ color: 'rgba(255,255,255,0.35)' }}>KOSHA</p>
+          </div>
 
-            <div className="flex gap-2 flex-wrap mb-5">
-              {[
-                { label: 'Earned',   val: earned,   bg: 'rgba(0,200,150,0.22)'  },
-                { label: 'Spent',    val: spent,    bg: 'rgba(255,71,87,0.22)'  },
-                { label: 'Invested', val: invested, bg: 'rgba(108,71,255,0.22)' },
-              ].map(s => (
-                <div key={s.label}
-                  className="px-3 py-2 rounded-2xl"
-                  style={{ background: s.bg, backdropFilter: 'blur(8px)' }}
-                >
-                  <p className="text-caption text-white/60">{s.label}</p>
-                  <p className="text-label font-bold text-white tabular-nums">{fmt(s.val)}</p>
-                </div>
-              ))}
-            </div>
+          {/* Balance */}
+          <p className="text-caption font-medium mb-1" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            Total balance
+          </p>
+          <p className="text-hero font-bold text-white leading-none tracking-tight tabular-nums">
+            {runningBalance !== null ? fmt(runningBalance) : '—'}
+          </p>
 
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-caption text-white/60">Savings rate</span>
-                <span className="text-caption font-semibold text-white">{rate}%</span>
+          {/* Savings rate chip */}
+          <div className="mt-2 mb-5 inline-flex items-center gap-1 px-2.5 py-1 rounded-pill"
+               style={{ background: 'rgba(159,232,112,0.18)' }}>
+            <span className="text-caption font-semibold" style={{ color: '#9FE870' }}>
+              {rate}% saved this month
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t mb-4" style={{ borderColor: 'rgba(255,255,255,0.12)' }} />
+
+          {/* Stats row — solid bg chips, no blur */}
+          <div className="flex justify-between">
+            {[
+              { label: 'Earned',   val: earned   },
+              { label: 'Spent',    val: spent    },
+              { label: 'Invested', val: invested },
+            ].map(s => (
+              <div key={s.label}
+                className="px-3 py-2.5 rounded-2xl"
+                style={{ background: 'rgba(255,255,255,0.10)' }}
+              >
+                <p className="text-caption mb-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  {s.label}
+                </p>
+                <p className="text-label font-bold text-white tabular-nums">{fmt(s.val)}</p>
               </div>
-              <div className="bar-dark-track">
-                <motion.div
-                  className="bar-dark-fill"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${rate}%` }}
-                  transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
-                />
-              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div className="mt-4">
+            <div className="bar-dark-track">
+              <motion.div
+                className="bar-dark-fill"
+                initial={{ width: 0 }}
+                animate={{ width: `${rate}%` }}
+                transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
+              />
             </div>
           </div>
         </motion.div>

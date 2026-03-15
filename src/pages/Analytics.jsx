@@ -21,22 +21,20 @@ const AppleTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.96)',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
+      background: 'rgba(255,255,255,0.98)',
       borderRadius: 12,
       padding: '10px 14px',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.06)',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(22,51,0,0.08)',
       minWidth: 140,
     }}>
-      <p style={{ fontSize: 12, fontWeight: 600, color: '#8C85A8',
+      <p style={{ fontSize: 12, fontWeight: 600, color: '#7A8F6E',
                   letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase' }}>
         {label}
       </p>
       {payload.map(p => (
         <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between',
                                    gap: 16, marginBottom: 3 }}>
-          <span style={{ fontSize: 13, color: '#3D3654' }}>{p.name}</span>
+          <span style={{ fontSize: 13, color: '#2A3A22' }}>{p.name}</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: p.color || p.fill }}>
             {fmt(p.value)}
           </span>
@@ -207,15 +205,12 @@ export default function Analytics() {
 
   const yoyYears = YEARS.filter(y => y <= now.getFullYear())
 
-  // Category data — bars only, no donut
-  // The donut was removed: the bars already show proportions clearly,
-  // the donut was redundant visual weight on the same numbers.
   const catData = Object.entries(data?.byCategory || {})
     .sort((a, b) => b[1] - a[1]).slice(0, 6)
     .map(([id, val]) => ({
       id, val,
       name:  CATEGORIES.find(c => c.id === id)?.label || id,
-      color: CATEGORIES.find(c => c.id === id)?.color || '#6C47FF',
+      color: CATEGORIES.find(c => c.id === id)?.color || '#163300',
     }))
   const totalCatSpend = catData.reduce((s, c) => s + c.val, 0)
 
@@ -274,7 +269,7 @@ export default function Analytics() {
             <div className="card p-4">
               <div className="w-8 h-8 rounded-lg bg-brand-container
                               flex items-center justify-center mb-3">
-                <span className="text-label font-bold text-brand">%</span>
+                <span className="text-label font-bold text-brand-on">%</span>
               </div>
               <p className="text-label text-ink-3 font-medium mb-0.5">Avg Savings Rate</p>
               <p className="text-value font-bold text-brand tabular-nums">
@@ -293,6 +288,7 @@ export default function Analytics() {
           </div>
 
           {/* ── 2. Monthly Cash Flow ─────────────────────────────────── */}
+          {/* Invest line: #6C47FF violet → #2B8A68 forest green          */}
           {chartData.length > 0 && (
             <div className="card p-5">
               <div className="flex items-center justify-between mb-4">
@@ -305,33 +301,33 @@ export default function Analytics() {
                   margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
                   <defs>
                     <linearGradient id="gIncome" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#00C896" stopOpacity={0.20} />
-                      <stop offset="100%" stopColor="#00C896" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#38A169" stopOpacity={0.22} />
+                      <stop offset="100%" stopColor="#38A169" stopOpacity={0.02} />
                     </linearGradient>
                     <linearGradient id="gSpent" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#FF4757" stopOpacity={0.20} />
                       <stop offset="100%" stopColor="#FF4757" stopOpacity={0.02} />
                     </linearGradient>
                     <linearGradient id="gInvest" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6C47FF" stopOpacity={0.20} />
-                      <stop offset="100%" stopColor="#6C47FF" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#2B8A68" stopOpacity={0.20} />
+                      <stop offset="100%" stopColor="#2B8A68" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="name"
-                    tick={{ fontSize: 12, fill: '#8C85A8', fontWeight: 500 }}
+                    tick={{ fontSize: 12, fill: '#7A8F6E', fontWeight: 500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
                   <Tooltip content={<AppleTooltip />}
-                    cursor={{ stroke: '#E8E6F0', strokeWidth: 1, strokeDasharray: '4 2' }}
+                    cursor={{ stroke: '#D6ECC4', strokeWidth: 1, strokeDasharray: '4 2' }}
                   />
                   <Area type={curveType} dataKey="Income"
-                    stroke="#00C896" strokeWidth={2} fill="url(#gIncome)"
-                    dot={false} activeDot={{ r: 4, fill: '#00C896', strokeWidth: 0 }}
+                    stroke="#38A169" strokeWidth={2} fill="url(#gIncome)"
+                    dot={false} activeDot={{ r: 4, fill: '#38A169', strokeWidth: 0 }}
                   />
                   <Area type={curveType} dataKey="Invest"
-                    stroke="#6C47FF" strokeWidth={2} fill="url(#gInvest)"
-                    dot={false} activeDot={{ r: 4, fill: '#6C47FF', strokeWidth: 0 }}
+                    stroke="#2B8A68" strokeWidth={2} fill="url(#gInvest)"
+                    dot={false} activeDot={{ r: 4, fill: '#2B8A68', strokeWidth: 0 }}
                   />
                   <Area type={curveType} dataKey="Spent"
                     stroke="#FF4757" strokeWidth={2} fill="url(#gSpent)"
@@ -341,7 +337,7 @@ export default function Analytics() {
               </ResponsiveContainer>
 
               <div className="flex justify-center gap-5 mt-4">
-                {[['Income', '#00C896'], ['Invest', '#6C47FF'], ['Spent', '#FF4757']].map(([l, c]) => (
+                {[['Income', '#38A169'], ['Invest', '#2B8A68'], ['Spent', '#FF4757']].map(([l, c]) => (
                   <div key={l} className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full" style={{ background: c }} />
                     <span className="text-caption text-ink-2 font-medium">{l}</span>
@@ -354,29 +350,27 @@ export default function Analytics() {
           {/* ── 3. Net Savings per month ─────────────────────────────── */}
           {netData.length > 0 && (
             <div className="card p-5">
-              <div className="flex items-center justify-between mb-1">
-                <p className="section-label">Net Savings</p>
-              </div>
-              <p className="text-caption text-ink-3 mb-4">
-                After expenses & investments
+              <p className="section-label">Net Savings</p>
+              <p className="text-caption text-ink-3 mb-4 mt-0.5">
+                After expenses &amp; investments
               </p>
               <ResponsiveContainer width="100%" height={120}>
                 <BarChart data={netData}
                   margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
                   <XAxis dataKey="name"
-                    tick={{ fontSize: 12, fill: '#8C85A8', fontWeight: 500 }}
+                    tick={{ fontSize: 12, fill: '#7A8F6E', fontWeight: 500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
                   <Tooltip content={<AppleTooltip />}
-                    cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                    cursor={{ fill: 'rgba(22,51,0,0.04)' }}
                   />
-                  <ReferenceLine y={0} stroke="#E8E6F0" strokeWidth={1} />
+                  <ReferenceLine y={0} stroke="#D6ECC4" strokeWidth={1} />
                   <Bar dataKey="Net" radius={[4, 4, 0, 0]} maxBarSize={32}>
                     {netData.map((entry, i) => (
                       <Cell
                         key={i}
-                        fill={entry.Net >= 0 ? '#00C896' : '#FF4757'}
+                        fill={entry.Net >= 0 ? '#38A169' : '#FF4757'}
                         fillOpacity={0.85}
                       />
                     ))}
@@ -420,8 +414,6 @@ export default function Analytics() {
           )}
 
           {/* ── 6. Spending by Category ──────────────────────────────── */}
-          {/* Donut removed — the bars below already show proportions.   */}
-          {/* Added % label inline so no information is lost.            */}
           {catData.length > 0 && (
             <div className="card p-5">
               <p className="section-label mb-4">Spending by Category</p>

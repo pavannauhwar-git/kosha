@@ -5,71 +5,66 @@ export default {
     extend: {
       colors: {
         // ── App backgrounds ──────────────────────────────────────────────
-        'kosha-bg': '#F5F4FB',
-        'kosha-bg-2': '#FFFFFF',
-        'kosha-surface': '#FFFFFF',
-        'kosha-surface-2': '#F5F4FB',
-        'kosha-border': '#E8E6F0',
-        'kosha-border-strong': '#C9C5D9',
+        'kosha-bg':            '#FFFFFF',
+        'kosha-bg-2':          '#F5FAF0',
+        'kosha-surface':       '#FFFFFF',
+        'kosha-surface-2':     '#F2F8EC',
+        'kosha-border':        '#D6ECC4',
+        'kosha-border-strong': '#A8D48A',
 
-        // ── Brand — violet ────────────────────────────────────────────────
-        'brand': '#6C47FF',
-        'brand-dark': '#5535CC',
-        'brand-container': '#EEEBFF',
-        'brand-on': '#3B1FAB',
+        // ── Brand — Wise Forest Green ─────────────────────────────────────
+        'brand':           '#163300',
+        'brand-dark':      '#0A1F00',
+        'brand-container': '#C8F5A0',
+        'brand-on':        '#163300',
 
         // ── Income ────────────────────────────────────────────────────────
-        'income': '#00C896',
-        'income-bg': '#E6FAF5',
-        'income-text': '#007A5E',
-        'income-border': '#99E8D0',
+        'income':        '#38A169',
+        'income-bg':     '#F0FFF4',
+        'income-text':   '#276749',
+        'income-border': '#9AE6B4',
 
         // ── Expense ───────────────────────────────────────────────────────
-        'expense': '#FF4757',
-        'expense-bg': '#FFF0F1',
-        'expense-text': '#D42B3A',
+        'expense':        '#FF4757',
+        'expense-bg':     '#FFF0F1',
+        'expense-text':   '#D42B3A',
         'expense-border': '#FFB3BA',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest': '#7B61FF',
-        'invest-bg': '#F0EEFF',
-        'invest-text': '#4B35CC',
-        'invest-border': '#C4BAFF',
+        'invest':        '#2B8A68',
+        'invest-bg':     '#E6F7F0',
+        'invest-text':   '#1A5C45',
+        'invest-border': '#81D4B8',
 
         // ── Repayment ─────────────────────────────────────────────────────
-        'repay': '#FF9500',
-        'repay-bg': '#FFF5E6',
-        'repay-text': '#B35A00',
+        'repay':        '#FF9500',
+        'repay-bg':     '#FFF5E6',
+        'repay-text':   '#B35A00',
         'repay-border': '#FFCC80',
 
         // ── Ink ───────────────────────────────────────────────────────────
-        'ink': '#110C22',
-        'ink-2': '#3D3654',
-        'ink-3': '#8C85A8',
-        'ink-4': '#C5C0D8',
+        'ink':   '#0D1A08',
+        'ink-2': '#2A3A22',
+        'ink-3': '#7A8F6E',
+        'ink-4': '#C0CCB6',
 
         // ── Utility ───────────────────────────────────────────────────────
-        'on-grad': '#FFFFFF',
-        'on-grad-2': '#FFFFFFBF',
-        'warning': '#FF9500',
-        'warning-bg': '#FFF5E6',
+        'on-grad':        '#FFFFFF',
+        'on-grad-2':      '#FFFFFFBF',
+        'warning':        '#FF9500',
+        'warning-bg':     '#FFF5E6',
         'warning-border': '#FFCC80',
-        'warning-text': '#B35A00',
-        'success': '#00C896',
-        'danger': '#FF4757',
-      },
-      fontFamily: {
-        display: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
-        sans:    ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Text',    'Inter', 'system-ui', 'sans-serif'],
+        'warning-text':   '#B35A00',
+        'success':        '#38A169',
+        'danger':         '#FF4757',
       },
 
-      // ── 6-step type scale — nothing else should be used ──────────────
-      // caption  12px  timestamps, tertiary labels
-      // label    14px  card labels, chips, secondary text
-      // body     16px  list items, descriptions, default prose
-      // value    20px  card amounts, section totals
-      // display  28px  page headings, hero numbers on cards
-      // hero     36px  running balance on the hero card only
+      fontFamily: {
+        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans:    ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+      },
+
+      // ── 6-step type scale ─────────────────────────────────────────────
       fontSize: {
         'caption': ['12px', { lineHeight: '1.4',  letterSpacing: '0.01em'  }],
         'label':   ['14px', { lineHeight: '1.4',  letterSpacing: '0em'     }],
@@ -86,16 +81,18 @@ export default {
         'chip':    '8px',
         'pill':    '9999px',
       },
+
       boxShadow: {
-        'card':       '0 2px 8px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04)',
-        'card-md':    '0 4px 16px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(0,0,0,0.04)',
-        'card-lg':    '0 8px 32px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.04)',
-        'apple-card': '0 20px 60px rgba(0,0,0,0.18), 0 8px 20px rgba(0,0,0,0.10)',
-        'fab':        '0 4px 16px rgba(108,71,255,0.35)',
-        'focus':      '0 0 0 3.5px rgba(108,71,255,0.30)',
+        'card':       '0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(22,51,0,0.06)',
+        'card-md':    '0 4px 16px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(22,51,0,0.06)',
+        'card-lg':    '0 8px 32px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(22,51,0,0.06)',
+        'apple-card': '0 20px 60px rgba(0,0,0,0.16), 0 8px 20px rgba(0,0,0,0.08)',
+        'fab':        '0 4px 20px rgba(22,51,0,0.35)',
+        'focus':      '0 0 0 3.5px rgba(22,51,0,0.20)',
         'urgent':     '0 2px 8px rgba(255,59,48,0.20), 0 0 0 0.5px rgba(255,59,48,0.15)',
         'warn':       '0 2px 8px rgba(255,149,0,0.20), 0 0 0 0.5px rgba(255,149,0,0.15)',
       },
+
       keyframes: {
         'sheet-in': {
           '0%':   { transform: 'translateY(100%)' },

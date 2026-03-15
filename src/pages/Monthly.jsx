@@ -12,10 +12,7 @@ const MONTH_NAMES = [
 ]
 
 // ── Hero card for the selected month ─────────────────────────────────────
-// Shows the three key numbers (Earned / Spent / Invested) and savings rate.
-// The 4-stat grid that used to live below this has been removed — it was
-// showing the same numbers a second time. Repaid is handled in Budget
-// Breakdown below where it has more context.
+// Stat chips now use solid rgba backgrounds — backdropFilter removed.
 function MonthHeroCard({ month, year }) {
   const { data } = useMonthSummary(year, month)
   const earned   = data?.earned     || 0
@@ -27,41 +24,61 @@ function MonthHeroCard({ month, year }) {
   return (
     <div className="card-hero p-6 relative overflow-hidden">
       {/* Month + brand label */}
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-caption font-bold tracking-widest text-white/60 uppercase">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-caption font-bold tracking-widest uppercase"
+           style={{ color: 'rgba(159,232,112,0.75)' }}>
           {MONTH_NAMES[month - 1].slice(0, 3)} {year}
         </p>
-        <p className="text-caption font-bold tracking-widest text-white/50">KOSHA</p>
+        <p className="text-caption font-bold tracking-widest"
+           style={{ color: 'rgba(255,255,255,0.35)' }}>KOSHA</p>
       </div>
 
-      {/* Balance */}
-      <p className={`text-hero font-bold leading-none tabular-nums mb-1
+      {/* Balance label + amount */}
+      <p className="text-caption font-medium mb-1"
+         style={{ color: 'rgba(255,255,255,0.55)' }}>
+        Monthly balance
+      </p>
+      <p className={`text-hero font-bold leading-none tabular-nums
         ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
         {fmt(balance)}
       </p>
-      <p className="text-caption text-white/50 mb-5">Monthly balance</p>
 
-      {/* Stat pills */}
-      <div className="flex gap-2 flex-wrap mb-5">
+      {/* Savings rate chip */}
+      <div className="mt-2 mb-5 inline-flex items-center gap-1 px-2.5 py-1 rounded-pill"
+           style={{ background: 'rgba(159,232,112,0.18)' }}>
+        <span className="text-caption font-semibold" style={{ color: '#9FE870' }}>
+          {rate}% saved
+        </span>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t mb-4" style={{ borderColor: 'rgba(255,255,255,0.12)' }} />
+
+      {/* Stat chips — solid backgrounds, no blur */}
+      <div className="flex justify-between mb-5">
         {[
-          { label: 'Earned',   val: earned,   bg: 'rgba(0,200,150,0.22)'  },
-          { label: 'Spent',    val: spent,    bg: 'rgba(255,71,87,0.22)'  },
-          { label: 'Invested', val: invested, bg: 'rgba(108,71,255,0.22)' },
+          { label: 'Earned',   val: earned   },
+          { label: 'Spent',    val: spent    },
+          { label: 'Invested', val: invested },
         ].map(s => (
           <div key={s.label}
-            className="px-3 py-2 rounded-2xl"
-            style={{ background: s.bg, backdropFilter: 'blur(8px)' }}
+            className="px-3 py-2.5 rounded-2xl"
+            style={{ background: 'rgba(255,255,255,0.10)' }}
           >
-            <p className="text-caption text-white/60">{s.label}</p>
+            <p className="text-caption mb-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
+              {s.label}
+            </p>
             <p className="text-label font-bold text-white tabular-nums">{fmt(s.val)}</p>
           </div>
         ))}
       </div>
 
-      {/* Savings rate */}
+      {/* Savings rate bar */}
       <div>
         <div className="flex justify-between mb-2">
-          <span className="text-caption text-white/60">Savings rate</span>
+          <span className="text-caption" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            Savings rate
+          </span>
           <span className="text-caption font-semibold text-white">{rate}%</span>
         </div>
         <div className="bar-dark-track">
@@ -149,8 +166,6 @@ export default function Monthly() {
         >
 
           {/* ── Budget Breakdown ──────────────────────────────────── */}
-          {/* This is the one place that earns its keep — the % split  */}
-          {/* gives context the raw numbers in the hero can't.         */}
           <div className="card p-5">
             <p className="section-label mb-4">Budget Breakdown</p>
 
@@ -183,7 +198,7 @@ export default function Monthly() {
               {[
                 { label: 'Spent',    val: spent,    pct: spentPct,    dot: 'bg-expense-text', textCls: 'text-expense-text' },
                 { label: 'Invested', val: invested, pct: investedPct, dot: 'bg-invest-text',  textCls: 'text-invest-text'  },
-                { label: 'Saved',    val: saved,    pct: savedPct,    dot: 'bg-brand',        textCls: 'text-brand'        },
+                { label: 'Saved',    val: saved,    pct: savedPct,    dot: 'bg-brand',        textCls: 'text-income-text'  },
               ].map(s => (
                 <div key={s.label} className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
@@ -206,7 +221,7 @@ export default function Monthly() {
               ))}
             </div>
 
-            {/* Income baseline + repaid (if any) */}
+            {/* Income baseline + repaid */}
             <div className="mt-4 pt-3 border-t border-kosha-border space-y-1.5">
               <div className="flex justify-between items-center">
                 <span className="text-label text-ink-3">Total income</span>

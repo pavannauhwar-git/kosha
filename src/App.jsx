@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from
 import { motion } from 'framer-motion'
 import { AuthProvider } from './hooks/useAuth'
 import { useAuth } from './hooks/useAuth'
+import { useScrollDirection } from './hooks/useScrollDirection'
 import AuthGuard    from './components/AuthGuard'
 import Dashboard    from './pages/Dashboard'
 import Transactions from './pages/Transactions'
@@ -23,7 +24,8 @@ const NAV = [
 // ── Bottom nav ────────────────────────────────────────────────────────────
 function BottomNav() {
   const location = useLocation()
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const shrink    = useScrollDirection()
 
   const hideOn = ['/login', '/onboarding', '/join', '/auth']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
@@ -34,9 +36,13 @@ function BottomNav() {
 
   return (
     <div className="nav-float-wrap">
-      <nav className="nav-float">
+      <nav className={`nav-float${shrink ? ' nav-float--shrink' : ''}`}>
         {NAV.map((item, i) => {
           const isActive = i === active
+          // Shrink: smaller hit area; expand: standard area
+          const itemW = shrink ? 'w-10' : 'w-14'
+          const itemH = shrink ? 'h-9'  : 'h-11'
+
           return (
             <button
               key={item.path}
@@ -46,20 +52,20 @@ function BottomNav() {
                 navigate(item.path)
               }}
             >
-              <div className="relative flex items-center justify-center w-14 h-11">
+              <div className={`relative flex items-center justify-center ${itemW} ${itemH}`}>
                 {isActive && (
                   <motion.div
                     layoutId="nav-pill"
                     className="absolute inset-0 rounded-pill"
-                    style={{ background: '#EEEBFF' }}
+                    style={{ background: '#C8F5A0' }}
                     transition={{ type: 'spring', stiffness: 400, damping: 36 }}
                   />
                 )}
                 <item.Icon
-                  size={26}
+                  size={shrink ? 21 : 26}
                   weight={isActive ? 'fill' : 'regular'}
-                  color={isActive ? '#6C47FF' : '#A09CC0'}
-                  style={{ position: 'relative', zIndex: 1 }}
+                  color={isActive ? '#163300' : '#7A8F6E'}
+                  style={{ position: 'relative', zIndex: 1, transition: 'all 0.2s ease' }}
                 />
               </div>
             </button>
@@ -97,7 +103,7 @@ export default function App() {
               <AuthGuard><Onboarding /></AuthGuard>
             } />
 
-            {/* Protected — no PageTransition wrapper */}
+            {/* Protected */}
             <Route path="/"             element={<AuthGuard><Dashboard    /></AuthGuard>} />
             <Route path="/transactions" element={<AuthGuard><Transactions /></AuthGuard>} />
             <Route path="/monthly"      element={<AuthGuard><Monthly      /></AuthGuard>} />
