@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { PieChart, Pie, Cell } from 'recharts'
 import { useMonthSummary } from '../hooks/useTransactions'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, savingsRate } from '../lib/utils'
@@ -158,41 +157,70 @@ export default function Monthly() {
               <span className="text-caption text-ink-3">{fmt(earned)} earned</span>
             </div>
 
-            {/* Donut + rows side-by-side (same pattern as portfolio donut) */}
+            {/* Donut + rows side-by-side */}
             <div className="flex gap-4 items-start">
 
-              {/* Donut */}
-              <div className="relative shrink-0" style={{ width:110, height:110 }}>
-                <PieChart width={110} height={110}>
-                  <Pie
-                    data={[
-                      { name:'Spent',    value: spent    || 0.001 },
-                      { name:'Invested', value: invested || 0     },
-                      { name:'Saved',    value: saved    || 0     },
-                    ].filter(d => d.value > 0)}
-                    cx={55} cy={55}
-                    innerRadius={36} outerRadius={52}
-                    dataKey="value"
-                    strokeWidth={0}
-                    paddingAngle={2}
-                  >
-                    <Cell fill="#D42B3A" />
-                    <Cell fill="#1A5C45" />
-                    <Cell fill="#163300" />
-                  </Pie>
-                </PieChart>
-                {/* Center: saved % */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span style={{ fontSize:15, fontWeight:700, color:'#163300',
-                                 fontFamily:'Plus Jakarta Sans, system-ui', lineHeight:1.1 }}>
-                    {savedPct}%
-                  </span>
-                  <span style={{ fontSize:9, color:'#7A8F6E',
-                                 fontFamily:'Plus Jakarta Sans, system-ui' }}>
-                    saved
-                  </span>
-                </div>
-              </div>
+              {/* Pure SVG donut — no recharts, no clipping */}
+              {(() => {
+                const SIZE = 110
+                const SW   = 10        // stroke-width
+                const R    = (SIZE / 2) - SW
+                const CX   = SIZE / 2
+                const CY   = SIZE / 2
+                const CIRC = 2 * Math.PI * R
+
+                // Build arc segments from proportions
+                const segs = [
+                  { pct: spentPct,    color: '#D42B3A' },
+                  { pct: investedPct, color: '#1A5C45' },
+                  { pct: savedPct,    color: '#163300' },
+                ].filter(s => s.pct > 0)
+
+                const GAP_DEG = 3
+                let offset = 0
+
+                return (
+                  <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
+                    <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}
+                         style={{ overflow: 'visible' }}>
+                      {/* Track */}
+                      <circle cx={CX} cy={CY} r={R}
+                        fill="none" stroke="#D6ECC4" strokeWidth={SW} />
+                      {/* Coloured arcs */}
+                      {segs.map((s, i) => {
+                        const gapFrac = (GAP_DEG / 360) * CIRC
+                        const arcLen  = (s.pct / 100) * CIRC - gapFrac
+                        const dashArr = `${Math.max(arcLen, 0)} ${CIRC}`
+                        const dashOff = -(offset / 100) * CIRC
+                        const node = (
+                          <circle key={i} cx={CX} cy={CY} r={R}
+                            fill="none"
+                            stroke={s.color}
+                            strokeWidth={SW}
+                            strokeDasharray={dashArr}
+                            strokeDashoffset={dashOff}
+                            strokeLinecap="round"
+                            transform={`rotate(-90 ${CX} ${CY})`}
+                          />
+                        )
+                        offset += s.pct
+                        return node
+                      })}
+                    </svg>
+                    {/* Center label */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span style={{ fontSize: 15, fontWeight: 700, color: '#163300',
+                                     fontFamily: 'Plus Jakarta Sans, system-ui', lineHeight: 1.1 }}>
+                        {savedPct}%
+                      </span>
+                      <span style={{ fontSize: 9, color: '#7A8F6E',
+                                     fontFamily: 'Plus Jakarta Sans, system-ui' }}>
+                        saved
+                      </span>
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Breakdown rows */}
               <div className="flex-1 space-y-3 pt-1">

@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from
 import { motion } from 'framer-motion'
 import { AuthProvider } from './hooks/useAuth'
 import { useAuth } from './hooks/useAuth'
-import { useScrollDirection } from './hooks/useScrollDirection'
 import AuthGuard    from './components/AuthGuard'
 import Dashboard    from './pages/Dashboard'
 import Transactions from './pages/Transactions'
@@ -15,17 +14,24 @@ import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/re
 
 const NAV = [
   { path: '/',             label: 'Home',     Icon: House        },
-  { path: '/transactions', label: 'All',      Icon: List         },
+  { path: '/transactions', label: 'Activity', Icon: List         },
   { path: '/monthly',      label: 'Monthly',  Icon: CalendarDots },
   { path: '/analytics',    label: 'Insights', Icon: ChartBar     },
   { path: '/bills',        label: 'Bills',    Icon: Receipt      },
 ]
 
-// ── Bottom nav ────────────────────────────────────────────────────────────
+// ── Bottom nav ─────────────────────────────────────────────────────────────
+// Apple tab-bar principles applied:
+//   1. Never resizes on scroll — fixed, stable, always present
+//   2. Icon + label on every tab, always
+//   3. layoutId pill springs between active items — stiffness 500, snappy
+//   4. Tap bounce via whileTap scale — physical feel
+//   5. Fill/regular icon cross-fades via opacity (not size swap, which can't animate)
+//   6. Label weight/color animate independently with 0.15s ease
+// ──────────────────────────────────────────────────────────────────────────
 function BottomNav() {
   const location = useLocation()
   const navigate  = useNavigate()
-  const shrink    = useScrollDirection()
 
   const hideOn = ['/login', '/onboarding', '/join', '/auth']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
@@ -36,39 +42,60 @@ function BottomNav() {
 
   return (
     <div className="nav-float-wrap">
-      <nav className={`nav-float${shrink ? ' nav-float--shrink' : ''}`}>
+      <nav className="nav-float">
         {NAV.map((item, i) => {
           const isActive = i === active
-          // Shrink: smaller hit area; expand: standard area
-          const itemW = shrink ? 'w-10' : 'w-14'
-          const itemH = shrink ? 'h-9'  : 'h-11'
-
           return (
-            <button
+            <motion.button
               key={item.path}
               className="nav-float-item"
               onClick={() => {
-                if (navigator.vibrate) navigator.vibrate(8)
+                if (navigator.vibrate) navigator.vibrate(6)
                 navigate(item.path)
               }}
+              whileTap={{ scale: 0.78 }}
+              transition={{ type: 'spring', stiffness: 600, damping: 28 }}
             >
-              <div className={`relative flex items-center justify-center ${itemW} ${itemH}`}>
+              {/* ── Icon area ── */}
+              <div className="nav-icon-wrap">
+                {/* Sliding background pill — springs between tabs */}
                 {isActive && (
                   <motion.div
                     layoutId="nav-pill"
-                    className="absolute inset-0 rounded-pill"
-                    style={{ background: '#C8F5A0' }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 36 }}
+                    className="nav-icon-bg"
+                    transition={{ type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }}
                   />
                 )}
-                <item.Icon
-                  size={shrink ? 21 : 26}
-                  weight={isActive ? 'fill' : 'regular'}
-                  color={isActive ? '#163300' : '#7A8F6E'}
-                  style={{ position: 'relative', zIndex: 1, transition: 'all 0.2s ease' }}
-                />
+                {/* Filled icon (active) — opacity cross-fade */}
+                <motion.span
+                  className="nav-icon-layer"
+                  animate={{ opacity: isActive ? 1 : 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <item.Icon size={22} weight="fill" color="#163300" />
+                </motion.span>
+                {/* Regular icon (inactive) — opacity cross-fade */}
+                <motion.span
+                  className="nav-icon-layer"
+                  animate={{ opacity: isActive ? 0 : 1 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <item.Icon size={22} weight="regular" color="#7A8F6E" />
+                </motion.span>
               </div>
-            </button>
+
+              {/* ── Label ── */}
+              <motion.span
+                className="nav-label"
+                animate={{
+                  color:      isActive ? '#163300' : '#7A8F6E',
+                  fontWeight: isActive ? 700 : 500,
+                }}
+                transition={{ duration: 0.15 }}
+              >
+                {item.label}
+              </motion.span>
+            </motion.button>
           )
         })}
       </nav>
@@ -76,7 +103,7 @@ function BottomNav() {
   )
 }
 
-// ── Auth callback ─────────────────────────────────────────────────────────
+// ── Auth callback ──────────────────────────────────────────────────────────
 function AuthCallback() {
   const { user, profile, loading } = useAuth()
   if (loading) return null
@@ -92,7 +119,6 @@ export default function App() {
       <AuthProvider>
         <div className="min-h-dvh bg-kosha-bg">
           <Routes>
-
             {/* Public */}
             <Route path="/login"         element={<Login />} />
             <Route path="/join/:token"   element={<Login />} />
@@ -112,7 +138,6 @@ export default function App() {
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
-
           </Routes>
 
           <BottomNav />

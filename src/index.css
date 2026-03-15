@@ -29,7 +29,7 @@
 
   :root {
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --nav-height:  calc(80px + env(safe-area-inset-bottom, 0px));
+    --nav-height:  calc(88px + env(safe-area-inset-bottom, 0px));
   }
 
   /* GPU layer on interactive elements — eliminates tap lag */
@@ -141,6 +141,11 @@
   }
 
   /* -- Floating nav ────────────────────────────────────────────────── */
+  /* ── Floating nav — Apple tab-bar style ────────────────────────────
+     Fixed dimensions — never resizes on scroll.
+     Icon + label always visible.
+     Background pill springs between tabs via Framer layoutId.
+  ─────────────────────────────────────────────────────────────────── */
   .nav-float-wrap {
     position: fixed;
     bottom: 0;
@@ -156,45 +161,75 @@
   .nav-float {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 8px 10px;
+    gap: 0;
+    padding: 8px 12px;
     border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.94);
-    /* Reduced from blur(24px) — still glassy, much cheaper on Android */
+    background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.10),
       0 2px 8px rgba(0, 0, 0, 0.06),
-      inset 0 0.5px 0 rgba(255, 255, 255, 0.80),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.90),
       0 0 0 0.5px rgba(22, 51, 0, 0.08);
     pointer-events: auto;
-    /* CSS transition only — no Framer layout recalc on scroll */
-    transition: padding 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-                gap     0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: padding;
+    /* No transition here — Framer controls all animation */
   }
 
-  /* Shrunk state — triggered by scroll-down via JS class */
-  .nav-float--shrink {
-    padding: 6px 8px;
-    gap: 2px;
-  }
-
+  /* Each tab button: icon on top, label below */
   .nav-float-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: 60px;
+    padding: 4px 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    /* Tap handled by Framer whileTap — no CSS active needed */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Icon area — fixed 36×32, pill bg positions relative to this */
+  .nav-icon-wrap {
+    position: relative;
+    width: 44px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    transition: transform 0.07s ease;
   }
 
-  .nav-float-item:active {
-    transform: scale(0.88);
+  /* The sliding green pill background */
+  .nav-icon-bg {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: #C8F5A0;
   }
+
+  /* Both icon layers sit on top of the pill, stacked in same spot */
+  .nav-icon-layer {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* opacity animated by Framer */
+  }
+
+  /* Label beneath icon */
+  .nav-label {
+    font-size: 10px;
+    line-height: 1;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    /* color + fontWeight animated by Framer */
+    white-space: nowrap;
+    user-select: none;
+  }
+
+
 
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
@@ -205,12 +240,13 @@
 
   /* -- Bottom sheet ────────────────────────────────────────────────── */
   .sheet-backdrop {
-    @apply fixed inset-0 z-40 animate-fade-in;
+    @apply fixed inset-0 z-40;
     background: rgba(0, 0, 0, 0.50);
-    /* backdrop-filter intentionally removed — GPU compositing layer
-       created by backdrop-filter leaves a "ghost blur" on the page
-       after AnimatePresence exit on Chromium and WebKit. The solid
-       semi-opaque overlay is sufficient and has no side effects.     */
+    /* animate-fade-in removed: it uses `animation-fill-mode: forwards`
+       which permanently locks opacity:1 via CSS, preventing Framer
+       Motion's exit animation (opacity→0) from working. Framer Motion
+       drives opacity entirely via its initial/animate/exit props.
+       backdrop-filter also removed — see previous note on ghost blur.  */
   }
 
   .sheet-panel {
