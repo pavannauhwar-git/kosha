@@ -1,14 +1,12 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 export default function AuthGuard({ children }) {
   const { user, profile, loading } = useAuth()
-  const navigate  = useNavigate()
-  const location  = useLocation()
+  const location = useLocation()
 
-  // Safety timeout — if profile takes more than 8 seconds to load,
-  // proceed anyway. Prevents permanent spinner if RLS query is slow.
+  // Safety timeout — if profile takes more than 8 seconds, proceed anyway
   const [profileTimeout, setProfileTimeout] = useState(false)
 
   useEffect(() => {
@@ -17,29 +15,30 @@ export default function AuthGuard({ children }) {
     return () => clearTimeout(timer)
   }, [profile, user])
 
-  useEffect(() => {
-    if (loading) return
-    if (!user) {
-      navigate('/login', {
-        replace: true,
-        state: { from: location.pathname },
-      })
-      return
-    }
-    if (profile && !profile.onboarded) {
-      const onboardingRoutes = ['/onboarding', '/login', '/join']
-      const alreadyThere = onboardingRoutes.some(r => location.pathname.startsWith(r))
-      if (!alreadyThere) navigate('/onboarding', { replace: true })
-    }
-  }, [user, profile, loading, navigate, location])
+  // ── 1. Initial session check in progress ─────────────────────────────
+  // Show a minimal loading screen — never a blank page
+  if (loading) {
+    return (
+      <div className="min-h-dvh bg-kosha-bg flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+      </div>
+    )
+  }
 
-  // Initial session check in progress
-  if (loading) return null
+  // ── 2. No session — redirect to login immediately ─────────────────────
+  // Using <Navigate> instead of useEffect + navigate() eliminates the
+  // blank page gap that occurred between loading=false and the redirect firing.
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    )
+  }
 
-  // No user — redirect in progress
-  if (!user) return null
-
-  // Profile still loading — show spinner, but bail out after timeout
+  // ── 3. Authenticated but profile still loading from DB ────────────────
   if (!profile && !profileTimeout) {
     return (
       <div className="min-h-dvh bg-kosha-bg flex items-center justify-center">
@@ -48,8 +47,11 @@ export default function AuthGuard({ children }) {
     )
   }
 
-  // Onboarding incomplete
-  if (profile && !profile.onboarded && location.pathname !== '/onboarding') return null
+  // ── 4. Profile loaded but onboarding incomplete ───────────────────────
+  if (profile && !profile.onboarded && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />
+  }
 
+  // ── 5. All good — render the protected page ───────────────────────────
   return children
 }
