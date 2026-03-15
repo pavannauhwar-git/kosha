@@ -1,75 +1,142 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { useTransactions } from '../hooks/useTransactions'
-import { useMonthSummary } from '../hooks/useTransactions'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, LogOut } from 'lucide-react'
+import { useTransactions }   from '../hooks/useTransactions'
+import { useMonthSummary }   from '../hooks/useTransactions'
 import { useRunningBalance } from '../hooks/useTransactions'
-import { useLiabilities } from '../hooks/useLiabilities'
-import AddTransactionSheet from '../components/AddTransactionSheet'
-import TransactionItem from '../components/TransactionItem'
-import DeleteDialog from '../components/DeleteDialog'
+import { useLiabilities }    from '../hooks/useLiabilities'
+import { useAuth }           from '../hooks/useAuth'
+import AddTransactionSheet   from '../components/AddTransactionSheet'
+import TransactionItem       from '../components/TransactionItem'
+import DeleteDialog          from '../components/DeleteDialog'
 import { deleteTransaction } from '../hooks/useTransactions'
 import { fmt, monthStr, savingsRate, daysUntil } from '../lib/utils'
 import { CATEGORIES } from '../lib/categories'
 import { Plus } from '@phosphor-icons/react'
 import CategoryIcon from '../components/CategoryIcon'
 
-// Simple easeOut — not springs. Springs are for interactive gestures.
-// y:4 not y:12 — barely perceptible movement, just enough to feel alive.
-// stagger:0.04 — tight enough that sections feel like one motion.
 const fadeUp = {
   hidden: { opacity: 0, y: 4 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
 }
 const stagger = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
+  show:   { transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
+}
+
+// ── Profile avatar + sign-out menu ────────────────────────────────────────
+function ProfileMenu({ profile, user, onSignOut }) {
+  const [open, setOpen] = useState(false)
+
+  // Initial letter — from display_name or email
+  const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-10 h-10 rounded-full bg-brand-container flex items-center
+                   justify-center active:scale-95 transition-transform duration-75"
+      >
+        <span className="text-label font-bold text-brand-on">{initial}</span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Backdrop — tap outside to close */}
+            <div
+              className="fixed inset-0 z-30"
+              onClick={() => setOpen(false)}
+            />
+
+            {/* Menu */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -4 }}
+              animate={{ opacity: 1, scale: 1,    y: 0 }}
+              exit={{    opacity: 0, scale: 0.95, y: -4 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
+              className="absolute right-0 top-12 z-40 w-52 card p-1"
+            >
+              {/* User info */}
+              <div className="px-3 py-2.5 border-b border-kosha-border mb-1">
+                <p className="text-label font-semibold text-ink truncate">
+                  {profile?.display_name || 'My Account'}
+                </p>
+                <p className="text-caption text-ink-3 truncate">
+                  {user?.email}
+                </p>
+              </div>
+
+              {/* Sign out */}
+              <button
+                onClick={() => { setOpen(false); onSignOut() }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                           text-label font-medium text-expense-text
+                           hover:bg-expense-bg transition-colors duration-75"
+              >
+                <LogOut size={15} />
+                Sign out
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  )
 }
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const now = new Date()
+  const now      = new Date()
+  const { user, profile, signOut } = useAuth()
+
   const [showAdd, setShowAdd] = useState(false)
   const [editTxn, setEditTxn] = useState(null)
-  const [delId, setDelId] = useState(null)
+  const [delId,   setDelId]   = useState(null)
 
   const { data: recent, refetch } = useTransactions({ limit: 6 })
-  const { data: summary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
-  const { data: lastSummary } = useMonthSummary(
+  const { data: summary }         = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
+  const { data: lastSummary }     = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
     now.getMonth() === 0 ? 12 : now.getMonth()
   )
   const { balance: runningBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
-  const { pending: bills } = useLiabilities()
+  const { pending: bills }          = useLiabilities()
 
-  const dueSoon = bills.filter(b => daysUntil(b.due_date) <= 7)
-  const earned = summary?.earned || 0
-  const spent = summary?.expense || 0
+  const dueSoon  = bills.filter(b => daysUntil(b.due_date) <= 7)
+  const earned   = summary?.earned     || 0
+  const spent    = summary?.expense    || 0
   const invested = summary?.investment || 0
-  const rate = savingsRate(earned, spent)
+  const rate     = savingsRate(earned, spent)
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const dayOfMonth = now.getDate()
-  const monthPct = Math.round((dayOfMonth / daysInMonth) * 100)
-  const spendPct = earned > 0 ? Math.round((spent / earned) * 100) : 0
-  const onTrack = spendPct <= monthPct
-  const paceGap = Math.abs(spendPct - monthPct)
+  const dayOfMonth  = now.getDate()
+  const monthPct    = Math.round((dayOfMonth / daysInMonth) * 100)
+  const spendPct    = earned > 0 ? Math.round((spent / earned) * 100) : 0
+  const onTrack     = spendPct <= monthPct
+  const paceGap     = Math.abs(spendPct - monthPct)
 
   const catEntries = Object.entries(summary?.byCategory || {}).sort((a, b) => b[1] - a[1])
-  const topCat = catEntries[0]
-  const topCatPct = topCat && spent > 0 ? Math.round((topCat[1] / spent) * 100) : 0
+  const topCat     = catEntries[0]
+  const topCatPct  = topCat && spent > 0 ? Math.round((topCat[1] / spent) * 100) : 0
   const topCatInfo = topCat ? CATEGORIES.find(c => c.id === topCat[0]) : null
 
   const lastInvested = lastSummary?.investment || 0
-  const investDiff = invested - lastInvested
-  const investUp = investDiff > 0
+  const investDiff   = invested - lastInvested
+  const investUp     = investDiff > 0
 
-  const hour = now.getHours()
+  const hour     = now.getHours()
   const greeting = hour < 12 ? 'Good morning'
-    : hour < 17 ? 'Good afternoon'
-      : hour < 21 ? 'Good evening'
-        : 'Good night'
+                 : hour < 17 ? 'Good afternoon'
+                 : hour < 21 ? 'Good evening'
+                 : 'Good night'
+
+  async function handleSignOut() {
+    await signOut()
+    navigate('/login', { replace: true })
+  }
 
   async function confirmDelete() {
     await deleteTransaction(delId)
@@ -81,26 +148,40 @@ export default function Dashboard() {
     <div className="page">
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
 
-        {/* ── Greeting ──────────────────────────────────────────────────── */}
+        {/* ── Greeting + profile menu ───────────────────────────────────── */}
         <motion.div variants={fadeUp} className="flex items-center justify-between pt-2">
           <div>
             <p className="text-label text-ink-3">
               {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
-            <h1 className="text-display font-bold text-ink tracking-tight">{greeting} 👋</h1>
+            <h1 className="text-display font-bold text-ink tracking-tight">
+              {greeting}{profile?.display_name ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
+            </h1>
           </div>
-          {dueSoon.length > 0 && (
-            <button
-              onClick={() => navigate('/bills')}
-              className="relative w-10 h-10 rounded-full bg-expense-bg flex items-center justify-center"
-            >
-              <Bell size={18} className="text-expense-text" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-expense rounded-full
-                               text-white text-[9px] font-bold flex items-center justify-center">
-                {dueSoon.length}
-              </span>
-            </button>
-          )}
+
+          <div className="flex items-center gap-2">
+            {/* Bill alert bell */}
+            {dueSoon.length > 0 && (
+              <button
+                onClick={() => navigate('/bills')}
+                className="relative w-10 h-10 rounded-full bg-expense-bg
+                           flex items-center justify-center"
+              >
+                <Bell size={18} className="text-expense-text" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-expense rounded-full
+                                 text-white text-[9px] font-bold flex items-center justify-center">
+                  {dueSoon.length}
+                </span>
+              </button>
+            )}
+
+            {/* Profile avatar */}
+            <ProfileMenu
+              profile={profile}
+              user={user}
+              onSignOut={handleSignOut}
+            />
+          </div>
         </motion.div>
 
         {/* ── Hero card ─────────────────────────────────────────────────── */}
@@ -125,8 +206,8 @@ export default function Dashboard() {
 
             <div className="flex gap-2 flex-wrap mb-5">
               {[
-                { label: 'Earned', val: earned, bg: 'rgba(0,200,150,0.22)' },
-                { label: 'Spent', val: spent, bg: 'rgba(255,71,87,0.22)' },
+                { label: 'Earned',   val: earned,   bg: 'rgba(0,200,150,0.22)'  },
+                { label: 'Spent',    val: spent,    bg: 'rgba(255,71,87,0.22)'  },
                 { label: 'Invested', val: invested, bg: 'rgba(108,71,255,0.22)' },
               ].map(s => (
                 <div key={s.label}
@@ -250,9 +331,10 @@ export default function Dashboard() {
                       ? <TrendingUp size={12} className="text-income-text" />
                       : <TrendingDown size={12} className="text-expense-text" />
                   }
-                  <span className={`text-caption font-semibold ${investDiff === 0 ? 'text-ink-3'
-                      : investUp ? 'text-income-text' : 'text-expense-text'
-                    }`}>
+                  <span className={`text-caption font-semibold ${
+                    investDiff === 0 ? 'text-ink-3'
+                    : investUp ? 'text-income-text' : 'text-expense-text'
+                  }`}>
                     {investDiff === 0
                       ? 'Same as last month'
                       : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}

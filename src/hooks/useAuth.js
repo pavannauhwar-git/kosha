@@ -1,21 +1,16 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-
-// ── useAuth ───────────────────────────────────────────────────────────────
-// Single source of truth for auth state across the app.
-// Returns: { user, profile, loading, signInWithGoogle, signInWithEmail,
-//            signUpWithEmail, signOut, updateProfile }
-//
-// user    — the Supabase auth user object (null if not signed in)
-// profile — the row from the profiles table (null until loaded)
-// loading — true during the initial session check on app boot
 
 export function useAuth() {
   const [user,    setUser]    = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // ── Load profile from DB ────────────────────────────────────────────────
+  // Track whether the initial session check has completed.
+  // After that, TOKEN_REFRESHED and other background events should
+  // NOT flip loading back to true — that's what caused the blank screen.
+  const initialised = useRef(false)
+
   const loadProfile = useCallback(async (userId) => {
     if (!userId) { setProfile(null); return }
     const { data } = await supabase
@@ -26,44 +21,64 @@ export function useAuth() {
     setProfile(data || null)
   }, [])
 
-  // ── Listen for auth state changes ───────────────────────────────────────
-  // onAuthStateChange fires on: initial load, sign in, sign out,
-  // token refresh. This is the only place we set user state.
   useEffect(() => {
-    // Check existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // ── Step 1: check existing session on mount ─────────────────────────
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const u = session?.user ?? null
       setUser(u)
-      loadProfile(u?.id).finally(() => setLoading(false))
+      await loadProfile(u?.id)
+      setLoading(false)
+      initialised.current = true
     })
 
-    // Subscribe to future changes
+    // ── Step 2: listen for future auth changes ──────────────────────────
+    // KEY FIX: only update user/profile state, never touch `loading` after
+    // initial mount. TOKEN_REFRESHED fires every ~15 mins and was causing
+    // loadProfile to run again, briefly setting profile to null, which
+    // made AuthGuard blank out the screen.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         const u = session?.user ?? null
+
+        // TOKEN_REFRESHED — session still valid, just a new token.
+        // Update user silently, don't reload profile (it hasn't changed).
+        if (event === 'TOKEN_REFRESHED') {
+          setUser(u)
+          return
+        }
+
+        // SIGNED_OUT — clear everything
+        if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setProfile(null)
+          if (initialised.current) setLoading(false)
+          return
+        }
+
+        // SIGNED_IN, INITIAL_SESSION, USER_UPDATED — load fresh profile
         setUser(u)
-        await loadProfile(u?.id)
-        setLoading(false)
+        if (u) await loadProfile(u.id)
+        else setProfile(null)
+
+        // Only set loading false here if initial getSession hasn't done it yet
+        if (!initialised.current) {
+          setLoading(false)
+          initialised.current = true
+        }
       }
     )
 
     return () => subscription.unsubscribe()
   }, [loadProfile])
 
-  // ── Google OAuth ────────────────────────────────────────────────────────
-  // Redirects to Google, then back to /auth/callback which Supabase handles.
-  // After redirect, onAuthStateChange fires and sets user automatically.
   const signInWithGoogle = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     })
     if (error) throw error
   }, [])
 
-  // ── Email sign-in ───────────────────────────────────────────────────────
   const signInWithEmail = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
@@ -73,32 +88,22 @@ export function useAuth() {
     return data
   }, [])
 
-  // ── Email sign-up ───────────────────────────────────────────────────────
-  // emailRedirectTo is used when email confirmation is enabled in Supabase.
-  // If you have email confirmation OFF (recommended for now), this just
-  // signs the user in immediately after creating the account.
   const signUpWithEmail = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
     if (error) throw error
     return data
   }, [])
 
-  // ── Sign out ────────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
   }, [])
 
-  // ── Update profile ──────────────────────────────────────────────────────
-  // Used by the Onboarding flow to save display_name, monthly_income,
-  // and mark onboarded = true.
   const updateProfile = useCallback(async (updates) => {
     if (!user) throw new Error('Not signed in')
     const { data, error } = await supabase
