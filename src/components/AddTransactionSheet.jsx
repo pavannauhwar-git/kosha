@@ -33,7 +33,7 @@ function CategoryPicker({ selected, onSelect, onClose }) {
   return (
     <>
       <motion.div className="sheet-backdrop"
-        initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+        initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0, pointerEvents:'none' }}
         onClick={onClose}
       />
       <motion.div
@@ -68,7 +68,7 @@ function ModePicker({ selected, onSelect, onClose }) {
   return (
     <>
       <motion.div className="sheet-backdrop"
-        initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+        initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0, pointerEvents:'none' }}
         onClick={onClose}
       />
       <motion.div
@@ -101,7 +101,7 @@ function VehiclePicker({ selected, onSelect, onClose }) {
   return (
     <>
       <motion.div className="sheet-backdrop"
-        initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+        initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0, pointerEvents:'none' }}
         onClick={onClose}
       />
       <motion.div
@@ -199,7 +199,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
       {open && (
         <>
           <motion.div className="sheet-backdrop"
-            initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+            initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0, pointerEvents:'none' }}
             onClick={onClose}
           />
           <motion.div

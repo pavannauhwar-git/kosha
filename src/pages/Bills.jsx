@@ -247,7 +247,7 @@ export default function Bills() {
         {showAdd && (
           <>
             <motion.div className="sheet-backdrop"
-              initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+              initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0, pointerEvents:'none' }}
               onClick={() => setShowAdd(false)}
             />
             <motion.div className="sheet-panel"
