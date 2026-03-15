@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
+import { C } from '../lib/colors'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
@@ -13,9 +14,9 @@ function KoshaLogo({ size = 64 }) {
   const r = Math.round(size * 0.22)
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <rect width="64" height="64" rx={r} fill="#163300" />
+      <rect width="64" height="64" rx={r} fill={C.logoBg} />
       {/* Subtle lime highlight top-right, same as generated PNGs */}
-      <ellipse cx="54" cy="10" rx="14" ry="14" fill="#9FE870" fillOpacity="0.13" />
+      <ellipse cx="54" cy="10" rx="14" ry="14" fill={C.logoHighlight} fillOpacity="0.13" />
       <text
         x="32" y="36"
         textAnchor="middle"
@@ -210,8 +211,8 @@ export default function Login() {
                 >
                   <svg width="15" height="15" viewBox="0 0 15 15" className="shrink-0 mt-px"
                        fill="none">
-                    <circle cx="7.5" cy="7.5" r="7" stroke="#D42B3A" strokeWidth="1.2"/>
-                    <path d="M7.5 4.5v3.5M7.5 10v.5" stroke="#D42B3A" strokeWidth="1.4"
+                    <circle cx="7.5" cy="7.5" r="7" stroke={C.expense} strokeWidth="1.2"/>
+                    <path d="M7.5 4.5v3.5M7.5 10v.5" stroke={C.expense} strokeWidth="1.4"
                           strokeLinecap="round"/>
                   </svg>
                   <p className="text-caption text-expense-text font-medium">{error}</p>

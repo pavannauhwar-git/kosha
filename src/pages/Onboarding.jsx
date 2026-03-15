@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
+import { C } from '../lib/colors'
 import { addTransaction } from '../hooks/useTransactions'
 import { CATEGORIES } from '../lib/categories'
 import CategoryIcon from '../components/CategoryIcon'
@@ -20,8 +21,8 @@ function KoshaLogo({ size = 44 }) {
   const r = Math.round(size * 0.22)
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <rect width="64" height="64" rx={r} fill="#163300" />
-      <ellipse cx="54" cy="10" rx="14" ry="14" fill="#9FE870" fillOpacity="0.13" />
+      <rect width="64" height="64" rx={r} fill={C.logoBg} />
+      <ellipse cx="54" cy="10" rx="14" ry="14" fill={C.logoHighlight} fillOpacity="0.13" />
       <text
         x="32" y="36"
         textAnchor="middle"
@@ -47,7 +48,7 @@ function StepDots({ current, total }) {
           key={i}
           animate={{
             width:      i === current ? 20 : 6,
-            background: i === current ? '#163300' : '#D6ECC4',
+            background: i === current ? C.brand : C.brandBorder,
           }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
           className="h-1.5 rounded-pill"

@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMonthSummary } from '../hooks/useTransactions'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, savingsRate } from '../lib/utils'
+import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
 
 const MONTH_NAMES = [
@@ -24,14 +25,14 @@ function MonthHeroCard({ month, year }) {
     <div className="card-hero p-6 relative overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <p className="text-caption font-bold tracking-widest uppercase"
-           style={{ color:'rgba(159,232,112,0.75)' }}>
+           style={{ color:C.heroAccent }}>
           {MONTH_NAMES[month - 1].slice(0, 3)} {year}
         </p>
         <p className="text-caption font-bold tracking-widest"
-           style={{ color:'rgba(255,255,255,0.35)' }}>KOSHA</p>
+           style={{ color:C.heroDimmer }}>KOSHA</p>
       </div>
 
-      <p className="text-caption font-medium mb-1" style={{ color:'rgba(255,255,255,0.55)' }}>
+      <p className="text-caption font-medium mb-1" style={{ color:C.heroLabel }}>
         Monthly balance
       </p>
       <p className={`text-hero font-bold leading-none tabular-nums
@@ -40,13 +41,13 @@ function MonthHeroCard({ month, year }) {
       </p>
 
       <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill"
-           style={{ background:'rgba(159,232,112,0.18)' }}>
-        <span className="text-caption font-semibold" style={{ color:'#9FE870' }}>
+           style={{ background:C.heroAccentBg }}>
+        <span className="text-caption font-semibold" style={{ color:C.heroAccentSolid }}>
           {rate}% saved
         </span>
       </div>
 
-      <div className="border-t mb-4" style={{ borderColor:'rgba(255,255,255,0.12)' }} />
+      <div className="border-t mb-4" style={{ borderColor:C.heroDivider }} />
 
       <div className="flex justify-between mb-5">
         {[
@@ -55,8 +56,8 @@ function MonthHeroCard({ month, year }) {
           { label:'Invested', val:invested },
         ].map(s => (
           <div key={s.label} className="px-3 py-2.5 rounded-2xl"
-               style={{ background:'rgba(255,255,255,0.10)' }}>
-            <p className="text-caption mb-0.5" style={{ color:'rgba(255,255,255,0.55)' }}>{s.label}</p>
+               style={{ background:C.heroStatBg }}>
+            <p className="text-caption mb-0.5" style={{ color:C.heroLabel }}>{s.label}</p>
             <p className="text-label font-bold text-white tabular-nums">{fmt(s.val)}</p>
           </div>
         ))}
@@ -64,7 +65,7 @@ function MonthHeroCard({ month, year }) {
 
       <div>
         <div className="flex justify-between mb-2">
-          <span className="text-caption" style={{ color:'rgba(255,255,255,0.55)' }}>Savings rate</span>
+          <span className="text-caption" style={{ color:C.heroLabel }}>Savings rate</span>
           <span className="text-caption font-semibold text-white">{rate}%</span>
         </div>
         <div className="bar-dark-track">
@@ -171,9 +172,9 @@ export default function Monthly() {
 
                 // Build arc segments from proportions
                 const segs = [
-                  { pct: spentPct,    color: '#D42B3A' },
-                  { pct: investedPct, color: '#1A5C45' },
-                  { pct: savedPct,    color: '#163300' },
+                  { pct: spentPct,    color: C.expense },
+                  { pct: investedPct, color: C.investText },
+                  { pct: savedPct,    color: C.brand },
                 ].filter(s => s.pct > 0)
 
                 const GAP_DEG = 3
@@ -185,7 +186,7 @@ export default function Monthly() {
                          style={{ overflow: 'visible' }}>
                       {/* Track */}
                       <circle cx={CX} cy={CY} r={R}
-                        fill="none" stroke="#D6ECC4" strokeWidth={SW} />
+                        fill="none" stroke={C.brandBorder} strokeWidth={SW} />
                       {/* Coloured arcs */}
                       {segs.map((s, i) => {
                         const gapFrac = (GAP_DEG / 360) * CIRC
@@ -209,11 +210,11 @@ export default function Monthly() {
                     </svg>
                     {/* Center label */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span style={{ fontSize: 15, fontWeight: 700, color: '#163300',
+                      <span style={{ fontSize: 15, fontWeight: 700, color: C.brand,
                                      fontFamily: 'Plus Jakarta Sans, system-ui', lineHeight: 1.1 }}>
                         {savedPct}%
                       </span>
-                      <span style={{ fontSize: 9, color: '#7A8F6E',
+                      <span style={{ fontSize: 9, color: C.inkMuted,
                                      fontFamily: 'Plus Jakarta Sans, system-ui' }}>
                         saved
                       </span>
@@ -225,9 +226,9 @@ export default function Monthly() {
               {/* Breakdown rows */}
               <div className="flex-1 space-y-3 pt-1">
                 {[
-                  { label:'Spent',    val:spent,    pct:spentPct,    dot:'#D42B3A', textCls:'text-expense-text' },
-                  { label:'Invested', val:invested, pct:investedPct, dot:'#1A5C45', textCls:'text-invest-text'  },
-                  { label:'Saved',    val:saved,    pct:savedPct,    dot:'#163300', textCls:'text-income-text'  },
+                  { label:'Spent',    val:spent,    pct:spentPct,    dot:C.expense, textCls:'text-expense-text' },
+                  { label:'Invested', val:invested, pct:investedPct, dot:C.investText, textCls:'text-invest-text'  },
+                  { label:'Saved',    val:saved,    pct:savedPct,    dot:C.brand, textCls:'text-income-text'  },
                 ].map(s => (
                   <div key={s.label}>
                     <div className="flex items-center gap-2 mb-1">
@@ -288,7 +289,7 @@ export default function Monthly() {
                         <div className="h-[4px] bg-kosha-border rounded-pill overflow-hidden">
                           <motion.div
                             className="h-full rounded-pill"
-                            style={{ background: cat?.color || '#38A169' }}
+                            style={{ background: cat?.color || C.income }}
                             initial={{ width:0 }} animate={{ width:`${pct}%` }}
                             transition={{ duration:0.6, ease:'easeOut' }}
                           />

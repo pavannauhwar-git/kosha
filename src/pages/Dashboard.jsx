@@ -13,6 +13,7 @@ import DeleteDialog          from '../components/DeleteDialog'
 import { deleteTransaction } from '../hooks/useTransactions'
 import { fmt, monthStr, savingsRate, daysUntil, groupByDate, dateLabel } from '../lib/utils'
 import { CATEGORIES } from '../lib/categories'
+import { C } from '../lib/colors'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
 import CategoryIcon from '../components/CategoryIcon'
 
@@ -85,10 +86,10 @@ function SavingsRing({ rate }) {
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {/* Track */}
       <circle cx={cx} cy={cy} r={r}
-        fill="none" stroke="#D6ECC4" strokeWidth={sw} />
+        fill="none" stroke={C.brandBorder} strokeWidth={sw} />
       {/* Filled arc */}
       <circle cx={cx} cy={cy} r={r}
-        fill="none" stroke="#163300" strokeWidth={sw}
+        fill="none" stroke={C.brand} strokeWidth={sw}
         strokeDasharray={`${dash} ${circ}`}
         strokeLinecap="round"
         transform={`rotate(-90 ${cx} ${cy})`}
@@ -97,13 +98,13 @@ function SavingsRing({ rate }) {
       {/* Center label */}
       <text x={cx} y={cy - 5}
         textAnchor="middle" dominantBaseline="central"
-        style={{ fontSize:14, fontWeight:700, fill:'#163300',
+        style={{ fontSize:14, fontWeight:700, fill:C.brand,
                  fontFamily:'Plus Jakarta Sans, system-ui' }}>
         {rate}%
       </text>
       <text x={cx} y={cy + 9}
         textAnchor="middle"
-        style={{ fontSize:9, fill:'#7A8F6E',
+        style={{ fontSize:9, fill:C.inkMuted,
                  fontFamily:'Plus Jakarta Sans, system-ui' }}>
         saved
       </text>
@@ -210,25 +211,25 @@ export default function Dashboard() {
         <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <p className="text-caption font-bold tracking-widest uppercase"
-               style={{ color:'rgba(159,232,112,0.75)' }}>
+               style={{ color:C.heroAccent }}>
               {monthStr(now).toUpperCase()}
             </p>
             <p className="text-caption font-bold tracking-widest"
-               style={{ color:'rgba(255,255,255,0.35)' }}>KOSHA</p>
+               style={{ color:C.heroDimmer }}>KOSHA</p>
           </div>
-          <p className="text-caption font-medium mb-1" style={{ color:'rgba(255,255,255,0.55)' }}>
+          <p className="text-caption font-medium mb-1" style={{ color:C.heroLabel }}>
             Total balance
           </p>
           <p className="text-hero font-bold text-white leading-none tracking-tight tabular-nums">
             {runningBalance !== null ? fmt(runningBalance) : '—'}
           </p>
           <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill"
-               style={{ background:'rgba(159,232,112,0.18)' }}>
-            <span className="text-caption font-semibold" style={{ color:'#9FE870' }}>
+               style={{ background:C.heroAccentBg }}>
+            <span className="text-caption font-semibold" style={{ color:C.heroAccentSolid }}>
               {rate}% saved this month
             </span>
           </div>
-          <div className="border-t mb-4" style={{ borderColor:'rgba(255,255,255,0.12)' }} />
+          <div className="border-t mb-4" style={{ borderColor:C.heroDivider }} />
           <div className="flex justify-between">
             {[
               { label:'Earned',   val:earned   },
@@ -236,8 +237,8 @@ export default function Dashboard() {
               { label:'Invested', val:invested },
             ].map(s => (
               <div key={s.label} className="px-3 py-2.5 rounded-2xl"
-                   style={{ background:'rgba(255,255,255,0.10)' }}>
-                <p className="text-caption mb-0.5" style={{ color:'rgba(255,255,255,0.55)' }}>{s.label}</p>
+                   style={{ background:C.heroStatBg }}>
+                <p className="text-caption mb-0.5" style={{ color:C.heroLabel }}>{s.label}</p>
                 <p className="text-label font-bold text-white tabular-nums">{fmt(s.val)}</p>
               </div>
             ))}
@@ -256,10 +257,10 @@ export default function Dashboard() {
         <motion.div variants={fadeUp} className="card py-4 px-2">
           <div className="flex justify-around">
             {[
-              { label:'Income',  icon:<ArrowUp size={20} weight="bold" />,   bg:'bg-income-bg',  color:'#276749',  type:'income'     },
-              { label:'Expense', icon:<ArrowDown size={20} weight="bold" />, bg:'bg-expense-bg', color:'#D42B3A',  type:'expense'    },
-              { label:'Invest',  icon:<ChartLine size={20} weight="bold" />, bg:'bg-invest-bg',  color:'#1A5C45',  type:'investment' },
-              { label:'Bills',   icon:<Receipt size={20} weight="bold" />,   bg:'bg-repay-bg',   color:'#B35A00',  type:'bills'      },
+              { label:'Income',  icon:<ArrowUp size={20} weight="bold" />,   bg:'bg-income-bg',  color:C.incomeText,  type:'income'     },
+              { label:'Expense', icon:<ArrowDown size={20} weight="bold" />, bg:'bg-expense-bg', color:C.expense,  type:'expense'    },
+              { label:'Invest',  icon:<ChartLine size={20} weight="bold" />, bg:'bg-invest-bg',  color:C.investText,  type:'investment' },
+              { label:'Bills',   icon:<Receipt size={20} weight="bold" />,   bg:'bg-repay-bg',   color:C.bills,  type:'bills'      },
             ].map(({ label, icon, bg, color, type }) => (
               <button key={label}
                 onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
@@ -321,7 +322,7 @@ export default function Dashboard() {
               </div>
               <div className="bar-light-track">
                 <motion.div className="h-full rounded-pill absolute inset-y-0 left-0"
-                  style={{ background:'#38A169' }}
+                  style={{ background:C.income }}
                   initial={{ width:'0%' }} animate={{ width:`${monthPct}%` }}
                   transition={{ duration:0.5, ease:'easeOut' }}
                 />
@@ -336,7 +337,7 @@ export default function Dashboard() {
               </div>
               <div className="bar-light-track">
                 <motion.div className="h-full rounded-pill absolute inset-y-0 left-0"
-                  style={{ background:'#FF4757' }}
+                  style={{ background:C.expenseBright }}
                   initial={{ width:'0%' }} animate={{ width:`${Math.min(spendPct, 100)}%` }}
                   transition={{ duration:0.5, ease:'easeOut', delay:0.1 }}
                 />

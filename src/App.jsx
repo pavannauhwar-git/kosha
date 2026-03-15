@@ -11,6 +11,7 @@ import Bills        from './pages/Bills'
 import Login        from './pages/Login'
 import Onboarding   from './pages/Onboarding'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
+import { C } from './lib/colors'
 
 const NAV = [
   { path: '/',             label: 'Home',     Icon: House        },
@@ -72,7 +73,7 @@ function BottomNav() {
                   animate={{ opacity: isActive ? 1 : 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <item.Icon size={22} weight="fill" color="#163300" />
+                  <item.Icon size={22} weight="fill" color={C.brand} />
                 </motion.span>
                 {/* Regular icon (inactive) — opacity cross-fade */}
                 <motion.span
@@ -80,7 +81,7 @@ function BottomNav() {
                   animate={{ opacity: isActive ? 0 : 1 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <item.Icon size={22} weight="regular" color="#7A8F6E" />
+                  <item.Icon size={22} weight="regular" color={C.inkMuted} />
                 </motion.span>
               </div>
 
@@ -88,7 +89,7 @@ function BottomNav() {
               <motion.span
                 className="nav-label"
                 animate={{
-                  color:      isActive ? '#163300' : '#7A8F6E',
+                  color:      isActive ? C.brand : C.inkMuted,
                   fontWeight: isActive ? 700 : 500,
                 }}
                 transition={{ duration: 0.15 }}

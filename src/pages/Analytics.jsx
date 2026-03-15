@@ -11,6 +11,7 @@ import { useYearSummary } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, fmtDate } from '../lib/utils'
+import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
 
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
@@ -18,7 +19,7 @@ const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
 const YEARS = [2023, 2024, 2025, 2026]
 
 // Portfolio colours — green family, darkest to lightest
-const PORTFOLIO_COLORS = ['#163300','#2B8A68','#38A169','#9FE870','#C8F5A0','#D6ECC4']
+const PORTFOLIO_COLORS = C.portfolio
 
 // ── Tooltip ───────────────────────────────────────────────────────────────
 const AppleTooltip = ({ active, payload, label }) => {
@@ -31,13 +32,13 @@ const AppleTooltip = ({ active, payload, label }) => {
       boxShadow: '0 4px 20px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(22,51,0,0.08)',
       minWidth: 140,
     }}>
-      <p style={{ fontSize:12, fontWeight:600, color:'#7A8F6E',
+      <p style={{ fontSize:12, fontWeight:600, color:C.inkMuted,
                   letterSpacing:'0.04em', marginBottom:6, textTransform:'uppercase' }}>
         {label}
       </p>
       {payload.map(p => (
         <div key={p.name} style={{ display:'flex', justifyContent:'space-between', gap:16, marginBottom:3 }}>
-          <span style={{ fontSize:13, color:'#2A3A22' }}>{p.name}</span>
+          <span style={{ fontSize:13, color:C.brand }}>{p.name}</span>
           <span style={{ fontSize:13, fontWeight:700, color:p.fill || p.color }}>
             {fmt(p.value)}
           </span>
@@ -276,7 +277,7 @@ export default function Analytics() {
     .map(([id, val]) => ({
       id, val,
       name:  CATEGORIES.find(c => c.id === id)?.label || id,
-      color: CATEGORIES.find(c => c.id === id)?.color || '#163300',
+      color: CATEGORIES.find(c => c.id === id)?.color || C.brand,
     }))
   const totalCatSpend = catData.reduce((s, c) => s + c.val, 0)
 
@@ -354,18 +355,18 @@ export default function Analytics() {
                   barCategoryGap="25%" barGap={3}
                   margin={{ top:4, right:4, left:4, bottom:0 }}>
                   <XAxis dataKey="name"
-                    tick={{ fontSize:12, fill:'#7A8F6E', fontWeight:500 }}
+                    tick={{ fontSize:12, fill:C.inkMuted, fontWeight:500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
                   <Tooltip content={<AppleTooltip />}
                     cursor={{ fill:'rgba(22,51,0,0.04)' }} />
-                  <Bar dataKey="Income" fill="#38A169" radius={[4,4,0,0]} maxBarSize={32} />
-                  <Bar dataKey="Spent"  fill="#FF4757" fillOpacity={0.85} radius={[4,4,0,0]} maxBarSize={32} />
+                  <Bar dataKey="Income" fill={C.income} radius={[4,4,0,0]} maxBarSize={32} />
+                  <Bar dataKey="Spent"  fill={C.expenseBright} fillOpacity={0.85} radius={[4,4,0,0]} maxBarSize={32} />
                 </BarChart>
               </ResponsiveContainer>
               <div className="flex justify-center gap-5 mt-4">
-                {[['Income','#38A169'],['Spent','#FF4757']].map(([l,c]) => (
+                {[['Income',C.income],['Spent',C.expenseBright]].map(([l,c]) => (
                   <div key={l} className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full" style={{ background:c }} />
                     <span className="text-caption text-ink-2 font-medium">{l}</span>
@@ -383,15 +384,15 @@ export default function Analytics() {
               <ResponsiveContainer width="100%" height={120}>
                 <BarChart data={netData} margin={{ top:4, right:4, left:4, bottom:0 }}>
                   <XAxis dataKey="name"
-                    tick={{ fontSize:12, fill:'#7A8F6E', fontWeight:500 }}
+                    tick={{ fontSize:12, fill:C.inkMuted, fontWeight:500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
                   <Tooltip content={<AppleTooltip />} cursor={{ fill:'rgba(22,51,0,0.04)' }} />
-                  <ReferenceLine y={0} stroke="#D6ECC4" strokeWidth={1} />
+                  <ReferenceLine y={0} stroke={C.brandBorder} strokeWidth={1} />
                   <Bar dataKey="Net" radius={[4,4,0,0]} maxBarSize={32}>
                     {netData.map((entry, i) => (
-                      <Cell key={i} fill={entry.Net >= 0 ? '#38A169' : '#FF4757'} fillOpacity={0.85} />
+                      <Cell key={i} fill={entry.Net >= 0 ? C.income : C.expenseBright} fillOpacity={0.85} />
                     ))}
                   </Bar>
                 </BarChart>

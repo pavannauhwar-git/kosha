@@ -25,11 +25,53 @@
     @apply bg-kosha-bg text-ink font-sans;
     min-height: 100dvh;
     overscroll-behavior: none;
+    /* Push all content below the Dynamic Island / status bar.
+       viewport-fit=cover in index.html lets us fill edge-to-edge,
+       this padding reclaims the top safe area so nothing is hidden. */
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   :root {
+    --safe-top:    env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --nav-height:  calc(88px + env(safe-area-inset-bottom, 0px));
+
+    /* ── Palette CSS variables ──────────────────────────────────────
+       Keep these in sync with src/lib/colors.js and tailwind.config.js
+       Change palette here → updates all CSS (hero card, nav, bars, etc.)
+    ───────────────────────────────────────────────────────────────── */
+
+    /* Brand (Forest Green) */
+    --c-brand:            #163300;
+    --c-brand-lit:        #9FE870;
+    --c-brand-container:  #C8F5A0;
+    --c-brand-border:     #D6ECC4;
+    --c-brand-rgb:        22, 51, 0;       /* used in rgba() calls */
+    --c-brand-lit-rgb:    159, 232, 112;   /* used in rgba() calls */
+
+    /* Income / Investment */
+    --c-income:           #38A169;
+    --c-invest-text:      #1A5C45;
+
+    /* Expense */
+    --c-expense:          #D42B3A;
+    --c-expense-bright:   #FF4757;
+
+    /* Ink */
+    --c-ink-muted:        #7A8F6E;
+
+    /* Hero card overlays */
+    --c-hero-accent:      rgba(159, 232, 112, 0.75);
+    --c-hero-accent-bg:   rgba(159, 232, 112, 0.18);
+    --c-hero-accent-fill: rgba(159, 232, 112, 0.90);
+    --c-hero-label:       rgba(255, 255, 255, 0.55);
+    --c-hero-dimmer:      rgba(255, 255, 255, 0.35);
+    --c-hero-divider:     rgba(255, 255, 255, 0.12);
+    --c-hero-stat-bg:     rgba(255, 255, 255, 0.10);
+
+    /* Shimmer animation colors */
+    --c-shimmer-1:        #e8f5e2;
+    --c-shimmer-2:        #d2edc7;
   }
 
   /* GPU layer on interactive elements — eliminates tap lag */
@@ -45,8 +87,8 @@
   /* Single gradient layer (was 6) — dramatically cheaper on GPU.      */
   .card-hero {
     background:
-      radial-gradient(ellipse at 85% 15%, rgba(159, 232, 112, 0.18) 0%, transparent 55%),
-      #163300;
+      radial-gradient(ellipse at 85% 15%, rgba(var(--c-brand-lit-rgb), 0.18) 0%, transparent 55%),
+      var(--c-brand);
     @apply rounded-hero shadow-apple-card;
   }
 
@@ -87,7 +129,7 @@
   }
 
   .list-row + .list-row {
-    border-top: 0.5px solid #D6ECC4;
+    border-top: 0.5px solid var(--c-brand-border);
   }
 
   /* -- Section label ───────────────────────────────────────────────── */
@@ -171,7 +213,7 @@
       0 8px 32px rgba(0, 0, 0, 0.10),
       0 2px 8px rgba(0, 0, 0, 0.06),
       inset 0 0.5px 0 rgba(255, 255, 255, 0.90),
-      0 0 0 0.5px rgba(22, 51, 0, 0.08);
+      0 0 0 0.5px rgba(var(--c-brand-rgb), 0.08);
     pointer-events: auto;
     /* No transition here — Framer controls all animation */
   }
@@ -207,7 +249,7 @@
     position: absolute;
     inset: 0;
     border-radius: 9999px;
-    background: #C8F5A0;
+    background: var(--c-brand-container);
   }
 
   /* Both icon layers sit on top of the pill, stacked in same spot */
@@ -277,18 +319,18 @@
 
   .bar-dark-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0;
-    background: rgba(159, 232, 112, 0.90);
+    background: var(--c-hero-accent-fill);
     transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .bar-light-track {
     @apply h-2 rounded-pill w-full relative overflow-hidden;
-    background: #D6ECC4;
+    background: var(--c-brand-border);
   }
 
   .bar-light-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0;
-    background: linear-gradient(90deg, #38A169 0%, #163300 100%);
+    background: linear-gradient(90deg, var(--c-income) 0%, var(--c-brand) 100%);
     transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -319,9 +361,9 @@
 .shimmer {
   background: linear-gradient(
     90deg,
-    #e8f5e2 25%,
-    #d2edc7 50%,
-    #e8f5e2 75%
+    var(--c-shimmer-1) 25%,
+    var(--c-shimmer-2) 50%,
+    var(--c-shimmer-1) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
