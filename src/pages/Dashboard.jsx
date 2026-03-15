@@ -287,6 +287,7 @@ export default function Dashboard() {
               {recent.map((t, i) => (
                 <TransactionItem
                   key={t.id} txn={t}
+                  showDate={true}
                   isLast={i === recent.length - 1}
                   onDelete={id => setDelId(id)}
                   onTap={t => { setEditTxn(t); setShowAdd(true) }}
