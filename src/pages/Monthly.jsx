@@ -39,7 +39,7 @@ function MonthHeroCard({ month, year }) {
         ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
         {fmt(balance)}
       </p>
-      <p className="text-caption text-white/50 mb-5">Running balance</p>
+      <p className="text-caption text-white/50 mb-5">Monthly balance</p>
 
       {/* Stat pills */}
       <div className="flex gap-2 flex-wrap mb-5">
