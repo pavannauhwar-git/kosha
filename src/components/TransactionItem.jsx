@@ -1,15 +1,14 @@
-import { useState, useRef } from 'react'
+import { memo, useState } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash } from '@phosphor-icons/react'
 import CategoryIcon from './CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../lib/utils'
 import { getCategory } from '../lib/categories'
-import { ChevronRight } from 'lucide-react'
 
 const SWIPE_THRESHOLD  = 80
 const DELETE_THRESHOLD = 160
 
-export default function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = false }) {
+function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = false }) {
   const x             = useMotionValue(0)
   const deleteOpacity = useTransform(x, [-DELETE_THRESHOLD, -SWIPE_THRESHOLD, 0], [1, 1, 0])
   const [deleting, setDeleting] = useState(false)
@@ -22,25 +21,28 @@ export default function TransactionItem({ txn, onDelete, onTap, showDate = false
     if (info.offset.x < -DELETE_THRESHOLD) {
       await animate(x, -500, { duration: 0.22 })
       setDeleting(true)
+      if (navigator.vibrate) navigator.vibrate([10, 20, 10])
       onDelete && onDelete(txn.id)
     } else if (info.offset.x < -SWIPE_THRESHOLD / 2) {
-      animate(x, -SWIPE_THRESHOLD, { type: 'spring', stiffness: 400, damping: 30 })
+      animate(x, -SWIPE_THRESHOLD, { type:'spring', stiffness:500, damping:36 })
     } else {
-      animate(x, 0, { type: 'spring', stiffness: 400, damping: 30 })
+      animate(x, 0, { type:'spring', stiffness:500, damping:36 })
     }
   }
 
   function handleDeleteTap() {
     setDeleting(true)
     animate(x, -500, { duration: 0.2 })
+    if (navigator.vibrate) navigator.vibrate(10)
     setTimeout(() => onDelete && onDelete(txn.id), 200)
   }
 
   function handleTap() {
     if (x.get() < -10) {
-      animate(x, 0, { type: 'spring', stiffness: 400, damping: 30 })
+      animate(x, 0, { type:'spring', stiffness:500, damping:36 })
       return
     }
+    if (navigator.vibrate) navigator.vibrate(8)
     onTap && onTap(txn)
   }
 
@@ -61,13 +63,15 @@ export default function TransactionItem({ txn, onDelete, onTap, showDate = false
 
       {/* Row */}
       <motion.div
-        className="list-row"
+        className="list-row active:bg-kosha-surface-2"
         style={{ x }}
         drag="x"
         dragConstraints={{ left: -DELETE_THRESHOLD * 1.2, right: 0 }}
         dragElastic={{ left: 0.15, right: 0.05 }}
         onDragEnd={handleDragEnd}
         onClick={handleTap}
+        whileTap={{ scale: 0.985 }}
+        transition={{ scale: { duration: 0.07 } }}
       >
         <CategoryIcon categoryId={txn.category} size={18} />
 
@@ -88,15 +92,16 @@ export default function TransactionItem({ txn, onDelete, onTap, showDate = false
           </div>
         </div>
 
-        <span className={`text-[15px] shrink-0 tabular-nums ${amtCls}`}>
+        <span className={`text-[15px] shrink-0 tabular-nums font-semibold ${amtCls}`}>
           {prefix}{fmt(txn.amount)}
         </span>
       </motion.div>
 
-      {/* Hairline separator — hidden on last item */}
       {!isLast && (
         <div className="absolute bottom-0 left-[64px] right-0 h-[0.5px] bg-kosha-border" />
       )}
     </div>
   )
 }
+
+export default memo(TransactionItem)
