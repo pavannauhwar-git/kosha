@@ -4,28 +4,11 @@ import { supabase } from '../lib/supabase'
 // ── Auth Context ──────────────────────────────────────────────────────────
 const AuthContext = createContext(null)
 
-// ── Synchronous localStorage pre-check ───────────────────────────────────
-// Supabase stores its session under sb-<project-ref>-auth-token.
-// If absent, there is no session — skip the async getSession() call
-// and go straight to login instantly.
-function hasStoredSession() {
-  try {
-    const projectRef = import.meta.env.VITE_SUPABASE_URL
-      ?.replace('https://', '')
-      .split('.')[0]
-    if (!projectRef) return false
-    return !!localStorage.getItem(`sb-${projectRef}-auth-token`)
-  } catch {
-    return true // localStorage blocked — fall through to getSession safely
-  }
-}
-
 // ── Internal hook (single instance, lives inside AuthProvider) ────────────
 function useAuthState() {
   const [user,    setUser]    = useState(null)
   const [profile, setProfile] = useState(null)
-  // No stored token = we already know loading is done, skip the spinner
-  const [loading, setLoading] = useState(() => hasStoredSession())
+  const [loading, setLoading] = useState(true)
 
   const loadProfile = useCallback(async (userId) => {
     if (!userId) { setProfile(null); return }
@@ -42,9 +25,8 @@ function useAuthState() {
   }, [])
 
   useEffect(() => {
-    // ── onAuthStateChange is ALWAYS set up ────────────────────────────
-    // Critical: this must never be skipped. It handles sign-in after
-    // the user submits the login form, token refresh, and sign-out.
+    // ── Secondary: onAuthStateChange for live events ───────────────────
+    // Registered FIRST so no events are missed during init.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'TOKEN_REFRESHED') {
@@ -63,23 +45,17 @@ function useAuthState() {
           setUser(u)
           if (u) await loadProfile(u.id)
           else setProfile(null)
-          // Ensure loading is cleared in case getSession was skipped
-          setLoading(false)
         }
       }
     )
 
-    // ── Fast path: no token → already signed out, skip network call ───
-    // loading was initialised false above — just clean up and return.
-    if (!hasStoredSession()) {
-      return () => subscription.unsubscribe()
-    }
-
-    // ── Primary: getSession — only when a token exists ─────────────────
-    // Reads + refreshes the token if expired. 6s timeout as safety net.
+    // ── Primary: getSession on mount ──────────────────────────────────
+    // Reads token from localStorage and refreshes it if expired.
+    // Wrapped in a 3s timeout so a hanging refresh never leaves the
+    // app stuck on a blank page.
     async function init() {
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth init timeout')), 6000)
+        setTimeout(() => reject(new Error('Auth init timeout')), 3000)
       )
       try {
         const { data: { session } } = await Promise.race([
