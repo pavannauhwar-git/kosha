@@ -1,10 +1,14 @@
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from './hooks/useAuth'
+import AuthGuard    from './components/AuthGuard'
 import Dashboard    from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Monthly      from './pages/Monthly'
 import Analytics    from './pages/Analytics'
 import Bills        from './pages/Bills'
+import Login        from './pages/Login'
+import Onboarding   from './pages/Onboarding'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
 
 const NAV = [
@@ -15,20 +19,21 @@ const NAV = [
   { path: '/bills',        label: 'Bills',    Icon: Receipt      },
 ]
 
-// Opacity-only fade — no x/y translation, no mode="wait".
-// mode="wait" caused a dead pause between pages (exit must finish before
-// enter starts). Removing it means crossfade — instant and smooth.
-// 120ms enter, 80ms exit — fast enough to feel snappy on mobile.
 const pageVariants = {
   initial: { opacity: 0 },
   animate: { opacity: 1, transition: { duration: 0.12, ease: 'easeOut' } },
   exit:    { opacity: 0, transition: { duration: 0.08, ease: 'easeIn'  } },
 }
 
+// ── Bottom nav — hidden on auth pages ─────────────────────────────────────
 function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
-  const active   = NAV.findIndex(n =>
+
+  const hideOn = ['/login', '/onboarding', '/join', '/auth']
+  if (hideOn.some(p => location.pathname.startsWith(p))) return null
+
+  const active = NAV.findIndex(n =>
     n.path === '/' ? location.pathname === '/' : location.pathname.startsWith(n.path)
   )
 
@@ -88,17 +93,69 @@ function PageTransition({ children }) {
   )
 }
 
+// ── Auth callback ─────────────────────────────────────────────────────────
+// Google OAuth lands here after redirect.
+// useAuth picks up the session via onAuthStateChange automatically.
+function AuthCallback() {
+  const { user, profile, loading } = useAuth()
+
+  if (loading) return null
+  if (!user)   return <Navigate to="/login"      replace />
+  if (profile && !profile.onboarded)
+               return <Navigate to="/onboarding" replace />
+  return             <Navigate to="/"            replace />
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <div className="min-h-dvh bg-kosha-bg">
         <Routes>
-          <Route path="/"             element={<PageTransition><Dashboard    /></PageTransition>} />
-          <Route path="/transactions" element={<PageTransition><Transactions /></PageTransition>} />
-          <Route path="/monthly"      element={<PageTransition><Monthly      /></PageTransition>} />
-          <Route path="/analytics"    element={<PageTransition><Analytics    /></PageTransition>} />
-          <Route path="/bills"        element={<PageTransition><Bills        /></PageTransition>} />
+
+          {/* Public */}
+          <Route path="/login"         element={<Login />} />
+          <Route path="/join/:token"   element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+
+          {/* Onboarding — needs auth, shown before main app */}
+          <Route path="/onboarding" element={
+            <AuthGuard>
+              <PageTransition><Onboarding /></PageTransition>
+            </AuthGuard>
+          } />
+
+          {/* Protected main app */}
+          <Route path="/" element={
+            <AuthGuard>
+              <PageTransition><Dashboard /></PageTransition>
+            </AuthGuard>
+          } />
+          <Route path="/transactions" element={
+            <AuthGuard>
+              <PageTransition><Transactions /></PageTransition>
+            </AuthGuard>
+          } />
+          <Route path="/monthly" element={
+            <AuthGuard>
+              <PageTransition><Monthly /></PageTransition>
+            </AuthGuard>
+          } />
+          <Route path="/analytics" element={
+            <AuthGuard>
+              <PageTransition><Analytics /></PageTransition>
+            </AuthGuard>
+          } />
+          <Route path="/bills" element={
+            <AuthGuard>
+              <PageTransition><Bills /></PageTransition>
+            </AuthGuard>
+          } />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
+
         <BottomNav />
       </div>
     </BrowserRouter>
