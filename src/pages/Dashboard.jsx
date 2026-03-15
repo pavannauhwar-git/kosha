@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { useTransactions }   from '../hooks/useTransactions'
-import { useMonthSummary }   from '../hooks/useTransactions'
+import { useTransactions } from '../hooks/useTransactions'
+import { useMonthSummary } from '../hooks/useTransactions'
 import { useRunningBalance } from '../hooks/useTransactions'
-import { useLiabilities }    from '../hooks/useLiabilities'
-import AddTransactionSheet   from '../components/AddTransactionSheet'
-import TransactionItem       from '../components/TransactionItem'
-import DeleteDialog          from '../components/DeleteDialog'
+import { useLiabilities } from '../hooks/useLiabilities'
+import AddTransactionSheet from '../components/AddTransactionSheet'
+import TransactionItem from '../components/TransactionItem'
+import DeleteDialog from '../components/DeleteDialog'
 import { deleteTransaction } from '../hooks/useTransactions'
 import { fmt, monthStr, savingsRate, daysUntil } from '../lib/utils'
 import { CATEGORIES } from '../lib/categories'
@@ -20,56 +20,56 @@ import CategoryIcon from '../components/CategoryIcon'
 // stagger:0.04 — tight enough that sections feel like one motion.
 const fadeUp = {
   hidden: { opacity: 0, y: 4 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
 }
 const stagger = {
   hidden: {},
-  show:   { transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
+  show: { transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
 }
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const now      = new Date()
+  const now = new Date()
   const [showAdd, setShowAdd] = useState(false)
   const [editTxn, setEditTxn] = useState(null)
-  const [delId,   setDelId]   = useState(null)
+  const [delId, setDelId] = useState(null)
 
   const { data: recent, refetch } = useTransactions({ limit: 6 })
-  const { data: summary }         = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
-  const { data: lastSummary }     = useMonthSummary(
+  const { data: summary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
+  const { data: lastSummary } = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
     now.getMonth() === 0 ? 12 : now.getMonth()
   )
   const { balance: runningBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
-  const { pending: bills }          = useLiabilities()
+  const { pending: bills } = useLiabilities()
 
-  const dueSoon  = bills.filter(b => daysUntil(b.due_date) <= 7)
-  const earned   = summary?.earned     || 0
-  const spent    = summary?.expense    || 0
+  const dueSoon = bills.filter(b => daysUntil(b.due_date) <= 7)
+  const earned = summary?.earned || 0
+  const spent = summary?.expense || 0
   const invested = summary?.investment || 0
-  const rate     = savingsRate(earned, spent)
+  const rate = savingsRate(earned, spent)
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const dayOfMonth  = now.getDate()
-  const monthPct    = Math.round((dayOfMonth / daysInMonth) * 100)
-  const spendPct    = earned > 0 ? Math.round((spent / earned) * 100) : 0
-  const onTrack     = spendPct <= monthPct
-  const paceGap     = Math.abs(spendPct - monthPct)
+  const dayOfMonth = now.getDate()
+  const monthPct = Math.round((dayOfMonth / daysInMonth) * 100)
+  const spendPct = earned > 0 ? Math.round((spent / earned) * 100) : 0
+  const onTrack = spendPct <= monthPct
+  const paceGap = Math.abs(spendPct - monthPct)
 
   const catEntries = Object.entries(summary?.byCategory || {}).sort((a, b) => b[1] - a[1])
-  const topCat     = catEntries[0]
-  const topCatPct  = topCat && spent > 0 ? Math.round((topCat[1] / spent) * 100) : 0
+  const topCat = catEntries[0]
+  const topCatPct = topCat && spent > 0 ? Math.round((topCat[1] / spent) * 100) : 0
   const topCatInfo = topCat ? CATEGORIES.find(c => c.id === topCat[0]) : null
 
   const lastInvested = lastSummary?.investment || 0
-  const investDiff   = invested - lastInvested
-  const investUp     = investDiff > 0
+  const investDiff = invested - lastInvested
+  const investUp = investDiff > 0
 
-  const hour     = now.getHours()
+  const hour = now.getHours()
   const greeting = hour < 12 ? 'Good morning'
-                 : hour < 17 ? 'Good afternoon'
-                 : hour < 21 ? 'Good evening'
-                 : 'Good night'
+    : hour < 17 ? 'Good afternoon'
+      : hour < 21 ? 'Good evening'
+        : 'Good night'
 
   async function confirmDelete() {
     await deleteTransaction(delId)
@@ -104,8 +104,6 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Hero card ─────────────────────────────────────────────────── */}
-        {/* Balance is a plain <p> — parent motion handles the entry.       */}
-        {/* Removed the nested motion.p that was double-animating it.       */}
         <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.03]"
             style={{
@@ -114,9 +112,12 @@ export default function Dashboard() {
             }}
           />
           <div className="relative">
-            <p className="text-caption font-semibold tracking-widest uppercase text-white/60 mb-1">
-              {monthStr(now).toUpperCase()}
-            </p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-caption font-semibold tracking-widest uppercase text-white/60">
+                {monthStr(now).toUpperCase()}
+              </p>
+              <p className="text-caption font-bold tracking-widest text-white/50">KOSHA</p>
+            </div>
             <p className="text-hero font-bold text-white leading-none tracking-tight mb-1 tabular-nums">
               {runningBalance !== null ? fmt(runningBalance) : '—'}
             </p>
@@ -124,8 +125,8 @@ export default function Dashboard() {
 
             <div className="flex gap-2 flex-wrap mb-5">
               {[
-                { label: 'Earned',   val: earned,   bg: 'rgba(0,200,150,0.22)'  },
-                { label: 'Spent',    val: spent,    bg: 'rgba(255,71,87,0.22)'  },
+                { label: 'Earned', val: earned, bg: 'rgba(0,200,150,0.22)' },
+                { label: 'Spent', val: spent, bg: 'rgba(255,71,87,0.22)' },
                 { label: 'Invested', val: invested, bg: 'rgba(108,71,255,0.22)' },
               ].map(s => (
                 <div key={s.label}
@@ -249,10 +250,9 @@ export default function Dashboard() {
                       ? <TrendingUp size={12} className="text-income-text" />
                       : <TrendingDown size={12} className="text-expense-text" />
                   }
-                  <span className={`text-caption font-semibold ${
-                    investDiff === 0 ? 'text-ink-3'
-                    : investUp ? 'text-income-text' : 'text-expense-text'
-                  }`}>
+                  <span className={`text-caption font-semibold ${investDiff === 0 ? 'text-ink-3'
+                      : investUp ? 'text-income-text' : 'text-expense-text'
+                    }`}>
                     {investDiff === 0
                       ? 'Same as last month'
                       : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
