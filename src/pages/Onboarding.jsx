@@ -8,7 +8,7 @@ import CategoryIcon from '../components/CategoryIcon'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
 }
 
 const EXPENSE_CATS = CATEGORIES.filter(c =>
@@ -23,7 +23,7 @@ function StepDots({ current, total }) {
         <motion.div
           key={i}
           animate={{
-            width: i === current ? 20 : 6,
+            width:      i === current ? 20 : 6,
             background: i === current ? '#6C47FF' : '#C5C0D8',
           }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
@@ -142,11 +142,11 @@ function StepIncome({ name, onNext, onBack }) {
 // ── Step 3 — First transaction ────────────────────────────────────────────
 function StepFirstTransaction({ onFinish, onSkip }) {
   const { user } = useAuth()
-  const [amount, setAmount] = useState('')
-  const [desc, setDesc] = useState('')
+  const [amount,   setAmount]   = useState('')
+  const [desc,     setDesc]     = useState('')
   const [category, setCategory] = useState('food')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
+  const [saving,   setSaving]   = useState(false)
+  const [error,    setError]    = useState(null)
 
   async function handleSave() {
     if (!amount || !desc.trim()) return
@@ -154,14 +154,14 @@ function StepFirstTransaction({ onFinish, onSkip }) {
     setError(null)
     try {
       await addTransaction({
-        date: new Date().toISOString().slice(0, 10),
-        type: 'expense',
-        description: desc.trim(),
-        amount: parseFloat(amount),
+        date:         new Date().toISOString().slice(0, 10),
+        type:         'expense',
+        description:  desc.trim(),
+        amount:       parseFloat(amount),
         category,
         is_repayment: false,
         payment_mode: 'upi',
-        user_id: user.id,
+        user_id:      user.id,
       })
       onFinish()
     } catch (e) {
@@ -262,12 +262,12 @@ function StepFirstTransaction({ onFinish, onSkip }) {
 
 // ── Main Onboarding page ──────────────────────────────────────────────────
 export default function Onboarding() {
-  const navigate = useNavigate()
-  const { token } = useParams()
+  const navigate              = useNavigate()
+  const { token }             = useParams()
   const { user, updateProfile } = useAuth()
 
-  const [step, setStep] = useState(0)
-  const [name, setName] = useState('')
+  const [step,   setStep]   = useState(0)
+  const [name,   setName]   = useState('')
   const [saving, setSaving] = useState(false)
 
   // If user arrived via /join/:token, mark the invite as used
@@ -325,12 +325,12 @@ export default function Onboarding() {
       <div className="w-full max-w-sm mx-auto flex flex-col flex-1">
 
         {/* Kosha wordmark */}
-        <img
-          src="/icons/icon-512.png"
-          alt="Kosha"
-          className="w-8 h-8 rounded-xl"
-        />
-        <span className="text-label font-bold text-ink tracking-tight">KOSHA</span>
+        <div className="flex items-center gap-2 mb-10">
+          <div className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center">
+            <span className="text-white font-bold text-sm">KOSHA</span>
+          </div>
+          <span className="text-label font-bold text-ink tracking-tight">KOSHA</span>
+        </div>
 
         <StepDots current={step} total={3} />
 
