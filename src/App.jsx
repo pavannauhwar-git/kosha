@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useAuth } from './hooks/useAuth'
 import AuthGuard    from './components/AuthGuard'
 import Dashboard    from './pages/Dashboard'
@@ -19,13 +19,7 @@ const NAV = [
   { path: '/bills',        label: 'Bills',    Icon: Receipt      },
 ]
 
-const pageVariants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 0.12, ease: 'easeOut' } },
-  exit:    { opacity: 0, transition: { duration: 0.08, ease: 'easeIn'  } },
-}
-
-// ── Bottom nav — hidden on auth pages ─────────────────────────────────────
+// ── Bottom nav ────────────────────────────────────────────────────────────
 function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -75,30 +69,9 @@ function BottomNav() {
   )
 }
 
-function PageTransition({ children }) {
-  const location = useLocation()
-  return (
-    <AnimatePresence>
-      <motion.div
-        key={location.pathname}
-        variants={pageVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        style={{ willChange: 'opacity' }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
-  )
-}
-
 // ── Auth callback ─────────────────────────────────────────────────────────
-// Google OAuth lands here after redirect.
-// useAuth picks up the session via onAuthStateChange automatically.
 function AuthCallback() {
   const { user, profile, loading } = useAuth()
-
   if (loading) return null
   if (!user)   return <Navigate to="/login"      replace />
   if (profile && !profile.onboarded)
@@ -117,39 +90,17 @@ export default function App() {
           <Route path="/join/:token"   element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
 
-          {/* Onboarding — needs auth, shown before main app */}
+          {/* Onboarding */}
           <Route path="/onboarding" element={
-            <AuthGuard>
-              <PageTransition><Onboarding /></PageTransition>
-            </AuthGuard>
+            <AuthGuard><Onboarding /></AuthGuard>
           } />
 
-          {/* Protected main app */}
-          <Route path="/" element={
-            <AuthGuard>
-              <PageTransition><Dashboard /></PageTransition>
-            </AuthGuard>
-          } />
-          <Route path="/transactions" element={
-            <AuthGuard>
-              <PageTransition><Transactions /></PageTransition>
-            </AuthGuard>
-          } />
-          <Route path="/monthly" element={
-            <AuthGuard>
-              <PageTransition><Monthly /></PageTransition>
-            </AuthGuard>
-          } />
-          <Route path="/analytics" element={
-            <AuthGuard>
-              <PageTransition><Analytics /></PageTransition>
-            </AuthGuard>
-          } />
-          <Route path="/bills" element={
-            <AuthGuard>
-              <PageTransition><Bills /></PageTransition>
-            </AuthGuard>
-          } />
+          {/* Protected — no PageTransition wrapper */}
+          <Route path="/"             element={<AuthGuard><Dashboard    /></AuthGuard>} />
+          <Route path="/transactions" element={<AuthGuard><Transactions /></AuthGuard>} />
+          <Route path="/monthly"      element={<AuthGuard><Monthly      /></AuthGuard>} />
+          <Route path="/analytics"    element={<AuthGuard><Analytics    /></AuthGuard>} />
+          <Route path="/bills"        element={<AuthGuard><Bills        /></AuthGuard>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

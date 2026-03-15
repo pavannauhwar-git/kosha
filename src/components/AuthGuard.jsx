@@ -5,24 +5,20 @@ export default function AuthGuard({ children }) {
   const { user, profile, loading } = useAuth()
   const location = useLocation()
 
-  // ── 1. Checking localStorage for existing session ─────────────────────
-  // Resolves in <100ms. Return null (invisible) — not a spinner.
+  // Auth initialising
   if (loading) return null
 
-  // ── 2. No session — go to login ───────────────────────────────────────
+  // No session
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  // ── 3. User confirmed — check onboarding ─────────────────────────────
-  // Only redirect to onboarding if profile has loaded AND onboarded=false.
-  // If profile is still null (loading), skip this check and render the page.
-  // The page will show its own loading state via the data hooks.
-  // This eliminates the blank screen caused by waiting for the profile query.
-  if (profile !== null && !profile.onboarded && location.pathname !== '/onboarding') {
+  // User confirmed — check onboarding only if profile loaded AND incomplete
+  // If profile is null (failed to load), skip onboarding check and show the app
+  if (profile && !profile.onboarded && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
   }
 
-  // ── 4. Render the page ────────────────────────────────────────────────
+  // Render the page — user is confirmed, that's all we need
   return children
 }
