@@ -15,9 +15,9 @@ import { CATEGORIES } from '../lib/categories'
 import { Plus } from '@phosphor-icons/react'
 import CategoryIcon from '../components/CategoryIcon'
 
-const stagger = { hidden:{}, show:{ transition:{ staggerChildren:0.06 } } }
+const stagger = { hidden:{}, show:{ transition:{ staggerChildren:0.07 } } }
 const fadeUp  = {
-  hidden:{ opacity:0, y:12 },
+  hidden:{ opacity:0, y:10 },
   show:{ opacity:1, y:0, transition:{ type:'spring', stiffness:280, damping:26 } }
 }
 
@@ -43,25 +43,24 @@ export default function Dashboard() {
   const invested = summary?.investment || 0
   const rate     = savingsRate(earned, spent)
 
-  // Month progress logic
-  const daysInMonth  = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const dayOfMonth   = now.getDate()
-  const monthPct     = Math.round((dayOfMonth / daysInMonth) * 100)
-  const spendPct     = earned > 0 ? Math.round((spent / earned) * 100) : 0
-  const onTrack      = spendPct <= monthPct
-  const paceGap      = Math.abs(spendPct - monthPct)
+  // Month progress
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const dayOfMonth  = now.getDate()
+  const monthPct    = Math.round((dayOfMonth / daysInMonth) * 100)
+  const spendPct    = earned > 0 ? Math.round((spent / earned) * 100) : 0
+  const onTrack     = spendPct <= monthPct
+  const paceGap     = Math.abs(spendPct - monthPct)
 
   // Top spend category
-  const catEntries   = Object.entries(summary?.byCategory || {}).sort((a,b) => b[1]-a[1])
-  const topCat       = catEntries[0]
-  const topCatPct    = topCat && spent > 0 ? Math.round((topCat[1] / spent) * 100) : 0
-  const topCatInfo   = topCat ? CATEGORIES.find(c => c.id === topCat[0]) : null
+  const catEntries = Object.entries(summary?.byCategory || {}).sort((a, b) => b[1] - a[1])
+  const topCat     = catEntries[0]
+  const topCatPct  = topCat && spent > 0 ? Math.round((topCat[1] / spent) * 100) : 0
+  const topCatInfo = topCat ? CATEGORIES.find(c => c.id === topCat[0]) : null
 
-  // Investment vs last month
+  // Investment trend
   const lastInvested = lastSummary?.investment || 0
   const investDiff   = invested - lastInvested
   const investUp     = investDiff > 0
-  const vehicleEntries = Object.entries(summary?.byVehicle || {}).sort((a,b) => b[1]-a[1])
 
   const hour     = now.getHours()
   const greeting = hour < 12 ? 'Good morning'
@@ -77,15 +76,15 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
 
-        {/* -- Greeting -- */}
+        {/* ── Greeting ──────────────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="flex items-center justify-between pt-2">
           <div>
-            <p className="text-[13px] text-ink-3">
-              {now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' })}
+            <p className="text-label text-ink-3">
+              {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
-            <h1 className="text-[28px] font-bold text-ink tracking-tight">{greeting} 👋</h1>
+            <h1 className="text-display font-bold text-ink tracking-tight">{greeting} 👋</h1>
           </div>
           {dueSoon.length > 0 && (
             <button
@@ -101,86 +100,86 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* -- Apple Card mesh gradient hero -- */}
+        {/* ── Hero card ─────────────────────────────────────────────────── */}
+        {/* Single source of truth for this month's numbers.               */}
+        {/* The 3-column stat grid that used to live below has been         */}
+        {/* removed — Earned / Spent / Invested are already here.          */}
         <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
+          {/* Subtle noise texture */}
           <div className="absolute inset-0 opacity-[0.03]"
             style={{
-              backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-              backgroundSize:'128px 128px',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+              backgroundSize: '128px 128px',
             }}
           />
-          <div className="relative">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-[11px] font-semibold tracking-widest uppercase text-white/70 mb-1">
-                  {monthStr(now).toUpperCase()}
-                </p>
-                <motion.p
-                  className="text-[44px] font-bold text-white leading-none tracking-tight"
-                  initial={{ opacity:0, y:8 }}
-                  animate={{ opacity:1, y:0 }}
-                  transition={{ delay:0.15, duration:0.5 }}
-                >
-                  {runningBalance !== null ? fmt(runningBalance) : '—'}
-                </motion.p>
-                <p className="text-[13px] text-white/60 mt-1">Running balance</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[11px] font-bold tracking-widest text-white/70">KOSHA</p>
-              </div>
-            </div>
 
-            {/* Stat pills */}
-            <div className="flex gap-2 flex-wrap mb-4">
+          <div className="relative">
+            {/* Month label + balance */}
+            <p className="text-caption font-semibold tracking-widest uppercase text-white/60 mb-1">
+              {monthStr(now).toUpperCase()}
+            </p>
+            <motion.p
+              className="text-hero font-bold text-white leading-none tracking-tight mb-1"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.5 }}
+            >
+              {runningBalance !== null ? fmt(runningBalance) : '—'}
+            </motion.p>
+            <p className="text-caption text-white/50 mb-5">Running balance</p>
+
+            {/* Stat pills — Earned / Spent / Invested */}
+            <div className="flex gap-2 flex-wrap mb-5">
               {[
-                { label:'Earned',   val:earned,   bg:'rgba(52,199,89,0.25)'  },
-                { label:'Spent',    val:spent,    bg:'rgba(255,59,48,0.25)'  },
-                { label:'Invested', val:invested, bg:'rgba(0,122,255,0.25)' },
+                { label: 'Earned',   val: earned,   bg: 'rgba(0,200,150,0.22)'  },
+                { label: 'Spent',    val: spent,    bg: 'rgba(255,71,87,0.22)'  },
+                { label: 'Invested', val: invested, bg: 'rgba(108,71,255,0.22)' },
               ].map(s => (
                 <div key={s.label}
-                  className="px-3 py-1.5 rounded-full"
-                  style={{ background:s.bg, backdropFilter:'blur(8px)' }}>
-                  <p className="text-[10px] font-medium text-white/70">{s.label}</p>
-                  <p className="text-[13px] font-bold text-white">{fmt(s.val)}</p>
+                  className="px-3 py-2 rounded-2xl"
+                  style={{ background: s.bg, backdropFilter: 'blur(8px)' }}
+                >
+                  <p className="text-caption text-white/60">{s.label}</p>
+                  <p className="text-label font-bold text-white tabular-nums">{fmt(s.val)}</p>
                 </div>
               ))}
             </div>
 
-            {/* Savings bar — dark style (white on gradient) */}
+            {/* Savings rate bar */}
             <div>
-              <div className="flex justify-between mb-1.5">
-                <span className="text-[11px] text-white/60">Savings rate</span>
-                <span className="text-[11px] font-semibold text-white">{rate}%</span>
+              <div className="flex justify-between mb-2">
+                <span className="text-caption text-white/60">Savings rate</span>
+                <span className="text-caption font-semibold text-white">{rate}%</span>
               </div>
               <div className="bar-dark-track">
                 <motion.div
                   className="bar-dark-fill"
-                  initial={{ width:0 }}
-                  animate={{ width:`${rate}%` }}
-                  transition={{ duration:0.7, delay:0.3, ease:'easeOut' }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${rate}%` }}
+                  transition={{ duration: 0.7, delay: 0.3, ease: 'easeOut' }}
                 />
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* -- Bill alert -- */}
+        {/* ── Bill alert ────────────────────────────────────────────────── */}
         {dueSoon.length > 0 && (
           <motion.div variants={fadeUp}>
             <button
               onClick={() => navigate('/bills')}
-              className="card-warn w-full flex items-center justify-between px-4 py-3.5 text-left"
+              className="card-warn w-full flex items-center justify-between px-4 py-4 text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-warning-bg flex items-center justify-center">
-                  <Bell size={15} className="text-warning-text" />
+                <div className="w-9 h-9 rounded-xl bg-warning-bg flex items-center justify-center shrink-0">
+                  <Bell size={16} className="text-warning-text" />
                 </div>
                 <div>
-                  <p className="text-[15px] font-semibold text-ink">
+                  <p className="text-body font-semibold text-ink">
                     {dueSoon.length} bill{dueSoon.length > 1 ? 's' : ''} due soon
                   </p>
-                  <p className="text-[13px] text-ink-3">
-                    {dueSoon.slice(0,2).map(b => b.description).join(' · ')}
+                  <p className="text-label text-ink-3">
+                    {dueSoon.slice(0, 2).map(b => b.description).join(' · ')}
                   </p>
                 </div>
               </div>
@@ -189,50 +188,32 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* -- THIS MONTH section label -- */}
+        {/* ── Month at a glance ─────────────────────────────────────────── */}
+        {/* The old "This Month" stat grid has been removed — those numbers  */}
+        {/* are already in the hero card above. This section now focuses on  */}
+        {/* pace (are you on track?) and top spend (where is money going?).  */}
         <motion.div variants={fadeUp}>
-          <p className="section-label mb-3">This Month</p>
+          <p className="section-label mb-4">Month at a Glance</p>
 
-          {/* Row 1 — 3 stat cards */}
-          <div className="grid grid-cols-3 gap-3 mb-3">
-            {[
-              { label:'Earned',   val:earned,   cls:'text-income-text' },
-              { label:'Spent',    val:spent,    cls:'text-expense-text' },
-              { label:'Invested', val:invested, cls:'text-invest-text' },
-            ].map(s => (
-              <div key={s.label} className="card p-3.5">
-                <p className="text-[11px] text-ink-3 font-medium mb-1">{s.label}</p>
-                <p className={`text-[14px] font-bold tabular-nums ${s.cls}`}>{fmt(s.val)}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Row 2 — Month Progress + Top Spend */}
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="grid grid-cols-2 gap-3">
 
             {/* Month Progress */}
             <div className="card p-4">
-              <p className="text-[11px] text-ink-3 font-medium mb-1">Month Progress</p>
-              <p className="text-[13px] font-semibold text-ink mb-0.5">
-                Day {dayOfMonth} of {daysInMonth}
+              <p className="text-caption text-ink-3 font-medium mb-2">Pace</p>
+              <p className="text-value font-bold text-ink tabular-nums leading-none mb-1">
+                {dayOfMonth}<span className="text-label font-medium text-ink-3"> / {daysInMonth}</span>
               </p>
-              {/* Bar — light style on white card */}
-              <div className="bar-light-track my-2">
+              <p className="text-caption text-ink-3 mb-3">Days through month</p>
+              <div className="bar-light-track mb-2">
                 <motion.div
                   className="bar-light-fill"
-                  initial={{ width:'0%' }}
-                  animate={{ width:`${monthPct}%` }}
-                  transition={{ duration:0.7, ease:'easeOut' }}
+                  initial={{ width: '0%' }}
+                  animate={{ width: `${monthPct}%` }}
+                  transition={{ duration: 0.7, ease: 'easeOut' }}
                 />
               </div>
-              <div className="flex items-center gap-1.5">
-                {onTrack
-                  ? <span className="text-[11px] font-semibold text-income-text">✓ On track</span>
-                  : <span className="text-[11px] font-semibold text-expense-text">↑ {paceGap}% ahead</span>
-                }
-              </div>
-              <p className="text-[10px] text-ink-4 mt-0.5">
-                Spent {spendPct}% · {monthPct}% through month
+              <p className={`text-caption font-semibold ${onTrack ? 'text-income-text' : 'text-expense-text'}`}>
+                {onTrack ? `✓ On track · spent ${spendPct}%` : `↑ ${paceGap}% ahead of pace`}
               </p>
             </div>
 
@@ -241,93 +222,83 @@ export default function Dashboard() {
               className="card p-4 cursor-pointer active:opacity-80"
               onClick={() => navigate('/transactions')}
             >
-              <p className="text-[11px] text-ink-3 font-medium mb-2">Top Spend</p>
+              <p className="text-caption text-ink-3 font-medium mb-2">Top spend</p>
               {topCat ? (
                 <>
                   <div className="flex items-center gap-2 mb-2">
                     <CategoryIcon categoryId={topCat[0]} size={16} />
-                    <span className="text-[13px] font-semibold text-ink truncate">
+                    <span className="text-label font-semibold text-ink truncate">
                       {topCatInfo?.label || topCat[0]}
                     </span>
                   </div>
-                  <p className="text-[15px] font-bold text-expense-text tabular-nums">
+                  <p className="text-value font-bold text-expense-text tabular-nums leading-none mb-3">
                     {fmt(topCat[1])}
                   </p>
-                  {/* Bar — light style */}
-                  <div className="bar-light-track mt-2">
+                  <div className="bar-light-track mb-1">
                     <motion.div
                       className="bar-light-fill"
-                      initial={{ width:'0%' }}
-                      animate={{ width:`${topCatPct}%` }}
-                      transition={{ duration:0.7, ease:'easeOut' }}
+                      initial={{ width: '0%' }}
+                      animate={{ width: `${topCatPct}%` }}
+                      transition={{ duration: 0.7, ease: 'easeOut' }}
                     />
                   </div>
-                  <p className="text-[10px] text-ink-4 mt-1">{topCatPct}% of total spend</p>
+                  <p className="text-caption text-ink-3">{topCatPct}% of total spend</p>
                 </>
               ) : (
-                <p className="text-[13px] text-ink-4">No expenses yet</p>
+                <p className="text-label text-ink-4">No expenses yet</p>
               )}
             </div>
           </div>
+        </motion.div>
 
-          {/* Row 3 — Investment This Month */}
-          {invested > 0 && (
-            <div className="card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] text-ink-3 font-medium">Investments This Month</p>
-                <div className="flex items-center gap-1">
+        {/* ── Investments ───────────────────────────────────────────────── */}
+        {/* Vehicle chips removed — too noisy for the dashboard.            */}
+        {/* Full breakdown lives in the Monthly / Analytics pages.          */}
+        {invested > 0 && (
+          <motion.div variants={fadeUp}>
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-caption text-ink-3 font-medium">Invested this month</p>
+                <div className="flex items-center gap-1.5">
                   {investDiff === 0
-                    ? <Minus size={13} className="text-ink-3" />
+                    ? <Minus size={12} className="text-ink-3" />
                     : investUp
-                      ? <TrendingUp size={13} className="text-income-text" />
-                      : <TrendingDown size={13} className="text-expense-text" />
+                      ? <TrendingUp size={12} className="text-income-text" />
+                      : <TrendingDown size={12} className="text-expense-text" />
                   }
-                  <span className={`text-[11px] font-semibold ${
+                  <span className={`text-caption font-semibold ${
                     investDiff === 0 ? 'text-ink-3'
                     : investUp ? 'text-income-text' : 'text-expense-text'
                   }`}>
-                    {investDiff === 0 ? 'Same as last month'
-                     : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
+                    {investDiff === 0
+                      ? 'Same as last month'
+                      : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
                   </span>
                 </div>
               </div>
-
-              <p className="text-[22px] font-bold text-invest-text tabular-nums mb-3">
+              <p className="text-value font-bold text-invest-text tabular-nums">
                 {fmt(invested)}
               </p>
-
-              {/* Vehicle chips */}
-              {vehicleEntries.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {vehicleEntries.slice(0, 4).map(([vehicle, amt]) => (
-                    <div key={vehicle}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-invest-bg">
-                      <span className="text-[11px] font-medium text-invest-text">{vehicle}</span>
-                      <span className="text-[11px] font-semibold text-invest-text">{fmt(amt)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          )}
-        </motion.div>
+          </motion.div>
+        )}
 
-        {/* -- Recent -- */}
+        {/* ── Recent transactions ───────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center justify-between mb-4">
             <p className="section-label">Recent</p>
             <button
               onClick={() => navigate('/transactions')}
-              className="flex items-center gap-1 text-[13px] font-medium text-brand"
+              className="flex items-center gap-1 text-label font-medium text-brand"
             >
-              See all <ArrowRight size={12} />
+              See all <ArrowRight size={13} />
             </button>
           </div>
 
           {recent.length === 0 ? (
             <div className="card p-8 text-center">
-              <p className="text-ink-3 text-[15px]">No transactions yet.</p>
-              <p className="text-ink-4 text-[13px] mt-1">Tap + to add your first one.</p>
+              <p className="text-body text-ink-3">No transactions yet.</p>
+              <p className="text-label text-ink-4 mt-1">Tap + to add your first one.</p>
             </div>
           ) : (
             <div className="list-card">

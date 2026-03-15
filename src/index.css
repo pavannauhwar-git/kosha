@@ -44,11 +44,11 @@
   }
 
   /* -- Cards ───────────────────────────────────────────────────────── */
-  .card       { @apply bg-kosha-surface rounded-card shadow-card; }
-  .card-md    { @apply bg-kosha-surface rounded-card shadow-card-md; }
-  .card-inset { @apply bg-kosha-surface-2 rounded-card; }
-  .card-urgent{ @apply bg-kosha-surface rounded-card shadow-urgent; }
-  .card-warn  { @apply bg-kosha-surface rounded-card shadow-warn; }
+  .card        { @apply bg-kosha-surface rounded-card shadow-card; }
+  .card-md     { @apply bg-kosha-surface rounded-card shadow-card-md; }
+  .card-inset  { @apply bg-kosha-surface-2 rounded-card; }
+  .card-urgent { @apply bg-kosha-surface rounded-card shadow-urgent; }
+  .card-warn   { @apply bg-kosha-surface rounded-card shadow-warn; }
 
   /* -- Skeleton loader ──────────────────────────────────────────────── */
   .skeleton {
@@ -66,9 +66,11 @@
     border-top: 0.5px solid #E5E5EA;
   }
 
-  /* -- Section label — iOS style ───────────────────────────────────── */
+  /* -- Section label ───────────────────────────────────────────────── */
+  /* Previously text-[13px] — now uses the named label token (14px).   */
+  /* Slightly larger makes it read as a deliberate heading, not noise.  */
   .section-label {
-    @apply text-[13px] font-semibold text-ink-3 tracking-tight;
+    @apply text-label font-semibold text-ink-3 tracking-tight;
   }
 
   /* -- Type chips ──────────────────────────────────────────────────── */
@@ -182,11 +184,13 @@
   }
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
-  .page { @apply min-h-dvh pb-36 pt-4 px-4; }
+  /* pt-4 → pt-6: more breathing room at the top of every page.        */
+  .page { @apply min-h-dvh pb-36 pt-6 px-4; }
 
   /* -- Progress bars ───────────────────────────────────────────────── */
+  /* h-2.5 → h-2: thinner bars feel lighter, less visually dominant.   */
   .bar-dark-track {
-    @apply h-2.5 rounded-pill w-full relative overflow-hidden;
+    @apply h-2 rounded-pill w-full relative overflow-hidden;
     background: rgba(255,255,255,0.20);
   }
   .bar-dark-fill {
@@ -195,7 +199,7 @@
     transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
   }
   .bar-light-track {
-    @apply h-2.5 rounded-pill w-full relative overflow-hidden;
+    @apply h-2 rounded-pill w-full relative overflow-hidden;
     background: #E5E5EA;
   }
   .bar-light-fill {
