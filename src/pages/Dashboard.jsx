@@ -71,6 +71,46 @@ function ProfileMenu({ profile, user, onSignOut }) {
   )
 }
 
+// ── Savings rate ring — pure SVG arc, no recharts dep ────────────────────
+function SavingsRing({ rate }) {
+  const size  = 64
+  const sw    = 6            // stroke-width
+  const r     = (size - sw * 2) / 2
+  const cx    = size / 2
+  const cy    = size / 2
+  const circ  = 2 * Math.PI * r
+  const dash  = (Math.min(Math.max(rate, 0), 100) / 100) * circ
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {/* Track */}
+      <circle cx={cx} cy={cy} r={r}
+        fill="none" stroke="#D6ECC4" strokeWidth={sw} />
+      {/* Filled arc */}
+      <circle cx={cx} cy={cy} r={r}
+        fill="none" stroke="#163300" strokeWidth={sw}
+        strokeDasharray={`${dash} ${circ}`}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${cx} ${cy})`}
+        style={{ transition:'stroke-dasharray 0.8s cubic-bezier(0.4,0,0.2,1)' }}
+      />
+      {/* Center label */}
+      <text x={cx} y={cy - 5}
+        textAnchor="middle" dominantBaseline="central"
+        style={{ fontSize:14, fontWeight:700, fill:'#163300',
+                 fontFamily:'Plus Jakarta Sans, system-ui' }}>
+        {rate}%
+      </text>
+      <text x={cx} y={cy + 9}
+        textAnchor="middle"
+        style={{ fontSize:9, fill:'#7A8F6E',
+                 fontFamily:'Plus Jakarta Sans, system-ui' }}>
+        saved
+      </text>
+    </svg>
+  )
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const now      = new Date()
@@ -262,11 +302,15 @@ export default function Dashboard() {
         <motion.div variants={fadeUp}>
           <p className="section-label mb-3">Spending Pulse</p>
           <div className="card p-4">
+            {/* Header row — status + day counter on left, savings ring on right */}
             <div className="flex items-center justify-between mb-4">
-              <span className={`text-label font-bold ${onTrack ? 'text-income-text' : 'text-expense-text'}`}>
-                {onTrack ? `✓ On track` : `↑ ${paceGap}% ahead of pace`}
-              </span>
-              <span className="text-caption text-ink-3">Day {dayOfMonth} of {daysInMonth}</span>
+              <div>
+                <span className={`text-label font-bold block ${onTrack ? 'text-income-text' : 'text-expense-text'}`}>
+                  {onTrack ? `✓ On track` : `↑ ${paceGap}% ahead of pace`}
+                </span>
+                <span className="text-caption text-ink-3">Day {dayOfMonth} of {daysInMonth}</span>
+              </div>
+              <SavingsRing rate={rate} />
             </div>
 
             {/* Month elapsed */}

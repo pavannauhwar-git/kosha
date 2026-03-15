@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { PieChart, Pie, Cell } from 'recharts'
 import { useMonthSummary } from '../hooks/useTransactions'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, savingsRate } from '../lib/utils'
@@ -150,58 +151,66 @@ export default function Monthly() {
         >
 
           {/* ── Budget Breakdown ──────────────────────────────────────── */}
+          {earned > 0 && (
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="section-label">Budget Breakdown</p>
               <span className="text-caption text-ink-3">{fmt(earned)} earned</span>
             </div>
 
-            {/* Segmented proportion bar */}
-            <div className="flex rounded-pill overflow-hidden h-2 mb-5" style={{ gap:2 }}>
-              <motion.div
-                className="h-full bg-expense-text"
-                style={{ borderRadius:'9999px 0 0 9999px' }}
-                initial={{ width:'0%' }} animate={{ width:`${spentPct}%` }}
-                transition={{ duration:0.7, ease:'easeOut' }}
-              />
-              <motion.div
-                className="h-full bg-invest-text"
-                initial={{ width:'0%' }} animate={{ width:`${investedPct}%` }}
-                transition={{ duration:0.7, ease:'easeOut', delay:0.1 }}
-              />
-              <motion.div
-                className="h-full bg-brand flex-1"
-                style={{ borderRadius:'0 9999px 9999px 0' }}
-                initial={{ opacity:0 }} animate={{ opacity:1 }}
-                transition={{ duration:0.5, delay:0.3 }}
-              />
-            </div>
+            {/* Donut + rows side-by-side (same pattern as portfolio donut) */}
+            <div className="flex gap-4 items-start">
 
-            {/* Breakdown rows — dot · label · thin bar · % · amount */}
-            <div className="space-y-3">
-              {[
-                { label:'Spent',    val:spent,    pct:spentPct,    dot:'bg-expense-text', textCls:'text-expense-text' },
-                { label:'Invested', val:invested, pct:investedPct, dot:'bg-invest-text',  textCls:'text-invest-text'  },
-                { label:'Saved',    val:saved,    pct:savedPct,    dot:'bg-brand',        textCls:'text-income-text'  },
-              ].map(s => (
-                <div key={s.label} className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
-                  <span className="text-caption text-ink-3 w-14">{s.label}</span>
-                  <div className="flex-1 h-[5px] bg-kosha-border rounded-pill overflow-hidden">
-                    <motion.div
-                      className={`h-full rounded-pill ${s.dot}`}
-                      initial={{ width:'0%' }} animate={{ width:`${s.pct}%` }}
-                      transition={{ duration:0.6, ease:'easeOut' }}
-                    />
-                  </div>
-                  <span className={`text-caption font-bold w-8 text-right tabular-nums ${s.textCls}`}>
-                    {s.pct}%
+              {/* Donut */}
+              <div className="relative shrink-0" style={{ width:110, height:110 }}>
+                <PieChart width={110} height={110}>
+                  <Pie
+                    data={[
+                      { name:'Spent',    value: spent    || 0.001 },
+                      { name:'Invested', value: invested || 0     },
+                      { name:'Saved',    value: saved    || 0     },
+                    ].filter(d => d.value > 0)}
+                    cx={55} cy={55}
+                    innerRadius={36} outerRadius={52}
+                    dataKey="value"
+                    strokeWidth={0}
+                    paddingAngle={2}
+                  >
+                    <Cell fill="#D42B3A" />
+                    <Cell fill="#1A5C45" />
+                    <Cell fill="#163300" />
+                  </Pie>
+                </PieChart>
+                {/* Center: saved % */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span style={{ fontSize:15, fontWeight:700, color:'#163300',
+                                 fontFamily:'Plus Jakarta Sans, system-ui', lineHeight:1.1 }}>
+                    {savedPct}%
                   </span>
-                  <span className="text-caption text-ink-3 w-24 text-right tabular-nums">
-                    {fmt(s.val)}
+                  <span style={{ fontSize:9, color:'#7A8F6E',
+                                 fontFamily:'Plus Jakarta Sans, system-ui' }}>
+                    saved
                   </span>
                 </div>
-              ))}
+              </div>
+
+              {/* Breakdown rows */}
+              <div className="flex-1 space-y-3 pt-1">
+                {[
+                  { label:'Spent',    val:spent,    pct:spentPct,    dot:'#D42B3A', textCls:'text-expense-text' },
+                  { label:'Invested', val:invested, pct:investedPct, dot:'#1A5C45', textCls:'text-invest-text'  },
+                  { label:'Saved',    val:saved,    pct:savedPct,    dot:'#163300', textCls:'text-income-text'  },
+                ].map(s => (
+                  <div key={s.label}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background:s.dot }} />
+                      <span className="text-caption text-ink-3 flex-1">{s.label}</span>
+                      <span className={`text-caption font-bold tabular-nums ${s.textCls}`}>{s.pct}%</span>
+                    </div>
+                    <p className="text-caption text-ink-3 tabular-nums pl-4">{fmt(s.val)}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Income total + repaid */}
@@ -218,6 +227,7 @@ export default function Monthly() {
               )}
             </div>
           </div>
+          )}
 
           {/* ── Spent by Category — bubbles + % of total spend ────────── */}
           {catEntries.length > 0 && (

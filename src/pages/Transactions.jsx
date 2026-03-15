@@ -52,6 +52,10 @@ export default function Transactions() {
     return s
   }, 0)
 
+  // Summary strip totals
+  const incomeTotal  = data.filter(t => t.type === 'income').reduce((s, t) => s + +t.amount, 0)
+  const outTotal     = data.filter(t => t.type !== 'income').reduce((s, t) => s + +t.amount, 0)
+
   // Active filter count for filter button badge
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
@@ -82,6 +86,26 @@ export default function Transactions() {
           </button>
         )}
       </div>
+
+      {/* ── Income / Out / Net summary strip ─────────────────────────── */}
+      {data.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="bg-income-bg rounded-card p-3">
+            <p className="text-[10px] font-semibold text-income-text uppercase tracking-wider mb-1">In</p>
+            <p className="text-[13px] font-bold text-income-text tabular-nums leading-none">{fmt(incomeTotal)}</p>
+          </div>
+          <div className="bg-expense-bg rounded-card p-3">
+            <p className="text-[10px] font-semibold text-expense-text uppercase tracking-wider mb-1">Out</p>
+            <p className="text-[13px] font-bold text-expense-text tabular-nums leading-none">{fmt(outTotal)}</p>
+          </div>
+          <div className={`rounded-card p-3 ${total >= 0 ? 'bg-income-bg' : 'bg-expense-bg'}`}>
+            <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${total >= 0 ? 'text-income-text' : 'text-expense-text'}`}>Net</p>
+            <p className={`text-[13px] font-bold tabular-nums leading-none ${total >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+              {total >= 0 ? '+' : ''}{fmt(total)}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Search + filter button ────────────────────────────────────── */}
       <div className="flex gap-2 mb-3">
@@ -201,16 +225,6 @@ export default function Transactions() {
           )
         })}
       </div>
-
-      {/* ── Net footer ───────────────────────────────────────────────── */}
-      {data.length > 0 && (
-        <div className="card mt-3 px-4 py-3 flex justify-between items-center">
-          <span className="text-caption text-ink-3">{data.length} transactions</span>
-          <span className={`text-label font-semibold ${total >= 0 ? 'amt-income' : 'amt-expense'}`}>
-            Net {fmt(Math.abs(total))}
-          </span>
-        </div>
-      )}
 
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>

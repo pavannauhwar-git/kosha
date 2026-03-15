@@ -206,10 +206,11 @@
   /* -- Bottom sheet ────────────────────────────────────────────────── */
   .sheet-backdrop {
     @apply fixed inset-0 z-40 animate-fade-in;
-    background: rgba(0, 0, 0, 0.45);
-    /* Reduced blur — visually near-identical, meaningfully cheaper     */
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.50);
+    /* backdrop-filter intentionally removed — GPU compositing layer
+       created by backdrop-filter leaves a "ghost blur" on the page
+       after AnimatePresence exit on Chromium and WebKit. The solid
+       semi-opaque overlay is sufficient and has no side effects.     */
   }
 
   .sheet-panel {
