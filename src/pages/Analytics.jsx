@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import {
-  AreaChart, Area, BarChart, Bar,
+  BarChart, Bar,
   XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, Cell,
+  PieChart, Pie,
 } from 'recharts'
 import { useYearSummary } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
@@ -15,6 +16,9 @@ import { CATEGORIES } from '../lib/categories'
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
                      'Jul','Aug','Sep','Oct','Nov','Dec']
 const YEARS = [2023, 2024, 2025, 2026]
+
+// Portfolio colours — green family, darkest to lightest
+const PORTFOLIO_COLORS = ['#163300','#2B8A68','#38A169','#9FE870','#C8F5A0','#D6ECC4']
 
 // ── Tooltip ───────────────────────────────────────────────────────────────
 const AppleTooltip = ({ active, payload, label }) => {
@@ -27,15 +31,14 @@ const AppleTooltip = ({ active, payload, label }) => {
       boxShadow: '0 4px 20px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(22,51,0,0.08)',
       minWidth: 140,
     }}>
-      <p style={{ fontSize: 12, fontWeight: 600, color: '#7A8F6E',
-                  letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase' }}>
+      <p style={{ fontSize:12, fontWeight:600, color:'#7A8F6E',
+                  letterSpacing:'0.04em', marginBottom:6, textTransform:'uppercase' }}>
         {label}
       </p>
       {payload.map(p => (
-        <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between',
-                                   gap: 16, marginBottom: 3 }}>
-          <span style={{ fontSize: 13, color: '#2A3A22' }}>{p.name}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: p.color || p.fill }}>
+        <div key={p.name} style={{ display:'flex', justifyContent:'space-between', gap:16, marginBottom:3 }}>
+          <span style={{ fontSize:13, color:'#2A3A22' }}>{p.name}</span>
+          <span style={{ fontSize:13, fontWeight:700, color:p.fill || p.color }}>
             {fmt(p.value)}
           </span>
         </div>
@@ -56,15 +59,9 @@ function KpiCard({ label, value, prevValue, textCls, bg }) {
       <p className="text-label text-ink-3 font-medium mb-0.5">{label}</p>
       <p className={`text-value font-bold ${textCls} tabular-nums`}>{fmt(value)}</p>
       {diff !== null && Math.abs(diff) > 100 && (
-        <div className={`flex items-center gap-1 mt-2
-          ${up ? 'text-income-text' : 'text-expense-text'}`}>
-          {up
-            ? <TrendingUp size={11} />
-            : <TrendingDown size={11} />
-          }
-          <span className="text-caption font-semibold">
-            {fmt(Math.abs(diff))} vs prev year
-          </span>
+        <div className={`flex items-center gap-1 mt-2 ${up ? 'text-income-text' : 'text-expense-text'}`}>
+          {up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+          <span className="text-caption font-semibold">{fmt(Math.abs(diff))} vs prev year</span>
         </div>
       )}
     </div>
@@ -76,10 +73,7 @@ function TrendPill({ current, previous, label }) {
   if (!previous || previous === 0) return null
   const pct  = Math.round(((current - previous) / previous) * 100)
   const up   = pct > 0
-  const same = Math.abs(pct) < 3
-  if (same) return (
-    <span className="chip-neutral">≈ Stable {label}</span>
-  )
+  if (Math.abs(pct) < 3) return <span className="chip-neutral">≈ Stable {label}</span>
   return (
     <span className={`text-caption font-semibold px-2.5 py-1 rounded-full
       ${up ? 'bg-expense-bg text-expense-text' : 'bg-income-bg text-income-text'}`}>
@@ -88,8 +82,8 @@ function TrendPill({ current, previous, label }) {
   )
 }
 
-// ── Year-over-year table ──────────────────────────────────────────────────
-function YoYTable({ years, currentYear }) {
+// ── Year-over-year CARDS (replaces scrollable table) ─────────────────────
+function YoYCards({ years, currentYear }) {
   const [allData, setAllData] = useState({})
 
   useEffect(() => {
@@ -113,48 +107,121 @@ function YoYTable({ years, currentYear }) {
   if (yearsWithData.length < 2) return null
 
   return (
+    <div className="space-y-3">
+      <p className="section-label">Year over Year</p>
+      {yearsWithData.map((y, idx) => {
+        const d    = allData[y]
+        const prev = allData[yearsWithData[idx - 1]]
+        const isCurrent = y === currentYear
+
+        function delta(curr, prv) {
+          if (!prv || prv === 0) return null
+          return Math.round(((curr - prv) / prv) * 100)
+        }
+
+        return (
+          <div key={y}
+            className={`card p-4 ${isCurrent ? 'border-brand' : ''}`}
+            style={isCurrent ? { borderWidth:'1.5px' } : {}}
+          >
+            {/* Year label + badge */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`text-label font-bold ${isCurrent ? 'text-ink' : 'text-ink-3'}`}>
+                {y}
+              </span>
+              {isCurrent && (
+                <span className="text-[10px] font-semibold bg-brand-container text-brand-on
+                                 px-2 py-0.5 rounded-pill">
+                  This year
+                </span>
+              )}
+            </div>
+
+            {/* 4-stat grid */}
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label:'Earned',   key:'income', cls: isCurrent ? 'text-income-text' : 'text-ink-3' },
+                { label:'Spent',    key:'spent',  cls: isCurrent ? 'text-expense-text': 'text-ink-3' },
+                { label:'Invested', key:'invest', cls: isCurrent ? 'text-invest-text' : 'text-ink-3' },
+                { label:'Saved',    key:'rate',   cls: isCurrent ? 'text-brand'        : 'text-ink-3', suffix:'%' },
+              ].map(row => {
+                const val   = d?.[row.key] ?? 0
+                const prevV = prev?.[row.key]
+                const d2    = delta(val, prevV)
+                return (
+                  <div key={row.key}>
+                    <p className="text-[10px] text-ink-3 mb-1">{row.label}</p>
+                    <p className={`text-[13px] font-bold tabular-nums ${row.cls}`}>
+                      {row.suffix ? `${val}%` : fmt(val, true)}
+                    </p>
+                    {isCurrent && d2 !== null && (
+                      <p className={`text-[10px] font-semibold mt-0.5 ${d2 > 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                        {d2 > 0 ? '↑' : '↓'} {Math.abs(d2)}%
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Portfolio donut ───────────────────────────────────────────────────────
+function PortfolioDonut({ vehicleData }) {
+  const total    = vehicleData.reduce((s, [, v]) => s + v, 0) || 1
+  const pieData  = vehicleData.map(([name, value]) => ({ name, value }))
+
+  return (
     <div className="card p-5">
-      <p className="section-label mb-4">Year over Year</p>
-      <div className="overflow-x-auto no-scrollbar">
-        <table className="w-full" style={{ minWidth: 320 }}>
-          <thead>
-            <tr>
-              <td className="text-caption text-ink-3 font-medium pb-3 w-20" />
-              {yearsWithData.map(y => (
-                <td key={y}
-                  className={`text-label font-bold pb-3 text-center tabular-nums
-                    ${y === currentYear ? 'text-brand' : 'text-ink'}`}>
-                  {y}
-                </td>
+      <p className="section-label mb-4">Portfolio Allocation</p>
+      <div className="flex items-center gap-4">
+        {/* Donut */}
+        <div className="relative shrink-0" style={{ width:130, height:130 }}>
+          <PieChart width={130} height={130}>
+            <Pie
+              data={pieData}
+              cx={65} cy={65}
+              innerRadius={42} outerRadius={60}
+              dataKey="value"
+              strokeWidth={0}
+              paddingAngle={2}
+            >
+              {pieData.map((_, i) => (
+                <Cell key={i} fill={PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length]} />
               ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-kosha-border">
-            {[
-              { label: 'Earned',   key: 'income',  cls: 'text-income-text'  },
-              { label: 'Spent',    key: 'spent',   cls: 'text-expense-text' },
-              { label: 'Invested', key: 'invest',  cls: 'text-invest-text'  },
-              { label: 'Savings',  key: 'rate',    cls: 'text-brand', suffix: '%' },
-            ].map(row => (
-              <tr key={row.key}>
-                <td className="text-label text-ink-2 py-3 font-medium">{row.label}</td>
-                {yearsWithData.map(y => {
-                  const val = allData[y]?.[row.key] ?? '—'
-                  const display = val === '—' ? '—'
-                    : row.suffix ? `${val}%`
-                    : fmt(val)
-                  return (
-                    <td key={y}
-                      className={`text-label font-semibold py-3 text-center tabular-nums
-                        ${y === currentYear ? row.cls : 'text-ink-2'}`}>
-                      {display}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </Pie>
+          </PieChart>
+          {/* Center label */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-[12px] font-bold text-ink tabular-nums">{fmt(total, true)}</span>
+            <span className="text-[10px] text-ink-3">total</span>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex-1 space-y-0 min-w-0">
+          {vehicleData.map(([vehicle, amt], i) => {
+            const pct = Math.round((amt / total) * 100)
+            return (
+              <div key={vehicle}
+                className={`flex items-center gap-2 py-2
+                  ${i < vehicleData.length - 1 ? 'border-b border-kosha-border' : ''}`}
+              >
+                <div className="w-2.5 h-2.5 rounded-full shrink-0"
+                     style={{ background: PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length] }} />
+                <span className="text-caption text-ink font-medium flex-1 truncate">{vehicle}</span>
+                <span className="text-caption text-ink-3 w-7 text-right">{pct}%</span>
+                <span className="text-caption font-semibold text-ink tabular-nums w-16 text-right">
+                  {fmt(amt, true)}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -184,17 +251,16 @@ export default function Analytics() {
     loadTop5()
   }, [year])
 
+  // Grouped bar chart — Income vs Spent side by side, no area overlap
   const chartData = (data?.monthly || [])
     .map((m, i) => ({
       name:   MONTH_SHORT[i],
       Income: Math.round(m.income),
       Spent:  Math.round(m.expense),
-      Invest: Math.round(m.investment),
     }))
-    .filter(m => m.Income > 0 || m.Spent > 0 || m.Invest > 0)
+    .filter(m => m.Income > 0 || m.Spent > 0)
 
-  const curveType = chartData.length <= 4 ? 'linear' : 'monotone'
-  const chartH    = chartData.length <= 4 ? 140 : 180
+  const chartH = chartData.length <= 4 ? 140 : 180
 
   const netData = (data?.monthly || [])
     .map((m, i) => ({
@@ -215,7 +281,6 @@ export default function Analytics() {
   const totalCatSpend = catData.reduce((s, c) => s + c.val, 0)
 
   const vehicleData = Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1])
-  const maxVehicle  = vehicleData[0]?.[1] || 1
 
   const recentMonths = (data?.monthly || []).filter(m => m.expense > 0)
   const lastTwo      = recentMonths.slice(-2)
@@ -226,7 +291,7 @@ export default function Analytics() {
   return (
     <div className="page">
 
-      {/* ── Year navigator ──────────────────────────────────────────── */}
+      {/* ── Year navigator ────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pt-2">
         <button onClick={() => setYear(y => y - 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
@@ -247,99 +312,62 @@ export default function Analytics() {
         </div>
       ) : (
         <motion.div key={year}
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
+          initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }}
+          transition={{ duration:0.25 }}
           className="space-y-6"
         >
 
           {/* ── 1. Annual KPIs ──────────────────────────────────────── */}
           <div className="grid grid-cols-2 gap-3">
             <KpiCard label="Total Earned"
-              value={data?.totalIncome || 0}
-              prevValue={prevData?.totalIncome}
+              value={data?.totalIncome || 0} prevValue={prevData?.totalIncome}
               textCls="text-income-text" bg="bg-income-bg" />
             <KpiCard label="Total Spent"
-              value={data?.totalExpense || 0}
-              prevValue={prevData?.totalExpense}
+              value={data?.totalExpense || 0} prevValue={prevData?.totalExpense}
               textCls="text-expense-text" bg="bg-expense-bg" />
             <KpiCard label="Total Invested"
-              value={data?.totalInvestment || 0}
-              prevValue={prevData?.totalInvestment}
+              value={data?.totalInvestment || 0} prevValue={prevData?.totalInvestment}
               textCls="text-invest-text" bg="bg-invest-bg" />
             <div className="card p-4">
-              <div className="w-8 h-8 rounded-lg bg-brand-container
-                              flex items-center justify-center mb-3">
+              <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center mb-3">
                 <span className="text-label font-bold text-brand-on">%</span>
               </div>
               <p className="text-label text-ink-3 font-medium mb-0.5">Avg Savings Rate</p>
-              <p className="text-value font-bold text-brand tabular-nums">
-                {data?.avgSavings || 0}%
-              </p>
+              <p className="text-value font-bold text-brand tabular-nums">{data?.avgSavings || 0}%</p>
               {spendTrend && (
                 <div className="mt-2">
-                  <TrendPill
-                    current={spendTrend.current}
-                    previous={spendTrend.previous}
-                    label="spend"
-                  />
+                  <TrendPill current={spendTrend.current} previous={spendTrend.previous} label="spend" />
                 </div>
               )}
             </div>
           </div>
 
-          {/* ── 2. Monthly Cash Flow ─────────────────────────────────── */}
-          {/* Invest line: #6C47FF violet → #2B8A68 forest green          */}
+          {/* ── 2. Monthly Cash Flow — grouped bars ─────────────────── */}
           {chartData.length > 0 && (
             <div className="card p-5">
               <div className="flex items-center justify-between mb-4">
                 <p className="section-label">Monthly Cash Flow</p>
                 <span className="text-caption text-ink-3">{chartData.length} months</span>
               </div>
-
               <ResponsiveContainer width="100%" height={chartH}>
-                <AreaChart data={chartData}
-                  margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="gIncome" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#38A169" stopOpacity={0.22} />
-                      <stop offset="100%" stopColor="#38A169" stopOpacity={0.02} />
-                    </linearGradient>
-                    <linearGradient id="gSpent" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#FF4757" stopOpacity={0.20} />
-                      <stop offset="100%" stopColor="#FF4757" stopOpacity={0.02} />
-                    </linearGradient>
-                    <linearGradient id="gInvest" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2B8A68" stopOpacity={0.20} />
-                      <stop offset="100%" stopColor="#2B8A68" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
+                <BarChart data={chartData}
+                  barCategoryGap="25%" barGap={3}
+                  margin={{ top:4, right:4, left:4, bottom:0 }}>
                   <XAxis dataKey="name"
-                    tick={{ fontSize: 12, fill: '#7A8F6E', fontWeight: 500 }}
+                    tick={{ fontSize:12, fill:'#7A8F6E', fontWeight:500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
                   <Tooltip content={<AppleTooltip />}
-                    cursor={{ stroke: '#D6ECC4', strokeWidth: 1, strokeDasharray: '4 2' }}
-                  />
-                  <Area type={curveType} dataKey="Income"
-                    stroke="#38A169" strokeWidth={2} fill="url(#gIncome)"
-                    dot={false} activeDot={{ r: 4, fill: '#38A169', strokeWidth: 0 }}
-                  />
-                  <Area type={curveType} dataKey="Invest"
-                    stroke="#2B8A68" strokeWidth={2} fill="url(#gInvest)"
-                    dot={false} activeDot={{ r: 4, fill: '#2B8A68', strokeWidth: 0 }}
-                  />
-                  <Area type={curveType} dataKey="Spent"
-                    stroke="#FF4757" strokeWidth={2} fill="url(#gSpent)"
-                    dot={false} activeDot={{ r: 4, fill: '#FF4757', strokeWidth: 0 }}
-                  />
-                </AreaChart>
+                    cursor={{ fill:'rgba(22,51,0,0.04)' }} />
+                  <Bar dataKey="Income" fill="#38A169" radius={[4,4,0,0]} maxBarSize={32} />
+                  <Bar dataKey="Spent"  fill="#FF4757" fillOpacity={0.85} radius={[4,4,0,0]} maxBarSize={32} />
+                </BarChart>
               </ResponsiveContainer>
-
               <div className="flex justify-center gap-5 mt-4">
-                {[['Income', '#38A169'], ['Invest', '#2B8A68'], ['Spent', '#FF4757']].map(([l, c]) => (
+                {[['Income','#38A169'],['Spent','#FF4757']].map(([l,c]) => (
                   <div key={l} className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{ background: c }} />
+                    <div className="w-2 h-2 rounded-full" style={{ background:c }} />
                     <span className="text-caption text-ink-2 font-medium">{l}</span>
                   </div>
                 ))}
@@ -347,32 +375,23 @@ export default function Analytics() {
             </div>
           )}
 
-          {/* ── 3. Net Savings per month ─────────────────────────────── */}
+          {/* ── 3. Net Savings ──────────────────────────────────────── */}
           {netData.length > 0 && (
             <div className="card p-5">
               <p className="section-label">Net Savings</p>
-              <p className="text-caption text-ink-3 mb-4 mt-0.5">
-                After expenses &amp; investments
-              </p>
+              <p className="text-caption text-ink-3 mb-4 mt-0.5">After expenses &amp; investments</p>
               <ResponsiveContainer width="100%" height={120}>
-                <BarChart data={netData}
-                  margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                <BarChart data={netData} margin={{ top:4, right:4, left:4, bottom:0 }}>
                   <XAxis dataKey="name"
-                    tick={{ fontSize: 12, fill: '#7A8F6E', fontWeight: 500 }}
+                    tick={{ fontSize:12, fill:'#7A8F6E', fontWeight:500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
-                  <Tooltip content={<AppleTooltip />}
-                    cursor={{ fill: 'rgba(22,51,0,0.04)' }}
-                  />
+                  <Tooltip content={<AppleTooltip />} cursor={{ fill:'rgba(22,51,0,0.04)' }} />
                   <ReferenceLine y={0} stroke="#D6ECC4" strokeWidth={1} />
-                  <Bar dataKey="Net" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                  <Bar dataKey="Net" radius={[4,4,0,0]} maxBarSize={32}>
                     {netData.map((entry, i) => (
-                      <Cell
-                        key={i}
-                        fill={entry.Net >= 0 ? '#38A169' : '#FF4757'}
-                        fillOpacity={0.85}
-                      />
+                      <Cell key={i} fill={entry.Net >= 0 ? '#38A169' : '#FF4757'} fillOpacity={0.85} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -380,8 +399,8 @@ export default function Analytics() {
             </div>
           )}
 
-          {/* ── 4. Year over Year ────────────────────────────────────── */}
-          <YoYTable years={yoyYears} currentYear={year} />
+          {/* ── 4. Year-over-year stacked cards ─────────────────────── */}
+          <YoYCards years={yoyYears} currentYear={year} />
 
           {/* ── 5. Top 5 expenses ────────────────────────────────────── */}
           {top5.length > 0 && (
@@ -393,15 +412,12 @@ export default function Analytics() {
                     className={`flex items-center gap-3 py-3.5 px-1
                       ${i < top5.length - 1 ? 'border-b border-kosha-border' : ''}`}
                   >
-                    <div className="w-6 h-6 rounded-full bg-kosha-surface-2 flex items-center
-                                    justify-center shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-kosha-surface-2 flex items-center justify-center shrink-0">
                       <span className="text-caption font-bold text-ink-3">{i + 1}</span>
                     </div>
                     <CategoryIcon categoryId={t.category} size={14} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-label font-medium text-ink truncate">
-                        {t.description}
-                      </p>
+                      <p className="text-label font-medium text-ink truncate">{t.description}</p>
                       <p className="text-caption text-ink-3">{fmtDate(t.date)}</p>
                     </div>
                     <span className="text-label font-bold text-expense-text tabular-nums shrink-0">
@@ -424,19 +440,14 @@ export default function Analytics() {
                     <div key={cat.id}>
                       <div className="flex items-center gap-2 mb-2">
                         <CategoryIcon categoryId={cat.id} size={14} />
-                        <span className="text-label text-ink font-medium flex-1 truncate">
-                          {cat.name}
-                        </span>
+                        <span className="text-label text-ink font-medium flex-1 truncate">{cat.name}</span>
                         <span className="text-caption text-ink-3 tabular-nums">{pct}%</span>
-                        <span className="text-label font-semibold text-ink tabular-nums">
-                          {fmt(cat.val)}
-                        </span>
+                        <span className="text-label font-semibold text-ink tabular-nums">{fmt(cat.val)}</span>
                       </div>
                       <div className="bar-light-track">
                         <motion.div className="bar-light-fill"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${pct}%` }}
-                          transition={{ duration: 0.6, ease: 'easeOut' }}
+                          initial={{ width:0 }} animate={{ width:`${pct}%` }}
+                          transition={{ duration:0.6, ease:'easeOut' }}
                         />
                       </div>
                     </div>
@@ -446,30 +457,9 @@ export default function Analytics() {
             </div>
           )}
 
-          {/* ── 7. Investment Portfolio ──────────────────────────────── */}
+          {/* ── 7. Portfolio donut ───────────────────────────────────── */}
           {vehicleData.length > 0 && (
-            <div className="card p-5">
-              <p className="section-label mb-4">Investment Portfolio</p>
-              <div className="space-y-4">
-                {vehicleData.map(([vehicle, amt]) => (
-                  <div key={vehicle}>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-label font-medium text-ink">{vehicle}</span>
-                      <span className="text-label font-bold text-invest-text tabular-nums">
-                        {fmt(amt)}
-                      </span>
-                    </div>
-                    <div className="bar-light-track">
-                      <motion.div className="bar-light-fill"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(amt / maxVehicle) * 100}%` }}
-                        transition={{ duration: 0.6, ease: 'easeOut' }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <PortfolioDonut vehicleData={vehicleData} />
           )}
 
           {!data?.totalIncome && !data?.totalExpense && (

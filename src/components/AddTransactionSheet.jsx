@@ -12,22 +12,23 @@ const TYPES = [
 ]
 
 const PAYMENT_MODES = [
-  { id:'upi',   label:'UPI'   },
-  { id:'card',  label:'Card'  },
-  { id:'cash',  label:'Cash'  },
-  { id:'bank',  label:'Bank Transfer' },
-  { id:'other', label:'Other' },
+  { id:'upi',         label:'UPI'         },
+  { id:'credit_card', label:'Credit Card' },
+  { id:'debit_card',  label:'Debit Card'  },
+  { id:'cash',        label:'Cash'        },
+  { id:'net_banking', label:'Net Banking' },
+  { id:'other',       label:'Other'       },
 ]
 
 const INVESTMENT_VEHICLES = [
-  'Mutual Fund','Stocks','Fixed Deposit','PPF','NPS','Gold','Real Estate','Crypto','Other',
+  'ESOPs','Adobe ESPP','PPF','NPS','Zerodha','Indriya',
+  'HSBC','Gold','SGB','Term Plan','CBI','Mutual Fund','Other',
 ]
 
 function todayStr() {
   return new Date().toISOString().split('T')[0]
 }
 
-// ── Category picker ────────────────────────────────────────────────────────
 function CategoryPicker({ selected, onSelect, onClose }) {
   return (
     <>
@@ -45,24 +46,15 @@ function CategoryPicker({ selected, onSelect, onClose }) {
         <div className="sheet-handle" />
         <div className="flex items-center justify-between px-5 mb-4">
           <h3 className="text-[17px] font-semibold text-ink">Category</h3>
-          <button onClick={onClose} className="close-btn">
-            <X size={16} className="text-ink-3" />
-          </button>
+          <button onClick={onClose} className="close-btn"><X size={16} className="text-ink-3" /></button>
         </div>
         <div className="list-card mx-4 overflow-y-auto max-h-[55vh]">
           {CATEGORIES.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => { onSelect(cat.id); onClose() }}
-              className={`list-row w-full text-left ${selected === cat.id ? 'bg-brand-container' : ''}`}
-            >
+            <button key={cat.id} onClick={() => { onSelect(cat.id); onClose() }}
+              className={`list-row w-full text-left ${selected === cat.id ? 'bg-brand-container' : ''}`}>
               <CategoryIcon categoryId={cat.id} size={16} />
-              <span className={`flex-1 text-[15px] ${selected === cat.id ? 'text-brand font-medium' : 'text-ink'}`}>
-                {cat.label}
-              </span>
-              {selected === cat.id && (
-                <span className="text-brand text-lg">✓</span>
-              )}
+              <span className={`flex-1 text-[15px] ${selected === cat.id ? 'text-brand font-medium' : 'text-ink'}`}>{cat.label}</span>
+              {selected === cat.id && <span className="text-brand text-lg">✓</span>}
             </button>
           ))}
         </div>
@@ -72,7 +64,6 @@ function CategoryPicker({ selected, onSelect, onClose }) {
   )
 }
 
-// ── Payment mode picker ────────────────────────────────────────────────────
 function ModePicker({ selected, onSelect, onClose }) {
   return (
     <>
@@ -90,20 +81,13 @@ function ModePicker({ selected, onSelect, onClose }) {
         <div className="sheet-handle" />
         <div className="flex items-center justify-between px-5 mb-4">
           <h3 className="text-[17px] font-semibold text-ink">Payment Mode</h3>
-          <button onClick={onClose} className="close-btn">
-            <X size={16} className="text-ink-3" />
-          </button>
+          <button onClick={onClose} className="close-btn"><X size={16} className="text-ink-3" /></button>
         </div>
         <div className="list-card mx-4">
           {PAYMENT_MODES.map(m => (
-            <button
-              key={m.id}
-              onClick={() => { onSelect(m.id); onClose() }}
-              className={`list-row w-full text-left ${selected === m.id ? 'bg-brand-container' : ''}`}
-            >
-              <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>
-                {m.label}
-              </span>
+            <button key={m.id} onClick={() => { onSelect(m.id); onClose() }}
+              className={`list-row w-full text-left ${selected === m.id ? 'bg-brand-container' : ''}`}>
+              <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>{m.label}</span>
               {selected === m.id && <span className="text-brand text-lg">✓</span>}
             </button>
           ))}
@@ -113,7 +97,6 @@ function ModePicker({ selected, onSelect, onClose }) {
   )
 }
 
-// ── Investment vehicle picker ──────────────────────────────────────────────
 function VehiclePicker({ selected, onSelect, onClose }) {
   return (
     <>
@@ -131,20 +114,13 @@ function VehiclePicker({ selected, onSelect, onClose }) {
         <div className="sheet-handle" />
         <div className="flex items-center justify-between px-5 mb-4">
           <h3 className="text-[17px] font-semibold text-ink">Investment Type</h3>
-          <button onClick={onClose} className="close-btn">
-            <X size={16} className="text-ink-3" />
-          </button>
+          <button onClick={onClose} className="close-btn"><X size={16} className="text-ink-3" /></button>
         </div>
         <div className="list-card mx-4">
           {INVESTMENT_VEHICLES.map(v => (
-            <button
-              key={v}
-              onClick={() => { onSelect(v); onClose() }}
-              className={`list-row w-full text-left ${selected === v ? 'bg-brand-container' : ''}`}
-            >
-              <span className={`flex-1 text-[15px] ${selected === v ? 'text-brand font-medium' : 'text-ink'}`}>
-                {v}
-              </span>
+            <button key={v} onClick={() => { onSelect(v); onClose() }}
+              className={`list-row w-full text-left ${selected === v ? 'bg-brand-container' : ''}`}>
+              <span className={`flex-1 text-[15px] ${selected === v ? 'text-brand font-medium' : 'text-ink'}`}>{v}</span>
               {selected === v && <span className="text-brand text-lg">✓</span>}
             </button>
           ))}
@@ -155,7 +131,7 @@ function VehiclePicker({ selected, onSelect, onClose }) {
 }
 
 // ── Main sheet ─────────────────────────────────────────────────────────────
-export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = null }) {
+export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = null, initialType = 'expense' }) {
   const [type,     setType]     = useState('expense')
   const [amount,   setAmount]   = useState('')
   const [desc,     setDesc]     = useState('')
@@ -170,7 +146,6 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
   const [showModePicker, setShowModePicker] = useState(false)
   const [showVehPicker,  setShowVehPicker]  = useState(false)
 
-  // ── FIX: no autoFocus — only focus after the sheet animation settles ──
   const amountRef = useRef(null)
 
   useEffect(() => {
@@ -183,7 +158,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
       setMode(editTxn.payment_mode || 'upi')
       setDate(editTxn.date || todayStr())
     } else {
-      setType('expense'); setAmount(''); setDesc('')
+      setType(initialType); setAmount(''); setDesc('')
       setCategory('other'); setVehicle('Other'); setMode('upi'); setDate(todayStr())
     }
     setError('')
@@ -215,9 +190,9 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
     }
   }
 
-  const activeType    = TYPES.find(t => t.id === type)
-  const selectedCat   = CATEGORIES.find(c => c.id === category)
-  const selectedMode  = PAYMENT_MODES.find(m => m.id === mode)
+  const activeType   = TYPES.find(t => t.id === type)
+  const selectedCat  = CATEGORIES.find(c => c.id === category)
+  const selectedMode = PAYMENT_MODES.find(m => m.id === mode)
 
   return (
     <AnimatePresence>
@@ -232,10 +207,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
             initial={{ y:'100%' }}
             animate={{ y:0, transition:{ type:'spring', stiffness:380, damping:32 } }}
             exit={{ y:'100%', transition:{ duration:0.22 } }}
-            // Focus the amount field only after the spring animation completes
-            onAnimationComplete={() => {
-              if (open) amountRef.current?.focus()
-            }}
+            onAnimationComplete={() => { if (open) amountRef.current?.focus() }}
           >
             <div className="sheet-handle" />
             <div className="px-4">
@@ -250,65 +222,60 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
                 </button>
               </div>
 
-              {/* Type selector */}
-              <div className="flex gap-2.5 mb-5">
+              {/* ── Type selector — iOS pill track ── */}
+              <div className="bg-kosha-surface-2 rounded-pill p-1 flex mb-5">
                 {TYPES.map(t => (
                   <button
                     key={t.id}
                     onClick={() => setType(t.id)}
-                    className={`flex-1 py-3 rounded-card text-[13px] font-semibold border-2 transition-all
-                      ${type === t.id
-                        ? `${t.bg} ${t.color} border-current`
-                        : 'bg-kosha-surface-2 text-ink-3 border-transparent'}`}
+                    className="flex-1 py-2.5 rounded-pill text-[13px] font-semibold
+                               transition-colors duration-150 relative z-0"
                   >
-                    {t.label}
+                    {type === t.id && (
+                      <motion.div
+                        layoutId="type-pill-bg"
+                        className="absolute inset-0 rounded-pill bg-kosha-surface shadow-card"
+                        transition={{ type:'spring', stiffness:400, damping:36 }}
+                      />
+                    )}
+                    <span className={`relative z-10 ${type === t.id ? activeType.color : 'text-ink-3'}`}>
+                      {t.label}
+                    </span>
                   </button>
                 ))}
               </div>
 
-              {/* Amount card */}
+              {/* Amount */}
               <div className="card mb-3 px-4 py-4 flex items-center gap-2">
                 <span className={`font-display text-2xl font-medium ${activeType.color}`}>₹</span>
                 <input
                   ref={amountRef}
                   className="flex-1 bg-transparent font-display text-4xl text-ink outline-none placeholder-ink-4"
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="0"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  // autoFocus REMOVED — keyboard was popping up before sheet finished animating
+                  type="number" inputMode="decimal" placeholder="0"
+                  value={amount} onChange={e => setAmount(e.target.value)}
                 />
               </div>
 
-              {/* Description card */}
+              {/* Description */}
               <div className="card mb-3 px-4 py-3.5">
                 <input
                   className="w-full bg-transparent text-[15px] text-ink placeholder-ink-4 outline-none"
                   placeholder="Description"
-                  value={desc}
-                  onChange={e => setDesc(e.target.value)}
+                  value={desc} onChange={e => setDesc(e.target.value)}
                 />
               </div>
 
-              {/* Options list */}
+              {/* Options */}
               <div className="list-card mb-3">
-
-                {/* Date */}
                 <label className="list-row">
                   <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
                     <Calendar size={15} className="text-brand" />
                   </div>
                   <span className="flex-1 text-[15px] text-ink">Date</span>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={e => setDate(e.target.value)}
-                    className="text-[15px] text-ink-3 bg-transparent outline-none text-right"
-                  />
+                  <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                    className="text-[15px] text-ink-3 bg-transparent outline-none text-right" />
                 </label>
 
-                {/* Category — only for non-investment */}
                 {type !== 'investment' && (
                   <button className="list-row w-full" onClick={() => setShowCatPicker(true)}>
                     <CategoryIcon categoryId={category} size={16} />
@@ -320,7 +287,6 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
                   </button>
                 )}
 
-                {/* Investment vehicle */}
                 {type === 'investment' && (
                   <button className="list-row w-full" onClick={() => setShowVehPicker(true)}>
                     <div className="w-8 h-8 rounded-chip bg-invest-bg flex items-center justify-center shrink-0">
@@ -334,7 +300,6 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
                   </button>
                 )}
 
-                {/* Payment mode */}
                 <button className="list-row w-full" onClick={() => setShowModePicker(true)}>
                   <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
                     <CreditCard size={15} className="text-brand" />
@@ -345,49 +310,27 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
                     <ChevronRight size={14} className="text-ink-4" />
                   </div>
                 </button>
-
               </div>
 
               {error && <p className="text-expense-text text-[13px] mb-3 px-1">{error}</p>}
 
-              {/* Save button */}
+              {/* Save — solid forest green */}
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className={`w-full py-4 rounded-card text-[17px] font-semibold transition-all
-                  active:scale-[0.98] disabled:opacity-60
-                  ${activeType.bg} ${activeType.color} border-2 ${activeType.border}`}
+                className="w-full py-4 rounded-card text-[17px] font-semibold bg-brand text-white
+                           active:scale-[0.98] disabled:opacity-60 transition-all"
               >
                 {saving ? 'Saving…' : editTxn ? 'Save Changes' : `Add ${activeType.label}`}
               </button>
-
               <div className="h-2" />
             </div>
           </motion.div>
 
-          {/* Sub-pickers */}
           <AnimatePresence>
-            {showCatPicker && (
-              <CategoryPicker
-                selected={category}
-                onSelect={setCategory}
-                onClose={() => setShowCatPicker(false)}
-              />
-            )}
-            {showModePicker && (
-              <ModePicker
-                selected={mode}
-                onSelect={setMode}
-                onClose={() => setShowModePicker(false)}
-              />
-            )}
-            {showVehPicker && (
-              <VehiclePicker
-                selected={vehicle}
-                onSelect={setVehicle}
-                onClose={() => setShowVehPicker(false)}
-              />
-            )}
+            {showCatPicker  && <CategoryPicker selected={category} onSelect={setCategory} onClose={() => setShowCatPicker(false)} />}
+            {showModePicker && <ModePicker     selected={mode}     onSelect={setMode}     onClose={() => setShowModePicker(false)} />}
+            {showVehPicker  && <VehiclePicker  selected={vehicle}  onSelect={setVehicle}  onClose={() => setShowVehPicker(false)} />}
           </AnimatePresence>
         </>
       )}

@@ -14,14 +14,18 @@ export default function Bills() {
   const [delId,   setDelId]   = useState(null)
   const [paying,  setPaying]  = useState(null)
 
-  // Add form state
   const [form, setForm] = useState({
     description:'', amount:'', due_date:'', is_recurring:false, recurrence:'monthly',
   })
   const [formErr, setFormErr] = useState('')
   const [saving,  setSaving]  = useState(false)
 
-  const totalPending = pending.reduce((s, b) => s + +b.amount, 0)
+  const totalPending  = pending.reduce((s, b) => s + +b.amount, 0)
+  const dueSoonAmount = pending
+    .filter(b => daysUntil(b.due_date) <= 7)
+    .reduce((s, b) => s + +b.amount, 0)
+  const dueSoonCount  = pending.filter(b => daysUntil(b.due_date) <= 7).length
+  const barPct        = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
 
   async function handleAdd() {
     if (!form.description.trim()) { setFormErr('Enter a description'); return }
@@ -59,24 +63,60 @@ export default function Bills() {
 
   return (
     <div className="page">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 pt-2">
-        <h1 className="font-display text-display text-ink">Bills & Dues</h1>
+
+      {/* ── Header ────────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between mb-4 pt-2">
+        <div>
+          <h1 className="font-display text-display text-ink">Bills &amp; Dues</h1>
+          {pending.length > 0 && (
+            <p className="text-caption text-ink-3 mt-0.5">
+              Next due in {Math.min(...pending.map(b => Math.max(0, daysUntil(b.due_date))))} days
+            </p>
+          )}
+        </div>
         <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-pill bg-brand text-white text-xs font-semibold">
+          className="flex items-center gap-1.5 px-3 py-2 rounded-pill bg-brand text-white
+                     text-xs font-semibold active:scale-95 transition-transform duration-75">
           <Plus size={14} /> Add Bill
         </button>
       </div>
 
-      {/* Total pending */}
+      {/* ── Structured summary card (replaces flat amber tint) ────────── */}
       {pending.length > 0 && (
-        <div className="card-hard-amber mb-4 px-4 py-3">
-          <p className="text-xs text-warning-text font-medium">Total Pending</p>
-          <p className="font-display text-2xl text-warning-text">{fmt(totalPending)}</p>
+        <div className="card mb-4 p-4">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-caption text-ink-3">Total pending</span>
+            <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2
+                             px-2 py-0.5 rounded-pill">
+              {pending.length} bill{pending.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <p className="text-[28px] font-bold text-ink tracking-tight tabular-nums mb-3">
+            {fmt(totalPending)}
+          </p>
+          {/* Progress bar — due-this-week proportion of total */}
+          <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-2">
+            <motion.div
+              className="h-full rounded-pill"
+              style={{ background: dueSoonCount > 0 ? '#B35A00' : '#38A169' }}
+              initial={{ width:0 }} animate={{ width:`${barPct || 100}%` }}
+              transition={{ duration:0.6, ease:'easeOut' }}
+            />
+          </div>
+          <div className="flex justify-between">
+            <span className="text-caption text-ink-3">
+              {dueSoonCount > 0
+                ? `Due this week · ${fmt(dueSoonAmount)}`
+                : 'All bills on schedule'}
+            </span>
+            {barPct > 0 && (
+              <span className="text-caption font-semibold text-warning-text">{barPct}% urgent</span>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Tabs */}
+      {/* ── Tabs ─────────────────────────────────────────────────────── */}
       <div className="flex gap-2 mb-4">
         {[
           { id:'pending', label:`Pending (${pending.length})` },
@@ -99,19 +139,41 @@ export default function Bills() {
         </div>
       ) : (
         <div className="space-y-3">
+
+          {/* ── Pending empty state — Wise-style ── */}
           {tab === 'pending' && pending.length === 0 && (
-            <div className="card p-8 text-center">
-              <p className="text-2xl mb-2">🎉</p>
-              <p className="text-ink-2 text-sm font-medium">All clear!</p>
-              <p className="text-ink-3 text-xs mt-1">No pending bills.</p>
+            <div className="card py-10 px-6 flex flex-col items-center text-center">
+              {/* Check ring — inline SVG, no emoji */}
+              <div className="w-16 h-16 rounded-full bg-income-bg flex items-center
+                              justify-center mb-4">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                  <path d="M9 16.5l5 5 9-9"
+                    stroke="#276749" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <p className="text-[17px] font-bold text-ink mb-2">You're all clear</p>
+              <p className="text-label text-ink-3 mb-5 max-w-[200px] leading-relaxed">
+                No pending bills. You're on top of your finances.
+              </p>
+              <button
+                onClick={() => setShowAdd(true)}
+                className="px-6 py-2.5 rounded-pill bg-brand text-white text-label font-semibold
+                           active:scale-95 transition-transform duration-75"
+              >
+                Add a bill
+              </button>
             </div>
           )}
+
           {tab === 'paid' && paid.length === 0 && (
             <div className="card p-6 text-center">
               <p className="text-ink-2 text-sm">No paid bills yet.</p>
             </div>
           )}
 
+          {/* ── Bill cards ── */}
           {(tab === 'pending' ? pending : paid).map(bill => {
             const days    = daysUntil(bill.due_date)
             const shadow  = tab === 'pending' ? dueShadow(days) : 'card'
@@ -180,7 +242,7 @@ export default function Bills() {
         </div>
       )}
 
-      {/* Add Bill Sheet */}
+      {/* ── Add Bill Sheet ────────────────────────────────────────────── */}
       <AnimatePresence>
         {showAdd && (
           <>
@@ -197,31 +259,33 @@ export default function Bills() {
               <div className="px-5">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="font-display text-display text-ink">Add Bill</h2>
-                  <button onClick={() => setShowAdd(false)} className="btn-ghost p-2 rounded-pill">
-                    <X size={20} className="text-ink-2" />
+                  <button onClick={() => setShowAdd(false)} className="close-btn">
+                    <X size={16} className="text-ink-3" />
                   </button>
                 </div>
 
                 <input className="input mb-3" placeholder="Description (e.g. Car EMI)"
                   value={form.description}
-                  onChange={e => setForm(f=>({...f, description:e.target.value}))} />
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
 
-                <div className="bg-kosha-bg border border-kosha-border rounded-card px-4 py-3 mb-3 flex items-center gap-2">
+                <div className="bg-kosha-bg border border-kosha-border rounded-card px-4 py-3 mb-3
+                                flex items-center gap-2">
                   <span className="font-display text-xl text-brand">₹</span>
                   <input className="flex-1 bg-transparent font-display text-2xl text-ink outline-none"
                     type="number" inputMode="decimal" placeholder="0"
                     value={form.amount}
-                    onChange={e => setForm(f=>({...f, amount:e.target.value}))} />
+                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
                 </div>
 
                 <input className="input mb-3" type="date"
                   value={form.due_date}
-                  onChange={e => setForm(f=>({...f, due_date:e.target.value}))} />
+                  onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
 
                 <div className="flex items-center gap-3 mb-3">
                   <button
-                    onClick={() => setForm(f=>({...f, is_recurring:!f.is_recurring}))}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-card text-sm font-medium border transition-all
+                    onClick={() => setForm(f => ({ ...f, is_recurring: !f.is_recurring }))}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-card text-sm font-medium
+                                border transition-all
                       ${form.is_recurring
                         ? 'bg-brand-container text-brand-on border-brand-container'
                         : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
@@ -232,9 +296,9 @@ export default function Bills() {
                     <div className="flex gap-2">
                       {RECURRENCE.map(r => (
                         <button key={r}
-                          onClick={() => setForm(f=>({...f, recurrence:r}))}
+                          onClick={() => setForm(f => ({ ...f, recurrence: r }))}
                           className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
-                            ${form.recurrence===r
+                            ${form.recurrence === r
                               ? 'bg-brand-container text-brand-on border-brand-container'
                               : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
                         >{r}</button>
@@ -246,8 +310,7 @@ export default function Bills() {
                 {formErr && <p className="text-expense-text text-sm mb-3">{formErr}</p>}
 
                 <button onClick={handleAdd} disabled={saving}
-                  className="w-full py-4 rounded-card bg-brand-container text-brand-on
-                             font-semibold border border-brand-container
+                  className="w-full py-4 rounded-card bg-brand text-white font-semibold
                              active:scale-[0.98] disabled:opacity-60 transition-all">
                   {saving ? 'Saving…' : 'Add Bill'}
                 </button>

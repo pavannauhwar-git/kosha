@@ -8,6 +8,15 @@ import { getCategory } from '../lib/categories'
 const SWIPE_THRESHOLD  = 80
 const DELETE_THRESHOLD = 160
 
+const MODE_LABEL = {
+  upi:         'UPI',
+  credit_card: 'Card',
+  debit_card:  'Card',
+  cash:        'Cash',
+  net_banking: 'Bank',
+  other:       '',
+}
+
 function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = false }) {
   const x             = useMotionValue(0)
   const deleteOpacity = useTransform(x, [-DELETE_THRESHOLD, -SWIPE_THRESHOLD, 0], [1, 1, 0])
@@ -16,6 +25,7 @@ function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = fals
   const cat    = getCategory(txn.category)
   const amtCls = amountClass(txn.type, txn.is_repayment)
   const prefix = amountPrefix(txn.type)
+  const mode   = MODE_LABEL[txn.payment_mode] || ''
 
   async function handleDragEnd(_, info) {
     if (info.offset.x < -DELETE_THRESHOLD) {
@@ -24,9 +34,9 @@ function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = fals
       if (navigator.vibrate) navigator.vibrate([10, 20, 10])
       onDelete && onDelete(txn.id)
     } else if (info.offset.x < -SWIPE_THRESHOLD / 2) {
-      animate(x, -SWIPE_THRESHOLD, { type:'spring', stiffness:500, damping:36 })
+      animate(x, -SWIPE_THRESHOLD, { type: 'spring', stiffness: 500, damping: 36 })
     } else {
-      animate(x, 0, { type:'spring', stiffness:500, damping:36 })
+      animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
     }
   }
 
@@ -39,7 +49,7 @@ function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = fals
 
   function handleTap() {
     if (x.get() < -10) {
-      animate(x, 0, { type:'spring', stiffness:500, damping:36 })
+      animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
       return
     }
     if (navigator.vibrate) navigator.vibrate(8)
@@ -73,16 +83,28 @@ function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = fals
         whileTap={{ scale: 0.985 }}
         transition={{ scale: { duration: 0.07 } }}
       >
-        <CategoryIcon categoryId={txn.category} size={18} />
+        {/* Category bubble */}
+        <div
+          className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
+          style={{ background: cat.bg }}
+        >
+          <CategoryIcon categoryId={txn.category} size={18} />
+        </div>
 
+        {/* Text */}
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-medium text-ink truncate leading-snug">
             {txn.description}
           </p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[13px] text-ink-3">{cat.label}</span>
-            {showDate && (
-              <span className="text-[13px] text-ink-4">· {fmtDate(txn.date)}</span>
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            {showDate
+              ? <span className="text-[12px] text-ink-3">{fmtDate(txn.date)}</span>
+              : <span className="text-[12px] text-ink-3">{cat.label}</span>
+            }
+            {mode && (
+              <span className="text-[11px] font-medium text-ink-4 bg-kosha-surface-2 px-1.5 py-px rounded-[5px]">
+                {mode}
+              </span>
             )}
             {txn.is_repayment && (
               <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
@@ -92,13 +114,14 @@ function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = fals
           </div>
         </div>
 
+        {/* Amount */}
         <span className={`text-[15px] shrink-0 tabular-nums font-semibold ${amtCls}`}>
           {prefix}{fmt(txn.amount)}
         </span>
       </motion.div>
 
       {!isLast && (
-        <div className="absolute bottom-0 left-[64px] right-0 h-[0.5px] bg-kosha-border" />
+        <div className="absolute bottom-0 left-[60px] right-0 h-[0.5px] bg-kosha-border" />
       )}
     </div>
   )

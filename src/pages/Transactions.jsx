@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X } from 'lucide-react'
+import { Search, X, SlidersHorizontal } from 'lucide-react'
 import { useTransactions, deleteTransaction } from '../hooks/useTransactions'
-import TransactionItem    from '../components/TransactionItem'
+import TransactionItem     from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
-import DeleteDialog       from '../components/DeleteDialog'
-import { CATEGORIES }     from '../lib/categories'
+import DeleteDialog        from '../components/DeleteDialog'
+import { CATEGORIES }      from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus } from '@phosphor-icons/react'
 
@@ -23,6 +23,11 @@ const TYPE_CHIP = {
   investment: 'bg-invest-bg text-invest-text border-invest-border',
 }
 
+function groupNet(txns) {
+  return txns.reduce((s, t) =>
+    t.type === 'income' ? s + +t.amount : s - +t.amount, 0)
+}
+
 export default function Transactions() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [catFilter,  setCatFilter]  = useState('')
@@ -31,6 +36,7 @@ export default function Transactions() {
   const [editTxn,    setEditTxn]    = useState(null)
   const [delId,      setDelId]      = useState(null)
   const [showCats,   setShowCats]   = useState(false)
+  const [addType,    setAddType]    = useState('expense')
 
   const { data, refetch } = useTransactions({
     type:     typeFilter === 'all' ? undefined : typeFilter,
@@ -46,6 +52,9 @@ export default function Transactions() {
     return s
   }, 0)
 
+  // Active filter count for filter button badge
+  const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
+
   async function confirmDelete() {
     await deleteTransaction(delId)
     setDelId(null)
@@ -54,33 +63,67 @@ export default function Transactions() {
 
   return (
     <div className="page">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 pt-2">
-        <h1 className="font-display text-display text-ink">Transactions</h1>
-      </div>
 
-      {/* Search */}
-      <div className="relative mb-3">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
-        <input
-          className="input pl-9 pr-9"
-          placeholder="Search transactions…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        {search && (
-          <button onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2">
-            <X size={14} className="text-ink-3" />
+      {/* ── Header with live count ────────────────────────────────────── */}
+      <div className="flex items-start justify-between mb-4 pt-2">
+        <div>
+          <h1 className="font-display text-display text-ink">Transactions</h1>
+          <p className="text-caption text-ink-3 mt-0.5">
+            {data.length > 0 ? `${data.length} transaction${data.length !== 1 ? 's' : ''}` : 'No results'}
+            {(typeFilter !== 'all' || catFilter) ? ' · filtered' : ''}
+          </p>
+        </div>
+        {(typeFilter !== 'all' || catFilter) && (
+          <button
+            onClick={() => { setTypeFilter('all'); setCatFilter(''); setShowCats(false) }}
+            className="mt-1 text-caption font-semibold text-brand"
+          >
+            Clear filters
           </button>
         )}
       </div>
 
-      {/* Type chips */}
+      {/* ── Search + filter button ────────────────────────────────────── */}
+      <div className="flex gap-2 mb-3">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+          <input
+            className="input pl-9 pr-9"
+            placeholder="Search transactions…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2">
+              <X size={14} className="text-ink-3" />
+            </button>
+          )}
+        </div>
+        {/* Filter button — opens category panel */}
+        <button
+          onClick={() => setShowCats(v => !v)}
+          className={`relative w-[46px] h-[46px] rounded-card flex items-center justify-center
+                      shrink-0 transition-all
+                      ${showCats || catFilter
+                        ? 'bg-brand text-white'
+                        : 'bg-kosha-surface border border-kosha-border text-ink-2'}`}
+        >
+          <SlidersHorizontal size={18} />
+          {filterCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-expense rounded-full
+                             text-white text-[9px] font-bold flex items-center justify-center">
+              {filterCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ── Type filter pills ─────────────────────────────────────────── */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-2">
         {TYPES.map(t => (
           <button key={t.id}
-            onClick={() => { setTypeFilter(t.id); setCatFilter(''); setShowCats(false) }}
+            onClick={() => { setTypeFilter(t.id); setShowCats(false) }}
             className={`px-3 py-1.5 rounded-pill text-xs font-semibold border shrink-0 transition-all
               ${typeFilter === t.id
                 ? TYPE_CHIP[t.id]
@@ -89,19 +132,9 @@ export default function Transactions() {
             {t.label}
           </button>
         ))}
-        <button
-          onClick={() => setShowCats(v => !v)}
-          className={`px-3 py-1.5 rounded-pill text-xs font-semibold border shrink-0 transition-all
-            ${catFilter ? 'bg-brand-container text-brand-on border-brand-container'
-                        : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
-        >
-          {catFilter
-            ? CATEGORIES.find(c => c.id === catFilter)?.label
-            : 'Category ▾'}
-        </button>
       </div>
 
-      {/* Category filter row */}
+      {/* ── Category filter row ───────────────────────────────────────── */}
       <AnimatePresence>
         {showCats && (
           <motion.div
@@ -109,12 +142,14 @@ export default function Transactions() {
             exit={{ height:0, opacity:0 }} transition={{ duration:0.2 }}
             className="overflow-hidden mb-2"
           >
+            <p className="text-caption text-ink-3 font-semibold mb-2 px-1">Filter by category</p>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
               <button
                 onClick={() => { setCatFilter(''); setShowCats(false) }}
                 className={`px-3 py-1.5 rounded-pill text-xs font-semibold border shrink-0
-                  ${!catFilter ? 'bg-brand-container text-brand-on border-brand-container'
-                               : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
+                  ${!catFilter
+                    ? 'bg-brand-container text-brand-on border-brand-container'
+                    : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
               >All</button>
               {CATEGORIES.map(c => (
                 <button key={c.id}
@@ -131,48 +166,60 @@ export default function Transactions() {
         )}
       </AnimatePresence>
 
-      {/* Groups */}
-      <div className="space-y-4">
+      {/* ── Transaction groups ────────────────────────────────────────── */}
+      <div className="space-y-3">
         {groups.length === 0 && (
-          <div className="card p-8 text-center mt-6">
+          <div className="card p-8 text-center mt-4">
             <p className="text-ink-2 text-sm">No transactions found.</p>
             {search && <p className="text-ink-3 text-xs mt-1">Try a different search term.</p>}
           </div>
         )}
-        {groups.map(([date, txns]) => (
-          <div key={date}>
-            <p className="section-label mb-2">{dateLabel(date)}</p>
-            <div className="list-card">
-              {txns.map(t => (
+        {groups.map(([date, txns]) => {
+          const net = groupNet(txns)
+          return (
+            <div key={date} className="list-card">
+              {/* Date group header — tinted, with net amount */}
+              <div className="flex items-center justify-between px-4 py-2 bg-kosha-surface-2
+                              border-b border-kosha-border">
+                <span className="text-caption font-semibold text-ink-3">
+                  {dateLabel(date)}
+                </span>
+                <span className={`text-caption font-semibold
+                  ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                  {net >= 0 ? '+' : ''}{fmt(net)}
+                </span>
+              </div>
+              {txns.map((t, i) => (
                 <TransactionItem
                   key={t.id} txn={t}
                   onDelete={id => setDelId(id)}
-                  onTap={t => { setEditTxn(t); setShowAdd(true) }}
+                  onTap={t => { setEditTxn(t); setAddType(t.type); setShowAdd(true) }}
+                  isLast={i === txns.length - 1}
                 />
               ))}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      {/* Net footer */}
+      {/* ── Net footer ───────────────────────────────────────────────── */}
       {data.length > 0 && (
-        <div className="card mt-4 px-4 py-3 flex justify-between items-center">
-          <span className="text-xs text-ink-2">{data.length} transactions</span>
-          <span className={`text-sm font-semibold ${total >= 0 ? 'amt-income' : 'amt-expense'}`}>
+        <div className="card mt-3 px-4 py-3 flex justify-between items-center">
+          <span className="text-caption text-ink-3">{data.length} transactions</span>
+          <span className={`text-label font-semibold ${total >= 0 ? 'amt-income' : 'amt-expense'}`}>
             Net {fmt(Math.abs(total))}
           </span>
         </div>
       )}
 
       {/* FAB */}
-      <button className="fab" onClick={() => { setEditTxn(null); setShowAdd(true) }}>
+      <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={28} weight="bold" color="white" />
       </button>
 
       <AddTransactionSheet
         open={showAdd} onClose={() => { setShowAdd(false); setEditTxn(null) }}
-        onSaved={refetch} editTxn={editTxn}
+        onSaved={refetch} editTxn={editTxn} initialType={addType}
       />
       <DeleteDialog
         open={!!delId} label="this transaction"
