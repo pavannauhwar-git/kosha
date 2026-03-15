@@ -51,11 +51,11 @@ function useAuthState() {
 
     // ── Primary: getSession on mount ──────────────────────────────────
     // Reads token from localStorage and refreshes it if expired.
-    // Wrapped in a 3s timeout so a hanging refresh never leaves the
+    // Wrapped in a 6s timeout so a hanging refresh never leaves the
     // app stuck on a blank page.
     async function init() {
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth init timeout')), 3000)
+        setTimeout(() => reject(new Error('Auth init timeout')), 6000)
       )
       try {
         const { data: { session } } = await Promise.race([
@@ -105,9 +105,15 @@ function useAuthState() {
   }, [])
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setProfile(null)
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Server sign-out failed (network error, timeout, etc.)
+      // Still clear local state — the user must always be able to log out.
+    } finally {
+      setUser(null)
+      setProfile(null)
+    }
   }, [])
 
   const updateProfile = useCallback(async (updates) => {
