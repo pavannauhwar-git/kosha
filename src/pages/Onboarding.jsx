@@ -316,7 +316,7 @@ export default function Onboarding() {
     } catch (_) {
       // Profile update failed — still navigate, app works without it
     } finally {
-      navigate('/', { replace: true })
+      window.location.href = '/'
     }
   }
 
