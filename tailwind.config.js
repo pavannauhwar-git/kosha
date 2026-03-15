@@ -4,45 +4,59 @@ export default {
   theme: {
     extend: {
       colors: {
-        'kosha-bg': '#F2F2F7',
+        // ── App backgrounds ──────────────────────────────────────────────
+        'kosha-bg': '#F5F4FB',   // was #F2F2F7 — slightly warmer, violet tint
         'kosha-bg-2': '#FFFFFF',
         'kosha-surface': '#FFFFFF',
-        'kosha-surface-2': '#F2F2F7',
-        'kosha-border': '#E5E5EA',
-        'kosha-border-strong': '#C7C7CC',
-        // Change these three brand tokens:
-        'brand': '#6C47FF',   // was #007AFF
+        'kosha-surface-2': '#F5F4FB',
+        'kosha-border': '#E8E6F0',   // was #E5E5EA — warmer border
+        'kosha-border-strong': '#C9C5D9',   // was #C7C7CC
+
+        // ── Brand — unified violet ────────────────────────────────────────
+        'brand': '#6C47FF',   // was #007AFF — THE fix
         'brand-dark': '#5535CC',   // was #0062CC
         'brand-container': '#EEEBFF',   // was #EBF4FF
         'brand-on': '#3B1FAB',   // was #0040A0
-        'income': '#34C759',
-        'income-bg': '#EDFAF1',
-        'income-text': '#1A7A35',
-        'income-border': '#A8E6B8',
-        'expense': '#FF3B30',
-        'expense-bg': '#FFF0EF',
-        'expense-text': '#CC0000',
-        'expense-border': '#FFB3AF',
-        'invest': '#007AFF',   // was #007AFF — now invest keeps the blue
-        'invest-bg': '#EBF4FF',   // unchanged
-        'invest-text': '#0040A0',   // unchanged
-        'invest-border': '#99CCFF',   // unchanged
-        'repay': '#FF9500',
-        'repay-bg': '#FFF5E6',
-        'repay-text': '#A05000',
-        'repay-border': '#FFCC80',
-        'ink': '#000000',
-        'ink-2': '#3C3C43',
-        'ink-3': '#8E8E93',
-        'ink-4': '#C7C7CC',
+
+        // ── Income — softer, modern green ────────────────────────────────
+        'income': '#00C896',   // was #34C759 — teal-green, fresher
+        'income-bg': '#E6FAF5',   // was #EDFAF1
+        'income-text': '#007A5E',   // was #1A7A35 — less murky
+        'income-border': '#99E8D0',   // was #A8E6B8
+
+        // ── Expense — softer red, more readable ──────────────────────────
+        'expense': '#FF4757',   // was #FF3B30 — slightly warmer
+        'expense-bg': '#FFF0F1',   // was #FFF0EF
+        'expense-text': '#D42B3A',   // was #CC0000 — less harsh
+        'expense-border': '#FFB3BA',   // was #FFB3AF
+
+        // ── Investment — violet-adjacent blue, on-brand ───────────────────
+        'invest': '#7B61FF',   // was #007AFF — now violet family
+        'invest-bg': '#F0EEFF',   // was #EBF4FF
+        'invest-text': '#4B35CC',   // was #0040A0 — violet not navy
+        'invest-border': '#C4BAFF',   // was #99CCFF
+
+        // ── Repayment — warm amber ────────────────────────────────────────
+        'repay': '#FF9500',   // unchanged
+        'repay-bg': '#FFF5E6',   // unchanged
+        'repay-text': '#B35A00',   // was #A05000 — slightly more contrast
+        'repay-border': '#FFCC80',   // unchanged
+
+        // ── Ink — slightly warm, not pure black ──────────────────────────
+        'ink': '#110C22',   // was #000000 — warm dark violet-black
+        'ink-2': '#3D3654',   // was #3C3C43 — warm mid
+        'ink-3': '#8C85A8',   // was #8E8E93 — warm grey
+        'ink-4': '#C5C0D8',   // was #C7C7CC — warm light
+
+        // ── Utility ──────────────────────────────────────────────────────
         'on-grad': '#FFFFFF',
         'on-grad-2': '#FFFFFFBF',
         'warning': '#FF9500',
         'warning-bg': '#FFF5E6',
         'warning-border': '#FFCC80',
-        'warning-text': '#A05000',
-        'success': '#34C759',
-        'danger': '#FF3B30',
+        'warning-text': '#B35A00',
+        'success': '#00C896',   // was #34C759 — matches new income
+        'danger': '#FF4757',   // was #FF3B30 — matches new expense
       },
       fontFamily: {
         display: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
