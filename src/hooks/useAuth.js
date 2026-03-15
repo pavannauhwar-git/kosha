@@ -3,15 +3,33 @@ import { supabase } from '../lib/supabase'
 
 // ── Auth Context ──────────────────────────────────────────────────────────
 // All components share ONE auth state via this context.
-// Previously, every useAuth() call created its own isolated state +
-// its own getSession() call, causing race conditions and blank pages.
 const AuthContext = createContext(null)
+
+// ── Synchronous localStorage pre-check ───────────────────────────────────
+// Supabase stores its session under sb-<project-ref>-auth-token.
+// If that key is absent, there is definitively no session — skip the
+// async getSession() call entirely and jump straight to login instantly.
+function hasStoredSession() {
+  try {
+    const projectRef = import.meta.env.VITE_SUPABASE_URL
+      ?.replace('https://', '')
+      .split('.')[0]
+    if (!projectRef) return false
+    return !!localStorage.getItem(`sb-${projectRef}-auth-token`)
+  } catch {
+    // localStorage blocked (e.g. private browsing quirks) — fall through
+    return true
+  }
+}
 
 // ── Internal hook (single instance, lives inside AuthProvider) ────────────
 function useAuthState() {
   const [user,    setUser]    = useState(null)
   const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  // If there's no stored session token, we already know the answer.
+  // Initialise loading=false so AuthGuard redirects to login instantly —
+  // no spinner, no async wait, no delay.
+  const [loading, setLoading] = useState(() => hasStoredSession())
 
   const loadProfile = useCallback(async (userId) => {
     if (!userId) { setProfile(null); return }
@@ -28,10 +46,14 @@ function useAuthState() {
   }, [])
 
   useEffect(() => {
-    // ── Primary: getSession on mount ──────────────────────────────────
-    // Reads token from localStorage and refreshes it if expired.
-    // Wrapped in a 6s timeout so a hanging refresh never leaves the
-    // app stuck on a blank page.
+    // ── Fast path: no token in localStorage → already signed out ──────
+    // loading was initialised to false above, nothing async needed.
+    if (!hasStoredSession()) return
+
+    // ── Primary: getSession on mount ───────────────────────────────────
+    // Only reached when a Supabase token exists in localStorage.
+    // Refreshes it if expired. Wrapped in a 6s timeout so a hanging
+    // network call never leaves the app stuck.
     async function init() {
       const timeout = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Auth init timeout')), 6000)
@@ -51,7 +73,6 @@ function useAuthState() {
         setUser(null)
         setProfile(null)
       } finally {
-        // Always runs — the app will never stay on a blank page.
         setLoading(false)
       }
     }
