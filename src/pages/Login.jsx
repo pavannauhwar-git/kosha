@@ -89,10 +89,11 @@ export default function Login() {
 
         {/* ── Logo + heading ─────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl
-                          bg-brand mb-5 shadow-fab">
-            <span className="text-white font-bold text-xl tracking-tight">K</span>
-          </div>
+          <img
+  src="/icons/icon-512.png"
+  alt="Kosha"
+  className="w-14 h-14 rounded-2xl mb-5 shadow-fab"
+/>
           <h1 className="text-display font-bold text-ink tracking-tight mb-1">
             {mode === 'signin' ? 'Welcome back' : 'Create account'}
           </h1>
