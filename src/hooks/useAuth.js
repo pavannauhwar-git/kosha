@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, createContext, useContext } from 'react'
+import { useState, useEffect, useCallback, createContext, useContext, createElement } from 'react'
 import { supabase } from '../lib/supabase'
 
 // ── Auth Context ──────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ function useAuthState() {
 // ── AuthProvider — wrap your app once in App.jsx ──────────────────────────
 export function AuthProvider({ children }) {
   const auth = useAuthState()
-  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>
+  return createElement(AuthContext.Provider, { value: auth }, children)
 }
 
 // ── useAuth — same export name, same import path, zero changes elsewhere ──
