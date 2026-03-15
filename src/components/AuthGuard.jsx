@@ -1,12 +1,21 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
+// ── Loading spinner ───────────────────────────────────────────────────────
+function AuthSpinner() {
+  return (
+    <div className="min-h-dvh bg-kosha-bg flex items-center justify-center">
+      <span className="animate-spin rounded-full h-8 w-8 border-2 border-brand border-t-transparent" />
+    </div>
+  )
+}
+
 export default function AuthGuard({ children }) {
   const { user, profile, loading } = useAuth()
   const location = useLocation()
 
-  // Auth initialising
-  if (loading) return null
+  // Auth initialising — show spinner, never a blank page
+  if (loading) return <AuthSpinner />
 
   // No session
   if (!user) {

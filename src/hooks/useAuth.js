@@ -1,7 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, createContext, useContext } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useAuth() {
+// ── Auth Context ──────────────────────────────────────────────────────────
+// All components share ONE auth state via this context.
+// Previously, every useAuth() call created its own isolated state +
+// its own getSession() call, causing race conditions and blank pages.
+const AuthContext = createContext(null)
+
+// ── Internal hook (single instance, lives inside AuthProvider) ────────────
+function useAuthState() {
   const [user,    setUser]    = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -22,21 +29,29 @@ export function useAuth() {
 
   useEffect(() => {
     // ── Primary: getSession on mount ──────────────────────────────────
-    // Reads token from localStorage immediately and resolves in <200ms.
-    // This is the reliable way to restore session in a fresh tab.
-    // onAuthStateChange INITIAL_SESSION is unreliable on Vercel PWAs.
+    // Reads token from localStorage and refreshes it if expired.
+    // Wrapped in a 6s timeout so a hanging refresh never leaves the
+    // app stuck on a blank page.
     async function init() {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Auth init timeout')), 6000)
+      )
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session } } = await Promise.race([
+          supabase.auth.getSession(),
+          timeout,
+        ])
         const u = session?.user ?? null
         setUser(u)
         if (u) await loadProfile(u.id)
         else setProfile(null)
       } catch {
+        // Token refresh failed, timed out, or network error —
+        // treat as signed-out so the app is never stuck.
         setUser(null)
         setProfile(null)
       } finally {
-        // Always set loading=false — never leave the app stuck
+        // Always runs — the app will never stay on a blank page.
         setLoading(false)
       }
     }
@@ -115,4 +130,17 @@ export function useAuth() {
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     signOut, updateProfile,
   }
+}
+
+// ── AuthProvider — wrap your app once in App.jsx ──────────────────────────
+export function AuthProvider({ children }) {
+  const auth = useAuthState()
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>
+}
+
+// ── useAuth — same export name, same import path, zero changes elsewhere ──
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')
+  return ctx
 }
