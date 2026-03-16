@@ -148,8 +148,7 @@ export default function Dashboard() {
   // ── Error toast ──────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
 
-  const { addOptimisticTxn, clearOptimisticTxns, optimisticTxns } = useAppData()
-  const [balanceDelta, setBalanceDelta] = useState(0)
+  const { addOptimisticTxn, clearOptimisticTxns } = useAppData()
 
   const { data: recent, refetch, prependOptimistic } = useTransactions({ limit: 8 })
   const { data: summary,     refetch: refetchSummary }     = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
@@ -161,26 +160,12 @@ export default function Dashboard() {
   const { pending: bills, refetch: refetchBills }             = useLiabilities()
 
   const dueSoon    = bills.filter(b => daysUntil(b.due_date) <= 7)
-  const optimisticForMonth = optimisticTxns.filter(t => {
-    const d = new Date(t.date)
-    return d.getFullYear() === now.getFullYear() &&
-           d.getMonth()    === now.getMonth()
-  })
-  const optimisticEarned   = optimisticForMonth
-    .filter(t => t.type === 'income')
-    .reduce((s, t) => s + +t.amount, 0)
-  const optimisticSpent    = optimisticForMonth
-    .filter(t => t.type === 'expense')
-    .reduce((s, t) => s + +t.amount, 0)
-  const optimisticInvested = optimisticForMonth
-    .filter(t => t.type === 'investment')
-    .reduce((s, t) => s + +t.amount, 0)
 
-  const earned     = (summary?.earned     || 0) + optimisticEarned
-  const spent      = (summary?.expense    || 0) + optimisticSpent
-  const invested   = (summary?.investment || 0) + optimisticInvested
+  // Month/Balance hooks already merge optimistic transactions from AppDataProvider.
+  const earned     = summary?.earned     || 0
+  const spent      = summary?.expense    || 0
+  const invested   = summary?.investment || 0
   const rate       = savingsRate(earned, spent)
-  const displayBalance = (runningBalance ?? 0) + balanceDelta
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const dayOfMonth  = now.getDate()
@@ -215,38 +200,26 @@ export default function Dashboard() {
     prependOptimistic(payload)
 
     addOptimisticTxn(payload)
-    // Also bump running balance locally so it never "snaps back" while
-    // Supabase is catching up.
-    setBalanceDelta(prev => {
-      if (payload.type === 'income')     return prev + payload.amount
-      if (payload.type === 'expense')    return prev - payload.amount
-      if (payload.type === 'investment') return prev - payload.amount
-      return prev
-    })
   }, [prependOptimistic, addOptimisticTxn])
 
   // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
-  // Keep optimistic overlay until the fresh numbers arrive, then clear.
+  // Do NOT clear optimistic txns here. They are pruned automatically once the
+  // transaction shows up in fetched server data. This prevents the "flash then
+  // revert" gap on slow queries.
   const handleConfirmed = useCallback(async () => {
-    try {
-      await Promise.all([
-        refetch(),
-        refetchSummary(),
-        refetchLastSummary(),
-        refetchBalance(),
-      ])
-    } finally {
-      clearOptimisticTxns()
-      setBalanceDelta(0)
-    }
-  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearOptimisticTxns])
+    await Promise.all([
+      refetch(),
+      refetchSummary(),
+      refetchLastSummary(),
+      refetchBalance(),
+    ])
+  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
   // The optimistic row disappears when refetch() returns real server data.
   // Toast tells the user what happened so they can try again.
   const handleFailed = useCallback((msg) => {
     clearOptimisticTxns()
-    setBalanceDelta(0)
     refetch()
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
@@ -335,7 +308,7 @@ export default function Dashboard() {
             Total balance
           </p>
           <p className="text-hero font-bold text-white leading-none tracking-tight tabular-nums">
-            {runningBalance !== null ? fmt(displayBalance) : '—'}
+            {runningBalance !== null ? fmt(runningBalance) : '—'}
           </p>
           <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill"
                style={{ background:C.heroAccentBg }}>

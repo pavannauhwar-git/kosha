@@ -140,7 +140,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
   })
   const [error, setError] = useState(null)
 
-  const { optimisticTxns } = useAppData()
+  const { optimisticTxns, pruneOptimisticTxns } = useAppData()
 
   const fetch = useCallback(async (force = false) => {
     const key    = `txns:${type}:${category}:${search}:${limit}`
@@ -175,11 +175,12 @@ export function useTransactions({ type, category, search, limit } = {}) {
       setCached(key, result)
       setData(result)
       setLoading(false)
+      pruneOptimisticTxns(result)
     } catch (e) {
       setError(e)
       setLoading(false)
     }
-  }, [type, category, search, limit])
+  }, [type, category, search, limit, pruneOptimisticTxns])
 
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)

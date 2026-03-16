@@ -273,11 +273,7 @@ export default function Transactions() {
           setDisplayCount(n => n + 1)  // ensure the new row is within the render window
         }}
         onConfirmed={async () => {
-          try {
-            await refetch()
-          } finally {
-            clearOptimisticTxns()
-          }
+          await refetch()
         }}
         onFailed={(msg) => {
           clearOptimisticTxns()

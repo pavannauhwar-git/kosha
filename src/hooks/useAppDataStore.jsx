@@ -13,6 +13,25 @@ export function AppDataProvider({ children }) {
     setOptimisticTxns(prev => [...prev, withMeta])
   }, [])
 
+  const pruneOptimisticTxns = useCallback((serverRows = []) => {
+    if (!Array.isArray(serverRows) || serverRows.length === 0) return
+
+    const normDesc = (s) => String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
+    const keyOf = (t) => [
+      t.date,
+      t.type,
+      Number(t.amount) || 0,
+      normDesc(t.description),
+      t.category || '',
+      t.investment_vehicle || '',
+      t.payment_mode || '',
+      Boolean(t.is_repayment),
+    ].join('|')
+
+    const serverKeys = new Set(serverRows.map(keyOf))
+    setOptimisticTxns(prev => prev.filter(t => !serverKeys.has(keyOf(t))))
+  }, [])
+
   const clearOptimisticTxns = useCallback(() => {
     setOptimisticTxns([])
   }, [])
@@ -20,6 +39,7 @@ export function AppDataProvider({ children }) {
   const value = {
     optimisticTxns,
     addOptimisticTxn,
+    pruneOptimisticTxns,
     clearOptimisticTxns,
   }
 
