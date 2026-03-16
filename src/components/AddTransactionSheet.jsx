@@ -131,7 +131,10 @@ function VehiclePicker({ selected, onSelect, onClose }) {
 }
 
 // ── Main sheet ─────────────────────────────────────────────────────────────
-export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = null, initialType = 'expense' }) {
+export default function AddTransactionSheet({ open, onClose, onSaved, onConfirmed, onFailed, editTxn = null, initialType = 'expense' }) {
+  // onSaved(payload)  — called IMMEDIATELY with the payload for optimistic UI (0ms)
+  // onConfirmed()     — called after the network save SUCCEEDS — triggers sync
+  // onFailed(msg)     — called if the network save FAILS — triggers rollback + toast
   const [type,     setType]     = useState('expense')
   const [amount,   setAmount]   = useState('')
   const [desc,     setDesc]     = useState('')
@@ -178,22 +181,21 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
     }
 
-    // ── Optimistic close: sheet dismisses instantly, save happens in bg ──
-    // This eliminates the "stuck" feel — the user never waits for the network.
-    // The 8-second timeout in addTransaction/updateTransaction ensures the
-    // promise always resolves, even on a dead connection.
+    // ── Step 1 (0ms): close sheet + instant optimistic UI update ─────
     onClose()
+    onSaved && onSaved(payload)
 
+    // ── Step 2: persist to Supabase in the background ─────────────────
     try {
       if (editTxn) await updateTransaction(editTxn.id, payload)
       else         await addTransaction(payload)
+      // ✓ Success — quiet sync replaces optimistic row with real server row
+      onConfirmed && onConfirmed()
     } catch (e) {
-      // Save failed silently (timeout / network error).
-      // onSaved() is still called to trigger a refetch — if the item
-      // never made it to Supabase, it simply won't appear in the list.
+      // ✗ Failure — tell the caller to roll back the optimistic row
+      // and show an error so the user knows to try again
       console.error('[Kosha] Save failed:', e.message)
-    } finally {
-      onSaved && onSaved()
+      onFailed && onFailed(e.message || 'Could not save. Check your connection.')
     }
   }
 

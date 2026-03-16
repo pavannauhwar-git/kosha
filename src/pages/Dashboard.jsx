@@ -143,7 +143,16 @@ export default function Dashboard() {
   const [delId,   setDelId]   = useState(null)
   const [addType, setAddType] = useState('expense')
 
-  const { data: recent, refetch } = useTransactions({ limit: 8 })
+  // ── Error toast ──────────────────────────────────────────────────────
+  const [toast, setToast] = useState(null)
+
+  // ── Optimistic summary delta ──────────────────────────────────────────
+  // When a transaction is added, we immediately adjust the summary numbers
+  // so the hero card updates in sync with the list — no waiting for refetch.
+  // Cleared when the background sync completes and real data arrives.
+  const [optimisticDelta, setOptimisticDelta] = useState(null)
+
+  const { data: recent, refetch, prependOptimistic } = useTransactions({ limit: 8 })
   const { data: summary }         = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary }     = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
@@ -153,9 +162,10 @@ export default function Dashboard() {
   const { pending: bills }          = useLiabilities()
 
   const dueSoon    = bills.filter(b => daysUntil(b.due_date) <= 7)
-  const earned     = summary?.earned     || 0
-  const spent      = summary?.expense    || 0
-  const invested   = summary?.investment || 0
+  // Apply optimistic delta on top of server data for instant hero card update
+  const earned     = (summary?.earned     || 0) + (optimisticDelta?.earned     || 0)
+  const spent      = (summary?.expense    || 0) + (optimisticDelta?.expense    || 0)
+  const invested   = (summary?.investment || 0) + (optimisticDelta?.investment || 0)
   const rate       = savingsRate(earned, spent)
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
@@ -181,6 +191,48 @@ export default function Dashboard() {
                  : 'Good night'
 
   const recentGroups = groupByDate(recent)
+
+  // ── handleOptimisticSave: called immediately when user taps Save ────
+  // Payload arrives before any network call. We:
+  //   (a) prepend it to the transaction list instantly
+  //   (b) update the hero card summary numbers instantly
+  const handleOptimisticSave = useCallback((payload) => {
+    // Only apply optimistic updates for new transactions in the current month
+    // (edits are less common and the brief delay is acceptable)
+    const txnDate  = new Date(payload.date)
+    const isThisMonth = txnDate.getFullYear() === now.getFullYear() &&
+                        txnDate.getMonth()    === now.getMonth()
+
+    // Prepend to the list immediately
+    prependOptimistic(payload)
+
+    // Update hero card numbers instantly if it's a current-month transaction
+    if (isThisMonth) {
+      setOptimisticDelta(prev => {
+        const d = prev || { earned: 0, expense: 0, investment: 0 }
+        if (payload.type === 'income')     return { ...d, earned:     d.earned     + payload.amount }
+        if (payload.type === 'expense')    return { ...d, expense:    d.expense    + payload.amount }
+        if (payload.type === 'investment') return { ...d, investment: d.investment + payload.amount }
+        return d
+      })
+    }
+  }, [prependOptimistic, now])
+
+  // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
+  const handleConfirmed = useCallback(() => {
+    setOptimisticDelta(null)
+    refetch()
+  }, [refetch])
+
+  // ── handleFailed: save failed — roll back + show toast ────────────────
+  // The optimistic row disappears when refetch() returns real server data.
+  // Toast tells the user what happened so they can try again.
+  const handleFailed = useCallback((msg) => {
+    setOptimisticDelta(null)
+    refetch()
+    setToast(msg)
+    setTimeout(() => setToast(null), 4000)
+  }, [refetch])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
@@ -466,6 +518,24 @@ export default function Dashboard() {
 
       </motion.div>
 
+      {/* ── Error toast ───────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity:0, y:20 }}
+            animate={{ opacity:1, y:0 }}
+            exit={{ opacity:0, y:20 }}
+            transition={{ duration:0.2 }}
+            className="fixed bottom-32 left-4 right-4 z-50 flex items-center gap-3
+                       bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
+          >
+            <span className="text-[13px] font-medium flex-1">{toast}</span>
+            <button onClick={() => setToast(null)}
+              className="text-white opacity-60 text-xs font-semibold">Dismiss</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={26} weight="bold" color="white" />
@@ -474,7 +544,9 @@ export default function Dashboard() {
       <AddTransactionSheet
         open={showAdd}
         onClose={() => { setShowAdd(false); setEditTxn(null) }}
-        onSaved={refetch}
+        onSaved={handleOptimisticSave}
+        onConfirmed={handleConfirmed}
+        onFailed={handleFailed}
         editTxn={editTxn}
         initialType={addType}
       />

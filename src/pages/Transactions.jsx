@@ -38,27 +38,29 @@ export default function Transactions() {
   const [showCats,   setShowCats]   = useState(false)
   const [addType,    setAddType]    = useState('expense')
 
+  // Render pagination: show 50 rows initially, more on demand.
+  // All data is loaded (from cache), we just control how many we render.
+  // This keeps initial render fast even with 374 transactions.
+  const [displayCount, setDisplayCount] = useState(50)
+  const [toast, setToast] = useState(null)
+
   // Debounce search: only fire a Supabase query 300ms after the user stops
   // typing — prevents a round-trip per keystroke (was 6 queries for "Swiggy")
+  // Reset display window when filters change so user sees top of filtered results
+  useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
+
   const debouncedSearch = useDebounce(search, 300)
 
-  const { data, refetch } = useTransactions({
+  const { data, refetch, prependOptimistic } = useTransactions({
     type:     typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter  || undefined,
     search:   debouncedSearch || undefined,
   })
 
-  const groups = groupByDate(data)
-  const total  = data.reduce((s, t) => {
-    if (t.type === 'expense')    return s - t.amount
-    if (t.type === 'income')     return s + t.amount
-    if (t.type === 'investment') return s - t.amount
-    return s
-  }, 0)
-
-  // Summary strip totals
-  const incomeTotal  = data.filter(t => t.type === 'income').reduce((s, t) => s + +t.amount, 0)
-  const outTotal     = data.filter(t => t.type !== 'income').reduce((s, t) => s + +t.amount, 0)
+  // Only group the rows we're actually rendering — avoids processing 374 items for 50 visible
+  const visibleData = data.slice(0, displayCount)
+  const groups      = groupByDate(visibleData)
+  const hasMore     = data.length > displayCount
 
   // Active filter count for filter button badge
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
@@ -98,26 +100,6 @@ export default function Transactions() {
           </button>
         )}
       </div>
-
-      {/* ── Income / Out / Net summary strip ─────────────────────────── */}
-      {data.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-income-bg rounded-card p-3">
-            <p className="text-[10px] font-semibold text-income-text uppercase tracking-wider mb-1">In</p>
-            <p className="text-[13px] font-bold text-income-text tabular-nums leading-none">{fmt(incomeTotal)}</p>
-          </div>
-          <div className="bg-expense-bg rounded-card p-3">
-            <p className="text-[10px] font-semibold text-expense-text uppercase tracking-wider mb-1">Out</p>
-            <p className="text-[13px] font-bold text-expense-text tabular-nums leading-none">{fmt(outTotal)}</p>
-          </div>
-          <div className={`rounded-card p-3 ${total >= 0 ? 'bg-income-bg' : 'bg-expense-bg'}`}>
-            <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${total >= 0 ? 'text-income-text' : 'text-expense-text'}`}>Net</p>
-            <p className={`text-[13px] font-bold tabular-nums leading-none ${total >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-              {total >= 0 ? '+' : ''}{fmt(total)}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* ── Search + filter button ────────────────────────────────────── */}
       <div className="flex gap-2 mb-3">
@@ -238,6 +220,35 @@ export default function Transactions() {
         })}
       </div>
 
+      {/* Load more — instant, no network, just renders more from cached data */}
+      {hasMore && (
+        <button
+          onClick={() => setDisplayCount(n => n + 50)}
+          className="w-full py-3 text-label font-semibold text-brand text-center
+                     bg-kosha-surface border border-kosha-border rounded-card mt-2"
+        >
+          Show more ({data.length - displayCount} remaining)
+        </button>
+      )}
+
+      {/* ── Error toast ─────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity:0, y:20 }}
+            animate={{ opacity:1, y:0 }}
+            exit={{ opacity:0, y:20 }}
+            transition={{ duration:0.2 }}
+            className="fixed bottom-32 left-4 right-4 z-50 flex items-center gap-3
+                       bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
+          >
+            <span className="text-[13px] font-medium flex-1">{toast}</span>
+            <button onClick={() => setToast(null)}
+              className="text-white opacity-60 text-xs font-semibold">Dismiss</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={28} weight="bold" color="white" />
@@ -245,7 +256,17 @@ export default function Transactions() {
 
       <AddTransactionSheet
         open={showAdd} onClose={() => { setShowAdd(false); setEditTxn(null) }}
-        onSaved={refetch} editTxn={editTxn} initialType={addType}
+        editTxn={editTxn} initialType={addType}
+        onSaved={(payload) => {
+          prependOptimistic(payload)
+          setDisplayCount(n => n + 1)  // ensure the new row is within the render window
+        }}
+        onConfirmed={refetch}
+        onFailed={(msg) => {
+          refetch()
+          setToast(msg)
+          setTimeout(() => setToast(null), 4000)
+        }}
       />
       <DeleteDialog
         open={!!delId} label="this transaction"
