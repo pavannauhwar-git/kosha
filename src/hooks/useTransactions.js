@@ -182,7 +182,21 @@ export function useTransactions({ type, category, search, limit } = {}) {
   useVisibilityRefetch(fetch)
 
   const refetch = useCallback(() => { invalidateCache('txns:'); fetch(true) }, [fetch])
-  return { data, loading, error, refetch }
+
+  // ── Optimistic prepend ────────────────────────────────────────────────
+  // Instantly inserts a transaction at the top of the list with a temp id.
+  // Called by Dashboard BEFORE the network save starts — zero latency UI.
+  // When refetch() is called after save, the real server row replaces it.
+  const prependOptimistic = useCallback((txn) => {
+    const tempTxn = {
+      ...txn,
+      id:         '__optimistic__' + Date.now(),
+      created_at: new Date().toISOString(),
+    }
+    setData(prev => [tempTxn, ...prev].slice(0, limit || 999))
+  }, [limit])
+
+  return { data, loading, error, refetch, prependOptimistic }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
