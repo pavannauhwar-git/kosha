@@ -6,6 +6,7 @@ import { useAuth } from './hooks/useAuth'
 import AuthGuard    from './components/AuthGuard'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
 import { C } from './lib/colors'
+import { prefetch } from './hooks/useTransactions'
 
 // ── Eager: Dashboard and Login are needed immediately ────────────────────
 import Dashboard    from './pages/Dashboard'
@@ -66,6 +67,10 @@ function BottomNav() {
             <motion.button
               key={item.path}
               className="nav-float-item"
+              onPointerDown={() => {
+                // Warm the cache before the finger lifts — makes tab switches feel instant
+                prefetch(item.path)
+              }}
               onClick={() => {
                 if (navigator.vibrate) navigator.vibrate(6)
                 navigate(item.path)

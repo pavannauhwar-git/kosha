@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Check, Repeat } from 'lucide-react'
+import { registerPrefetch } from '../hooks/useTransactions'
 import { useLiabilities, addLiability, markPaid, deleteLiability } from '../hooks/useLiabilities'
 import DeleteDialog from '../components/DeleteDialog'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'

@@ -24,14 +24,56 @@ export default defineConfig({
         ],
       },
       workbox: {
-        runtimeCaching: [{
-          urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: 'supabase-cache',
-            expiration: { maxEntries: 50, maxAgeSeconds: 86400 },
+        // ── Caching strategy ──────────────────────────────────────────────
+        // StaleWhileRevalidate: serve cached response INSTANTLY, then update
+        // cache in the background. This is what makes return visits feel
+        // native — the user never waits for the network on content they've
+        // seen before.
+        //
+        // NetworkFirst is only used for auth — sessions must always be
+        // validated against the server to prevent stale credential issues.
+        runtimeCaching: [
+          {
+            // Supabase auth endpoints — NetworkFirst (always validate session)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-auth',
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 10, maxAgeSeconds: 3600 },
+            },
           },
-        }],
+          {
+            // Supabase data endpoints — StaleWhileRevalidate (instant + fresh)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'supabase-data',
+              expiration: { maxEntries: 100, maxAgeSeconds: 300 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Google Fonts CSS — CacheFirst (font manifests rarely change)
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-css',
+              expiration: { maxEntries: 5, maxAgeSeconds: 31536000 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Google Fonts files — CacheFirst (font files never change)
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-files',
+              expiration: { maxEntries: 20, maxAgeSeconds: 31536000 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],
