@@ -10,6 +10,9 @@ function useAuthState() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Fire-and-forget: loads profile without blocking auth loading state.
+  // The rest of the app renders immediately once user is known —
+  // profile data arrives a moment later and slots in silently.
   const loadProfile = useCallback(async (userId) => {
     if (!userId) { setProfile(null); return }
     try {
@@ -25,58 +28,100 @@ function useAuthState() {
   }, [])
 
   useEffect(() => {
-    // ── Secondary: onAuthStateChange for live events ───────────────────
-    // Registered FIRST so no events are missed during init.
+    // ── Single source of truth: onAuthStateChange ─────────────────────
+    //
+    // Supabase v2 fires events in this order on page load:
+    //   INITIAL_SESSION → fires immediately from localStorage (no network)
+    //   TOKEN_REFRESHED → fires shortly after if token was near expiry
+    //
+    // By handling ALL events here we avoid the two problems that plagued
+    // the previous implementation:
+    //
+    //   Problem 1 — The 6-second timeout on getSession() would fire on
+    //   slow mobile connections, catch() would run, setUser(null) would
+    //   be called, and AuthGuard would redirect to /login mid-session.
+    //   The timeout is now GONE entirely.
+    //
+    //   Problem 2 — INITIAL_SESSION was not handled, so the app always
+    //   fell through to getSession() — the slow network path — even when
+    //   a valid session was sitting in localStorage.
+    //
+    // The auth loading state is set to false after the first event fires.
+    // INITIAL_SESSION fires synchronously from localStorage in < 5ms,
+    // so the skeleton in AuthGuard is visible for an imperceptibly short
+    // time before the real content loads.
+
+    let initialised = false
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'TOKEN_REFRESHED') {
-          setUser(session?.user ?? null)
+
+        const u = session?.user ?? null
+
+        // ── INITIAL_SESSION: fired synchronously from localStorage ─────
+        // This is the first event on every page load. session is whatever
+        // is in localStorage — no network call needed.
+        if (event === 'INITIAL_SESSION') {
+          setUser(u)
+          setLoading(false)           // ← unblocks AuthGuard immediately
+          initialised = true
+          if (u) loadProfile(u.id)   // ← non-blocking, runs in background
+          else   setProfile(null)
           return
         }
 
+        // ── TOKEN_REFRESHED: silent token refresh completed ───────────
+        // Token was near expiry on load; Supabase refreshed it. Update
+        // the user object so the new token is used for all future requests.
+        if (event === 'TOKEN_REFRESHED') {
+          setUser(u)
+          return
+        }
+
+        // ── SIGNED_IN: explicit login action ─────────────────────────
+        if (event === 'SIGNED_IN') {
+          setUser(u)
+          if (!initialised) { setLoading(false); initialised = true }
+          if (u) loadProfile(u.id)
+          else   setProfile(null)
+          return
+        }
+
+        // ── SIGNED_OUT: explicit logout or session expiry ─────────────
         if (event === 'SIGNED_OUT') {
           setUser(null)
           setProfile(null)
+          if (!initialised) { setLoading(false); initialised = true }
           return
         }
 
-        if (event === 'SIGNED_IN') {
-          const u = session?.user ?? null
+        // ── USER_UPDATED: email/password change ───────────────────────
+        if (event === 'USER_UPDATED') {
           setUser(u)
-          if (u) await loadProfile(u.id)
-          else setProfile(null)
+          return
         }
       }
     )
 
-    // ── Primary: getSession on mount ──────────────────────────────────
-    // Reads token from localStorage and refreshes it if expired.
-    // Wrapped in a 6s timeout so a hanging refresh never leaves the
-    // app stuck on a blank page.
-    async function init() {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth init timeout')), 6000)
-      )
-      try {
-        const { data: { session } } = await Promise.race([
-          supabase.auth.getSession(),
-          timeout,
-        ])
-        const u = session?.user ?? null
-        setUser(u)
-        if (u) await loadProfile(u.id)
-        else setProfile(null)
-      } catch {
-        setUser(null)
-        setProfile(null)
-      } finally {
+    // ── Safety net ───────────────────────────────────────────────────
+    // In the unlikely event onAuthStateChange never fires INITIAL_SESSION
+    // (e.g. Supabase client is misconfigured, or running in an environment
+    // where localStorage is unavailable), release the loading state after
+    // 3 seconds so the app doesn't hang indefinitely.
+    // This does NOT log the user out — it just sets loading = false and
+    // lets AuthGuard decide what to show based on whatever state exists.
+    const safetyTimer = setTimeout(() => {
+      if (!initialised) {
+        console.warn('[Kosha] Auth INITIAL_SESSION did not fire within 3s. Releasing loading state.')
         setLoading(false)
+        initialised = true
       }
+    }, 3000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(safetyTimer)
     }
-
-    init()
-
-    return () => subscription.unsubscribe()
   }, [loadProfile])
 
   const signInWithGoogle = useCallback(async () => {
