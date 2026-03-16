@@ -258,7 +258,9 @@ export function useMonthSummary(year, month) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  return { data, loading }
+  const refetch = useCallback(() => { fetch(true) }, [fetch])
+
+  return { data, loading, refetch }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -333,7 +335,9 @@ export function useYearSummary(year) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  return { data, loading }
+  const refetch = useCallback(() => { fetch(true) }, [fetch])
+
+  return { data, loading, refetch }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -391,7 +395,9 @@ export function useRunningBalance(year, month) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  return { balance, loading }
+  const refetch = useCallback(() => { fetch(true) }, [fetch])
+
+  return { balance, loading, refetch }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

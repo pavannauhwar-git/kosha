@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import {
@@ -14,6 +14,7 @@ import CategoryIcon from '../components/CategoryIcon'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
+import PullToRefresh from '../components/PullToRefresh'
 
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
                      'Jul','Aug','Sep','Oct','Nov','Dec']
@@ -263,23 +264,24 @@ export default function Analytics() {
   const [year, setYear] = useState(now.getFullYear())
   const [top5, setTop5] = useState([])
 
-  const { data, loading } = useYearSummary(year)
-  const { data: prevData } = useYearSummary(year - 1)
+  const { data, loading, refetch } = useYearSummary(year)
+  const { data: prevData, refetch: refetchPrev } = useYearSummary(year - 1)
+
+  const refreshTop5 = useCallback(async () => {
+    const { data: rows } = await supabase
+      .from('transactions')
+      .select('id, date, description, amount, category')
+      .eq('type', 'expense')
+      .gte('date', `${year}-01-01`)
+      .lte('date', `${year}-12-31`)
+      .order('amount', { ascending: false })
+      .limit(5)
+    setTop5(rows || [])
+  }, [year])
 
   useEffect(() => {
-    async function loadTop5() {
-      const { data: rows } = await supabase
-        .from('transactions')
-        .select('id, date, description, amount, category')
-        .eq('type', 'expense')
-        .gte('date', `${year}-01-01`)
-        .lte('date', `${year}-12-31`)
-        .order('amount', { ascending: false })
-        .limit(5)
-      setTop5(rows || [])
-    }
-    loadTop5()
-  }, [year])
+    refreshTop5()
+  }, [refreshTop5])
 
   // Grouped bar chart — Income vs Spent side by side, no area overlap
   const chartData = (data?.monthly || [])
@@ -318,8 +320,15 @@ export default function Analytics() {
     ? { current: lastTwo[1].expense, previous: lastTwo[0].expense }
     : null
 
+  const handleRefresh = useCallback(() => {
+    refetch()
+    refetchPrev()
+    refreshTop5()
+  }, [refetch, refetchPrev, refreshTop5])
+
   return (
     <div className="page">
+      <PullToRefresh onRefresh={handleRefresh} />
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pt-2">

@@ -16,6 +16,7 @@ import { CATEGORIES } from '../lib/categories'
 import { C } from '../lib/colors'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
 import CategoryIcon from '../components/CategoryIcon'
+import PullToRefresh from '../components/PullToRefresh'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 4 },
@@ -153,13 +154,13 @@ export default function Dashboard() {
   const [optimisticDelta, setOptimisticDelta] = useState(null)
 
   const { data: recent, refetch, prependOptimistic } = useTransactions({ limit: 8 })
-  const { data: summary }         = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
-  const { data: lastSummary }     = useMonthSummary(
+  const { data: summary,     refetch: refetchSummary }     = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
+  const { data: lastSummary, refetch: refetchLastSummary } = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
     now.getMonth() === 0 ? 12 : now.getMonth()
   )
-  const { balance: runningBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
-  const { pending: bills }          = useLiabilities()
+  const { balance: runningBalance, refetch: refetchBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
+  const { pending: bills, refetch: refetchBills }             = useLiabilities()
 
   const dueSoon    = bills.filter(b => daysUntil(b.due_date) <= 7)
   // Apply optimistic delta on top of server data for instant hero card update
@@ -251,6 +252,14 @@ export default function Dashboard() {
     refetch()
   }, [delId, refetch])
 
+  const handleRefreshAll = useCallback(() => {
+    refetch()
+    refetchSummary()
+    refetchLastSummary()
+    refetchBalance()
+    refetchBills()
+  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, refetchBills])
+
   // Stable callbacks for TransactionItem — avoids remounting memo'd rows
   // on every Dashboard render (e.g. when bell icon updates or state changes)
   const handleDelete = useCallback((id) => setDelId(id), [])
@@ -262,6 +271,7 @@ export default function Dashboard() {
 
   return (
     <div className="page">
+      <PullToRefresh onRefresh={handleRefreshAll} />
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
 
         {/* ── Greeting ──────────────────────────────────────────────────── */}

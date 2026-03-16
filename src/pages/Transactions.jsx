@@ -8,6 +8,7 @@ import DeleteDialog        from '../components/DeleteDialog'
 import { CATEGORIES }      from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus } from '@phosphor-icons/react'
+import PullToRefresh from '../components/PullToRefresh'
 
 const TYPES = [
   { id:'all',        label:'All'      },
@@ -78,8 +79,13 @@ export default function Transactions() {
     setShowAdd(true)
   }, [])
 
+  const handleRefresh = useCallback(() => {
+    refetch()
+  }, [refetch])
+
   return (
     <div className="page">
+      <PullToRefresh onRefresh={handleRefresh} />
 
       {/* ── Header with live count ────────────────────────────────────── */}
       <div className="flex items-start justify-between mb-4 pt-2">

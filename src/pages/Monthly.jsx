@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMonthSummary } from '../hooks/useTransactions'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, savingsRate } from '../lib/utils'
+import PullToRefresh from '../components/PullToRefresh'
 
 // ── SVG arc bar — round-capped, same as Dashboard Spending Pulse ──────────
 function SvgArcBar({ pct, color }) {
@@ -103,7 +104,7 @@ export default function Monthly() {
   const now   = new Date()
   const [year,  setYear]  = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
-  const { data, loading } = useMonthSummary(year, month)
+  const { data, loading, refetch } = useMonthSummary(year, month)
 
   function prev() {
     if (month === 1) { setMonth(12); setYear(y => y - 1) }
@@ -113,6 +114,10 @@ export default function Monthly() {
     if (month === 12) { setMonth(1); setYear(y => y + 1) }
     else setMonth(m => m + 1)
   }
+
+  const handleRefresh = useCallback(() => {
+    refetch()
+  }, [refetch])
 
   const earned   = data?.earned     || 0
   const spent    = data?.expense    || 0
@@ -134,6 +139,7 @@ export default function Monthly() {
 
   return (
     <div className="page">
+      <PullToRefresh onRefresh={handleRefresh} />
 
       {/* ── Month navigator ───────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pt-2">
