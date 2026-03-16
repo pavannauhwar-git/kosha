@@ -111,7 +111,7 @@ export default function Transactions() {
       <PullToRefresh onRefresh={handleRefresh} />
 
       {/* ── Header with live count ────────────────────────────────────── */}
-      <div className="flex items-start justify-between mb-4 pt-2">
+      <div className="flex items-center justify-between mb-4 pt-2">
         <div>
           <h1 className="font-display text-display text-ink">Transactions</h1>
           <p className="text-caption text-ink-3 mt-0.5">

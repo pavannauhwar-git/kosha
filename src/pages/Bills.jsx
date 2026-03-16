@@ -67,7 +67,7 @@ export default function Bills() {
     <div className="page">
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between mb-4 pt-2">
+      <div className="flex items-center justify-between mb-4 pt-2">
         <div>
           <h1 className="font-display text-display text-ink">Bills &amp; Dues</h1>
           {pending.length > 0 && (
