@@ -39,16 +39,9 @@ export default function Transactions() {
   const [delId,      setDelId]      = useState(null)
   const [showCats,   setShowCats]   = useState(false)
   const [addType,    setAddType]    = useState('expense')
-
-  // Render pagination: show 50 rows initially, more on demand.
-  // All data is loaded (from cache), we just control how many we render.
-  // This keeps initial render fast even with 374 transactions.
   const [displayCount, setDisplayCount] = useState(50)
   const [toast, setToast] = useState(null)
 
-  // Debounce search: only fire a Supabase query 300ms after the user stops
-  // typing — prevents a round-trip per keystroke (was 6 queries for "Swiggy")
-  // Reset display window when filters change so user sees top of filtered results
   const debouncedSearch = useDebounce(search, 300)
   useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
 
@@ -64,27 +57,25 @@ export default function Transactions() {
     search:   debouncedSearch || undefined,
   })
 
-  // Only group the rows we're actually rendering — avoids processing 374 items for 50 visible
   const visibleData = data.slice(0, displayCount)
   const groups      = groupByDate(visibleData)
   const hasMore     = data.length > displayCount
-
-  // Active filter count for filter button badge
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
+
+  // ✅ FIXED: moved up before confirmDelete so variables are defined in time
+  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
 
   const confirmDelete = useCallback(async () => {
     const id = delId
     if (!id) return
 
     addOptimisticDelete(id)
-    // Optimistically remove from the visible list immediately
     applyLocalDelete(id)
 
     try {
       await deleteTransaction(id)
     } catch (e) {
       removeOptimisticDelete(id)
-      // If Supabase delete fails, refetch to restore the row and surface error
       refetch()
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
@@ -93,7 +84,6 @@ export default function Transactions() {
     }
   }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch])
 
-  // Stable callbacks for TransactionItem memo
   const handleDelete = useCallback((id) => setDelId(id), [])
   const handleTap    = useCallback((t) => {
     setEditTxn(t)
@@ -101,11 +91,8 @@ export default function Transactions() {
     setShowAdd(true)
   }, [])
 
-  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
-
   return (
     <div className="page">
-      
 
       {/* ── Header with live count ────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-4 pt-2">
@@ -146,7 +133,6 @@ export default function Transactions() {
             </button>
           )}
         </div>
-        {/* Filter button — opens category panel */}
         <button
           onClick={() => setShowCats(v => !v)}
           className={`relative w-[46px] h-[46px] rounded-card flex items-center justify-center
@@ -224,7 +210,6 @@ export default function Transactions() {
           const net = groupNet(txns)
           return (
             <div key={date} className="list-card">
-              {/* Date group header — tinted, with net amount */}
               <div className="flex items-center justify-between px-4 py-2 bg-kosha-surface-2
                               border-b border-kosha-border">
                 <span className="text-caption font-semibold text-ink-3">
@@ -248,7 +233,7 @@ export default function Transactions() {
         })}
       </div>
 
-      {/* Load more — instant, no network, just renders more from cached data */}
+      {/* Load more */}
       {hasMore && (
         <button
           onClick={() => setDisplayCount(n => n + 50)}
@@ -289,13 +274,11 @@ export default function Transactions() {
         initialType={addType}
         onSaved={(payload) => {
           if (payload.id) {
-            // Edit — update in-place for this list instance
             applyLocalEdit(payload.id, payload)
           } else {
-            // New transaction — prepend + global optimistic add
             prependOptimistic(payload)
             addOptimisticTxn(payload)
-            setDisplayCount(n => n + 1)  // ensure the new row is within the render window
+            setDisplayCount(n => n + 1)
           }
         }}
         onConfirmed={async () => {
