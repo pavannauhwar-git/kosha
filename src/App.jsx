@@ -43,6 +43,7 @@ const NAV = [
 // ── Global header — ProfileMenu fixed top-right, rendered once ────────────
 // Same principle as BottomNav: one instance, one position, no per-page drift.
 // Hidden on auth/onboarding pages where the nav is also hidden.
+// ── Global header — ProfileMenu fixed top-right, rendered once ────────────
 function GlobalHeader() {
   const location = useLocation()
 
@@ -50,7 +51,8 @@ function GlobalHeader() {
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   return (
-    <div className="fixed top-6 right-4 z-30">
+    // Added mt-[env(safe-area-inset-top)] to push it below the mobile status bar
+    <div className="fixed top-6 right-4 z-30 mt-[env(safe-area-inset-top)]">
       <ProfileMenu />
     </div>
   )
