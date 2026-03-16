@@ -5,6 +5,7 @@ import { AuthProvider } from './hooks/useAuth'
 import { AppDataProvider } from './hooks/useAppDataStore'
 import { useAuth } from './hooks/useAuth'
 import AuthGuard    from './components/AuthGuard'
+import ProfileMenu  from './components/ProfileMenu'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
 import { C } from './lib/colors'
 import { prefetch } from './hooks/useTransactions'
@@ -38,6 +39,22 @@ const NAV = [
   { path: '/analytics',    label: 'Insights', Icon: ChartBar     },
   { path: '/bills',        label: 'Bills',    Icon: Receipt      },
 ]
+
+// ── Global header — ProfileMenu fixed top-right, rendered once ────────────
+// Same principle as BottomNav: one instance, one position, no per-page drift.
+// Hidden on auth/onboarding pages where the nav is also hidden.
+function GlobalHeader() {
+  const location = useLocation()
+
+  const hideOn = ['/login', '/onboarding', '/join', '/auth']
+  if (hideOn.some(p => location.pathname.startsWith(p))) return null
+
+  return (
+    <div className="fixed top-4 right-4 z-30">
+      <ProfileMenu />
+    </div>
+  )
+}
 
 // ── Bottom nav ─────────────────────────────────────────────────────────────
 // Apple tab-bar principles applied:
@@ -182,6 +199,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
 
+            <GlobalHeader />
             <BottomNav />
           </div>
         </AppDataProvider>

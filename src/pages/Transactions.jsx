@@ -8,7 +8,6 @@ import DeleteDialog        from '../components/DeleteDialog'
 import { CATEGORIES }      from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus } from '@phosphor-icons/react'
-import ProfileMenu from '../components/ProfileMenu'
 import { useAppData } from '../hooks/useAppDataStore'
 
 const TYPES = [
@@ -99,16 +98,13 @@ export default function Transactions() {
   return (
     <div className="page">
 
-      {/* ── Header with live count ────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-4 pt-2">
-        <div>
-          <h1 className="font-display text-display text-ink">Transactions</h1>
-          <p className="text-caption text-ink-3 mt-0.5">
-            {data.length > 0 ? `${data.length} transaction${data.length !== 1 ? 's' : ''}` : 'No results'}
-            {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
-          </p>
-        </div>
-        <ProfileMenu className="mt-0.5"/>
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <div className="mb-4 pt-2">
+        <h1 className="font-display text-display text-ink">Transactions</h1>
+        <p className="text-caption text-ink-3 mt-0.5">
+          {data.length > 0 ? `${data.length} transaction${data.length !== 1 ? 's' : ''}` : 'No results'}
+          {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
+        </p>
       </div>
 
       {/* ── Search bar ───────────────────────────────────────────────── */}
@@ -278,14 +274,12 @@ export default function Transactions() {
         }}
         onConfirmed={async () => {
           await refetch()
-          // Clear the overlay AFTER fresh data is back — no flicker
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
             pendingEditId.current = null
           }
         }}
         onFailed={(msg) => {
-          // Roll back edit overlay too
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
             pendingEditId.current = null

@@ -5,7 +5,6 @@ import { registerPrefetch } from '../hooks/useTransactions'
 import { useLiabilities, addLiability, markPaid, deleteLiability } from '../hooks/useLiabilities'
 import DeleteDialog from '../components/DeleteDialog'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
-import ProfileMenu from '../components/ProfileMenu'
 
 const RECURRENCE = ['monthly','quarterly','yearly']
 
@@ -67,26 +66,16 @@ export default function Bills() {
     <div className="page">
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-4 pt-2">
-        <div>
-          <h1 className="font-display text-display text-ink">Bills &amp; Dues</h1>
-          {pending.length > 0 && (
-            <p className="text-caption text-ink-3 mt-0.5">
-              Next due in {Math.min(...pending.map(b => Math.max(0, daysUntil(b.due_date))))} days
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-pill bg-brand text-white
-                       text-xs font-semibold active:scale-95 transition-transform duration-75">
-            <Plus size={14} /> Add Bill
-          </button>
-          <ProfileMenu className="mt-0.5" />
-        </div>
+      <div className="mb-4 pt-2">
+        <h1 className="font-display text-display text-ink">Bills &amp; Dues</h1>
+        {pending.length > 0 && (
+          <p className="text-caption text-ink-3 mt-0.5">
+            Next due in {Math.min(...pending.map(b => Math.max(0, daysUntil(b.due_date))))} days
+          </p>
+        )}
       </div>
 
-      {/* ── Structured summary card (replaces flat amber tint) ────────── */}
+      {/* ── Structured summary card ───────────────────────────────────── */}
       {pending.length > 0 && (
         <div className="card mb-4 p-4">
           <div className="flex items-center justify-between mb-1">
@@ -145,10 +134,9 @@ export default function Bills() {
       ) : (
         <div className="space-y-3">
 
-          {/* ── Pending empty state — Wise-style ── */}
+          {/* ── Pending empty state ── */}
           {tab === 'pending' && pending.length === 0 && (
             <div className="card py-10 px-6 flex flex-col items-center text-center">
-              {/* Check ring — inline SVG, no emoji */}
               <div className="w-16 h-16 rounded-full bg-income-bg flex items-center
                               justify-center mb-4">
                 <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -324,6 +312,11 @@ export default function Bills() {
           </>
         )}
       </AnimatePresence>
+
+      {/* FAB */}
+      <button className="fab" onClick={() => setShowAdd(true)}>
+        <Plus size={28} weight="bold" color="white" />
+      </button>
 
       <DeleteDialog
         open={!!delId} label="this bill"

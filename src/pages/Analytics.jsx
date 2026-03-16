@@ -14,7 +14,6 @@ import CategoryIcon from '../components/CategoryIcon'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
-import ProfileMenu from '../components/ProfileMenu'
 
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
                      'Jul','Aug','Sep','Oct','Nov','Dec']
@@ -155,7 +154,6 @@ function YoYCards({ years, currentYear }) {
             className={`card p-4 ${isCurrent ? 'border-brand' : ''}`}
             style={isCurrent ? { borderWidth:'1.5px' } : {}}
           >
-            {/* Year label + badge */}
             <div className="flex items-center gap-2 mb-3">
               <span className={`text-label font-bold ${isCurrent ? 'text-ink' : 'text-ink-3'}`}>
                 {y}
@@ -168,7 +166,6 @@ function YoYCards({ years, currentYear }) {
               )}
             </div>
 
-            {/* 4-stat grid */}
             <div className="grid grid-cols-4 gap-2">
               {[
                 { label:'Earned',   key:'income', cls: isCurrent ? 'text-income-text' : 'text-ink-3' },
@@ -210,7 +207,6 @@ function PortfolioDonut({ vehicleData }) {
     <div className="card p-5">
       <p className="section-label mb-4">Portfolio Allocation</p>
       <div className="flex items-center gap-4">
-        {/* Donut */}
         <div className="relative shrink-0" style={{ width:130, height:130 }}>
           <PieChart width={130} height={130}>
             <Pie
@@ -226,14 +222,12 @@ function PortfolioDonut({ vehicleData }) {
               ))}
             </Pie>
           </PieChart>
-          {/* Center label */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <span className="text-[12px] font-bold text-ink tabular-nums">{fmt(total, true)}</span>
             <span className="text-[10px] text-ink-3">total</span>
           </div>
         </div>
 
-        {/* Legend */}
         <div className="flex-1 space-y-0 min-w-0">
           {vehicleData.map(([vehicle, amt], i) => {
             const pct = Math.round((amt / total) * 100)
@@ -283,7 +277,6 @@ export default function Analytics() {
     refreshTop5()
   }, [refreshTop5])
 
-  // Grouped bar chart — Income vs Spent side by side, no area overlap
   const chartData = (data?.monthly || [])
     .map((m, i) => ({
       name:   MONTH_SHORT[i],
@@ -323,7 +316,7 @@ export default function Analytics() {
   return (
     <div className="page">
 
-      {/* ── Year navigator + profile ──────────────────────────────────── */}
+      {/* ── Year navigator ────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pt-2">
         <button onClick={() => setYear(y => y - 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
@@ -331,14 +324,11 @@ export default function Analytics() {
           <ChevronLeft size={18} className="text-ink-2" />
         </button>
         <h1 className="text-display font-bold text-ink tracking-tight">{year}</h1>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setYear(y => y + 1)}
-            className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                       flex items-center justify-center active:bg-kosha-surface-2">
-            <ChevronRight size={18} className="text-ink-2" />
-          </button>
-          <ProfileMenu className="mt-0.5" />
-        </div>
+        <button onClick={() => setYear(y => y + 1)}
+          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                     flex items-center justify-center active:bg-kosha-surface-2">
+          <ChevronRight size={18} className="text-ink-2" />
+        </button>
       </div>
 
       {loading ? (
@@ -377,28 +367,23 @@ export default function Analytics() {
             </div>
           </div>
 
-          {/* ── 2. Monthly Cash Flow — dark card, glowing area curves ──── */}
+          {/* ── 2. Cash Flow chart ──────────────────────────────────── */}
           {chartData.length > 0 && (
             <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background:C.chartDark }}>
               <div className="px-5 pt-5 pb-2">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-label font-semibold" style={{ color:'rgba(255,255,255,0.85)' }}>
-                    Monthly Cash Flow
-                  </p>
-                  <span style={{ fontSize:11, color:'rgba(255,255,255,0.35)' }}>{chartData.length} months</span>
-                </div>
+                <p className="text-label font-semibold" style={{ color:'rgba(255,255,255,0.85)' }}>Cash Flow</p>
+                <p style={{ fontSize:11, color:'rgba(255,255,255,0.35)', marginTop:2 }}>Income vs spending by month</p>
               </div>
-              <ResponsiveContainer width="100%" height={chartH + 20}>
-                <AreaChart data={chartData}
-                  margin={{ top:8, right:16, left:16, bottom:0 }}>
+              <ResponsiveContainer width="100%" height={chartH}>
+                <AreaChart data={chartData} margin={{ top:8, right:16, left:16, bottom:0 }}>
                   <defs>
                     <linearGradient id="gIncome" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={C.chartIncome} stopOpacity={0.30}/>
-                      <stop offset="100%" stopColor={C.chartIncome} stopOpacity={0.02}/>
+                      <stop offset="5%"  stopColor={C.chartIncome}  stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={C.chartIncome}  stopOpacity={0.02} />
                     </linearGradient>
                     <linearGradient id="gExpense" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={C.chartExpense} stopOpacity={0.25}/>
-                      <stop offset="100%" stopColor={C.chartExpense} stopOpacity={0.02}/>
+                      <stop offset="5%"  stopColor={C.chartExpense} stopOpacity={0.20} />
+                      <stop offset="95%" stopColor={C.chartExpense} stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="name"
@@ -406,8 +391,7 @@ export default function Analytics() {
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
-                  <Tooltip content={<DarkTooltip />}
-                    cursor={{ stroke:'rgba(255,255,255,0.10)', strokeWidth:1 }} />
+                  <Tooltip content={<DarkTooltip />} cursor={{ stroke:'rgba(255,255,255,0.08)', strokeWidth:1 }} />
                   <Area dataKey="Income" type="monotone"
                     stroke={C.chartIncome} strokeWidth={2}
                     fill="url(#gIncome)" dot={false}

@@ -17,7 +17,6 @@ import { CATEGORIES } from '../lib/categories'
 import { C } from '../lib/colors'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
 import CategoryIcon from '../components/CategoryIcon'
-import ProfileMenu from '../components/ProfileMenu'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 4 },
@@ -92,7 +91,7 @@ function SavingsRing({ rate }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const now      = new Date()
-  const { user, profile, signOut } = useAuth()
+  const { profile } = useAuth()
 
   const [showAdd, setShowAdd] = useState(false)
   const [editTxn, setEditTxn] = useState(null)
@@ -194,11 +193,6 @@ export default function Dashboard() {
     setShowAdd(true)
   }, [])
 
-  const handleSignOut = useCallback(async () => {
-    await signOut()
-    navigate('/login', { replace: true })
-  }, [signOut, navigate])
-
   const confirmDelete = useCallback(async () => {
     const id = delId
     if (!id) return
@@ -234,28 +228,13 @@ export default function Dashboard() {
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
 
         {/* ── Greeting ──────────────────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="flex items-start justify-between pt-2">
-          <div>
-            <p className="text-caption text-ink-3">
-              {now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' })}
-            </p>
-            <h1 className="text-display font-bold text-ink tracking-tight">
-              {greeting}{profile?.display_name ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
-            </h1>
-          </div>
-          <div className="flex items-center gap-2 mt-0.5">
-            {dueSoon.length > 0 && (
-              <button onClick={() => navigate('/bills')}
-                className="relative w-9 h-9 rounded-full bg-expense-bg flex items-center justify-center">
-                <Bell size={16} className="text-expense-text" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-expense rounded-full
-                                 text-white text-[9px] font-bold flex items-center justify-center">
-                  {dueSoon.length}
-                </span>
-              </button>
-            )}
-            <ProfileMenu className="mt-0.5" />
-          </div>
+        <motion.div variants={fadeUp} className="pt-2">
+          <p className="text-caption text-ink-3">
+            {now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' })}
+          </p>
+          <h1 className="text-display font-bold text-ink tracking-tight">
+            {greeting}{profile?.display_name ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
+          </h1>
         </motion.div>
 
         {/* ── Hero card ─────────────────────────────────────────────────── */}
@@ -313,9 +292,9 @@ export default function Dashboard() {
           <div className="flex justify-around">
             {[
               { label:'Income',  icon:<ArrowUp size={20} weight="bold" />,   bg:'bg-income-bg',  color:C.incomeText,  type:'income'     },
-              { label:'Expense', icon:<ArrowDown size={20} weight="bold" />, bg:'bg-expense-bg', color:C.expense,  type:'expense'    },
+              { label:'Expense', icon:<ArrowDown size={20} weight="bold" />, bg:'bg-expense-bg', color:C.expense,     type:'expense'    },
               { label:'Invest',  icon:<ChartLine size={20} weight="bold" />, bg:'bg-invest-bg',  color:C.investText,  type:'investment' },
-              { label:'Bills',   icon:<Receipt size={20} weight="bold" />,   bg:'bg-repay-bg',   color:C.bills,  type:'bills'      },
+              { label:'Bills',   icon:<Receipt size={20} weight="bold" />,   bg:'bg-repay-bg',   color:C.bills,       type:'bills'      },
             ].map(({ label, icon, bg, color, type }) => (
               <button key={label}
                 onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}

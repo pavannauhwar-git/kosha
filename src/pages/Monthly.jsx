@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMonthSummary } from '../hooks/useTransactions'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, savingsRate } from '../lib/utils'
-import ProfileMenu from '../components/ProfileMenu'
+import { C } from '../lib/colors'
+import { CATEGORIES } from '../lib/categories'
 
 // ── SVG arc bar — round-capped, same as Dashboard Spending Pulse ──────────
 function SvgArcBar({ pct, color }) {
@@ -24,8 +25,6 @@ function SvgArcBar({ pct, color }) {
     </svg>
   )
 }
-import { C } from '../lib/colors'
-import { CATEGORIES } from '../lib/categories'
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
@@ -136,7 +135,7 @@ export default function Monthly() {
   return (
     <div className="page">
 
-      {/* ── Month navigator + profile ─────────────────────────────────── */}
+      {/* ── Month navigator ───────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pt-2">
         <button onClick={prev}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
@@ -146,14 +145,11 @@ export default function Monthly() {
         <h1 className="text-display font-bold text-ink tracking-tight">
           {MONTH_NAMES[month - 1]} {year}
         </h1>
-        <div className="flex items-center gap-2">
-          <button onClick={next}
-            className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                       flex items-center justify-center active:bg-kosha-surface-2">
-            <ChevronRight size={18} className="text-ink-2" />
-          </button>
-          <ProfileMenu className="mt-0.5" />
-        </div>
+        <button onClick={next}
+          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                     flex items-center justify-center active:bg-kosha-surface-2">
+          <ChevronRight size={18} className="text-ink-2" />
+        </button>
       </div>
 
       {/* ── Hero card ─────────────────────────────────────────────────── */}
@@ -205,33 +201,24 @@ export default function Monthly() {
 
                 return (
                   <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
-                    <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}
-                         style={{ overflow: 'visible' }}>
+                    <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
                       {/* Track */}
-                      <circle cx={CX} cy={CY} r={R}
-                        fill="none" stroke={C.brandBorder} strokeWidth={SW} />
-                      {/* Coloured arcs */}
-                      {segs.map((s, i) => {
-                        const gapFrac = (GAP_DEG / 360) * CIRC
-                        const arcLen  = (s.pct / 100) * CIRC - gapFrac
-                        const dashArr = `${Math.max(arcLen, 0)} ${CIRC}`
-                        const dashOff = -(offset / 100) * CIRC
-                        const node = (
+                      <circle cx={CX} cy={CY} r={R} fill="none"
+                        stroke={C.brandBorder} strokeWidth={SW} />
+                      {segs.map((seg, i) => {
+                        const dashLen = Math.max(0, (seg.pct / 100) * CIRC - (GAP_DEG / 360) * CIRC)
+                        const currentOffset = offset
+                        offset += seg.pct
+                        return (
                           <circle key={i} cx={CX} cy={CY} r={R}
-                            fill="none"
-                            stroke={s.color}
-                            strokeWidth={SW}
-                            strokeDasharray={dashArr}
-                            strokeDashoffset={dashOff}
-                            strokeLinecap="round"
+                            fill="none" stroke={seg.color} strokeWidth={SW}
+                            strokeDasharray={`${dashLen} ${CIRC}`}
+                            strokeDashoffset={-currentOffset * CIRC / 100}
                             transform={`rotate(-90 ${CX} ${CY})`}
                           />
                         )
-                        offset += s.pct
-                        return node
                       })}
                     </svg>
-                    {/* Center label */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <span style={{ fontSize: 15, fontWeight: 700, color: C.brand,
                                      fontFamily: 'Plus Jakarta Sans, system-ui', lineHeight: 1.1 }}>
@@ -249,9 +236,9 @@ export default function Monthly() {
               {/* Breakdown rows */}
               <div className="flex-1 space-y-3 pt-1">
                 {[
-                  { label:'Spent',    val:spent,    pct:spentPct,    dot:C.expense, textCls:'text-expense-text' },
+                  { label:'Spent',    val:spent,    pct:spentPct,    dot:C.expense,    textCls:'text-expense-text' },
                   { label:'Invested', val:invested, pct:investedPct, dot:C.investText, textCls:'text-invest-text'  },
-                  { label:'Saved',    val:saved,    pct:savedPct,    dot:C.brand, textCls:'text-brand'        },
+                  { label:'Saved',    val:saved,    pct:savedPct,    dot:C.brand,      textCls:'text-brand'        },
                 ].map(s => (
                   <div key={s.label}>
                     <div className="flex items-center gap-2 mb-1">
