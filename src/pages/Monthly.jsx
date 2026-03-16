@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMonthSummary } from '../hooks/useTransactions'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, savingsRate } from '../lib/utils'
-import PullToRefresh from '../components/PullToRefresh'
 import ProfileMenu from '../components/ProfileMenu'
 
 // ── SVG arc bar — round-capped, same as Dashboard Spending Pulse ──────────
@@ -116,10 +115,6 @@ export default function Monthly() {
     else setMonth(m => m + 1)
   }
 
-  const handleRefresh = useCallback(() => {
-    refetch()
-  }, [refetch])
-
   const earned   = data?.earned     || 0
   const spent    = data?.expense    || 0
   const invested = data?.investment || 0
@@ -140,7 +135,6 @@ export default function Monthly() {
 
   return (
     <div className="page">
-      <PullToRefresh onRefresh={handleRefresh} />
 
       {/* ── Month navigator + profile ─────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pt-2">
@@ -158,7 +152,7 @@ export default function Monthly() {
                        flex items-center justify-center active:bg-kosha-surface-2">
             <ChevronRight size={18} className="text-ink-2" />
           </button>
-          <ProfileMenu />
+          <ProfileMenu className="mt-0.5" />
         </div>
       </div>
 

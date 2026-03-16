@@ -82,7 +82,7 @@ export default function Bills() {
                        text-xs font-semibold active:scale-95 transition-transform duration-75">
             <Plus size={14} /> Add Bill
           </button>
-          <ProfileMenu />
+          <ProfileMenu className="mt-0.5" />
         </div>
       </div>
 

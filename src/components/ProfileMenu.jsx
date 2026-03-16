@@ -4,7 +4,7 @@ import { LogOut, Camera } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 
-export default function ProfileMenu() {
+export default function ProfileMenu({ className = '' }) {
   const { user, profile, signOut, updateProfile } = useAuth()
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -47,7 +47,7 @@ export default function ProfileMenu() {
   }
 
   return (
-    <div className="relative">
+    <div className={`relative ${className}`.trim()}>
       <button
         onClick={() => setOpen(v => !v)}
         className="w-9 h-9 rounded-full bg-brand-container flex items-center

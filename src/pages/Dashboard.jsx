@@ -18,7 +18,6 @@ import { C } from '../lib/colors'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
 import CategoryIcon from '../components/CategoryIcon'
 import ProfileMenu from '../components/ProfileMenu'
-import PullToRefresh from '../components/PullToRefresh'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 4 },
@@ -103,7 +102,7 @@ export default function Dashboard() {
   // ── Error toast ──────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
 
-  const { addOptimisticTxn, clearOptimisticTxns } = useAppData()
+  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
 
   const {
     data: recent,
@@ -118,7 +117,7 @@ export default function Dashboard() {
     now.getMonth() === 0 ? 12 : now.getMonth()
   )
   const { balance: runningBalance, refetch: refetchBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
-  const { pending: bills, refetch: refetchBills }             = useLiabilities()
+  const { pending: bills }             = useLiabilities()
 
   const dueSoon    = bills.filter(b => daysUntil(b.due_date) <= 7)
 
@@ -204,12 +203,14 @@ export default function Dashboard() {
     const id = delId
     if (!id) return
 
+    addOptimisticDelete(id)
     // Optimistically remove from the latest list immediately
     applyLocalDelete(id)
 
     try {
       await deleteTransaction(id)
     } catch (e) {
+      removeOptimisticDelete(id)
       // If delete fails, refetch to restore and show error toast
       refetch()
       setToast(e.message || 'Could not delete transaction. Check your connection.')
@@ -217,15 +218,7 @@ export default function Dashboard() {
     } finally {
       setDelId(null)
     }
-  }, [delId, applyLocalDelete, refetch])
-
-  const handleRefreshAll = useCallback(() => {
-    refetch()
-    refetchSummary()
-    refetchLastSummary()
-    refetchBalance()
-    refetchBills()
-  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, refetchBills])
+  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch])
 
   // Stable callbacks for TransactionItem — avoids remounting memo'd rows
   // on every Dashboard render (e.g. when bell icon updates or state changes)
@@ -238,11 +231,10 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <PullToRefresh onRefresh={handleRefreshAll} />
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
 
         {/* ── Greeting ──────────────────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="flex items-center justify-between pt-2">
+        <motion.div variants={fadeUp} className="flex items-start justify-between pt-2">
           <div>
             <p className="text-caption text-ink-3">
               {now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' })}
@@ -251,7 +243,7 @@ export default function Dashboard() {
               {greeting}{profile?.display_name ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-0.5">
             {dueSoon.length > 0 && (
               <button onClick={() => navigate('/bills')}
                 className="relative w-9 h-9 rounded-full bg-expense-bg flex items-center justify-center">
@@ -268,11 +260,6 @@ export default function Dashboard() {
 
         {/* ── Hero card ─────────────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
-          {/* Ghost growth curve — faint bezier behind balance, lime at 7% opacity */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 340 180" preserveAspectRatio="none">
-            <path d="M-10 160 C 60 140, 100 100, 170 80 S 280 30, 360 10"
-              fill="none" stroke="#E2FF5A" strokeWidth="1.5" strokeOpacity="0.07" strokeLinecap="round"/>
-          </svg>
           <div className="flex items-center justify-between mb-4">
             <p className="text-caption font-bold tracking-widest uppercase"
                style={{ color:C.heroAccent }}>

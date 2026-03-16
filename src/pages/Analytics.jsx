@@ -14,7 +14,6 @@ import CategoryIcon from '../components/CategoryIcon'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
-import PullToRefresh from '../components/PullToRefresh'
 import ProfileMenu from '../components/ProfileMenu'
 
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
@@ -321,15 +320,8 @@ export default function Analytics() {
     ? { current: lastTwo[1].expense, previous: lastTwo[0].expense }
     : null
 
-  const handleRefresh = useCallback(() => {
-    refetch()
-    refetchPrev()
-    refreshTop5()
-  }, [refetch, refetchPrev, refreshTop5])
-
   return (
     <div className="page">
-      <PullToRefresh onRefresh={handleRefresh} />
 
       {/* ── Year navigator + profile ──────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pt-2">
@@ -345,7 +337,7 @@ export default function Analytics() {
                        flex items-center justify-center active:bg-kosha-surface-2">
             <ChevronRight size={18} className="text-ink-2" />
           </button>
-          <ProfileMenu />
+          <ProfileMenu className="mt-0.5" />
         </div>
       </div>
 

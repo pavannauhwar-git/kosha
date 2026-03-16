@@ -8,7 +8,6 @@ import DeleteDialog        from '../components/DeleteDialog'
 import { CATEGORIES }      from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus } from '@phosphor-icons/react'
-import PullToRefresh from '../components/PullToRefresh'
 import ProfileMenu from '../components/ProfileMenu'
 import { useAppData } from '../hooks/useAppDataStore'
 
@@ -77,12 +76,14 @@ export default function Transactions() {
     const id = delId
     if (!id) return
 
+    addOptimisticDelete(id)
     // Optimistically remove from the visible list immediately
     applyLocalDelete(id)
 
     try {
       await deleteTransaction(id)
     } catch (e) {
+      removeOptimisticDelete(id)
       // If Supabase delete fails, refetch to restore the row and surface error
       refetch()
       setToast(e.message || 'Could not delete transaction. Check your connection.')
@@ -90,7 +91,7 @@ export default function Transactions() {
     } finally {
       setDelId(null)
     }
-  }, [delId, applyLocalDelete, refetch])
+  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch])
 
   // Stable callbacks for TransactionItem memo
   const handleDelete = useCallback((id) => setDelId(id), [])
@@ -100,15 +101,11 @@ export default function Transactions() {
     setShowAdd(true)
   }, [])
 
-  const { addOptimisticTxn, clearOptimisticTxns } = useAppData()
-
-  const handleRefresh = useCallback(() => {
-    refetch()
-  }, [refetch])
+  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
 
   return (
     <div className="page">
-      <PullToRefresh onRefresh={handleRefresh} />
+      
 
       {/* ── Header with live count ────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-4 pt-2">
@@ -128,7 +125,7 @@ export default function Transactions() {
               Clear filters
             </button>
           )}
-          <ProfileMenu />
+          <ProfileMenu className="mt-0.5" />
         </div>
       </div>
 

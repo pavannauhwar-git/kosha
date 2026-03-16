@@ -140,7 +140,12 @@ export function useTransactions({ type, category, search, limit } = {}) {
   })
   const [error, setError] = useState(null)
 
-  const { optimisticTxns, pruneOptimisticTxns } = useAppData()
+  const {
+    optimisticTxns,
+    pruneOptimisticTxns,
+    optimisticDeletedIds,
+    pruneOptimisticDeletes,
+  } = useAppData()
 
   const fetch = useCallback(async (force = false) => {
     const key    = `txns:${type}:${category}:${search}:${limit}`
@@ -176,11 +181,12 @@ export function useTransactions({ type, category, search, limit } = {}) {
       setData(result)
       setLoading(false)
       pruneOptimisticTxns(result)
+      pruneOptimisticDeletes(result)
     } catch (e) {
       setError(e)
       setLoading(false)
     }
-  }, [type, category, search, limit, pruneOptimisticTxns])
+  }, [type, category, search, limit, pruneOptimisticTxns, pruneOptimisticDeletes])
 
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
@@ -229,8 +235,12 @@ export function useTransactions({ type, category, search, limit } = {}) {
       })), ...data].slice(0, limit || data.length || 999)
     : data
 
+  const finalData = optimisticDeletedIds?.length
+    ? mergedData.filter(t => !optimisticDeletedIds.includes(t.id))
+    : mergedData
+
   return {
-    data: mergedData,
+    data: finalData,
     loading,
     error,
     refetch,
