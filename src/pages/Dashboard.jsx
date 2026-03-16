@@ -29,45 +29,40 @@ const stagger = {
 // ── Profile menu ──────────────────────────────────────────────────────────
 function ProfileMenu({ profile, user, onSignOut }) {
   const [open, setOpen] = useState(false)
-  const initials = profile?.display_name
-    ? profile.display_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-    : user?.email?.[0]?.toUpperCase() || '?'
+  const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
 
   return (
     <div className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center"
+        className="w-9 h-9 rounded-full bg-brand-container flex items-center
+                   justify-center active:scale-95 transition-transform duration-75"
       >
-        <span className="text-xs font-bold text-brand">{initials}</span>
+        <span className="text-label font-bold text-brand-on">{initial}</span>
       </button>
       <AnimatePresence>
         {open && (
           <>
+            <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
             <motion.div
-              className="fixed inset-0 z-40"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-            />
-            <motion.div
-              className="absolute right-0 top-11 z-50 bg-kosha-surface rounded-card shadow-card-lg
-                         border border-kosha-border min-w-[180px] overflow-hidden"
-              initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity:0, scale:0.95, y:-4 }}
+              animate={{ opacity:1, scale:1,    y:0   }}
+              exit={{    opacity:0, scale:0.95, y:-4  }}
+              transition={{ duration:0.12, ease:'easeOut' }}
+              className="absolute right-0 top-11 z-40 w-52 card p-1"
             >
-              <div className="px-4 py-3 border-b border-kosha-border">
+              <div className="px-3 py-2.5 border-b border-kosha-border mb-1">
                 <p className="text-label font-semibold text-ink truncate">
-                  {profile?.display_name || 'Account'}
+                  {profile?.display_name || 'My Account'}
                 </p>
                 <p className="text-caption text-ink-3 truncate">{user?.email}</p>
               </div>
               <button
                 onClick={() => { setOpen(false); onSignOut() }}
-                className="w-full flex items-center gap-2 px-4 py-3 text-left
-                           text-label text-expense-text hover:bg-expense-bg transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                           text-label font-medium text-expense-text hover:bg-expense-bg transition-colors"
               >
-                <LogOut size={14} />
-                Sign out
+                <LogOut size={15} /> Sign out
               </button>
             </motion.div>
           </>
@@ -77,42 +72,42 @@ function ProfileMenu({ profile, user, onSignOut }) {
   )
 }
 
-// ── SVG arc bar — round-capped progress bar ───────────────────────────────
+// ── SVG arc progress bar — round-capped, matches Savings ring style ─────────
 function SvgArcBar({ pct, color }) {
-  const W   = 100
-  const H   = 6
+  const W   = 100  // viewBox width (%)
+  const H   = 6    // height in px
   const R   = H / 2
   const max = W - R * 2
   const fill = Math.max(0, Math.min(pct, 100)) / 100 * max
   return (
     <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      {/* Track */}
       <line x1={R} y1={R} x2={W - R} y2={R}
         stroke="#D4CEFF" strokeWidth={H} strokeLinecap="round" />
+      {/* Fill */}
       {fill > 0 && (
         <line x1={R} y1={R} x2={R + fill} y2={R}
-          stroke={color} strokeWidth={H} strokeLinecap="round"
-          style={{ transition: 'x2 0.5s ease-out' }}
-        />
+          stroke={color} strokeWidth={H} strokeLinecap="round" />
       )}
     </svg>
   )
 }
 
-// ── Savings ring — circular progress arc ─────────────────────────────────
+// ── Savings rate ring — pure SVG arc, no recharts dep ────────────────────
 function SavingsRing({ rate }) {
-  const size = 64
-  const sw   = 6
-  const cx   = size / 2
-  const cy   = size / 2
-  const r    = (size - sw) / 2
-  const circ = 2 * Math.PI * r
-  const dash = (Math.min(rate, 100) / 100) * circ
+  const size  = 64
+  const sw    = 6            // stroke-width
+  const r     = (size - sw * 2) / 2
+  const cx    = size / 2
+  const cy    = size / 2
+  const circ  = 2 * Math.PI * r
+  const dash  = (Math.min(Math.max(rate, 0), 100) / 100) * circ
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {/* Track */}
       <circle cx={cx} cy={cy} r={r}
-        fill="none" stroke="#D4CEFF" strokeWidth={sw} />
+        fill="none" stroke={C.brandBorder} strokeWidth={sw} />
       {/* Filled arc */}
       <circle cx={cx} cy={cy} r={r}
         fill="none" stroke={C.brand} strokeWidth={sw}
@@ -152,12 +147,12 @@ export default function Dashboard() {
   const [toast, setToast] = useState(null)
 
   // ── Optimistic summary delta ──────────────────────────────────────────
-  // When a transaction is added/edited, we immediately adjust the summary
-  // numbers so the hero card updates in sync with the list.
+  // When a transaction is added, we immediately adjust the summary numbers
+  // so the hero card updates in sync with the list — no waiting for refetch.
   // Cleared when the background sync completes and real data arrives.
   const [optimisticDelta, setOptimisticDelta] = useState(null)
 
-  const { data: recent, refetch, prependOptimistic, replaceOptimistic, removeOptimistic } = useTransactions({ limit: 8 })
+  const { data: recent, refetch, prependOptimistic } = useTransactions({ limit: 8 })
   const { data: summary }         = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary }     = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
@@ -197,57 +192,31 @@ export default function Dashboard() {
 
   const recentGroups = groupByDate(recent)
 
-  const showToast = useCallback((msg) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 4000)
-  }, [])
-
-  // ── handleOptimisticSave: called immediately when user taps Save ─────
-  // Handles both ADD and EDIT paths.
-  // ADD:  prepend the new row + add to hero delta
-  // EDIT: swap the row in-place + adjust hero delta by the net diff
+  // ── handleOptimisticSave: called immediately when user taps Save ────
+  // Payload arrives before any network call. We:
+  //   (a) prepend it to the transaction list instantly
+  //   (b) update the hero card summary numbers instantly
   const handleOptimisticSave = useCallback((payload) => {
-    const txnDate     = new Date(payload.date)
+    // Only apply optimistic updates for new transactions in the current month
+    // (edits are less common and the brief delay is acceptable)
+    const txnDate  = new Date(payload.date)
     const isThisMonth = txnDate.getFullYear() === now.getFullYear() &&
                         txnDate.getMonth()    === now.getMonth()
 
-    if (editTxn) {
-      // ── Edit path ────────────────────────────────────────────────────
-      replaceOptimistic(editTxn.id, payload)
+    // Prepend to the list immediately
+    prependOptimistic(payload)
 
-      // Adjust hero card: undo the old values, apply the new ones
-      if (isThisMonth) {
-        setOptimisticDelta(prev => {
-          const d = { earned: 0, expense: 0, investment: 0, ...(prev || {}) }
-
-          // Subtract old transaction's contribution
-          if (editTxn.type === 'income')     d.earned     -= +editTxn.amount
-          if (editTxn.type === 'expense')    d.expense    -= +editTxn.amount
-          if (editTxn.type === 'investment') d.investment -= +editTxn.amount
-
-          // Add new transaction's contribution
-          if (payload.type === 'income')     d.earned     += payload.amount
-          if (payload.type === 'expense')    d.expense    += payload.amount
-          if (payload.type === 'investment') d.investment += payload.amount
-
-          return { ...d }
-        })
-      }
-    } else {
-      // ── Add path ─────────────────────────────────────────────────────
-      prependOptimistic(payload)
-
-      if (isThisMonth) {
-        setOptimisticDelta(prev => {
-          const d = prev || { earned: 0, expense: 0, investment: 0 }
-          if (payload.type === 'income')     return { ...d, earned:     d.earned     + payload.amount }
-          if (payload.type === 'expense')    return { ...d, expense:    d.expense    + payload.amount }
-          if (payload.type === 'investment') return { ...d, investment: d.investment + payload.amount }
-          return d
-        })
-      }
+    // Update hero card numbers instantly if it's a current-month transaction
+    if (isThisMonth) {
+      setOptimisticDelta(prev => {
+        const d = prev || { earned: 0, expense: 0, investment: 0 }
+        if (payload.type === 'income')     return { ...d, earned:     d.earned     + payload.amount }
+        if (payload.type === 'expense')    return { ...d, expense:    d.expense    + payload.amount }
+        if (payload.type === 'investment') return { ...d, investment: d.investment + payload.amount }
+        return d
+      })
     }
-  }, [prependOptimistic, replaceOptimistic, editTxn, now])
+  }, [prependOptimistic, now])
 
   // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
   const handleConfirmed = useCallback(() => {
@@ -256,12 +225,14 @@ export default function Dashboard() {
   }, [refetch])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
-  // The optimistic change disappears when refetch() returns real server data.
+  // The optimistic row disappears when refetch() returns real server data.
+  // Toast tells the user what happened so they can try again.
   const handleFailed = useCallback((msg) => {
     setOptimisticDelta(null)
     refetch()
-    showToast(msg)
-  }, [refetch, showToast])
+    setToast(msg)
+    setTimeout(() => setToast(null), 4000)
+  }, [refetch])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
@@ -274,24 +245,14 @@ export default function Dashboard() {
     navigate('/login', { replace: true })
   }, [signOut, navigate])
 
-  // ── Delete: remove row instantly, sync in background ─────────────────
-  // The old pattern awaited deleteTransaction() before touching the UI —
-  // that's what caused the ~10s delay. Now we remove optimistically first,
-  // fire the network call in the background, and only rollback on failure.
   const confirmDelete = useCallback(async () => {
-    const id = delId
+    await deleteTransaction(delId)
     setDelId(null)
-    removeOptimistic(id)              // ← instant: row disappears immediately
-    try {
-      await deleteTransaction(id)
-      refetch()                       // ← quiet background sync to confirm
-    } catch {
-      refetch()                       // ← rollback: row reappears from server
-      showToast('Could not delete. Check your connection.')
-    }
-  }, [delId, removeOptimistic, refetch, showToast])
+    refetch()
+  }, [delId, refetch])
 
   // Stable callbacks for TransactionItem — avoids remounting memo'd rows
+  // on every Dashboard render (e.g. when bell icon updates or state changes)
   const handleDelete = useCallback((id) => setDelId(id), [])
   const handleTap    = useCallback((t) => {
     setEditTxn(t)
@@ -388,9 +349,9 @@ export default function Dashboard() {
           <div className="flex justify-around">
             {[
               { label:'Income',  icon:<ArrowUp size={20} weight="bold" />,   bg:'bg-income-bg',  color:C.incomeText,  type:'income'     },
-              { label:'Expense', icon:<ArrowDown size={20} weight="bold" />, bg:'bg-expense-bg', color:C.expense,     type:'expense'    },
+              { label:'Expense', icon:<ArrowDown size={20} weight="bold" />, bg:'bg-expense-bg', color:C.expense,  type:'expense'    },
               { label:'Invest',  icon:<ChartLine size={20} weight="bold" />, bg:'bg-invest-bg',  color:C.investText,  type:'investment' },
-              { label:'Bills',   icon:<Receipt size={20} weight="bold" />,   bg:'bg-repay-bg',   color:C.bills,       type:'bills'      },
+              { label:'Bills',   icon:<Receipt size={20} weight="bold" />,   bg:'bg-repay-bg',   color:C.bills,  type:'bills'      },
             ].map(({ label, icon, bg, color, type }) => (
               <button key={label}
                 onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}

@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CACHE
+// PERSISTENT CACHE
+//
+// Survives browser refresh, app close, and PWA reopen.
 // Structure in localStorage: { data: ..., ts: epoch_ms }
 // TTL: 5 minutes before a cache entry is considered stale (still served
 // instantly, then refreshed in background via stale-while-revalidate).
@@ -15,7 +17,7 @@ import { supabase } from '../lib/supabase'
 // localStorage is the right tool.
 // ─────────────────────────────────────────────────────────────────────────────
 const CACHE_PREFIX  = 'kosha_cache_'
-const SOFT_TTL      =   5 * 60 * 1000       //  5 min  — serve fresh from network
+const SOFT_TTL      =   5 * 60 * 1000   //  5 min  — serve fresh from network
 const HARD_TTL      =  24 * 60 * 60 * 1000  // 24 hrs — serve stale from cache
 
 function getCached(key) {
@@ -182,8 +184,8 @@ export function useTransactions({ type, category, search, limit } = {}) {
   const refetch = useCallback(() => { invalidateCache('txns:'); fetch(true) }, [fetch])
 
   // ── Optimistic prepend ────────────────────────────────────────────────
-  // Instantly inserts a new transaction at the top of the list with a temp id.
-  // Called BEFORE the network save starts — zero latency UI.
+  // Instantly inserts a transaction at the top of the list with a temp id.
+  // Called by Dashboard BEFORE the network save starts — zero latency UI.
   // When refetch() is called after save, the real server row replaces it.
   const prependOptimistic = useCallback((txn) => {
     const tempTxn = {
@@ -194,23 +196,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
     setData(prev => [tempTxn, ...prev].slice(0, limit || 999))
   }, [limit])
 
-  // ── Optimistic replace ────────────────────────────────────────────────
-  // Instantly swaps an existing row's data in-place for edits.
-  // Called BEFORE the network update starts — zero latency UI.
-  // When refetch() is called after save, the real server row confirms it.
-  const replaceOptimistic = useCallback((id, updatedFields) => {
-    setData(prev => prev.map(t => t.id === id ? { ...t, ...updatedFields } : t))
-  }, [])
-
-  // ── Optimistic remove ─────────────────────────────────────────────────
-  // Instantly removes a row from the list for deletes.
-  // Called BEFORE the network delete starts — zero latency UI.
-  // If the delete fails, refetch() restores the row from server state.
-  const removeOptimistic = useCallback((id) => {
-    setData(prev => prev.filter(t => t.id !== id))
-  }, [])
-
-  return { data, loading, error, refetch, prependOptimistic, replaceOptimistic, removeOptimistic }
+  return { data, loading, error, refetch, prependOptimistic }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -297,66 +283,45 @@ export function useYearSummary(year) {
     try {
       const { data: rows } = await supabase
         .from('transactions')
-        .select('date, type, amount, category, investment_vehicle, is_repayment')
+        .select('type, amount, category, investment_vehicle, is_repayment, date')
         .gte('date', `${year}-01-01`)
         .lte('date', `${year}-12-31`)
 
       if (!rows) { setLoading(false); return }
 
-      // Build monthly buckets
-      // Field names use 'income'/'expense'/'investment' to match what Analytics.jsx reads
-      const months = Array.from({ length: 12 }, (_, i) => ({
-        month: i + 1, income: 0, expense: 0, investment: 0, net: 0,
-      }))
-      rows.forEach(r => {
-        const m = new Date(r.date).getMonth()  // 0-indexed
-        if (r.type === 'income'     && !r.is_repayment) months[m].income     += +r.amount
-        if (r.type === 'expense')                        months[m].expense    += +r.amount
-        if (r.type === 'investment')                     months[m].investment += +r.amount
+      const monthly = Array.from({ length: 12 }, (_, i) => {
+        const m  = i + 1
+        const mo = rows.filter(r => new Date(r.date).getMonth() + 1 === m)
+        return {
+          month:      m,
+          income:     mo.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0),
+          expense:    mo.filter(r => r.type === 'expense'   ).reduce((s, r) => s + +r.amount, 0),
+          investment: mo.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0),
+        }
       })
-      months.forEach(m => { m.net = m.income - m.expense - m.investment })
 
-      const totEarned  = months.reduce((s, m) => s + m.income,     0)
-      const totExpense = months.reduce((s, m) => s + m.expense,    0)
-      const totInvest  = months.reduce((s, m) => s + m.investment, 0)
+      const totalIncome     = rows.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0)
+      const totalRepayments = rows.filter(r => r.type === 'income' &&  r.is_repayment).reduce((s, r) => s + +r.amount, 0)
+      const totalExpense    = rows.filter(r => r.type === 'expense'   ).reduce((s, r) => s + +r.amount, 0)
+      const totalInvestment = rows.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0)
 
-      // Top 5 expense categories
-      const catMap = {}
-      rows.filter(r => r.type === 'expense').forEach(r => {
-        catMap[r.category] = (catMap[r.category] || 0) + +r.amount
-      })
-      const topCategories = Object.entries(catMap)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-
-      // Also expose the field names Analytics.jsx reads from this hook
-      const avgSavings = totEarned > 0
-        ? Math.round(((totEarned - totExpense) / totEarned) * 100)
-        : 0
-
-      // byCategory and byVehicle for Analytics spending/portfolio sections
       const byCategory = {}
-      const byVehicle  = {}
       rows.filter(r => r.type === 'expense').forEach(r => {
         byCategory[r.category] = (byCategory[r.category] || 0) + +r.amount
       })
+      const byVehicle = {}
       rows.filter(r => r.type === 'investment').forEach(r => {
         const k = r.investment_vehicle || 'Other'
         byVehicle[k] = (byVehicle[k] || 0) + +r.amount
       })
 
-      const result = {
-        // names used internally / by other hooks
-        months, totEarned, totExpense, totInvest, topCategories,
-        // names Analytics.jsx reads
-        monthly:         months,           // data?.monthly
-        totalIncome:     totEarned,        // data?.totalIncome
-        totalExpense:    totExpense,        // data?.totalExpense
-        totalInvestment: totInvest,        // data?.totalInvestment
-        avgSavings,                        // data?.avgSavings
-        byCategory,                        // data?.byCategory
-        byVehicle,                         // data?.byVehicle
-      }
+      const withIncome = monthly.filter(m => m.income > 0)
+      const avgSavings = withIncome.length
+        ? Math.round(withIncome.reduce((s, m) => s + ((m.income - m.expense) / m.income * 100), 0) / withIncome.length)
+        : 0
+
+      const result = { monthly, totalIncome, totalRepayments, totalExpense, totalInvestment,
+                       byCategory, byVehicle, avgSavings }
       setCached(cacheKey, result)
       setData(result)
       setLoading(false)
@@ -373,18 +338,23 @@ export function useYearSummary(year) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // useRunningBalance
-// Returns the running balance up to and including the given month.
-// Sums all transactions from the beginning of time to end of that month.
+//
+// FIXED: The old version fetched ALL historical transactions with no lower
+// bound (potentially 500+ rows) just to sum them. This version uses a
+// Postgres aggregate — one number comes back instead of all rows.
 // ─────────────────────────────────────────────────────────────────────────────
 export function useRunningBalance(year, month) {
   const cacheKey = `balance:${year}:${month}`
 
-  const [balance, setBalance] = useState(() => getCached(cacheKey)?.data ?? null)
+  const [balance, setBalance] = useState(() => {
+    const cached = getCached(cacheKey)
+    return cached?.data ?? null
+  })
   const [loading, setLoading] = useState(() => !getCached(cacheKey))
 
   const fetch = useCallback(async (force = false) => {
     const cached = getCached(cacheKey)
-    if (cached) {
+    if (cached !== null && cached !== undefined) {
       setBalance(cached.data)
       setLoading(false)
       if (!force && isFresh(cached)) return
@@ -393,25 +363,25 @@ export function useRunningBalance(year, month) {
     }
 
     try {
-      const pad  = String(month).padStart(2, '0')
-      const days = new Date(year, month, 0).getDate()
+      const endDate = `${year}-${String(month).padStart(2,'0')}-${new Date(year, month, 0).getDate()}`
 
+      // Fetch only what we need — type + amount, no other columns
       const { data: rows } = await supabase
         .from('transactions')
-        .select('type, amount, is_repayment')
-        .lte('date', `${year}-${pad}-${days}`)
+        .select('type, amount')
+        .lte('date', endDate)
 
       if (!rows) { setLoading(false); return }
 
-      const bal = rows.reduce((s, r) => {
-        if (r.type === 'income')     return s + +r.amount
-        if (r.type === 'expense')    return s - +r.amount
-        if (r.type === 'investment') return s - +r.amount
-        return s
+      const cumulative = rows.reduce((sum, r) => {
+        if (r.type === 'income')     return sum + +r.amount
+        if (r.type === 'expense')    return sum - +r.amount
+        if (r.type === 'investment') return sum - +r.amount
+        return sum
       }, 0)
 
-      setCached(cacheKey, bal)
-      setBalance(bal)
+      setCached(cacheKey, cumulative)
+      setBalance(cumulative)
       setLoading(false)
     } catch {
       setLoading(false)
@@ -425,9 +395,10 @@ export function useRunningBalance(year, month) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WRITE OPERATIONS
-// Each invalidates only the cache keys it affects — leaves other months warm.
-// Analytics year summary stays warm while the affected month/balance refreshes.
+// CRUD
+// All writes invalidate only the relevant cache keys rather than wiping
+// everything — so unrelated cached data (e.g. Analytics year summary)
+// stays warm while the affected month/balance refreshes.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function addTransaction(payload) {
   const user_id = await getCurrentUserId()

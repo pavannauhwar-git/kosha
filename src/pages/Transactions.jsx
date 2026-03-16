@@ -37,23 +37,21 @@ export default function Transactions() {
   const [delId,      setDelId]      = useState(null)
   const [showCats,   setShowCats]   = useState(false)
   const [addType,    setAddType]    = useState('expense')
-  const [toast,      setToast]      = useState(null)
 
   // Render pagination: show 50 rows initially, more on demand.
   // All data is loaded (from cache), we just control how many we render.
   // This keeps initial render fast even with 374 transactions.
   const [displayCount, setDisplayCount] = useState(50)
+  const [toast, setToast] = useState(null)
 
   // Debounce search: only fire a Supabase query 300ms after the user stops
   // typing — prevents a round-trip per keystroke (was 6 queries for "Swiggy")
-  // IMPORTANT: debouncedSearch must be declared BEFORE the useEffect that
-  // uses it as a dependency — const/let are not hoisted like var.
-  const debouncedSearch = useDebounce(search, 300)
-
   // Reset display window when filters change so user sees top of filtered results
   useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
 
-  const { data, refetch, prependOptimistic, replaceOptimistic, removeOptimistic } = useTransactions({
+  const debouncedSearch = useDebounce(search, 300)
+
+  const { data, refetch, prependOptimistic } = useTransactions({
     type:     typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter  || undefined,
     search:   debouncedSearch || undefined,
@@ -67,27 +65,11 @@ export default function Transactions() {
   // Active filter count for filter button badge
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
-  const showToast = useCallback((msg) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 4000)
-  }, [])
-
-  // ── Delete: remove row instantly, sync in background ─────────────────
-  // The old pattern awaited deleteTransaction() before touching the UI —
-  // that's what caused the ~10s delay. Now we remove optimistically first,
-  // fire the network call in the background, and only rollback on failure.
   const confirmDelete = useCallback(async () => {
-    const id = delId
+    await deleteTransaction(delId)
     setDelId(null)
-    removeOptimistic(id)              // ← instant: row disappears immediately
-    try {
-      await deleteTransaction(id)
-      refetch()                       // ← quiet background sync to confirm
-    } catch {
-      refetch()                       // ← rollback: row reappears from server
-      showToast('Could not delete. Check your connection.')
-    }
-  }, [delId, removeOptimistic, refetch, showToast])
+    refetch()
+  }, [delId, refetch])
 
   // Stable callbacks for TransactionItem memo
   const handleDelete = useCallback((id) => setDelId(id), [])
@@ -141,13 +123,13 @@ export default function Transactions() {
           onClick={() => setShowCats(v => !v)}
           className={`relative w-[46px] h-[46px] rounded-card flex items-center justify-center
                       shrink-0 transition-all
-                      ${showCats || filterCount > 0
-                        ? 'bg-brand-container text-brand border border-brand-container'
-                        : 'bg-kosha-surface text-ink-2 border border-kosha-border'}`}
+                      ${showCats || catFilter
+                        ? 'bg-brand text-white'
+                        : 'bg-kosha-surface border border-kosha-border text-ink-2'}`}
         >
           <SlidersHorizontal size={18} />
           {filterCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand rounded-full
+            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-expense rounded-full
                              text-white text-[9px] font-bold flex items-center justify-center">
               {filterCount}
             </span>
@@ -155,33 +137,34 @@ export default function Transactions() {
         </button>
       </div>
 
-      {/* ── Type filter chips ─────────────────────────────────────────── */}
-      <div className="flex gap-2 mb-3 overflow-x-auto no-scrollbar">
+      {/* ── Type filter pills ─────────────────────────────────────────── */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-2">
         {TYPES.map(t => (
           <button key={t.id}
-            onClick={() => setTypeFilter(t.id)}
+            onClick={() => { setTypeFilter(t.id); setShowCats(false) }}
             className={`px-3 py-1.5 rounded-pill text-xs font-semibold border shrink-0 transition-all
-              ${typeFilter === t.id ? TYPE_CHIP[t.id] : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
+              ${typeFilter === t.id
+                ? TYPE_CHIP[t.id]
+                : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* ── Category filter panel ─────────────────────────────────────── */}
+      {/* ── Category filter row ───────────────────────────────────────── */}
       <AnimatePresence>
         {showCats && (
           <motion.div
-            initial={{ opacity:0, height:0 }}
-            animate={{ opacity:1, height:'auto' }}
-            exit={{ opacity:0, height:0 }}
-            transition={{ duration:0.18 }}
-            className="overflow-hidden mb-3"
+            initial={{ height:0, opacity:0 }} animate={{ height:'auto', opacity:1 }}
+            exit={{ height:0, opacity:0 }} transition={{ duration:0.2 }}
+            className="overflow-hidden mb-2"
           >
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <p className="text-caption text-ink-3 font-semibold mb-2 px-1">Filter by category</p>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
               <button
                 onClick={() => { setCatFilter(''); setShowCats(false) }}
-                className={`px-3 py-1.5 rounded-pill text-xs font-semibold border shrink-0 transition-all
+                className={`px-3 py-1.5 rounded-pill text-xs font-semibold border shrink-0
                   ${!catFilter
                     ? 'bg-brand-container text-brand-on border-brand-container'
                     : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
@@ -275,19 +258,14 @@ export default function Transactions() {
         open={showAdd} onClose={() => { setShowAdd(false); setEditTxn(null) }}
         editTxn={editTxn} initialType={addType}
         onSaved={(payload) => {
-          if (editTxn) {
-            // Edit: swap the existing row in-place instantly
-            replaceOptimistic(editTxn.id, payload)
-          } else {
-            // Add: prepend the new row instantly
-            prependOptimistic(payload)
-            setDisplayCount(n => n + 1)  // ensure the new row is within the render window
-          }
+          prependOptimistic(payload)
+          setDisplayCount(n => n + 1)  // ensure the new row is within the render window
         }}
         onConfirmed={refetch}
         onFailed={(msg) => {
           refetch()
-          showToast(msg)
+          setToast(msg)
+          setTimeout(() => setToast(null), 4000)
         }}
       />
       <DeleteDialog
