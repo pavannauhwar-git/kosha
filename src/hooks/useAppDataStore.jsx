@@ -1,9 +1,31 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 const AppDataContext = createContext(null)
+const OPT_KEY = 'kosha_optimistic_txns'
 
 export function AppDataProvider({ children }) {
-  const [optimisticTxns, setOptimisticTxns] = useState([])
+  const [optimisticTxns, setOptimisticTxns] = useState(() => {
+    try {
+      const raw = localStorage.getItem(OPT_KEY)
+      if (!raw) return []
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })
+
+  useEffect(() => {
+    try {
+      if (!optimisticTxns.length) {
+        localStorage.removeItem(OPT_KEY)
+      } else {
+        localStorage.setItem(OPT_KEY, JSON.stringify(optimisticTxns))
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [optimisticTxns])
 
   const addOptimisticTxn = useCallback((payload) => {
     const withMeta = {
