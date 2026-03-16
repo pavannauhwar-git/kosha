@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Camera } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import { LogOut, Camera, Trash2 } from 'lucide-react'
 
 export default function ProfileMenu({ className = '' }) {
   const { user, profile, signOut, updateProfile } = useAuth()
@@ -45,7 +46,17 @@ export default function ProfileMenu({ className = '' }) {
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
-
+  async function handleDeletePhoto() {
+    setError('')
+    setUploading(true)
+    try {
+      await updateProfile({ avatar_url: null })
+    } catch (e) {
+      setError(e.message || 'Could not remove photo. Try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
   return (
     <div className={`relative ${className}`.trim()}>
       <button
@@ -77,10 +88,10 @@ export default function ProfileMenu({ className = '' }) {
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
             <motion.div
-              initial={{ opacity:0, scale:0.95, y:-4 }}
-              animate={{ opacity:1, scale:1,    y:0   }}
-              exit={{    opacity:0, scale:0.95, y:-4  }}
-              transition={{ duration:0.12, ease:'easeOut' }}
+              initial={{ opacity: 0, scale: 0.95, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -4 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
               className="absolute right-0 top-11 z-40 w-60 card p-2"
             >
               <div className="px-3 py-2.5 border-b border-kosha-border mb-1 flex items-center gap-3">
@@ -113,6 +124,18 @@ export default function ProfileMenu({ className = '' }) {
                 {uploading ? 'Updating photo…' : 'Change photo'}
               </button>
 
+              {avatarUrl && (
+                <button
+                  onClick={handleDeletePhoto}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+               text-label font-medium text-expense-text hover:bg-expense-bg transition-colors disabled:opacity-60"
+                  disabled={uploading}
+                >
+                  <Trash2 size={15} />
+                  {uploading ? 'Removing…' : 'Remove photo'}
+                </button>
+              )}
+
               {error && (
                 <p className="px-3 pt-1 text-[11px] text-expense-text">
                   {error}
@@ -133,4 +156,3 @@ export default function ProfileMenu({ className = '' }) {
     </div>
   )
 }
-
