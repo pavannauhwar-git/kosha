@@ -297,25 +297,26 @@ export function useYearSummary(year) {
     try {
       const { data: rows } = await supabase
         .from('transactions')
-        .select('date, type, amount, category, is_repayment')
+        .select('date, type, amount, category, investment_vehicle, is_repayment')
         .gte('date', `${year}-01-01`)
         .lte('date', `${year}-12-31`)
 
       if (!rows) { setLoading(false); return }
 
       // Build monthly buckets
+      // Field names use 'income'/'expense'/'investment' to match what Analytics.jsx reads
       const months = Array.from({ length: 12 }, (_, i) => ({
-        month: i + 1, earned: 0, expense: 0, investment: 0, net: 0,
+        month: i + 1, income: 0, expense: 0, investment: 0, net: 0,
       }))
       rows.forEach(r => {
         const m = new Date(r.date).getMonth()  // 0-indexed
-        if (r.type === 'income'     && !r.is_repayment) months[m].earned     += +r.amount
+        if (r.type === 'income'     && !r.is_repayment) months[m].income     += +r.amount
         if (r.type === 'expense')                        months[m].expense    += +r.amount
         if (r.type === 'investment')                     months[m].investment += +r.amount
       })
-      months.forEach(m => { m.net = m.earned - m.expense - m.investment })
+      months.forEach(m => { m.net = m.income - m.expense - m.investment })
 
-      const totEarned  = months.reduce((s, m) => s + m.earned,     0)
+      const totEarned  = months.reduce((s, m) => s + m.income,     0)
       const totExpense = months.reduce((s, m) => s + m.expense,    0)
       const totInvest  = months.reduce((s, m) => s + m.investment, 0)
 
@@ -328,7 +329,34 @@ export function useYearSummary(year) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
 
-      const result = { months, totEarned, totExpense, totInvest, topCategories }
+      // Also expose the field names Analytics.jsx reads from this hook
+      const avgSavings = totEarned > 0
+        ? Math.round(((totEarned - totExpense) / totEarned) * 100)
+        : 0
+
+      // byCategory and byVehicle for Analytics spending/portfolio sections
+      const byCategory = {}
+      const byVehicle  = {}
+      rows.filter(r => r.type === 'expense').forEach(r => {
+        byCategory[r.category] = (byCategory[r.category] || 0) + +r.amount
+      })
+      rows.filter(r => r.type === 'investment').forEach(r => {
+        const k = r.investment_vehicle || 'Other'
+        byVehicle[k] = (byVehicle[k] || 0) + +r.amount
+      })
+
+      const result = {
+        // names used internally / by other hooks
+        months, totEarned, totExpense, totInvest, topCategories,
+        // names Analytics.jsx reads
+        monthly:         months,           // data?.monthly
+        totalIncome:     totEarned,        // data?.totalIncome
+        totalExpense:    totExpense,        // data?.totalExpense
+        totalInvestment: totInvest,        // data?.totalInvestment
+        avgSavings,                        // data?.avgSavings
+        byCategory,                        // data?.byCategory
+        byVehicle,                         // data?.byVehicle
+      }
       setCached(cacheKey, result)
       setData(result)
       setLoading(false)
