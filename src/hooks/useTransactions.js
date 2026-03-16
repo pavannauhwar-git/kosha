@@ -140,6 +140,12 @@ export function useTransactions({ type, category, search, limit } = {}) {
   })
   const [error, setError] = useState(null)
 
+  // ── localEdits overlay — persists through refetches until confirmed ──────
+  // applyLocalEdit patches data instantly, but setData(freshRows) from
+  // refetch() would overwrite it before Supabase confirms the write.
+  // localEdits sits on top of finalData so edits survive the refetch gap.
+  const [localEdits, setLocalEdits] = useState({})
+
   const {
     optimisticTxns,
     pruneOptimisticTxns,
@@ -199,9 +205,21 @@ export function useTransactions({ type, category, search, limit } = {}) {
   // Local-only helpers for list-level optimism (Phase 1):
   // They mutate the in-memory list used by this hook instance only.
   const applyLocalEdit = useCallback((id, updates) => {
+    // 1. Store in overlay so the edit survives the upcoming refetch()
+    setLocalEdits(prev => ({ ...prev, [id]: updates }))
+    // 2. Also patch raw data immediately for instant render
     setData(prev => prev.map(row => (
       row.id === id ? { ...row, ...updates } : row
     )))
+  }, [])
+
+  // Called after onConfirmed — removes the overlay once fresh server data is back
+  const clearLocalEdit = useCallback((id) => {
+    setLocalEdits(prev => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
   }, [])
 
   const applyLocalDelete = useCallback((id) => {
@@ -239,13 +257,19 @@ export function useTransactions({ type, category, search, limit } = {}) {
     ? mergedData.filter(t => !optimisticDeletedIds.includes(t.id))
     : mergedData
 
+  // Apply localEdits overlay on top of finalData so edits survive refetches
+  const overlaidData = Object.keys(localEdits).length
+    ? finalData.map(row => localEdits[row.id] ? { ...row, ...localEdits[row.id] } : row)
+    : finalData
+
   return {
-    data: finalData,
+    data: overlaidData,
     loading,
     error,
     refetch,
     prependOptimistic,
     applyLocalEdit,
+    clearLocalEdit,
     applyLocalDelete,
   }
 }
@@ -582,7 +606,8 @@ export function useRunningBalance(year, month) {
     return sum
   }, 0)
 
-  const mergedBalance = balance != null ? balance + optimisticDelta : balance
+  const mergedBalance = balance != null ?
+    balance + optimisticDelta : balance
 
   return { balance: mergedBalance, loading, refetch }
 }

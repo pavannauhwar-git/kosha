@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
 import { useTransactions, registerPrefetch, deleteTransaction, useDebounce } from '../hooks/useTransactions'
@@ -42,6 +42,10 @@ export default function Transactions() {
   const [displayCount, setDisplayCount] = useState(50)
   const [toast, setToast] = useState(null)
 
+  // Tracks which transaction id is being edited so we can clear the
+  // localEdits overlay after onConfirmed (refetch returns fresh server data)
+  const pendingEditId = useRef(null)
+
   const debouncedSearch = useDebounce(search, 300)
   useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
 
@@ -50,6 +54,7 @@ export default function Transactions() {
     refetch,
     prependOptimistic,
     applyLocalEdit,
+    clearLocalEdit,
     applyLocalDelete,
   } = useTransactions({
     type:     typeFilter === 'all' ? undefined : typeFilter,
@@ -100,120 +105,109 @@ export default function Transactions() {
           <h1 className="font-display text-display text-ink">Transactions</h1>
           <p className="text-caption text-ink-3 mt-0.5">
             {data.length > 0 ? `${data.length} transaction${data.length !== 1 ? 's' : ''}` : 'No results'}
-            {(typeFilter !== 'all' || catFilter) ? ' · filtered' : ''}
+            {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {(typeFilter !== 'all' || catFilter) && (
-            <button
-              onClick={() => { setTypeFilter('all'); setCatFilter(''); setShowCats(false) }}
-              className="mt-1 text-caption font-semibold text-brand"
-            >
-              Clear filters
-            </button>
-          )}
-          <ProfileMenu className="mt-0.5" />
-        </div>
+        <ProfileMenu className="mt-0.5"/>
       </div>
 
-      {/* ── Search + filter button ────────────────────────────────────── */}
-      <div className="flex gap-2 mb-3">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
-          <input
-            className="input pl-9 pr-9"
-            placeholder="Search transactions…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {search && (
-            <button onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2">
-              <X size={14} className="text-ink-3" />
-            </button>
-          )}
-        </div>
+      {/* ── Search bar ───────────────────────────────────────────────── */}
+      <div className="relative mb-3">
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+        <input
+          className="w-full bg-kosha-surface border border-kosha-border rounded-card
+                     pl-9 pr-9 py-2.5 text-[14px] text-ink placeholder-ink-4 outline-none
+                     focus:border-brand transition-colors"
+          placeholder="Search transactions…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* ── Filter chips ─────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-none">
+        {TYPES.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTypeFilter(t.id)}
+            className={`shrink-0 px-3 py-1.5 rounded-pill text-label font-semibold border
+                        transition-colors ${typeFilter === t.id
+                          ? TYPE_CHIP[t.id]
+                          : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+
+        {/* Category filter button */}
         <button
           onClick={() => setShowCats(v => !v)}
-          className={`relative w-[46px] h-[46px] rounded-card flex items-center justify-center
-                      shrink-0 transition-all
-                      ${showCats || catFilter
-                        ? 'bg-brand text-white'
-                        : 'bg-kosha-surface border border-kosha-border text-ink-2'}`}
+          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-pill
+                      text-label font-semibold border transition-colors
+                      ${catFilter
+                        ? 'bg-brand-container text-brand-on border-brand-container'
+                        : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
         >
-          <SlidersHorizontal size={18} />
-          {filterCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-expense rounded-full
-                             text-white text-[9px] font-bold flex items-center justify-center">
-              {filterCount}
+          <SlidersHorizontal size={12} />
+          {catFilter
+            ? CATEGORIES.find(c => c.id === catFilter)?.label || 'Category'
+            : 'Category'}
+          {catFilter && (
+            <span
+              onClick={e => { e.stopPropagation(); setCatFilter('') }}
+              className="ml-0.5"
+            >
+              <X size={11} />
             </span>
           )}
         </button>
       </div>
 
-      {/* ── Type filter pills ─────────────────────────────────────────── */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-2">
-        {TYPES.map(t => (
-          <button key={t.id}
-            onClick={() => { setTypeFilter(t.id); setShowCats(false) }}
-            className={`px-3 py-1.5 rounded-pill text-xs font-semibold border shrink-0 transition-all
-              ${typeFilter === t.id
-                ? TYPE_CHIP[t.id]
-                : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Category filter row ───────────────────────────────────────── */}
+      {/* ── Category picker ──────────────────────────────────────────── */}
       <AnimatePresence>
         {showCats && (
           <motion.div
-            initial={{ height:0, opacity:0 }} animate={{ height:'auto', opacity:1 }}
-            exit={{ height:0, opacity:0 }} transition={{ duration:0.2 }}
-            className="overflow-hidden mb-2"
+            initial={{ opacity:0, y:-6 }}
+            animate={{ opacity:1, y:0 }}
+            exit={{ opacity:0, y:-6 }}
+            transition={{ duration:0.15 }}
+            className="card mb-4 p-3 grid grid-cols-3 gap-2"
           >
-            <p className="text-caption text-ink-3 font-semibold mb-2 px-1">Filter by category</p>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+            {CATEGORIES.map(c => (
               <button
-                onClick={() => { setCatFilter(''); setShowCats(false) }}
-                className={`px-3 py-1.5 rounded-pill text-xs font-semibold border shrink-0
-                  ${!catFilter
-                    ? 'bg-brand-container text-brand-on border-brand-container'
-                    : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
-              >All</button>
-              {CATEGORIES.map(c => (
-                <button key={c.id}
-                  onClick={() => { setCatFilter(c.id); setShowCats(false) }}
-                  className={`px-3 py-1.5 rounded-pill text-xs font-semibold border shrink-0 transition-all
-                    ${catFilter === c.id ? 'text-white border-transparent' : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
-                  style={catFilter === c.id ? { background: c.color, borderColor: c.color } : {}}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
+                key={c.id}
+                onClick={() => { setCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
+                className={`px-2 py-1.5 rounded-chip text-[11px] font-semibold text-center
+                            border transition-colors
+                            ${catFilter === c.id
+                              ? 'bg-brand-container text-brand-on border-brand-container'
+                              : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+              >
+                {c.label}
+              </button>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Transaction groups ────────────────────────────────────────── */}
-      <div className="space-y-3">
-        {groups.length === 0 && (
-          <div className="card p-8 text-center mt-4">
-            <p className="text-ink-2 text-sm">No transactions found.</p>
-            {search && <p className="text-ink-3 text-xs mt-1">Try a different search term.</p>}
-          </div>
-        )}
-        {groups.map(([date, txns]) => {
+      {/* ── Transaction groups ───────────────────────────────────────── */}
+      <div className="space-y-4 pb-32">
+        {groups.map(([dateKey, txns]) => {
           const net = groupNet(txns)
           return (
-            <div key={date} className="list-card">
-              <div className="flex items-center justify-between px-4 py-2 bg-kosha-surface-2
-                              border-b border-kosha-border">
-                <span className="text-caption font-semibold text-ink-3">
-                  {dateLabel(date)}
+            <div key={dateKey} className="list-card overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5
+                              border-b border-kosha-border bg-kosha-surface-2">
+                <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
+                  {dateLabel(dateKey)}
                 </span>
                 <span className={`text-caption font-semibold
                   ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
@@ -274,6 +268,7 @@ export default function Transactions() {
         initialType={addType}
         onSaved={(payload) => {
           if (payload.id) {
+            pendingEditId.current = payload.id
             applyLocalEdit(payload.id, payload)
           } else {
             prependOptimistic(payload)
@@ -283,8 +278,18 @@ export default function Transactions() {
         }}
         onConfirmed={async () => {
           await refetch()
+          // Clear the overlay AFTER fresh data is back — no flicker
+          if (pendingEditId.current) {
+            clearLocalEdit(pendingEditId.current)
+            pendingEditId.current = null
+          }
         }}
         onFailed={(msg) => {
+          // Roll back edit overlay too
+          if (pendingEditId.current) {
+            clearLocalEdit(pendingEditId.current)
+            pendingEditId.current = null
+          }
           clearOptimisticTxns()
           refetch()
           setToast(msg)

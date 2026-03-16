@@ -254,7 +254,7 @@ export default function Dashboard() {
                 </span>
               </button>
             )}
-            <ProfileMenu />
+            <ProfileMenu className="mt-0.5" />
           </div>
         </motion.div>
 
