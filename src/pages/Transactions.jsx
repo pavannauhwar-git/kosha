@@ -99,7 +99,7 @@ export default function Transactions() {
     <div className="page">
 
       {/* ── Header ───────────────────────────────────────────────────── */}
-      <div className="mb-4 pt-2">
+      <div className="mb-4">
         <h1 className="font-display text-display text-ink">Transactions</h1>
         <p className="text-caption text-ink-3 mt-0.5">
           {data.length > 0 ? `${data.length} transaction${data.length !== 1 ? 's' : ''}` : 'No results'}

@@ -317,7 +317,7 @@ export default function Analytics() {
     <div className="page">
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-6 pt-2 pr-14">
+      <div className="flex items-center justify-between mb-6 pr-14">
         <button onClick={() => setYear(y => y - 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">

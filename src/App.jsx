@@ -50,7 +50,7 @@ function GlobalHeader() {
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   return (
-    <div className="fixed top-4 right-4 z-30">
+    <div className="fixed top-6 right-4 z-30">
       <ProfileMenu />
     </div>
   )

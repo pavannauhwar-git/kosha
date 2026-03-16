@@ -228,7 +228,7 @@ export default function Dashboard() {
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
 
         {/* ── Greeting ──────────────────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="pt-2">
+        <motion.div variants={fadeUp}>
           <p className="text-caption text-ink-3">
             {now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' })}
           </p>

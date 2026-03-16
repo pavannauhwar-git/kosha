@@ -66,7 +66,7 @@ export default function Bills() {
     <div className="page">
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="mb-4 pt-2">
+      <div className="mb-4">
         <h1 className="font-display text-display text-ink">Bills &amp; Dues</h1>
         {pending.length > 0 && (
           <p className="text-caption text-ink-3 mt-0.5">
