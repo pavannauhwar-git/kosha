@@ -5,6 +5,7 @@ import { registerPrefetch } from '../hooks/useTransactions'
 import { useLiabilities, addLiability, markPaid, deleteLiability } from '../hooks/useLiabilities'
 import DeleteDialog from '../components/DeleteDialog'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
+import ProfileMenu from '../components/ProfileMenu'
 
 const RECURRENCE = ['monthly','quarterly','yearly']
 
@@ -75,11 +76,14 @@ export default function Bills() {
             </p>
           )}
         </div>
-        <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-pill bg-brand text-white
-                     text-xs font-semibold active:scale-95 transition-transform duration-75">
-          <Plus size={14} /> Add Bill
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-pill bg-brand text-white
+                       text-xs font-semibold active:scale-95 transition-transform duration-75">
+            <Plus size={14} /> Add Bill
+          </button>
+          <ProfileMenu />
+        </div>
       </div>
 
       {/* ── Structured summary card (replaces flat amber tint) ────────── */}

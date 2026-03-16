@@ -9,6 +9,7 @@ import { CATEGORIES }      from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus } from '@phosphor-icons/react'
 import PullToRefresh from '../components/PullToRefresh'
+import ProfileMenu from '../components/ProfileMenu'
 import { useAppData } from '../hooks/useAppDataStore'
 
 const TYPES = [
@@ -73,13 +74,21 @@ export default function Transactions() {
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
   const confirmDelete = useCallback(async () => {
+    const id = delId
+    if (!id) return
+
     // Optimistically remove from the visible list immediately
-    applyLocalDelete(delId)
+    applyLocalDelete(id)
+
     try {
-      await deleteTransaction(delId)
+      await deleteTransaction(id)
+    } catch (e) {
+      // If Supabase delete fails, refetch to restore the row and surface error
+      refetch()
+      setToast(e.message || 'Could not delete transaction. Check your connection.')
+      setTimeout(() => setToast(null), 4000)
     } finally {
       setDelId(null)
-      refetch()
     }
   }, [delId, applyLocalDelete, refetch])
 
@@ -110,14 +119,17 @@ export default function Transactions() {
             {(typeFilter !== 'all' || catFilter) ? ' · filtered' : ''}
           </p>
         </div>
-        {(typeFilter !== 'all' || catFilter) && (
-          <button
-            onClick={() => { setTypeFilter('all'); setCatFilter(''); setShowCats(false) }}
-            className="mt-1 text-caption font-semibold text-brand"
-          >
-            Clear filters
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {(typeFilter !== 'all' || catFilter) && (
+            <button
+              onClick={() => { setTypeFilter('all'); setCatFilter(''); setShowCats(false) }}
+              className="mt-1 text-caption font-semibold text-brand"
+            >
+              Clear filters
+            </button>
+          )}
+          <ProfileMenu />
+        </div>
       </div>
 
       {/* ── Search + filter button ────────────────────────────────────── */}

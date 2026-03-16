@@ -5,6 +5,7 @@ import { useMonthSummary } from '../hooks/useTransactions'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, savingsRate } from '../lib/utils'
 import PullToRefresh from '../components/PullToRefresh'
+import ProfileMenu from '../components/ProfileMenu'
 
 // ── SVG arc bar — round-capped, same as Dashboard Spending Pulse ──────────
 function SvgArcBar({ pct, color }) {
@@ -141,7 +142,7 @@ export default function Monthly() {
     <div className="page">
       <PullToRefresh onRefresh={handleRefresh} />
 
-      {/* ── Month navigator ───────────────────────────────────────────── */}
+      {/* ── Month navigator + profile ─────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pt-2">
         <button onClick={prev}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
@@ -151,11 +152,14 @@ export default function Monthly() {
         <h1 className="text-display font-bold text-ink tracking-tight">
           {MONTH_NAMES[month - 1]} {year}
         </h1>
-        <button onClick={next}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                     flex items-center justify-center active:bg-kosha-surface-2">
-          <ChevronRight size={18} className="text-ink-2" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={next}
+            className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                       flex items-center justify-center active:bg-kosha-surface-2">
+            <ChevronRight size={18} className="text-ink-2" />
+          </button>
+          <ProfileMenu />
+        </div>
       </div>
 
       {/* ── Hero card ─────────────────────────────────────────────────── */}

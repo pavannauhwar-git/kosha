@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, LogOut } from 'lucide-react'
+import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { useTransactions, registerPrefetch }   from '../hooks/useTransactions'
 import { useMonthSummary }   from '../hooks/useTransactions'
 import { useRunningBalance } from '../hooks/useTransactions'
@@ -17,6 +17,7 @@ import { CATEGORIES } from '../lib/categories'
 import { C } from '../lib/colors'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
 import CategoryIcon from '../components/CategoryIcon'
+import ProfileMenu from '../components/ProfileMenu'
 import PullToRefresh from '../components/PullToRefresh'
 
 const fadeUp = {
@@ -26,52 +27,6 @@ const fadeUp = {
 const stagger = {
   hidden: {},
   show:   { transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
-}
-
-// ── Profile menu ──────────────────────────────────────────────────────────
-function ProfileMenu({ profile, user, onSignOut }) {
-  const [open, setOpen] = useState(false)
-  const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-9 h-9 rounded-full bg-brand-container flex items-center
-                   justify-center active:scale-95 transition-transform duration-75"
-      >
-        <span className="text-label font-bold text-brand-on">{initial}</span>
-      </button>
-      <AnimatePresence>
-        {open && (
-          <>
-            <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-            <motion.div
-              initial={{ opacity:0, scale:0.95, y:-4 }}
-              animate={{ opacity:1, scale:1,    y:0   }}
-              exit={{    opacity:0, scale:0.95, y:-4  }}
-              transition={{ duration:0.12, ease:'easeOut' }}
-              className="absolute right-0 top-11 z-40 w-52 card p-1"
-            >
-              <div className="px-3 py-2.5 border-b border-kosha-border mb-1">
-                <p className="text-label font-semibold text-ink truncate">
-                  {profile?.display_name || 'My Account'}
-                </p>
-                <p className="text-caption text-ink-3 truncate">{user?.email}</p>
-              </div>
-              <button
-                onClick={() => { setOpen(false); onSignOut() }}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
-                           text-label font-medium text-expense-text hover:bg-expense-bg transition-colors"
-              >
-                <LogOut size={15} /> Sign out
-              </button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  )
 }
 
 // ── SVG arc progress bar — round-capped, matches Savings ring style ─────────
@@ -246,14 +201,21 @@ export default function Dashboard() {
   }, [signOut, navigate])
 
   const confirmDelete = useCallback(async () => {
+    const id = delId
+    if (!id) return
+
     // Optimistically remove from the latest list immediately
-    applyLocalDelete(delId)
+    applyLocalDelete(id)
+
     try {
-      await deleteTransaction(delId)
+      await deleteTransaction(id)
+    } catch (e) {
+      // If delete fails, refetch to restore and show error toast
+      refetch()
+      setToast(e.message || 'Could not delete transaction. Check your connection.')
+      setTimeout(() => setToast(null), 4000)
     } finally {
       setDelId(null)
-      // Background refetch keeps other tabs in sync when Supabase catches up
-      refetch()
     }
   }, [delId, applyLocalDelete, refetch])
 
@@ -300,7 +262,7 @@ export default function Dashboard() {
                 </span>
               </button>
             )}
-            <ProfileMenu profile={profile} user={user} onSignOut={handleSignOut} />
+            <ProfileMenu />
           </div>
         </motion.div>
 

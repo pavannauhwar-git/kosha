@@ -15,6 +15,7 @@ import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
 import PullToRefresh from '../components/PullToRefresh'
+import ProfileMenu from '../components/ProfileMenu'
 
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
                      'Jul','Aug','Sep','Oct','Nov','Dec']
@@ -330,7 +331,7 @@ export default function Analytics() {
     <div className="page">
       <PullToRefresh onRefresh={handleRefresh} />
 
-      {/* ── Year navigator ────────────────────────────────────────────── */}
+      {/* ── Year navigator + profile ──────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pt-2">
         <button onClick={() => setYear(y => y - 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
@@ -338,11 +339,14 @@ export default function Analytics() {
           <ChevronLeft size={18} className="text-ink-2" />
         </button>
         <h1 className="text-display font-bold text-ink tracking-tight">{year}</h1>
-        <button onClick={() => setYear(y => y + 1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                     flex items-center justify-center active:bg-kosha-surface-2">
-          <ChevronRight size={18} className="text-ink-2" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setYear(y => y + 1)}
+            className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                       flex items-center justify-center active:bg-kosha-surface-2">
+            <ChevronRight size={18} className="text-ink-2" />
+          </button>
+          <ProfileMenu />
+        </div>
       </div>
 
       {loading ? (
