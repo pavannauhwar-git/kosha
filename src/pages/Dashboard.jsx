@@ -149,6 +149,7 @@ export default function Dashboard() {
   const [toast, setToast] = useState(null)
 
   const { addOptimisticTxn, clearOptimisticTxns, optimisticTxns } = useAppData()
+  const [balanceDelta, setBalanceDelta] = useState(0)
 
   const { data: recent, refetch, prependOptimistic } = useTransactions({ limit: 8 })
   const { data: summary,     refetch: refetchSummary }     = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
@@ -179,6 +180,7 @@ export default function Dashboard() {
   const spent      = (summary?.expense    || 0) + optimisticSpent
   const invested   = (summary?.investment || 0) + optimisticInvested
   const rate       = savingsRate(earned, spent)
+  const displayBalance = (runningBalance ?? 0) + balanceDelta
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const dayOfMonth  = now.getDate()
@@ -209,29 +211,42 @@ export default function Dashboard() {
   //   (a) prepend it to the transaction list instantly
   //   (b) update the hero card summary numbers instantly
   const handleOptimisticSave = useCallback((payload) => {
-    // Only apply optimistic updates for new transactions in the current month
-    // (edits are less common and the brief delay is acceptable)
-    const txnDate  = new Date(payload.date)
-    const isThisMonth = txnDate.getFullYear() === now.getFullYear() &&
-                        txnDate.getMonth()    === now.getMonth()
-
     // Prepend to the list immediately
     prependOptimistic(payload)
 
     addOptimisticTxn(payload)
-  }, [prependOptimistic, now, addOptimisticTxn])
+    // Also bump running balance locally so it never "snaps back" while
+    // Supabase is catching up.
+    setBalanceDelta(prev => {
+      if (payload.type === 'income')     return prev + payload.amount
+      if (payload.type === 'expense')    return prev - payload.amount
+      if (payload.type === 'investment') return prev - payload.amount
+      return prev
+    })
+  }, [prependOptimistic, addOptimisticTxn])
 
   // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
-  const handleConfirmed = useCallback(() => {
-    clearOptimisticTxns()
-    refetch()
-  }, [refetch, clearOptimisticTxns])
+  // Keep optimistic overlay until the fresh numbers arrive, then clear.
+  const handleConfirmed = useCallback(async () => {
+    try {
+      await Promise.all([
+        refetch(),
+        refetchSummary(),
+        refetchLastSummary(),
+        refetchBalance(),
+      ])
+    } finally {
+      clearOptimisticTxns()
+      setBalanceDelta(0)
+    }
+  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearOptimisticTxns])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
   // The optimistic row disappears when refetch() returns real server data.
   // Toast tells the user what happened so they can try again.
   const handleFailed = useCallback((msg) => {
     clearOptimisticTxns()
+    setBalanceDelta(0)
     refetch()
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
@@ -320,7 +335,7 @@ export default function Dashboard() {
             Total balance
           </p>
           <p className="text-hero font-bold text-white leading-none tracking-tight tabular-nums">
-            {runningBalance !== null ? fmt(runningBalance) : '—'}
+            {runningBalance !== null ? fmt(displayBalance) : '—'}
           </p>
           <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill"
                style={{ background:C.heroAccentBg }}>

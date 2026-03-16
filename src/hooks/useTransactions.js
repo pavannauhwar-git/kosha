@@ -184,7 +184,10 @@ export function useTransactions({ type, category, search, limit } = {}) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  const refetch = useCallback(() => { invalidateCache('txns:'); fetch(true) }, [fetch])
+  const refetch = useCallback(() => {
+    invalidateCache('txns:')
+    return fetch(true)
+  }, [fetch])
 
   // ── Optimistic prepend ────────────────────────────────────────────────
   // Instantly inserts a transaction at the top of the list with a temp id.
@@ -277,7 +280,7 @@ export function useMonthSummary(year, month) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  const refetch = useCallback(() => { fetch(true) }, [fetch])
+  const refetch = useCallback(() => fetch(true), [fetch])
 
   const optimisticForMonth = optimisticTxns.filter(t => {
     const d = new Date(t.date)
@@ -411,7 +414,7 @@ export function useYearSummary(year) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  const refetch = useCallback(() => { fetch(true) }, [fetch])
+  const refetch = useCallback(() => fetch(true), [fetch])
 
   const optimisticForYear = optimisticTxns.filter(t => {
     const d = new Date(t.date)
@@ -536,7 +539,7 @@ export function useRunningBalance(year, month) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  const refetch = useCallback(() => { fetch(true) }, [fetch])
+  const refetch = useCallback(() => fetch(true), [fetch])
 
   const endDate = `${year}-${String(month).padStart(2,'0')}-${new Date(year, month, 0).getDate()}`
   const optimisticForPeriod = optimisticTxns.filter(t => t.date <= endDate)
