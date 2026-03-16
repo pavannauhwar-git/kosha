@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useTransactions, deleteTransaction } from '../hooks/useTransactions'
+import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTransactions'
 import TransactionItem     from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import DeleteDialog        from '../components/DeleteDialog'
@@ -38,10 +38,14 @@ export default function Transactions() {
   const [showCats,   setShowCats]   = useState(false)
   const [addType,    setAddType]    = useState('expense')
 
+  // Debounce search: only fire a Supabase query 300ms after the user stops
+  // typing — prevents a round-trip per keystroke (was 6 queries for "Swiggy")
+  const debouncedSearch = useDebounce(search, 300)
+
   const { data, refetch } = useTransactions({
     type:     typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter  || undefined,
-    search:   search     || undefined,
+    search:   debouncedSearch || undefined,
   })
 
   const groups = groupByDate(data)
@@ -59,11 +63,19 @@ export default function Transactions() {
   // Active filter count for filter button badge
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
-  async function confirmDelete() {
+  const confirmDelete = useCallback(async () => {
     await deleteTransaction(delId)
     setDelId(null)
     refetch()
-  }
+  }, [delId, refetch])
+
+  // Stable callbacks for TransactionItem memo
+  const handleDelete = useCallback((id) => setDelId(id), [])
+  const handleTap    = useCallback((t) => {
+    setEditTxn(t)
+    setAddType(t.type)
+    setShowAdd(true)
+  }, [])
 
   return (
     <div className="page">
@@ -216,8 +228,8 @@ export default function Transactions() {
               {txns.map((t, i) => (
                 <TransactionItem
                   key={t.id} txn={t}
-                  onDelete={id => setDelId(id)}
-                  onTap={t => { setEditTxn(t); setAddType(t.type); setShowAdd(true) }}
+                  onDelete={handleDelete}
+                  onTap={handleTap}
                   isLast={i === txns.length - 1}
                 />
               ))}

@@ -5,10 +5,10 @@ export default {
     extend: {
       colors: {
         // ── App backgrounds ───────────────────────────────────────────────
-        'kosha-bg':            '#F8F7FF',
-        'kosha-bg-2':          '#F0EEFF',
+        'kosha-bg':            '#FDFCFF',
+        'kosha-bg-2':          '#F5F3FF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F0EEFF',
+        'kosha-surface-2':     '#F5F3FF',
         'kosha-border':        '#D4CEFF',
         'kosha-border-strong': '#8B83E6',
 
@@ -33,10 +33,10 @@ export default {
         'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#0891B2',
-        'invest-bg':     '#ECFEFF',
-        'invest-text':   '#0E7490',
-        'invest-border': '#A5F3FC',
+        'invest':        '#BE185D',
+        'invest-bg':     '#FFF0F7',
+        'invest-text':   '#9D174D',
+        'invest-border': '#FBCFE8',
 
         // ── Repayment / Bills ─────────────────────────────────────────────
         'repay':        '#CA8A04',
@@ -87,10 +87,10 @@ export default {
 
       boxShadow: {
         'card':       '0 2px 8px rgba(55,48,163,0.06), 0 0 0 0.5px rgba(55,48,163,0.07)',
-        'card-md':    '0 4px 16px rgba(55,48,163,0.08), 0 0 0 0.5px rgba(55,48,163,0.07)',
-        'card-lg':    '0 8px 32px rgba(55,48,163,0.10), 0 0 0 0.5px rgba(55,48,163,0.07)',
-        'apple-card': '0 20px 60px rgba(55,48,163,0.16), 0 8px 20px rgba(55,48,163,0.09)',
-        'fab':        '0 4px 16px rgba(55,48,163,0.35)',
+        'card-md':    '0 4px 16px rgba(30,27,75,0.10), 0 0 0 0.5px rgba(30,27,75,0.07)',
+        'card-lg':    '0 8px 28px rgba(30,27,75,0.13), 0 0 0 0.5px rgba(30,27,75,0.07)',
+        'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
+        'fab':        '0 4px 16px rgba(55,48,163,0.40)',
         'focus':      '0 0 0 3.5px rgba(91,81,224,0.28)',
         'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
         'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, LogOut } from 'lucide-react'
@@ -69,6 +69,27 @@ function ProfileMenu({ profile, user, onSignOut }) {
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+// ── SVG arc progress bar — round-capped, matches Savings ring style ─────────
+function SvgArcBar({ pct, color }) {
+  const W   = 100  // viewBox width (%)
+  const H   = 6    // height in px
+  const R   = H / 2
+  const max = W - R * 2
+  const fill = Math.max(0, Math.min(pct, 100)) / 100 * max
+  return (
+    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      {/* Track */}
+      <line x1={R} y1={R} x2={W - R} y2={R}
+        stroke="#D4CEFF" strokeWidth={H} strokeLinecap="round" />
+      {/* Fill */}
+      {fill > 0 && (
+        <line x1={R} y1={R} x2={R + fill} y2={R}
+          stroke={color} strokeWidth={H} strokeLinecap="round" />
+      )}
+    </svg>
   )
 }
 
@@ -161,22 +182,31 @@ export default function Dashboard() {
 
   const recentGroups = groupByDate(recent)
 
-  function openQuickAdd(type) {
+  const openQuickAdd = useCallback((type) => {
     setAddType(type)
     setEditTxn(null)
     setShowAdd(true)
-  }
+  }, [])
 
-  async function handleSignOut() {
+  const handleSignOut = useCallback(async () => {
     await signOut()
     navigate('/login', { replace: true })
-  }
+  }, [signOut, navigate])
 
-  async function confirmDelete() {
+  const confirmDelete = useCallback(async () => {
     await deleteTransaction(delId)
     setDelId(null)
     refetch()
-  }
+  }, [delId, refetch])
+
+  // Stable callbacks for TransactionItem — avoids remounting memo'd rows
+  // on every Dashboard render (e.g. when bell icon updates or state changes)
+  const handleDelete = useCallback((id) => setDelId(id), [])
+  const handleTap    = useCallback((t) => {
+    setEditTxn(t)
+    setAddType(t.type)
+    setShowAdd(true)
+  }, [])
 
   return (
     <div className="page">
@@ -209,6 +239,11 @@ export default function Dashboard() {
 
         {/* ── Hero card ─────────────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
+          {/* Ghost growth curve — faint bezier behind balance, lime at 7% opacity */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 340 180" preserveAspectRatio="none">
+            <path d="M-10 160 C 60 140, 100 100, 170 80 S 280 30, 360 10"
+              fill="none" stroke="#E2FF5A" strokeWidth="1.5" strokeOpacity="0.07" strokeLinecap="round"/>
+          </svg>
           <div className="flex items-center justify-between mb-4">
             <p className="text-caption font-bold tracking-widest uppercase"
                style={{ color:C.heroAccent }}>
@@ -244,6 +279,10 @@ export default function Dashboard() {
             ))}
           </div>
           <div className="mt-4">
+            <div className="flex justify-between mb-2">
+              <span className="text-caption font-medium" style={{ color:C.heroLabel }}>Savings rate</span>
+              <span className="text-caption font-bold" style={{ color:C.heroAccentSolid }}>{rate}%</span>
+            </div>
             <div className="bar-dark-track">
               <motion.div className="bar-dark-fill"
                 initial={{ width:0 }} animate={{ width:`${rate}%` }}
@@ -314,34 +353,22 @@ export default function Dashboard() {
               <SavingsRing rate={rate} />
             </div>
 
-            {/* Month elapsed */}
-            <div className="mb-3">
-              <div className="flex justify-between mb-1.5">
+            {/* Month elapsed — SVG arc bar */}
+            <div className="mb-4">
+              <div className="flex justify-between mb-2">
                 <span className="text-caption text-ink-3">Month elapsed</span>
                 <span className="text-caption font-semibold text-ink-2">{monthPct}%</span>
               </div>
-              <div className="bar-light-track">
-                <motion.div className="h-full rounded-pill absolute inset-y-0 left-0"
-                  style={{ background:C.income }}
-                  initial={{ width:'0%' }} animate={{ width:`${monthPct}%` }}
-                  transition={{ duration:0.5, ease:'easeOut' }}
-                />
-              </div>
+              <SvgArcBar pct={monthPct} color={C.income} />
             </div>
 
-            {/* Amount spent */}
+            {/* Amount spent — SVG arc bar */}
             <div className="mb-4">
-              <div className="flex justify-between mb-1.5">
+              <div className="flex justify-between mb-2">
                 <span className="text-caption text-ink-3">Amount spent</span>
                 <span className="text-caption font-semibold text-expense-text">{spendPct}%</span>
               </div>
-              <div className="bar-light-track">
-                <motion.div className="h-full rounded-pill absolute inset-y-0 left-0"
-                  style={{ background:C.expenseBright }}
-                  initial={{ width:'0%' }} animate={{ width:`${Math.min(spendPct, 100)}%` }}
-                  transition={{ duration:0.5, ease:'easeOut', delay:0.1 }}
-                />
-              </div>
+              <SvgArcBar pct={Math.min(spendPct, 100)} color={C.expenseBright} />
             </div>
 
             {/* Top category */}
@@ -426,8 +453,8 @@ export default function Dashboard() {
                       <TransactionItem key={t.id} txn={t}
                         showDate={false}
                         isLast={i === txns.length - 1}
-                        onDelete={id => setDelId(id)}
-                        onTap={t => { setEditTxn(t); setAddType(t.type); setShowAdd(true) }}
+                        onDelete={handleDelete}
+                        onTap={handleTap}
                       />
                     ))}
                   </div>

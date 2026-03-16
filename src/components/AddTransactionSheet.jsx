@@ -139,7 +139,6 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
   const [vehicle,  setVehicle]  = useState('Other')
   const [mode,     setMode]     = useState('upi')
   const [date,     setDate]     = useState(todayStr())
-  const [saving,   setSaving]   = useState(false)
   const [error,    setError]    = useState('')
 
   const [showCatPicker,  setShowCatPicker]  = useState(false)
@@ -167,26 +166,34 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
   async function handleSave() {
     if (!amount || isNaN(+amount) || +amount <= 0) { setError('Enter a valid amount'); return }
     if (!desc.trim()) { setError('Enter a description'); return }
-    setError(''); setSaving(true)
+
+    const payload = {
+      type,
+      description:  desc.trim(),
+      amount:       +amount,
+      category:     type === 'investment' ? 'other' : category,
+      date,
+      payment_mode: mode,
+      is_repayment: false,
+      ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
+    }
+
+    // ── Optimistic close: sheet dismisses instantly, save happens in bg ──
+    // This eliminates the "stuck" feel — the user never waits for the network.
+    // The 8-second timeout in addTransaction/updateTransaction ensures the
+    // promise always resolves, even on a dead connection.
+    onClose()
+
     try {
-      const payload = {
-        type,
-        description:  desc.trim(),
-        amount:       +amount,
-        category:     type === 'investment' ? 'other' : category,
-        date,
-        payment_mode: mode,
-        is_repayment: false,
-        ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
-      }
       if (editTxn) await updateTransaction(editTxn.id, payload)
       else         await addTransaction(payload)
-      onSaved && onSaved()
-      onClose()
     } catch (e) {
-      setError(e.message || 'Something went wrong')
+      // Save failed silently (timeout / network error).
+      // onSaved() is still called to trigger a refetch — if the item
+      // never made it to Supabase, it simply won't appear in the list.
+      console.error('[Kosha] Save failed:', e.message)
     } finally {
-      setSaving(false)
+      onSaved && onSaved()
     }
   }
 
@@ -317,11 +324,10 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editTxn = 
               {/* Save — solid forest green */}
               <button
                 onClick={handleSave}
-                disabled={saving}
                 className="w-full py-4 rounded-card text-[17px] font-semibold bg-brand text-white
-                           active:scale-[0.98] disabled:opacity-60 transition-all"
+                           active:scale-[0.98] transition-all"
               >
-                {saving ? 'Saving…' : editTxn ? 'Save Changes' : `Add ${activeType.label}`}
+                {editTxn ? 'Save Changes' : `Add ${activeType.label}`}
               </button>
               <div className="h-2" />
             </div>

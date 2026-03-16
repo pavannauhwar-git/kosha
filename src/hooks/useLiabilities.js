@@ -8,6 +8,16 @@ async function getCurrentUserId() {
   return session.user.id
 }
 
+// ── 8-second timeout wrapper ─────────────────────────────────────────────
+function withTimeout(promise, ms = 8000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out. Check your connection.')), ms)
+    ),
+  ])
+}
+
 export function useLiabilities() {
   const [pending, setPending] = useState([])
   const [paid,    setPaid]    = useState([])
@@ -28,14 +38,23 @@ export function useLiabilities() {
 
   useEffect(() => { fetch() }, [fetch])
 
+  // ── visibilitychange: re-fetch when app returns from background ────────
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'visible') fetch()
+    }
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [fetch])
+
   return { pending, paid, loading, refetch: fetch }
 }
 
 export async function addLiability(payload) {
   const user_id = await getCurrentUserId()
-  const { error } = await supabase
-    .from('liabilities')
-    .insert([{ ...payload, user_id }])
+  const { error } = await withTimeout(
+    supabase.from('liabilities').insert([{ ...payload, user_id }])
+  )
   if (error) throw error
 }
 
@@ -54,18 +73,17 @@ export async function markPaid(liability) {
     notes:        `Auto-created from bill: ${liability.description}`,
     user_id,
   }
-  const { data: txn, error: txnErr } = await supabase
-    .from('transactions')
-    .insert([txnPayload])
-    .select()
-    .single()
+  const { data: txn, error: txnErr } = await withTimeout(
+    supabase.from('transactions').insert([txnPayload]).select().single()
+  )
   if (txnErr) throw txnErr
 
   // 2. Mark liability paid and link to the transaction
-  const { error: liabErr } = await supabase
-    .from('liabilities')
-    .update({ paid: true, linked_transaction_id: txn.id })
-    .eq('id', liability.id)
+  const { error: liabErr } = await withTimeout(
+    supabase.from('liabilities')
+      .update({ paid: true, linked_transaction_id: txn.id })
+      .eq('id', liability.id)
+  )
   if (liabErr) throw liabErr
 
   // 3. If recurring, create the next period automatically
@@ -73,22 +91,23 @@ export async function markPaid(liability) {
     const due    = new Date(liability.due_date)
     const months = { monthly: 1, quarterly: 3, yearly: 12 }
     due.setMonth(due.getMonth() + (months[liability.recurrence] || 1))
-    await supabase.from('liabilities').insert([{
-      description:  liability.description,
-      amount:       liability.amount,
-      due_date:     due.toISOString().slice(0, 10),
-      is_recurring: true,
-      recurrence:   liability.recurrence,
-      paid:         false,
-      user_id,
-    }])
+    await withTimeout(
+      supabase.from('liabilities').insert([{
+        description:  liability.description,
+        amount:       liability.amount,
+        due_date:     due.toISOString().slice(0, 10),
+        is_recurring: true,
+        recurrence:   liability.recurrence,
+        paid:         false,
+        user_id,
+      }])
+    )
   }
 }
 
 export async function deleteLiability(id) {
-  const { error } = await supabase
-    .from('liabilities')
-    .delete()
-    .eq('id', id)
+  const { error } = await withTimeout(
+    supabase.from('liabilities').delete().eq('id', id)
+  )
   if (error) throw error
 }

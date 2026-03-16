@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import {
+  AreaChart, Area,
   BarChart, Bar,
   XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, Cell,
@@ -21,7 +22,7 @@ const YEARS = [2023, 2024, 2025, 2026]
 // Portfolio colours — green family, darkest to lightest
 const PORTFOLIO_COLORS = C.portfolio
 
-// ── Tooltip ───────────────────────────────────────────────────────────────
+// ── Light tooltip (KPI cards, net savings) ───────────────────────────────
 const AppleTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
@@ -29,7 +30,7 @@ const AppleTooltip = ({ active, payload, label }) => {
       background: 'rgba(255,255,255,0.98)',
       borderRadius: 12,
       padding: '10px 14px',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(22,51,0,0.08)',
+      boxShadow: '0 4px 20px rgba(30,27,75,0.14), 0 0 0 0.5px rgba(30,27,75,0.08)',
       minWidth: 140,
     }}>
       <p style={{ fontSize:12, fontWeight:600, color:C.inkMuted,
@@ -38,8 +39,36 @@ const AppleTooltip = ({ active, payload, label }) => {
       </p>
       {payload.map(p => (
         <div key={p.name} style={{ display:'flex', justifyContent:'space-between', gap:16, marginBottom:3 }}>
-          <span style={{ fontSize:13, color:C.brand }}>{p.name}</span>
+          <span style={{ fontSize:13, color:C.ink }}>{p.name}</span>
           <span style={{ fontSize:13, fontWeight:700, color:p.fill || p.color }}>
+            {fmt(p.value)}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Dark tooltip (on dark chart card) ────────────────────────────────────
+const DarkTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{
+      background: 'rgba(48,42,110,0.96)',
+      borderRadius: 12,
+      padding: '10px 14px',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+      minWidth: 140,
+      border: '0.5px solid rgba(255,255,255,0.10)',
+    }}>
+      <p style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.5)',
+                  letterSpacing:'0.04em', marginBottom:6, textTransform:'uppercase' }}>
+        {label}
+      </p>
+      {payload.map(p => (
+        <div key={p.name} style={{ display:'flex', justifyContent:'space-between', gap:16, marginBottom:3 }}>
+          <span style={{ fontSize:13, color:'rgba(255,255,255,0.75)' }}>{p.name}</span>
+          <span style={{ fontSize:13, fontWeight:700, color:p.stroke || p.fill || p.color }}>
             {fmt(p.value)}
           </span>
         </div>
@@ -343,33 +372,54 @@ export default function Analytics() {
             </div>
           </div>
 
-          {/* ── 2. Monthly Cash Flow — grouped bars ─────────────────── */}
+          {/* ── 2. Monthly Cash Flow — dark card, glowing area curves ──── */}
           {chartData.length > 0 && (
-            <div className="card p-5">
-              <div className="flex items-center justify-between mb-4">
-                <p className="section-label">Monthly Cash Flow</p>
-                <span className="text-caption text-ink-3">{chartData.length} months</span>
+            <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background:C.chartDark }}>
+              <div className="px-5 pt-5 pb-2">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-label font-semibold" style={{ color:'rgba(255,255,255,0.85)' }}>
+                    Monthly Cash Flow
+                  </p>
+                  <span style={{ fontSize:11, color:'rgba(255,255,255,0.35)' }}>{chartData.length} months</span>
+                </div>
               </div>
-              <ResponsiveContainer width="100%" height={chartH}>
-                <BarChart data={chartData}
-                  barCategoryGap="25%" barGap={3}
-                  margin={{ top:4, right:4, left:4, bottom:0 }}>
+              <ResponsiveContainer width="100%" height={chartH + 20}>
+                <AreaChart data={chartData}
+                  margin={{ top:8, right:16, left:16, bottom:0 }}>
+                  <defs>
+                    <linearGradient id="gIncome" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={C.chartIncome} stopOpacity={0.30}/>
+                      <stop offset="100%" stopColor={C.chartIncome} stopOpacity={0.02}/>
+                    </linearGradient>
+                    <linearGradient id="gExpense" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={C.chartExpense} stopOpacity={0.25}/>
+                      <stop offset="100%" stopColor={C.chartExpense} stopOpacity={0.02}/>
+                    </linearGradient>
+                  </defs>
                   <XAxis dataKey="name"
-                    tick={{ fontSize:12, fill:C.inkMuted, fontWeight:500 }}
+                    tick={{ fontSize:11, fill:'rgba(255,255,255,0.40)', fontWeight:500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
-                  <Tooltip content={<AppleTooltip />}
-                    cursor={{ fill:'rgba(22,51,0,0.04)' }} />
-                  <Bar dataKey="Income" fill={C.income} radius={[4,4,0,0]} maxBarSize={32} />
-                  <Bar dataKey="Spent"  fill={C.expenseBright} fillOpacity={0.85} radius={[4,4,0,0]} maxBarSize={32} />
-                </BarChart>
+                  <Tooltip content={<DarkTooltip />}
+                    cursor={{ stroke:'rgba(255,255,255,0.10)', strokeWidth:1 }} />
+                  <Area dataKey="Income" type="monotone"
+                    stroke={C.chartIncome} strokeWidth={2}
+                    fill="url(#gIncome)" dot={false}
+                    activeDot={{ r:4, fill:C.chartIncome, stroke:'#fff', strokeWidth:1.5 }}
+                  />
+                  <Area dataKey="Spent" type="monotone"
+                    stroke={C.chartExpense} strokeWidth={2}
+                    fill="url(#gExpense)" dot={false}
+                    activeDot={{ r:4, fill:C.chartExpense, stroke:'#fff', strokeWidth:1.5 }}
+                  />
+                </AreaChart>
               </ResponsiveContainer>
-              <div className="flex justify-center gap-5 mt-4">
-                {[['Income',C.income],['Spent',C.expenseBright]].map(([l,c]) => (
+              <div className="flex justify-center gap-6 pb-4 pt-1">
+                {[['Income',C.chartIncome],['Spent',C.chartExpense]].map(([l,c]) => (
                   <div key={l} className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full" style={{ background:c }} />
-                    <span className="text-caption text-ink-2 font-medium">{l}</span>
+                    <span style={{ fontSize:11, color:'rgba(255,255,255,0.50)', fontWeight:500 }}>{l}</span>
                   </div>
                 ))}
               </div>
@@ -378,25 +428,30 @@ export default function Analytics() {
 
           {/* ── 3. Net Savings ──────────────────────────────────────── */}
           {netData.length > 0 && (
-            <div className="card p-5">
-              <p className="section-label">Net Savings</p>
-              <p className="text-caption text-ink-3 mb-4 mt-0.5">After expenses &amp; investments</p>
-              <ResponsiveContainer width="100%" height={120}>
-                <BarChart data={netData} margin={{ top:4, right:4, left:4, bottom:0 }}>
+            <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background:C.chartDark }}>
+              <div className="px-5 pt-5 pb-2">
+                <p className="text-label font-semibold" style={{ color:'rgba(255,255,255,0.85)' }}>Net Savings</p>
+                <p style={{ fontSize:11, color:'rgba(255,255,255,0.35)', marginTop:2 }}>After expenses &amp; investments</p>
+              </div>
+              <ResponsiveContainer width="100%" height={130}>
+                <BarChart data={netData} margin={{ top:4, right:16, left:16, bottom:0 }}>
                   <XAxis dataKey="name"
-                    tick={{ fontSize:12, fill:C.inkMuted, fontWeight:500 }}
+                    tick={{ fontSize:11, fill:'rgba(255,255,255,0.40)', fontWeight:500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
-                  <Tooltip content={<AppleTooltip />} cursor={{ fill:'rgba(22,51,0,0.04)' }} />
-                  <ReferenceLine y={0} stroke={C.brandBorder} strokeWidth={1} />
+                  <Tooltip content={<DarkTooltip />} cursor={{ fill:'rgba(255,255,255,0.05)' }} />
+                  <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
                   <Bar dataKey="Net" radius={[4,4,0,0]} maxBarSize={32}>
                     {netData.map((entry, i) => (
-                      <Cell key={i} fill={entry.Net >= 0 ? C.income : C.expenseBright} fillOpacity={0.85} />
+                      <Cell key={i}
+                        fill={entry.Net >= 0 ? C.chartIncome : C.chartExpense}
+                        fillOpacity={0.90} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              <div className="h-4"/>
             </div>
           )}
 

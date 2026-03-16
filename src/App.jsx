@@ -1,17 +1,33 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { AuthProvider } from './hooks/useAuth'
 import { useAuth } from './hooks/useAuth'
 import AuthGuard    from './components/AuthGuard'
-import Dashboard    from './pages/Dashboard'
-import Transactions from './pages/Transactions'
-import Monthly      from './pages/Monthly'
-import Analytics    from './pages/Analytics'
-import Bills        from './pages/Bills'
-import Login        from './pages/Login'
-import Onboarding   from './pages/Onboarding'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
 import { C } from './lib/colors'
+
+// ── Eager: Dashboard and Login are needed immediately ────────────────────
+import Dashboard    from './pages/Dashboard'
+import Login        from './pages/Login'
+import Onboarding   from './pages/Onboarding'
+
+// ── Lazy: heavier pages loaded on first visit ────────────────────────────
+// Reduces the initial JS bundle the phone has to parse on first open.
+// Each page is code-split into its own chunk (~30-50KB savings each).
+const Transactions = lazy(() => import('./pages/Transactions'))
+const Monthly      = lazy(() => import('./pages/Monthly'))
+const Analytics    = lazy(() => import('./pages/Analytics'))
+const Bills        = lazy(() => import('./pages/Bills'))
+
+// ── Skeleton fallback for lazy pages ─────────────────────────────────────
+// AuthGuard already shows per-route skeletons — we just need a minimal
+// wrapper for the brief Suspense window before AuthGuard kicks in.
+function PageFallback() {
+  return (
+    <div className="min-h-dvh bg-kosha-bg" />
+  )
+}
 
 const NAV = [
   { path: '/',             label: 'Home',     Icon: House        },
@@ -130,12 +146,30 @@ export default function App() {
               <AuthGuard><Onboarding /></AuthGuard>
             } />
 
-            {/* Protected */}
-            <Route path="/"             element={<AuthGuard><Dashboard    /></AuthGuard>} />
-            <Route path="/transactions" element={<AuthGuard><Transactions /></AuthGuard>} />
-            <Route path="/monthly"      element={<AuthGuard><Monthly      /></AuthGuard>} />
-            <Route path="/analytics"    element={<AuthGuard><Analytics    /></AuthGuard>} />
-            <Route path="/bills"        element={<AuthGuard><Bills        /></AuthGuard>} />
+            {/* Protected — eager */}
+            <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
+
+            {/* Protected — lazy (code-split, loaded on first navigation) */}
+            <Route path="/transactions" element={
+              <Suspense fallback={<PageFallback />}>
+                <AuthGuard><Transactions /></AuthGuard>
+              </Suspense>
+            } />
+            <Route path="/monthly" element={
+              <Suspense fallback={<PageFallback />}>
+                <AuthGuard><Monthly /></AuthGuard>
+              </Suspense>
+            } />
+            <Route path="/analytics" element={
+              <Suspense fallback={<PageFallback />}>
+                <AuthGuard><Analytics /></AuthGuard>
+              </Suspense>
+            } />
+            <Route path="/bills" element={
+              <Suspense fallback={<PageFallback />}>
+                <AuthGuard><Bills /></AuthGuard>
+              </Suspense>
+            } />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

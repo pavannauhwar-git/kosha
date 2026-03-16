@@ -4,6 +4,25 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMonthSummary } from '../hooks/useTransactions'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, savingsRate } from '../lib/utils'
+
+// ── SVG arc bar — round-capped, same as Dashboard Spending Pulse ──────────
+function SvgArcBar({ pct, color }) {
+  const W   = 100
+  const H   = 6
+  const R   = H / 2
+  const max = W - R * 2
+  const fill = Math.max(0, Math.min(pct, 100)) / 100 * max
+  return (
+    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <line x1={R} y1={R} x2={W - R} y2={R}
+        stroke="#D4CEFF" strokeWidth={H} strokeLinecap="round" />
+      {fill > 0 && (
+        <line x1={R} y1={R} x2={R + fill} y2={R}
+          stroke={color} strokeWidth={H} strokeLinecap="round" />
+      )}
+    </svg>
+  )
+}
 import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
 
@@ -228,7 +247,7 @@ export default function Monthly() {
                 {[
                   { label:'Spent',    val:spent,    pct:spentPct,    dot:C.expense, textCls:'text-expense-text' },
                   { label:'Invested', val:invested, pct:investedPct, dot:C.investText, textCls:'text-invest-text'  },
-                  { label:'Saved',    val:saved,    pct:savedPct,    dot:C.brand, textCls:'text-income-text'  },
+                  { label:'Saved',    val:saved,    pct:savedPct,    dot:C.brand, textCls:'text-brand'        },
                 ].map(s => (
                   <div key={s.label}>
                     <div className="flex items-center gap-2 mb-1">
@@ -286,14 +305,7 @@ export default function Monthly() {
                           </span>
                           <span className="text-caption text-ink-3 ml-2 shrink-0">{pct}%</span>
                         </div>
-                        <div className="h-[4px] bg-kosha-border rounded-pill overflow-hidden">
-                          <motion.div
-                            className="h-full rounded-pill"
-                            style={{ background: cat?.color || C.income }}
-                            initial={{ width:0 }} animate={{ width:`${pct}%` }}
-                            transition={{ duration:0.6, ease:'easeOut' }}
-                          />
-                        </div>
+                        <SvgArcBar pct={pct} color={cat?.color || C.income} />
                       </div>
                       <span className="text-label font-semibold text-expense-text tabular-nums ml-2 shrink-0">
                         {fmt(amt)}

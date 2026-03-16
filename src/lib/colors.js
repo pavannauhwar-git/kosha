@@ -36,8 +36,10 @@ export const C = {
   expenseBright:   '#E11D48',   // same — no separate "bright" needed
 
   // ── Investment — Cyan H=194° ──────────────────────────────────────
-  invest:          '#0891B2',
-  investText:      '#0E7490',
+  invest:          '#BE185D',   // deep rose-pink, darker H=331°
+  investText:      '#9D174D',
+
+  saved:           '#3730A3',   // brand periwinkle — residual money in Kosha
 
   // ── Bills — Amber H=84° ───────────────────────────────────────────
   bills:           '#CA8A04',
@@ -54,6 +56,14 @@ export const C = {
   heroDimmer:      'rgba(255,255,255,0.35)', // "KOSHA" watermark
   heroDivider:     'rgba(255,255,255,0.12)', // horizontal rule
   heroStatBg:      'rgba(255,255,255,0.10)', // Earned/Spent/Invested chips
+
+  // ── Chart glow colours — on dark #1E1B4B card background ─────────
+  // Brighter variants of semantic colours so they glow on dark substrate
+  chartIncome:     '#34D399',   // bright emerald glow on dark
+  chartExpense:    '#FB7185',   // bright rose glow on dark
+  chartDark:       '#1E1B4B',   // dark chart card background = brand ink
+  chartGrid:       'rgba(255,255,255,0.06)', // grid lines on dark card
+  chartCursor:     'rgba(255,255,255,0.06)', // tooltip cursor on dark card
 
   // ── Portfolio donut — periwinkle family, darkest → lightest ──────
   portfolio: [
