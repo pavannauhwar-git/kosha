@@ -9,6 +9,7 @@ import { CATEGORIES }      from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus } from '@phosphor-icons/react'
 import PullToRefresh from '../components/PullToRefresh'
+import { useAppData } from '../hooks/useAppDataStore'
 
 const TYPES = [
   { id:'all',        label:'All'      },
@@ -78,6 +79,8 @@ export default function Transactions() {
     setAddType(t.type)
     setShowAdd(true)
   }, [])
+
+  const { addOptimisticTxn, clearOptimisticTxns } = useAppData()
 
   const handleRefresh = useCallback(() => {
     refetch()

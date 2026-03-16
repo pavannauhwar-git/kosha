@@ -7,6 +7,7 @@ import { useMonthSummary }   from '../hooks/useTransactions'
 import { useRunningBalance } from '../hooks/useTransactions'
 import { useLiabilities }    from '../hooks/useLiabilities'
 import { useAuth }           from '../hooks/useAuth'
+import { useAppData }        from '../hooks/useAppDataStore'
 import AddTransactionSheet   from '../components/AddTransactionSheet'
 import TransactionItem       from '../components/TransactionItem'
 import DeleteDialog          from '../components/DeleteDialog'
@@ -147,11 +148,7 @@ export default function Dashboard() {
   // ── Error toast ──────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
 
-  // ── Optimistic summary delta ──────────────────────────────────────────
-  // When a transaction is added, we immediately adjust the summary numbers
-  // so the hero card updates in sync with the list — no waiting for refetch.
-  // Cleared when the background sync completes and real data arrives.
-  const [optimisticDelta, setOptimisticDelta] = useState(null)
+  const { addOptimisticTxn, clearOptimisticTxns, optimisticTxns } = useAppData()
 
   const { data: recent, refetch, prependOptimistic } = useTransactions({ limit: 8 })
   const { data: summary,     refetch: refetchSummary }     = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
@@ -163,10 +160,24 @@ export default function Dashboard() {
   const { pending: bills, refetch: refetchBills }             = useLiabilities()
 
   const dueSoon    = bills.filter(b => daysUntil(b.due_date) <= 7)
-  // Apply optimistic delta on top of server data for instant hero card update
-  const earned     = (summary?.earned     || 0) + (optimisticDelta?.earned     || 0)
-  const spent      = (summary?.expense    || 0) + (optimisticDelta?.expense    || 0)
-  const invested   = (summary?.investment || 0) + (optimisticDelta?.investment || 0)
+  const optimisticForMonth = optimisticTxns.filter(t => {
+    const d = new Date(t.date)
+    return d.getFullYear() === now.getFullYear() &&
+           d.getMonth()    === now.getMonth()
+  })
+  const optimisticEarned   = optimisticForMonth
+    .filter(t => t.type === 'income')
+    .reduce((s, t) => s + +t.amount, 0)
+  const optimisticSpent    = optimisticForMonth
+    .filter(t => t.type === 'expense')
+    .reduce((s, t) => s + +t.amount, 0)
+  const optimisticInvested = optimisticForMonth
+    .filter(t => t.type === 'investment')
+    .reduce((s, t) => s + +t.amount, 0)
+
+  const earned     = (summary?.earned     || 0) + optimisticEarned
+  const spent      = (summary?.expense    || 0) + optimisticSpent
+  const invested   = (summary?.investment || 0) + optimisticInvested
   const rate       = savingsRate(earned, spent)
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
@@ -207,33 +218,24 @@ export default function Dashboard() {
     // Prepend to the list immediately
     prependOptimistic(payload)
 
-    // Update hero card numbers instantly if it's a current-month transaction
-    if (isThisMonth) {
-      setOptimisticDelta(prev => {
-        const d = prev || { earned: 0, expense: 0, investment: 0 }
-        if (payload.type === 'income')     return { ...d, earned:     d.earned     + payload.amount }
-        if (payload.type === 'expense')    return { ...d, expense:    d.expense    + payload.amount }
-        if (payload.type === 'investment') return { ...d, investment: d.investment + payload.amount }
-        return d
-      })
-    }
-  }, [prependOptimistic, now])
+    addOptimisticTxn(payload)
+  }, [prependOptimistic, now, addOptimisticTxn])
 
   // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
   const handleConfirmed = useCallback(() => {
-    setOptimisticDelta(null)
+    clearOptimisticTxns()
     refetch()
-  }, [refetch])
+  }, [refetch, clearOptimisticTxns])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
   // The optimistic row disappears when refetch() returns real server data.
   // Toast tells the user what happened so they can try again.
   const handleFailed = useCallback((msg) => {
-    setOptimisticDelta(null)
+    clearOptimisticTxns()
     refetch()
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
-  }, [refetch])
+  }, [refetch, clearOptimisticTxns])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)

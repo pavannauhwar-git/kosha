@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from
 import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { AuthProvider } from './hooks/useAuth'
+import { AppDataProvider } from './hooks/useAppDataStore'
 import { useAuth } from './hooks/useAuth'
 import AuthGuard    from './components/AuthGuard'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
@@ -139,49 +140,51 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <div className="min-h-dvh bg-kosha-bg">
-          <Routes>
-            {/* Public */}
-            <Route path="/login"         element={<Login />} />
-            <Route path="/join/:token"   element={<Login />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
+        <AppDataProvider>
+          <div className="min-h-dvh bg-kosha-bg">
+            <Routes>
+              {/* Public */}
+              <Route path="/login"         element={<Login />} />
+              <Route path="/join/:token"   element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
 
-            {/* Onboarding */}
-            <Route path="/onboarding" element={
-              <AuthGuard><Onboarding /></AuthGuard>
-            } />
+              {/* Onboarding */}
+              <Route path="/onboarding" element={
+                <AuthGuard><Onboarding /></AuthGuard>
+              } />
 
-            {/* Protected — eager */}
-            <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
+              {/* Protected — eager */}
+              <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
 
-            {/* Protected — lazy (code-split, loaded on first navigation) */}
-            <Route path="/transactions" element={
-              <Suspense fallback={<PageFallback />}>
-                <AuthGuard><Transactions /></AuthGuard>
-              </Suspense>
-            } />
-            <Route path="/monthly" element={
-              <Suspense fallback={<PageFallback />}>
-                <AuthGuard><Monthly /></AuthGuard>
-              </Suspense>
-            } />
-            <Route path="/analytics" element={
-              <Suspense fallback={<PageFallback />}>
-                <AuthGuard><Analytics /></AuthGuard>
-              </Suspense>
-            } />
-            <Route path="/bills" element={
-              <Suspense fallback={<PageFallback />}>
-                <AuthGuard><Bills /></AuthGuard>
-              </Suspense>
-            } />
+              {/* Protected — lazy (code-split, loaded on first navigation) */}
+              <Route path="/transactions" element={
+                <Suspense fallback={<PageFallback />}>
+                  <AuthGuard><Transactions /></AuthGuard>
+                </Suspense>
+              } />
+              <Route path="/monthly" element={
+                <Suspense fallback={<PageFallback />}>
+                  <AuthGuard><Monthly /></AuthGuard>
+                </Suspense>
+              } />
+              <Route path="/analytics" element={
+                <Suspense fallback={<PageFallback />}>
+                  <AuthGuard><Analytics /></AuthGuard>
+                </Suspense>
+              } />
+              <Route path="/bills" element={
+                <Suspense fallback={<PageFallback />}>
+                  <AuthGuard><Bills /></AuthGuard>
+                </Suspense>
+              } />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
 
-          <BottomNav />
-        </div>
+            <BottomNav />
+          </div>
+        </AppDataProvider>
       </AuthProvider>
     </BrowserRouter>
   )

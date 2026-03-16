@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAppData } from './useAppDataStore'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PERSISTENT CACHE
@@ -208,6 +209,8 @@ export function useMonthSummary(year, month) {
   const [data,    setData]    = useState(() => getCached(cacheKey)?.data || null)
   const [loading, setLoading] = useState(() => !getCached(cacheKey))
 
+  const { optimisticTxns } = useAppData()
+
   const fetch = useCallback(async (force = false) => {
     const cached = getCached(cacheKey)
     if (cached) {
@@ -260,7 +263,62 @@ export function useMonthSummary(year, month) {
 
   const refetch = useCallback(() => { fetch(true) }, [fetch])
 
-  return { data, loading, refetch }
+  const optimisticForMonth = optimisticTxns.filter(t => {
+    const d = new Date(t.date)
+    return d.getFullYear() === year && (d.getMonth() + 1) === month
+  })
+
+  const optimisticEarned     = optimisticForMonth
+    .filter(t => t.type === 'income')
+    .reduce((s, t) => s + +t.amount, 0)
+  const optimisticRepayments = 0
+  const optimisticExpense    = optimisticForMonth
+    .filter(t => t.type === 'expense')
+    .reduce((s, t) => s + +t.amount, 0)
+  const optimisticInvestment = optimisticForMonth
+    .filter(t => t.type === 'investment')
+    .reduce((s, t) => s + +t.amount, 0)
+
+  const optimisticByCategory = {}
+  optimisticForMonth
+    .filter(t => t.type === 'expense')
+    .forEach(t => {
+      const k = t.category
+      optimisticByCategory[k] = (optimisticByCategory[k] || 0) + +t.amount
+    })
+
+  const optimisticByVehicle = {}
+  optimisticForMonth
+    .filter(t => t.type === 'investment')
+    .forEach(t => {
+      const k = t.investment_vehicle || 'Other'
+      optimisticByVehicle[k] = (optimisticByVehicle[k] || 0) + +t.amount
+    })
+
+  const merged = data && optimisticForMonth.length > 0
+    ? {
+        ...data,
+        earned:     data.earned     + optimisticEarned,
+        repayments: data.repayments + optimisticRepayments,
+        expense:    data.expense    + optimisticExpense,
+        investment: data.investment + optimisticInvestment,
+        balance:    data.balance    + optimisticEarned + optimisticRepayments - optimisticExpense - optimisticInvestment,
+        byCategory: {
+          ...data.byCategory,
+          ...Object.fromEntries(
+            Object.entries(optimisticByCategory).map(([k, v]) => [k, (data.byCategory[k] || 0) + v])
+          ),
+        },
+        byVehicle: {
+          ...data.byVehicle,
+          ...Object.fromEntries(
+            Object.entries(optimisticByVehicle).map(([k, v]) => [k, (data.byVehicle[k] || 0) + v])
+          ),
+        },
+      }
+    : data
+
+  return { data: merged, loading, refetch }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -271,6 +329,8 @@ export function useYearSummary(year) {
 
   const [data,    setData]    = useState(() => getCached(cacheKey)?.data || null)
   const [loading, setLoading] = useState(() => !getCached(cacheKey))
+
+  const { optimisticTxns } = useAppData()
 
   const fetch = useCallback(async (force = false) => {
     const cached = getCached(cacheKey)
@@ -337,7 +397,70 @@ export function useYearSummary(year) {
 
   const refetch = useCallback(() => { fetch(true) }, [fetch])
 
-  return { data, loading, refetch }
+  const optimisticForYear = optimisticTxns.filter(t => {
+    const d = new Date(t.date)
+    return d.getFullYear() === year
+  })
+
+  if (!data || optimisticForYear.length === 0) {
+    return { data, loading, refetch }
+  }
+
+  const monthly = data.monthly.map(m => {
+    const monthTxns = optimisticForYear.filter(t => {
+      const d = new Date(t.date)
+      return (d.getMonth() + 1) === m.month
+    })
+    const income     = monthTxns.filter(t => t.type === 'income').reduce((s, t) => s + +t.amount, 0)
+    const expense    = monthTxns.filter(t => t.type === 'expense').reduce((s, t) => s + +t.amount, 0)
+    const investment = monthTxns.filter(t => t.type === 'investment').reduce((s, t) => s + +t.amount, 0)
+    return {
+      month:      m.month,
+      income:     m.income     + income,
+      expense:    m.expense    + expense,
+      investment: m.investment + investment,
+    }
+  })
+
+  const totalIncomeDelta     = optimisticForYear.filter(t => t.type === 'income').reduce((s, t) => s + +t.amount, 0)
+  const totalRepaymentsDelta = 0
+  const totalExpenseDelta    = optimisticForYear.filter(t => t.type === 'expense').reduce((s, t) => s + +t.amount, 0)
+  const totalInvestmentDelta = optimisticForYear.filter(t => t.type === 'investment').reduce((s, t) => s + +t.amount, 0)
+
+  const byCategory = { ...data.byCategory }
+  optimisticForYear
+    .filter(t => t.type === 'expense')
+    .forEach(t => {
+      const k = t.category
+      byCategory[k] = (byCategory[k] || 0) + +t.amount
+    })
+
+  const byVehicle = { ...data.byVehicle }
+  optimisticForYear
+    .filter(t => t.type === 'investment')
+    .forEach(t => {
+      const k = t.investment_vehicle || 'Other'
+      byVehicle[k] = (byVehicle[k] || 0) + +t.amount
+    })
+
+  const withIncome = monthly.filter(m => m.income > 0)
+  const avgSavings = withIncome.length
+    ? Math.round(withIncome.reduce((s, m) => s + ((m.income - m.expense) / m.income * 100), 0) / withIncome.length)
+    : 0
+
+  const merged = {
+    ...data,
+    monthly,
+    totalIncome:     data.totalIncome     + totalIncomeDelta,
+    totalRepayments: data.totalRepayments + totalRepaymentsDelta,
+    totalExpense:    data.totalExpense    + totalExpenseDelta,
+    totalInvestment: data.totalInvestment + totalInvestmentDelta,
+    byCategory,
+    byVehicle,
+    avgSavings,
+  }
+
+  return { data: merged, loading, refetch }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -355,6 +478,8 @@ export function useRunningBalance(year, month) {
     return cached?.data ?? null
   })
   const [loading, setLoading] = useState(() => !getCached(cacheKey))
+
+  const { optimisticTxns } = useAppData()
 
   const fetch = useCallback(async (force = false) => {
     const cached = getCached(cacheKey)
@@ -397,7 +522,19 @@ export function useRunningBalance(year, month) {
 
   const refetch = useCallback(() => { fetch(true) }, [fetch])
 
-  return { balance, loading, refetch }
+  const endDate = `${year}-${String(month).padStart(2,'0')}-${new Date(year, month, 0).getDate()}`
+  const optimisticForPeriod = optimisticTxns.filter(t => t.date <= endDate)
+
+  const optimisticDelta = optimisticForPeriod.reduce((sum, t) => {
+    if (t.type === 'income')     return sum + +t.amount
+    if (t.type === 'expense')    return sum - +t.amount
+    if (t.type === 'investment') return sum - +t.amount
+    return sum
+  }, 0)
+
+  const mergedBalance = balance != null ? balance + optimisticDelta : balance
+
+  return { balance: mergedBalance, loading, refetch }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
