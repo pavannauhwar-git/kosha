@@ -263,14 +263,21 @@ export default function Transactions() {
       </button>
 
       <AddTransactionSheet
-        open={showAdd} onClose={() => { setShowAdd(false); setEditTxn(null) }}
-        editTxn={editTxn} initialType={addType}
+        open={showAdd}
+        onClose={() => { setShowAdd(false); setEditTxn(null) }}
+        editTxn={editTxn}
+        initialType={addType}
         onSaved={(payload) => {
           prependOptimistic(payload)
+          addOptimisticTxn(payload)
           setDisplayCount(n => n + 1)  // ensure the new row is within the render window
         }}
-        onConfirmed={refetch}
+        onConfirmed={() => {
+          clearOptimisticTxns()
+          refetch()
+        }}
         onFailed={(msg) => {
+          clearOptimisticTxns()
           refetch()
           setToast(msg)
           setTimeout(() => setToast(null), 4000)

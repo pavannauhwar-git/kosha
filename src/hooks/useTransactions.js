@@ -140,6 +140,8 @@ export function useTransactions({ type, category, search, limit } = {}) {
   })
   const [error, setError] = useState(null)
 
+  const { optimisticTxns } = useAppData()
+
   const fetch = useCallback(async (force = false) => {
     const key    = `txns:${type}:${category}:${search}:${limit}`
     const cached = getCached(key)
@@ -197,7 +199,21 @@ export function useTransactions({ type, category, search, limit } = {}) {
     setData(prev => [tempTxn, ...prev].slice(0, limit || 999))
   }, [limit])
 
-  return { data, loading, error, refetch, prependOptimistic }
+  const optimisticForList = optimisticTxns.filter(t => {
+    if (type && t.type !== type) return false
+    if (category && t.category !== category) return false
+    if (search && !t.description?.toLowerCase().includes(String(search).toLowerCase())) return false
+    return true
+  })
+
+  const mergedData = optimisticForList.length
+    ? [...optimisticForList.map(t => ({
+        ...t,
+        id: t._id || t.id,
+      })), ...data].slice(0, limit || data.length || 999)
+    : data
+
+  return { data: mergedData, loading, error, refetch, prependOptimistic }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
