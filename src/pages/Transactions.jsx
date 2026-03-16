@@ -47,9 +47,8 @@ export default function Transactions() {
   // Debounce search: only fire a Supabase query 300ms after the user stops
   // typing — prevents a round-trip per keystroke (was 6 queries for "Swiggy")
   // Reset display window when filters change so user sees top of filtered results
-  useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
-
   const debouncedSearch = useDebounce(search, 300)
+  useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
 
   const { data, refetch, prependOptimistic } = useTransactions({
     type:     typeFilter === 'all' ? undefined : typeFilter,
