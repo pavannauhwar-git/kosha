@@ -52,7 +52,13 @@ export default function Transactions() {
   const debouncedSearch = useDebounce(search, 300)
   useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
 
-  const { data, refetch, prependOptimistic } = useTransactions({
+  const {
+    data,
+    refetch,
+    prependOptimistic,
+    applyLocalEdit,
+    applyLocalDelete,
+  } = useTransactions({
     type:     typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter  || undefined,
     search:   debouncedSearch || undefined,
@@ -67,10 +73,15 @@ export default function Transactions() {
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
   const confirmDelete = useCallback(async () => {
-    await deleteTransaction(delId)
-    setDelId(null)
-    refetch()
-  }, [delId, refetch])
+    // Optimistically remove from the visible list immediately
+    applyLocalDelete(delId)
+    try {
+      await deleteTransaction(delId)
+    } finally {
+      setDelId(null)
+      refetch()
+    }
+  }, [delId, applyLocalDelete, refetch])
 
   // Stable callbacks for TransactionItem memo
   const handleDelete = useCallback((id) => setDelId(id), [])
@@ -268,9 +279,15 @@ export default function Transactions() {
         editTxn={editTxn}
         initialType={addType}
         onSaved={(payload) => {
-          prependOptimistic(payload)
-          addOptimisticTxn(payload)
-          setDisplayCount(n => n + 1)  // ensure the new row is within the render window
+          if (payload.id) {
+            // Edit — update in-place for this list instance
+            applyLocalEdit(payload.id, payload)
+          } else {
+            // New transaction — prepend + global optimistic add
+            prependOptimistic(payload)
+            addOptimisticTxn(payload)
+            setDisplayCount(n => n + 1)  // ensure the new row is within the render window
+          }
         }}
         onConfirmed={async () => {
           await refetch()

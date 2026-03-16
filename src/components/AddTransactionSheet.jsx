@@ -183,7 +183,11 @@ export default function AddTransactionSheet({ open, onClose, onSaved, onConfirme
 
     // ── Step 1 (0ms): close sheet + instant optimistic UI update ─────
     onClose()
-    onSaved && onSaved(payload)
+    // When editing, include id + original so callers can apply local edits
+    const enriched = editTxn
+      ? { ...payload, id: editTxn.id, _original: editTxn }
+      : payload
+    onSaved && onSaved(enriched)
 
     // ── Step 2: persist to Supabase in the background ─────────────────
     try {

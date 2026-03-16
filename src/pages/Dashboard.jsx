@@ -150,7 +150,13 @@ export default function Dashboard() {
 
   const { addOptimisticTxn, clearOptimisticTxns } = useAppData()
 
-  const { data: recent, refetch, prependOptimistic } = useTransactions({ limit: 8 })
+  const {
+    data: recent,
+    refetch,
+    prependOptimistic,
+    applyLocalEdit,
+    applyLocalDelete,
+  } = useTransactions({ limit: 8 })
   const { data: summary,     refetch: refetchSummary }     = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary, refetch: refetchLastSummary } = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
@@ -192,15 +198,18 @@ export default function Dashboard() {
   const recentGroups = groupByDate(recent)
 
   // ── handleOptimisticSave: called immediately when user taps Save ────
-  // Payload arrives before any network call. We:
-  //   (a) prepend it to the transaction list instantly
-  //   (b) update the hero card summary numbers instantly
+  // For NEW transactions, prepend + global optimistic. For EDITS, apply
+  // a local edit so the "Latest" list updates instantly.
   const handleOptimisticSave = useCallback((payload) => {
-    // Prepend to the list immediately
-    prependOptimistic(payload)
-
-    addOptimisticTxn(payload)
-  }, [prependOptimistic, addOptimisticTxn])
+    if (payload.id) {
+      // Edit existing transaction in this list only
+      applyLocalEdit(payload.id, payload)
+    } else {
+      // New transaction — prepend + global optimistic add
+      prependOptimistic(payload)
+      addOptimisticTxn(payload)
+    }
+  }, [applyLocalEdit, prependOptimistic, addOptimisticTxn])
 
   // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
   // Do NOT clear optimistic txns here. They are pruned automatically once the
@@ -237,10 +246,16 @@ export default function Dashboard() {
   }, [signOut, navigate])
 
   const confirmDelete = useCallback(async () => {
-    await deleteTransaction(delId)
-    setDelId(null)
-    refetch()
-  }, [delId, refetch])
+    // Optimistically remove from the latest list immediately
+    applyLocalDelete(delId)
+    try {
+      await deleteTransaction(delId)
+    } finally {
+      setDelId(null)
+      // Background refetch keeps other tabs in sync when Supabase catches up
+      refetch()
+    }
+  }, [delId, applyLocalDelete, refetch])
 
   const handleRefreshAll = useCallback(() => {
     refetch()

@@ -190,6 +190,18 @@ export function useTransactions({ type, category, search, limit } = {}) {
     return fetch(true)
   }, [fetch])
 
+  // Local-only helpers for list-level optimism (Phase 1):
+  // They mutate the in-memory list used by this hook instance only.
+  const applyLocalEdit = useCallback((id, updates) => {
+    setData(prev => prev.map(row => (
+      row.id === id ? { ...row, ...updates } : row
+    )))
+  }, [])
+
+  const applyLocalDelete = useCallback((id) => {
+    setData(prev => prev.filter(row => row.id !== id))
+  }, [])
+
   // ── Optimistic prepend ────────────────────────────────────────────────
   // Instantly inserts a transaction at the top of the list with a temp id.
   // Called by Dashboard BEFORE the network save starts — zero latency UI.
@@ -217,7 +229,15 @@ export function useTransactions({ type, category, search, limit } = {}) {
       })), ...data].slice(0, limit || data.length || 999)
     : data
 
-  return { data: mergedData, loading, error, refetch, prependOptimistic }
+  return {
+    data: mergedData,
+    loading,
+    error,
+    refetch,
+    prependOptimistic,
+    applyLocalEdit,
+    applyLocalDelete,
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
