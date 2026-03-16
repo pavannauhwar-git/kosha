@@ -1,68 +1,71 @@
 /**
  * Kosha palette — JS constants
  *
- * This is the single source of truth for every colour used in
- * inline styles, Framer Motion animate props, recharts fill/stroke
- * props, SVG attributes, and Phosphor Icon color props.
+ * Single source of truth for every colour used in inline styles,
+ * Framer Motion animate props, recharts fill/stroke props,
+ * SVG attributes, and Phosphor Icon color props.
  *
  * To change the palette:
- *   1. Edit the hex values here
- *   2. Update the matching CSS variables in src/index.css  (:root block)
- *   3. Update the matching tokens in tailwind.config.js
- *
- * Tailwind utility classes (text-brand, bg-income-bg, etc.) are
- * controlled by tailwind.config.js. Everything else flows from here.
+ *   1. Edit values here
+ *   2. Update matching CSS variables in src/index.css  (:root block)
+ *   3. Update matching tokens in tailwind.config.js
  */
 
 export const C = {
 
-  // ── Brand (Forest Green) ──────────────────────────────────────────
-  brand:           '#163300',   // buttons, FAB, active states
-  brandLit:        '#9FE870',   // lime highlight — hero chip text, ring fill
-  brandContainer:  '#C8F5A0',   // nav active pill, tonal button bg
-  brandBorder:     '#D6ECC4',   // card borders, chart reference lines
+  // ── Brand — Periwinkle ────────────────────────────────────────────
+  brand:           '#3730A3',   // deep indigo — buttons, FAB, active states
+  brandMid:        '#5B51E0',   // mid periwinkle — hero gradient end
+  brandLight:      '#8B83E6',   // lighter periwinkle
+  brandContainer:  '#EDE9FF',   // lavender tint — nav pill, tonal bg
+  brandBorder:     '#D4CEFF',   // card borders, separators
 
-  // ── Income / positive ─────────────────────────────────────────────
-  income:          '#38A169',   // income bars, positive net, chart fill
-  incomeText:      '#276749',   // income text amounts
+  // ── Accent — Electric Lime ────────────────────────────────────────
+  // Used ONLY against dark periwinkle backgrounds (hero card, logo).
+  // Never use on white — fails contrast.
+  accent:          '#E2FF5A',   // electric lime text/fill on dark bg
+  accentBg:        'rgba(226,255,90,0.20)',  // lime tint chip bg on hero
+  accentFill:      'rgba(226,255,90,0.75)',  // savings bar fill on hero
 
-  // ── Investment ────────────────────────────────────────────────────
-  invest:          '#2B8A68',   // investment chart line
-  investText:      '#1A5C45',   // investment amounts, donut arc
+  // ── Income — Emerald H=174° ───────────────────────────────────────
+  income:          '#059669',
+  incomeText:      '#047857',
 
-  // ── Expense / negative ────────────────────────────────────────────
-  expense:         '#D42B3A',   // expense amounts, error states
-  expenseBright:   '#FF4757',   // expense bars, negative cells, error icon
+  // ── Expense — Rose H=354° ─────────────────────────────────────────
+  expense:         '#E11D48',
+  expenseBright:   '#E11D48',   // same — no separate "bright" needed
 
-  // ── Bills / amber ─────────────────────────────────────────────────
-  bills:           '#B35A00',   // bills quick-action icon
+  // ── Investment — Cyan H=194° ──────────────────────────────────────
+  invest:          '#0891B2',
+  investText:      '#0E7490',
 
-  // ── Ink / neutral ─────────────────────────────────────────────────
-  inkMuted:        '#7A8F6E',   // inactive nav icons, chart axis ticks
+  // ── Bills — Amber H=84° ───────────────────────────────────────────
+  bills:           '#CA8A04',
 
-  // ── Hero card overlays (white/lime on dark green) ─────────────────
-  // These are intentionally semi-transparent so the dark bg shows through.
-  heroAccent:      'rgba(159,232,112,0.75)',  // month label text on hero
-  heroAccentBg:    'rgba(159,232,112,0.18)',  // savings rate chip bg on hero
-  heroAccentSolid: '#9FE870',                // savings rate chip text on hero
-  heroLabel:       'rgba(255,255,255,0.55)',  // "Total balance" label on hero
-  heroDimmer:      'rgba(255,255,255,0.35)',  // "KOSHA" watermark on hero
-  heroDivider:     'rgba(255,255,255,0.12)',  // horizontal rule on hero
-  heroStatBg:      'rgba(255,255,255,0.10)',  // Earned/Spent/Invested chips bg on hero
+  // ── Ink — indigo-tinted neutrals ─────────────────────────────────
+  ink:             '#1E1B4B',
+  inkMuted:        '#9590B8',   // inactive nav icons, chart axis ticks
 
-  // ── Portfolio donut shades — darkest to lightest ──────────────────
-  // Used in Analytics PortfolioDonut and the PORTFOLIO_COLORS array.
+  // ── Hero card overlays (lime/white on deep periwinkle) ────────────
+  heroAccent:      'rgba(226,255,90,0.75)',   // savings bar fill
+  heroAccentBg:    'rgba(226,255,90,0.20)',   // chip bg
+  heroAccentSolid: '#E2FF5A',                // chip text, month label
+  heroLabel:       'rgba(255,255,255,0.55)', // "Total balance" label
+  heroDimmer:      'rgba(255,255,255,0.35)', // "KOSHA" watermark
+  heroDivider:     'rgba(255,255,255,0.12)', // horizontal rule
+  heroStatBg:      'rgba(255,255,255,0.10)', // Earned/Spent/Invested chips
+
+  // ── Portfolio donut — periwinkle family, darkest → lightest ──────
   portfolio: [
-    '#163300',   // brand (darkest)
-    '#2B8A68',   // invest
-    '#38A169',   // income
-    '#9FE870',   // brand-lit
-    '#C8F5A0',   // brand-container
-    '#D6ECC4',   // brand-border (lightest)
+    '#1E1B4B',   // ink (darkest)
+    '#3730A3',   // brand
+    '#5B51E0',   // brand-mid
+    '#8B83E6',   // brand-light
+    '#EDE9FF',   // brand-container
+    '#D4CEFF',   // brand-border (lightest)
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  // Used in KoshaLogo component in Login.jsx and Onboarding.jsx
-  logoBg:      '#163300',   // rounded-rect fill
-  logoHighlight: '#9FE870', // top-right ellipse glow
+  logoBg:        '#3730A3',   // deep indigo rounded-rect fill
+  logoHighlight: '#E2FF5A',   // electric lime top-right glow
 }

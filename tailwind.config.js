@@ -4,59 +4,63 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ── App backgrounds ──────────────────────────────────────────────
-        'kosha-bg':            '#FFFFFF',
-        'kosha-bg-2':          '#F5FAF0',
+        // ── App backgrounds ───────────────────────────────────────────────
+        'kosha-bg':            '#F8F7FF',
+        'kosha-bg-2':          '#F0EEFF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F2F8EC',
-        'kosha-border':        '#D6ECC4',
-        'kosha-border-strong': '#A8D48A',
+        'kosha-surface-2':     '#F0EEFF',
+        'kosha-border':        '#D4CEFF',
+        'kosha-border-strong': '#8B83E6',
 
-        // ── Brand — Wise Forest Green ─────────────────────────────────────
-        'brand':           '#163300',
-        'brand-dark':      '#0A1F00',
-        'brand-container': '#C8F5A0',
-        'brand-on':        '#163300',
+        // ── Brand — Periwinkle + Electric Lime ───────────────────────────
+        'brand':           '#3730A3',   // deep indigo — buttons, FAB, active
+        'brand-dark':      '#1E1B4B',   // near-black indigo
+        'brand-mid':       '#5B51E0',   // mid periwinkle — hero gradient
+        'brand-container': '#EDE9FF',   // lavender tint — nav pill, tonal bg
+        'brand-on':        '#3730A3',   // text on brand-container
+        'brand-accent':    '#E2FF5A',   // electric lime — hero chip, savings
 
         // ── Income ────────────────────────────────────────────────────────
-        'income':        '#38A169',
-        'income-bg':     '#F0FFF4',
-        'income-text':   '#276749',
-        'income-border': '#9AE6B4',
+        'income':        '#059669',
+        'income-bg':     '#ECFDF5',
+        'income-text':   '#047857',
+        'income-border': '#A7F3D0',
 
         // ── Expense ───────────────────────────────────────────────────────
-        'expense':        '#FF4757',
-        'expense-bg':     '#FFF0F1',
-        'expense-text':   '#D42B3A',
-        'expense-border': '#FFB3BA',
+        'expense':        '#E11D48',
+        'expense-bg':     '#FFF1F2',
+        'expense-text':   '#BE123C',
+        'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#2B8A68',
-        'invest-bg':     '#E6F7F0',
-        'invest-text':   '#1A5C45',
-        'invest-border': '#81D4B8',
+        'invest':        '#0891B2',
+        'invest-bg':     '#ECFEFF',
+        'invest-text':   '#0E7490',
+        'invest-border': '#A5F3FC',
 
-        // ── Repayment ─────────────────────────────────────────────────────
-        'repay':        '#FF9500',
-        'repay-bg':     '#FFF5E6',
-        'repay-text':   '#B35A00',
-        'repay-border': '#FFCC80',
+        // ── Repayment / Bills ─────────────────────────────────────────────
+        'repay':        '#CA8A04',
+        'repay-bg':     '#FEFCE8',
+        'repay-text':   '#A16207',
+        'repay-border': '#FEF08A',
 
-        // ── Ink ───────────────────────────────────────────────────────────
-        'ink':   '#0D1A08',
-        'ink-2': '#2A3A22',
-        'ink-3': '#7A8F6E',
-        'ink-4': '#C0CCB6',
+        // ── Warning ───────────────────────────────────────────────────────
+        'warning':        '#D97706',
+        'warning-bg':     '#FFFBEB',
+        'warning-border': '#FDE68A',
+        'warning-text':   '#B45309',
+
+        // ── Ink — indigo-tinted neutrals ──────────────────────────────────
+        'ink':   '#1E1B4B',
+        'ink-2': '#312E81',
+        'ink-3': '#9590B8',
+        'ink-4': '#C4C0E0',
 
         // ── Utility ───────────────────────────────────────────────────────
-        'on-grad':        '#FFFFFF',
-        'on-grad-2':      '#FFFFFFBF',
-        'warning':        '#FF9500',
-        'warning-bg':     '#FFF5E6',
-        'warning-border': '#FFCC80',
-        'warning-text':   '#B35A00',
-        'success':        '#38A169',
-        'danger':         '#FF4757',
+        'on-grad':   '#FFFFFF',
+        'on-grad-2': '#FFFFFFBF',
+        'success':   '#059669',
+        'danger':    '#E11D48',
       },
 
       fontFamily: {
@@ -64,7 +68,6 @@ export default {
         sans:    ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
 
-      // ── 6-step type scale ─────────────────────────────────────────────
       fontSize: {
         'caption': ['12px', { lineHeight: '1.4',  letterSpacing: '0.01em'  }],
         'label':   ['14px', { lineHeight: '1.4',  letterSpacing: '0em'     }],
@@ -83,21 +86,21 @@ export default {
       },
 
       boxShadow: {
-        'card':       '0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(22,51,0,0.06)',
-        'card-md':    '0 4px 16px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(22,51,0,0.06)',
-        'card-lg':    '0 8px 32px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(22,51,0,0.06)',
-        'apple-card': '0 20px 60px rgba(0,0,0,0.16), 0 8px 20px rgba(0,0,0,0.08)',
-        'fab':        '0 4px 20px rgba(22,51,0,0.35)',
-        'focus':      '0 0 0 3.5px rgba(22,51,0,0.20)',
-        'urgent':     '0 2px 8px rgba(255,59,48,0.20), 0 0 0 0.5px rgba(255,59,48,0.15)',
-        'warn':       '0 2px 8px rgba(255,149,0,0.20), 0 0 0 0.5px rgba(255,149,0,0.15)',
+        'card':       '0 2px 8px rgba(55,48,163,0.06), 0 0 0 0.5px rgba(55,48,163,0.07)',
+        'card-md':    '0 4px 16px rgba(55,48,163,0.08), 0 0 0 0.5px rgba(55,48,163,0.07)',
+        'card-lg':    '0 8px 32px rgba(55,48,163,0.10), 0 0 0 0.5px rgba(55,48,163,0.07)',
+        'apple-card': '0 20px 60px rgba(55,48,163,0.16), 0 8px 20px rgba(55,48,163,0.09)',
+        'fab':        '0 4px 16px rgba(55,48,163,0.35)',
+        'focus':      '0 0 0 3.5px rgba(91,81,224,0.28)',
+        'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
+        'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
       },
 
       keyframes: {
         'sheet-in': {
           '0%':   { transform: 'translateY(100%)' },
-          '72%':  { transform: 'translateY(-4px)' },
-          '100%': { transform: 'translateY(0)' },
+          '72%':  { transform: 'translateY(-4px)'  },
+          '100%': { transform: 'translateY(0)'     },
         },
         'fade-in':  { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
         'slide-up': {

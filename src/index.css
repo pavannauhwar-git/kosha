@@ -37,41 +37,42 @@
     --nav-height:  calc(88px + env(safe-area-inset-bottom, 0px));
 
     /* ── Palette CSS variables ──────────────────────────────────────
-       Keep these in sync with src/lib/colors.js and tailwind.config.js
-       Change palette here → updates all CSS (hero card, nav, bars, etc.)
+       Keep in sync with src/lib/colors.js and tailwind.config.js
     ───────────────────────────────────────────────────────────────── */
 
-    /* Brand (Forest Green) */
-    --c-brand:            #163300;
-    --c-brand-lit:        #9FE870;
-    --c-brand-container:  #C8F5A0;
-    --c-brand-border:     #D6ECC4;
-    --c-brand-rgb:        22, 51, 0;       /* used in rgba() calls */
-    --c-brand-lit-rgb:    159, 232, 112;   /* used in rgba() calls */
+    /* Brand — Periwinkle */
+    --c-brand:            #3730A3;
+    --c-brand-mid:        #5B51E0;
+    --c-brand-container:  #EDE9FF;
+    --c-brand-border:     #D4CEFF;
+    --c-brand-rgb:        55, 48, 163;     /* used in rgba() calls */
+    --c-brand-mid-rgb:    91, 81, 224;     /* used in rgba() calls */
 
-    /* Income / Investment */
-    --c-income:           #38A169;
-    --c-invest-text:      #1A5C45;
+    /* Accent — Electric Lime (on dark bg only) */
+    --c-accent:           #E2FF5A;
+    --c-accent-rgb:       226, 255, 90;    /* used in rgba() calls */
 
-    /* Expense */
-    --c-expense:          #D42B3A;
-    --c-expense-bright:   #FF4757;
+    /* Semantics */
+    --c-income:           #059669;
+    --c-invest-text:      #0E7490;
+    --c-expense:          #E11D48;
+    --c-expense-bright:   #E11D48;
 
     /* Ink */
-    --c-ink-muted:        #7A8F6E;
+    --c-ink-muted:        #9590B8;
 
     /* Hero card overlays */
-    --c-hero-accent:      rgba(159, 232, 112, 0.75);
-    --c-hero-accent-bg:   rgba(159, 232, 112, 0.18);
-    --c-hero-accent-fill: rgba(159, 232, 112, 0.90);
+    --c-hero-accent:      rgba(226, 255, 90, 0.75);
+    --c-hero-accent-bg:   rgba(226, 255, 90, 0.20);
+    --c-hero-accent-fill: rgba(226, 255, 90, 0.75);
     --c-hero-label:       rgba(255, 255, 255, 0.55);
     --c-hero-dimmer:      rgba(255, 255, 255, 0.35);
     --c-hero-divider:     rgba(255, 255, 255, 0.12);
     --c-hero-stat-bg:     rgba(255, 255, 255, 0.10);
 
     /* Shimmer animation colors */
-    --c-shimmer-1:        #e8f5e2;
-    --c-shimmer-2:        #d2edc7;
+    --c-shimmer-1:        #EFECFF;
+    --c-shimmer-2:        #E0DAFF;
   }
 
   /* GPU layer on interactive elements — eliminates tap lag */
@@ -87,8 +88,8 @@
   /* Single gradient layer (was 6) — dramatically cheaper on GPU.      */
   .card-hero {
     background:
-      radial-gradient(ellipse at 85% 15%, rgba(var(--c-brand-lit-rgb), 0.18) 0%, transparent 55%),
-      var(--c-brand);
+      radial-gradient(ellipse at 85% 15%, rgba(var(--c-accent-rgb), 0.18) 0%, transparent 55%),
+      linear-gradient(145deg, var(--c-brand) 0%, var(--c-brand-mid) 100%);
     @apply rounded-hero shadow-apple-card;
   }
 
@@ -213,7 +214,7 @@
       0 8px 32px rgba(0, 0, 0, 0.10),
       0 2px 8px rgba(0, 0, 0, 0.06),
       inset 0 0.5px 0 rgba(255, 255, 255, 0.90),
-      0 0 0 0.5px rgba(var(--c-brand-rgb), 0.08);
+      0 0 0 0.5px rgba(var(--c-brand-rgb), 0.10);
     pointer-events: auto;
     /* No transition here — Framer controls all animation */
   }
