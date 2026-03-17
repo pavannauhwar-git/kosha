@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
@@ -103,7 +103,6 @@ export default function Dashboard() {
 
   const [showAdd, setShowAdd] = useState(false)
   const [editTxn, setEditTxn] = useState(null)
-  const [delId] = useState(null)
   const [addType, setAddType] = useState('expense')
   const [duplicateTxn, setDuplicateTxn] = useState(null)
 
@@ -112,11 +111,16 @@ export default function Dashboard() {
 
   const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
 
+  // Tracks which transaction id is being edited so we can clear the
+  // localEdits overlay after onConfirmed (refetch returns fresh server data)
+  const pendingEditId = useRef(null)
+
   const {
     data: recent,
     refetch,
     prependOptimistic,
     applyLocalEdit,
+    clearLocalEdit,
     applyLocalDelete,
   } = useTransactions({ limit: 8 })
   const { data: summary, refetch: refetchSummary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
@@ -165,6 +169,7 @@ export default function Dashboard() {
   const handleOptimisticSave = useCallback((payload) => {
     if (payload.id) {
       // Edit existing transaction in this list only
+      pendingEditId.current = payload.id
       applyLocalEdit(payload.id, payload)
     } else {
       // New transaction — prepend + global optimistic add
@@ -184,17 +189,25 @@ export default function Dashboard() {
       refetchLastSummary(),
       refetchBalance(),
     ])
-  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance])
+    if (pendingEditId.current) {
+      clearLocalEdit(pendingEditId.current)
+      pendingEditId.current = null
+    }
+  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearLocalEdit])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
   // The optimistic row disappears when refetch() returns real server data.
   // Toast tells the user what happened so they can try again.
   const handleFailed = useCallback((msg) => {
+    if (pendingEditId.current) {
+      clearLocalEdit(pendingEditId.current)
+      pendingEditId.current = null
+    }
     clearOptimisticTxns()
     refetch()
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
-  }, [refetch, clearOptimisticTxns])
+  }, [refetch, clearOptimisticTxns, clearLocalEdit])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
@@ -202,8 +215,7 @@ export default function Dashboard() {
     setShowAdd(true)
   }, [])
 
-  const confirmDelete = useCallback(async () => {
-    const id = delId
+  const handleDelete = useCallback(async (id) => {
     if (!id) return
 
     addOptimisticDelete(id)
@@ -220,11 +232,7 @@ export default function Dashboard() {
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
-
-  // Stable callbacks for TransactionItem — avoids remounting memo'd rows
-  // on every Dashboard render (e.g. when bell icon updates or state changes)
-  const handleDelete = useCallback((id) => confirmDelete(id), [confirmDelete])
+  }, [addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)

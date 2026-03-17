@@ -4,7 +4,6 @@ import { Search, X, SlidersHorizontal } from 'lucide-react'
 import { useTransactions, registerPrefetch, deleteTransaction, useDebounce, useMonthSummary, useRunningBalance } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
-import DeleteDialog from '../components/DeleteDialog'
 import { CATEGORIES } from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus, DownloadSimple } from '@phosphor-icons/react'
@@ -35,7 +34,6 @@ export default function Transactions() {
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [editTxn, setEditTxn] = useState(null)
-  const [delId, setDelId] = useState(null)
   const [showCats, setShowCats] = useState(false)
   const [addType, setAddType] = useState('expense')
   const [displayCount, setDisplayCount] = useState(50)
@@ -78,8 +76,7 @@ export default function Transactions() {
   )
   const { refetch: refetchBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
 
-  const confirmDelete = useCallback(async () => {
-    const id = delId
+  const handleDelete = useCallback(async (id) => {
     if (!id) return
 
     addOptimisticDelete(id)
@@ -94,9 +91,7 @@ export default function Transactions() {
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
-
-  const handleDelete = useCallback((id) => confirmDelete(id), [confirmDelete])
+  }, [addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)
