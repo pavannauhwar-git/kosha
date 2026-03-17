@@ -33,8 +33,7 @@ const MONTH_NAMES = [
   'July','August','September','October','November','December'
 ]
 
-// ── Budget input sheet ────────────────────────────────────────────────────
-// Bottom sheet for setting/editing/removing a budget for one category.
+// ── Budget sheet ──────────────────────────────────────────────────────────
 function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
   const [value, setValue] = useState(current ? String(current) : '')
   const [saving, setSaving] = useState(false)
@@ -44,14 +43,14 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
     if (!amt || amt <= 0) return
     setSaving(true)
     try { await onSave(cat.id, amt); onClose() }
-    catch { /* error handled by hook */ }
+    catch { }
     finally { setSaving(false) }
   }
 
   async function handleRemove() {
     setSaving(true)
     try { await onRemove(cat.id); onClose() }
-    catch {}
+    catch { }
     finally { setSaving(false) }
   }
 
@@ -68,7 +67,6 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
       >
         <div className="sheet-handle" />
         <div className="px-5">
-          {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <CategoryIcon categoryId={cat.id} size={18} />
@@ -79,7 +77,6 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
             </button>
           </div>
 
-          {/* Amount input */}
           <p className="text-caption text-ink-3 mb-2">Monthly limit</p>
           <div className="bg-kosha-surface-2 rounded-card px-4 py-3 mb-5 flex items-center gap-2">
             <span className="font-display text-2xl font-bold text-brand">₹</span>
@@ -93,7 +90,6 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
             />
           </div>
 
-          {/* Save */}
           <button
             onClick={handleSave}
             disabled={saving || !value || +value <= 0}
@@ -103,7 +99,6 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
             {saving ? 'Saving…' : current ? 'Update Budget' : 'Set Budget'}
           </button>
 
-          {/* Remove (only shown when a budget already exists) */}
           {current > 0 && (
             <button
               onClick={handleRemove}
@@ -122,7 +117,7 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
   )
 }
 
-// ── Hero card ─────────────────────────────────────────────────────────────
+// ── Hero card — clean, original design ───────────────────────────────────
 function MonthHeroCard({ month, year }) {
   const { data } = useMonthSummary(year, month)
   const earned   = data?.earned     || 0
@@ -130,20 +125,6 @@ function MonthHeroCard({ month, year }) {
   const invested = data?.investment || 0
   const balance  = data?.balance    || 0
   const rate     = savingsRate(earned, spent)
-
-  const spentPct    = earned > 0 ? Math.round((spent    / earned) * 100) : 0
-  const investedPct = earned > 0 ? Math.round((invested / earned) * 100) : 0
-  const savedPct    = Math.max(0, 100 - spentPct - investedPct)
-
-  const CX = 44, CY = 44, R = 36, SW = 8
-  const CIRC   = 2 * Math.PI * R
-  const GAP_DEG = 4
-
-  const segments = [
-    { pct: spentPct,    color: '#E11D48' },
-    { pct: investedPct, color: '#BE185D' },
-    { pct: savedPct,    color: '#3730A3' },
-  ]
 
   return (
     <div className="card-hero p-6 relative overflow-hidden">
@@ -187,46 +168,89 @@ function MonthHeroCard({ month, year }) {
         ))}
       </div>
 
-      {/* Donut + breakdown */}
-      <div className="flex items-center gap-4">
-        {(() => {
-          let offset = 0
-          return (
-            <div className="relative shrink-0" style={{ width: 88, height: 88 }}>
-              <svg width={88} height={88} viewBox="0 0 88 88">
-                {segments.map((seg, i) => {
-                  const dashLen = Math.max(0, (seg.pct / 100) * CIRC - (GAP_DEG / 360) * CIRC)
-                  const currentOffset = offset
-                  offset += seg.pct
-                  return (
-                    <circle key={i} cx={CX} cy={CY} r={R}
-                      fill="none" stroke={seg.color} strokeWidth={SW}
-                      strokeDasharray={`${dashLen} ${CIRC}`}
-                      strokeDashoffset={-currentOffset * CIRC / 100}
-                      transform={`rotate(-90 ${CX} ${CY})`}
-                    />
-                  )
-                })}
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span style={{ fontSize: 15, fontWeight: 700, color: C.brand,
-                               fontFamily: 'Plus Jakarta Sans, system-ui', lineHeight: 1.1 }}>
-                  {savedPct}%
-                </span>
-                <span style={{ fontSize: 9, color: C.inkMuted,
-                               fontFamily: 'Plus Jakarta Sans, system-ui' }}>
-                  saved
-                </span>
-              </div>
-            </div>
-          )
-        })()}
+      <div>
+        <div className="flex justify-between mb-2">
+          <span className="text-caption" style={{ color: C.heroLabel }}>Savings rate</span>
+          <span className="text-caption font-semibold text-white">{rate}%</span>
+        </div>
+        <div className="bar-dark-track">
+          <motion.div className="bar-dark-fill"
+            initial={{ width: 0 }} animate={{ width: `${rate}%` }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
 
+// ── Breakdown donut card — separate from hero ─────────────────────────────
+function BreakdownCard({ earned, spent, invested }) {
+  const saved       = Math.max(0, earned - spent - invested)
+  const spentPct    = earned > 0 ? Math.round((spent    / earned) * 100) : 0
+  const investedPct = earned > 0 ? Math.round((invested / earned) * 100) : 0
+  const savedPct    = Math.max(0, 100 - spentPct - investedPct)
+
+  const SIZE  = 110
+  const SW    = 10
+  const R     = (SIZE / 2) - SW
+  const CX    = SIZE / 2
+  const CY    = SIZE / 2
+  const CIRC  = 2 * Math.PI * R
+  const GAP   = 3
+
+  const segs = [
+    { pct: spentPct,    color: C.expense   },
+    { pct: investedPct, color: C.investText },
+    { pct: savedPct,    color: C.brand     },
+  ].filter(s => s.pct > 0)
+
+  let offset = 0
+
+  if (earned === 0) return null
+
+  return (
+    <div className="card p-5">
+      <p className="section-label mb-4">Budget Breakdown</p>
+      <div className="flex gap-4 items-center">
+
+        {/* Donut */}
+        <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
+          <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+            <circle cx={CX} cy={CY} r={R} fill="none"
+              stroke={C.brandBorder} strokeWidth={SW} />
+            {segs.map((seg, i) => {
+              const dashLen      = Math.max(0, (seg.pct / 100) * CIRC - (GAP / 360) * CIRC)
+              const currentOffset = offset
+              offset += seg.pct
+              return (
+                <circle key={i} cx={CX} cy={CY} r={R}
+                  fill="none" stroke={seg.color} strokeWidth={SW}
+                  strokeDasharray={`${dashLen} ${CIRC}`}
+                  strokeDashoffset={-currentOffset * CIRC / 100}
+                  transform={`rotate(-90 ${CX} ${CY})`}
+                />
+              )
+            })}
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span style={{ fontSize: 15, fontWeight: 700, color: C.brand,
+                           fontFamily: 'Plus Jakarta Sans, system-ui', lineHeight: 1.1 }}>
+              {savedPct}%
+            </span>
+            <span style={{ fontSize: 9, color: C.inkMuted,
+                           fontFamily: 'Plus Jakarta Sans, system-ui' }}>
+              saved
+            </span>
+          </div>
+        </div>
+
+        {/* Rows */}
         <div className="flex-1 space-y-3 pt-1">
           {[
             { label: 'Spent',    val: spent,    pct: spentPct,    dot: C.expense,    textCls: 'text-expense-text' },
             { label: 'Invested', val: invested, pct: investedPct, dot: C.investText, textCls: 'text-invest-text'  },
-            { label: 'Saved',    val: Math.max(0, earned - spent - invested), pct: savedPct, dot: C.brand, textCls: 'text-brand' },
+            { label: 'Saved',    val: saved,    pct: savedPct,    dot: C.brand,      textCls: 'text-brand'        },
           ].map(s => (
             <div key={s.label}>
               <div className="flex items-center gap-2 mb-1">
@@ -240,18 +264,12 @@ function MonthHeroCard({ month, year }) {
         </div>
       </div>
 
-      <div className="mt-4 pt-3 border-t space-y-1.5" style={{ borderColor: C.heroDivider }}>
+      {/* Income total */}
+      <div className="mt-4 pt-3 border-t border-kosha-border">
         <div className="flex justify-between">
-          <span className="text-caption" style={{ color: C.heroLabel }}>Total income</span>
-          <span className="text-caption font-bold text-white tabular-nums">{fmt(earned)}</span>
+          <span className="text-caption text-ink-3">Total income</span>
+          <span className="text-caption font-bold text-income-text tabular-nums">{fmt(earned)}</span>
         </div>
-        {(data?.repayments || 0) > 0 && (
-          <div className="flex justify-between">
-            <span className="text-caption" style={{ color: C.heroLabel }}>Repayments received</span>
-            <span className="text-caption font-semibold tabular-nums"
-                  style={{ color: 'rgba(255,255,255,0.7)' }}>{fmt(data.repayments)}</span>
-          </div>
-        )}
       </div>
     </div>
   )
@@ -266,8 +284,7 @@ export default function Monthly() {
   const { data, loading } = useMonthSummary(year, month)
   const { budgets, setBudget, removeBudget } = useBudgets()
 
-  // Budget sheet state
-  const [budgetCat, setBudgetCat] = useState(null)  // category object | null
+  const [budgetCat, setBudgetCat] = useState(null)
 
   function prev() {
     if (month === 1) { setMonth(12); setYear(y => y - 1) }
@@ -281,14 +298,7 @@ export default function Monthly() {
   const earned   = data?.earned     || 0
   const spent    = data?.expense    || 0
   const invested = data?.investment || 0
-  const repaid   = data?.repayments || 0
-  const saved    = Math.max(0, earned - spent - invested)
 
-  const spentPct    = earned > 0 ? Math.round((spent    / earned) * 100) : 0
-  const investedPct = earned > 0 ? Math.round((invested / earned) * 100) : 0
-  const savedPct    = Math.max(0, 100 - spentPct - investedPct)
-
-  // Show top 8 categories (more useful with budgets visible)
   const catEntries = Object.entries(data?.byCategory || {})
     .sort((a, b) => b[1] - a[1]).slice(0, 8)
   const totalCatSpend = catEntries.reduce((s, [, v]) => s + v, 0) || 1
@@ -296,12 +306,9 @@ export default function Monthly() {
   const vehicleEntries = Object.entries(data?.byVehicle || {})
     .sort((a, b) => b[1] - a[1])
 
-  // Count how many categories have budgets set — shown in section header
   const budgetCount = catEntries.filter(([id]) => budgets[id]).length
 
-  const openBudgetSheet = useCallback((cat) => {
-    setBudgetCat(cat)
-  }, [])
+  const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
 
   return (
     <div className="page">
@@ -341,92 +348,86 @@ export default function Monthly() {
           className="space-y-6"
         >
 
-          {/* ── Budget summary strip ─────────────────────────────────── */}
-          {catEntries.length > 0 && (
-            <div className="flex items-center justify-between">
-              <p className="section-label">Spent by Category</p>
-              <span className="text-caption text-ink-3">
-                {budgetCount > 0
-                  ? `${budgetCount} budget${budgetCount > 1 ? 's' : ''} set · tap to edit`
-                  : 'tap a row to set budget'}
-              </span>
-            </div>
-          )}
+          {/* ── Breakdown donut card ─────────────────────────────────── */}
+          <BreakdownCard earned={earned} spent={spent} invested={invested} />
 
           {/* ── Category rows with budget overlay ───────────────────── */}
           {catEntries.length > 0 && (
-            <div className="card p-0 overflow-hidden -mt-3">
-              {catEntries.map(([catId, amt], i) => {
-                const cat        = CATEGORIES.find(c => c.id === catId)
-                const budget     = budgets[catId] || 0
-                const hasBudget  = budget > 0
-                // If budget set: bar shows spent vs budget. Else: % of total spend.
-                const barPct     = hasBudget
-                  ? Math.min(Math.round((amt / budget) * 100), 100)
-                  : Math.round((amt / totalCatSpend) * 100)
-                const overBudget = hasBudget && amt > budget
-                const remaining  = hasBudget ? budget - amt : null
+            <>
+              <div className="flex items-center justify-between -mb-3">
+                <p className="section-label">Spent by Category</p>
+                <span className="text-caption text-ink-3">
+                  {budgetCount > 0
+                    ? `${budgetCount} budget${budgetCount > 1 ? 's' : ''} set · tap to edit`
+                    : 'tap a row to set budget'}
+                </span>
+              </div>
 
-                return (
-                  <button
-                    key={catId}
-                    onClick={() => openBudgetSheet(cat)}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
-                                active:bg-kosha-surface-2 transition-colors
-                                ${i < catEntries.length - 1 ? 'border-b border-kosha-border' : ''}`}
-                  >
-                    {/* Category icon */}
-                    <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
-                         style={{ background: cat?.bg || '#F5F5F5' }}>
-                      <CategoryIcon categoryId={catId} size={16} />
-                    </div>
+              <div className="card p-0 overflow-hidden">
+                {catEntries.map(([catId, amt], i) => {
+                  const cat        = CATEGORIES.find(c => c.id === catId)
+                  const budget     = budgets[catId] || 0
+                  const hasBudget  = budget > 0
+                  const barPct     = hasBudget
+                    ? Math.min(Math.round((amt / budget) * 100), 100)
+                    : Math.round((amt / totalCatSpend) * 100)
+                  const overBudget = hasBudget && amt > budget
+                  const remaining  = hasBudget ? budget - amt : null
 
-                    {/* Name + bar + budget labels */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-label font-medium text-ink truncate">
-                          {cat?.label || catId}
-                        </span>
-                        {/* Budget status label */}
-                        {hasBudget ? (
-                          <span className={`text-caption ml-2 shrink-0 font-semibold
+                  return (
+                    <button
+                      key={catId}
+                      onClick={() => openBudgetSheet(cat)}
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
+                                  active:bg-kosha-surface-2 transition-colors
+                                  ${i < catEntries.length - 1 ? 'border-b border-kosha-border' : ''}`}
+                    >
+                      <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+                           style={{ background: cat?.bg || '#F5F5F5' }}>
+                        <CategoryIcon categoryId={catId} size={16} />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-label font-medium text-ink truncate">
+                            {cat?.label || catId}
+                          </span>
+                          {hasBudget ? (
+                            <span className={`text-caption ml-2 shrink-0 font-semibold
+                              ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
+                              {overBudget
+                                ? `+${fmt(Math.abs(remaining))} over`
+                                : `${fmt(remaining)} left`}
+                            </span>
+                          ) : (
+                            <span className="text-caption text-ink-4 ml-2 shrink-0">
+                              {Math.round((amt / totalCatSpend) * 100)}%
+                            </span>
+                          )}
+                        </div>
+
+                        <SvgArcBar
+                          pct={barPct}
+                          color={cat?.color || C.income}
+                          overBudget={overBudget}
+                        />
+
+                        {hasBudget && (
+                          <p className={`text-caption mt-1 tabular-nums
                             ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
-                            {overBudget
-                              ? `+${fmt(Math.abs(remaining))} over`
-                              : `${fmt(remaining)} left`}
-                          </span>
-                        ) : (
-                          <span className="text-caption text-ink-4 ml-2 shrink-0">
-                            {Math.round((amt / totalCatSpend) * 100)}%
-                          </span>
+                            {fmt(amt)} of {fmt(budget)}
+                          </p>
                         )}
                       </div>
 
-                      {/* Progress bar */}
-                      <SvgArcBar
-                        pct={barPct}
-                        color={cat?.color || C.income}
-                        overBudget={overBudget}
-                      />
-
-                      {/* Budget sub-label: "₹3,200 of ₹5,000" */}
-                      {hasBudget && (
-                        <p className={`text-caption mt-1 tabular-nums
-                          ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
-                          {fmt(amt)} of {fmt(budget)}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Spent amount */}
-                    <span className={`text-label font-semibold tabular-nums ml-2 shrink-0
-                      ${overBudget ? 'text-expense-text' : 'text-expense-text'}`}>
-                      {fmt(amt)}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+                      <span className="text-label font-semibold tabular-nums ml-2 shrink-0 text-expense-text">
+                        {fmt(amt)}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
           )}
 
           {/* ── Investments ───────────────────────────────────────────── */}
