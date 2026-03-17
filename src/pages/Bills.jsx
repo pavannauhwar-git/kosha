@@ -5,28 +5,29 @@ import { registerPrefetch } from '../hooks/useTransactions'
 import { useLiabilities, addLiability, markPaid, deleteLiability } from '../hooks/useLiabilities'
 import DeleteDialog from '../components/DeleteDialog'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
+import { C } from '../lib/colors'
 
-const RECURRENCE = ['monthly','quarterly','yearly']
+const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 
 export default function Bills() {
   const { pending, paid, loading, refetch } = useLiabilities()
-  const [tab,     setTab]     = useState('pending')
+  const [tab, setTab] = useState('pending')
   const [showAdd, setShowAdd] = useState(false)
-  const [delId,   setDelId]   = useState(null)
-  const [paying,  setPaying]  = useState(null)
+  const [delId, setDelId] = useState(null)
+  const [paying, setPaying] = useState(null)
 
   const [form, setForm] = useState({
-    description:'', amount:'', due_date:'', is_recurring:false, recurrence:'monthly',
+    description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly',
   })
   const [formErr, setFormErr] = useState('')
-  const [saving,  setSaving]  = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  const totalPending  = pending.reduce((s, b) => s + +b.amount, 0)
+  const totalPending = pending.reduce((s, b) => s + +b.amount, 0)
   const dueSoonAmount = pending
     .filter(b => daysUntil(b.due_date) <= 7)
     .reduce((s, b) => s + +b.amount, 0)
-  const dueSoonCount  = pending.filter(b => daysUntil(b.due_date) <= 7).length
-  const barPct        = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
+  const dueSoonCount = pending.filter(b => daysUntil(b.due_date) <= 7).length
+  const barPct = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
 
   async function handleAdd() {
     if (!form.description.trim()) { setFormErr('Enter a description'); return }
@@ -35,14 +36,14 @@ export default function Bills() {
     setFormErr(''); setSaving(true)
     try {
       await addLiability({
-        description:  form.description.trim(),
-        amount:       +form.amount,
-        due_date:     form.due_date,
+        description: form.description.trim(),
+        amount: +form.amount,
+        due_date: form.due_date,
         is_recurring: form.is_recurring,
-        recurrence:   form.is_recurring ? form.recurrence : null,
-        paid:         false,
+        recurrence: form.is_recurring ? form.recurrence : null,
+        paid: false,
       })
-      setForm({ description:'', amount:'', due_date:'', is_recurring:false, recurrence:'monthly' })
+      setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
       setShowAdd(false)
       refetch()
     } catch (e) { setFormErr(e.message) }
@@ -93,8 +94,8 @@ export default function Bills() {
             <motion.div
               className="h-full rounded-pill"
               style={{ background: dueSoonCount > 0 ? '#B35A00' : '#38A169' }}
-              initial={{ width:0 }} animate={{ width:`${barPct || 100}%` }}
-              transition={{ duration:0.6, ease:'easeOut' }}
+              initial={{ width: 0 }} animate={{ width: `${barPct || 100}%` }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
             />
           </div>
           <div className="flex justify-between">
@@ -113,8 +114,8 @@ export default function Bills() {
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
       <div className="flex gap-2 mb-4">
         {[
-          { id:'pending', label:`Pending (${pending.length})` },
-          { id:'paid',    label:`Paid (${paid.length})` },
+          { id: 'pending', label: `Pending (${pending.length})` },
+          { id: 'paid', label: `Paid (${paid.length})` },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex-1 py-2.5 rounded-card text-sm font-semibold border transition-all
@@ -168,14 +169,14 @@ export default function Bills() {
 
           {/* ── Bill cards ── */}
           {(tab === 'pending' ? pending : paid).map(bill => {
-            const days    = daysUntil(bill.due_date)
-            const shadow  = tab === 'pending' ? dueShadow(days) : 'card'
+            const days = daysUntil(bill.due_date)
+            const shadow = tab === 'pending' ? dueShadow(days) : 'card'
             const chipCls = dueChipClass(days)
             return (
               <motion.div key={bill.id}
                 layout
-                initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }}
-                exit={{ opacity:0 }}
+                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
                 className={`${shadow} p-4`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -240,13 +241,13 @@ export default function Bills() {
         {showAdd && (
           <>
             <motion.div className="sheet-backdrop"
-              initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0, pointerEvents:'none' }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
               onClick={() => setShowAdd(false)}
             />
             <motion.div className="sheet-panel"
-              initial={{ y:'100%' }}
-              animate={{ y:0, transition:{ type:'spring', stiffness:400, damping:32 } }}
-              exit={{ y:'100%', transition:{ duration:0.22 } }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+              exit={{ y: '100%', transition: { duration: 0.22 } }}
             >
               <div className="sheet-handle" />
               <div className="px-5">
@@ -315,7 +316,7 @@ export default function Bills() {
 
       {/* FAB */}
       <button className="fab-bills" onClick={() => setShowAdd(true)}>
-        <Plus size={24} weight="bold" color="white" />
+        <Plus size={24} weight="bold" color={C.ink} />
       </button>
 
       <DeleteDialog
