@@ -4,7 +4,6 @@ import { Search, X, SlidersHorizontal } from 'lucide-react'
 import { useTransactions, registerPrefetch, deleteTransaction, useDebounce, useMonthSummary, useRunningBalance } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
-import DeleteDialog from '../components/DeleteDialog'
 import { CATEGORIES } from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus, DownloadSimple } from '@phosphor-icons/react'
@@ -35,7 +34,6 @@ export default function Transactions() {
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [editTxn, setEditTxn] = useState(null)
-  const [delId, setDelId] = useState(null)
   const [showCats, setShowCats] = useState(false)
   const [addType, setAddType] = useState('expense')
   const [displayCount, setDisplayCount] = useState(50)
@@ -67,8 +65,12 @@ export default function Transactions() {
   const hasMore = data.length > displayCount
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
-  // FIXED: moved up before confirmDelete so variables are defined in time
-  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
+  // FIXED: moved up before handleDelete so variables are defined in time
+  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit, clearOptimisticEdits } = useAppData()
+
+  // Ref to always have latest data for delete lookups (avoids stale closures)
+  const dataRef = useRef(data)
+  dataRef.current = data
 
   const now = new Date()
   const { refetch: refetchSummary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
@@ -78,11 +80,13 @@ export default function Transactions() {
   )
   const { refetch: refetchBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
 
-  const confirmDelete = useCallback(async () => {
-    const id = delId
+  const handleDelete = useCallback(async (id) => {
     if (!id) return
 
-    addOptimisticDelete(id)
+    // Look up the full transaction data so summary/balance hooks can
+    // subtract it immediately (optimistic delete propagation).
+    const txn = dataRef.current.find(t => t.id === id)
+    addOptimisticDelete(id, txn)
     applyLocalDelete(id)
 
     try {
@@ -94,9 +98,7 @@ export default function Transactions() {
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
-
-  const handleDelete = useCallback((id) => confirmDelete(id), [confirmDelete])
+  }, [addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)
@@ -329,6 +331,9 @@ export default function Transactions() {
           if (payload.id) {
             pendingEditId.current = payload.id
             applyLocalEdit(payload.id, payload)
+            if (payload._original) {
+              addOptimisticEdit(payload.id, payload._original, payload)
+            }
           } else {
             prependOptimistic(payload)
             addOptimisticTxn(payload)
@@ -339,12 +344,14 @@ export default function Transactions() {
           await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
+            removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           }
         }}
         onFailed={(msg) => {
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
+            removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           }
           clearOptimisticTxns()

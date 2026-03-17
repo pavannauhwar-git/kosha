@@ -27,6 +27,14 @@ export function AppDataProvider({ children }) {
     }
   })
 
+  // Full transaction data for deleted items — lets summary/balance hooks
+  // subtract the right amounts before the server confirms the delete.
+  const [optimisticDeletedTxns, setOptimisticDeletedTxns] = useState([])
+
+  // Optimistic edits — { id, original: {...}, updated: {...} } entries
+  // let summary/balance hooks compute deltas for in-flight edits.
+  const [optimisticEdits, setOptimisticEdits] = useState([])
+
   useEffect(() => {
     try {
       if (!optimisticTxns.length) {
@@ -59,20 +67,27 @@ export function AppDataProvider({ children }) {
     setOptimisticTxns(prev => [...prev, withMeta])
   }, [])
 
-  const addOptimisticDelete = useCallback((id) => {
+  const addOptimisticDelete = useCallback((id, txnData) => {
     if (!id) return
     setOptimisticDeletedIds(prev => (prev.includes(id) ? prev : [...prev, id]))
+    if (txnData) {
+      setOptimisticDeletedTxns(prev =>
+        prev.some(t => t.id === id) ? prev : [...prev, { ...txnData, id }]
+      )
+    }
   }, [])
 
   const removeOptimisticDelete = useCallback((id) => {
     if (!id) return
     setOptimisticDeletedIds(prev => prev.filter(x => x !== id))
+    setOptimisticDeletedTxns(prev => prev.filter(t => t.id !== id))
   }, [])
 
   const pruneOptimisticDeletes = useCallback((serverRows = []) => {
     if (!Array.isArray(serverRows)) return
     const serverIds = new Set(serverRows.map(r => r.id))
     setOptimisticDeletedIds(prev => prev.filter(id => serverIds.has(id)))
+    setOptimisticDeletedTxns(prev => prev.filter(t => serverIds.has(t.id)))
   }, [])
 
   const pruneOptimisticTxns = useCallback((serverRows = []) => {
@@ -98,15 +113,37 @@ export function AppDataProvider({ children }) {
     setOptimisticTxns([])
   }, [])
 
+  const addOptimisticEdit = useCallback((id, original, updated) => {
+    if (!id) return
+    setOptimisticEdits(prev => {
+      const filtered = prev.filter(e => e.id !== id)
+      return [...filtered, { id, original, updated }]
+    })
+  }, [])
+
+  const removeOptimisticEdit = useCallback((id) => {
+    if (!id) return
+    setOptimisticEdits(prev => prev.filter(e => e.id !== id))
+  }, [])
+
+  const clearOptimisticEdits = useCallback(() => {
+    setOptimisticEdits([])
+  }, [])
+
   const value = {
     optimisticTxns,
     addOptimisticTxn,
     pruneOptimisticTxns,
     clearOptimisticTxns,
     optimisticDeletedIds,
+    optimisticDeletedTxns,
     addOptimisticDelete,
     removeOptimisticDelete,
     pruneOptimisticDeletes,
+    optimisticEdits,
+    addOptimisticEdit,
+    removeOptimisticEdit,
+    clearOptimisticEdits,
   }
 
   return (
