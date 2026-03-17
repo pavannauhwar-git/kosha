@@ -261,10 +261,10 @@ export default function Bills() {
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
 
-                <div className="bg-kosha-bg border border-kosha-border rounded-card px-4 py-3 mb-3
-                                flex items-center gap-2">
+                <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3
+                                flex items-center gap-2 border border-transparent">
                   <span className="font-display text-xl text-brand">₹</span>
-                  <input className="flex-1 bg-transparent font-display text-2xl text-ink outline-none"
+                  <input className="flex-1 bg-transparent font-display text-2xl text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" placeholder="0"
                     value={form.amount}
                     onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />

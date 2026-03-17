@@ -326,7 +326,7 @@
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     max-height: 94dvh;
     overflow-y: auto;
-    animation: sheet-in 0.38s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    overflow-x: hidden;
   }
 
   .sheet-handle {

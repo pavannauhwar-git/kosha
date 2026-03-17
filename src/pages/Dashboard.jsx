@@ -190,6 +190,12 @@ export default function Dashboard() {
   // transaction shows up in fetched server data. This prevents the "flash then
   // revert" gap on slow queries.
   const handleConfirmed = useCallback(async () => {
+    // Remove optimistic edit overlay BEFORE refetching so summary/balance hooks
+    // don't apply the edit delta on top of already-updated server data (double-counting).
+    // Keep localEdit active during refetch so the list still shows edited values.
+    if (pendingEditId.current) {
+      removeOptimisticEdit(pendingEditId.current)
+    }
     await Promise.all([
       refetch(),
       refetchSummary(),
@@ -198,7 +204,6 @@ export default function Dashboard() {
     ])
     if (pendingEditId.current) {
       clearLocalEdit(pendingEditId.current)
-      removeOptimisticEdit(pendingEditId.current)
       pendingEditId.current = null
     }
   }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearLocalEdit, removeOptimisticEdit])
@@ -237,6 +242,9 @@ export default function Dashboard() {
     try {
       await deleteTransaction(id)
       await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
+      // Explicitly clean up optimistic delete after all refetches complete
+      // so summary/balance hooks don't double-subtract from already-updated server data.
+      removeOptimisticDelete(id)
     } catch (e) {
       removeOptimisticDelete(id)
       // If delete fails, refetch to restore and show error toast
