@@ -151,6 +151,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
     pruneOptimisticTxns,
     optimisticDeletedIds,
     pruneOptimisticDeletes,
+    optimisticEdits,
   } = useAppData()
 
   const fetch = useCallback(async (force = false) => {
@@ -258,9 +259,18 @@ export function useTransactions({ type, category, search, limit } = {}) {
     : mergedData
 
   // Apply localEdits overlay on top of finalData so edits survive refetches
-  const overlaidData = Object.keys(localEdits).length
-    ? finalData.map(row => localEdits[row.id] ? { ...row, ...localEdits[row.id] } : row)
+  const optimisticEditKeys = Object.keys(optimisticEdits || {})
+  const withGlobalEdits = optimisticEditKeys.length
+    ? finalData.map(row => (
+      optimisticEdits[row.id]?.updates
+        ? { ...row, ...optimisticEdits[row.id].updates }
+        : row
+    ))
     : finalData
+
+  const overlaidData = Object.keys(localEdits).length
+    ? withGlobalEdits.map(row => localEdits[row.id] ? { ...row, ...localEdits[row.id] } : row)
+    : withGlobalEdits
 
   return {
     data: overlaidData,
@@ -283,7 +293,7 @@ export function useMonthSummary(year, month) {
   const [data,    setData]    = useState(() => getCached(cacheKey)?.data || null)
   const [loading, setLoading] = useState(() => !getCached(cacheKey))
 
-  const { optimisticTxns } = useAppData()
+  const { optimisticTxns, optimisticDeletedIds, optimisticDeletedTxns, optimisticEdits } = useAppData()
 
   const fetch = useCallback(async (force = false) => {
     const cached = getCached(cacheKey)
@@ -369,26 +379,98 @@ export function useMonthSummary(year, month) {
       optimisticByVehicle[k] = (optimisticByVehicle[k] || 0) + +t.amount
     })
 
-  const merged = data && optimisticForMonth.length > 0
+  const optimisticDeletedForMonth = optimisticDeletedIds
+    .map(id => optimisticDeletedTxns[id])
+    .filter(Boolean)
+    .filter(t => {
+      const d = new Date(t.date)
+      return d.getFullYear() === year && (d.getMonth() + 1) === month
+    })
+
+  const optimisticEditEntries = Object.values(optimisticEdits || {})
+  const editedOriginalForMonth = optimisticEditEntries
+    .map(entry => entry?.original)
+    .filter(Boolean)
+    .filter(t => {
+      const d = new Date(t.date)
+      return d.getFullYear() === year && (d.getMonth() + 1) === month
+    })
+  const editedUpdatedForMonth = optimisticEditEntries
+    .map(entry => entry?.updates)
+    .filter(Boolean)
+    .filter(t => {
+      const d = new Date(t.date)
+      return d.getFullYear() === year && (d.getMonth() + 1) === month
+    })
+
+  const deltaFor = (txns = [], typeName) =>
+    txns.filter(t => t.type === typeName).reduce((s, t) => s + +t.amount, 0)
+
+  const deletedEarned     = deltaFor(optimisticDeletedForMonth, 'income')
+  const deletedExpense    = deltaFor(optimisticDeletedForMonth, 'expense')
+  const deletedInvestment = deltaFor(optimisticDeletedForMonth, 'investment')
+
+  const editedOriginalEarned     = deltaFor(editedOriginalForMonth, 'income')
+  const editedOriginalExpense    = deltaFor(editedOriginalForMonth, 'expense')
+  const editedOriginalInvestment = deltaFor(editedOriginalForMonth, 'investment')
+  const editedUpdatedEarned      = deltaFor(editedUpdatedForMonth, 'income')
+  const editedUpdatedExpense     = deltaFor(editedUpdatedForMonth, 'expense')
+  const editedUpdatedInvestment  = deltaFor(editedUpdatedForMonth, 'investment')
+
+  const byCategoryDelta = {}
+  ;[...optimisticForMonth, ...editedUpdatedForMonth].forEach(t => {
+    if (t.type !== 'expense') return
+    const k = t.category
+    byCategoryDelta[k] = (byCategoryDelta[k] || 0) + +t.amount
+  })
+  ;[...optimisticDeletedForMonth, ...editedOriginalForMonth].forEach(t => {
+    if (t.type !== 'expense') return
+    const k = t.category
+    byCategoryDelta[k] = (byCategoryDelta[k] || 0) - +t.amount
+  })
+
+  const byVehicleDelta = {}
+  ;[...optimisticForMonth, ...editedUpdatedForMonth].forEach(t => {
+    if (t.type !== 'investment') return
+    const k = t.investment_vehicle || 'Other'
+    byVehicleDelta[k] = (byVehicleDelta[k] || 0) + +t.amount
+  })
+  ;[...optimisticDeletedForMonth, ...editedOriginalForMonth].forEach(t => {
+    if (t.type !== 'investment') return
+    const k = t.investment_vehicle || 'Other'
+    byVehicleDelta[k] = (byVehicleDelta[k] || 0) - +t.amount
+  })
+
+  const hasOptimisticDelta =
+    optimisticForMonth.length > 0 ||
+    optimisticDeletedForMonth.length > 0 ||
+    editedOriginalForMonth.length > 0 ||
+    editedUpdatedForMonth.length > 0
+
+  const merged = data && hasOptimisticDelta
     ? {
         ...data,
-        earned:     data.earned     + optimisticEarned,
+        earned: data.earned + optimisticEarned - deletedEarned - editedOriginalEarned + editedUpdatedEarned,
         repayments: data.repayments + optimisticRepayments,
-        expense:    data.expense    + optimisticExpense,
-        investment: data.investment + optimisticInvestment,
-        balance:    data.balance    + optimisticEarned + optimisticRepayments - optimisticExpense - optimisticInvestment,
-        byCategory: {
-          ...data.byCategory,
-          ...Object.fromEntries(
-            Object.entries(optimisticByCategory).map(([k, v]) => [k, (data.byCategory[k] || 0) + v])
-          ),
-        },
-        byVehicle: {
-          ...data.byVehicle,
-          ...Object.fromEntries(
-            Object.entries(optimisticByVehicle).map(([k, v]) => [k, (data.byVehicle[k] || 0) + v])
-          ),
-        },
+        expense: data.expense + optimisticExpense - deletedExpense - editedOriginalExpense + editedUpdatedExpense,
+        investment: data.investment + optimisticInvestment - deletedInvestment - editedOriginalInvestment + editedUpdatedInvestment,
+        balance:
+          data.balance +
+          (optimisticEarned - deletedEarned - editedOriginalEarned + editedUpdatedEarned) -
+          (optimisticExpense - deletedExpense - editedOriginalExpense + editedUpdatedExpense) -
+          (optimisticInvestment - deletedInvestment - editedOriginalInvestment + editedUpdatedInvestment),
+        byCategory: Object.fromEntries(
+          Object.entries({
+            ...data.byCategory,
+            ...Object.fromEntries(Object.keys(byCategoryDelta).map(k => [k, (data.byCategory[k] || 0) + byCategoryDelta[k]])),
+          }).filter(([, v]) => v > 0)
+        ),
+        byVehicle: Object.fromEntries(
+          Object.entries({
+            ...data.byVehicle,
+            ...Object.fromEntries(Object.keys(byVehicleDelta).map(k => [k, (data.byVehicle[k] || 0) + byVehicleDelta[k]])),
+          }).filter(([, v]) => v > 0)
+        ),
       }
     : data
 
@@ -553,7 +635,7 @@ export function useRunningBalance(year, month) {
   })
   const [loading, setLoading] = useState(() => !getCached(cacheKey))
 
-  const { optimisticTxns } = useAppData()
+  const { optimisticTxns, optimisticDeletedIds, optimisticDeletedTxns, optimisticEdits } = useAppData()
 
   const fetch = useCallback(async (force = false) => {
     const cached = getCached(cacheKey)
@@ -606,8 +688,32 @@ export function useRunningBalance(year, month) {
     return sum
   }, 0)
 
+  const deletedDelta = optimisticDeletedIds.reduce((sum, id) => {
+    const t = optimisticDeletedTxns[id]
+    if (!t || t.date > endDate) return sum
+    if (t.type === 'income')     return sum - +t.amount
+    if (t.type === 'expense')    return sum + +t.amount
+    if (t.type === 'investment') return sum + +t.amount
+    return sum
+  }, 0)
+
+  const editedDelta = Object.values(optimisticEdits || {}).reduce((sum, entry) => {
+    const original = entry?.original
+    const updates = entry?.updates
+    if (!original || !updates) return sum
+
+    const contribution = (txn) => {
+      if (!txn || txn.date > endDate) return 0
+      if (txn.type === 'income')     return +txn.amount
+      if (txn.type === 'expense')    return -txn.amount
+      if (txn.type === 'investment') return -txn.amount
+      return 0
+    }
+    return sum - contribution(original) + contribution(updates)
+  }, 0)
+
   const mergedBalance = balance != null ?
-    balance + optimisticDelta : balance
+    balance + optimisticDelta + deletedDelta + editedDelta : balance
 
   return { balance: mergedBalance, loading, refetch }
 }

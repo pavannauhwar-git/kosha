@@ -67,13 +67,21 @@ export default function Transactions() {
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
   // ✅ FIXED: moved up before confirmDelete so variables are defined in time
-  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
+  const {
+    addOptimisticTxn,
+    clearOptimisticTxns,
+    addOptimisticDelete,
+    removeOptimisticDelete,
+    addOptimisticEdit,
+    removeOptimisticEdit,
+  } = useAppData()
 
   const confirmDelete = useCallback(async () => {
     const id = delId
     if (!id) return
+    const txn = data.find(t => t.id === id)
 
-    addOptimisticDelete(id)
+    addOptimisticDelete(txn || id)
     applyLocalDelete(id)
 
     try {
@@ -86,7 +94,7 @@ export default function Transactions() {
     } finally {
       setDelId(null)
     }
-  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch])
+  }, [delId, data, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch])
 
   const handleDelete = useCallback((id) => setDelId(id), [])
   const handleTap    = useCallback((t) => {
@@ -265,6 +273,7 @@ export default function Transactions() {
         onSaved={(payload) => {
           if (payload.id) {
             pendingEditId.current = payload.id
+            addOptimisticEdit(payload.id, payload, payload._original)
             applyLocalEdit(payload.id, payload)
           } else {
             prependOptimistic(payload)
@@ -276,12 +285,14 @@ export default function Transactions() {
           await refetch()
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
+            removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           }
         }}
         onFailed={(msg) => {
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
+            removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           }
           clearOptimisticTxns()
