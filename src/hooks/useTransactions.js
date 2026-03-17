@@ -187,7 +187,10 @@ export function useTransactions({ type, category, search, limit } = {}) {
       setData(result)
       setLoading(false)
       pruneOptimisticTxns(result)
-      pruneOptimisticDeletes(result)
+      // Only prune optimistic deletes when fetching the full list (no limit).
+      // Paginated fetches (e.g. Dashboard's limit:8) would incorrectly prune
+      // deletes for transactions beyond the page, causing them to reappear.
+      if (!limit) pruneOptimisticDeletes(result)
     } catch (e) {
       setError(e)
       setLoading(false)

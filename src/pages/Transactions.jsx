@@ -92,6 +92,9 @@ export default function Transactions() {
     try {
       await deleteTransaction(id)
       await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
+      // Explicitly clean up optimistic delete after all refetches complete
+      // so summary/balance hooks don't double-subtract from already-updated server data.
+      removeOptimisticDelete(id)
     } catch (e) {
       removeOptimisticDelete(id)
       refetch()
@@ -341,10 +344,14 @@ export default function Transactions() {
           }
         }}
         onConfirmed={async () => {
+          // Remove optimistic edit overlay BEFORE refetching so summary/balance hooks
+          // don't apply the edit delta on top of already-updated server data.
+          if (pendingEditId.current) {
+            removeOptimisticEdit(pendingEditId.current)
+          }
           await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
-            removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           }
         }}
