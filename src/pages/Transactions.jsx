@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useTransactions, registerPrefetch, deleteTransaction, useDebounce } from '../hooks/useTransactions'
+import { useTransactions, registerPrefetch, deleteTransaction, useDebounce, invalidateCache } from '../hooks/useTransactions'
 import TransactionItem     from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import DeleteDialog        from '../components/DeleteDialog'
@@ -78,6 +78,11 @@ export default function Transactions() {
 
     try {
       await deleteTransaction(id)
+      // Refresh list and invalidate summary cache so Dashboard/Monthly
+      // show correct data when navigated back to
+      refetch()
+      invalidateCache('month:')
+      invalidateCache('balance:')
     } catch (e) {
       removeOptimisticDelete(id)
       refetch()
@@ -274,6 +279,10 @@ export default function Transactions() {
         }}
         onConfirmed={async () => {
           await refetch()
+          // Invalidate summary/balance cache so Dashboard and Monthly
+          // show fresh data on next visit
+          invalidateCache('month:')
+          invalidateCache('balance:')
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
             pendingEditId.current = null
