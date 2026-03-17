@@ -109,7 +109,7 @@ export default function Dashboard() {
   // ── Error toast ──────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
 
-  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
+  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit, clearOptimisticEdits } = useAppData()
 
   // Tracks which transaction id is being edited so we can clear the
   // localEdits overlay after onConfirmed (refetch returns fresh server data)
@@ -163,20 +163,27 @@ export default function Dashboard() {
 
   const recentGroups = groupByDate(recent)
 
+  // Ref to always have latest data for delete lookups (avoids stale closures)
+  const recentRef = useRef(recent)
+  recentRef.current = recent
+
   // ── handleOptimisticSave: called immediately when user taps Save ────
   // For NEW transactions, prepend + global optimistic. For EDITS, apply
   // a local edit so the "Latest" list updates instantly.
   const handleOptimisticSave = useCallback((payload) => {
     if (payload.id) {
-      // Edit existing transaction in this list only
+      // Edit existing transaction — local + global optimistic edit
       pendingEditId.current = payload.id
       applyLocalEdit(payload.id, payload)
+      if (payload._original) {
+        addOptimisticEdit(payload.id, payload._original, payload)
+      }
     } else {
       // New transaction — prepend + global optimistic add
       prependOptimistic(payload)
       addOptimisticTxn(payload)
     }
-  }, [applyLocalEdit, prependOptimistic, addOptimisticTxn])
+  }, [applyLocalEdit, prependOptimistic, addOptimisticTxn, addOptimisticEdit])
 
   // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
   // Do NOT clear optimistic txns here. They are pruned automatically once the
@@ -191,9 +198,10 @@ export default function Dashboard() {
     ])
     if (pendingEditId.current) {
       clearLocalEdit(pendingEditId.current)
+      removeOptimisticEdit(pendingEditId.current)
       pendingEditId.current = null
     }
-  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearLocalEdit])
+  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearLocalEdit, removeOptimisticEdit])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
   // The optimistic row disappears when refetch() returns real server data.
@@ -201,13 +209,14 @@ export default function Dashboard() {
   const handleFailed = useCallback((msg) => {
     if (pendingEditId.current) {
       clearLocalEdit(pendingEditId.current)
+      removeOptimisticEdit(pendingEditId.current)
       pendingEditId.current = null
     }
     clearOptimisticTxns()
     refetch()
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
-  }, [refetch, clearOptimisticTxns, clearLocalEdit])
+  }, [refetch, clearOptimisticTxns, clearLocalEdit, removeOptimisticEdit])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
@@ -218,7 +227,10 @@ export default function Dashboard() {
   const handleDelete = useCallback(async (id) => {
     if (!id) return
 
-    addOptimisticDelete(id)
+    // Look up the full transaction data so summary/balance hooks can
+    // subtract it immediately (optimistic delete propagation).
+    const txn = recentRef.current.find(t => t.id === id)
+    addOptimisticDelete(id, txn)
     // Optimistically remove from the latest list immediately
     applyLocalDelete(id)
 

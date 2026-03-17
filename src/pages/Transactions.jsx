@@ -65,8 +65,12 @@ export default function Transactions() {
   const hasMore = data.length > displayCount
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
-  // FIXED: moved up before confirmDelete so variables are defined in time
-  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
+  // FIXED: moved up before handleDelete so variables are defined in time
+  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit, clearOptimisticEdits } = useAppData()
+
+  // Ref to always have latest data for delete lookups (avoids stale closures)
+  const dataRef = useRef(data)
+  dataRef.current = data
 
   const now = new Date()
   const { refetch: refetchSummary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
@@ -79,7 +83,10 @@ export default function Transactions() {
   const handleDelete = useCallback(async (id) => {
     if (!id) return
 
-    addOptimisticDelete(id)
+    // Look up the full transaction data so summary/balance hooks can
+    // subtract it immediately (optimistic delete propagation).
+    const txn = dataRef.current.find(t => t.id === id)
+    addOptimisticDelete(id, txn)
     applyLocalDelete(id)
 
     try {
@@ -324,6 +331,9 @@ export default function Transactions() {
           if (payload.id) {
             pendingEditId.current = payload.id
             applyLocalEdit(payload.id, payload)
+            if (payload._original) {
+              addOptimisticEdit(payload.id, payload._original, payload)
+            }
           } else {
             prependOptimistic(payload)
             addOptimisticTxn(payload)
@@ -334,12 +344,14 @@ export default function Transactions() {
           await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
+            removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           }
         }}
         onFailed={(msg) => {
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
+            removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           }
           clearOptimisticTxns()
