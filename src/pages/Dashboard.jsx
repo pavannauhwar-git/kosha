@@ -500,6 +500,16 @@ export default function Dashboard() {
         <Plus size={24} weight="bold" color="white" />
       </button>
 
+      <AddTransactionSheet
+        open={showAdd}
+        duplicateTxn={duplicateTxn}
+        onClose={() => { setShowAdd(false); setEditTxn(null); setDuplicateTxn(null) }}
+        onSaved={handleOptimisticSave}
+        onConfirmed={handleConfirmed}
+        onFailed={handleFailed}
+        editTxn={editTxn}
+        initialType={addType}
+      />
     </div>
   )
 }
