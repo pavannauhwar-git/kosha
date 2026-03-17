@@ -403,19 +403,19 @@ export function useMonthSummary(year, month) {
       return d.getFullYear() === year && (d.getMonth() + 1) === month
     })
 
-  const deltaFor = (txns = [], typeName) =>
+  const sumAmountByType = (txns = [], typeName) =>
     txns.filter(t => t.type === typeName).reduce((s, t) => s + +t.amount, 0)
 
-  const deletedEarned     = deltaFor(optimisticDeletedForMonth, 'income')
-  const deletedExpense    = deltaFor(optimisticDeletedForMonth, 'expense')
-  const deletedInvestment = deltaFor(optimisticDeletedForMonth, 'investment')
+  const deletedEarned     = sumAmountByType(optimisticDeletedForMonth, 'income')
+  const deletedExpense    = sumAmountByType(optimisticDeletedForMonth, 'expense')
+  const deletedInvestment = sumAmountByType(optimisticDeletedForMonth, 'investment')
 
-  const editedOriginalEarned     = deltaFor(editedOriginalForMonth, 'income')
-  const editedOriginalExpense    = deltaFor(editedOriginalForMonth, 'expense')
-  const editedOriginalInvestment = deltaFor(editedOriginalForMonth, 'investment')
-  const editedUpdatedEarned      = deltaFor(editedUpdatedForMonth, 'income')
-  const editedUpdatedExpense     = deltaFor(editedUpdatedForMonth, 'expense')
-  const editedUpdatedInvestment  = deltaFor(editedUpdatedForMonth, 'investment')
+  const editedOriginalEarned     = sumAmountByType(editedOriginalForMonth, 'income')
+  const editedOriginalExpense    = sumAmountByType(editedOriginalForMonth, 'expense')
+  const editedOriginalInvestment = sumAmountByType(editedOriginalForMonth, 'investment')
+  const editedUpdatedEarned      = sumAmountByType(editedUpdatedForMonth, 'income')
+  const editedUpdatedExpense     = sumAmountByType(editedUpdatedForMonth, 'expense')
+  const editedUpdatedInvestment  = sumAmountByType(editedUpdatedForMonth, 'investment')
 
   const byCategoryDelta = {}
   ;[...optimisticForMonth, ...editedUpdatedForMonth].forEach(t => {
@@ -447,30 +447,28 @@ export function useMonthSummary(year, month) {
     editedOriginalForMonth.length > 0 ||
     editedUpdatedForMonth.length > 0
 
+  const earnedDelta = (optimisticEarned - deletedEarned) + (editedUpdatedEarned - editedOriginalEarned)
+  const expenseDelta = (optimisticExpense - deletedExpense) + (editedUpdatedExpense - editedOriginalExpense)
+  const investmentDelta = (optimisticInvestment - deletedInvestment) + (editedUpdatedInvestment - editedOriginalInvestment)
+
+  const mergeMetricMapWithDelta = (base = {}, delta = {}) => {
+    const mergedMap = { ...base }
+    Object.entries(delta).forEach(([k, v]) => {
+      mergedMap[k] = (mergedMap[k] || 0) + v
+    })
+    return Object.fromEntries(Object.entries(mergedMap).filter(([, v]) => v > 0))
+  }
+
   const merged = data && hasOptimisticDelta
     ? {
         ...data,
-        earned: data.earned + optimisticEarned - deletedEarned - editedOriginalEarned + editedUpdatedEarned,
+        earned: data.earned + earnedDelta,
         repayments: data.repayments + optimisticRepayments,
-        expense: data.expense + optimisticExpense - deletedExpense - editedOriginalExpense + editedUpdatedExpense,
-        investment: data.investment + optimisticInvestment - deletedInvestment - editedOriginalInvestment + editedUpdatedInvestment,
-        balance:
-          data.balance +
-          (optimisticEarned - deletedEarned - editedOriginalEarned + editedUpdatedEarned) -
-          (optimisticExpense - deletedExpense - editedOriginalExpense + editedUpdatedExpense) -
-          (optimisticInvestment - deletedInvestment - editedOriginalInvestment + editedUpdatedInvestment),
-        byCategory: Object.fromEntries(
-          Object.entries({
-            ...data.byCategory,
-            ...Object.fromEntries(Object.keys(byCategoryDelta).map(k => [k, (data.byCategory[k] || 0) + byCategoryDelta[k]])),
-          }).filter(([, v]) => v > 0)
-        ),
-        byVehicle: Object.fromEntries(
-          Object.entries({
-            ...data.byVehicle,
-            ...Object.fromEntries(Object.keys(byVehicleDelta).map(k => [k, (data.byVehicle[k] || 0) + byVehicleDelta[k]])),
-          }).filter(([, v]) => v > 0)
-        ),
+        expense: data.expense + expenseDelta,
+        investment: data.investment + investmentDelta,
+        balance: data.balance + earnedDelta - expenseDelta - investmentDelta,
+        byCategory: mergeMetricMapWithDelta(data.byCategory, byCategoryDelta),
+        byVehicle: mergeMetricMapWithDelta(data.byVehicle, byVehicleDelta),
       }
     : data
 
