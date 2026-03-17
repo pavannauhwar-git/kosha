@@ -482,7 +482,7 @@ export default function Dashboard() {
 
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
-        <Plus size={26} weight="bold" color="white" />
+        <Plus size={24} weight="bold" color="white" />
       </button>
 
       <AddTransactionSheet

@@ -314,8 +314,8 @@ export default function Bills() {
       </AnimatePresence>
 
       {/* FAB */}
-      <button className="fab" onClick={() => setShowAdd(true)}>
-        <Plus size={28} weight="bold" color="white" />
+      <button className="fab-bills" onClick={() => setShowAdd(true)}>
+        <Plus size={24} weight="bold" color="white" />
       </button>
 
       <DeleteDialog

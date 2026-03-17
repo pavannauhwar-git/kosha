@@ -32,47 +32,51 @@
   }
 
   :root {
-    --safe-top:    env(safe-area-inset-top, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --nav-height:  calc(88px + env(safe-area-inset-bottom, 0px));
+    --nav-height: calc(88px + env(safe-area-inset-bottom, 0px));
 
     /* ── Palette CSS variables ──────────────────────────────────────
        Keep in sync with src/lib/colors.js and tailwind.config.js
     ───────────────────────────────────────────────────────────────── */
 
     /* Brand — Periwinkle */
-    --c-brand:            #3730A3;
-    --c-brand-mid:        #5B51E0;
-    --c-brand-container:  #EDE9FF;
-    --c-brand-border:     #D4CEFF;
-    --c-brand-rgb:        55, 48, 163;     /* used in rgba() calls */
-    --c-brand-mid-rgb:    91, 81, 224;     /* used in rgba() calls */
+    --c-brand: #3730A3;
+    --c-brand-mid: #5B51E0;
+    --c-brand-container: #EDE9FF;
+    --c-brand-border: #D4CEFF;
+    --c-brand-rgb: 55, 48, 163;
+    /* used in rgba() calls */
+    --c-brand-mid-rgb: 91, 81, 224;
+    /* used in rgba() calls */
 
     /* Accent — Electric Lime (on dark bg only) */
-    --c-accent:           #E2FF5A;
-    --c-accent-rgb:       226, 255, 90;    /* used in rgba() calls */
+    --c-accent: #E2FF5A;
+    --c-accent-rgb: 226, 255, 90;
+    /* used in rgba() calls */
 
     /* Semantics */
-    --c-income:           #059669;
-    --c-invest-text:      #9D174D;   /* text on invest-bg */
-    --c-expense:          #E11D48;
-    --c-expense-bright:   #E11D48;
+    --c-income: #059669;
+    --c-invest-text: #9D174D;
+    /* text on invest-bg */
+    --c-expense: #E11D48;
+    --c-expense-bright: #E11D48;
 
     /* Ink */
-    --c-ink-muted:        #9590B8;
+    --c-ink-muted: #9590B8;
 
     /* Hero card overlays */
-    --c-hero-accent:      rgba(226, 255, 90, 0.75);
-    --c-hero-accent-bg:   rgba(226, 255, 90, 0.20);
+    --c-hero-accent: rgba(226, 255, 90, 0.75);
+    --c-hero-accent-bg: rgba(226, 255, 90, 0.20);
     --c-hero-accent-fill: rgba(226, 255, 90, 0.75);
-    --c-hero-label:       rgba(255, 255, 255, 0.55);
-    --c-hero-dimmer:      rgba(255, 255, 255, 0.35);
-    --c-hero-divider:     rgba(255, 255, 255, 0.12);
-    --c-hero-stat-bg:     rgba(255, 255, 255, 0.10);
+    --c-hero-label: rgba(255, 255, 255, 0.55);
+    --c-hero-dimmer: rgba(255, 255, 255, 0.35);
+    --c-hero-divider: rgba(255, 255, 255, 0.12);
+    --c-hero-stat-bg: rgba(255, 255, 255, 0.10);
 
     /* Shimmer animation colors */
-    --c-shimmer-1:        #EFECFF;
-    --c-shimmer-2:        #E0DAFF;
+    --c-shimmer-1: #EFECFF;
+    --c-shimmer-2: #E0DAFF;
   }
 
   /* GPU layer on interactive elements — eliminates tap lag */
@@ -129,7 +133,7 @@
     @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface transition-colors duration-75 cursor-pointer;
   }
 
-  .list-row + .list-row {
+  .list-row+.list-row {
     border-top: 0.5px solid var(--c-brand-border);
   }
 
@@ -160,26 +164,52 @@
   }
 
   /* -- Amount colours ──────────────────────────────────────────────── */
-  .amt-income  { @apply text-income-text font-semibold; }
-  .amt-expense { @apply text-expense-text font-semibold; }
-  .amt-invest  { @apply text-invest-text font-semibold; }
-  .amt-repay   { @apply text-repay-text font-semibold; }
+  .amt-income {
+    @apply text-income-text font-semibold;
+  }
+
+  .amt-expense {
+    @apply text-expense-text font-semibold;
+  }
+
+  .amt-invest {
+    @apply text-invest-text font-semibold;
+  }
+
+  .amt-repay {
+    @apply text-repay-text font-semibold;
+  }
 
   /* -- Buttons ─────────────────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill
-           transition-all duration-75 active:scale-[0.96] select-none cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all duration-75 active:scale-[0.96] select-none cursor-pointer;
   }
 
-  .btn-primary  { @apply btn bg-brand text-white px-6 py-3; }
-  .btn-tonal    { @apply btn bg-brand-container text-brand-on px-6 py-3; }
-  .btn-ghost    { @apply btn text-brand px-4 py-2; }
-  .btn-danger   { @apply btn bg-expense-bg text-expense-text px-6 py-3 border border-expense-border; }
+  .btn-primary {
+    @apply btn bg-brand text-white px-6 py-3;
+  }
+
+  .btn-tonal {
+    @apply btn bg-brand-container text-brand-on px-6 py-3;
+  }
+
+  .btn-ghost {
+    @apply btn text-brand px-4 py-2;
+  }
+
+  .btn-danger {
+    @apply btn bg-expense-bg text-expense-text px-6 py-3 border border-expense-border;
+  }
 
   /* -- FAB ─────────────────────────────────────────────────────────── */
   .fab {
-    @apply fixed right-4 w-14 h-14 bg-brand text-white rounded-2xl shadow-fab
-           flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
+    @apply fixed right-4 w-14 h-14 bg-brand text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
+    bottom: calc(var(--nav-height) + 1rem);
+  }
+
+  /* Bills page FAB — amber/warning to match bills colour theme */
+  .fab-bills {
+    @apply fixed right-4 w-14 h-14 bg-warning text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
     bottom: calc(var(--nav-height) + 1rem);
   }
 
@@ -214,7 +244,7 @@
       0 8px 32px rgba(0, 0, 0, 0.10),
       0 2px 8px rgba(0, 0, 0, 0.06),
       inset 0 0.5px 0 rgba(255, 255, 255, 0.90),
-      0 0 0 0.5px rgba(30,27,75, 0.10);
+      0 0 0 0.5px rgba(30, 27, 75, 0.10);
     pointer-events: auto;
     /* No transition here — Framer controls all animation */
   }
@@ -273,12 +303,9 @@
   }
 
 
-
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
-    @apply w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink
-           placeholder-ink-4 text-base border border-transparent
-           focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-150;
+    @apply w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-transparent focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-150;
   }
 
   /* -- Bottom sheet ────────────────────────────────────────────────── */
@@ -335,37 +362,53 @@
     transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .savings-track { @apply bar-dark-track; }
-  .savings-fill  { @apply bar-dark-fill; }
+  .savings-track {
+    @apply bar-dark-track;
+  }
+
+  .savings-fill {
+    @apply bar-dark-fill;
+  }
 
   /* -- Close button ────────────────────────────────────────────────── */
   .close-btn {
-    @apply w-9 h-9 rounded-pill flex items-center justify-center
-           bg-kosha-surface-2 active:bg-kosha-border transition-all duration-75 cursor-pointer;
+    @apply w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border transition-all duration-75 cursor-pointer;
   }
 
-  .close-btn:active { transform: scale(0.92); }
+  .close-btn:active {
+    transform: scale(0.92);
+  }
 }
 
 /* -- Skeleton pulse ──────────────────────────────────────────────────── */
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 1;   }
-  50%       { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* -- Shimmer — green tint to match new palette ─────────────────────── */
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--c-shimmer-1) 25%,
-    var(--c-shimmer-2) 50%,
-    var(--c-shimmer-1) 75%
-  );
+  background: linear-gradient(90deg,
+      var(--c-shimmer-1) 25%,
+      var(--c-shimmer-2) 50%,
+      var(--c-shimmer-1) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
 }
