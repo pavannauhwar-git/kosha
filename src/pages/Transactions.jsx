@@ -93,12 +93,10 @@ export default function Transactions() {
       refetch()
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
-    } finally {
-      setDelId(null)
     }
   }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
 
-  const handleDelete = useCallback((id) => setDelId(id), [])
+  const handleDelete = useCallback((id) => confirmDelete(id), [confirmDelete])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)
@@ -354,10 +352,6 @@ export default function Transactions() {
           setToast(msg)
           setTimeout(() => setToast(null), 4000)
         }}
-      />
-      <DeleteDialog
-        open={!!delId} label="this transaction"
-        onConfirm={confirmDelete} onCancel={() => setDelId(null)}
       />
     </div>
   )

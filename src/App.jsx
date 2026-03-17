@@ -4,24 +4,25 @@ import { motion } from 'framer-motion'
 import { AuthProvider } from './hooks/useAuth'
 import { AppDataProvider } from './hooks/useAppDataStore'
 import { useAuth } from './hooks/useAuth'
-import AuthGuard    from './components/AuthGuard'
-import ProfileMenu  from './components/ProfileMenu'
+import AuthGuard from './components/AuthGuard'
+import ProfileMenu from './components/ProfileMenu'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
 import { C } from './lib/colors'
 import { prefetch } from './hooks/useTransactions'
+import { useScrollDirection } from './hooks/useScrollDirection'
 
 // ── Eager: Dashboard and Login are needed immediately ────────────────────
-import Dashboard    from './pages/Dashboard'
-import Login        from './pages/Login'
-import Onboarding   from './pages/Onboarding'
+import Dashboard from './pages/Dashboard'
+import Login from './pages/Login'
+import Onboarding from './pages/Onboarding'
 
 // ── Lazy: heavier pages loaded on first visit ────────────────────────────
 // Reduces the initial JS bundle the phone has to parse on first open.
 // Each page is code-split into its own chunk (~30-50KB savings each).
 const Transactions = lazy(() => import('./pages/Transactions'))
-const Monthly      = lazy(() => import('./pages/Monthly'))
-const Analytics    = lazy(() => import('./pages/Analytics'))
-const Bills        = lazy(() => import('./pages/Bills'))
+const Monthly = lazy(() => import('./pages/Monthly'))
+const Analytics = lazy(() => import('./pages/Analytics'))
+const Bills = lazy(() => import('./pages/Bills'))
 
 // ── Skeleton fallback for lazy pages ─────────────────────────────────────
 // AuthGuard already shows per-route skeletons — we just need a minimal
@@ -33,11 +34,11 @@ function PageFallback() {
 }
 
 const NAV = [
-  { path: '/',             label: 'Home',     Icon: House        },
-  { path: '/transactions', label: 'Activity', Icon: List         },
-  { path: '/monthly',      label: 'Monthly',  Icon: CalendarDots },
-  { path: '/analytics',    label: 'Insights', Icon: ChartBar     },
-  { path: '/bills',        label: 'Bills',    Icon: Receipt      },
+  { path: '/', label: 'Home', Icon: House },
+  { path: '/transactions', label: 'Activity', Icon: List },
+  { path: '/monthly', label: 'Monthly', Icon: CalendarDots },
+  { path: '/analytics', label: 'Insights', Icon: ChartBar },
+  { path: '/bills', label: 'Bills', Icon: Receipt },
 ]
 
 // ── Global header — ProfileMenu fixed top-right, rendered once ────────────
@@ -69,7 +70,8 @@ function GlobalHeader() {
 // ──────────────────────────────────────────────────────────────────────────
 function BottomNav() {
   const location = useLocation()
-  const navigate  = useNavigate()
+  const navigate = useNavigate()
+  const scrolledDown = useScrollDirection()
 
   const hideOn = ['/login', '/onboarding', '/join', '/auth']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
@@ -79,7 +81,11 @@ function BottomNav() {
   )
 
   return (
-    <div className="nav-float-wrap">
+    <motion.div
+      className="nav-float-wrap"
+      animate={{ y: scrolledDown ? 110 : 0 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 40, mass: 0.8 }}
+    >
       <nav className="nav-float">
         {NAV.map((item, i) => {
           const isActive = i === active
@@ -130,7 +136,7 @@ function BottomNav() {
               <motion.span
                 className="nav-label"
                 animate={{
-                  color:      isActive ? C.brand : C.inkMuted,
+                  color: isActive ? C.brand : C.inkMuted,
                   fontWeight: isActive ? 700 : 500,
                 }}
                 transition={{ duration: 0.15 }}
@@ -141,7 +147,7 @@ function BottomNav() {
           )
         })}
       </nav>
-    </div>
+    </motion.div>
   )
 }
 
@@ -149,10 +155,10 @@ function BottomNav() {
 function AuthCallback() {
   const { user, profile, loading } = useAuth()
   if (loading) return null
-  if (!user)   return <Navigate to="/login"      replace />
+  if (!user) return <Navigate to="/login" replace />
   if (profile && !profile.onboarded)
-               return <Navigate to="/onboarding" replace />
-  return             <Navigate to="/"            replace />
+    return <Navigate to="/onboarding" replace />
+  return <Navigate to="/" replace />
 }
 
 export default function App() {
@@ -163,8 +169,8 @@ export default function App() {
           <div className="min-h-dvh bg-kosha-bg">
             <Routes>
               {/* Public */}
-              <Route path="/login"         element={<Login />} />
-              <Route path="/join/:token"   element={<Login />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/join/:token" element={<Login />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
 
               {/* Onboarding */}

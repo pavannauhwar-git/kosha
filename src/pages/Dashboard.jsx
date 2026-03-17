@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { useTransactions, registerPrefetch } from '../hooks/useTransactions'
+import { useTransactions } from '../hooks/useTransactions'
 import { useMonthSummary } from '../hooks/useTransactions'
 import { useRunningBalance } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
@@ -10,7 +10,6 @@ import { useAuth } from '../hooks/useAuth'
 import { useAppData } from '../hooks/useAppDataStore'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import TransactionItem from '../components/TransactionItem'
-import DeleteDialog from '../components/DeleteDialog'
 import { deleteTransaction } from '../hooks/useTransactions'
 import { fmt, monthStr, savingsRate, daysUntil, groupByDate, dateLabel } from '../lib/utils'
 import { CATEGORIES } from '../lib/categories'
@@ -94,12 +93,17 @@ function SavingsRing({ rate }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const now = new Date()
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(id)
+  }, [])
   const { profile } = useAuth()
 
   const [showAdd, setShowAdd] = useState(false)
   const [editTxn, setEditTxn] = useState(null)
-  const [delId, setDelId] = useState(null)
+  const [delId] = useState(null)
   const [addType, setAddType] = useState('expense')
   const [duplicateTxn, setDuplicateTxn] = useState(null)
 
@@ -215,14 +219,12 @@ export default function Dashboard() {
       refetch()
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
-    } finally {
-      setDelId(null)
     }
   }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
 
   // Stable callbacks for TransactionItem — avoids remounting memo'd rows
   // on every Dashboard render (e.g. when bell icon updates or state changes)
-  const handleDelete = useCallback((id) => setDelId(id), [])
+  const handleDelete = useCallback((id) => confirmDelete(id), [confirmDelete])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)
@@ -507,10 +509,6 @@ export default function Dashboard() {
         onFailed={handleFailed}
         editTxn={editTxn}
         initialType={addType}
-      />
-      <DeleteDialog
-        open={!!delId} label="this transaction"
-        onConfirm={confirmDelete} onCancel={() => setDelId(null)}
       />
     </div>
   )

@@ -20,6 +20,7 @@ export const CATEGORIES = [
   { id:'gift',          label:'Gift',            icon:'Gift',            color:'#D97706', bg:'#FFFBEB' },
   { id:'charity',       label:'Charity',         icon:'Heart',           color:'#DC2626', bg:'#FEF2F2' },
   { id:'taxes',         label:'Taxes',           icon:'Receipt',         color:'#B45309', bg:'#FFFBEB' },
+  { id:'bills',         label:'Bills',           icon:'Receipt',         color:'#D97706', bg:'#FFFBEB' },
   { id:'other',         label:'Other',           icon:'Package',         color:'#9CA3AF', bg:'#F9FAFB' },
 ]
 
