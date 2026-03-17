@@ -315,7 +315,7 @@ export default function Bills() {
 
       {/* FAB */}
       <button className="fab-bills" onClick={() => setShowAdd(true)}>
-        <Plus size={26} weight="bold" color="white" />
+        <Plus size={28} weight="bold" color="white" />
       </button>
 
       <DeleteDialog
