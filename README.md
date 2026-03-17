@@ -27,6 +27,9 @@ A personal finance PWA built with React, Vite, Tailwind CSS, and Supabase. Track
 - **Monthly** — Month navigator, hero card, budget breakdown (spent / invested / saved), category bars, investment vehicles
 - **Analytics** — Year KPIs, monthly cash flow chart, net savings chart, year-over-year table, top 5 expenses, spending by category, investment portfolio
 - **Bills** — Pending and paid tabs, mark-as-paid (auto-creates expense transaction), recurring bill support
+- **Auth & Onboarding** — Email/password and Google sign-in, profile-first onboarding flow
+- **Invite Links** — Token-based `/join/:token` entry flow with invite consumption on onboarding
+- **Data Isolation** — Per-user data access through Supabase RLS policies
 - **PWA** — Installable on iOS (Safari) and Android, offline caching via Workbox
 
 ---
@@ -92,6 +95,7 @@ Work through these in order:
 - [ ] `npm install` completed
 - [ ] Supabase project created
 - [ ] `supabase/schema.sql` run in SQL Editor
+- [ ] At least one auth user can sign in (email/password or Google)
 - [ ] `.env` created with all 4 keys
 - [ ] `npm run dev` — app loads at localhost:5173
 - [ ] Excel files placed in `scripts/` folder
@@ -105,23 +109,41 @@ Work through these in order:
 
 ---
 
-## Phase 2 — In Progress
+## Phase 2 — Complete
 
-Phase 2 is currently **not complete**. The features below are planned but not yet implemented. Do not expect them in the current build.
+Phase 2 is complete and includes:
 
-### Planned for Phase 2
+- **Multi-user Auth** — Email/password sign-in/sign-up and Google OAuth via Supabase Auth
+- **Row Level Security** — `profiles`, `transactions`, `liabilities`, and `invites` are protected with per-user RLS policies
+- **Shareable invite flow** — `/join/:token` route is active and invite tokens are consumed during onboarding
+- **Profile bootstrap** — `handle_new_user` trigger function creates a profile row when a new auth user is created
 
-- **Multi-user Auth** — Email/password sign-up and Google OAuth via Supabase Auth
-- **Row Level Security** — Each user sees only their own data; RLS policies on all tables
-- **Shareable invite link** — Generate a `/join/:token` URL so others can create an account and be onboarded
-- **Household / shared view** — Opt-in ability for two accounts to see combined data
+### Current Scope
 
-### Current Auth Status
+- Users can sign in, complete onboarding, and work with isolated personal data.
+- Invite tokens can be validated and consumed in onboarding.
+- Household/shared multi-account view is **not** part of Phase 2 and remains future roadmap scope.
 
-The app currently supports a **single-user** flow only. Supabase Auth is wired up (login, session management, `AuthGuard`), but:
-- There is no self-serve sign-up page; accounts are created manually in the Supabase dashboard
-- Row Level Security policies exist in `schema.sql` but assume a single user
-- The `/join/:token` route is stubbed in the router but not functional
+---
+
+## Database Model (Phase 2)
+
+Public tables in active use:
+
+- `profiles` — user profile metadata (`display_name`, `monthly_income`, `onboarded`, `avatar_url`)
+- `transactions` — user-scoped financial entries (`user_id` FK)
+- `liabilities` — user-scoped bills/dues (`user_id` FK, optional `linked_transaction_id`)
+- `invites` — onboarding token flow (`token`, `created_by`, `used_by`, `used_at`)
+
+Security model:
+
+- RLS enabled on all four public tables.
+- CRUD policies enforce `auth.uid()` ownership checks for profile, transactions, and liabilities.
+- Invite policies allow authenticated validation, creator-owned insert, and controlled consume update.
+
+Bootstrap behavior:
+
+- `public.handle_new_user` inserts a `profiles` row for each new `auth.users` record.
 
 ---
 

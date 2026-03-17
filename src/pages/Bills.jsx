@@ -5,7 +5,6 @@ import { registerPrefetch } from '../hooks/useTransactions'
 import { useLiabilities, addLiability, markPaid, deleteLiability } from '../hooks/useLiabilities'
 import DeleteDialog from '../components/DeleteDialog'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
-import { C } from '../lib/colors'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 
@@ -316,7 +315,7 @@ export default function Bills() {
 
       {/* FAB */}
       <button className="fab-bills" onClick={() => setShowAdd(true)}>
-        <Plus size={24} weight="bold" color={C.ink} />
+        <Plus size={26} weight="bold" color="white" />
       </button>
 
       <DeleteDialog
