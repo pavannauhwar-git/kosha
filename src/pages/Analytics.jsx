@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import {
@@ -9,13 +9,14 @@ import {
   PieChart, Pie,
 } from 'recharts'
 import { useYearSummary } from '../hooks/useTransactions'
+import { supabase } from '../lib/supabase'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
 
-const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
-                     'Jul','Aug','Sep','Oct','Nov','Dec']
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2023 + i)
 
 // Portfolio colours — green family, darkest to lightest
@@ -32,14 +33,16 @@ const AppleTooltip = ({ active, payload, label }) => {
       boxShadow: '0 4px 20px rgba(30,27,75,0.14), 0 0 0 0.5px rgba(30,27,75,0.08)',
       minWidth: 140,
     }}>
-      <p style={{ fontSize:12, fontWeight:600, color:C.inkMuted,
-                  letterSpacing:'0.04em', marginBottom:6, textTransform:'uppercase' }}>
+      <p style={{
+        fontSize: 12, fontWeight: 600, color: C.inkMuted,
+        letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase'
+      }}>
         {label}
       </p>
       {payload.map(p => (
-        <div key={p.name} style={{ display:'flex', justifyContent:'space-between', gap:16, marginBottom:3 }}>
-          <span style={{ fontSize:13, color:C.ink }}>{p.name}</span>
-          <span style={{ fontSize:13, fontWeight:700, color:p.fill || p.color }}>
+        <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
+          <span style={{ fontSize: 13, color: C.ink }}>{p.name}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: p.fill || p.color }}>
             {fmt(p.value)}
           </span>
         </div>
@@ -60,14 +63,16 @@ const DarkTooltip = ({ active, payload, label }) => {
       minWidth: 140,
       border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
-      <p style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.5)',
-                  letterSpacing:'0.04em', marginBottom:6, textTransform:'uppercase' }}>
+      <p style={{
+        fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+        letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase'
+      }}>
         {label}
       </p>
       {payload.map(p => (
-        <div key={p.name} style={{ display:'flex', justifyContent:'space-between', gap:16, marginBottom:3 }}>
-          <span style={{ fontSize:13, color:'rgba(255,255,255,0.75)' }}>{p.name}</span>
-          <span style={{ fontSize:13, fontWeight:700, color:p.stroke || p.fill || p.color }}>
+        <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>{p.name}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: p.stroke || p.fill || p.color }}>
             {fmt(p.value)}
           </span>
         </div>
@@ -79,7 +84,7 @@ const DarkTooltip = ({ active, payload, label }) => {
 // ── KPI card ──────────────────────────────────────────────────────────────
 function KpiCard({ label, value, prevValue, textCls, bg }) {
   const diff = prevValue != null ? value - prevValue : null
-  const up   = diff > 0
+  const up = diff > 0
   return (
     <div className="card p-4">
       <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center mb-3`}>
@@ -100,8 +105,8 @@ function KpiCard({ label, value, prevValue, textCls, bg }) {
 // ── Trend pill ────────────────────────────────────────────────────────────
 function TrendPill({ current, previous, label }) {
   if (!previous || previous === 0) return null
-  const pct  = Math.round(((current - previous) / previous) * 100)
-  const up   = pct > 0
+  const pct = Math.round(((current - previous) / previous) * 100)
+  const up = pct > 0
   if (Math.abs(pct) < 3) return <span className="chip-neutral">≈ Stable {label}</span>
   return (
     <span className={`text-caption font-semibold px-2.5 py-1 rounded-full
@@ -124,9 +129,9 @@ function YoYCards({ years, currentYear }) {
         .then(({ data: rows }) => {
           if (!rows) return
           const income = rows.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0)
-          const spent  = rows.filter(r => r.type === 'expense').reduce((s, r) => s + +r.amount, 0)
+          const spent = rows.filter(r => r.type === 'expense').reduce((s, r) => s + +r.amount, 0)
           const invest = rows.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0)
-          const rate   = income > 0 ? Math.round(((income - spent) / income) * 100) : 0
+          const rate = income > 0 ? Math.round(((income - spent) / income) * 100) : 0
           setAllData(prev => ({ ...prev, [y]: { income, spent, invest, rate } }))
         })
     })
@@ -139,7 +144,7 @@ function YoYCards({ years, currentYear }) {
     <div className="space-y-3">
       <p className="section-label">Year over Year</p>
       {yearsWithData.map((y, idx) => {
-        const d    = allData[y]
+        const d = allData[y]
         const prev = allData[yearsWithData[idx - 1]]
         const isCurrent = y === currentYear
 
@@ -151,7 +156,7 @@ function YoYCards({ years, currentYear }) {
         return (
           <div key={y}
             className={`card p-4 ${isCurrent ? 'border-brand' : ''}`}
-            style={isCurrent ? { borderWidth:'1.5px' } : {}}
+            style={isCurrent ? { borderWidth: '1.5px' } : {}}
           >
             <div className="flex items-center gap-2 mb-3">
               <span className={`text-label font-bold ${isCurrent ? 'text-ink' : 'text-ink-3'}`}>
@@ -167,14 +172,14 @@ function YoYCards({ years, currentYear }) {
 
             <div className="grid grid-cols-4 gap-2">
               {[
-                { label:'Earned',   key:'income', cls: isCurrent ? 'text-income-text' : 'text-ink-3' },
-                { label:'Spent',    key:'spent',  cls: isCurrent ? 'text-expense-text': 'text-ink-3' },
-                { label:'Invested', key:'invest', cls: isCurrent ? 'text-invest-text' : 'text-ink-3' },
-                { label:'Saved',    key:'rate',   cls: isCurrent ? 'text-brand'        : 'text-ink-3', suffix:'%' },
+                { label: 'Earned', key: 'income', cls: isCurrent ? 'text-income-text' : 'text-ink-3' },
+                { label: 'Spent', key: 'spent', cls: isCurrent ? 'text-expense-text' : 'text-ink-3' },
+                { label: 'Invested', key: 'invest', cls: isCurrent ? 'text-invest-text' : 'text-ink-3' },
+                { label: 'Saved', key: 'rate', cls: isCurrent ? 'text-brand' : 'text-ink-3', suffix: '%' },
               ].map(row => {
-                const val   = d?.[row.key] ?? 0
+                const val = d?.[row.key] ?? 0
                 const prevV = prev?.[row.key]
-                const d2    = delta(val, prevV)
+                const d2 = delta(val, prevV)
                 return (
                   <div key={row.key}>
                     <p className="text-[10px] text-ink-3 mb-1">{row.label}</p>
@@ -199,14 +204,14 @@ function YoYCards({ years, currentYear }) {
 
 // ── Portfolio donut ───────────────────────────────────────────────────────
 function PortfolioDonut({ vehicleData }) {
-  const total    = vehicleData.reduce((s, [, v]) => s + v, 0) || 1
-  const pieData  = vehicleData.map(([name, value]) => ({ name, value }))
+  const total = vehicleData.reduce((s, [, v]) => s + v, 0) || 1
+  const pieData = vehicleData.map(([name, value]) => ({ name, value }))
 
   return (
     <div className="card p-5">
       <p className="section-label mb-4">Portfolio Allocation</p>
       <div className="flex items-center gap-4">
-        <div className="relative shrink-0" style={{ width:130, height:130 }}>
+        <div className="relative shrink-0" style={{ width: 130, height: 130 }}>
           <PieChart width={130} height={130}>
             <Pie
               data={pieData}
@@ -236,7 +241,7 @@ function PortfolioDonut({ vehicleData }) {
                   ${i < vehicleData.length - 1 ? 'border-b border-kosha-border' : ''}`}
               >
                 <div className="w-2.5 h-2.5 rounded-full shrink-0"
-                     style={{ background: PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length] }} />
+                  style={{ background: PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length] }} />
                 <span className="text-caption text-ink font-medium flex-1 truncate">{vehicle}</span>
                 <span className="text-caption text-ink-3 w-7 text-right">{pct}%</span>
                 <span className="text-caption font-semibold text-ink tabular-nums w-16 text-right">
@@ -253,17 +258,33 @@ function PortfolioDonut({ vehicleData }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
-  const now  = new Date()
+  const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
 
   const { data, loading, refetch } = useYearSummary(year)
   const { data: prevData, refetch: refetchPrev } = useYearSummary(year - 1)
 
+  const [top5, setTop5] = useState([])
+
+  const refreshTop5 = useCallback(async () => {
+    const { data: rows } = await supabase
+      .from('transactions')
+      .select('id, date, description, amount, category')
+      .eq('type', 'expense')
+      .gte('date', `${year}-01-01`)
+      .lte('date', `${year}-12-31`)
+      .order('amount', { ascending: false })
+      .limit(5)
+    setTop5(rows || [])
+  }, [year])
+
+  useEffect(() => { refreshTop5() }, [refreshTop5])
+
   const chartData = (data?.monthly || [])
     .map((m, i) => ({
-      name:   MONTH_SHORT[i],
+      name: MONTH_SHORT[i],
       Income: Math.round(m.income),
-      Spent:  Math.round(m.expense),
+      Spent: Math.round(m.expense),
     }))
     .filter(m => m.Income > 0 || m.Spent > 0)
 
@@ -272,7 +293,7 @@ export default function Analytics() {
   const netData = (data?.monthly || [])
     .map((m, i) => ({
       name: MONTH_SHORT[i],
-      Net:  Math.round(m.income - m.expense - m.investment),
+      Net: Math.round(m.income - m.expense - m.investment),
     }))
     .filter(m => m.Net !== 0)
 
@@ -282,7 +303,7 @@ export default function Analytics() {
     .sort((a, b) => b[1] - a[1]).slice(0, 6)
     .map(([id, val]) => ({
       id, val,
-      name:  CATEGORIES.find(c => c.id === id)?.label || id,
+      name: CATEGORIES.find(c => c.id === id)?.label || id,
       color: CATEGORIES.find(c => c.id === id)?.color || C.brand,
     }))
   const totalCatSpend = catData.reduce((s, c) => s + c.val, 0)
@@ -290,8 +311,8 @@ export default function Analytics() {
   const vehicleData = Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1])
 
   const recentMonths = (data?.monthly || []).filter(m => m.expense > 0)
-  const lastTwo      = recentMonths.slice(-2)
-  const spendTrend   = lastTwo.length === 2
+  const lastTwo = recentMonths.slice(-2)
+  const spendTrend = lastTwo.length === 2
     ? { current: lastTwo[1].expense, previous: lastTwo[0].expense }
     : null
 
@@ -319,8 +340,8 @@ export default function Analytics() {
         </div>
       ) : (
         <motion.div key={year}
-          initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }}
-          transition={{ duration:0.25 }}
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
           className="space-y-6"
         >
 
@@ -351,46 +372,46 @@ export default function Analytics() {
 
           {/* ── 2. Cash Flow chart ──────────────────────────────────── */}
           {chartData.length > 0 && (
-            <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background:C.chartDark }}>
+            <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background: C.chartDark }}>
               <div className="px-5 pt-5 pb-2">
-                <p className="text-label font-semibold" style={{ color:'rgba(255,255,255,0.85)' }}>Cash Flow</p>
-                <p style={{ fontSize:11, color:'rgba(255,255,255,0.35)', marginTop:2 }}>Income vs spending by month</p>
+                <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>Cash Flow</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Income vs spending by month</p>
               </div>
               <ResponsiveContainer width="100%" height={chartH}>
-                <AreaChart data={chartData} margin={{ top:8, right:16, left:16, bottom:0 }}>
+                <AreaChart data={chartData} margin={{ top: 8, right: 16, left: 16, bottom: 0 }}>
                   <defs>
                     <linearGradient id="gIncome" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={C.chartIncome}  stopOpacity={0.25} />
-                      <stop offset="95%" stopColor={C.chartIncome}  stopOpacity={0.02} />
+                      <stop offset="5%" stopColor={C.chartIncome} stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={C.chartIncome} stopOpacity={0.02} />
                     </linearGradient>
                     <linearGradient id="gExpense" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={C.chartExpense} stopOpacity={0.20} />
+                      <stop offset="5%" stopColor={C.chartExpense} stopOpacity={0.20} />
                       <stop offset="95%" stopColor={C.chartExpense} stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="name"
-                    tick={{ fontSize:11, fill:'rgba(255,255,255,0.40)', fontWeight:500 }}
+                    tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.40)', fontWeight: 500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
-                  <Tooltip content={<DarkTooltip />} cursor={{ stroke:'rgba(255,255,255,0.08)', strokeWidth:1 }} />
+                  <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
                   <Area dataKey="Income" type="monotone"
                     stroke={C.chartIncome} strokeWidth={2}
                     fill="url(#gIncome)" dot={false}
-                    activeDot={{ r:4, fill:C.chartIncome, stroke:'#fff', strokeWidth:1.5 }}
+                    activeDot={{ r: 4, fill: C.chartIncome, stroke: '#fff', strokeWidth: 1.5 }}
                   />
                   <Area dataKey="Spent" type="monotone"
                     stroke={C.chartExpense} strokeWidth={2}
                     fill="url(#gExpense)" dot={false}
-                    activeDot={{ r:4, fill:C.chartExpense, stroke:'#fff', strokeWidth:1.5 }}
+                    activeDot={{ r: 4, fill: C.chartExpense, stroke: '#fff', strokeWidth: 1.5 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
               <div className="flex justify-center gap-6 pb-4 pt-1">
-                {[['Income',C.chartIncome],['Spent',C.chartExpense]].map(([l,c]) => (
+                {[['Income', C.chartIncome], ['Spent', C.chartExpense]].map(([l, c]) => (
                   <div key={l} className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full" style={{ background:c }} />
-                    <span style={{ fontSize:11, color:'rgba(255,255,255,0.50)', fontWeight:500 }}>{l}</span>
+                    <div className="w-2 h-2 rounded-full" style={{ background: c }} />
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', fontWeight: 500 }}>{l}</span>
                   </div>
                 ))}
               </div>
@@ -399,21 +420,21 @@ export default function Analytics() {
 
           {/* ── 3. Net Savings ──────────────────────────────────────── */}
           {netData.length > 0 && (
-            <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background:C.chartDark }}>
+            <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background: C.chartDark }}>
               <div className="px-5 pt-5 pb-2">
-                <p className="text-label font-semibold" style={{ color:'rgba(255,255,255,0.85)' }}>Net Savings</p>
-                <p style={{ fontSize:11, color:'rgba(255,255,255,0.35)', marginTop:2 }}>After expenses &amp; investments</p>
+                <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>Net Savings</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>After expenses &amp; investments</p>
               </div>
               <ResponsiveContainer width="100%" height={130}>
-                <BarChart data={netData} margin={{ top:4, right:16, left:16, bottom:0 }}>
+                <BarChart data={netData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
                   <XAxis dataKey="name"
-                    tick={{ fontSize:11, fill:'rgba(255,255,255,0.40)', fontWeight:500 }}
+                    tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.40)', fontWeight: 500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
                   <YAxis hide />
-                  <Tooltip content={<DarkTooltip />} cursor={{ fill:'rgba(255,255,255,0.05)' }} />
+                  <Tooltip content={<DarkTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                   <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
-                  <Bar dataKey="Net" radius={[4,4,0,0]} maxBarSize={32}>
+                  <Bar dataKey="Net" radius={[4, 4, 0, 0]} maxBarSize={32}>
                     {netData.map((entry, i) => (
                       <Cell key={i}
                         fill={entry.Net >= 0 ? C.chartIncome : C.chartExpense}
@@ -422,7 +443,7 @@ export default function Analytics() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-              <div className="h-4"/>
+              <div className="h-4" />
             </div>
           )}
 
@@ -473,8 +494,8 @@ export default function Analytics() {
                       </div>
                       <div className="bar-light-track">
                         <motion.div className="bar-light-fill"
-                          initial={{ width:0 }} animate={{ width:`${pct}%` }}
-                          transition={{ duration:0.6, ease:'easeOut' }}
+                          initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                          transition={{ duration: 0.6, ease: 'easeOut' }}
                         />
                       </div>
                     </div>
