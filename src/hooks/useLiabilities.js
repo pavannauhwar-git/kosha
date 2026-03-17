@@ -1,14 +1,38 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-// ── Helper: get current user_id from session ──────────────────────────────
+// ── Cache — same stale-while-revalidate pattern as useTransactions ────────
+// Bills data changes rarely (a few times a day at most), so 90s TTL is fine.
+// This eliminates the loading flash when switching back to the Bills tab.
+const cache   = new Map()
+const TTL_MS  = 90_000  // 90 seconds
+const CACHE_KEY = 'liabilities'
+
+function getCached() {
+  const entry = cache.get(CACHE_KEY)
+  if (!entry) return null
+  return entry
+}
+
+function setCached(rows) {
+  cache.set(CACHE_KEY, { rows, ts: Date.now() })
+}
+
+function invalidateCache() {
+  cache.delete(CACHE_KEY)
+}
+
+function isFresh(entry) {
+  return Date.now() - entry.ts < TTL_MS
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
 async function getCurrentUserId() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user?.id) throw new Error('Not signed in')
   return session.user.id
 }
 
-// ── 8-second timeout wrapper ─────────────────────────────────────────────
 function withTimeout(promise, ms = 8000) {
   return Promise.race([
     promise,
@@ -18,27 +42,53 @@ function withTimeout(promise, ms = 8000) {
   ])
 }
 
+// ── useLiabilities ────────────────────────────────────────────────────────
 export function useLiabilities() {
-  const [pending, setPending] = useState([])
-  const [paid,    setPaid]    = useState([])
-  const [loading, setLoading] = useState(true)
+  // Initialise synchronously from cache — zero loading flash on return visits
+  const [pending, setPending] = useState(() => {
+    const cached = getCached()
+    return cached ? cached.rows.filter(r => !r.paid) : []
+  })
+  const [paid, setPaid] = useState(() => {
+    const cached = getCached()
+    return cached ? cached.rows.filter(r => r.paid) : []
+  })
+  const [loading, setLoading] = useState(() => !getCached())
 
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    const { data: rows } = await supabase
-      .from('liabilities')
-      .select('*')
-      .order('due_date', { ascending: true })
-    if (rows) {
-      setPending(rows.filter(r => !r.paid))
-      setPaid(rows.filter(r =>  r.paid))
+  const fetch = useCallback(async (force = false) => {
+    const cached = getCached()
+
+    // Serve cache immediately while revalidating in background
+    if (cached) {
+      setPending(cached.rows.filter(r => !r.paid))
+      setPaid(cached.rows.filter(r => r.paid))
+      setLoading(false)
+      if (!force && isFresh(cached)) return  // still fresh — skip network
+    } else {
+      setLoading(true)
     }
-    setLoading(false)
+
+    try {
+      const { data: rows } = await supabase
+        .from('liabilities')
+        .select('*')
+        .order('due_date', { ascending: true })
+
+      if (rows) {
+        setCached(rows)
+        setPending(rows.filter(r => !r.paid))
+        setPaid(rows.filter(r => r.paid))
+      }
+    } catch {
+      // Network failure — cached data stays visible, no spinner
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { fetch() }, [fetch])
 
-  // ── visibilitychange: re-fetch when app returns from background ────────
+  // Re-fetch when app returns from background
   useEffect(() => {
     const handler = () => {
       if (document.visibilityState === 'visible') fetch()
@@ -47,8 +97,12 @@ export function useLiabilities() {
     return () => document.removeEventListener('visibilitychange', handler)
   }, [fetch])
 
-  return { pending, paid, loading, refetch: fetch }
+  const refetch = useCallback(() => fetch(true), [fetch])
+
+  return { pending, paid, loading, refetch }
 }
+
+// ── Writes — all invalidate cache so next read hits the network ───────────
 
 export async function addLiability(payload) {
   const user_id = await getCurrentUserId()
@@ -56,6 +110,7 @@ export async function addLiability(payload) {
     supabase.from('liabilities').insert([{ ...payload, user_id }])
   )
   if (error) throw error
+  invalidateCache()
 }
 
 export async function markPaid(liability) {
@@ -67,9 +122,9 @@ export async function markPaid(liability) {
     type:         'expense',
     description:  liability.description,
     amount:       liability.amount,
-    category:     'credit_card',
+    category:     'bills',
     is_repayment: false,
-    payment_mode: 'net_banking',
+    payment_mode: 'other',
     notes:        `Auto-created from bill: ${liability.description}`,
     user_id,
   }
@@ -103,6 +158,8 @@ export async function markPaid(liability) {
       }])
     )
   }
+
+  invalidateCache()
 }
 
 export async function deleteLiability(id) {
@@ -110,4 +167,5 @@ export async function deleteLiability(id) {
     supabase.from('liabilities').delete().eq('id', id)
   )
   if (error) throw error
+  invalidateCache()
 }

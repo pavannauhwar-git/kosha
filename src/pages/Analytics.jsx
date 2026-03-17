@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import {
@@ -9,7 +9,6 @@ import {
   PieChart, Pie,
 } from 'recharts'
 import { useYearSummary } from '../hooks/useTransactions'
-import { supabase } from '../lib/supabase'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
@@ -17,7 +16,7 @@ import { CATEGORIES } from '../lib/categories'
 
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
                      'Jul','Aug','Sep','Oct','Nov','Dec']
-const YEARS = [2023, 2024, 2025, 2026]
+const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2023 + i)
 
 // Portfolio colours — green family, darkest to lightest
 const PORTFOLIO_COLORS = C.portfolio
@@ -256,26 +255,9 @@ function PortfolioDonut({ vehicleData }) {
 export default function Analytics() {
   const now  = new Date()
   const [year, setYear] = useState(now.getFullYear())
-  const [top5, setTop5] = useState([])
 
   const { data, loading, refetch } = useYearSummary(year)
   const { data: prevData, refetch: refetchPrev } = useYearSummary(year - 1)
-
-  const refreshTop5 = useCallback(async () => {
-    const { data: rows } = await supabase
-      .from('transactions')
-      .select('id, date, description, amount, category')
-      .eq('type', 'expense')
-      .gte('date', `${year}-01-01`)
-      .lte('date', `${year}-12-31`)
-      .order('amount', { ascending: false })
-      .limit(5)
-    setTop5(rows || [])
-  }, [year])
-
-  useEffect(() => {
-    refreshTop5()
-  }, [refreshTop5])
 
   const chartData = (data?.monthly || [])
     .map((m, i) => ({

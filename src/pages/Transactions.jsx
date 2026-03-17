@@ -2,25 +2,25 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
 import { useTransactions, registerPrefetch, deleteTransaction, useDebounce, useMonthSummary, useRunningBalance } from '../hooks/useTransactions'
-import TransactionItem     from '../components/TransactionItem'
+import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
-import DeleteDialog        from '../components/DeleteDialog'
-import { CATEGORIES }      from '../lib/categories'
+import DeleteDialog from '../components/DeleteDialog'
+import { CATEGORIES } from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
-import { Plus } from '@phosphor-icons/react'
+import { Plus, DownloadSimple } from '@phosphor-icons/react'
 import { useAppData } from '../hooks/useAppDataStore'
 
 const TYPES = [
-  { id:'all',        label:'All'      },
-  { id:'expense',    label:'Expenses' },
-  { id:'income',     label:'Income'   },
-  { id:'investment', label:'Invest'   },
+  { id: 'all', label: 'All' },
+  { id: 'expense', label: 'Expenses' },
+  { id: 'income', label: 'Income' },
+  { id: 'investment', label: 'Invest' },
 ]
 
 const TYPE_CHIP = {
-  all:        'bg-brand-container text-brand-on border-brand-container',
-  expense:    'bg-expense-bg text-expense-text border-expense-border',
-  income:     'bg-income-bg text-income-text border-income-border',
+  all: 'bg-brand-container text-brand-on border-brand-container',
+  expense: 'bg-expense-bg text-expense-text border-expense-border',
+  income: 'bg-income-bg text-income-text border-income-border',
   investment: 'bg-invest-bg text-invest-text border-invest-border',
 }
 
@@ -31,15 +31,16 @@ function groupNet(txns) {
 
 export default function Transactions() {
   const [typeFilter, setTypeFilter] = useState('all')
-  const [catFilter,  setCatFilter]  = useState('')
-  const [search,     setSearch]     = useState('')
-  const [showAdd,    setShowAdd]    = useState(false)
-  const [editTxn,    setEditTxn]    = useState(null)
-  const [delId,      setDelId]      = useState(null)
-  const [showCats,   setShowCats]   = useState(false)
-  const [addType,    setAddType]    = useState('expense')
+  const [catFilter, setCatFilter] = useState('')
+  const [search, setSearch] = useState('')
+  const [showAdd, setShowAdd] = useState(false)
+  const [editTxn, setEditTxn] = useState(null)
+  const [delId, setDelId] = useState(null)
+  const [showCats, setShowCats] = useState(false)
+  const [addType, setAddType] = useState('expense')
   const [displayCount, setDisplayCount] = useState(50)
   const [toast, setToast] = useState(null)
+  const [duplicateTxn, setDuplicateTxn] = useState(null)
 
   // Tracks which transaction id is being edited so we can clear the
   // localEdits overlay after onConfirmed (refetch returns fresh server data)
@@ -56,26 +57,26 @@ export default function Transactions() {
     clearLocalEdit,
     applyLocalDelete,
   } = useTransactions({
-    type:     typeFilter === 'all' ? undefined : typeFilter,
-    category: catFilter  || undefined,
-    search:   debouncedSearch || undefined,
+    type: typeFilter === 'all' ? undefined : typeFilter,
+    category: catFilter || undefined,
+    search: debouncedSearch || undefined,
   })
 
   const visibleData = data.slice(0, displayCount)
-  const groups      = groupByDate(visibleData)
-  const hasMore     = data.length > displayCount
+  const groups = groupByDate(visibleData)
+  const hasMore = data.length > displayCount
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
-  // ✅ FIXED: moved up before confirmDelete so variables are defined in time
+  // FIXED: moved up before confirmDelete so variables are defined in time
   const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
 
   const now = new Date()
-  const { refetch: refetchSummary }     = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
+  const { refetch: refetchSummary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { refetch: refetchLastSummary } = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
     now.getMonth() === 0 ? 12 : now.getMonth()
   )
-  const { refetch: refetchBalance }     = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
+  const { refetch: refetchBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
 
   const confirmDelete = useCallback(async () => {
     const id = delId
@@ -98,22 +99,75 @@ export default function Transactions() {
   }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
 
   const handleDelete = useCallback((id) => setDelId(id), [])
-  const handleTap    = useCallback((t) => {
+  const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)
     setShowAdd(true)
   }, [])
 
+  // After handleTap, add:
+  const handleDuplicate = useCallback((txn) => {
+    setEditTxn(null)
+    setDuplicateTxn(txn)
+    setAddType(txn.type)
+    setShowAdd(true)
+  }, [])
+
+  const exportCSV = useCallback(() => {
+    if (!data.length) return
+
+    const CATEGORY_LABELS = Object.fromEntries(
+      CATEGORIES.map(c => [c.id, c.label])
+    )
+    const headers = ['Date', 'Type', 'Description', 'Amount', 'Category', 'Investment Vehicle', 'Payment Mode', 'Notes']
+    const rows = data.map(t => [
+      t.date,
+      t.type,
+      `"${(t.description || '').replace(/"/g, '""')}"`,
+      t.amount,
+      CATEGORY_LABELS[t.category] || t.category || '',
+      t.investment_vehicle || '',
+      t.payment_mode || '',
+      `"${(t.notes || '').replace(/"/g, '""')}"`,
+    ])
+
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const filters = [
+      typeFilter !== 'all' ? typeFilter : '',
+      catFilter ? (CATEGORY_LABELS[catFilter] || catFilter) : '',
+    ].filter(Boolean).join('-')
+    a.href = url
+    a.download = `kosha-${filters || 'transactions'}-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [data, typeFilter, catFilter])
+
   return (
     <div className="page">
 
       {/* ── Header ───────────────────────────────────────────────────── */}
-      <div className="mb-4">
-        <h1 className="font-display text-display text-ink">Transactions</h1>
-        <p className="text-caption text-ink-3 mt-0.5">
-          {data.length > 0 ? `${data.length} transaction${data.length !== 1 ? 's' : ''}` : 'No results'}
-          {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
-        </p>
+      <div className="mb-4 flex items-start justify-between pr-14">
+        <div>
+          <h1 className="font-display text-display text-ink">Transactions</h1>
+          <p className="text-caption text-ink-3 mt-0.5">
+            {data.length > 0 ? `${data.length} transaction${data.length !== 1 ? 's' : ''}` : 'No results'}
+            {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
+          </p>
+        </div>
+        {data.length > 0 && (
+          <button
+            onClick={exportCSV}
+            title="Export CSV"
+            className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                 flex items-center justify-center active:bg-kosha-surface-2
+                 transition-colors shrink-0 mt-1"
+          >
+            <DownloadSimple size={16} className="text-ink-2" />
+          </button>
+        )}
       </div>
 
       {/* ── Search bar ───────────────────────────────────────────────── */}
@@ -145,8 +199,8 @@ export default function Transactions() {
             onClick={() => setTypeFilter(t.id)}
             className={`shrink-0 px-3 py-1.5 rounded-pill text-label font-semibold border
                         transition-colors ${typeFilter === t.id
-                          ? TYPE_CHIP[t.id]
-                          : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+                ? TYPE_CHIP[t.id]
+                : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
           >
             {t.label}
           </button>
@@ -158,8 +212,8 @@ export default function Transactions() {
           className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-pill
                       text-label font-semibold border transition-colors
                       ${catFilter
-                        ? 'bg-brand-container text-brand-on border-brand-container'
-                        : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+              ? 'bg-brand-container text-brand-on border-brand-container'
+              : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
         >
           <SlidersHorizontal size={12} />
           {catFilter
@@ -180,10 +234,10 @@ export default function Transactions() {
       <AnimatePresence>
         {showCats && (
           <motion.div
-            initial={{ opacity:0, y:-6 }}
-            animate={{ opacity:1, y:0 }}
-            exit={{ opacity:0, y:-6 }}
-            transition={{ duration:0.15 }}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
             className="card mb-4 p-3 grid grid-cols-3 gap-2"
           >
             {CATEGORIES.map(c => (
@@ -193,8 +247,8 @@ export default function Transactions() {
                 className={`px-2 py-1.5 rounded-chip text-[11px] font-semibold text-center
                             border transition-colors
                             ${catFilter === c.id
-                              ? 'bg-brand-container text-brand-on border-brand-container'
-                              : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+                    ? 'bg-brand-container text-brand-on border-brand-container'
+                    : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
               >
                 {c.label}
               </button>
@@ -225,6 +279,7 @@ export default function Transactions() {
                   onDelete={handleDelete}
                   onTap={handleTap}
                   isLast={i === txns.length - 1}
+                  onDuplicate={handleDuplicate}
                 />
               ))}
             </div>
@@ -247,10 +302,10 @@ export default function Transactions() {
       <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ opacity:0, y:20 }}
-            animate={{ opacity:1, y:0 }}
-            exit={{ opacity:0, y:20 }}
-            transition={{ duration:0.2 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
             className="fixed bottom-32 left-4 right-4 z-50 flex items-center gap-3
                        bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
           >
@@ -268,7 +323,8 @@ export default function Transactions() {
 
       <AddTransactionSheet
         open={showAdd}
-        onClose={() => { setShowAdd(false); setEditTxn(null) }}
+        duplicateTxn={duplicateTxn}
+        onClose={() => { setShowAdd(false); setEditTxn(null); setDuplicateTxn(null) }}
         editTxn={editTxn}
         initialType={addType}
         onSaved={(payload) => {

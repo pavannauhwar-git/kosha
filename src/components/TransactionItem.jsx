@@ -1,12 +1,15 @@
 import { memo, useState } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { Trash } from '@phosphor-icons/react'
+import { Trash, CopySimple } from '@phosphor-icons/react'
 import CategoryIcon from './CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../lib/utils'
 import { getCategory } from '../lib/categories'
 
-const SWIPE_THRESHOLD  = 80
-const DELETE_THRESHOLD = 160
+// ── Thresholds ────────────────────────────────────────────────────────────
+// PEEK   — row snaps here after a light swipe, revealing both action buttons
+// COMMIT — dragging past this auto-triggers delete (power-user shortcut)
+const PEEK_X   = 140   // px — both buttons fully visible at this offset
+const COMMIT_X = 260   // px — full drag auto-deletes, no tap needed
 
 const MODE_LABEL = {
   upi:         'UPI',
@@ -17,9 +20,15 @@ const MODE_LABEL = {
   other:       '',
 }
 
-function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = false }) {
-  const x             = useMotionValue(0)
-  const deleteOpacity = useTransform(x, [-DELETE_THRESHOLD, -SWIPE_THRESHOLD, 0], [1, 1, 0])
+function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, isLast = false }) {
+  const x = useMotionValue(0)
+
+  // Action zone fades in as the row slides left past ~30px
+  const actionOpacity = useTransform(x, [0, -30, -PEEK_X], [0, 0.5, 1])
+
+  // Subtle scale on the action zone as it comes into full view
+  const actionScale = useTransform(x, [-PEEK_X * 0.4, -PEEK_X], [0.92, 1])
+
   const [deleting, setDeleting] = useState(false)
 
   const cat    = getCategory(txn.category)
@@ -27,19 +36,41 @@ function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = fals
   const prefix = amountPrefix(txn.type)
   const mode   = MODE_LABEL[txn.payment_mode] || ''
 
+  // ── Snap to peek (both buttons visible) ──────────────────────────────
+  function snapToPeek() {
+    animate(x, -PEEK_X, { type: 'spring', stiffness: 500, damping: 36 })
+  }
+
+  // ── Snap back to rest ─────────────────────────────────────────────────
+  function snapToRest() {
+    animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
+  }
+
   async function handleDragEnd(_, info) {
-    if (info.offset.x < -DELETE_THRESHOLD) {
+    const ox = info.offset.x
+
+    if (ox > 0) {
+      // Right drag — snap back, no action
+      snapToRest()
+      return
+    }
+
+    if (ox < -COMMIT_X) {
+      // Full drag past commit threshold — auto delete
       await animate(x, -500, { duration: 0.22 })
       setDeleting(true)
       if (navigator.vibrate) navigator.vibrate([10, 20, 10])
       onDelete && onDelete(txn.id)
-    } else if (info.offset.x < -SWIPE_THRESHOLD / 2) {
-      animate(x, -SWIPE_THRESHOLD, { type: 'spring', stiffness: 500, damping: 36 })
+    } else if (ox < -PEEK_X * 0.5) {
+      // Past halfway to peek — snap to peek, show buttons
+      snapToPeek()
     } else {
-      animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
+      // Light drag — snap back
+      snapToRest()
     }
   }
 
+  // ── Action button handlers ────────────────────────────────────────────
   function handleDeleteTap() {
     setDeleting(true)
     animate(x, -500, { duration: 0.2 })
@@ -47,9 +78,18 @@ function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = fals
     setTimeout(() => onDelete && onDelete(txn.id), 200)
   }
 
+  function handleDuplicateTap() {
+    snapToRest()
+    if (navigator.vibrate) navigator.vibrate([6, 10, 6])
+    // Small delay so the row snaps back before the sheet opens — feels cleaner
+    setTimeout(() => onDuplicate && onDuplicate(txn), 120)
+  }
+
+  // ── Row tap ───────────────────────────────────────────────────────────
   function handleTap() {
+    // If peeked, first tap just closes the action zone
     if (x.get() < -10) {
-      animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
+      snapToRest()
       return
     }
     if (navigator.vibrate) navigator.vibrate(8)
@@ -60,24 +100,42 @@ function TransactionItem({ txn, onDelete, onTap, showDate = false, isLast = fals
 
   return (
     <div className="relative overflow-hidden bg-kosha-surface">
-      {/* Delete zone */}
+
+      {/* ── Action zone — sits on the right, revealed by left swipe ───── */}
       <motion.div
-        className="absolute inset-y-0 right-0 flex items-center justify-center bg-expense px-6"
-        style={{ opacity: deleteOpacity }}
+        className="absolute inset-y-0 right-0 flex items-stretch"
+        style={{ opacity: actionOpacity, scale: actionScale }}
       >
-        <button onClick={handleDeleteTap} className="flex flex-col items-center gap-1">
-          <Trash size={18} color="white" weight="bold" />
-          <span className="text-white text-[10px] font-semibold">Delete</span>
+        {/* Repeat button */}
+        <button
+          onClick={handleDuplicateTap}
+          className="flex flex-col items-center justify-center gap-1 px-5
+                     bg-brand-container active:opacity-80 transition-opacity"
+        >
+          <CopySimple size={18} weight="bold" color="var(--c-brand)" />
+          <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
+            Repeat
+          </span>
+        </button>
+
+        {/* Delete button */}
+        <button
+          onClick={handleDeleteTap}
+          className="flex flex-col items-center justify-center gap-1 px-5
+                     bg-expense active:opacity-80 transition-opacity"
+        >
+          <Trash size={18} weight="bold" color="white" />
+          <span className="text-[10px] font-semibold text-white">Delete</span>
         </button>
       </motion.div>
 
-      {/* Row */}
+      {/* ── Draggable row ─────────────────────────────────────────────── */}
       <motion.div
         className="list-row active:bg-kosha-surface-2"
         style={{ x }}
         drag="x"
-        dragConstraints={{ left: -DELETE_THRESHOLD * 1.2, right: 0 }}
-        dragElastic={{ left: 0.15, right: 0.05 }}
+        dragConstraints={{ left: -COMMIT_X * 1.1, right: 0 }}
+        dragElastic={{ left: 0.12, right: 0.02 }}
         onDragEnd={handleDragEnd}
         onClick={handleTap}
         whileTap={{ scale: 0.985 }}
