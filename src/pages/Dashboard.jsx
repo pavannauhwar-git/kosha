@@ -203,6 +203,7 @@ export default function Dashboard() {
 
     try {
       await deleteTransaction(id)
+      await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
     } catch (e) {
       removeOptimisticDelete(id)
       // If delete fails, refetch to restore and show error toast
@@ -212,7 +213,7 @@ export default function Dashboard() {
     } finally {
       setDelId(null)
     }
-  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch])
+  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
 
   // Stable callbacks for TransactionItem — avoids remounting memo'd rows
   // on every Dashboard render (e.g. when bell icon updates or state changes)

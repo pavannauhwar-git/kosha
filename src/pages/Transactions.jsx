@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useTransactions, registerPrefetch, deleteTransaction, useDebounce } from '../hooks/useTransactions'
+import { useTransactions, registerPrefetch, deleteTransaction, useDebounce, useMonthSummary, useRunningBalance } from '../hooks/useTransactions'
 import TransactionItem     from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import DeleteDialog        from '../components/DeleteDialog'
@@ -69,6 +69,14 @@ export default function Transactions() {
   // ✅ FIXED: moved up before confirmDelete so variables are defined in time
   const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete } = useAppData()
 
+  const now = new Date()
+  const { refetch: refetchSummary }     = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
+  const { refetch: refetchLastSummary } = useMonthSummary(
+    now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
+    now.getMonth() === 0 ? 12 : now.getMonth()
+  )
+  const { refetch: refetchBalance }     = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
+
   const confirmDelete = useCallback(async () => {
     const id = delId
     if (!id) return
@@ -78,6 +86,7 @@ export default function Transactions() {
 
     try {
       await deleteTransaction(id)
+      await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
     } catch (e) {
       removeOptimisticDelete(id)
       refetch()
@@ -86,7 +95,7 @@ export default function Transactions() {
     } finally {
       setDelId(null)
     }
-  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch])
+  }, [delId, addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
 
   const handleDelete = useCallback((id) => setDelId(id), [])
   const handleTap    = useCallback((t) => {
@@ -273,7 +282,7 @@ export default function Transactions() {
           }
         }}
         onConfirmed={async () => {
-          await refetch()
+          await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
             pendingEditId.current = null
