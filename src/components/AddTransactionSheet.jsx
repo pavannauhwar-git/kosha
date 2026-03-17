@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronRight, CreditCard, NotePencil } from '@phosphor-icons/react'
+import { X, CreditCard, NotePencil } from '@phosphor-icons/react'
+import { ChevronRight } from 'lucide-react'
 import { addTransaction, updateTransaction } from '../hooks/useTransactions'
 import CategoryIcon from './CategoryIcon'
 import { CATEGORIES } from '../lib/categories'
