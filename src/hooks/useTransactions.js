@@ -218,12 +218,12 @@ export function useTransactions({ type, category, search, limit } = {}) {
       setCached(key, result)
       setData(result)
       setLoading(false)
-      // Only prune optimistic adds/deletes when fetching the full (non-paginated)
-      // list. Pruning from a paginated (limit) fetch (e.g. Dashboard's limit:8)
-      // would incorrectly remove optimistic state for transactions outside the
-      // page window, causing them to vanish from the Transactions tab before
-      // its own full-list fetch has completed (the Tab Desync symptom).
-      if (!limit) {
+      // Only prune optimistic adds/deletes when fetching the canonical full list:
+      // unpaginated + unfiltered (the "All" query). Pruning from filtered queries
+      // (e.g. "Expenses") can incorrectly clear optimistic state for rows that
+      // are still missing from "All", causing cross-filter desync.
+      const isCanonicalFullList = !limit && !type && !category && !search
+      if (isCanonicalFullList) {
         pruneOptimisticTxns(result)
         pruneOptimisticDeletes(result)
       }
