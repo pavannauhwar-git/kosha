@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import {
@@ -9,6 +9,7 @@ import {
   PieChart, Pie,
 } from 'recharts'
 import { useYearSummary } from '../hooks/useTransactions'
+import { supabase } from '../lib/supabase'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
@@ -136,21 +137,50 @@ function YoYCards({ years, currentYear }) {
   const [allData, setAllData] = useState({})
 
   useEffect(() => {
-    years.forEach(y => {
-      supabase.from('transactions')
+    let cancelled = false
+
+    async function loadYoY() {
+      if (!years.length) {
+        if (!cancelled) setAllData({})
+        return
+      }
+
+      const startYear = Math.min(...years)
+      const endYear = Math.max(...years)
+      const yearsSet = new Set(years)
+
+      const { data: rows } = await supabase
+        .from('transactions')
         .select('type, amount, date, is_repayment')
-        .gte('date', `${y}-01-01`)
-        .lte('date', `${y}-12-31`)
-        .then(({ data: rows }) => {
-          if (!rows) return
-          const income = rows.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0)
-          const spent = rows.filter(r => r.type === 'expense').reduce((s, r) => s + +r.amount, 0)
-          const invest = rows.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0)
-          const rate = income > 0 ? Math.round(((income - spent) / income) * 100) : 0
-          setAllData(prev => ({ ...prev, [y]: { income, spent, invest, rate } }))
-        })
-    })
-  }, [years.join(',')])
+        .gte('date', `${startYear}-01-01`)
+        .lte('date', `${endYear}-12-31`)
+
+      if (cancelled) return
+
+      const totals = {}
+      years.forEach((y) => {
+        totals[y] = { income: 0, spent: 0, invest: 0, rate: 0 }
+      })
+
+      ;(rows || []).forEach((r) => {
+        const y = new Date(r.date).getFullYear()
+        if (!yearsSet.has(y)) return
+        if (r.type === 'income' && !r.is_repayment) totals[y].income += +r.amount
+        if (r.type === 'expense') totals[y].spent += +r.amount
+        if (r.type === 'investment') totals[y].invest += +r.amount
+      })
+
+      years.forEach((y) => {
+        const entry = totals[y]
+        entry.rate = entry.income > 0 ? Math.round(((entry.income - entry.spent) / entry.income) * 100) : 0
+      })
+
+      setAllData(totals)
+    }
+
+    loadYoY()
+    return () => { cancelled = true }
+  }, [years])
 
   const yearsWithData = years.filter(y => allData[y]?.income > 0 || allData[y]?.spent > 0)
   if (yearsWithData.length < 2) return null
