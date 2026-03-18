@@ -314,7 +314,6 @@ export function useTransactions({ type, category, search, limit } = {}) {
       created_at: new Date().toISOString(),
     }
     setData(prev => [tempTxn, ...prev].slice(0, limit || 999))
-    return tempTxn.id
   }, [limit])
 
   const replaceOptimistic = useCallback((optimisticId, serverTxn) => {

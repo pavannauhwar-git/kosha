@@ -119,10 +119,10 @@ export function AppDataProvider({ children }) {
         const id = t._id || t.id
         if (id === optimisticId) {
           found = true
-          return serverTxn ? { ...serverTxn } : null
+          return serverTxn ? { ...serverTxn } : t
         }
         return t
-      }).filter(Boolean)
+      })
       return found ? replaced : prev
     })
   }, [])

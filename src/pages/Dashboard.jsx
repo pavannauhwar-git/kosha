@@ -211,7 +211,6 @@ export default function Dashboard() {
     if (serverTxn && pendingOptimisticId.current) {
       replaceOptimistic(pendingOptimisticId.current, serverTxn)
       resolveOptimisticTxn(pendingOptimisticId.current, serverTxn)
-      pendingOptimisticId.current = null
     }
     await Promise.all([
       refetch(),

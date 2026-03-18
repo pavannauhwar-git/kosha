@@ -355,7 +355,6 @@ export default function Transactions() {
           if (serverTxn && pendingOptimisticId.current) {
             replaceOptimistic(pendingOptimisticId.current, serverTxn)
             resolveOptimisticTxn(pendingOptimisticId.current, serverTxn)
-            pendingOptimisticId.current = null
           }
           await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
           if (pendingEditId.current) {
