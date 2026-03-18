@@ -59,12 +59,14 @@ export function AppDataProvider({ children }) {
     }
   }, [optimisticDeletedIds])
 
-  const addOptimisticTxn = useCallback((payload) => {
+  const addOptimisticTxn = useCallback((payload, optimisticId) => {
+    const id = optimisticId || '__optimistic__' + Date.now() + Math.random().toString(16).slice(2)
     const withMeta = {
       ...payload,
-      _id: '__optimistic__' + Date.now() + Math.random().toString(16).slice(2),
+      _id: id,
     }
     setOptimisticTxns(prev => [...prev, withMeta])
+    return id
   }, [])
 
   const addOptimisticDelete = useCallback((id, txnData) => {
@@ -109,6 +111,22 @@ export function AppDataProvider({ children }) {
     setOptimisticTxns(prev => prev.filter(t => !serverKeys.has(keyOf(t))))
   }, [])
 
+  const resolveOptimisticTxn = useCallback((optimisticId, serverTxn) => {
+    if (!optimisticId) return
+    setOptimisticTxns(prev => {
+      let found = false
+      const replaced = prev.map((t) => {
+        const id = t._id || t.id
+        if (id === optimisticId) {
+          found = true
+          return serverTxn ? { ...serverTxn } : null
+        }
+        return t
+      }).filter(Boolean)
+      return found ? replaced : prev
+    })
+  }, [])
+
   const clearOptimisticTxns = useCallback(() => {
     setOptimisticTxns([])
   }, [])
@@ -135,6 +153,7 @@ export function AppDataProvider({ children }) {
     addOptimisticTxn,
     pruneOptimisticTxns,
     clearOptimisticTxns,
+    resolveOptimisticTxn,
     optimisticDeletedIds,
     optimisticDeletedTxns,
     addOptimisticDelete,
@@ -158,4 +177,3 @@ export function useAppData() {
   if (!ctx) throw new Error('useAppData must be used within AppDataProvider')
   return ctx
 }
-

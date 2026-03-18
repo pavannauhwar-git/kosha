@@ -307,14 +307,22 @@ export function useTransactions({ type, category, search, limit } = {}) {
   // Instantly inserts a transaction at the top of the list with a temp id.
   // Called by Dashboard BEFORE the network save starts — zero latency UI.
   // When refetch() is called after save, the real server row replaces it.
-  const prependOptimistic = useCallback((txn) => {
+  const prependOptimistic = useCallback((txn, optimisticId) => {
     const tempTxn = {
       ...txn,
-      id: '__optimistic__' + Date.now(),
+      id: optimisticId || '__optimistic__' + Date.now(),
       created_at: new Date().toISOString(),
     }
     setData(prev => [tempTxn, ...prev].slice(0, limit || 999))
+    return tempTxn.id
   }, [limit])
+
+  const replaceOptimistic = useCallback((optimisticId, serverTxn) => {
+    if (!optimisticId || !serverTxn) return
+    setData(prev => prev.map(row => (
+      row.id === optimisticId ? { ...serverTxn } : row
+    )))
+  }, [])
 
   const optimisticForList = optimisticTxns.filter(t => {
     if (type && t.type !== type) return false
@@ -345,6 +353,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
     error,
     refetch,
     prependOptimistic,
+    replaceOptimistic,
     applyLocalEdit,
     clearLocalEdit,
     applyLocalDelete,
@@ -892,16 +901,21 @@ export function useRunningBalance(year, month) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function addTransaction(payload) {
   const user_id = await getCurrentUserId()
-  const { error } = await withTimeout(
-    supabase.from('transactions').insert([{ ...payload, user_id }])
+  const { data, error } = await withTimeout(
+    supabase
+      .from('transactions')
+      .insert([{ ...payload, user_id }])
+      .select('id, date, type, description, amount, category, investment_vehicle, is_repayment, payment_mode, notes, created_at')
+      .single()
   )
   if (error) throw error
   // Invalidate the specific month + balance, leave other months warm
-  const d = new Date(payload.date)
+  const d = new Date((data && data.date) || payload.date)
   invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
   invalidateCache(`balance:`)
   invalidateCache(`txns:`)
   invalidateCache(`year:${d.getFullYear()}`)
+  return data || null
 }
 
 export async function updateTransaction(id, payload) {

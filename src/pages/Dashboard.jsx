@@ -109,16 +109,18 @@ export default function Dashboard() {
   // ── Error toast ──────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
 
-  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit, clearOptimisticEdits } = useAppData()
+  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit, clearOptimisticEdits, resolveOptimisticTxn } = useAppData()
 
   // Tracks which transaction id is being edited so we can clear the
   // localEdits overlay after onConfirmed (refetch returns fresh server data)
   const pendingEditId = useRef(null)
+  const pendingOptimisticId = useRef(null)
 
   const {
     data: recent,
     refetch,
     prependOptimistic,
+    replaceOptimistic,
     applyLocalEdit,
     clearLocalEdit,
     applyLocalDelete,
@@ -189,8 +191,9 @@ export default function Dashboard() {
       }
     } else {
       // New transaction — prepend + global optimistic add
-      prependOptimistic(payload)
-      addOptimisticTxn(payload)
+      const optimisticId = addOptimisticTxn(payload)
+      pendingOptimisticId.current = optimisticId
+      prependOptimistic(payload, optimisticId)
     }
   }, [applyLocalEdit, prependOptimistic, addOptimisticTxn, addOptimisticEdit])
 
@@ -198,12 +201,17 @@ export default function Dashboard() {
   // Do NOT clear optimistic txns here. They are pruned automatically once the
   // transaction shows up in fetched server data. This prevents the "flash then
   // revert" gap on slow queries.
-  const handleConfirmed = useCallback(async () => {
+  const handleConfirmed = useCallback(async (serverTxn) => {
     // Remove optimistic edit overlay BEFORE refetching so summary/balance hooks
     // don't apply the edit delta on top of already-updated server data (double-counting).
     // Keep localEdit active during refetch so the list still shows edited values.
     if (pendingEditId.current) {
       removeOptimisticEdit(pendingEditId.current)
+    }
+    if (serverTxn && pendingOptimisticId.current) {
+      replaceOptimistic(pendingOptimisticId.current, serverTxn)
+      resolveOptimisticTxn(pendingOptimisticId.current, serverTxn)
+      pendingOptimisticId.current = null
     }
     await Promise.all([
       refetch(),
@@ -215,7 +223,8 @@ export default function Dashboard() {
       clearLocalEdit(pendingEditId.current)
       pendingEditId.current = null
     }
-  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearLocalEdit, removeOptimisticEdit])
+    pendingOptimisticId.current = null
+  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearLocalEdit, removeOptimisticEdit, replaceOptimistic, resolveOptimisticTxn])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
   // The optimistic row disappears when refetch() returns real server data.
@@ -226,6 +235,7 @@ export default function Dashboard() {
       removeOptimisticEdit(pendingEditId.current)
       pendingEditId.current = null
     }
+    pendingOptimisticId.current = null
     clearOptimisticTxns()
     refetch()
     setToast(msg)
