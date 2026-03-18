@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabase'
 const cache   = new Map()
 const TTL_MS  = 90_000  // 90 seconds
 const CACHE_KEY = 'liabilities'
+export const LIABILITIES_INVALIDATION_EVENT = 'kosha:liabilities:invalidated'
+const subscribers = new Set()
 
 function getCached() {
   const entry = cache.get(CACHE_KEY)
@@ -20,10 +22,25 @@ function setCached(rows) {
 
 function invalidateCache() {
   cache.delete(CACHE_KEY)
+  window.dispatchEvent(new CustomEvent(LIABILITIES_INVALIDATION_EVENT))
 }
 
 function isFresh(entry) {
   return Date.now() - entry.ts < TTL_MS
+}
+
+function subscribe(listener) {
+  subscribers.add(listener)
+  return () => subscribers.delete(listener)
+}
+
+function notify(rows) {
+  subscribers.forEach((listener) => listener(rows))
+}
+
+function setCachedAndNotify(rows) {
+  setCached(rows)
+  notify(rows)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -75,9 +92,7 @@ export function useLiabilities() {
         .order('due_date', { ascending: true })
 
       if (rows) {
-        setCached(rows)
-        setPending(rows.filter(r => !r.paid))
-        setPaid(rows.filter(r => r.paid))
+        setCachedAndNotify(rows)
       }
     } catch {
       // Network failure — cached data stays visible, no spinner
@@ -88,6 +103,15 @@ export function useLiabilities() {
 
   useEffect(() => { fetch() }, [fetch])
 
+  useEffect(() => {
+    const unsubscribe = subscribe((rows) => {
+      setPending(rows.filter(r => !r.paid))
+      setPaid(rows.filter(r => r.paid))
+      setLoading(false)
+    })
+    return unsubscribe
+  }, [])
+
   // Re-fetch when app returns from background
   useEffect(() => {
     const handler = () => {
@@ -95,6 +119,12 @@ export function useLiabilities() {
     }
     document.addEventListener('visibilitychange', handler)
     return () => document.removeEventListener('visibilitychange', handler)
+  }, [fetch])
+
+  useEffect(() => {
+    const handler = () => { fetch(true) }
+    window.addEventListener(LIABILITIES_INVALIDATION_EVENT, handler)
+    return () => window.removeEventListener(LIABILITIES_INVALIDATION_EVENT, handler)
   }, [fetch])
 
   const refetch = useCallback(() => fetch(true), [fetch])
@@ -106,11 +136,31 @@ export function useLiabilities() {
 
 export async function addLiability(payload) {
   const user_id = await getCurrentUserId()
-  const { error } = await withTimeout(
-    supabase.from('liabilities').insert([{ ...payload, user_id }])
-  )
-  if (error) throw error
-  invalidateCache()
+  const optimistic = {
+    id: `optimistic-${Date.now()}`,
+    ...payload,
+    user_id,
+    linked_transaction_id: null,
+  }
+  const current = getCached()?.rows || []
+  setCachedAndNotify([...current, optimistic].sort((a, b) => String(a.due_date).localeCompare(String(b.due_date))))
+
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('liabilities')
+        .insert([{ ...payload, user_id }])
+        .select('id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
+        .single()
+    )
+    if (error) throw error
+    const withServerRow = (getCached()?.rows || []).map((row) => (row.id === optimistic.id ? data : row))
+    setCachedAndNotify(withServerRow)
+    invalidateCache()
+  } catch (error) {
+    setCachedAndNotify((getCached()?.rows || []).filter((row) => row.id !== optimistic.id))
+    throw error
+  }
 }
 
 export async function markPaid(liability) {
