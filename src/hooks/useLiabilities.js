@@ -166,7 +166,6 @@ export async function addLiability(payload) {
   const optimistic = {
     id: optimisticId,
     ...payload,
-    user_id: null,
     linked_transaction_id: null,
   }
   setCachedAndNotify([...previousRows, optimistic].sort(compareDueDate))
