@@ -118,7 +118,6 @@ export default function Dashboard() {
 
   const {
     data: recent,
-    refetch,
     prependOptimistic,
     replaceOptimistic,
     applyLocalEdit,
@@ -131,12 +130,12 @@ export default function Dashboard() {
   const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
     useGlobalTransactionMutation({ prependOptimistic, replaceOptimistic })
 
-  const { data: summary, refetch: refetchSummary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
-  const { data: lastSummary, refetch: refetchLastSummary } = useMonthSummary(
+  const { data: summary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
+  const { data: lastSummary } = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
     now.getMonth() === 0 ? 12 : now.getMonth()
   )
-  const { balance: runningBalance, refetch: refetchBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
+  const { balance: runningBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
   const { pending: bills } = useLiabilities()
 
   const dueSoon = useMemo(
@@ -202,31 +201,25 @@ export default function Dashboard() {
   }, [applyLocalEdit, addOptimisticEdit, onTransactionSaved])
 
   // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
-  // For NEW transactions: Brain handles Phase 2 (UUID swap) + Phase 3 (background sync).
-  // For EDITS: remove the optimistic edit overlay before refetching so summary/balance
-  // hooks don't apply the edit delta on top of already-updated server data (double-counting).
-  const handleConfirmed = useCallback(async (serverTxn) => {
+  // For NEW transactions: Brain handles Phase 2 (UUID swap). Phase 3 (background
+  // sync) is handled by the CRUD function's cache invalidation events.
+  // For EDITS: remove the optimistic edit overlay and local edit immediately.
+  // The event-driven refetch from updateTransaction's invalidateCache will
+  // bring fresh server data without blocking the UI.
+  const handleConfirmed = useCallback((serverTxn) => {
     if (pendingEditId.current) {
       removeOptimisticEdit(pendingEditId.current)
+      clearLocalEdit(pendingEditId.current)
+      pendingEditId.current = null
     } else {
       // New transaction — Phase 2: swap __optimistic__ ID with real UUID in all caches
       onTransactionConfirmed(serverTxn)
     }
-    await Promise.all([
-      refetch(),
-      refetchSummary(),
-      refetchLastSummary(),
-      refetchBalance(),
-    ])
-    if (pendingEditId.current) {
-      clearLocalEdit(pendingEditId.current)
-      pendingEditId.current = null
-    }
-  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearLocalEdit, removeOptimisticEdit, onTransactionConfirmed])
+  }, [clearLocalEdit, removeOptimisticEdit, onTransactionConfirmed])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
-  // The optimistic row disappears when refetch() returns real server data.
-  // Toast tells the user what happened so they can try again.
+  // The optimistic row disappears when the event-driven refetch returns real
+  // server data. Toast tells the user what happened so they can try again.
   const handleFailed = useCallback((msg) => {
     if (pendingEditId.current) {
       clearLocalEdit(pendingEditId.current)
@@ -236,10 +229,9 @@ export default function Dashboard() {
       // New transaction failed — Brain rolls back the ghost row + syncs all caches
       onTransactionFailed()
     }
-    refetch()
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
-  }, [refetch, clearLocalEdit, removeOptimisticEdit, onTransactionFailed])
+  }, [clearLocalEdit, removeOptimisticEdit, onTransactionFailed])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
@@ -265,18 +257,17 @@ export default function Dashboard() {
 
     try {
       await deleteTransaction(id)
-      await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
-      // Explicitly clean up optimistic delete after all refetches complete
-      // so summary/balance hooks don't double-subtract from already-updated server data.
+      // deleteTransaction already called invalidateCache which triggers
+      // background refetches on all mounted hooks via CACHE_INVALIDATION_EVENT.
+      // Clean up the optimistic overlay now that the server confirmed the delete.
       removeOptimisticDelete(id)
     } catch (e) {
       removeOptimisticDelete(id)
-      // If delete fails, refetch to restore and show error toast
-      refetch()
+      // If delete fails, the event-driven refetch will restore the item
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
+  }, [addOptimisticDelete, removeOptimisticDelete, applyLocalDelete])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)
