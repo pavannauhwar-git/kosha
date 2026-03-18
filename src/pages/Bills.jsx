@@ -270,9 +270,18 @@ export default function Bills() {
                     onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
                 </div>
 
-                <input className="input mb-3" type="date"
-                  value={form.due_date}
-                  onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
+                <div className="list-card mb-3">
+                  <label className="list-row w-full cursor-pointer">
+                    <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
+                      <span className="text-brand text-xs font-bold">📅</span>
+                    </div>
+                    <span className="flex-1 text-[15px] text-ink">Due Date</span>
+                    <input type="date"
+                      value={form.due_date}
+                      onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
+                      className="text-[15px] text-ink-3 bg-transparent outline-none text-right" />
+                  </label>
+                </div>
 
                 <div className="flex items-center gap-3 mb-3">
                   <button

@@ -165,14 +165,28 @@ export function useTransactions({ type, category, search, limit } = {}) {
     pruneOptimisticDeletes,
   } = useAppData()
 
+  // ── Fetch version counter — prevents stale concurrent fetches from
+  // overwriting fresh data. Each fetch call stamps itself with a version.
+  // When the fetch completes, it only applies results if it is still the
+  // latest fetch (i.e. no newer fetch started after it). This fixes:
+  //   1. "Pop back" on delete/edit: a background fetch that started before
+  //      the mutation returns stale data after the cache is cleared.
+  //   2. "All" filter showing stale data while "Expenses" shows fresh data.
+  const fetchVersionRef = useRef(0)
+
   const fetch = useCallback(async (force = false) => {
+    const myVersion = ++fetchVersionRef.current
     const key = `txns:${type}:${category}:${search}:${limit}`
     const cached = getCached(key)
 
-    // Serve cache immediately (stale-while-revalidate)
+    // Serve cache immediately (stale-while-revalidate) for non-forced fetches.
+    // For forced fetches (post-mutation) we skip serving the stale cache to
+    // avoid briefly showing outdated rows on top of the current optimistic state.
     if (cached) {
-      setData(cached.data)
-      setLoading(false)
+      if (!force) {
+        setData(cached.data)
+        setLoading(false)
+      }
       if (!force && isFresh(cached)) return   // fresh — skip network
     } else {
       setLoading(true)
@@ -192,18 +206,29 @@ export function useTransactions({ type, category, search, limit } = {}) {
       if (limit) q = q.limit(limit)
 
       const { data: rows, error: err } = await q
+
+      // Discard results if a newer fetch has since started. This prevents a
+      // slow background fetch from overwriting fresh data already applied by
+      // the latest (post-mutation) fetch.
+      if (myVersion !== fetchVersionRef.current) return
+
       if (err) { setError(err); setLoading(false); return }
 
       const result = rows || []
       setCached(key, result)
       setData(result)
       setLoading(false)
-      pruneOptimisticTxns(result)
-      // Only prune optimistic deletes when fetching the full list (no limit).
-      // Paginated fetches (e.g. Dashboard's limit:8) would incorrectly prune
-      // deletes for transactions beyond the page, causing them to reappear.
-      if (!limit) pruneOptimisticDeletes(result)
+      // Only prune optimistic adds/deletes when fetching the full (non-paginated)
+      // list. Pruning from a paginated (limit) fetch (e.g. Dashboard's limit:8)
+      // would incorrectly remove optimistic state for transactions outside the
+      // page window, causing them to vanish from the Transactions tab before
+      // its own full-list fetch has completed (the Tab Desync symptom).
+      if (!limit) {
+        pruneOptimisticTxns(result)
+        pruneOptimisticDeletes(result)
+      }
     } catch (e) {
+      if (myVersion !== fetchVersionRef.current) return
       setError(e)
       setLoading(false)
     }
@@ -224,10 +249,14 @@ export function useTransactions({ type, category, search, limit } = {}) {
     return () => window.removeEventListener(CACHE_INVALIDATION_EVENT, handler)
   }, [type, category, search, limit, fetch])
 
-  const refetch = useCallback(() => {
-    invalidateCache('txns:')
-    return fetch(true)
-  }, [fetch])
+  // refetch() forces a fresh network fetch without re-dispatching a cache
+  // invalidation event. Mutation functions (addTransaction / updateTransaction /
+  // deleteTransaction) already call invalidateCache(), which clears the cache
+  // AND dispatches the event — triggering this hook's listener above. Calling
+  // invalidateCache() again here would fire a second event, starting yet another
+  // concurrent fetch that races against the one already in-flight, producing
+  // the "double fetch" pattern that was causing stale data flashes.
+  const refetch = useCallback(() => fetch(true), [fetch])
 
   // Local-only helpers for list-level optimism (Phase 1):
   // They mutate the in-memory list used by this hook instance only.
