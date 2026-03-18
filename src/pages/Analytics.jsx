@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import {
@@ -9,7 +9,6 @@ import {
   PieChart, Pie,
 } from 'recharts'
 import { useYearSummary } from '../hooks/useTransactions'
-import { supabase } from '../lib/supabase'
 import CategoryIcon from '../components/CategoryIcon'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
@@ -21,6 +20,22 @@ const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i)
 
 // Portfolio colours — green family, darkest to lightest
 const PORTFOLIO_COLORS = C.portfolio
+
+function AnalyticsSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="skeleton shimmer h-[110px]" />
+        <div className="skeleton shimmer h-[110px]" />
+        <div className="skeleton shimmer h-[110px]" />
+        <div className="skeleton shimmer h-[110px]" />
+      </div>
+      <div className="skeleton shimmer h-[220px]" />
+      <div className="skeleton shimmer h-[170px]" />
+      <div className="skeleton shimmer h-[180px]" />
+    </div>
+  )
+}
 
 // ── Light tooltip (KPI cards, net savings) ───────────────────────────────
 const AppleTooltip = ({ active, payload, label }) => {
@@ -259,62 +274,54 @@ function PortfolioDonut({ vehicleData }) {
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
   const now = new Date()
+  const currentYear = now.getFullYear()
   const [year, setYear] = useState(now.getFullYear())
 
-  const { data, loading, refetch } = useYearSummary(year)
-  const { data: prevData, refetch: refetchPrev } = useYearSummary(year - 1)
+  const { data, loading } = useYearSummary(year)
+  const { data: prevData } = useYearSummary(year - 1)
 
-  const [top5, setTop5] = useState([])
+  const top5 = data?.top5 || []
 
-  const refreshTop5 = useCallback(async () => {
-    const { data: rows } = await supabase
-      .from('transactions')
-      .select('id, date, description, amount, category')
-      .eq('type', 'expense')
-      .gte('date', `${year}-01-01`)
-      .lte('date', `${year}-12-31`)
-      .order('amount', { ascending: false })
-      .limit(5)
-    setTop5(rows || [])
-  }, [year])
-
-  useEffect(() => { refreshTop5() }, [refreshTop5])
-
-  const chartData = (data?.monthly || [])
+  const chartData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
       name: MONTH_SHORT[i],
       Income: Math.round(m.income),
       Spent: Math.round(m.expense),
     }))
-    .filter(m => m.Income > 0 || m.Spent > 0)
+    .filter(m => m.Income > 0 || m.Spent > 0), [data?.monthly])
 
   const chartH = chartData.length <= 4 ? 140 : 180
 
-  const netData = (data?.monthly || [])
+  const netData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
       name: MONTH_SHORT[i],
       Net: Math.round(m.income - m.expense - m.investment),
     }))
-    .filter(m => m.Net !== 0)
+    .filter(m => m.Net !== 0), [data?.monthly])
 
-  const yoyYears = YEARS.filter(y => y <= now.getFullYear())
+  const yoyYears = useMemo(() => YEARS.filter(y => y <= currentYear), [currentYear])
 
-  const catData = Object.entries(data?.byCategory || {})
+  const catData = useMemo(() => Object.entries(data?.byCategory || {})
     .sort((a, b) => b[1] - a[1]).slice(0, 6)
     .map(([id, val]) => ({
       id, val,
       name: CATEGORIES.find(c => c.id === id)?.label || id,
       color: CATEGORIES.find(c => c.id === id)?.color || C.brand,
-    }))
-  const totalCatSpend = catData.reduce((s, c) => s + c.val, 0)
+    })), [data?.byCategory])
+  const totalCatSpend = useMemo(() => catData.reduce((s, c) => s + c.val, 0), [catData])
 
-  const vehicleData = Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1])
+  const vehicleData = useMemo(
+    () => Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1]),
+    [data?.byVehicle]
+  )
 
-  const recentMonths = (data?.monthly || []).filter(m => m.expense > 0)
-  const lastTwo = recentMonths.slice(-2)
-  const spendTrend = lastTwo.length === 2
-    ? { current: lastTwo[1].expense, previous: lastTwo[0].expense }
-    : null
+  const spendTrend = useMemo(() => {
+    const recentMonths = (data?.monthly || []).filter(m => m.expense > 0)
+    const lastTwo = recentMonths.slice(-2)
+    return lastTwo.length === 2
+      ? { current: lastTwo[1].expense, previous: lastTwo[0].expense }
+      : null
+  }, [data?.monthly])
 
   return (
     <div className="page">
@@ -335,9 +342,7 @@ export default function Analytics() {
       </div>
 
       {loading ? (
-        <div className="card p-8 text-center">
-          <p className="text-body text-ink-3">Loading…</p>
-        </div>
+        <AnalyticsSkeleton />
       ) : (
         <motion.div key={year}
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}

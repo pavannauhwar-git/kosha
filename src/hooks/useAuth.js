@@ -18,7 +18,7 @@ function useAuthState() {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, display_name, avatar_url, onboarded')
         .eq('id', userId)
         .single()
       setProfile(data || null)
@@ -164,7 +164,9 @@ function useAuthState() {
   const updateProfile = useCallback(async (updates) => {
     if (!user) throw new Error('Not signed in')
     const { data, error } = await supabase
-      .from('profiles').update(updates).eq('id', user.id).select().single()
+      .from('profiles').update(updates).eq('id', user.id)
+      .select('id, display_name, avatar_url, onboarded')
+      .single()
     if (error) throw error
     setProfile(data)
     return data

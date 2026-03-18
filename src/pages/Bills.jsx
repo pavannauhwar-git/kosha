@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Check, Repeat } from 'lucide-react'
 import { registerPrefetch } from '../hooks/useTransactions'
@@ -7,6 +7,17 @@ import DeleteDialog from '../components/DeleteDialog'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
+
+function BillsSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="skeleton shimmer h-[120px]" />
+      <div className="skeleton shimmer h-[92px]" />
+      <div className="skeleton shimmer h-[92px]" />
+      <div className="skeleton shimmer h-[92px]" />
+    </div>
+  )
+}
 
 export default function Bills() {
   const { pending, paid, loading, refetch } = useLiabilities()
@@ -21,11 +32,11 @@ export default function Bills() {
   const [formErr, setFormErr] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const totalPending = pending.reduce((s, b) => s + +b.amount, 0)
-  const dueSoonAmount = pending
+  const totalPending = useMemo(() => pending.reduce((s, b) => s + +b.amount, 0), [pending])
+  const dueSoonAmount = useMemo(() => pending
     .filter(b => daysUntil(b.due_date) <= 7)
-    .reduce((s, b) => s + +b.amount, 0)
-  const dueSoonCount = pending.filter(b => daysUntil(b.due_date) <= 7).length
+    .reduce((s, b) => s + +b.amount, 0), [pending])
+  const dueSoonCount = useMemo(() => pending.filter(b => daysUntil(b.due_date) <= 7).length, [pending])
   const barPct = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
 
   async function handleAdd() {
@@ -128,9 +139,7 @@ export default function Bills() {
       </div>
 
       {loading ? (
-        <div className="card p-8 text-center">
-          <p className="text-ink-3 text-sm">Loading…</p>
-        </div>
+        <BillsSkeleton />
       ) : (
         <div className="space-y-3">
 
