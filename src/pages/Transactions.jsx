@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
 import { useTransactions, registerPrefetch, deleteTransaction, useDebounce, useMonthSummary, useRunningBalance } from '../hooks/useTransactions'
@@ -60,9 +60,9 @@ export default function Transactions() {
     search: debouncedSearch || undefined,
   })
 
-  const visibleData = data.slice(0, displayCount)
-  const groups = groupByDate(visibleData)
-  const hasMore = data.length > displayCount
+  const visibleData = useMemo(() => data.slice(0, displayCount), [data, displayCount])
+  const groups = useMemo(() => groupByDate(visibleData), [visibleData])
+  const hasMore = useMemo(() => data.length > displayCount, [data.length, displayCount])
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
   // FIXED: moved up before handleDelete so variables are defined in time

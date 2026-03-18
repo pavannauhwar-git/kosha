@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useMonthSummary } from '../hooks/useTransactions'
@@ -32,6 +32,16 @@ const MONTH_NAMES = [
   'January','February','March','April','May','June',
   'July','August','September','October','November','December'
 ]
+
+function MonthlySkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="skeleton shimmer h-[260px]" />
+      <div className="skeleton shimmer h-[220px]" />
+      <div className="skeleton shimmer h-[180px]" />
+    </div>
+  )
+}
 
 // ── Budget sheet ──────────────────────────────────────────────────────────
 function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
@@ -299,14 +309,19 @@ export default function Monthly() {
   const spent    = data?.expense    || 0
   const invested = data?.investment || 0
 
-  const catEntries = Object.entries(data?.byCategory || {})
-    .sort((a, b) => b[1] - a[1]).slice(0, 8)
-  const totalCatSpend = catEntries.reduce((s, [, v]) => s + v, 0) || 1
+  const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
+    .sort((a, b) => b[1] - a[1]).slice(0, 8), [data?.byCategory])
+  const totalCatSpend = useMemo(() => catEntries.reduce((s, [, v]) => s + v, 0) || 1, [catEntries])
 
-  const vehicleEntries = Object.entries(data?.byVehicle || {})
-    .sort((a, b) => b[1] - a[1])
+  const vehicleEntries = useMemo(
+    () => Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1]),
+    [data?.byVehicle]
+  )
 
-  const budgetCount = catEntries.filter(([id]) => budgets[id]).length
+  const budgetCount = useMemo(
+    () => catEntries.filter(([id]) => budgets[id]).length,
+    [catEntries, budgets]
+  )
 
   const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
 
@@ -336,9 +351,7 @@ export default function Monthly() {
       </div>
 
       {loading ? (
-        <div className="card p-8 text-center">
-          <p className="text-body text-ink-3">Loading…</p>
-        </div>
+        <MonthlySkeleton />
       ) : (
         <motion.div
           key={`${year}-${month}`}

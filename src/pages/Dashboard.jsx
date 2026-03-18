@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
@@ -131,7 +131,10 @@ export default function Dashboard() {
   const { balance: runningBalance, refetch: refetchBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
   const { pending: bills } = useLiabilities()
 
-  const dueSoon = bills.filter(b => daysUntil(b.due_date) <= 7)
+  const dueSoon = useMemo(
+    () => bills.filter(b => daysUntil(b.due_date) <= 7),
+    [bills]
+  )
 
   // Month/Balance hooks already merge optimistic transactions from AppDataProvider.
   const earned = summary?.earned || 0
@@ -146,10 +149,16 @@ export default function Dashboard() {
   const onTrack = spendPct <= monthPct
   const paceGap = Math.abs(spendPct - monthPct)
 
-  const catEntries = Object.entries(summary?.byCategory || {}).sort((a, b) => b[1] - a[1])
+  const catEntries = useMemo(
+    () => Object.entries(summary?.byCategory || {}).sort((a, b) => b[1] - a[1]),
+    [summary?.byCategory]
+  )
   const topCat = catEntries[0]
   const topCatPct = topCat && spent > 0 ? Math.round((topCat[1] / spent) * 100) : 0
-  const topCatInfo = topCat ? CATEGORIES.find(c => c.id === topCat[0]) : null
+  const topCatInfo = useMemo(
+    () => (topCat ? CATEGORIES.find(c => c.id === topCat[0]) : null),
+    [topCat]
+  )
 
   const lastInvested = lastSummary?.investment || 0
   const investDiff = invested - lastInvested
@@ -161,7 +170,7 @@ export default function Dashboard() {
       : hour < 21 ? 'Good evening'
         : 'Good night'
 
-  const recentGroups = groupByDate(recent)
+  const recentGroups = useMemo(() => groupByDate(recent), [recent])
 
   // Ref to always have latest data for delete lookups (avoids stale closures)
   const recentRef = useRef(recent)

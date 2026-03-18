@@ -19,6 +19,8 @@ import { useAppData } from './useAppDataStore'
 // ─────────────────────────────────────────────────────────────────────────────
 const CACHE_PREFIX = 'kosha_cache_'
 const SOFT_TTL = 5 * 60 * 1000   //  5 min  — serve fresh from network
+const HISTORY_MONTH_SOFT_TTL = 20 * 60 * 1000 // 20 min for past months
+const HISTORY_YEAR_SOFT_TTL = 30 * 60 * 1000  // 30 min for yearly summaries
 const HARD_TTL = 24 * 60 * 60 * 1000  // 24 hrs — serve stale from cache
 
 function getCached(key) {
@@ -44,8 +46,27 @@ function setCached(key, data) {
   }
 }
 
-function isFresh(entry) {
-  return entry && (Date.now() - entry.ts < SOFT_TTL)
+function getSoftTtlForKey(key) {
+  if (!key) return SOFT_TTL
+  if (key.startsWith('year:')) return HISTORY_YEAR_SOFT_TTL
+
+  if (key.startsWith('month:')) {
+    const [, yRaw, mRaw] = key.split(':')
+    const y = Number(yRaw)
+    const m = Number(mRaw)
+    if (Number.isFinite(y) && Number.isFinite(m)) {
+      const now = new Date()
+      const currentMonthIndex = now.getFullYear() * 12 + now.getMonth()
+      const queryMonthIndex = y * 12 + (m - 1)
+      if (queryMonthIndex < currentMonthIndex) return HISTORY_MONTH_SOFT_TTL
+    }
+  }
+
+  return SOFT_TTL
+}
+
+function isFresh(entry, key) {
+  return entry && (Date.now() - entry.ts < getSoftTtlForKey(key))
 }
 
 // Custom event name for broadcasting cache invalidations to all mounted hooks.
@@ -187,7 +208,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
         setData(cached.data)
         setLoading(false)
       }
-      if (!force && isFresh(cached)) return   // fresh — skip network
+      if (!force && isFresh(cached, key)) return   // fresh — skip network
     } else {
       setLoading(true)
     }
@@ -346,7 +367,7 @@ export function useMonthSummary(year, month) {
     if (cached) {
       setData(cached.data)
       setLoading(false)
-      if (!force && isFresh(cached)) return
+      if (!force && isFresh(cached, cacheKey)) return
     } else {
       setLoading(true)
     }
@@ -579,7 +600,7 @@ export function useYearSummary(year) {
     if (cached) {
       setData(cached.data)
       setLoading(false)
-      if (!force && isFresh(cached)) return
+      if (!force && isFresh(cached, cacheKey)) return
     } else {
       setLoading(true)
     }
@@ -785,7 +806,7 @@ export function useRunningBalance(year, month) {
     if (cached !== null && cached !== undefined) {
       setBalance(cached.data)
       setLoading(false)
-      if (!force && isFresh(cached)) return
+      if (!force && isFresh(cached, cacheKey)) return
     } else {
       setLoading(true)
     }

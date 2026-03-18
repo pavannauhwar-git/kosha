@@ -71,7 +71,7 @@ export function useLiabilities() {
     try {
       const { data: rows } = await supabase
         .from('liabilities')
-        .select('*')
+        .select('id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
         .order('due_date', { ascending: true })
 
       if (rows) {
@@ -129,7 +129,7 @@ export async function markPaid(liability) {
     user_id,
   }
   const { data: txn, error: txnErr } = await withTimeout(
-    supabase.from('transactions').insert([txnPayload]).select().single()
+    supabase.from('transactions').insert([txnPayload]).select('id').single()
   )
   if (txnErr) throw txnErr
 
