@@ -43,6 +43,7 @@ export default function Transactions() {
   // Tracks which transaction id is being edited so we can clear the
   // localEdits overlay after onConfirmed (refetch returns fresh server data)
   const pendingEditId = useRef(null)
+  const pendingOptimisticId = useRef(null)
 
   const debouncedSearch = useDebounce(search, 300)
   useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
@@ -51,6 +52,7 @@ export default function Transactions() {
     data,
     refetch,
     prependOptimistic,
+    replaceOptimistic,
     applyLocalEdit,
     clearLocalEdit,
     applyLocalDelete,
@@ -66,7 +68,7 @@ export default function Transactions() {
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
   // FIXED: moved up before handleDelete so variables are defined in time
-  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit, clearOptimisticEdits } = useAppData()
+  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit, clearOptimisticEdits, resolveOptimisticTxn } = useAppData()
 
   // Ref to always have latest data for delete lookups (avoids stale closures)
   const dataRef = useRef(data)
@@ -338,22 +340,28 @@ export default function Transactions() {
               addOptimisticEdit(payload.id, payload._original, payload)
             }
           } else {
-            prependOptimistic(payload)
-            addOptimisticTxn(payload)
+            const optimisticId = addOptimisticTxn(payload)
+            pendingOptimisticId.current = optimisticId
+            prependOptimistic(payload, optimisticId)
             setDisplayCount(n => n + 1)
           }
         }}
-        onConfirmed={async () => {
+        onConfirmed={async (serverTxn) => {
           // Remove optimistic edit overlay BEFORE refetching so summary/balance hooks
           // don't apply the edit delta on top of already-updated server data.
           if (pendingEditId.current) {
             removeOptimisticEdit(pendingEditId.current)
+          }
+          if (serverTxn && pendingOptimisticId.current) {
+            replaceOptimistic(pendingOptimisticId.current, serverTxn)
+            resolveOptimisticTxn(pendingOptimisticId.current, serverTxn)
           }
           await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
             pendingEditId.current = null
           }
+          pendingOptimisticId.current = null
         }}
         onFailed={(msg) => {
           if (pendingEditId.current) {
@@ -361,6 +369,7 @@ export default function Transactions() {
             removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           }
+          pendingOptimisticId.current = null
           clearOptimisticTxns()
           refetch()
           setToast(msg)
