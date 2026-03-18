@@ -48,6 +48,12 @@ function isFresh(entry) {
   return entry && (Date.now() - entry.ts < SOFT_TTL)
 }
 
+// Custom event name for broadcasting cache invalidations to all mounted hooks.
+// When a mutation (add/edit/delete) happens, this event is dispatched so every
+// hook instance — even on pages that are currently mounted in the background —
+// immediately re-fetches instead of serving stale cache for up to SOFT_TTL.
+const CACHE_INVALIDATION_EVENT = 'kosha:cache:invalidated'
+
 export function invalidateCache(pattern) {
   // If pattern provided, only clear matching keys — otherwise clear all Kosha cache
   try {
@@ -59,6 +65,12 @@ export function invalidateCache(pattern) {
         localStorage.removeItem(k)
       }
     })
+  } catch { /* ignore */ }
+  // Notify all mounted hook instances that their cache may have been cleared.
+  // This ensures cross-page consistency: hooks on background pages immediately
+  // refetch rather than waiting until they are navigated-to again.
+  try {
+    window.dispatchEvent(new CustomEvent(CACHE_INVALIDATION_EVENT, { detail: { pattern } }))
   } catch { /* ignore */ }
 }
 
@@ -200,6 +212,18 @@ export function useTransactions({ type, category, search, limit } = {}) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
+  // Re-fetch whenever any cache key matching 'txns:' is invalidated by a mutation
+  // on any page — ensures this hook instance is always up-to-date.
+  useEffect(() => {
+    const txnKey = `txns:${type}:${category}:${search}:${limit}`
+    const handler = (e) => {
+      const { pattern } = e.detail || {}
+      if (!pattern || txnKey.startsWith(pattern)) fetch(true)
+    }
+    window.addEventListener(CACHE_INVALIDATION_EVENT, handler)
+    return () => window.removeEventListener(CACHE_INVALIDATION_EVENT, handler)
+  }, [type, category, search, limit, fetch])
+
   const refetch = useCallback(() => {
     invalidateCache('txns:')
     return fetch(true)
@@ -340,9 +364,18 @@ export function useMonthSummary(year, month) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  const refetch = useCallback(() => fetch(true), [fetch])
+  // Re-fetch whenever 'month:' cache entries are invalidated by mutations,
+  // or when transaction data changes (month summaries are derived from txns).
+  useEffect(() => {
+    const handler = (e) => {
+      const { pattern } = e.detail || {}
+      if (!pattern || cacheKey.startsWith(pattern) || pattern.startsWith('txns:')) fetch(true)
+    }
+    window.addEventListener(CACHE_INVALIDATION_EVENT, handler)
+    return () => window.removeEventListener(CACHE_INVALIDATION_EVENT, handler)
+  }, [cacheKey, fetch])
 
-  // ── Helper: check if a txn date falls in this month ────────────────────
+  const refetch = useCallback(() => fetch(true), [fetch])
   const inMonth = (t) => {
     if (!t?.date) return false
     const d = new Date(t.date)
@@ -586,9 +619,17 @@ export function useYearSummary(year) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  const refetch = useCallback(() => fetch(true), [fetch])
+  // Re-fetch whenever 'year:' cache entries are invalidated by mutations
+  useEffect(() => {
+    const handler = (e) => {
+      const { pattern } = e.detail || {}
+      if (!pattern || cacheKey.startsWith(pattern)) fetch(true)
+    }
+    window.addEventListener(CACHE_INVALIDATION_EVENT, handler)
+    return () => window.removeEventListener(CACHE_INVALIDATION_EVENT, handler)
+  }, [cacheKey, fetch])
 
-  // ── Helper: check if a txn date falls in this year ─────────────────────
+  const refetch = useCallback(() => fetch(true), [fetch])
   const inYear = (t) => {
     if (!t?.date) return false
     return new Date(t.date).getFullYear() === year
@@ -749,9 +790,17 @@ export function useRunningBalance(year, month) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  const refetch = useCallback(() => fetch(true), [fetch])
+  // Re-fetch whenever 'balance:' cache entries are invalidated by mutations
+  useEffect(() => {
+    const handler = (e) => {
+      const { pattern } = e.detail || {}
+      if (!pattern || cacheKey.startsWith(pattern)) fetch(true)
+    }
+    window.addEventListener(CACHE_INVALIDATION_EVENT, handler)
+    return () => window.removeEventListener(CACHE_INVALIDATION_EVENT, handler)
+  }, [cacheKey, fetch])
 
-  // Helper to compute balance delta for a single transaction
+  const refetch = useCallback(() => fetch(true), [fetch])
   const balanceDelta = (t) => {
     if (t.type === 'income') return +t.amount
     if (t.type === 'expense') return -(+t.amount)
