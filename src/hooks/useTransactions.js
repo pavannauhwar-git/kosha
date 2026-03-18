@@ -385,11 +385,21 @@ export function useMonthSummary(year, month) {
 
   const { optimisticTxns, optimisticDeletedTxns, optimisticEdits } = useAppData()
 
+  // Prevents a slower stale fetch from overwriting fresh data already applied
+  // by the latest post-mutation fetch (same pattern as the main useTransactions hook).
+  const fetchVersionRef = useRef(0)
+
   const fetch = useCallback(async (force = false) => {
+    const myVersion = ++fetchVersionRef.current
     const cached = getCached(cacheKey)
+
+    // Skip serving the stale cache for forced (post-mutation) fetches to avoid
+    // briefly showing pre-mutation summary numbers on top of the optimistic overlay.
     if (cached) {
-      setData(cached.data)
-      setLoading(false)
+      if (!force) {
+        setData(cached.data)
+        setLoading(false)
+      }
       if (!force && isFresh(cached, cacheKey)) return
     } else {
       setLoading(true)
@@ -404,6 +414,8 @@ export function useMonthSummary(year, month) {
         .select('type, amount, category, investment_vehicle, is_repayment')
         .gte('date', `${year}-${pad}-01`)
         .lte('date', `${year}-${pad}-${days}`)
+
+      if (myVersion !== fetchVersionRef.current) return
 
       if (!rows) { setLoading(false); return }
 
@@ -430,6 +442,7 @@ export function useMonthSummary(year, month) {
       setData(result)
       setLoading(false)
     } catch {
+      if (myVersion !== fetchVersionRef.current) return
       setLoading(false)
     }
   }, [year, month, cacheKey])
@@ -437,12 +450,15 @@ export function useMonthSummary(year, month) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  // Re-fetch whenever 'month:' cache entries are invalidated by mutations,
-  // or when transaction data changes (month summaries are derived from txns).
+  // Re-fetch whenever 'month:' cache entries are invalidated by mutations.
+  // The redundant `pattern.startsWith('txns:')` check was removed: every
+  // transaction mutation (add/edit/delete) already calls invalidateCache('month:')
+  // explicitly, so responding to 'txns:' events here only created a second
+  // concurrent fetch that could land with stale data and overwrite fresh results.
   useEffect(() => {
     const handler = (e) => {
       const { pattern } = e.detail || {}
-      if (!pattern || cacheKey.startsWith(pattern) || pattern.startsWith('txns:')) fetch(true)
+      if (!pattern || cacheKey.startsWith(pattern)) fetch(true)
     }
     window.addEventListener(CACHE_INVALIDATION_EVENT, handler)
     return () => window.removeEventListener(CACHE_INVALIDATION_EVENT, handler)
@@ -618,11 +634,20 @@ export function useYearSummary(year) {
 
   const { optimisticTxns, optimisticDeletedTxns, optimisticEdits } = useAppData()
 
+  // Prevents a slower stale fetch from overwriting fresh data already applied
+  // by the latest post-mutation fetch (same pattern as the main useTransactions hook).
+  const fetchVersionRef = useRef(0)
+
   const fetch = useCallback(async (force = false) => {
+    const myVersion = ++fetchVersionRef.current
     const cached = getCached(cacheKey)
+
+    // Skip serving the stale cache for forced (post-mutation) fetches.
     if (cached) {
-      setData(cached.data)
-      setLoading(false)
+      if (!force) {
+        setData(cached.data)
+        setLoading(false)
+      }
       if (!force && isFresh(cached, cacheKey)) return
     } else {
       setLoading(true)
@@ -634,6 +659,8 @@ export function useYearSummary(year) {
         .select('id, date, type, amount, description, category, investment_vehicle, is_repayment')
         .gte('date', `${year}-01-01`)
         .lte('date', `${year}-12-31`)
+
+      if (myVersion !== fetchVersionRef.current) return
 
       if (!rows) { setLoading(false); return }
 
@@ -685,6 +712,7 @@ export function useYearSummary(year) {
       setData(result)
       setLoading(false)
     } catch {
+      if (myVersion !== fetchVersionRef.current) return
       setLoading(false)
     }
   }, [year, cacheKey])
@@ -824,11 +852,20 @@ export function useRunningBalance(year, month) {
 
   const { optimisticTxns, optimisticDeletedTxns, optimisticEdits } = useAppData()
 
+  // Prevents a slower stale fetch from overwriting fresh data already applied
+  // by the latest post-mutation fetch (same pattern as the main useTransactions hook).
+  const fetchVersionRef = useRef(0)
+
   const fetch = useCallback(async (force = false) => {
+    const myVersion = ++fetchVersionRef.current
     const cached = getCached(cacheKey)
+
+    // Skip serving the stale cache for forced (post-mutation) fetches.
     if (cached !== null && cached !== undefined) {
-      setBalance(cached.data)
-      setLoading(false)
+      if (!force) {
+        setBalance(cached.data)
+        setLoading(false)
+      }
       if (!force && isFresh(cached, cacheKey)) return
     } else {
       setLoading(true)
@@ -843,6 +880,8 @@ export function useRunningBalance(year, month) {
         .select('type, amount')
         .lte('date', endDate)
 
+      if (myVersion !== fetchVersionRef.current) return
+
       if (!rows) { setLoading(false); return }
 
       const cumulative = rows.reduce((sum, r) => {
@@ -856,6 +895,7 @@ export function useRunningBalance(year, month) {
       setBalance(cumulative)
       setLoading(false)
     } catch {
+      if (myVersion !== fetchVersionRef.current) return
       setLoading(false)
     }
   }, [year, month, cacheKey])

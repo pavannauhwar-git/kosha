@@ -176,6 +176,13 @@ export default function AddTransactionSheet({
   // frame already shows the correct edit/duplicate/add form.
   const [prevInitSource, setPrevInitSource] = useState(null)
 
+  // Keeps the form title stable during the exit animation. When onClose() fires,
+  // the parent clears editTxn to null in the same render that sets open=false, so
+  // reading editTxn directly in the header causes a flash of "Add Transaction"
+  // while the sheet slides out. frozenEditMode is only updated when the form
+  // OPENS (initSource changes), never when it closes (no branch executes below).
+  const [frozenEditMode, setFrozenEditMode] = useState(false)
+
   const initSource = editTxn?.id
     ? `edit-${editTxn.id}`
     : duplicateTxn?.id
@@ -185,6 +192,7 @@ export default function AddTransactionSheet({
   if (initSource !== prevInitSource) {
     setPrevInitSource(initSource)
     if (editTxn) {
+      setFrozenEditMode(true)
       setType(editTxn.type)
       setAmount(String(editTxn.amount))
       setDesc(editTxn.description)
@@ -195,6 +203,7 @@ export default function AddTransactionSheet({
       setNotes(editTxn.notes || '')
       setShowNotes(!!(editTxn.notes))
     } else if (duplicateTxn) {
+      setFrozenEditMode(false)
       setType(duplicateTxn.type)
       setAmount(String(duplicateTxn.amount))
       setDesc(duplicateTxn.description)
@@ -205,11 +214,14 @@ export default function AddTransactionSheet({
       setNotes(duplicateTxn.notes || '')
       setShowNotes(!!(duplicateTxn.notes))
     } else if (open) {
+      setFrozenEditMode(false)
       setType(initialType)
       setAmount(''); setDesc(''); setCategory('other')
       setVehicle('Other'); setMode('upi'); setDate(todayStr())
       setNotes(''); setShowNotes(false)
     }
+    // No else — form is closing; leave frozenEditMode unchanged so the title
+    // remains correct during the exit animation.
     setError('')
   }
 
@@ -271,7 +283,7 @@ export default function AddTransactionSheet({
               {/* Header */}
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[20px] font-bold text-ink">
-                  {editTxn ? 'Edit Transaction' : 'Add Transaction'}
+                  {frozenEditMode ? 'Edit Transaction' : 'Add Transaction'}
                 </h2>
                 <button onClick={onClose} className="close-btn">
                   <X size={16} className="text-ink-3" />
