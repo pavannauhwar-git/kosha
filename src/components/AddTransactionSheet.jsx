@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CreditCard, NotePencil } from '@phosphor-icons/react'
 import { ChevronRight } from 'lucide-react'
@@ -159,8 +159,8 @@ export default function AddTransactionSheet({
   const [vehicle, setVehicle] = useState('Other')
   const [mode, setMode] = useState('upi')
   const [date, setDate] = useState(todayStr())
-  const [notes, setNotes] = useState('')       // ← new
-  const [showNotes, setShowNotes] = useState(false)  // ← collapsible
+  const [notes, setNotes] = useState('')
+  const [showNotes, setShowNotes] = useState(false)
   const [error, setError] = useState('')
 
   const [showCatPicker, setShowCatPicker] = useState(false)
@@ -169,7 +169,21 @@ export default function AddTransactionSheet({
 
   const amountRef = useRef(null)
 
-  useEffect(() => {
+  // ── Synchronous form re-initialization ──────────────────────────────────
+  // React's recommended "adjusting state when a prop changes" pattern.
+  // Unlike useEffect (which fires AFTER render, causing a flash of stale
+  // default state), this runs synchronously DURING render so the very first
+  // frame already shows the correct edit/duplicate/add form.
+  const [prevInitSource, setPrevInitSource] = useState(null)
+
+  const initSource = editTxn?.id
+    ? `edit-${editTxn.id}`
+    : duplicateTxn?.id
+      ? `dup-${duplicateTxn.id}`
+      : open ? '__add__' : null
+
+  if (initSource !== prevInitSource) {
+    setPrevInitSource(initSource)
     if (editTxn) {
       setType(editTxn.type)
       setAmount(String(editTxn.amount))
@@ -179,26 +193,25 @@ export default function AddTransactionSheet({
       setMode(editTxn.payment_mode || 'upi')
       setDate(editTxn.date || todayStr())
       setNotes(editTxn.notes || '')
-      setShowNotes(!!(editTxn.notes))  // auto-expand if editing a txn that has notes
+      setShowNotes(!!(editTxn.notes))
     } else if (duplicateTxn) {
-      // Pre-fill all fields from the source transaction, but reset date to today
       setType(duplicateTxn.type)
       setAmount(String(duplicateTxn.amount))
       setDesc(duplicateTxn.description)
       setCategory(duplicateTxn.category || 'other')
       setVehicle(duplicateTxn.investment_vehicle || 'Other')
       setMode(duplicateTxn.payment_mode || 'upi')
-      setDate(todayStr())           // always today — that's the point of duplicate
+      setDate(todayStr())
       setNotes(duplicateTxn.notes || '')
       setShowNotes(!!(duplicateTxn.notes))
-    } else {
+    } else if (open) {
       setType(initialType)
       setAmount(''); setDesc(''); setCategory('other')
       setVehicle('Other'); setMode('upi'); setDate(todayStr())
       setNotes(''); setShowNotes(false)
     }
     setError('')
-  }, [editTxn, open])
+  }
 
   async function handleSave() {
     if (!amount || isNaN(+amount) || +amount <= 0) { setError('Enter a valid amount'); return }

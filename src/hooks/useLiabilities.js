@@ -24,7 +24,11 @@ function setCached(rows) {
 }
 
 function invalidateCache() {
-  cache.delete(CACHE_KEY)
+  // Mark cache as stale without deleting data — this is critical for preventing
+  // the loading skeleton flash. The stale-while-revalidate pattern will serve
+  // the existing cached data immediately while fetching fresh data in background.
+  const entry = cache.get(CACHE_KEY)
+  if (entry) entry.ts = 0
   window.dispatchEvent(new CustomEvent(LIABILITIES_INVALIDATION_EVENT))
 }
 
