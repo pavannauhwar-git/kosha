@@ -234,10 +234,6 @@
     will-change: transform;
   }
 
-  .nav-float-wrap--visible {
-    transform: translateY(0);
-  }
-
   .nav-float-wrap--hidden {
     transform: translateY(100%);
   }

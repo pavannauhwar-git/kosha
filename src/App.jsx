@@ -82,7 +82,7 @@ function BottomNav() {
 
   return (
     <div
-      className={`nav-float-wrap ${scrolledDown ? 'nav-float-wrap--hidden' : 'nav-float-wrap--visible'}`}
+      className={`nav-float-wrap ${scrolledDown ? 'nav-float-wrap--hidden' : ''}`}
     >
       <nav className="nav-float">
         {NAV.map((item, i) => {

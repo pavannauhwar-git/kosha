@@ -258,7 +258,7 @@ export default function Bills() {
                 </div>
 
                 <input
-                  className="w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink
+                  className="w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink
                              placeholder-ink-4 text-base border border-transparent
                              focus:outline-none focus:border-warning-border
                              focus:ring-2 focus:ring-warning-border/50 focus:bg-white
@@ -272,7 +272,7 @@ export default function Bills() {
                                 flex items-center gap-2 border border-transparent
                                 focus-within:border-warning-border
                                 focus-within:ring-2 focus-within:ring-warning-border/50
-                                transition-all">
+                                transition-all duration-150">
                   <span className="font-display text-xl text-warning-text">₹</span>
                   <input className="flex-1 bg-transparent font-display text-2xl text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" placeholder="0"
