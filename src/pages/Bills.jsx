@@ -152,7 +152,7 @@ export default function Bills() {
               </p>
               <button
                 onClick={() => setShowAdd(true)}
-                className="px-6 py-2.5 rounded-pill bg-brand text-white text-label font-semibold
+                className="px-6 py-2.5 rounded-pill bg-warning text-white text-label font-semibold
                            active:scale-95 transition-transform duration-75"
               >
                 Add a bill
@@ -257,13 +257,23 @@ export default function Bills() {
                   </button>
                 </div>
 
-                <input className="input mb-3" placeholder="Description (e.g. Car EMI)"
+                <input
+                  className="w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink
+                             placeholder-ink-4 text-base border border-transparent
+                             focus:outline-none focus:border-warning-border
+                             focus:ring-2 focus:ring-warning-border/50 focus:bg-white
+                             transition-all duration-150 mb-3"
+                  placeholder="Description (e.g. Car EMI)"
                   value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                />
 
                 <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3
-                                flex items-center gap-2 border border-transparent">
-                  <span className="font-display text-xl text-brand">₹</span>
+                                flex items-center gap-2 border border-transparent
+                                focus-within:border-warning-border
+                                focus-within:ring-2 focus-within:ring-warning-border/50
+                                transition-all">
+                  <span className="font-display text-xl text-warning-text">₹</span>
                   <input className="flex-1 bg-transparent font-display text-2xl text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" placeholder="0"
                     value={form.amount}
@@ -272,14 +282,15 @@ export default function Bills() {
 
                 <div className="list-card mb-3">
                   <label className="list-row w-full cursor-pointer">
-                    <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
-                      <span className="text-brand text-xs font-bold">📅</span>
+                    <div className="w-8 h-8 rounded-chip bg-warning-bg flex items-center justify-center shrink-0">
+                      <span className="text-warning-text text-xs font-bold">📅</span>
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Due Date</span>
                     <input type="date"
                       value={form.due_date}
                       onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-                      className="text-[15px] text-ink-3 bg-transparent outline-none text-right" />
+                      className="text-[15px] text-ink-3 bg-transparent outline-none text-right
+                                 focus:text-warning-text" />
                   </label>
                 </div>
 
@@ -289,7 +300,7 @@ export default function Bills() {
                     className={`flex items-center gap-2 px-3 py-2 rounded-card text-sm font-medium
                                 border transition-all
                       ${form.is_recurring
-                        ? 'bg-brand-container text-brand-on border-brand-container'
+                        ? 'bg-warning-bg text-warning-text border-warning-border'
                         : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
                   >
                     <Repeat size={14} /> Recurring
@@ -301,7 +312,7 @@ export default function Bills() {
                           onClick={() => setForm(f => ({ ...f, recurrence: r }))}
                           className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
                             ${form.recurrence === r
-                              ? 'bg-brand-container text-brand-on border-brand-container'
+                              ? 'bg-warning-bg text-warning-text border-warning-border'
                               : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
                         >{r}</button>
                       ))}
@@ -312,7 +323,7 @@ export default function Bills() {
                 {formErr && <p className="text-expense-text text-sm mb-3">{formErr}</p>}
 
                 <button onClick={handleAdd} disabled={saving}
-                  className="w-full py-4 rounded-card bg-brand text-white font-semibold
+                  className="w-full py-4 rounded-card bg-warning text-white font-semibold
                              active:scale-[0.98] disabled:opacity-60 transition-all">
                   {saving ? 'Saving…' : 'Add Bill'}
                 </button>

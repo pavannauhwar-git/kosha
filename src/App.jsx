@@ -81,10 +81,8 @@ function BottomNav() {
   )
 
   return (
-    <motion.div
-      className="nav-float-wrap"
-      animate={{ y: scrolledDown ? 110 : 0 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 40, mass: 0.8 }}
+    <div
+      className={`nav-float-wrap ${scrolledDown ? 'nav-float-wrap--hidden' : 'nav-float-wrap--visible'}`}
     >
       <nav className="nav-float">
         {NAV.map((item, i) => {
@@ -147,7 +145,7 @@ function BottomNav() {
           )
         })}
       </nav>
-    </motion.div>
+    </div>
   )
 }
 

@@ -225,7 +225,7 @@ export default function AddTransactionSheet({
     try {
       if (editTxn) await updateTransaction(editTxn.id, payload)
       else await addTransaction(payload)
-      onConfirmed && onConfirmed()
+      if (onConfirmed) await onConfirmed()
     } catch (e) {
       console.error('[Kosha] Save failed:', e.message)
       onFailed && onFailed(e.message || 'Could not save. Check your connection.')
