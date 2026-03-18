@@ -135,6 +135,7 @@ function TrendPill({ current, previous, label }) {
 // ── Year-over-year CARDS (replaces scrollable table) ─────────────────────
 function YoYCards({ years, currentYear }) {
   const [allData, setAllData] = useState({})
+  const yearsKey = useMemo(() => years.join(','), [years])
 
   useEffect(() => {
     let cancelled = false
@@ -175,12 +176,13 @@ function YoYCards({ years, currentYear }) {
         entry.rate = entry.income > 0 ? Math.round(((entry.income - entry.spent) / entry.income) * 100) : 0
       })
 
+      if (cancelled) return
       setAllData(totals)
     }
 
     loadYoY()
     return () => { cancelled = true }
-  }, [years])
+  }, [yearsKey])
 
   const yearsWithData = years.filter(y => allData[y]?.income > 0 || allData[y]?.spent > 0)
   if (yearsWithData.length < 2) return null
