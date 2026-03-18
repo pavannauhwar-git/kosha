@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useTransactions, registerPrefetch, deleteTransaction, useDebounce, useMonthSummary, useRunningBalance } from '../hooks/useTransactions'
+import { useTransactions, registerPrefetch, deleteTransaction, useDebounce, useMonthSummary, useRunningBalance, isOptimisticId } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus, DownloadSimple } from '@phosphor-icons/react'
 import { useAppData } from '../hooks/useAppDataStore'
+import { useGlobalTransactionMutation } from '../hooks/useGlobalTransactionMutation'
 
 const TYPES = [
   { id: 'all', label: 'All' },
@@ -43,7 +44,6 @@ export default function Transactions() {
   // Tracks which transaction id is being edited so we can clear the
   // localEdits overlay after onConfirmed (refetch returns fresh server data)
   const pendingEditId = useRef(null)
-  const pendingOptimisticId = useRef(null)
 
   const debouncedSearch = useDebounce(search, 300)
   useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
@@ -67,8 +67,12 @@ export default function Transactions() {
   const hasMore = useMemo(() => data.length > displayCount, [data.length, displayCount])
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
-  // FIXED: moved up before handleDelete so variables are defined in time
-  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit, clearOptimisticEdits, resolveOptimisticTxn } = useAppData()
+  const { addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit } = useAppData()
+
+  // Brain hook — centralized add-transaction lifecycle manager.
+  // Handles Phase 1 (global broadcast), Phase 2 (UUID swap), Phase 3 (background sync).
+  const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
+    useGlobalTransactionMutation({ prependOptimistic, replaceOptimistic })
 
   // Ref to always have latest data for delete lookups (avoids stale closures)
   const dataRef = useRef(data)
@@ -84,6 +88,12 @@ export default function Transactions() {
 
   const handleDelete = useCallback(async (id) => {
     if (!id) return
+
+    // Guard: never attempt to delete an item that still has a temporary optimistic ID.
+    // The Brain hook's UUID swap (Phase 2) replaces these IDs on success, so the user
+    // can only reach here with a real UUID. If somehow a ghost row slips through,
+    // silently bail out rather than crashing with a Supabase foreign-key error.
+    if (isOptimisticId(id)) return
 
     // Look up the full transaction data so summary/balance hooks can
     // subtract it immediately (optimistic delete propagation).
@@ -334,43 +344,41 @@ export default function Transactions() {
         initialType={addType}
         onSaved={(payload) => {
           if (payload.id) {
+            // Edit existing transaction — local + global optimistic edit
             pendingEditId.current = payload.id
             applyLocalEdit(payload.id, payload)
             if (payload._original) {
               addOptimisticEdit(payload.id, payload._original, payload)
             }
           } else {
-            const optimisticId = addOptimisticTxn(payload)
-            pendingOptimisticId.current = optimisticId
-            prependOptimistic(payload, optimisticId)
+            // New transaction — Phase 1: Brain broadcasts to ALL caches simultaneously
+            onTransactionSaved(payload)
             setDisplayCount(n => n + 1)
           }
         }}
         onConfirmed={async (serverTxn) => {
-          // Remove optimistic edit overlay BEFORE refetching so summary/balance hooks
-          // don't apply the edit delta on top of already-updated server data.
           if (pendingEditId.current) {
+            // Edit: remove overlay BEFORE refetching so hooks don't double-count the delta
             removeOptimisticEdit(pendingEditId.current)
-          }
-          if (serverTxn && pendingOptimisticId.current) {
-            replaceOptimistic(pendingOptimisticId.current, serverTxn)
-            resolveOptimisticTxn(pendingOptimisticId.current, serverTxn)
+          } else {
+            // New transaction — Phase 2: Brain swaps __optimistic__ ID with real UUID
+            onTransactionConfirmed(serverTxn)
           }
           await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
             pendingEditId.current = null
           }
-          pendingOptimisticId.current = null
         }}
         onFailed={(msg) => {
           if (pendingEditId.current) {
             clearLocalEdit(pendingEditId.current)
             removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
+          } else {
+            // New transaction failed — Brain rolls back ghost row + syncs all caches
+            onTransactionFailed()
           }
-          pendingOptimisticId.current = null
-          clearOptimisticTxns()
           refetch()
           setToast(msg)
           setTimeout(() => setToast(null), 4000)

@@ -96,6 +96,21 @@ export function invalidateCache(pattern) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// OPTIMISTIC ID HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The prefix used for all temporary optimistic transaction IDs. */
+export const OPTIMISTIC_ID_PREFIX = '__optimistic__'
+
+/**
+ * Returns true if `id` is a temporary optimistic ID (not yet confirmed by the server).
+ * Use this guard before any Supabase write that requires a real UUID.
+ */
+export function isOptimisticId(id) {
+  return typeof id === 'string' && id.startsWith(OPTIMISTIC_ID_PREFIX)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DEBOUNCE — used by Transactions search
 // ─────────────────────────────────────────────────────────────────────────────
 export function useDebounce(value, ms = 300) {

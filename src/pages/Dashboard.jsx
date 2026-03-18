@@ -5,12 +5,13 @@ import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { useTransactions } from '../hooks/useTransactions'
 import { useMonthSummary } from '../hooks/useTransactions'
 import { useRunningBalance } from '../hooks/useTransactions'
+import { deleteTransaction, isOptimisticId } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
 import { useAppData } from '../hooks/useAppDataStore'
+import { useGlobalTransactionMutation } from '../hooks/useGlobalTransactionMutation'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import TransactionItem from '../components/TransactionItem'
-import { deleteTransaction } from '../hooks/useTransactions'
 import { fmt, monthStr, savingsRate, daysUntil, groupByDate, dateLabel } from '../lib/utils'
 import { CATEGORIES } from '../lib/categories'
 import { C } from '../lib/colors'
@@ -109,12 +110,11 @@ export default function Dashboard() {
   // ── Error toast ──────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
 
-  const { addOptimisticTxn, clearOptimisticTxns, addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit, clearOptimisticEdits, resolveOptimisticTxn } = useAppData()
+  const { addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit } = useAppData()
 
   // Tracks which transaction id is being edited so we can clear the
   // localEdits overlay after onConfirmed (refetch returns fresh server data)
   const pendingEditId = useRef(null)
-  const pendingOptimisticId = useRef(null)
 
   const {
     data: recent,
@@ -125,6 +125,12 @@ export default function Dashboard() {
     clearLocalEdit,
     applyLocalDelete,
   } = useTransactions({ limit: 8 })
+
+  // Brain hook — centralized add-transaction lifecycle manager.
+  // Handles Phase 1 (global broadcast), Phase 2 (UUID swap), Phase 3 (background sync).
+  const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
+    useGlobalTransactionMutation({ prependOptimistic, replaceOptimistic })
+
   const { data: summary, refetch: refetchSummary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary, refetch: refetchLastSummary } = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
@@ -179,8 +185,8 @@ export default function Dashboard() {
   recentRef.current = recent
 
   // ── handleOptimisticSave: called immediately when user taps Save ────
-  // For NEW transactions, prepend + global optimistic. For EDITS, apply
-  // a local edit so the "Latest" list updates instantly.
+  // For NEW transactions, the Brain hook handles global broadcast + ID tracking.
+  // For EDITS, apply a local edit so the "Latest" list updates instantly.
   const handleOptimisticSave = useCallback((payload) => {
     if (payload.id) {
       // Edit existing transaction — local + global optimistic edit
@@ -190,27 +196,21 @@ export default function Dashboard() {
         addOptimisticEdit(payload.id, payload._original, payload)
       }
     } else {
-      // New transaction — prepend + global optimistic add
-      const optimisticId = addOptimisticTxn(payload)
-      pendingOptimisticId.current = optimisticId
-      prependOptimistic(payload, optimisticId)
+      // New transaction — Phase 1: Brain broadcasts to ALL caches simultaneously
+      onTransactionSaved(payload)
     }
-  }, [applyLocalEdit, prependOptimistic, addOptimisticTxn, addOptimisticEdit])
+  }, [applyLocalEdit, addOptimisticEdit, onTransactionSaved])
 
   // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
-  // Do NOT clear optimistic txns here. They are pruned automatically once the
-  // transaction shows up in fetched server data. This prevents the "flash then
-  // revert" gap on slow queries.
+  // For NEW transactions: Brain handles Phase 2 (UUID swap) + Phase 3 (background sync).
+  // For EDITS: remove the optimistic edit overlay before refetching so summary/balance
+  // hooks don't apply the edit delta on top of already-updated server data (double-counting).
   const handleConfirmed = useCallback(async (serverTxn) => {
-    // Remove optimistic edit overlay BEFORE refetching so summary/balance hooks
-    // don't apply the edit delta on top of already-updated server data (double-counting).
-    // Keep localEdit active during refetch so the list still shows edited values.
     if (pendingEditId.current) {
       removeOptimisticEdit(pendingEditId.current)
-    }
-    if (serverTxn && pendingOptimisticId.current) {
-      replaceOptimistic(pendingOptimisticId.current, serverTxn)
-      resolveOptimisticTxn(pendingOptimisticId.current, serverTxn)
+    } else {
+      // New transaction — Phase 2: swap __optimistic__ ID with real UUID in all caches
+      onTransactionConfirmed(serverTxn)
     }
     await Promise.all([
       refetch(),
@@ -222,8 +222,7 @@ export default function Dashboard() {
       clearLocalEdit(pendingEditId.current)
       pendingEditId.current = null
     }
-    pendingOptimisticId.current = null
-  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearLocalEdit, removeOptimisticEdit, replaceOptimistic, resolveOptimisticTxn])
+  }, [refetch, refetchSummary, refetchLastSummary, refetchBalance, clearLocalEdit, removeOptimisticEdit, onTransactionConfirmed])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
   // The optimistic row disappears when refetch() returns real server data.
@@ -233,13 +232,14 @@ export default function Dashboard() {
       clearLocalEdit(pendingEditId.current)
       removeOptimisticEdit(pendingEditId.current)
       pendingEditId.current = null
+    } else {
+      // New transaction failed — Brain rolls back the ghost row + syncs all caches
+      onTransactionFailed()
     }
-    pendingOptimisticId.current = null
-    clearOptimisticTxns()
     refetch()
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
-  }, [refetch, clearOptimisticTxns, clearLocalEdit, removeOptimisticEdit])
+  }, [refetch, clearLocalEdit, removeOptimisticEdit, onTransactionFailed])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
@@ -249,6 +249,12 @@ export default function Dashboard() {
 
   const handleDelete = useCallback(async (id) => {
     if (!id) return
+
+    // Guard: never attempt to delete an item that still has a temporary optimistic ID.
+    // The Brain hook's UUID swap (Phase 2) replaces these IDs on success, so the user
+    // can only reach here with a real UUID. If somehow a ghost row slips through,
+    // silently bail out rather than crashing with a Supabase foreign-key error.
+    if (isOptimisticId(id)) return
 
     // Look up the full transaction data so summary/balance hooks can
     // subtract it immediately (optimistic delete propagation).
