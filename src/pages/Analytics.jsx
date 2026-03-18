@@ -135,7 +135,10 @@ function TrendPill({ current, previous, label }) {
 // ── Year-over-year CARDS (replaces scrollable table) ─────────────────────
 function YoYCards({ years, currentYear }) {
   const [allData, setAllData] = useState({})
-  const yearsKey = useMemo(() => years.join(','), [years])
+  const yearsKey = useMemo(
+    () => years.slice().sort((a, b) => a - b).join(','),
+    [years]
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -160,11 +163,11 @@ function YoYCards({ years, currentYear }) {
 
       const totals = {}
       years.forEach((y) => {
-        totals[y] = { income: 0, spent: 0, invest: 0, rate: 0 }
+        totals[y] = { income: 0, spent: 0, invest: 0 }
       })
 
       ;(rows || []).forEach((r) => {
-        const y = new Date(r.date).getFullYear()
+        const y = Number(String(r.date).slice(0, 4))
         if (!yearsSet.has(y)) return
         if (r.type === 'income' && !r.is_repayment) totals[y].income += +r.amount
         if (r.type === 'expense') totals[y].spent += +r.amount
@@ -307,7 +310,7 @@ function PortfolioDonut({ vehicleData }) {
 export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
-  const [year, setYear] = useState(now.getFullYear())
+  const [year, setYear] = useState(currentYear)
 
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1)
