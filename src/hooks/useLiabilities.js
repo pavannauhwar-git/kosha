@@ -10,6 +10,8 @@ const CACHE_KEY = 'liabilities'
 export const LIABILITIES_INVALIDATION_EVENT = 'kosha:liabilities:invalidated'
 const subscribers = new Set()
 let optimisticCounter = 0
+let activeFetchController = null
+let latestFetchToken = 0
 
 function getCached() {
   const entry = cache.get(CACHE_KEY)
@@ -50,6 +52,14 @@ function setCachedAndNotify(rows) {
   notify(rows)
 }
 
+function cancelLiabilitiesFetches() {
+  latestFetchToken += 1
+  if (activeFetchController) {
+    activeFetchController.abort()
+    activeFetchController = null
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 async function getCurrentUserId() {
   const { data: { session } } = await supabase.auth.getSession()
@@ -80,6 +90,9 @@ export function useLiabilities() {
   const [loading, setLoading] = useState(() => !getCached())
 
   const fetch = useCallback(async (force = false) => {
+    const token = ++latestFetchToken
+    const controller = new AbortController()
+    activeFetchController = controller
     const cached = getCached()
 
     // Serve cache immediately while revalidating in background
@@ -97,16 +110,19 @@ export function useLiabilities() {
         .from('liabilities')
         .select('id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
         .order('due_date', { ascending: true })
+        .abortSignal(controller.signal)
 
-      if (rows) {
+      if (rows && token === latestFetchToken) {
         setCachedAndNotify(rows)
         setPending(rows.filter(r => !r.paid))
         setPaid(rows.filter(r => r.paid))
       }
-    } catch {
+    } catch (error) {
+      if (error?.name === 'AbortError') return
       // Network failure — cached data stays visible, no spinner
     } finally {
-      setLoading(false)
+      if (activeFetchController === controller) activeFetchController = null
+      if (token === latestFetchToken) setLoading(false)
     }
   }, [])
 
@@ -144,18 +160,19 @@ export function useLiabilities() {
 // ── Writes — all invalidate cache so next read hits the network ───────────
 
 export async function addLiability(payload) {
-  const user_id = await getCurrentUserId()
+  cancelLiabilitiesFetches()
+  const previousRows = [...(getCached()?.rows || [])]
   const optimisticId = globalThis.crypto?.randomUUID?.() || `temp-${Date.now()}-${++optimisticCounter}`
   const optimistic = {
     id: optimisticId,
     ...payload,
-    user_id,
+    user_id: null,
     linked_transaction_id: null,
   }
-  const current = getCached()?.rows || []
-  setCachedAndNotify([...current, optimistic].sort(compareDueDate))
+  setCachedAndNotify([...previousRows, optimistic].sort(compareDueDate))
 
   try {
+    const user_id = await getCurrentUserId()
     const { data, error } = await withTimeout(
       supabase
         .from('liabilities')
@@ -178,66 +195,89 @@ export async function addLiability(payload) {
       new Map(withServerRow.map((row) => [row.id, row])).values()
     ).sort(compareDueDate)
     setCachedAndNotify(deduped)
-    invalidateCache()
   } catch (error) {
-    setCachedAndNotify((getCached()?.rows || []).filter((row) => row.id !== optimistic.id))
+    setCachedAndNotify(previousRows)
     throw error
+  } finally {
+    invalidateCache()
   }
 }
 
 export async function markPaid(liability) {
-  const user_id = await getCurrentUserId()
+  cancelLiabilitiesFetches()
+  const previousRows = [...(getCached()?.rows || [])]
+  const optimisticRows = previousRows
+    .map((row) => (row.id === liability.id ? { ...row, paid: true } : row))
+    .sort(compareDueDate)
+  setCachedAndNotify(optimisticRows)
 
-  // 1. Insert an expense transaction linked to this bill
-  const txnPayload = {
-    date:         new Date().toISOString().slice(0, 10),
-    type:         'expense',
-    description:  liability.description,
-    amount:       liability.amount,
-    category:     'bills',
-    is_repayment: false,
-    payment_mode: 'other',
-    notes:        `Auto-created from bill: ${liability.description}`,
-    user_id,
-  }
-  const { data: txn, error: txnErr } = await withTimeout(
-    supabase.from('transactions').insert([txnPayload]).select('id').single()
-  )
-  if (txnErr) throw txnErr
+  try {
+    const user_id = await getCurrentUserId()
 
-  // 2. Mark liability paid and link to the transaction
-  const { error: liabErr } = await withTimeout(
-    supabase.from('liabilities')
-      .update({ paid: true, linked_transaction_id: txn.id })
-      .eq('id', liability.id)
-  )
-  if (liabErr) throw liabErr
-
-  // 3. If recurring, create the next period automatically
-  if (liability.is_recurring && liability.recurrence) {
-    const due    = new Date(liability.due_date)
-    const months = { monthly: 1, quarterly: 3, yearly: 12 }
-    due.setMonth(due.getMonth() + (months[liability.recurrence] || 1))
-    await withTimeout(
-      supabase.from('liabilities').insert([{
-        description:  liability.description,
-        amount:       liability.amount,
-        due_date:     due.toISOString().slice(0, 10),
-        is_recurring: true,
-        recurrence:   liability.recurrence,
-        paid:         false,
-        user_id,
-      }])
+    // 1. Insert an expense transaction linked to this bill
+    const txnPayload = {
+      date:         new Date().toISOString().slice(0, 10),
+      type:         'expense',
+      description:  liability.description,
+      amount:       liability.amount,
+      category:     'bills',
+      is_repayment: false,
+      payment_mode: 'other',
+      notes:        `Auto-created from bill: ${liability.description}`,
+      user_id,
+    }
+    const { data: txn, error: txnErr } = await withTimeout(
+      supabase.from('transactions').insert([txnPayload]).select('id').single()
     )
-  }
+    if (txnErr) throw txnErr
 
-  invalidateCache()
+    // 2. Mark liability paid and link to the transaction
+    const { error: liabErr } = await withTimeout(
+      supabase.from('liabilities')
+        .update({ paid: true, linked_transaction_id: txn.id })
+        .eq('id', liability.id)
+    )
+    if (liabErr) throw liabErr
+
+    // 3. If recurring, create the next period automatically
+    if (liability.is_recurring && liability.recurrence) {
+      const due    = new Date(liability.due_date)
+      const months = { monthly: 1, quarterly: 3, yearly: 12 }
+      due.setMonth(due.getMonth() + (months[liability.recurrence] || 1))
+      await withTimeout(
+        supabase.from('liabilities').insert([{
+          description:  liability.description,
+          amount:       liability.amount,
+          due_date:     due.toISOString().slice(0, 10),
+          is_recurring: true,
+          recurrence:   liability.recurrence,
+          paid:         false,
+          user_id,
+        }])
+      )
+    }
+  } catch (error) {
+    setCachedAndNotify(previousRows)
+    throw error
+  } finally {
+    invalidateCache()
+  }
 }
 
 export async function deleteLiability(id) {
-  const { error } = await withTimeout(
-    supabase.from('liabilities').delete().eq('id', id)
-  )
-  if (error) throw error
-  invalidateCache()
+  cancelLiabilitiesFetches()
+  const previousRows = [...(getCached()?.rows || [])]
+  setCachedAndNotify(previousRows.filter((row) => row.id !== id))
+
+  try {
+    const { error } = await withTimeout(
+      supabase.from('liabilities').delete().eq('id', id)
+    )
+    if (error) throw error
+  } catch (error) {
+    setCachedAndNotify(previousRows)
+    throw error
+  } finally {
+    invalidateCache()
+  }
 }

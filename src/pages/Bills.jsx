@@ -20,7 +20,7 @@ function BillsSkeleton() {
 }
 
 export default function Bills() {
-  const { pending, paid, loading, refetch } = useLiabilities()
+  const { pending, paid, loading } = useLiabilities()
   const [tab, setTab] = useState('pending')
   const [showAdd, setShowAdd] = useState(false)
   const [delId, setDelId] = useState(null)
@@ -55,14 +55,13 @@ export default function Bills() {
       })
       setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
       setShowAdd(false)
-      refetch()
     } catch (e) { setFormErr(e.message) }
     finally { setSaving(false) }
   }
 
   async function handleMarkPaid(bill) {
     setPaying(bill.id)
-    try { await markPaid(bill); refetch() }
+    try { await markPaid(bill) }
     catch (e) { alert(e.message) }
     finally { setPaying(null) }
   }
@@ -70,7 +69,6 @@ export default function Bills() {
   async function confirmDelete() {
     await deleteLiability(delId)
     setDelId(null)
-    refetch()
   }
 
   return (
