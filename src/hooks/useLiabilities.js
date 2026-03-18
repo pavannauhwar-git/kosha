@@ -7,6 +7,9 @@ import { supabase } from '../lib/supabase'
 const cache   = new Map()
 const TTL_MS  = 90_000  // 90 seconds
 const CACHE_KEY = 'liabilities'
+export const LIABILITIES_INVALIDATION_EVENT = 'kosha:liabilities:invalidated'
+const subscribers = new Set()
+let optimisticCounter = 0
 
 function getCached() {
   const entry = cache.get(CACHE_KEY)
@@ -20,10 +23,31 @@ function setCached(rows) {
 
 function invalidateCache() {
   cache.delete(CACHE_KEY)
+  window.dispatchEvent(new CustomEvent(LIABILITIES_INVALIDATION_EVENT))
 }
 
 function isFresh(entry) {
   return Date.now() - entry.ts < TTL_MS
+}
+
+function compareDueDate(a, b) {
+  const left = a?.due_date || ''
+  const right = b?.due_date || ''
+  return left.localeCompare(right)
+}
+
+function subscribe(listener) {
+  subscribers.add(listener)
+  return () => subscribers.delete(listener)
+}
+
+function notify(rows) {
+  subscribers.forEach((listener) => listener(rows))
+}
+
+function setCachedAndNotify(rows) {
+  setCached(rows)
+  notify(rows)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -75,7 +99,7 @@ export function useLiabilities() {
         .order('due_date', { ascending: true })
 
       if (rows) {
-        setCached(rows)
+        setCachedAndNotify(rows)
         setPending(rows.filter(r => !r.paid))
         setPaid(rows.filter(r => r.paid))
       }
@@ -88,6 +112,15 @@ export function useLiabilities() {
 
   useEffect(() => { fetch() }, [fetch])
 
+  useEffect(() => {
+    const unsubscribe = subscribe((rows) => {
+      setPending(rows.filter(r => !r.paid))
+      setPaid(rows.filter(r => r.paid))
+      setLoading(false)
+    })
+    return unsubscribe
+  }, [])
+
   // Re-fetch when app returns from background
   useEffect(() => {
     const handler = () => {
@@ -95,6 +128,12 @@ export function useLiabilities() {
     }
     document.addEventListener('visibilitychange', handler)
     return () => document.removeEventListener('visibilitychange', handler)
+  }, [fetch])
+
+  useEffect(() => {
+    const handler = () => { fetch(true) }
+    window.addEventListener(LIABILITIES_INVALIDATION_EVENT, handler)
+    return () => window.removeEventListener(LIABILITIES_INVALIDATION_EVENT, handler)
   }, [fetch])
 
   const refetch = useCallback(() => fetch(true), [fetch])
@@ -106,11 +145,44 @@ export function useLiabilities() {
 
 export async function addLiability(payload) {
   const user_id = await getCurrentUserId()
-  const { error } = await withTimeout(
-    supabase.from('liabilities').insert([{ ...payload, user_id }])
-  )
-  if (error) throw error
-  invalidateCache()
+  const optimisticId = globalThis.crypto?.randomUUID?.() || `temp-${Date.now()}-${++optimisticCounter}`
+  const optimistic = {
+    id: optimisticId,
+    ...payload,
+    user_id,
+    linked_transaction_id: null,
+  }
+  const current = getCached()?.rows || []
+  setCachedAndNotify([...current, optimistic].sort(compareDueDate))
+
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('liabilities')
+        .insert([{ ...payload, user_id }])
+        .select('id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
+        .single()
+    )
+    if (error) throw error
+    let replaced = false
+    const withServerRow = (getCached()?.rows || [])
+      .map((row) => {
+        if (row.id === optimistic.id) {
+          replaced = true
+          return data
+        }
+        return row
+      })
+    if (!replaced) withServerRow.push(data)
+    const deduped = Array.from(
+      new Map(withServerRow.map((row) => [row.id, row])).values()
+    ).sort(compareDueDate)
+    setCachedAndNotify(deduped)
+    invalidateCache()
+  } catch (error) {
+    setCachedAndNotify((getCached()?.rows || []).filter((row) => row.id !== optimistic.id))
+    throw error
+  }
 }
 
 export async function markPaid(liability) {

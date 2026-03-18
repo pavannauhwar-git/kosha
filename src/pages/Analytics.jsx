@@ -11,9 +11,9 @@ import {
 import { useYearSummary } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
 import CategoryIcon from '../components/CategoryIcon'
+import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
-import { CATEGORIES } from '../lib/categories'
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -336,14 +336,9 @@ export default function Analytics() {
 
   const yoyYears = useMemo(() => YEARS.filter(y => y <= currentYear), [currentYear])
 
-  const catData = useMemo(() => Object.entries(data?.byCategory || {})
-    .sort((a, b) => b[1] - a[1]).slice(0, 6)
-    .map(([id, val]) => ({
-      id, val,
-      name: CATEGORIES.find(c => c.id === id)?.label || id,
-      color: CATEGORIES.find(c => c.id === id)?.color || C.brand,
-    })), [data?.byCategory])
-  const totalCatSpend = useMemo(() => catData.reduce((s, c) => s + c.val, 0), [catData])
+  const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
+    .sort((a, b) => b[1] - a[1]).slice(0, 8), [data?.byCategory])
+  const categoryTotal = useMemo(() => catEntries.reduce((s, [, v]) => s + v, 0) || 1, [catEntries])
 
   const vehicleData = useMemo(
     () => Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1]),
@@ -518,31 +513,11 @@ export default function Analytics() {
           )}
 
           {/* ── 6. Spending by Category ──────────────────────────────── */}
-          {catData.length > 0 && (
-            <div className="card p-5">
-              <p className="section-label mb-4">Spending by Category</p>
-              <div className="space-y-4">
-                {catData.map(cat => {
-                  const pct = totalCatSpend > 0 ? Math.round((cat.val / totalCatSpend) * 100) : 0
-                  return (
-                    <div key={cat.id}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <CategoryIcon categoryId={cat.id} size={14} />
-                        <span className="text-label text-ink font-medium flex-1 truncate">{cat.name}</span>
-                        <span className="text-caption text-ink-3 tabular-nums">{pct}%</span>
-                        <span className="text-label font-semibold text-ink tabular-nums">{fmt(cat.val)}</span>
-                      </div>
-                      <div className="bar-light-track">
-                        <motion.div className="bar-light-fill"
-                          initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-                          transition={{ duration: 0.6, ease: 'easeOut' }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+          {catEntries.length > 0 && (
+            <CategorySpendingChart
+              entries={catEntries}
+              total={categoryTotal}
+            />
           )}
 
           {/* ── 7. Portfolio donut ───────────────────────────────────── */}
