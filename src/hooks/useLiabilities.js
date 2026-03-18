@@ -9,6 +9,7 @@ const TTL_MS  = 90_000  // 90 seconds
 const CACHE_KEY = 'liabilities'
 export const LIABILITIES_INVALIDATION_EVENT = 'kosha:liabilities:invalidated'
 const subscribers = new Set()
+let optimisticCounter = 0
 
 function getCached() {
   const entry = cache.get(CACHE_KEY)
@@ -27,6 +28,12 @@ function invalidateCache() {
 
 function isFresh(entry) {
   return Date.now() - entry.ts < TTL_MS
+}
+
+function compareDueDate(a, b) {
+  const left = a?.due_date || ''
+  const right = b?.due_date || ''
+  return left.localeCompare(right)
 }
 
 function subscribe(listener) {
@@ -93,6 +100,8 @@ export function useLiabilities() {
 
       if (rows) {
         setCachedAndNotify(rows)
+        setPending(rows.filter(r => !r.paid))
+        setPaid(rows.filter(r => r.paid))
       }
     } catch {
       // Network failure — cached data stays visible, no spinner
@@ -136,14 +145,15 @@ export function useLiabilities() {
 
 export async function addLiability(payload) {
   const user_id = await getCurrentUserId()
+  const optimisticId = globalThis.crypto?.randomUUID?.() || `temp-${Date.now()}-${++optimisticCounter}`
   const optimistic = {
-    id: `optimistic-${Date.now()}`,
+    id: optimisticId,
     ...payload,
     user_id,
     linked_transaction_id: null,
   }
   const current = getCached()?.rows || []
-  setCachedAndNotify([...current, optimistic].sort((a, b) => String(a.due_date).localeCompare(String(b.due_date))))
+  setCachedAndNotify([...current, optimistic].sort(compareDueDate))
 
   try {
     const { data, error } = await withTimeout(
@@ -154,8 +164,20 @@ export async function addLiability(payload) {
         .single()
     )
     if (error) throw error
-    const withServerRow = (getCached()?.rows || []).map((row) => (row.id === optimistic.id ? data : row))
-    setCachedAndNotify(withServerRow)
+    let replaced = false
+    const withServerRow = (getCached()?.rows || [])
+      .map((row) => {
+        if (row.id === optimistic.id) {
+          replaced = true
+          return data
+        }
+        return row
+      })
+    if (!replaced) withServerRow.push(data)
+    const deduped = Array.from(
+      new Map(withServerRow.map((row) => [row.id, row])).values()
+    ).sort(compareDueDate)
+    setCachedAndNotify(deduped)
     invalidateCache()
   } catch (error) {
     setCachedAndNotify((getCached()?.rows || []).filter((row) => row.id !== optimistic.id))
