@@ -8,7 +8,6 @@ import { useRunningBalance } from '../hooks/useTransactions'
 import { deleteTransaction, isOptimisticId, invalidateCache } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
-import { useAppData } from '../hooks/useAppDataStore'
 import { useGlobalTransactionMutation } from '../hooks/useGlobalTransactionMutation'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import TransactionItem from '../components/TransactionItem'
@@ -110,8 +109,7 @@ export default function Dashboard() {
   // ── Error toast ──────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
 
-  const { addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit } = useAppData()
-
+  
   // Tracks which transaction id is being edited so we can clear the
   // localEdits overlay after onConfirmed (refetch returns fresh server data)
   const pendingEditId = useRef(null)
@@ -185,9 +183,9 @@ export default function Dashboard() {
     if (payload.id) {
       // Edit existing transaction — apply local + global optimistic edit
       pendingEditId.current = payload.id
-      applyLocalEdit(payload.id, payload)
+      
       if (payload._original) {
-        addOptimisticEdit(payload.id, payload._original, payload)
+        
       }
     } else {
       // New transaction — Brain broadcasts to ALL caches simultaneously
@@ -198,8 +196,8 @@ export default function Dashboard() {
   // ── handleConfirmed: save succeeded ──────────────────────────────────
   const handleConfirmed = useCallback((serverTxn) => {
     if (pendingEditId.current) {
-      removeOptimisticEdit(pendingEditId.current)
-      clearLocalEdit(pendingEditId.current)
+      
+      
       pendingEditId.current = null
     } else {
       // New transaction — remove optimistic entry; refetch brings the real row
@@ -210,8 +208,8 @@ export default function Dashboard() {
   // ── handleFailed: save failed — roll back + show toast ────────────────
   const handleFailed = useCallback((msg) => {
     if (pendingEditId.current) {
-      revertLocalEdit(pendingEditId.current)
-      removeOptimisticEdit(pendingEditId.current)
+      
+      
       pendingEditId.current = null
     } else {
       onTransactionFailed()
@@ -233,7 +231,7 @@ export default function Dashboard() {
     if (isOptimisticId(id)) return
 
     const txn = recentRef.current.find(t => t.id === id)
-    addOptimisticDelete(id, txn)
+    
 
     try {
       await deleteTransaction(id)
@@ -251,7 +249,7 @@ export default function Dashboard() {
       invalidateCache('txns:')
       invalidateCache('balance:')
     } catch (e) {
-      removeOptimisticDelete(id)
+      
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }

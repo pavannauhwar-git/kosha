@@ -7,7 +7,7 @@ import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus, DownloadSimple } from '@phosphor-icons/react'
-import { useAppData } from '../hooks/useAppDataStore'
+
 import { useGlobalTransactionMutation } from '../hooks/useGlobalTransactionMutation'
 
 const TYPES = [
@@ -64,8 +64,7 @@ export default function Transactions() {
   const hasMore = useMemo(() => data.length > displayCount, [data.length, displayCount])
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
-  const { addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit } = useAppData()
-
+  
   // Brain hook — centralized add-transaction lifecycle manager.
   const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
     useGlobalTransactionMutation()
@@ -81,7 +80,7 @@ export default function Transactions() {
     if (isOptimisticId(id)) return
 
     const txn = dataRef.current.find(t => t.id === id)
-    addOptimisticDelete(id, txn)
+    
 
     try {
       await deleteTransaction(id)
@@ -99,7 +98,7 @@ export default function Transactions() {
       invalidateCache('txns:')
       invalidateCache('balance:')
     } catch (e) {
-      removeOptimisticDelete(id)
+      
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }
@@ -335,9 +334,9 @@ export default function Transactions() {
           if (payload.id) {
             // Edit existing transaction
             pendingEditId.current = payload.id
-            applyLocalEdit(payload.id, payload)
+            
             if (payload._original) {
-              addOptimisticEdit(payload.id, payload._original, payload)
+              
             }
           } else {
             // New transaction — Brain broadcasts to all caches
@@ -347,8 +346,8 @@ export default function Transactions() {
         }}
         onConfirmed={(serverTxn) => {
           if (pendingEditId.current) {
-            removeOptimisticEdit(pendingEditId.current)
-            clearLocalEdit(pendingEditId.current)
+            
+            
             pendingEditId.current = null
           } else {
             // New transaction — remove optimistic entry; refetch brings the real row
@@ -357,8 +356,8 @@ export default function Transactions() {
         }}
         onFailed={(msg) => {
           if (pendingEditId.current) {
-            revertLocalEdit(pendingEditId.current)
-            removeOptimisticEdit(pendingEditId.current)
+            
+            
             pendingEditId.current = null
           } else {
             onTransactionFailed()

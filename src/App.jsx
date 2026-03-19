@@ -2,10 +2,11 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from
 import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './hooks/useAuth'
-import { AppDataProvider } from './hooks/useAppDataStore'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from './lib/queryClient'
+// Data Store is dummy now
 import { useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import { invalidateCache } from './hooks/useTransactions'
 import AuthGuard from './components/AuthGuard'
 import ProfileMenu from './components/ProfileMenu'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
@@ -168,20 +169,28 @@ function GlobalRealtimeSync() {
   useEffect(() => {
     if (!user) return
 
-    const channel = supabase.channel('schema-db-changes')
+    // Debounce invalidations to prevent double-fetching on self-caused mutations
+    // which already invalidate their caches on success.
+    let timeoutId;
+
+    const channel = supabase.channel(`schema-db-changes-${user.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'transactions' },
-        () => {
-          invalidateCache('txns:')
-          invalidateCache('month:')
-          invalidateCache('year:')
-          invalidateCache('balance:')
+        (payload) => {
+          clearTimeout(timeoutId)
+          timeoutId = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] })
+            queryClient.invalidateQueries({ queryKey: ['month'] })
+            queryClient.invalidateQueries({ queryKey: ['year'] })
+            queryClient.invalidateQueries({ queryKey: ['balance'] })
+          }, 300) // 300ms debounce
         }
       )
       .subscribe()
 
     return () => {
+      clearTimeout(timeoutId)
       supabase.removeChannel(channel)
     }
   }, [user])
@@ -193,7 +202,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppDataProvider>
+        <QueryClientProvider client={queryClient}>
           <GlobalRealtimeSync />
           <div className="min-h-dvh bg-kosha-bg">
             <Routes>
@@ -239,7 +248,7 @@ export default function App() {
             <GlobalHeader />
             <BottomNav />
           </div>
-        </AppDataProvider>
+        </QueryClientProvider>
       </AuthProvider>
     </BrowserRouter>
   )
