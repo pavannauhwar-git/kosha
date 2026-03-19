@@ -6,9 +6,7 @@ import {
   addLiability,
   markPaid,
   deleteLiability,
-  refreshLiabilityCache,
 } from '../hooks/useLiabilities'
-import { invalidateCache as invalidateTxnCache } from '../hooks/useTransactions'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
@@ -63,8 +61,7 @@ export default function Bills() {
     setAddSaving(true)
 
     try {
-      await addLiability(billData, { invalidate: false })
-      await refreshLiabilityCache()
+      await addLiability(billData)
       setShowAdd(false)
       setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
     } catch (e) {
@@ -79,9 +76,7 @@ export default function Bills() {
     if (!bill?.id || payingId || deletingId) return
     setPayingId(bill.id)
     try {
-      await markPaid(bill, { invalidate: false })
-      await refreshLiabilityCache()
-      void invalidateTxnCache().catch(() => {})
+      await markPaid(bill)
     } catch (e) {
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)
@@ -93,8 +88,7 @@ export default function Bills() {
     if (!id || payingId || deletingId) return
     setDeletingId(id)
     try {
-      await deleteLiability(id, { invalidate: false })
-      await refreshLiabilityCache()
+      await deleteLiability(id)
     } catch (e) {
       setErrToast(e.message || 'Could not delete bill. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)
@@ -211,12 +205,7 @@ export default function Bills() {
             const shadow = tab === 'pending' ? dueShadow(days) : 'card'
             const chipCls = dueChipClass(days)
             return (
-              <motion.div key={bill.id}
-                layout
-                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={`${shadow} p-4`}
-              >
+              <div key={bill.id} className={`${shadow} p-4`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -270,7 +259,7 @@ export default function Bills() {
                     </button>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )
           })}
         </div>
