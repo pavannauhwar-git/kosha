@@ -68,18 +68,28 @@ export function useMonthSummary(year, month) {
         .lte('date', `${year}-${pad}-${days}`)
 
       if (error) throw error
+      
+      const safeRows = rows || []
 
-      return (rows || []).reduce((acc, row) => {
-        const amt = Number(row.amount)
-        if (row.type === 'expense') {
-          acc.expense += amt
-        } else if (row.type === 'income') {
-          acc.income += amt
-        } else if (row.type === 'investment') {
-          acc.investment += amt
-        }
-        return acc
-      }, { expense: 0, income: 0, investment: 0 })
+      const earned = safeRows.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0)
+      const repayments = safeRows.filter(r => r.type === 'income' && r.is_repayment).reduce((s, r) => s + +r.amount, 0)
+      const expense = safeRows.filter(r => r.type === 'expense').reduce((s, r) => s + +r.amount, 0)
+      const investment = safeRows.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0)
+
+      const byCategory = {}
+      safeRows.filter(r => r.type === 'expense').forEach(r => {
+        byCategory[r.category] = (byCategory[r.category] || 0) + +r.amount
+      })
+      const byVehicle = {}
+      safeRows.filter(r => r.type === 'investment').forEach(r => {
+        const k = r.investment_vehicle || 'Other'
+        byVehicle[k] = (byVehicle[k] || 0) + +r.amount
+      })
+
+      return {
+        earned, repayments, expense, investment, byCategory, byVehicle,
+        count: safeRows.length
+      }
     }
   })
 
@@ -92,26 +102,56 @@ export function useYearSummary(year) {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from('transactions')
-        .select('type, amount, date, category')
+        .select('id, date, type, amount, description, category, investment_vehicle, is_repayment')
         .gte('date', `${year}-01-01`)
         .lte('date', `${year}-12-31`)
 
       if (error) throw error
       
-      const summary = { expense: 0, income: 0, investment: 0, monthly: {} }
-      for (let i = 1; i <= 12; i++) {
-        summary.monthly[i] = { expense: 0, income: 0, investment: 0 }
-      }
-
-      ;(rows || []).forEach(row => {
-        const amt = Number(row.amount)
-        const m = new Date(row.date).getMonth() + 1
-        if (row.type && summary[row.type] !== undefined) {
-          summary[row.type] += amt
-          summary.monthly[m][row.type] += amt
+      const safeRows = rows || []
+      
+      const monthly = Array.from({ length: 12 }, (_, i) => {
+        const m = i + 1
+        const mo = safeRows.filter(r => new Date(r.date).getMonth() + 1 === m)
+        return {
+          month: m,
+          income: mo.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0),
+          expense: mo.filter(r => r.type === 'expense').reduce((s, r) => s + +r.amount, 0),
+          investment: mo.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0),
         }
       })
-      return summary
+
+      const totalIncome = safeRows.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0)
+      const totalRepayments = safeRows.filter(r => r.type === 'income' && r.is_repayment).reduce((s, r) => s + +r.amount, 0)
+      const totalExpense = safeRows.filter(r => r.type === 'expense').reduce((s, r) => s + +r.amount, 0)
+      const totalInvestment = safeRows.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0)
+
+      const byCategory = {}
+      safeRows.filter(r => r.type === 'expense').forEach(r => {
+        byCategory[r.category] = (byCategory[r.category] || 0) + +r.amount
+      })
+      const byVehicle = {}
+      safeRows.filter(r => r.type === 'investment').forEach(r => {
+        const k = r.investment_vehicle || 'Other'
+        byVehicle[k] = (byVehicle[k] || 0) + +r.amount
+      })
+
+      const top5 = safeRows
+        .filter(r => r.type === 'expense')
+        .sort((a, b) => +b.amount - +a.amount)
+        .slice(0, 5)
+
+      return {
+        monthly,
+        totalIncome,
+        totalRepayments,
+        totalExpense,
+        totalInvestment,
+        byCategory,
+        byVehicle,
+        top5,
+        count: safeRows.length
+      }
     }
   })
 
@@ -122,14 +162,19 @@ export function useRunningBalance(year, month) {
   const { data, isLoading } = useQuery({
     queryKey: ['balance', year, month],
     queryFn: async () => {
-      const { data: rows, error } = await supabase.from('transactions').select('amount, type')
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
+      const { data: rows, error } = await supabase
+        .from('transactions')
+        .select('type, amount')
+        .lte('date', endDate)
+
       if (error) throw error
       return (rows || []).reduce((acc, r) => {
         return acc + (r.type === 'income' ? Number(r.amount) : -Number(r.amount))
       }, 0)
     }
   })
-  return { data, loading: isLoading }
+  return { balance: data, loading: isLoading }
 }
 
 export async function addTransaction(payload) {
