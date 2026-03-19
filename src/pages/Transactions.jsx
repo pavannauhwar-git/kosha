@@ -50,11 +50,8 @@ export default function Transactions() {
 
   const {
     data,
-    prependOptimistic,
-    replaceOptimistic,
     applyLocalEdit,
     clearLocalEdit,
-    applyLocalDelete,
   } = useTransactions({
     type: typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter || undefined,
@@ -69,7 +66,6 @@ export default function Transactions() {
   const { addOptimisticDelete, removeOptimisticDelete, addOptimisticEdit, removeOptimisticEdit } = useAppData()
 
   // Brain hook — centralized add-transaction lifecycle manager.
-  // Handles Phase 1 (global broadcast), Phase 2 (UUID swap), Phase 3 (background sync).
   const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
     useGlobalTransactionMutation()
 
@@ -80,37 +76,27 @@ export default function Transactions() {
   const handleDelete = useCallback(async (id) => {
     if (!id) return
 
-    // Guard: never attempt to delete an item that still has a temporary optimistic ID.
-    // The Brain hook's UUID swap (Phase 2) replaces these IDs on success, so the user
-    // can only reach here with a real UUID. If somehow a ghost row slips through,
-    // silently bail out rather than crashing with a Supabase foreign-key error.
+    // Guard: never attempt to delete an item with a temporary optimistic ID.
     if (isOptimisticId(id)) return
 
-    // Look up the full transaction data so summary/balance hooks can
-    // subtract it immediately (optimistic delete propagation).
     const txn = dataRef.current.find(t => t.id === id)
     addOptimisticDelete(id, txn)
-    applyLocalDelete(id)
 
     try {
       await deleteTransaction(id)
-      // deleteTransaction already called invalidateCache which triggers
-      // background refetches on all mounted hooks via CACHE_INVALIDATION_EVENT.
-      // Clean up the optimistic overlay now that the server confirmed the delete.
       removeOptimisticDelete(id)
     } catch (e) {
       removeOptimisticDelete(id)
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [addOptimisticDelete, removeOptimisticDelete, applyLocalDelete])
+  }, [addOptimisticDelete, removeOptimisticDelete])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)
     setShowAdd(true)
   }, [])
 
-  // After handleTap, add:
   const handleDuplicate = useCallback((txn) => {
     setEditTxn(null)
     setDuplicateTxn(txn)
@@ -334,27 +320,25 @@ export default function Transactions() {
         initialType={addType}
         onSaved={(payload) => {
           if (payload.id) {
-            // Edit existing transaction — local + global optimistic edit
+            // Edit existing transaction
             pendingEditId.current = payload.id
             applyLocalEdit(payload.id, payload)
             if (payload._original) {
               addOptimisticEdit(payload.id, payload._original, payload)
             }
           } else {
-            // New transaction — Phase 1: Brain broadcasts to ALL caches simultaneously
+            // New transaction — Brain broadcasts to all caches
             onTransactionSaved(payload)
             setDisplayCount(n => n + 1)
           }
         }}
         onConfirmed={(serverTxn) => {
           if (pendingEditId.current) {
-            // Edit: remove overlays immediately — the event-driven refetch from
-            // updateTransaction's invalidateCache will bring fresh server data.
             removeOptimisticEdit(pendingEditId.current)
             clearLocalEdit(pendingEditId.current)
             pendingEditId.current = null
           } else {
-            // New transaction — Phase 2: Brain swaps __optimistic__ ID with real UUID
+            // New transaction — remove optimistic entry; refetch brings the real row
             onTransactionConfirmed(serverTxn)
           }
         }}
@@ -364,7 +348,6 @@ export default function Transactions() {
             removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           } else {
-            // New transaction failed — Brain rolls back ghost row + syncs all caches
             onTransactionFailed()
           }
           setToast(msg)

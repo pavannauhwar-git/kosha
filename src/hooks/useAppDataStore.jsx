@@ -1,31 +1,12 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 
 const AppDataContext = createContext(null)
-const OPT_KEY = 'kosha_optimistic_txns'
-const OPT_DEL_KEY = 'kosha_optimistic_deleted_txn_ids'
 
 export function AppDataProvider({ children }) {
-  const [optimisticTxns, setOptimisticTxns] = useState(() => {
-    try {
-      const raw = localStorage.getItem(OPT_KEY)
-      if (!raw) return []
-      const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  })
-
-  const [optimisticDeletedIds, setOptimisticDeletedIds] = useState(() => {
-    try {
-      const raw = localStorage.getItem(OPT_DEL_KEY)
-      if (!raw) return []
-      const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  })
+  // Transient in-flight optimistic state — not persisted to localStorage.
+  // On app restart the fresh fetch brings the correct server data.
+  const [optimisticTxns, setOptimisticTxns] = useState([])
+  const [optimisticDeletedIds, setOptimisticDeletedIds] = useState([])
 
   // Full transaction data for deleted items — lets summary/balance hooks
   // subtract the right amounts before the server confirms the delete.
@@ -34,30 +15,6 @@ export function AppDataProvider({ children }) {
   // Optimistic edits — { id, original: {...}, updated: {...} } entries
   // let summary/balance hooks compute deltas for in-flight edits.
   const [optimisticEdits, setOptimisticEdits] = useState([])
-
-  useEffect(() => {
-    try {
-      if (!optimisticTxns.length) {
-        localStorage.removeItem(OPT_KEY)
-      } else {
-        localStorage.setItem(OPT_KEY, JSON.stringify(optimisticTxns))
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, [optimisticTxns])
-
-  useEffect(() => {
-    try {
-      if (!optimisticDeletedIds.length) {
-        localStorage.removeItem(OPT_DEL_KEY)
-      } else {
-        localStorage.setItem(OPT_DEL_KEY, JSON.stringify(optimisticDeletedIds))
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, [optimisticDeletedIds])
 
   const addOptimisticTxn = useCallback((payload, optimisticId) => {
     const id = optimisticId || '__optimistic__' + Date.now() + Math.random().toString(16).slice(2)
@@ -111,29 +68,16 @@ export function AppDataProvider({ children }) {
     setOptimisticTxns(prev => prev.filter(t => !serverKeys.has(keyOf(t))))
   }, [])
 
-  const resolveOptimisticTxn = useCallback((optimisticId, serverTxn) => {
+  const resolveOptimisticTxn = useCallback((optimisticId) => {
     if (!optimisticId) return
-    setOptimisticTxns(prev => {
-      let found = false
-      const replaced = prev.map((t) => {
-        const id = t._id || t.id
-        if (id === optimisticId) {
-          found = true
-          return serverTxn ? { ...serverTxn } : t
-        }
-        return t
-      })
-      return found ? replaced : prev
-    })
+    // Remove the optimistic entry entirely. Once the server confirms and
+    // addTransaction() calls invalidateCache(), the refetch brings the real row.
+    setOptimisticTxns(prev => prev.filter(t => (t._id || t.id) !== optimisticId))
   }, [])
 
   const removeOptimisticTxn = useCallback((id) => {
     if (!id) return
     setOptimisticTxns(prev => prev.filter(t => (t._id || t.id) !== id))
-  }, [])
-
-  const clearOptimisticTxns = useCallback(() => {
-    setOptimisticTxns([])
   }, [])
 
   const addOptimisticEdit = useCallback((id, original, updated) => {
@@ -158,7 +102,6 @@ export function AppDataProvider({ children }) {
     addOptimisticTxn,
     pruneOptimisticTxns,
     removeOptimisticTxn,
-    clearOptimisticTxns,
     resolveOptimisticTxn,
     optimisticDeletedIds,
     optimisticDeletedTxns,

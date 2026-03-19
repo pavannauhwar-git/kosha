@@ -4,26 +4,8 @@ import { invalidateCache } from './useTransactions'
 
 /**
  * useGlobalTransactionMutation — centralized "Brain" hook for add-transaction mutations.
- *
- * Implements the three-phase optimistic lifecycle:
- *
- *  Phase 1 — Global Broadcast  (onTransactionSaved)
- *    Generates a __optimistic__ ID and immediately pushes the new item into
- *    the global AppDataStore. Because useTransactions, useMonthSummary,
- *    useRunningBalance, and useYearSummary all read from the store, every
- *    mounted page reacts in real-time without any extra wiring.
- *
- *  Phase 2 — UUID Swap  (onTransactionConfirmed)
- *    Once Supabase returns the real database record the fake ID is replaced
- *    with the real UUID in the global store. This prevents handleDelete from
- *    crashing when it tries to call deleteTransaction() with a non-existent
- *    __optimistic__ ID.
- *
- *  Phase 3 — Background Sync  (onTransactionConfirmed / onTransactionFailed)
- *    All related cache keys (txns, month summary, balance, year analytics)
- *    are invalidated via invalidateCache(), which dispatches
- *    CACHE_INVALIDATION_EVENT. Every mounted hook hears the event and
- *    silently re-fetches in the background, ensuring eventual consistency.
+ * Manages the three-phase optimistic lifecycle: global broadcast → UUID swap → background sync.
+ * Used by Dashboard and Transactions to ensure all hooks see optimistic state immediately.
  */
 export function useGlobalTransactionMutation() {
   const {
@@ -38,15 +20,11 @@ export function useGlobalTransactionMutation() {
   /**
    * Phase 1 — Global Broadcast.
    * Call this from AddTransactionSheet.onSaved for new transactions.
-   * Edits (payload.id is set) are handled by the addOptimisticEdit flow — this
-   * function is a no-op for them.
+   * No-op for edits (payload.id is set) — those use the addOptimisticEdit flow.
    */
   const onTransactionSaved = useCallback((payload) => {
     if (payload.id) return
 
-    // Broadcast to ALL caches simultaneously via AppDataStore.
-    // useTransactions, useMonthSummary, useRunningBalance, useYearSummary
-    // all subscribe to optimisticTxns and react immediately.
     const optimisticId = addOptimisticTxn(payload)
     pendingOptimisticId.current = optimisticId
 
@@ -54,30 +32,20 @@ export function useGlobalTransactionMutation() {
   }, [addOptimisticTxn])
 
   /**
-   * Phase 2 — UUID Swap.
+   * Phase 2 — Cleanup.
    * Call this from AddTransactionSheet.onConfirmed once Supabase responds.
-   *
-   * Swaps the fake __optimistic__ ID with the real UUID in the global store
-   * so subsequent deletes/edits always reference a real database row and never crash.
-   *
-   * Phase 3 (Background Sync) is handled entirely by the CRUD functions
-   * (addTransaction / updateTransaction) which call invalidateCache()
-   * internally. No duplicate invalidation is needed here.
+   * Removes the optimistic entry — the cache-invalidation refetch brings the real row.
    */
-  const onTransactionConfirmed = useCallback((serverTxn) => {
+  const onTransactionConfirmed = useCallback(() => {
     if (pendingOptimisticId.current) {
-      if (serverTxn) {
-        // Swap in the global store — resolves for ALL mounted hooks
-        resolveOptimisticTxn(pendingOptimisticId.current, serverTxn)
-      }
+      resolveOptimisticTxn(pendingOptimisticId.current)
       pendingOptimisticId.current = null
     }
   }, [resolveOptimisticTxn])
 
   /**
-   * Rollback + Phase 3 — Background Sync.
-   * Call this from AddTransactionSheet.onFailed to discard only the ghost row
-   * that failed — other in-flight optimistic transactions are preserved.
+   * Rollback — call from AddTransactionSheet.onFailed.
+   * Removes only the ghost row that failed; other in-flight optimistic transactions are preserved.
    */
   const onTransactionFailed = useCallback(() => {
     const failedId = pendingOptimisticId.current
@@ -86,7 +54,7 @@ export function useGlobalTransactionMutation() {
       removeOptimisticTxn(failedId)
     }
 
-    // Phase 3 — Sync even on failure to converge all caches back to server truth
+    // Sync all caches back to server truth
     invalidateCache('txns:')
     invalidateCache('month:')
     invalidateCache('balance:')
@@ -97,7 +65,6 @@ export function useGlobalTransactionMutation() {
     onTransactionSaved,
     onTransactionConfirmed,
     onTransactionFailed,
-    /** Exposed so callers can inspect the in-flight optimistic ID if needed */
     pendingOptimisticId,
   }
 }
