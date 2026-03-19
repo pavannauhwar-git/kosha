@@ -13,7 +13,9 @@
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient } from '../lib/queryClient'
+import { invalidateQueryFamilies } from '../lib/queryClient'
+
+export const BUDGET_INVALIDATION_KEYS = [['budgets']]
 
 // ── Session helper ────────────────────────────────────────────────────────
 async function getUserId() {
@@ -23,7 +25,7 @@ async function getUserId() {
 }
 
 function invalidate() {
-  queryClient.invalidateQueries({ queryKey: ['budgets'] })
+  return invalidateQueryFamilies(BUDGET_INVALIDATION_KEYS)
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────
@@ -46,7 +48,7 @@ export function useBudgets() {
       .from('budgets')
       .upsert({ user_id, category, amount }, { onConflict: 'user_id,category' })
     if (error) throw error
-    invalidate()
+    await invalidate()
   }, [])
 
   // ── removeBudget: delete a category budget ────────────────────────────
@@ -58,7 +60,7 @@ export function useBudgets() {
       .eq('category', category)
       .eq('user_id', user_id)
     if (error) throw error
-    invalidate()
+    await invalidate()
   }, [])
 
   return { budgets: budgets || {}, loading: isLoading, setBudget, removeBudget }

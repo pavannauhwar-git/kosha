@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:join-flow": "node scripts/test_join_flow.mjs",
+    "test:liabilities-realtime": "node scripts/test_liabilities_realtime.mjs"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.10",

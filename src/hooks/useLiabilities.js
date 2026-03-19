@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient } from '../lib/queryClient'
+import { invalidateQueryFamilies } from '../lib/queryClient'
 import { invalidateCache as invalidateTxnCache } from './useTransactions'
+
+export const LIABILITY_INVALIDATION_KEYS = [['liabilities']]
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 async function getCurrentUserId() {
@@ -11,8 +13,8 @@ async function getCurrentUserId() {
   return session.user.id
 }
 
-function invalidateCache() {
-  return queryClient.invalidateQueries({ queryKey: ['liabilities'] })
+export function invalidateLiabilityCache() {
+  return invalidateQueryFamilies(LIABILITY_INVALIDATION_KEYS)
 }
 
 // ── useLiabilities ────────────────────────────────────────────────────────
@@ -45,7 +47,7 @@ export async function addLiability(payload) {
     .select('id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
     .single()
   if (error) throw error
-  await invalidateCache()
+  await invalidateLiabilityCache()
   return data
 }
 
@@ -94,11 +96,11 @@ export async function markPaid(liability) {
   }
 
   // Invalidate both caches — UI refreshes with server truth
-  await Promise.all([invalidateCache(), invalidateTxnCache()])
+  await Promise.all([invalidateLiabilityCache(), invalidateTxnCache()])
 }
 
 export async function deleteLiability(id) {
   const { error } = await supabase.from('liabilities').delete().eq('id', id)
   if (error) throw error
-  await invalidateCache()
+  await invalidateLiabilityCache()
 }

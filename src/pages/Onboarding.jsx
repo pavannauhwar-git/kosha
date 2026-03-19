@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { C } from '../lib/colors'
 import { addTransaction } from '../hooks/useTransactions'
+import { supabase } from '../lib/supabase'
+import { consumeInviteToken, getInviteToken } from '../lib/invites'
 import { CATEGORIES } from '../lib/categories'
 import CategoryIcon from '../components/CategoryIcon'
 
@@ -283,7 +285,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
 // ── Main Onboarding page ──────────────────────────────────────────────────
 export default function Onboarding() {
   const navigate = useNavigate()
-  const { token } = useParams()
+  const location = useLocation()
   const { user, updateProfile } = useAuth()
 
   const [step,   setStep]   = useState(0)
@@ -291,19 +293,18 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false)
 
   async function consumeInvite() {
-    if (!token) return
+    const inviteToken = getInviteToken(location.search)
+    if (!inviteToken || !user?.id) return
     try {
-      const { supabase } = await import('../lib/supabase')
-      const { data: invite } = await supabase
-        .from('invites').select('id')
-        .eq('token', token).is('used_by', null).single()
-      if (invite) {
-        await supabase.from('invites').update({
-          used_by: user.id,
-          used_at: new Date().toISOString(),
-        }).eq('id', invite.id)
-      }
+      await consumeInviteToken({
+        supabaseClient: supabase,
+        inviteToken,
+        userId: user.id,
+      })
     } catch (_) {}
+    finally {
+      sessionStorage.removeItem('pendingInviteToken')
+    }
   }
 
   async function handleNameNext(displayName) {

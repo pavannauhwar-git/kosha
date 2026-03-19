@@ -75,6 +75,20 @@ exception
   when undefined_object then null;
 end $$;
 
+-- Enable Supabase Realtime for liabilities table so bills sync cross-device
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'liabilities'
+  ) then
+    alter publication supabase_realtime add table liabilities;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
 -- Foreign keys against Supabase auth users
 do $$
 begin
@@ -236,7 +250,17 @@ with check (auth.uid() = created_by);
 drop policy if exists "invites: update to consume" on invites;
 create policy "invites: update to consume" on invites
 for update to public
-using ((auth.uid() = created_by) or (used_by is null));
+using (
+  (auth.uid() = created_by)
+  or (used_by is null)
+)
+with check (
+  (auth.uid() = created_by)
+  or (
+    used_by = auth.uid()
+    and used_at is not null
+  )
+);
 
 -- Create profile row automatically when a new auth user is inserted
 create or replace function public.handle_new_user()

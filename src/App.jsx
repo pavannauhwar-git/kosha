@@ -3,9 +3,11 @@ import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from './lib/queryClient'
+import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
 import { useEffect } from 'react'
 import { supabase } from './lib/supabase'
+import { TRANSACTION_INVALIDATION_KEYS } from './hooks/useTransactions'
+import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
 import AuthGuard from './components/AuthGuard'
 import ProfileMenu from './components/ProfileMenu'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
@@ -40,6 +42,11 @@ const NAV = [
   { path: '/monthly', label: 'Monthly', Icon: CalendarDots },
   { path: '/analytics', label: 'Insights', Icon: ChartBar },
   { path: '/bills', label: 'Bills', Icon: Receipt },
+]
+
+const REALTIME_INVALIDATION_POLICIES = [
+  { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS },
+  { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
 ]
 
 // ── Global header — ProfileMenu fixed top-right, rendered once ────────────
@@ -165,26 +172,36 @@ function GlobalRealtimeSync() {
 
     // Debounce invalidations to prevent double-fetching on self-caused mutations
     // which already invalidate their caches on success.
-    let timeoutId;
+    const timeoutIds = new Map()
 
-    const channel = supabase.channel(`schema-db-changes-${user.id}`)
-      .on(
+    const scheduleInvalidate = (key, invalidate) => {
+      const existingTimeoutId = timeoutIds.get(key)
+      clearTimeout(existingTimeoutId)
+
+      const timeoutId = setTimeout(() => {
+        timeoutIds.delete(key)
+        void invalidate()
+      }, 300)
+
+      timeoutIds.set(key, timeoutId)
+    }
+
+    let channel = supabase.channel(`schema-db-changes-${user.id}`)
+
+    for (const policy of REALTIME_INVALIDATION_POLICIES) {
+      channel = channel.on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'transactions' },
-        (payload) => {
-          clearTimeout(timeoutId)
-          timeoutId = setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['transactions'] })
-            queryClient.invalidateQueries({ queryKey: ['month'] })
-            queryClient.invalidateQueries({ queryKey: ['year'] })
-            queryClient.invalidateQueries({ queryKey: ['balance'] })
-          }, 300) // 300ms debounce
+        { event: '*', schema: 'public', table: policy.table },
+        () => {
+          scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
         }
       )
-      .subscribe()
+    }
+
+    channel = channel.subscribe()
 
     return () => {
-      clearTimeout(timeoutId)
+      timeoutIds.forEach(timeoutId => clearTimeout(timeoutId))
       supabase.removeChannel(channel)
     }
   }, [user])

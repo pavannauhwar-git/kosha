@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient } from '../lib/queryClient'
+import { invalidateQueryFamilies } from '../lib/queryClient'
 
+export const TRANSACTION_INVALIDATION_KEYS = [
+  ['transactions'],
+  ['month'],
+  ['year'],
+  ['balance'],
+]
 
 export function useDebounce(value, ms = 300) {
   const [debounced, setDebounced] = useState(value)
@@ -175,24 +181,22 @@ export async function addTransaction(payload) {
   const user_id = await getCurrentUserId()
   const { data, error } = await supabase.from('transactions').insert({ ...payload, user_id }).select().single()
   if (error) throw error
+  await invalidateCache()
   return data
 }
 export async function updateTransaction(id, payload) {
   const { data, error } = await supabase.from('transactions').update(payload).eq('id', id).select().single()
   if (error) throw error
+  await invalidateCache()
   return data
 }
 export async function deleteTransaction(id) {
   const { error } = await supabase.from('transactions').delete().eq('id', id)
   if (error) throw error
+  await invalidateCache()
   return true
 }
 
 export function invalidateCache() {
-  return Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['transactions'] }),
-    queryClient.invalidateQueries({ queryKey: ['month'] }),
-    queryClient.invalidateQueries({ queryKey: ['year'] }),
-    queryClient.invalidateQueries({ queryKey: ['balance'] }),
-  ])
+  return invalidateQueryFamilies(TRANSACTION_INVALIDATION_KEYS)
 }

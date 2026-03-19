@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useTransactions, deleteTransaction, useDebounce, invalidateCache } from '../hooks/useTransactions'
+import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
@@ -57,7 +57,6 @@ export default function Transactions() {
     if (!id) return
     try {
       await deleteTransaction(id)
-      await invalidateCache()
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)

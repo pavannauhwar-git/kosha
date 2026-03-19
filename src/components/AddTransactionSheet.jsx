@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CreditCard, NotePencil } from '@phosphor-icons/react'
 import { ChevronRight } from 'lucide-react'
-import { addTransaction, updateTransaction, invalidateCache } from '../hooks/useTransactions'
+import { addTransaction, updateTransaction } from '../hooks/useTransactions'
 import CategoryIcon from './CategoryIcon'
 import { CATEGORIES } from '../lib/categories'
 import { parseTransactionSmart } from '../lib/nlp'
@@ -254,7 +254,6 @@ export default function AddTransactionSheet({
       } else {
         await addTransaction(payload)
       }
-      await invalidateCache()
       onClose()
     } catch (e) {
       setError(e.message || 'Could not save. Check your connection.')

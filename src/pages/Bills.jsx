@@ -18,7 +18,7 @@ function BillsSkeleton() {
 }
 
 export default function Bills() {
-  const { pending, paid, loading, refetch } = useLiabilities()
+  const { pending, paid, loading } = useLiabilities()
   const [tab, setTab] = useState('pending')
   const [showAdd, setShowAdd] = useState(false)
   const [payingId, setPayingId] = useState(null)
@@ -72,7 +72,6 @@ export default function Bills() {
     setPayingId(bill.id)
     try {
       await markPaid(bill)
-      await refetch()
     } catch (e) {
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)
@@ -85,7 +84,6 @@ export default function Bills() {
     setDeletingId(id)
     try {
       await deleteLiability(id)
-      await refetch()
     } catch (e) {
       setErrToast(e.message || 'Could not delete bill. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { C } from '../lib/colors'
@@ -48,6 +48,7 @@ function GoogleLogo() {
 export default function Login() {
   const navigate  = useNavigate()
   const location  = useLocation()
+  const { token } = useParams()
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
 
   const [mode,          setMode]         = useState('signin')
@@ -63,6 +64,13 @@ export default function Login() {
   useEffect(() => {
     if (user) navigate(from, { replace: true })
   }, [user])
+
+  // Persist invite token across auth redirects so onboarding can consume it.
+  useEffect(() => {
+    if (token) {
+      sessionStorage.setItem('pendingInviteToken', token)
+    }
+  }, [token])
 
   async function handleGoogle() {
     setError(null)

@@ -46,6 +46,40 @@ A personal finance PWA built with React, Vite, Tailwind CSS, and Supabase. Track
 
 ---
 
+## Verification Scripts
+
+Use these scripts to validate invite consumption and liabilities realtime behavior against your Supabase project.
+
+- `npm run test:join-flow`
+	- Signs in two users (creator + joiner)
+	- Creates an invite token
+	- Runs the same invite-consumption logic used by onboarding
+	- Confirms invite row is marked used by the joiner
+
+- `npm run test:liabilities-realtime`
+	- Opens two authenticated sessions
+	- Subscribes one session to liabilities realtime events
+	- Inserts a liability from the other session
+	- Confirms realtime event is received without manual refresh
+
+Required environment variables for both scripts:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `E2E_CREATOR_EMAIL`
+- `E2E_CREATOR_PASSWORD`
+- `E2E_JOINER_EMAIL`
+- `E2E_JOINER_PASSWORD`
+
+For liabilities realtime script only:
+
+- `E2E_SESSION_EMAIL`
+- `E2E_SESSION_PASSWORD`
+
+If `liabilities` events are not received, run the latest `supabase/schema.sql` publication block so `liabilities` is in `supabase_realtime`.
+
+---
+
 ## Project Structure
 
 ```

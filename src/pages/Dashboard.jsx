@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { useTransactions, useMonthSummary, useRunningBalance, deleteTransaction, invalidateCache } from '../hooks/useTransactions'
+import { useTransactions, useMonthSummary, useRunningBalance, deleteTransaction } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
 import AddTransactionSheet from '../components/AddTransactionSheet'
@@ -81,7 +81,6 @@ export default function Dashboard() {
     if (!id) return
     try {
       await deleteTransaction(id)
-      await invalidateCache()
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)
