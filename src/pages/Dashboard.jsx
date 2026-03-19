@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { useTransactions, useMonthSummary, useRunningBalance, deleteTransaction } from '../hooks/useTransactions'
+import { useTransactions, useMonthSummary, useRunningBalance, useTodayExpenses, deleteTransaction } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
 import AddTransactionSheet from '../components/AddTransactionSheet'
@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [toast, setToast] = useState(null)
 
   const { data: recent } = useTransactions({ limit: 8 })
+  const { todaySpend } = useTodayExpenses()
 
   const { data: summary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary } = useMonthSummary(
@@ -71,14 +72,7 @@ export default function Dashboard() {
 
   const daysInMonth    = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const dayOfMonth     = now.getDate()
-  // Build today's date string in local time (avoids UTC-offset issues with .toISOString())
-  const todayISO       = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
 
-  const todaySpend = useMemo(
-    () => (recent || []).filter(t => t.date === todayISO && t.type === 'expense')
-                        .reduce((s, t) => s + +t.amount, 0),
-    [recent, todayISO]
-  )
   // On-pace: spending fraction ≤ days-elapsed fraction + 5% buffer
   const paceOk        = earned === 0 || spent / earned <= dayOfMonth / daysInMonth + 0.05
   const totalBillsAmt = useMemo(() => bills.reduce((s, b) => s + +b.amount, 0), [bills])

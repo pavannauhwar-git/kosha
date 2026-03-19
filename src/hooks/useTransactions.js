@@ -47,6 +47,27 @@ export function useTransactions({ type, category, search, limit } = {}) {
   return { data: data || [], loading: isLoading, error, refetch }
 }
 
+export function useTodayExpenses() {
+  const today = new Date()
+  const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['transactions', 'today-expenses', todayISO],
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('type', 'expense')
+        .eq('date', todayISO)
+
+      if (error) throw error
+      return (rows || []).reduce((sum, r) => sum + +r.amount, 0)
+    },
+  })
+
+  return { todaySpend: data ?? 0, loading: isLoading }
+}
+
 export function useMonthSummary(year, month) {
   const { data, isLoading } = useQuery({
     queryKey: ['month', year, month],
