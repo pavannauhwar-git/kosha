@@ -260,7 +260,7 @@ function YoYCards({ years, currentYear }) {
     <div>
       <SectionHeading>Year over Year</SectionHeading>
       <div className="overflow-x-auto no-scrollbar -mx-4 px-4 mt-3">
-        <div className="flex gap-3 pb-1" style={{ minWidth: 'max-content' }}>
+        <div className="flex gap-3 pb-1 pr-4" style={{ minWidth: 'max-content' }}>
           {yearsWithData.map((y, idx) => {
             const d = allData[y]
             const prev = allData[yearsWithData[idx - 1]]
@@ -468,22 +468,22 @@ export default function Analytics() {
 
           {/* ── Yearly Insights ──────────────────────────────────────── */}
           {chartData.length > 0 && (
-            <div className="card p-5 overflow-hidden relative"
+            <div className="card p-4 overflow-hidden relative"
               style={{ background: 'linear-gradient(135deg, #EDE9FF 0%, #F5F3FF 100%)' }}>
               {/* decorative radial glow */}
-              <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
+              <div className="absolute top-0 right-0 w-28 h-28 pointer-events-none"
                 style={{
                   background: 'radial-gradient(circle at 70% 30%, rgba(55,48,163,0.10) 0%, transparent 70%)',
                   borderRadius: '50%',
                   transform: 'translate(20%, -20%)',
                 }} />
-              <div className="flex items-center gap-2.5 mb-3 relative">
-                <div className="w-7 h-7 rounded-xl bg-brand flex items-center justify-center shrink-0">
-                  <Sparkle size={14} className="text-white" weight="fill" />
+              <div className="flex items-center gap-2 mb-2 relative">
+                <div className="w-6 h-6 rounded-lg bg-brand flex items-center justify-center shrink-0">
+                  <Sparkle size={12} className="text-white" weight="fill" />
                 </div>
-                <h3 className="text-[15px] font-bold text-ink">Yearly Insights</h3>
+                <h3 className="text-[13px] font-bold text-ink">Yearly Insights</h3>
               </div>
-              <p className="text-[14px] text-ink-2 leading-relaxed relative">
+              <p className="text-[13px] text-ink-2 leading-relaxed relative">
                 {(() => {
                   let parts = []
                   const inc = data?.totalIncome || 0
