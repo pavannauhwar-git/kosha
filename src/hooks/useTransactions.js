@@ -199,6 +199,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
     pruneOptimisticTxns,
     optimisticDeletedIds,
     pruneOptimisticDeletes,
+    pruneOptimisticEdits,
   } = useAppData()
 
   // Fetch version guard — discards stale concurrent fetches.
@@ -244,17 +245,18 @@ export function useTransactions({ type, category, search, limit } = {}) {
       const isCanonicalFullList = !limit && !type && !category && !search
       if (isCanonicalFullList) {
         pruneOptimisticTxns(result)
+        // Prune deletes only from the canonical full list. Filtered/paginated
+        // responses can legitimately omit IDs and would drop the delete guard
+        // too early, causing "resurrected" rows.
+        pruneOptimisticDeletes(result)
+        pruneOptimisticEdits(result)
       }
-      // Always prune deletes — if a deleted ID is absent from ANY server response,
-      // the delete is confirmed. Unlike adds (fuzzy-matched), delete IDs are exact
-      // so there is no false-positive risk from filtered/paginated queries.
-      pruneOptimisticDeletes(result)
     } catch (e) {
       if (myVersion !== fetchVersionRef.current) return
       setError(e)
       setLoading(false)
     }
-  }, [type, category, search, limit, pruneOptimisticTxns, pruneOptimisticDeletes])
+  }, [type, category, search, limit, pruneOptimisticTxns, pruneOptimisticDeletes, pruneOptimisticEdits])
 
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
@@ -914,10 +916,16 @@ export async function addTransaction(payload) {
 }
 
 export async function updateTransaction(id, payload) {
-  const { error } = await withTimeout(
-    supabase.from('transactions').update(payload).eq('id', id)
+  const { data, error } = await withTimeout(
+    supabase
+      .from('transactions')
+      .update(payload)
+      .eq('id', id)
+      .select('id, date, type, description, amount, category, investment_vehicle, is_repayment, payment_mode, notes, created_at')
+      .single()
   )
   if (error) throw error
+  return data || null
 }
 
 export async function deleteTransaction(id) {

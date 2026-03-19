@@ -69,14 +69,24 @@ export default function Bills() {
 
   async function handleMarkPaid(bill) {
     setPaying(bill.id)
-    try { await markPaid(bill) }
-    catch (e) { alert(e.message) }
+    try {
+      await markPaid(bill)
+    } catch (e) {
+      setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
+      setTimeout(() => setErrToast(null), 4000)
+    }
     finally { setPaying(null) }
   }
 
   async function confirmDelete() {
-    await deleteLiability(delId)
-    setDelId(null)
+    if (!delId) return
+    try {
+      await deleteLiability(delId)
+      setDelId(null)
+    } catch (e) {
+      setErrToast(e.message || 'Could not delete bill. Check your connection.')
+      setTimeout(() => setErrToast(null), 4000)
+    }
   }
 
   return (

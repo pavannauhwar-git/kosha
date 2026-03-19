@@ -41,7 +41,7 @@ export function useGlobalTransactionMutation() {
    */
   const onTransactionConfirmed = useCallback((serverTxn) => {
     if (pendingOptimisticId.current) {
-      resolveOptimisticTxn(pendingOptimisticId.current)
+      resolveOptimisticTxn(pendingOptimisticId.current, serverTxn)
       pendingOptimisticId.current = null
     }
     // Invalidate AFTER the optimistic entry is removed so the refetch lands clean

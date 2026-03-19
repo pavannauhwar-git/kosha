@@ -52,6 +52,7 @@ export function AppDataProvider({ children }) {
   const pruneOptimisticTxns = useCallback((serverRows = []) => {
     if (!Array.isArray(serverRows) || serverRows.length === 0) return
 
+    const serverIds = new Set(serverRows.map(r => r.id))
     const normDesc = (s) => String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
     const keyOf = (t) => [
       t.date,
@@ -65,14 +66,39 @@ export function AppDataProvider({ children }) {
     ].join('|')
 
     const serverKeys = new Set(serverRows.map(keyOf))
-    setOptimisticTxns(prev => prev.filter(t => !serverKeys.has(keyOf(t))))
+    setOptimisticTxns(prev => prev.filter(t => {
+      const id = t._id || t.id
+      if (id && serverIds.has(id)) return false
+      return !serverKeys.has(keyOf(t))
+    }))
   }, [])
 
-  const resolveOptimisticTxn = useCallback((optimisticId) => {
+  const resolveOptimisticTxn = useCallback((optimisticId, serverTxn) => {
     if (!optimisticId) return
-    // Remove the optimistic entry entirely. Once the server confirms and
-    // addTransaction() calls invalidateCache(), the refetch brings the real row.
-    setOptimisticTxns(prev => prev.filter(t => (t._id || t.id) !== optimisticId))
+    // Swap temporary optimistic ID with the confirmed server row so the UI stays
+    // stable even if the immediate refetch returns stale data. The canonical
+    // transaction list will prune this entry once the same server row appears.
+    setOptimisticTxns(prev => prev.map((t) => {
+      if ((t._id || t.id) !== optimisticId) return t
+      if (!serverTxn?.id) return t
+      return {
+        ...t,
+        ...serverTxn,
+        _id: serverTxn.id,
+      }
+    }))
+  }, [])
+
+  const pruneOptimisticEdits = useCallback((serverRows = []) => {
+    if (!Array.isArray(serverRows) || serverRows.length === 0) return
+    const byId = new Map(serverRows.map(r => [r.id, r]))
+    setOptimisticEdits(prev => prev.filter(({ id, updated }) => {
+      const row = byId.get(id)
+      if (!row) return true
+      const entries = Object.entries(updated || {}).filter(([k]) => k !== '_original')
+      if (!entries.length) return false
+      return entries.some(([k, v]) => row[k] !== v)
+    }))
   }, [])
 
   const removeOptimisticTxn = useCallback((id) => {
@@ -111,6 +137,7 @@ export function AppDataProvider({ children }) {
     optimisticEdits,
     addOptimisticEdit,
     removeOptimisticEdit,
+    pruneOptimisticEdits,
     clearOptimisticEdits,
   }
 
