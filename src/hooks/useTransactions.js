@@ -90,6 +90,182 @@ export function invalidateCache(pattern) {
   } catch { /* ignore */ }
 }
 
+function readCacheEntryBySuffix(suffix) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + suffix)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+function writeCacheEntryBySuffix(suffix, data, ts) {
+  try {
+    localStorage.setItem(
+      CACHE_PREFIX + suffix,
+      JSON.stringify({ data, ts: Number.isFinite(ts) ? ts : Date.now() })
+    )
+  } catch {
+    // ignore cache write errors
+  }
+}
+
+function parseTxnCacheSuffix(suffix) {
+  if (!suffix?.startsWith('txns:')) return null
+  const raw = suffix.slice('txns:'.length)
+  const parts = raw.split(':')
+  if (parts.length < 4) return null
+  const typeRaw = parts[0]
+  const categoryRaw = parts[1]
+  const limitRaw = parts[parts.length - 1]
+  const searchRaw = parts.slice(2, -1).join(':')
+  const limit = limitRaw === 'undefined' ? undefined : Number(limitRaw)
+  return {
+    type: typeRaw === 'undefined' ? undefined : typeRaw,
+    category: categoryRaw === 'undefined' ? undefined : categoryRaw,
+    search: searchRaw === 'undefined' ? undefined : searchRaw,
+    limit: Number.isFinite(limit) ? limit : undefined,
+  }
+}
+
+function txnMatchesCacheFilter(txn, parsedKey) {
+  if (!txn || !parsedKey) return false
+  if (parsedKey.type && txn.type !== parsedKey.type) return false
+  if (parsedKey.category && txn.category !== parsedKey.category) return false
+  if (parsedKey.search) {
+    const needle = String(parsedKey.search).toLowerCase()
+    const hay = String(txn.description || '').toLowerCase()
+    if (!hay.includes(needle)) return false
+  }
+  return true
+}
+
+function compareTxnRows(a, b) {
+  const dateCmp = String(b?.date || '').localeCompare(String(a?.date || ''))
+  if (dateCmp !== 0) return dateCmp
+  return String(b?.created_at || '').localeCompare(String(a?.created_at || ''))
+}
+
+/**
+ * Writes a confirmed transaction into existing local caches immediately so a
+ * page reload does not temporarily hide the new row while backend replicas or
+ * delayed reads catch up.
+ */
+export function mergeConfirmedTransactionIntoCache(txn) {
+  if (!txn?.id) return
+  try {
+    const keys = Object.keys(localStorage)
+    keys.forEach((fullKey) => {
+      if (!fullKey.startsWith(CACHE_PREFIX)) return
+      const suffix = fullKey.slice(CACHE_PREFIX.length)
+      const entry = readCacheEntryBySuffix(suffix)
+      if (!entry) return
+
+      if (suffix.startsWith('txns:') && Array.isArray(entry.data)) {
+        const parsed = parseTxnCacheSuffix(suffix)
+        if (!txnMatchesCacheFilter(txn, parsed)) return
+        const merged = [txn, ...entry.data.filter((row) => row?.id !== txn.id)]
+          .sort(compareTxnRows)
+        const limited = parsed?.limit ? merged.slice(0, parsed.limit) : merged
+        writeCacheEntryBySuffix(suffix, limited, entry.ts)
+        return
+      }
+
+      if (suffix.startsWith('month:') && entry.data && typeof entry.data === 'object') {
+        const [, yRaw, mRaw] = suffix.split(':')
+        const y = Number(yRaw)
+        const m = Number(mRaw)
+        if (!Number.isFinite(y) || !Number.isFinite(m)) return
+        const d = new Date(txn.date)
+        if (d.getFullYear() !== y || d.getMonth() + 1 !== m) return
+
+        const next = {
+          ...entry.data,
+          byCategory: { ...(entry.data.byCategory || {}) },
+          byVehicle: { ...(entry.data.byVehicle || {}) },
+        }
+        if (txn.type === 'income') {
+          if (txn.is_repayment) next.repayments = (next.repayments || 0) + +txn.amount
+          else next.earned = (next.earned || 0) + +txn.amount
+        } else if (txn.type === 'expense') {
+          next.expense = (next.expense || 0) + +txn.amount
+          const cat = txn.category
+          if (cat) next.byCategory[cat] = (next.byCategory[cat] || 0) + +txn.amount
+        } else if (txn.type === 'investment') {
+          next.investment = (next.investment || 0) + +txn.amount
+          const veh = txn.investment_vehicle || 'Other'
+          next.byVehicle[veh] = (next.byVehicle[veh] || 0) + +txn.amount
+        }
+        next.balance = (next.earned || 0) + (next.repayments || 0) - (next.expense || 0) - (next.investment || 0)
+        writeCacheEntryBySuffix(suffix, next, entry.ts)
+        return
+      }
+
+      if (suffix.startsWith('year:') && entry.data && typeof entry.data === 'object') {
+        const [, yRaw] = suffix.split(':')
+        const y = Number(yRaw)
+        if (!Number.isFinite(y)) return
+        const d = new Date(txn.date)
+        if (d.getFullYear() !== y) return
+        const monthIdx = d.getMonth()
+        const nextMonthly = Array.isArray(entry.data.monthly)
+          ? entry.data.monthly.map((row) => ({ ...row }))
+          : []
+        if (nextMonthly[monthIdx]) {
+          if (txn.type === 'income' && !txn.is_repayment) nextMonthly[monthIdx].income += +txn.amount
+          if (txn.type === 'expense') nextMonthly[monthIdx].expense += +txn.amount
+          if (txn.type === 'investment') nextMonthly[monthIdx].investment += +txn.amount
+        }
+
+        const next = {
+          ...entry.data,
+          monthly: nextMonthly,
+          byCategory: { ...(entry.data.byCategory || {}) },
+          byVehicle: { ...(entry.data.byVehicle || {}) },
+        }
+        if (txn.type === 'income') {
+          if (txn.is_repayment) next.totalRepayments = (next.totalRepayments || 0) + +txn.amount
+          else next.totalIncome = (next.totalIncome || 0) + +txn.amount
+        } else if (txn.type === 'expense') {
+          next.totalExpense = (next.totalExpense || 0) + +txn.amount
+          const cat = txn.category
+          if (cat) next.byCategory[cat] = (next.byCategory[cat] || 0) + +txn.amount
+          if (Array.isArray(next.top5)) {
+            next.top5 = [
+              { id: txn.id, date: txn.date, description: txn.description, amount: +txn.amount, category: txn.category },
+              ...next.top5.filter((row) => row?.id !== txn.id),
+            ]
+              .sort((a, b) => (+b.amount || 0) - (+a.amount || 0))
+              .slice(0, 5)
+          }
+        } else if (txn.type === 'investment') {
+          next.totalInvestment = (next.totalInvestment || 0) + +txn.amount
+          const veh = txn.investment_vehicle || 'Other'
+          next.byVehicle[veh] = (next.byVehicle[veh] || 0) + +txn.amount
+        }
+        writeCacheEntryBySuffix(suffix, next, entry.ts)
+        return
+      }
+
+      if (suffix.startsWith('balance:') && typeof entry.data === 'number') {
+        const [, yRaw, mRaw] = suffix.split(':')
+        const y = Number(yRaw)
+        const m = Number(mRaw)
+        if (!Number.isFinite(y) || !Number.isFinite(m)) return
+        const endDate = `${y}-${String(m).padStart(2, '0')}-${new Date(y, m, 0).getDate()}`
+        if (!txn.date || txn.date > endDate) return
+        let delta = 0
+        if (txn.type === 'income') delta = +txn.amount
+        if (txn.type === 'expense' || txn.type === 'investment') delta = -(+txn.amount)
+        writeCacheEntryBySuffix(suffix, entry.data + delta, entry.ts)
+      }
+    })
+  } catch {
+    // ignore cache patch errors
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // OPTIMISTIC ID HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
