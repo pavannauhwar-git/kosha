@@ -7,7 +7,6 @@ import {
   BarChart, Bar,
   XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, Cell,
-  PieChart, Pie,
 } from 'recharts'
 import { useYearSummary } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
@@ -228,29 +227,60 @@ function YoYCards({ years, currentYear }) {
 
 // ── Portfolio donut ───────────────────────────────────────────────────────
 function PortfolioDonut({ vehicleData }) {
-  const total = vehicleData.reduce((s, [, v]) => s + v, 0) || 1
-  const pieData = vehicleData.map(([name, value]) => ({ name, value }))
+  const total = vehicleData.reduce((s, [, v]) => s + (Number(v) || 0), 0)
+
+  const SIZE = 130
+  const SW = 9
+  const R = (SIZE / 2) - SW
+  const CX = SIZE / 2
+  const CY = SIZE / 2
+  const CIRC = 2 * Math.PI * R
+  const GAP_DEG = 12
+
+  const segs = vehicleData
+    .map(([name, value], i) => {
+      const safeValue = Number(value) || 0
+      return {
+        name,
+        value: safeValue,
+        ratio: total > 0 ? safeValue / total : 0,
+        pct: total > 0 ? Math.round((safeValue / total) * 100) : 0,
+        color: PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length],
+      }
+    })
+    .filter(s => s.value > 0)
+
+  let offsetRatio = 0
 
   return (
     <div className="card p-5">
       <p className="section-label mb-4">Portfolio Allocation</p>
       <div className="flex items-center gap-4">
-        <div className="relative shrink-0" style={{ width: 130, height: 130 }}>
-          <PieChart width={130} height={130}>
-            <Pie
-              data={pieData}
-              cx={65} cy={65}
-              innerRadius={42} outerRadius={60}
-              cornerRadius={6}
-              dataKey="value"
-              strokeWidth={0}
-              paddingAngle={4}
-            >
-              {pieData.map((_, i) => (
-                <Cell key={i} fill={PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length]} />
-              ))}
-            </Pie>
-          </PieChart>
+        <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
+          <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+            <circle cx={CX} cy={CY} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
+            {segs.map((seg) => {
+              const gapLen = segs.length > 1 ? (GAP_DEG / 360) * CIRC : 0
+              const dashLen = Math.max(0, seg.ratio * CIRC - gapLen)
+              const currentOffset = offsetRatio
+              offsetRatio += seg.ratio
+              return (
+                <circle
+                  key={seg.name}
+                  cx={CX}
+                  cy={CY}
+                  r={R}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth={SW}
+                  strokeLinecap="round"
+                  strokeDasharray={`${dashLen} ${CIRC}`}
+                  strokeDashoffset={-currentOffset * CIRC}
+                  transform={`rotate(-90 ${CX} ${CY})`}
+                />
+              )
+            })}
+          </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <span className="text-[12px] font-bold text-ink tabular-nums">{fmt(total, true)}</span>
             <span className="text-[10px] text-ink-3">total</span>
@@ -258,19 +288,18 @@ function PortfolioDonut({ vehicleData }) {
         </div>
 
         <div className="flex-1 space-y-0 min-w-0">
-          {vehicleData.map(([vehicle, amt], i) => {
-            const pct = Math.round((amt / total) * 100)
+          {segs.map((seg, i) => {
             return (
-              <div key={vehicle}
+              <div key={seg.name}
                 className={`flex items-center gap-2 py-2
-                  ${i < vehicleData.length - 1 ? 'border-b border-kosha-border' : ''}`}
+                  ${i < segs.length - 1 ? 'border-b border-kosha-border' : ''}`}
               >
                 <div className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ background: PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length] }} />
-                <span className="text-caption text-ink font-medium flex-1 truncate">{vehicle}</span>
-                <span className="text-caption text-ink-3 w-7 text-right">{pct}%</span>
+                  style={{ background: seg.color }} />
+                <span className="text-caption text-ink font-medium flex-1 truncate">{seg.name}</span>
+                <span className="text-caption text-ink-3 w-7 text-right">{seg.pct}%</span>
                 <span className="text-caption font-semibold text-ink tabular-nums w-16 text-right">
-                  {fmt(amt, true)}
+                  {fmt(seg.value, true)}
                 </span>
               </div>
             )

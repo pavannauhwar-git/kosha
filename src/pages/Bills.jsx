@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Check, Repeat } from 'lucide-react'
+import { Plus, X, Check, Repeat, Loader2 } from 'lucide-react'
 import { useLiabilities, addLiability, markPaid, deleteLiability } from '../hooks/useLiabilities'
-import DeleteDialog from '../components/DeleteDialog'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
@@ -19,11 +18,11 @@ function BillsSkeleton() {
 }
 
 export default function Bills() {
-  const { pending, paid, loading } = useLiabilities()
+  const { pending, paid, loading, refetch } = useLiabilities()
   const [tab, setTab] = useState('pending')
   const [showAdd, setShowAdd] = useState(false)
-  const [delId, setDelId] = useState(null)
-  const [paying, setPaying] = useState(null)
+  const [payingId, setPayingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
 
   const [form, setForm] = useState({
     description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly',
@@ -69,24 +68,29 @@ export default function Bills() {
   }
 
   async function handleMarkPaid(bill) {
-    setPaying(bill.id)
+    if (!bill?.id || payingId || deletingId) return
+    setPayingId(bill.id)
     try {
       await markPaid(bill)
+      await refetch()
     } catch (e) {
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)
     }
-    finally { setPaying(null) }
+    finally { setPayingId(null) }
   }
 
-  async function confirmDelete() {
-    if (!delId) return
+  async function handleDelete(id) {
+    if (!id || payingId || deletingId) return
+    setDeletingId(id)
     try {
-      await deleteLiability(delId)
-      setDelId(null)
+      await deleteLiability(id)
+      await refetch()
     } catch (e) {
       setErrToast(e.message || 'Could not delete bill. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -235,23 +239,25 @@ export default function Bills() {
                     {tab === 'pending' && (
                       <button
                         onClick={() => handleMarkPaid(bill)}
-                        disabled={paying === bill.id}
+                        disabled={!!payingId || !!deletingId}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-card
                                    bg-income-bg text-income-text text-xs font-semibold
                                    border border-income-border active:scale-95 transition-all
                                    disabled:opacity-60"
                       >
-                        <Check size={13} />
-                        {paying === bill.id ? 'Paying…' : 'Paid'}
+                        {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                        {payingId === bill.id ? 'Paying…' : 'Paid'}
                       </button>
                     )}
                     <button
-                      onClick={() => setDelId(bill.id)}
+                      onClick={() => handleDelete(bill.id)}
+                      disabled={!!payingId || !!deletingId}
                       className="flex items-center justify-center px-3 py-2 rounded-card
                                  bg-expense-bg text-expense-text text-xs font-semibold
-                                 border border-expense-border active:scale-95 transition-all"
+                                 border border-expense-border active:scale-95 transition-all
+                                 disabled:opacity-60"
                     >
-                      <X size={13} />
+                      {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                     </button>
                   </div>
                 </div>
@@ -383,10 +389,6 @@ export default function Bills() {
         )}
       </AnimatePresence>
 
-      <DeleteDialog
-        open={!!delId} label="this bill"
-        onConfirm={confirmDelete} onCancel={() => setDelId(null)}
-      />
     </div>
   )
 }
