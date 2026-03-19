@@ -7,7 +7,7 @@ import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import TransactionItem from '../components/TransactionItem'
-import { fmt, monthStr, savingsRate, daysUntil, groupByDate, dateLabel } from '../lib/utils'
+import { fmt, monthStr, savingsRate, daysUntil } from '../lib/utils'
 import { C } from '../lib/colors'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
 
@@ -69,7 +69,30 @@ export default function Dashboard() {
       : hour < 21 ? 'Good evening'
         : 'Good night'
 
-  const recentGroups = useMemo(() => groupByDate(recent), [recent])
+  const daysInMonth    = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const dayOfMonth     = now.getDate()
+  // Build today's date string in local time (avoids UTC-offset issues with .toISOString())
+  const todayISO       = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+
+  const todaySpend = useMemo(
+    () => (recent || []).filter(t => t.date === todayISO && t.type === 'expense')
+                        .reduce((s, t) => s + +t.amount, 0),
+    [recent, todayISO]
+  )
+  // On-pace: spending fraction ≤ days-elapsed fraction + 5% buffer
+  const paceOk        = earned === 0 || spent / earned <= dayOfMonth / daysInMonth + 0.05
+  const totalBillsAmt = useMemo(() => bills.reduce((s, b) => s + +b.amount, 0), [bills])
+  const insight       = useMemo(() => {
+    const spendPct = earned > 0 ? spent / earned : 0
+    const dayPct   = dayOfMonth / daysInMonth
+    if (!earned && !spent)         return 'Log a transaction to start your money story 📊'
+    if (spendPct < dayPct - 0.15)  return `Under pace · ${rate}% saved so far ✨`
+    if (spendPct > dayPct + 0.15)  return 'Spending running hot this month · ease up 📈'
+    if (dueSoon.length > 0)        return `${dueSoon.length} bill${dueSoon.length > 1 ? 's' : ''} coming due · plan ahead 📅`
+    if (investDiff > 0)            return `Invested ${fmt(Math.abs(investDiff))} more than last month 💪`
+    if (rate >= 25)                return `Saving ${rate}% of income · outstanding month 🎯`
+    return `Saving ${rate}% this month · right on track 👍`
+  }, [earned, spent, dayOfMonth, daysInMonth, rate, dueSoon, investDiff])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
@@ -172,7 +195,44 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        
+        {/* ── Pulse strip ───────────────────────────────────────────────── */}
+        <motion.div variants={fadeUp} className="overflow-x-auto -mx-4 px-4">
+          <div className="flex gap-2 pb-1">
+            {/* Today */}
+            <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface border border-kosha-border">
+              <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">Today</p>
+              <p className={`text-[13px] font-bold tabular-nums leading-none ${
+                todaySpend > 0 ? 'text-expense-text' : 'text-income-text'
+              }`}>
+                {todaySpend > 0 ? fmt(todaySpend, true) : 'All clear 🌿'}
+              </p>
+            </div>
+            {/* Monthly pace */}
+            <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface border border-kosha-border">
+              <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">Monthly pace</p>
+              <p className={`text-[13px] font-bold leading-none ${
+                paceOk ? 'text-income-text' : 'text-expense-text'
+              }`}>
+                {paceOk ? 'On track ✓' : 'Running hot'}
+              </p>
+            </div>
+            {/* Bills due — only if any exist */}
+            {totalBillsAmt > 0 && (
+              <button
+                onClick={() => navigate('/bills')}
+                className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-repay-bg border border-repay-border text-left active:opacity-75 transition-opacity"
+              >
+                <p className="text-[10px] font-semibold text-repay-text uppercase tracking-wider">Bills due</p>
+                <p className="text-[13px] font-bold text-repay-text tabular-nums leading-none">{fmt(totalBillsAmt, true)}</p>
+              </button>
+            )}
+            {/* Contextual insight */}
+            <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface-2 border border-kosha-border min-w-[165px] max-w-[240px]">
+              <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">Insight</p>
+              <p className="text-[12px] font-medium text-ink leading-snug">{insight}</p>
+            </div>
+          </div>
+        </motion.div>
 
         {/* ── Quick-action strip ────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="card py-4 px-2">
@@ -243,7 +303,7 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* ── Latest — grouped by date ──────────────────────────────────── */}
+        {/* ── Latest ────────────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
           <div className="flex items-center justify-between mb-3">
             <p className="section-label">Latest</p>
@@ -253,39 +313,22 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {recentGroups.length === 0 ? (
+          {!recent || recent.length === 0 ? (
             <div className="card p-8 text-center">
               <p className="text-body text-ink-3">No transactions yet.</p>
               <p className="text-label text-ink-4 mt-1">Tap + to add your first one.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {recentGroups.slice(0, 3).map(([date, txns]) => {
-                const dayNet = txns.reduce((s, t) =>
-                  t.type === 'income' ? s + +t.amount : s - +t.amount, 0)
-                return (
-                  <div key={date} className="list-card">
-                    {/* Date group header */}
-                    <div className="flex items-center justify-between px-4 py-2 bg-kosha-surface-2
-                                    border-b border-kosha-border">
-                      <span className="text-caption font-semibold text-ink-3">{dateLabel(date)}</span>
-                      <span className={`text-caption font-semibold
-                        ${dayNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                        {dayNet >= 0 ? '+' : ''}{fmt(dayNet)}
-                      </span>
-                    </div>
-                    {txns.map((t, i) => (
-                      <TransactionItem key={t.id} txn={t}
-                        showDate={false}
-                        isLast={i === txns.length - 1}
-                        onDelete={handleDelete}
-                        onTap={handleTap}
-                        onDuplicate={handleDuplicate}
-                      />
-                    ))}
-                  </div>
-                )
-              })}
+            <div className="list-card">
+              {recent.slice(0, 8).map((t, i) => (
+                <TransactionItem key={t.id} txn={t}
+                  showDate
+                  isLast={i === Math.min(recent.length, 8) - 1}
+                  onDelete={handleDelete}
+                  onTap={handleTap}
+                  onDuplicate={handleDuplicate}
+                />
+              ))}
             </div>
           )}
         </motion.div>
