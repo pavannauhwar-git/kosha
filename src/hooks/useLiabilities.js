@@ -19,7 +19,7 @@ export function invalidateLiabilityCache() {
 
 // ── useLiabilities ────────────────────────────────────────────────────────
 export function useLiabilities() {
-  const { data: rows, isLoading, refetch } = useQuery({
+  const { data: rows, isLoading } = useQuery({
     queryKey: ['liabilities'],
     queryFn: async () => {
       const { data: rows, error } = await supabase
@@ -34,7 +34,7 @@ export function useLiabilities() {
   const pending = useMemo(() => (rows || []).filter(r => !r.paid), [rows])
   const paid = useMemo(() => (rows || []).filter(r => r.paid), [rows])
 
-  return { pending, paid, loading: isLoading, refetch }
+  return { pending, paid, loading: isLoading }
 }
 
 // ── Writes — pessimistic: server first, then invalidate ───────────────────
@@ -84,7 +84,7 @@ export async function markPaid(liability) {
     const due    = new Date(liability.due_date)
     const months = { monthly: 1, quarterly: 3, yearly: 12 }
     due.setMonth(due.getMonth() + (months[liability.recurrence] || 1))
-    await supabase.from('liabilities').insert([{
+    const { error: recurringErr } = await supabase.from('liabilities').insert([{
       description:  liability.description,
       amount:       liability.amount,
       due_date:     due.toISOString().slice(0, 10),
@@ -93,6 +93,7 @@ export async function markPaid(liability) {
       paid:         false,
       user_id,
     }])
+    if (recurringErr) throw recurringErr
   }
 
   // Invalidate both caches — UI refreshes with server truth
