@@ -236,14 +236,14 @@ export function useTransactions({ type, category, search, limit } = {}) {
       setCached(key, result)
       setData(result)
       setLoading(false)
-      // Only prune optimistic state on the canonical full list (unpaginated + unfiltered).
-      // Pruning from filtered/paginated queries can incorrectly clear optimistic state
-      // for transactions outside the current view.
       const isCanonicalFullList = !limit && !type && !category && !search
       if (isCanonicalFullList) {
         pruneOptimisticTxns(result)
-        pruneOptimisticDeletes(result)
       }
+      // Always prune deletes — if a deleted ID is absent from ANY server response,
+      // the delete is confirmed. Unlike adds (fuzzy-matched), delete IDs are exact
+      // so there is no false-positive risk from filtered/paginated queries.
+      pruneOptimisticDeletes(result)
     } catch (e) {
       if (myVersion !== fetchVersionRef.current) return
       setError(e)
