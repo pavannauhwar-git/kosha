@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
+import { Sparkle } from '@phosphor-icons/react'
 import {
   AreaChart, Area,
   BarChart, Bar,
