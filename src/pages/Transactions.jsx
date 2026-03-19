@@ -102,7 +102,7 @@ export default function Transactions() {
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [addOptimisticDelete, removeOptimisticDelete])
+  }, [])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)

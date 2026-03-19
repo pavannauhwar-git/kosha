@@ -191,7 +191,7 @@ export default function Dashboard() {
       // New transaction — Brain broadcasts to ALL caches simultaneously
       onTransactionSaved(payload)
     }
-  }, [applyLocalEdit, addOptimisticEdit, onTransactionSaved])
+  }, [applyLocalEdit, onTransactionSaved])
 
   // ── handleConfirmed: save succeeded ──────────────────────────────────
   const handleConfirmed = useCallback((serverTxn) => {
@@ -203,7 +203,7 @@ export default function Dashboard() {
       // New transaction — remove optimistic entry; refetch brings the real row
       onTransactionConfirmed(serverTxn)
     }
-  }, [clearLocalEdit, removeOptimisticEdit, onTransactionConfirmed])
+  }, [clearLocalEdit, onTransactionConfirmed])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
   const handleFailed = useCallback((msg) => {
@@ -216,7 +216,7 @@ export default function Dashboard() {
     }
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
-  }, [revertLocalEdit, removeOptimisticEdit, onTransactionFailed])
+  }, [revertLocalEdit, onTransactionFailed])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
