@@ -61,6 +61,20 @@ create table if not exists invites (
 alter table transactions add column if not exists user_id uuid;
 alter table liabilities add column if not exists user_id uuid;
 
+-- Enable Supabase Realtime for transactions table so cross-device sync works instantly
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'transactions'
+  ) then
+    alter publication supabase_realtime add table transactions;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
 -- Foreign keys against Supabase auth users
 do $$
 begin

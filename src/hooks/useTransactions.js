@@ -527,6 +527,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
     optimisticDeletedIds,
     pruneOptimisticDeletes,
     pruneOptimisticEdits,
+    optimisticEdits,
   } = useAppData()
 
   // Fetch version guard — discards stale concurrent fetches.
@@ -538,10 +539,8 @@ export function useTransactions({ type, category, search, limit } = {}) {
     const cached = getCached(key)
 
     if (cached) {
-      if (!force) {
-        setData(cached.data)
-        setLoading(false)
-      }
+      setData(cached.data)
+      if (!force) setLoading(false)
       if (!force && isFresh(cached, key)) return
     } else {
       setLoading(true)
@@ -668,10 +667,19 @@ export function useTransactions({ type, category, search, limit } = {}) {
     ? mergedData.filter(t => !optimisticDeletedIds.includes(t.id))
     : mergedData
 
-  // Apply localEdits overlay on top of finalData so edits survive refetches
-  const overlaidData = Object.keys(localEdits).length
-    ? finalData.map(row => localEdits[row.id] ? { ...row, ...localEdits[row.id] } : row)
-    : finalData
+  // Apply global optimisticEdits FIRST so they show up on other pages,
+  // then apply localEdits overlay on top so active typing survives refetches.
+  const overlaidData = finalData.map(row => {
+    let updated = row
+    const globalEdit = optimisticEdits.find(e => e.id === row.id)
+    if (globalEdit) {
+      updated = { ...updated, ...globalEdit.updated }
+    }
+    if (localEdits[row.id]) {
+      updated = { ...updated, ...localEdits[row.id] }
+    }
+    return updated
+  })
 
   return {
     data: overlaidData,

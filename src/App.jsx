@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
-import { AuthProvider } from './hooks/useAuth'
+import { AuthProvider, useAuth } from './hooks/useAuth'
 import { AppDataProvider } from './hooks/useAppDataStore'
-import { useAuth } from './hooks/useAuth'
+import { useEffect } from 'react'
+import { supabase } from './lib/supabase'
+import { invalidateCache } from './hooks/useTransactions'
 import AuthGuard from './components/AuthGuard'
 import ProfileMenu from './components/ProfileMenu'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
@@ -158,11 +160,41 @@ function AuthCallback() {
   return <Navigate to="/" replace />
 }
 
+// ── Global Realtime Sync ──────────────────────────────────────────────────
+// Automatically invalidates caches when the database changes via other devices.
+function GlobalRealtimeSync() {
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase.channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'transactions' },
+        () => {
+          invalidateCache('txns:')
+          invalidateCache('month:')
+          invalidateCache('year:')
+          invalidateCache('balance:')
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <AppDataProvider>
+          <GlobalRealtimeSync />
           <div className="min-h-dvh bg-kosha-bg">
             <Routes>
               {/* Public */}
