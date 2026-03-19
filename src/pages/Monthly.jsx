@@ -352,8 +352,6 @@ export default function Monthly() {
               entries={catEntries}
               total={categoryTotal}
               budgets={budgets}
-              month={month}
-              year={year}
               subtitle={budgetCount > 0
                 ? `${budgetCount} budget${budgetCount > 1 ? 's' : ''} set · tap to edit`
                 : 'tap a row to set budget'}

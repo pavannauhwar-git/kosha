@@ -5,6 +5,7 @@ import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTra
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
+import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus, DownloadSimple } from '@phosphor-icons/react'
 
@@ -42,15 +43,16 @@ export default function Transactions() {
   const debouncedSearch = useDebounce(search, 300)
   useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
 
-  const { data } = useTransactions({
+  const { data, total } = useTransactions({
     type: typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter || undefined,
     search: debouncedSearch || undefined,
+    limit: displayCount,
+    withCount: true,
   })
 
-  const visibleData = useMemo(() => data.slice(0, displayCount), [data, displayCount])
-  const groups = useMemo(() => groupByDate(visibleData), [visibleData])
-  const hasMore = useMemo(() => data.length > displayCount, [data.length, displayCount])
+  const groups = useMemo(() => groupByDate(data), [data])
+  const hasMore = useMemo(() => total > data.length, [total, data.length])
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
   const handleDelete = useCallback(async (id) => {
@@ -76,37 +78,61 @@ export default function Transactions() {
     setShowAdd(true)
   }, [])
 
-  const exportCSV = useCallback(() => {
-    if (!data.length) return
+  const exportCSV = useCallback(async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const userId = session?.user?.id
+      if (!userId) throw new Error('Not signed in')
 
-    const CATEGORY_LABELS = Object.fromEntries(
-      CATEGORIES.map(c => [c.id, c.label])
-    )
-    const headers = ['Date', 'Type', 'Description', 'Amount', 'Category', 'Investment Vehicle', 'Payment Mode', 'Notes']
-    const rows = data.map(t => [
-      t.date,
-      t.type,
-      `"${(t.description || '').replace(/"/g, '""')}"`,
-      t.amount,
-      CATEGORY_LABELS[t.category] || t.category || '',
-      t.investment_vehicle || '',
-      t.payment_mode || '',
-      `"${(t.notes || '').replace(/"/g, '""')}"`,
-    ])
+      let q = supabase
+        .from('transactions')
+        .select('date, type, description, amount, category, investment_vehicle, payment_mode, notes')
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
 
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    const filters = [
-      typeFilter !== 'all' ? typeFilter : '',
-      catFilter ? (CATEGORY_LABELS[catFilter] || catFilter) : '',
-    ].filter(Boolean).join('-')
-    a.href = url
-    a.download = `kosha-${filters || 'transactions'}-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }, [data, typeFilter, catFilter])
+      if (typeFilter !== 'all') q = q.eq('type', typeFilter)
+      if (catFilter) q = q.eq('category', catFilter)
+      if (debouncedSearch) q = q.ilike('description', `%${debouncedSearch}%`)
+
+      const { data: exportRows, error } = await q
+      if (error) throw error
+      if (!exportRows?.length) return
+
+      const CATEGORY_LABELS = Object.fromEntries(
+        CATEGORIES.map(c => [c.id, c.label])
+      )
+      const headers = ['Date', 'Type', 'Description', 'Amount', 'Category', 'Investment Vehicle', 'Payment Mode', 'Notes']
+      const rows = exportRows.map(t => [
+        t.date,
+        t.type,
+        `"${(t.description || '').replace(/"/g, '""')}"`,
+        t.amount,
+        CATEGORY_LABELS[t.category] || t.category || '',
+        t.investment_vehicle || '',
+        t.payment_mode || '',
+        `"${(t.notes || '').replace(/"/g, '""')}"`,
+      ])
+
+      const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const filters = [
+        typeFilter !== 'all' ? typeFilter : '',
+        catFilter ? (CATEGORY_LABELS[catFilter] || catFilter) : '',
+      ].filter(Boolean).join('-')
+      a.href = url
+      a.download = `kosha-${filters || 'transactions'}-${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      setToast(e.message || 'Could not export transactions.')
+      setTimeout(() => setToast(null), 4000)
+    }
+  }, [typeFilter, catFilter, debouncedSearch])
 
   return (
     <div className="page">
@@ -116,11 +142,11 @@ export default function Transactions() {
         <div>
           <h1 className="font-display text-display font-bold text-ink">Transactions</h1>
           <p className="text-caption text-ink-3 mt-0.5">
-            {data.length > 0 ? `${data.length} transaction${data.length !== 1 ? 's' : ''}` : 'No results'}
+            {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
             {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
           </p>
         </div>
-        {data.length > 0 && (
+        {total > 0 && (
           <button
             onClick={exportCSV}
             title="Export CSV"
@@ -257,7 +283,7 @@ export default function Transactions() {
           className="w-full py-3 text-label font-semibold text-brand text-center
                      bg-kosha-surface border border-kosha-border rounded-card mt-2"
         >
-          Show more ({data.length - displayCount} remaining)
+          Show more ({total - data.length} remaining)
         </button>
       )}
 

@@ -28,8 +28,6 @@ export default function CategorySpendingChart({
   title = 'Spent by Category',
   subtitle,
   onCategoryClick,
-  month,
-  year,
 }) {
   if (!entries.length) return null
 

@@ -10,6 +10,26 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['balance'],
 ]
 
+const TRANSACTION_LIST_COLUMNS =
+  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes'
+const TRANSACTION_MUTATION_COLUMNS =
+  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes'
+const TRANSACTION_MONTH_COLUMNS = 'type, amount, category, investment_vehicle, is_repayment'
+const TRANSACTION_YEAR_COLUMNS = 'date, type, amount, category, investment_vehicle, is_repayment'
+const TRANSACTION_TOP_EXPENSE_COLUMNS = 'id, date, type, amount, description, category'
+
+function logQueryError(scope, error) {
+  console.error(`[Kosha] ${scope} query failed`, error)
+}
+
+async function getCurrentUserId() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session?.user?.id) throw new Error('Not signed in')
+  return session.user.id
+}
+
 export function useDebounce(value, ms = 300) {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
@@ -19,203 +39,342 @@ export function useDebounce(value, ms = 300) {
   return debounced
 }
 
-export function useTransactions({ type, category, search, limit } = {}) {
-  // Translate parameters into standard react query key
-  const queryKey = ['transactions', { type, category, search, limit }]
-  
+export function useTransactions({ type, category, search, limit, withCount = false } = {}) {
+  const queryKey = ['transactions', { type, category, search, limit, withCount }]
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey,
     queryFn: async () => {
-      let q = supabase
-        .from('transactions')
-        .select('*')
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
+      try {
+        const userId = await getCurrentUserId()
+        const selectOptions = withCount ? { count: 'exact' } : undefined
 
-      if (type) q = q.eq('type', type)
-      if (category) q = q.eq('category', category)
-      if (search) q = q.ilike('description', `%${search}%`)
-      if (limit) q = q.limit(limit)
+        let q = supabase
+          .from('transactions')
+          .select(TRANSACTION_LIST_COLUMNS, selectOptions)
+          .eq('user_id', userId)
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false })
 
-      const { data: rows, error: err } = await q
-      if (err) throw err
-      return rows || []
-    }
+        if (type) q = q.eq('type', type)
+        if (category) q = q.eq('category', category)
+        if (search) q = q.ilike('description', `%${search}%`)
+        if (limit) q = q.limit(limit)
+
+        const { data: rows, error: err, count } = await q
+        if (err) throw err
+
+        return {
+          rows: rows || [],
+          total: typeof count === 'number' ? count : (rows || []).length,
+        }
+      } catch (err) {
+        logQueryError('transactions list', err)
+        throw err
+      }
+    },
   })
 
-  // Return exactly what the legacy hook returned to minimize component breakages
-  return { data: data || [], loading: isLoading, error, refetch }
+  return {
+    data: data?.rows || [],
+    total: data?.total ?? 0,
+    loading: isLoading,
+    error,
+    refetch,
+  }
 }
 
 export function useTodayExpenses() {
   const today = new Date()
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['transactions', 'today-expenses', todayISO],
     queryFn: async () => {
-      const { data: rows, error } = await supabase
-        .from('transactions')
-        .select('amount')
-        .eq('type', 'expense')
-        .eq('date', todayISO)
+      try {
+        const userId = await getCurrentUserId()
+        const { data: rows, error: qError } = await supabase
+          .from('transactions')
+          .select('amount')
+          .eq('user_id', userId)
+          .eq('type', 'expense')
+          .eq('date', todayISO)
 
-      if (error) throw error
-      return (rows || []).reduce((sum, r) => sum + +r.amount, 0)
+        if (qError) throw qError
+        return (rows || []).reduce((sum, r) => sum + Number(r.amount || 0), 0)
+      } catch (err) {
+        logQueryError('today expenses', err)
+        throw err
+      }
     },
   })
 
-  return { todaySpend: data ?? 0, loading: isLoading }
+  return { todaySpend: data ?? 0, loading: isLoading, error }
 }
 
 export function useMonthSummary(year, month) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['month', year, month],
     queryFn: async () => {
-      const pad = String(month).padStart(2, '0')
-      const days = new Date(year, month, 0).getDate()
+      try {
+        const userId = await getCurrentUserId()
+        const pad = String(month).padStart(2, '0')
+        const days = new Date(year, month, 0).getDate()
 
-      const { data: rows, error } = await supabase
-        .from('transactions')
-        .select('type, amount, category, investment_vehicle, is_repayment')
-        .gte('date', `${year}-${pad}-01`)
-        .lte('date', `${year}-${pad}-${days}`)
+        const { data: rows, error: qError } = await supabase
+          .from('transactions')
+          .select(TRANSACTION_MONTH_COLUMNS)
+          .eq('user_id', userId)
+          .gte('date', `${year}-${pad}-01`)
+          .lte('date', `${year}-${pad}-${days}`)
 
-      if (error) throw error
-      
-      const safeRows = rows || []
+        if (qError) throw qError
 
-      const earned = safeRows.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0)
-      const repayments = safeRows.filter(r => r.type === 'income' && r.is_repayment).reduce((s, r) => s + +r.amount, 0)
-      const expense = safeRows.filter(r => r.type === 'expense').reduce((s, r) => s + +r.amount, 0)
-      const investment = safeRows.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0)
+        const safeRows = rows || []
+        const byCategory = {}
+        const byVehicle = {}
 
-      const byCategory = {}
-      safeRows.filter(r => r.type === 'expense').forEach(r => {
-        byCategory[r.category] = (byCategory[r.category] || 0) + +r.amount
-      })
-      const byVehicle = {}
-      safeRows.filter(r => r.type === 'investment').forEach(r => {
-        const k = r.investment_vehicle || 'Other'
-        byVehicle[k] = (byVehicle[k] || 0) + +r.amount
-      })
+        let earned = 0
+        let repayments = 0
+        let expense = 0
+        let investment = 0
 
-      return {
-        earned, repayments, expense, investment, byCategory, byVehicle,
-        balance: earned + repayments - expense - investment,
-        count: safeRows.length
+        for (const row of safeRows) {
+          const amount = Number(row.amount || 0)
+          if (row.type === 'income') {
+            if (row.is_repayment) repayments += amount
+            else earned += amount
+          }
+
+          if (row.type === 'expense') {
+            expense += amount
+            byCategory[row.category] = (byCategory[row.category] || 0) + amount
+          }
+
+          if (row.type === 'investment') {
+            investment += amount
+            const vehicle = row.investment_vehicle || 'Other'
+            byVehicle[vehicle] = (byVehicle[vehicle] || 0) + amount
+          }
+        }
+
+        return {
+          earned,
+          repayments,
+          expense,
+          investment,
+          byCategory,
+          byVehicle,
+          balance: earned + repayments - expense - investment,
+          count: safeRows.length,
+        }
+      } catch (err) {
+        logQueryError('month summary', err)
+        throw err
       }
-    }
+    },
   })
 
-  return { data, loading: isLoading }
+  return { data, loading: isLoading, error }
 }
 
 export function useYearSummary(year) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['year', year],
     queryFn: async () => {
-      const { data: rows, error } = await supabase
-        .from('transactions')
-        .select('id, date, type, amount, description, category, investment_vehicle, is_repayment')
-        .gte('date', `${year}-01-01`)
-        .lte('date', `${year}-12-31`)
+      try {
+        const userId = await getCurrentUserId()
+        const rangeStart = `${year}-01-01`
+        const rangeEnd = `${year}-12-31`
 
-      if (error) throw error
-      
-      const safeRows = rows || []
-      
-      const monthly = Array.from({ length: 12 }, (_, i) => {
-        const m = i + 1
-        const mo = safeRows.filter(r => new Date(r.date).getMonth() + 1 === m)
-        return {
-          month: m,
-          income: mo.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0),
-          expense: mo.filter(r => r.type === 'expense').reduce((s, r) => s + +r.amount, 0),
-          investment: mo.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0),
+        const [baseRes, topExpenseRes] = await Promise.all([
+          supabase
+            .from('transactions')
+            .select(TRANSACTION_YEAR_COLUMNS)
+            .eq('user_id', userId)
+            .gte('date', rangeStart)
+            .lte('date', rangeEnd),
+          supabase
+            .from('transactions')
+            .select(TRANSACTION_TOP_EXPENSE_COLUMNS)
+            .eq('user_id', userId)
+            .eq('type', 'expense')
+            .gte('date', rangeStart)
+            .lte('date', rangeEnd)
+            .order('amount', { ascending: false })
+            .limit(5),
+        ])
+
+        if (baseRes.error) throw baseRes.error
+        if (topExpenseRes.error) throw topExpenseRes.error
+
+        const baseRows = baseRes.data || []
+        const top5 = topExpenseRes.data || []
+
+        const monthly = Array.from({ length: 12 }, (_, i) => ({
+          month: i + 1,
+          income: 0,
+          expense: 0,
+          investment: 0,
+        }))
+
+        const byCategory = {}
+        const byVehicle = {}
+
+        let totalIncome = 0
+        let totalRepayments = 0
+        let totalExpense = 0
+        let totalInvestment = 0
+
+        for (const row of baseRows) {
+          const amount = Number(row.amount || 0)
+          const monthIndex = Number(String(row.date).slice(5, 7)) - 1
+
+          if (row.type === 'income') {
+            if (row.is_repayment) totalRepayments += amount
+            else {
+              totalIncome += amount
+              if (monthIndex >= 0 && monthIndex < 12) monthly[monthIndex].income += amount
+            }
+          }
+
+          if (row.type === 'expense') {
+            totalExpense += amount
+            if (monthIndex >= 0 && monthIndex < 12) monthly[monthIndex].expense += amount
+            byCategory[row.category] = (byCategory[row.category] || 0) + amount
+          }
+
+          if (row.type === 'investment') {
+            totalInvestment += amount
+            if (monthIndex >= 0 && monthIndex < 12) monthly[monthIndex].investment += amount
+            const vehicle = row.investment_vehicle || 'Other'
+            byVehicle[vehicle] = (byVehicle[vehicle] || 0) + amount
+          }
         }
-      })
 
-      const totalIncome = safeRows.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0)
-      const totalRepayments = safeRows.filter(r => r.type === 'income' && r.is_repayment).reduce((s, r) => s + +r.amount, 0)
-      const totalExpense = safeRows.filter(r => r.type === 'expense').reduce((s, r) => s + +r.amount, 0)
-      const totalInvestment = safeRows.filter(r => r.type === 'investment').reduce((s, r) => s + +r.amount, 0)
+        const monthsWithIncome = monthly.filter(m => m.income > 0)
+        const avgSavings = monthsWithIncome.length
+          ? Math.round(
+            monthsWithIncome.reduce((sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0)
+              / monthsWithIncome.length
+          )
+          : 0
 
-      const byCategory = {}
-      safeRows.filter(r => r.type === 'expense').forEach(r => {
-        byCategory[r.category] = (byCategory[r.category] || 0) + +r.amount
-      })
-      const byVehicle = {}
-      safeRows.filter(r => r.type === 'investment').forEach(r => {
-        const k = r.investment_vehicle || 'Other'
-        byVehicle[k] = (byVehicle[k] || 0) + +r.amount
-      })
-
-      const top5 = safeRows
-        .filter(r => r.type === 'expense')
-        .sort((a, b) => +b.amount - +a.amount)
-        .slice(0, 5)
-
-      return {
-        monthly,
-        totalIncome,
-        totalRepayments,
-        totalExpense,
-        totalInvestment,
-        byCategory,
-        byVehicle,
-        top5,
-        count: safeRows.length
+        return {
+          monthly,
+          totalIncome,
+          totalRepayments,
+          totalExpense,
+          totalInvestment,
+          avgSavings,
+          byCategory,
+          byVehicle,
+          top5,
+          count: baseRows.length,
+        }
+      } catch (err) {
+        logQueryError('year summary', err)
+        throw err
       }
-    }
+    },
   })
 
-  return { data, loading: isLoading }
+  return { data, loading: isLoading, error }
 }
 
 export function useRunningBalance(year, month) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['balance', year, month],
     queryFn: async () => {
-      const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
-      const { data: rows, error } = await supabase
-        .from('transactions')
-        .select('type, amount')
-        .lte('date', endDate)
+      try {
+        const userId = await getCurrentUserId()
+        const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
-      if (error) throw error
-      return (rows || []).reduce((acc, r) => {
-        return acc + (r.type === 'income' ? Number(r.amount) : -Number(r.amount))
-      }, 0)
-    }
+        const [incomeRes, outflowRes] = await Promise.all([
+          supabase
+            .from('transactions')
+            .select('amount')
+            .eq('user_id', userId)
+            .eq('type', 'income')
+            .lte('date', endDate),
+          supabase
+            .from('transactions')
+            .select('amount')
+            .eq('user_id', userId)
+            .in('type', ['expense', 'investment'])
+            .lte('date', endDate),
+        ])
+
+        if (incomeRes.error) throw incomeRes.error
+        if (outflowRes.error) throw outflowRes.error
+
+        const incomeTotal = (incomeRes.data || []).reduce((sum, r) => sum + Number(r.amount || 0), 0)
+        const outflowTotal = (outflowRes.data || []).reduce((sum, r) => sum + Number(r.amount || 0), 0)
+        return incomeTotal - outflowTotal
+      } catch (err) {
+        logQueryError('running balance', err)
+        throw err
+      }
+    },
   })
-  return { balance: data, loading: isLoading }
-}
 
-async function getCurrentUserId() {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.user?.id) throw new Error('Not signed in')
-  return session.user.id
+  return { balance: data, loading: isLoading, error }
 }
 
 export async function addTransaction(payload) {
-  const user_id = await getCurrentUserId()
-  const { data, error } = await supabase.from('transactions').insert({ ...payload, user_id }).select().single()
-  if (error) throw error
-  await invalidateCache()
-  return data
+  try {
+    const user_id = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert({ ...payload, user_id })
+      .select(TRANSACTION_MUTATION_COLUMNS)
+      .single()
+
+    if (error) throw error
+    await invalidateCache()
+    return data
+  } catch (err) {
+    console.error('[Kosha] addTransaction failed', err)
+    throw err
+  }
 }
+
 export async function updateTransaction(id, payload) {
-  const { data, error } = await supabase.from('transactions').update(payload).eq('id', id).select().single()
-  if (error) throw error
-  await invalidateCache()
-  return data
+  try {
+    const user_id = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('transactions')
+      .update(payload)
+      .eq('id', id)
+      .eq('user_id', user_id)
+      .select(TRANSACTION_MUTATION_COLUMNS)
+      .single()
+
+    if (error) throw error
+    await invalidateCache()
+    return data
+  } catch (err) {
+    console.error('[Kosha] updateTransaction failed', err)
+    throw err
+  }
 }
+
 export async function deleteTransaction(id) {
-  const { error } = await supabase.from('transactions').delete().eq('id', id)
-  if (error) throw error
-  await invalidateCache()
-  return true
+  try {
+    const user_id = await getCurrentUserId()
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user_id)
+
+    if (error) throw error
+    await invalidateCache()
+    return true
+  } catch (err) {
+    console.error('[Kosha] deleteTransaction failed', err)
+    throw err
+  }
 }
 
 export function invalidateCache() {

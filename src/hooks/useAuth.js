@@ -193,7 +193,7 @@ function useAuthState() {
     } finally {
       setUser(null)
       setProfile(null)
-      queryClient.removeQueries({ queryKey: USER_PROFILE_QUERY_KEY })
+      queryClient.clear()
     }
   }, [])
 

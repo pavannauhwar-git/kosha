@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import { Sparkle } from '@phosphor-icons/react'
+import { useQuery } from '@tanstack/react-query'
 import {
   AreaChart, Area,
   BarChart, Bar,
@@ -9,6 +10,7 @@ import {
   ResponsiveContainer, Cell,
 } from 'recharts'
 import { useYearSummary } from '../hooks/useTransactions'
+import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import CategoryIcon from '../components/CategoryIcon'
 import CategorySpendingChart from '../components/CategorySpendingChart'
@@ -199,59 +201,57 @@ function TrendPill({ current, previous, label }) {
 }
 
 // ── Year-over-year CARDS (replaces scrollable table) ─────────────────────
-function YoYCards({ years, currentYear }) {
-  const [allData, setAllData] = useState({})
+function YoYCards({ years, currentYear, userId }) {
   const yearsKey = useMemo(
     () => years.slice().sort((a, b) => a - b).join(','),
     [years]
   )
 
-  useEffect(() => {
-    let cancelled = false
+  const { data: allData = {} } = useQuery({
+    queryKey: ['yoy', userId, yearsKey],
+    enabled: Boolean(userId) && years.length > 0,
+    queryFn: async () => {
+      try {
+        const startYear = Math.min(...years)
+        const endYear = Math.max(...years)
+        const yearsSet = new Set(years)
 
-    async function loadYoY() {
-      if (!years.length) {
-        if (!cancelled) setAllData({})
-        return
+        const { data: rows, error } = await supabase
+          .from('transactions')
+          .select('type, amount, date, is_repayment')
+          .eq('user_id', userId)
+          .gte('date', `${startYear}-01-01`)
+          .lte('date', `${endYear}-12-31`)
+
+        if (error) throw error
+
+        const totals = {}
+        years.forEach((y) => {
+          totals[y] = { income: 0, spent: 0, invest: 0 }
+        })
+
+        ;(rows || []).forEach((r) => {
+          const y = Number(String(r.date).slice(0, 4))
+          if (!yearsSet.has(y)) return
+          if (r.type === 'income' && !r.is_repayment) totals[y].income += +r.amount
+          if (r.type === 'expense') totals[y].spent += +r.amount
+          if (r.type === 'investment') totals[y].invest += +r.amount
+        })
+
+        years.forEach((y) => {
+          const entry = totals[y]
+          entry.rate = entry.income > 0
+            ? Math.round(((entry.income - entry.spent) / entry.income) * 100)
+            : 0
+        })
+
+        return totals
+      } catch (err) {
+        console.error('[Kosha] YoY query failed', err)
+        throw err
       }
-
-      const startYear = Math.min(...years)
-      const endYear = Math.max(...years)
-      const yearsSet = new Set(years)
-
-      const { data: rows } = await supabase
-        .from('transactions')
-        .select('type, amount, date, is_repayment')
-        .gte('date', `${startYear}-01-01`)
-        .lte('date', `${endYear}-12-31`)
-
-      if (cancelled) return
-
-      const totals = {}
-      years.forEach((y) => {
-        totals[y] = { income: 0, spent: 0, invest: 0 }
-      })
-
-      ;(rows || []).forEach((r) => {
-        const y = Number(String(r.date).slice(0, 4))
-        if (!yearsSet.has(y)) return
-        if (r.type === 'income' && !r.is_repayment) totals[y].income += +r.amount
-        if (r.type === 'expense') totals[y].spent += +r.amount
-        if (r.type === 'investment') totals[y].invest += +r.amount
-      })
-
-      years.forEach((y) => {
-        const entry = totals[y]
-        entry.rate = entry.income > 0 ? Math.round(((entry.income - entry.spent) / entry.income) * 100) : 0
-      })
-
-      if (cancelled) return
-      setAllData(totals)
-    }
-
-    loadYoY()
-    return () => { cancelled = true }
-  }, [yearsKey])
+    },
+  })
 
   const yearsWithData = years.filter(y => allData[y]?.income > 0 || allData[y]?.spent > 0)
   if (yearsWithData.length < 2) return null
@@ -396,6 +396,7 @@ export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
+  const { user } = useAuth()
 
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1)
@@ -626,7 +627,7 @@ export default function Analytics() {
           )}
 
           {/* ── 4. Year-over-year stacked cards ─────────────────────── */}
-          <YoYCards years={yoyYears} currentYear={year} />
+          <YoYCards years={yoyYears} currentYear={year} userId={user?.id} />
 
           {/* ── 5. Top 3 expenses — victory podium ───────────────────── */}
           {top5.length > 0 && (() => {

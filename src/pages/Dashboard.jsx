@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
@@ -48,7 +48,7 @@ export default function Dashboard() {
     now.getMonth() === 0 ? 12 : now.getMonth()
   )
   const { balance: runningBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
-  const { pending: bills } = useLiabilities()
+  const { pending: bills } = useLiabilities({ includePaid: false })
 
   const dueSoon = useMemo(
     () => bills.filter(b => daysUntil(b.due_date) <= 7),

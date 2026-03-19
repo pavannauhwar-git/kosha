@@ -33,34 +33,51 @@ export function useBudgets() {
   const { data: budgets, isLoading } = useQuery({
     queryKey: ['budgets'],
     queryFn: async () => {
-      const { data: rows, error } = await supabase
-        .from('budgets')
-        .select('category, amount')
-      if (error) throw error
-      return Object.fromEntries((rows || []).map(r => [r.category, +r.amount]))
+      try {
+        const user_id = await getUserId()
+        const { data: rows, error } = await supabase
+          .from('budgets')
+          .select('category, amount')
+          .eq('user_id', user_id)
+        if (error) throw error
+        return Object.fromEntries((rows || []).map(r => [r.category, +r.amount]))
+      } catch (err) {
+        console.error('[Kosha] budgets query failed', err)
+        throw err
+      }
     },
   })
 
   // ── setBudget: upsert a category budget ───────────────────────────────
   const setBudget = useCallback(async (category, amount) => {
-    const user_id = await getUserId()
-    const { error } = await supabase
-      .from('budgets')
-      .upsert({ user_id, category, amount }, { onConflict: 'user_id,category' })
-    if (error) throw error
-    await invalidate()
+    try {
+      const user_id = await getUserId()
+      const { error } = await supabase
+        .from('budgets')
+        .upsert({ user_id, category, amount }, { onConflict: 'user_id,category' })
+      if (error) throw error
+      await invalidate()
+    } catch (err) {
+      console.error('[Kosha] setBudget failed', err)
+      throw err
+    }
   }, [])
 
   // ── removeBudget: delete a category budget ────────────────────────────
   const removeBudget = useCallback(async (category) => {
-    const user_id = await getUserId()
-    const { error } = await supabase
-      .from('budgets')
-      .delete()
-      .eq('category', category)
-      .eq('user_id', user_id)
-    if (error) throw error
-    await invalidate()
+    try {
+      const user_id = await getUserId()
+      const { error } = await supabase
+        .from('budgets')
+        .delete()
+        .eq('category', category)
+        .eq('user_id', user_id)
+      if (error) throw error
+      await invalidate()
+    } catch (err) {
+      console.error('[Kosha] removeBudget failed', err)
+      throw err
+    }
   }, [])
 
   return { budgets: budgets || {}, loading: isLoading, setBudget, removeBudget }
