@@ -189,10 +189,15 @@ function BreakdownCard({ earned, spent, invested }) {
   const CIRC  = 2 * Math.PI * R
   const GAP   = 16
 
+  // Violet for invest — clearly distinct from rose/red expense
+  const INVEST_COLOR  = '#6D28D9'
+  // Amber for leftover
+  const LEFTOVER_COLOR = C.bills
+
   const segs = [
-    { pct: spentPct,    color: C.expense   },
-    { pct: investedPct, color: C.investText },
-    { pct: savedPct,    color: C.brand     },
+    { pct: spentPct,    color: C.expense      },
+    { pct: investedPct, color: INVEST_COLOR   },
+    { pct: savedPct,    color: LEFTOVER_COLOR },
   ].filter(s => s.pct > 0)
 
   let offset = 0
@@ -224,13 +229,13 @@ function BreakdownCard({ earned, spent, invested }) {
             })}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span style={{ fontSize: 15, fontWeight: 700, color: C.brand,
+            <span style={{ fontSize: 15, fontWeight: 700, color: LEFTOVER_COLOR,
                            fontFamily: 'Roboto, system-ui', lineHeight: 1.1 }}>
               {savedPct}%
             </span>
             <span style={{ fontSize: 9, color: C.inkMuted,
                            fontFamily: 'Roboto, system-ui' }}>
-              saved
+              leftover
             </span>
           </div>
         </div>
@@ -238,15 +243,15 @@ function BreakdownCard({ earned, spent, invested }) {
         {/* Rows */}
         <div className="flex-1 space-y-3 pt-1">
           {[
-            { label: 'Spent',    val: spent,    pct: spentPct,    dot: C.expense,    textCls: 'text-expense-text' },
-            { label: 'Invested', val: invested, pct: investedPct, dot: C.investText, textCls: 'text-invest-text'  },
-            { label: 'Saved',    val: saved,    pct: savedPct,    dot: C.brand,      textCls: 'text-brand'        },
+            { label: 'Spent',    val: spent,    pct: spentPct,    dot: C.expense,      color: C.expense      },
+            { label: 'Invested', val: invested, pct: investedPct, dot: INVEST_COLOR,   color: INVEST_COLOR   },
+            { label: 'Leftover', val: saved,    pct: savedPct,    dot: LEFTOVER_COLOR, color: LEFTOVER_COLOR },
           ].map(s => (
             <div key={s.label}>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 rounded-full shrink-0" style={{ background: s.dot }} />
                 <span className="text-caption text-ink-3 flex-1">{s.label}</span>
-                <span className={`text-caption font-bold tabular-nums ${s.textCls}`}>{s.pct}%</span>
+                <span className="text-caption font-bold tabular-nums" style={{ color: s.color }}>{s.pct}%</span>
               </div>
               <p className="text-caption text-ink-3 tabular-nums pl-4">{fmt(s.val)}</p>
             </div>

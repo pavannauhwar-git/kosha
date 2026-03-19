@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
-import { Sparkle, Star } from '@phosphor-icons/react'
+import { Sparkle } from '@phosphor-icons/react'
 import {
   AreaChart, Area,
   BarChart, Bar,
@@ -70,14 +70,11 @@ const DarkTooltip = ({ active, payload, label }) => {
   )
 }
 
-// ── Section heading with left-accent ─────────────────────────────────────
+// ── Section heading ───────────────────────────────────────────────────────
 function SectionHeading({ children, right }) {
   return (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2.5">
-        <div className="w-[3px] h-[18px] rounded-full bg-brand opacity-50" />
-        <p className="section-label">{children}</p>
-      </div>
+      <p className="section-label">{children}</p>
       {right && <div>{right}</div>}
     </div>
   )
@@ -260,146 +257,135 @@ function YoYCards({ years, currentYear }) {
   if (yearsWithData.length < 2) return null
 
   return (
-    <div className="space-y-3">
+    <div>
       <SectionHeading>Year over Year</SectionHeading>
-      {yearsWithData.map((y, idx) => {
-        const d = allData[y]
-        const prev = allData[yearsWithData[idx - 1]]
-        const isCurrent = y === currentYear
+      <div className="overflow-x-auto no-scrollbar -mx-4 px-4 mt-3">
+        <div className="flex gap-3 pb-1" style={{ minWidth: 'max-content' }}>
+          {yearsWithData.map((y, idx) => {
+            const d = allData[y]
+            const prev = allData[yearsWithData[idx - 1]]
+            const isCurrent = y === currentYear
 
-        function delta(curr, prv) {
-          if (!prv || prv === 0) return null
-          return Math.round(((curr - prv) / prv) * 100)
-        }
+            function delta(curr, prv) {
+              if (!prv || prv === 0) return null
+              return Math.round(((curr - prv) / prv) * 100)
+            }
 
-        return (
-          <div key={y}
-            className={`card p-4 ${isCurrent ? 'border-brand' : ''}`}
-            style={isCurrent ? { borderWidth: '1.5px' } : {}}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <span className={`text-label font-bold ${isCurrent ? 'text-ink' : 'text-ink-3'}`}>
-                {y}
-              </span>
-              {isCurrent && (
-                <span className="text-[10px] font-semibold bg-brand-container text-brand-on
-                                 px-2 py-0.5 rounded-pill">
-                  This year
-                </span>
-              )}
-            </div>
+            return (
+              <div key={y}
+                className={`card p-4 w-[155px] shrink-0 ${isCurrent ? 'border-brand' : ''}`}
+                style={isCurrent ? { borderWidth: '1.5px' } : {}}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`text-label font-bold ${isCurrent ? 'text-ink' : 'text-ink-3'}`}>{y}</span>
+                  {isCurrent && (
+                    <span className="text-[9px] font-bold bg-brand-container text-brand-on px-1.5 py-0.5 rounded-full">
+                      Now
+                    </span>
+                  )}
+                </div>
 
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { label: 'Earned', key: 'income', cls: isCurrent ? 'text-income-text' : 'text-ink-3' },
-                { label: 'Spent', key: 'spent', cls: isCurrent ? 'text-expense-text' : 'text-ink-3' },
-                { label: 'Invested', key: 'invest', cls: isCurrent ? 'text-invest-text' : 'text-ink-3' },
-                { label: 'Saved', key: 'rate', cls: isCurrent ? 'text-brand' : 'text-ink-3', suffix: '%' },
-              ].map(row => {
-                const val = d?.[row.key] ?? 0
-                const prevV = prev?.[row.key]
-                const d2 = delta(val, prevV)
-                return (
-                  <div key={row.key}>
-                    <p className="text-[10px] text-ink-3 mb-1">{row.label}</p>
-                    <p className={`text-[13px] font-bold tabular-nums ${row.cls}`}>
-                      {row.suffix ? `${val}%` : fmt(val, true)}
-                    </p>
-                    {isCurrent && d2 !== null && (
-                      <p className={`text-[10px] font-semibold mt-0.5 ${d2 > 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                        {d2 > 0 ? '↑' : '↓'} {Math.abs(d2)}%
-                      </p>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })}
+                <div className="space-y-2.5">
+                  {[
+                    { label: 'Earned',   key: 'income', cls: isCurrent ? 'text-income-text'  : 'text-ink-2' },
+                    { label: 'Spent',    key: 'spent',  cls: isCurrent ? 'text-expense-text' : 'text-ink-2' },
+                    { label: 'Invested', key: 'invest', cls: isCurrent ? 'text-invest-text'  : 'text-ink-2' },
+                    { label: 'Leftover', key: 'rate',   cls: isCurrent ? 'text-repay-text'   : 'text-ink-2', suffix: '%' },
+                  ].map(row => {
+                    const val = d?.[row.key] ?? 0
+                    const d2  = delta(val, prev?.[row.key])
+                    return (
+                      <div key={row.key}>
+                        <p className="text-[10px] text-ink-3 mb-0.5">{row.label}</p>
+                        <div className="flex items-baseline gap-1">
+                          <p className={`text-[12px] font-bold tabular-nums ${row.cls}`}>
+                            {row.suffix ? `${val}%` : fmt(val, true)}
+                          </p>
+                          {d2 !== null && Math.abs(d2) >= 3 && (
+                            <span className={`text-[9px] font-bold ${d2 > 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                              {d2 > 0 ? '↑' : '↓'}{Math.abs(d2)}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
 
-// ── Portfolio donut ───────────────────────────────────────────────────────
-function PortfolioDonut({ vehicleData }) {
+// ── Portfolio allocation — matches Monthly BreakdownCard layout ──────────
+function PortfolioAllocation({ vehicleData }) {
   const total = vehicleData.reduce((s, [, v]) => s + (Number(v) || 0), 0)
+  if (!vehicleData.length || total === 0) return null
 
-  const SIZE = 130
-  const SW = 9
-  const R = (SIZE / 2) - SW
-  const CX = SIZE / 2
-  const CY = SIZE / 2
+  const SIZE = 120
+  const SW   = 8
+  const R    = SIZE / 2 - SW
+  const CX   = SIZE / 2
+  const CY   = SIZE / 2
   const CIRC = 2 * Math.PI * R
-  const GAP_DEG = 12
+  const GAP  = 16
 
   const segs = vehicleData
-    .map(([name, value], i) => {
-      const safeValue = Number(value) || 0
-      return {
-        name,
-        value: safeValue,
-        ratio: total > 0 ? safeValue / total : 0,
-        pct: total > 0 ? Math.round((safeValue / total) * 100) : 0,
-        color: PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length],
-      }
-    })
+    .map(([name, value], i) => ({
+      name,
+      value: Number(value) || 0,
+      pct: total > 0 ? Math.round(((Number(value) || 0) / total) * 100) : 0,
+      color: PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length],
+    }))
     .filter(s => s.value > 0)
 
-  let offsetRatio = 0
+  let offset = 0
 
   return (
     <div className="card p-5">
-      <SectionHeading>Portfolio Allocation</SectionHeading>
-      <div className="flex items-center gap-4 mt-4">
+      <p className="section-label mb-4">Portfolio Allocation</p>
+      <div className="flex gap-4 items-center">
+        {/* Donut */}
         <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
             <circle cx={CX} cy={CY} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
-            {segs.map((seg) => {
-              const gapLen = segs.length > 1 ? (GAP_DEG / 360) * CIRC : 0
-              const dashLen = Math.max(0, seg.ratio * CIRC - gapLen)
-              const currentOffset = offsetRatio
-              offsetRatio += seg.ratio
+            {segs.map((seg, i) => {
+              const dashLen       = Math.max(0, (seg.pct / 100) * CIRC - (GAP / 360) * CIRC)
+              const currentOffset = offset
+              offset += seg.pct
               return (
-                <circle
-                  key={seg.name}
-                  cx={CX}
-                  cy={CY}
-                  r={R}
-                  fill="none"
-                  stroke={seg.color}
-                  strokeWidth={SW}
-                  strokeLinecap="round"
+                <circle key={i} cx={CX} cy={CY} r={R}
+                  fill="none" stroke={seg.color} strokeWidth={SW} strokeLinecap="round"
                   strokeDasharray={`${dashLen} ${CIRC}`}
-                  strokeDashoffset={-currentOffset * CIRC}
+                  strokeDashoffset={-currentOffset * CIRC / 100}
                   transform={`rotate(-90 ${CX} ${CY})`}
                 />
               )
             })}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-[12px] font-bold text-ink tabular-nums">{fmt(total, true)}</span>
-            <span className="text-[10px] text-ink-3">total</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.ink, lineHeight: 1.1 }}>
+              {fmt(total, true)}
+            </span>
+            <span style={{ fontSize: 9, color: C.inkMuted }}>total</span>
           </div>
         </div>
 
-        <div className="flex-1 space-y-0 min-w-0">
-          {segs.map((seg, i) => {
-            return (
-              <div key={seg.name}
-                className={`flex items-center gap-2 py-2
-                  ${i < segs.length - 1 ? 'border-b border-kosha-border' : ''}`}
-              >
-                <div className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ background: seg.color }} />
-                <span className="text-caption text-ink font-medium flex-1 truncate">{seg.name}</span>
-                <span className="text-caption text-ink-3 w-7 text-right">{seg.pct}%</span>
-                <span className="text-caption font-semibold text-ink tabular-nums w-16 text-right">
-                  {fmt(seg.value, true)}
-                </span>
+        {/* Rows */}
+        <div className="flex-1 space-y-3 pt-1 min-w-0">
+          {segs.map(seg => (
+            <div key={seg.name}>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ background: seg.color }} />
+                <span className="text-caption text-ink-3 flex-1 truncate">{seg.name}</span>
+                <span className="text-caption font-bold tabular-nums text-ink">{seg.pct}%</span>
               </div>
-            )
-          })}
+              <p className="text-caption text-ink-3 tabular-nums pl-4">{fmt(seg.value)}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -459,26 +445,15 @@ export default function Analytics() {
       {/* ── Year navigator ────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pr-14">
         <button onClick={() => setYear(y => y - 1)}
-          className="w-10 h-10 rounded-full bg-kosha-surface-2 border border-kosha-border
-                     flex items-center justify-center active:scale-95 transition-transform">
-          <ChevronLeft size={20} className="text-ink-2" />
+          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                     flex items-center justify-center active:bg-kosha-surface-2">
+          <ChevronLeft size={18} className="text-ink-2" />
         </button>
-        <div className="text-center">
-          <h1 className="text-display font-bold text-ink tracking-tight leading-none">{year}</h1>
-          {year === currentYear && (
-            <span className="text-[10px] font-bold text-brand bg-brand-container
-                             px-2.5 py-0.5 rounded-full mt-1.5 inline-block tracking-wide">
-              CURRENT
-            </span>
-          )}
-        </div>
-        <button onClick={() => setYear(y => Math.min(y + 1, currentYear))}
-          disabled={year >= currentYear}
-          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-transform
-            ${year >= currentYear
-              ? 'bg-kosha-surface-2/50 border-kosha-border/40 opacity-30 cursor-default'
-              : 'bg-kosha-surface-2 border-kosha-border active:scale-95'}`}>
-          <ChevronRight size={20} className="text-ink-2" />
+        <h1 className="text-display font-bold text-ink tracking-tight">{year}</h1>
+        <button onClick={() => setYear(y => y + 1)}
+          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                     flex items-center justify-center active:bg-kosha-surface-2">
+          <ChevronRight size={18} className="text-ink-2" />
         </button>
       </div>
 
@@ -654,58 +629,61 @@ export default function Analytics() {
           {/* ── 4. Year-over-year stacked cards ─────────────────────── */}
           <YoYCards years={yoyYears} currentYear={year} />
 
-          {/* ── 5. Top 5 expenses ────────────────────────────────────── */}
-          {top5.length > 0 && (
-            <div>
-              <SectionHeading>Top Expenses {year}</SectionHeading>
-              <div className="card p-0 overflow-hidden mt-3">
-                {top5.map((t, i) => {
-                  // Medal style for top 3
-                  const MEDAL = [
-                    { ringCls: 'ring-yellow-300/60', bg: 'bg-yellow-50', textCls: 'text-yellow-600' },
-                    { ringCls: 'ring-slate-300/60',  bg: 'bg-slate-50',  textCls: 'text-slate-500'  },
-                    { ringCls: 'ring-orange-300/60', bg: 'bg-orange-50', textCls: 'text-orange-500' },
-                  ]
-                  const medal = i < 3 ? MEDAL[i] : null
+          {/* ── 5. Top 3 expenses — victory podium ───────────────────── */}
+          {top5.length > 0 && (() => {
+            const top3 = top5.slice(0, 3)
+            // Display order: 2nd left, 1st center (tallest), 3rd right
+            const PODIUM = [
+              { rank: 2, platformH: 56, grad: 'linear-gradient(170deg,#E2E8F0,#94A3B8)', rankColor: '#475569' },
+              { rank: 1, platformH: 80, grad: 'linear-gradient(170deg,#FDE68A,#F59E0B)', rankColor: '#92400E' },
+              { rank: 3, platformH: 40, grad: 'linear-gradient(170deg,#FED7AA,#F97316)', rankColor: '#9A3412' },
+            ]
+            const slots = PODIUM.map(p => ({ ...p, item: top3[p.rank - 1] })).filter(p => p.item)
 
-                  return (
-                    <div key={t.id}
-                      className={`flex items-center gap-3 py-3.5 px-4
-                        ${i < top5.length - 1 ? 'border-b border-kosha-border' : ''}`}
-                    >
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0
-                        ${medal ? `${medal.bg} ring-1 ${medal.ringCls}` : 'bg-kosha-surface-2'}`}>
-                        {i === 0
-                          ? <Star size={12} weight="fill" className={medal.textCls} />
-                          : <span className={`text-[10px] font-bold ${medal ? medal.textCls : 'text-ink-3'}`}>{i + 1}</span>
-                        }
+            return (
+              <div>
+                <SectionHeading>Top Expenses {year}</SectionHeading>
+                <div className="card mt-3 overflow-hidden">
+                  <div className="flex items-end gap-1.5 px-3 pt-5">
+                    {slots.map(({ rank, platformH, grad, rankColor, item }) => (
+                      <div key={rank} className="flex flex-col flex-1 items-center min-w-0">
+                        {/* Info above platform */}
+                        <div className="w-full flex flex-col items-center pb-3 px-0.5">
+                          <CategoryIcon categoryId={item.category} size={14} />
+                          <p className="text-[11px] font-medium text-ink text-center mt-1.5 leading-tight line-clamp-2">
+                            {item.description}
+                          </p>
+                          <p className="text-[13px] font-bold text-expense-text tabular-nums mt-1">
+                            {fmt(item.amount)}
+                          </p>
+                          <p className="text-[10px] text-ink-3 mt-0.5">{fmtDate(item.date)}</p>
+                        </div>
+                        {/* Podium platform */}
+                        <div className="w-full rounded-t-xl flex items-center justify-center"
+                          style={{ height: platformH, background: grad }}>
+                          <span className="text-[13px] font-extrabold" style={{ color: rankColor }}>
+                            #{rank}
+                          </span>
+                        </div>
                       </div>
-                      <CategoryIcon categoryId={t.category} size={14} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-label font-medium text-ink truncate">{t.description}</p>
-                        <p className="text-caption text-ink-3">{fmtDate(t.date)}</p>
-                      </div>
-                      <span className="text-label font-bold text-expense-text tabular-nums shrink-0">
-                        {fmt(t.amount)}
-                      </span>
-                    </div>
-                  )
-                })}
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            )
+          })()}
+
+          {/* ── 6. Portfolio allocation ──────────────────────────────── */}
+          {vehicleData.length > 0 && (
+            <PortfolioAllocation vehicleData={vehicleData} />
           )}
 
-          {/* ── 6. Spending by Category ──────────────────────────────── */}
+          {/* ── 7. Spending by Category ──────────────────────────────── */}
           {catEntries.length > 0 && (
             <CategorySpendingChart
               entries={catEntries}
               total={categoryTotal}
             />
-          )}
-
-          {/* ── 7. Portfolio donut ───────────────────────────────────── */}
-          {vehicleData.length > 0 && (
-            <PortfolioDonut vehicleData={vehicleData} />
           )}
 
           {!data?.totalIncome && !data?.totalExpense && (

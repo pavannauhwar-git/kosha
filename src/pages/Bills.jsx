@@ -108,7 +108,7 @@ export default function Bills() {
 
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-4">
-        <h1 className="font-display text-display text-ink">Bills &amp; Dues</h1>
+        <h1 className="font-display text-display font-bold text-ink">Bills &amp; Dues</h1>
         {pending.length > 0 && (
           <p className="text-caption text-ink-3 mt-0.5">
             Next due in {Math.min(...pending.map(b => Math.max(0, daysUntil(b.due_date))))} days

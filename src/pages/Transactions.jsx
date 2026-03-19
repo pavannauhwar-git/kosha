@@ -114,7 +114,7 @@ export default function Transactions() {
       {/* ── Header ───────────────────────────────────────────────────── */}
       <div className="mb-4 flex items-start justify-between pr-14">
         <div>
-          <h1 className="font-display text-display text-ink">Transactions</h1>
+          <h1 className="font-display text-display font-bold text-ink">Transactions</h1>
           <p className="text-caption text-ink-3 mt-0.5">
             {data.length > 0 ? `${data.length} transaction${data.length !== 1 ? 's' : ''}` : 'No results'}
             {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
