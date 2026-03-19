@@ -168,27 +168,77 @@ function writeRecentConfirmedTxnMap(map) {
   }
 }
 
+function parseRecentConfirmedEntry(entry) {
+  if (typeof entry === 'number') {
+    return Number.isFinite(entry) ? { ts: entry, txn: null } : null
+  }
+  if (!entry || typeof entry !== 'object') return null
+  const ts = Number(entry.ts)
+  if (!Number.isFinite(ts)) return null
+  const txn = entry.txn && typeof entry.txn === 'object' ? entry.txn : null
+  return { ts, txn }
+}
+
+function normalizeRecentConfirmedEntry(entry, parsed) {
+  const hasNormalizedNumber = typeof entry === 'number' && entry === parsed.ts
+  const hasNormalizedObject = !!(
+    entry &&
+    typeof entry === 'object' &&
+    Number(entry.ts) === parsed.ts &&
+    (entry.txn || null) === (parsed.txn || null)
+  )
+  return {
+    normalized: parsed.txn ? { ts: parsed.ts, txn: parsed.txn } : parsed.ts,
+    isAlreadyNormalized: hasNormalizedNumber || hasNormalizedObject,
+  }
+}
+
 function getRecentConfirmedTxnIds() {
   const now = Date.now()
   const map = readRecentConfirmedTxnMap()
   let changed = false
   const next = {}
-  Object.entries(map).forEach(([id, ts]) => {
-    const n = Number(ts)
-    if (Number.isFinite(n) && n <= now && now - n <= RECENT_CONFIRMED_TXN_TTL) {
-      next[id] = n
-    } else {
+  Object.entries(map).forEach(([id, entry]) => {
+    const parsed = parseRecentConfirmedEntry(entry)
+    if (!parsed || parsed.ts > now || now - parsed.ts > RECENT_CONFIRMED_TXN_TTL) {
       changed = true
+      return
     }
+    const { normalized, isAlreadyNormalized } = normalizeRecentConfirmedEntry(entry, parsed)
+    if (!isAlreadyNormalized) changed = true
+    next[id] = normalized
   })
   if (changed) writeRecentConfirmedTxnMap(next)
   return new Set(Object.keys(next))
 }
 
-function markRecentConfirmedTxn(id) {
-  if (!id) return
+function getRecentConfirmedTxnRows() {
+  const now = Date.now()
   const map = readRecentConfirmedTxnMap()
-  map[id] = Date.now()
+  let changed = false
+  const next = {}
+  const rows = []
+
+  Object.entries(map).forEach(([id, entry]) => {
+    const parsed = parseRecentConfirmedEntry(entry)
+    if (!parsed || parsed.ts > now || now - parsed.ts > RECENT_CONFIRMED_TXN_TTL) {
+      changed = true
+      return
+    }
+    const { normalized, isAlreadyNormalized } = normalizeRecentConfirmedEntry(entry, parsed)
+    if (!isAlreadyNormalized) changed = true
+    next[id] = normalized
+    if (parsed.txn?.id) rows.push(parsed.txn)
+  })
+
+  if (changed) writeRecentConfirmedTxnMap(next)
+  return rows
+}
+
+function markRecentConfirmedTxn(txn) {
+  if (!txn?.id) return
+  const map = readRecentConfirmedTxnMap()
+  map[txn.id] = { ts: Date.now(), txn }
   writeRecentConfirmedTxnMap(map)
 }
 
@@ -201,14 +251,29 @@ function reconcileRecentConfirmedTxns({
   limit,
 }) {
   if (!Array.isArray(rows)) return rows || []
-  if (!Array.isArray(cachedRows) || !cachedRows.length) return rows
 
   const recentIds = getRecentConfirmedTxnIds()
   if (!recentIds.size) return rows
 
+  const recentRows = getRecentConfirmedTxnRows()
+  const bridgeRows = [
+    ...(Array.isArray(cachedRows) ? cachedRows : []),
+    ...recentRows,
+  ]
+  if (!bridgeRows.length) return rows
+
+  const seenBridgeIds = new Set()
+  const uniqueBridgeRows = bridgeRows.filter((row) => {
+    const id = row?.id
+    if (!id) return false
+    if (seenBridgeIds.has(id)) return false
+    seenBridgeIds.add(id)
+    return true
+  })
+
   const filterOptions = { type, category, search, limit }
   const networkIds = new Set(rows.map((r) => r?.id).filter(Boolean))
-  const missingRecentRows = cachedRows.filter((r) =>
+  const missingRecentRows = uniqueBridgeRows.filter((r) =>
     (r?.id && recentIds.has(r.id) && !networkIds.has(r.id)) &&
     txnMatchesCacheFilter(r, filterOptions)
   )
@@ -234,7 +299,7 @@ function reconcileRecentConfirmedTxns({
  */
 export function mergeConfirmedTransactionIntoCache(txn) {
   if (!txn?.id) return
-  markRecentConfirmedTxn(txn.id)
+  markRecentConfirmedTxn(txn)
   try {
     const keys = Object.keys(localStorage)
     keys.forEach((fullKey) => {
