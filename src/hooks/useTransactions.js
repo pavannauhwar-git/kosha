@@ -189,6 +189,11 @@ export function useTransactions({ type, category, search, limit } = {}) {
   // localEdits sits on top of finalData so edits survive the refetch gap.
   const [localEdits, setLocalEdits] = useState({})
 
+  // Ref always tracks the latest localEdits value so clearLocalEdit /
+  // revertLocalEdit can read it without needing it as a useCallback dep.
+  const localEditsRef = useRef(localEdits)
+  localEditsRef.current = localEdits
+
   const {
     optimisticTxns,
     pruneOptimisticTxns,
@@ -274,6 +279,31 @@ export function useTransactions({ type, category, search, limit } = {}) {
   }, [])
 
   const clearLocalEdit = useCallback((id) => {
+    const edit = localEditsRef.current[id]
+    if (edit !== undefined) {
+      // Commit the pending edit into `data` before clearing the overlay.
+      // Without this, a concurrent background fetch can overwrite `data` with
+      // stale server values between applyLocalEdit and the post-confirm refetch,
+      // causing the edit to vanish the moment the overlay is removed.
+      const { _original, ...cleanEdit } = edit
+      setData(prev => prev.map(row => row.id === id ? { ...row, ...cleanEdit } : row))
+    }
+    setLocalEdits(prev => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+  }, [])
+
+  // Called on save failure: restores data to the pre-edit original so the UI
+  // doesn't show a wrong value after the overlay is cleared.
+  const revertLocalEdit = useCallback((id) => {
+    const edit = localEditsRef.current[id]
+    if (edit !== undefined) {
+      if (edit._original) {
+        setData(prev => prev.map(row => row.id === id ? { ...row, ...edit._original } : row))
+      }
+    }
     setLocalEdits(prev => {
       const next = { ...prev }
       delete next[id]
@@ -314,6 +344,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
     refetch,
     applyLocalEdit,
     clearLocalEdit,
+    revertLocalEdit,
   }
 }
 

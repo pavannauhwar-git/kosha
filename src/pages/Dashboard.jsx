@@ -120,6 +120,7 @@ export default function Dashboard() {
     data: recent,
     applyLocalEdit,
     clearLocalEdit,
+    revertLocalEdit,
   } = useTransactions({ limit: 8 })
 
   // Brain hook — centralized add-transaction lifecycle manager.
@@ -209,7 +210,7 @@ export default function Dashboard() {
   // ── handleFailed: save failed — roll back + show toast ────────────────
   const handleFailed = useCallback((msg) => {
     if (pendingEditId.current) {
-      clearLocalEdit(pendingEditId.current)
+      revertLocalEdit(pendingEditId.current)
       removeOptimisticEdit(pendingEditId.current)
       pendingEditId.current = null
     } else {
@@ -217,7 +218,7 @@ export default function Dashboard() {
     }
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
-  }, [clearLocalEdit, removeOptimisticEdit, onTransactionFailed])
+  }, [revertLocalEdit, removeOptimisticEdit, onTransactionFailed])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)

@@ -252,6 +252,15 @@ export default function AddTransactionSheet({
         // Cache invalidation for new transactions is handled by onConfirmed (Brain hook)
       }
     } catch (e) {
+      if (editTxn) {
+        // Force a corrective refetch so the UI snaps back to correct server data
+        // after a failed edit — the caller's onFailed will revert the local overlay.
+        const d = new Date(payload.date)
+        invalidateCache(`txns:`)
+        invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
+        invalidateCache(`balance:`)
+        invalidateCache(`year:${d.getFullYear()}`)
+      }
       onFailed && onFailed(e.message || 'Could not save. Check your connection.')
     }
   }
