@@ -118,15 +118,11 @@ export default function Dashboard() {
 
   const {
     data: recent,
-    prependOptimistic,
-    replaceOptimistic,
     applyLocalEdit,
     clearLocalEdit,
-    applyLocalDelete,
   } = useTransactions({ limit: 8 })
 
   // Brain hook — centralized add-transaction lifecycle manager.
-  // Handles Phase 1 (global broadcast), Phase 2 (UUID swap), Phase 3 (background sync).
   const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
     useGlobalTransactionMutation()
 
@@ -143,7 +139,7 @@ export default function Dashboard() {
     [bills]
   )
 
-  // Month/Balance hooks already merge optimistic transactions from AppDataProvider.
+  // Month/Balance hooks merge optimistic transactions from AppDataProvider.
   const earned = summary?.earned || 0
   const spent = summary?.expense || 0
   const invested = summary?.investment || 0
@@ -184,49 +180,39 @@ export default function Dashboard() {
   recentRef.current = recent
 
   // ── handleOptimisticSave: called immediately when user taps Save ────
-  // For NEW transactions, the Brain hook handles global broadcast + ID tracking.
-  // For EDITS, apply a local edit so the "Latest" list updates instantly.
   const handleOptimisticSave = useCallback((payload) => {
     if (payload.id) {
-      // Edit existing transaction — local + global optimistic edit
+      // Edit existing transaction — apply local + global optimistic edit
       pendingEditId.current = payload.id
       applyLocalEdit(payload.id, payload)
       if (payload._original) {
         addOptimisticEdit(payload.id, payload._original, payload)
       }
     } else {
-      // New transaction — Phase 1: Brain broadcasts to ALL caches simultaneously
+      // New transaction — Brain broadcasts to ALL caches simultaneously
       onTransactionSaved(payload)
     }
   }, [applyLocalEdit, addOptimisticEdit, onTransactionSaved])
 
-  // ── handleConfirmed: save succeeded — quiet sync ──────────────────────
-  // For NEW transactions: Brain handles Phase 2 (UUID swap). Phase 3 (background
-  // sync) is handled by the CRUD function's cache invalidation events.
-  // For EDITS: remove the optimistic edit overlay and local edit immediately.
-  // The event-driven refetch from updateTransaction's invalidateCache will
-  // bring fresh server data without blocking the UI.
+  // ── handleConfirmed: save succeeded ──────────────────────────────────
   const handleConfirmed = useCallback((serverTxn) => {
     if (pendingEditId.current) {
       removeOptimisticEdit(pendingEditId.current)
       clearLocalEdit(pendingEditId.current)
       pendingEditId.current = null
     } else {
-      // New transaction — Phase 2: swap __optimistic__ ID with real UUID in all caches
+      // New transaction — remove optimistic entry; refetch brings the real row
       onTransactionConfirmed(serverTxn)
     }
   }, [clearLocalEdit, removeOptimisticEdit, onTransactionConfirmed])
 
   // ── handleFailed: save failed — roll back + show toast ────────────────
-  // The optimistic row disappears when the event-driven refetch returns real
-  // server data. Toast tells the user what happened so they can try again.
   const handleFailed = useCallback((msg) => {
     if (pendingEditId.current) {
       clearLocalEdit(pendingEditId.current)
       removeOptimisticEdit(pendingEditId.current)
       pendingEditId.current = null
     } else {
-      // New transaction failed — Brain rolls back the ghost row + syncs all caches
       onTransactionFailed()
     }
     setToast(msg)
@@ -242,39 +228,27 @@ export default function Dashboard() {
   const handleDelete = useCallback(async (id) => {
     if (!id) return
 
-    // Guard: never attempt to delete an item that still has a temporary optimistic ID.
-    // The Brain hook's UUID swap (Phase 2) replaces these IDs on success, so the user
-    // can only reach here with a real UUID. If somehow a ghost row slips through,
-    // silently bail out rather than crashing with a Supabase foreign-key error.
+    // Guard: never attempt to delete an item with a temporary optimistic ID.
     if (isOptimisticId(id)) return
 
-    // Look up the full transaction data so summary/balance hooks can
-    // subtract it immediately (optimistic delete propagation).
     const txn = recentRef.current.find(t => t.id === id)
     addOptimisticDelete(id, txn)
-    // Optimistically remove from the latest list immediately
-    applyLocalDelete(id)
 
     try {
       await deleteTransaction(id)
-      // deleteTransaction already called invalidateCache which triggers
-      // background refetches on all mounted hooks via CACHE_INVALIDATION_EVENT.
-      // Clean up the optimistic overlay now that the server confirmed the delete.
       removeOptimisticDelete(id)
     } catch (e) {
       removeOptimisticDelete(id)
-      // If delete fails, the event-driven refetch will restore the item
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [addOptimisticDelete, removeOptimisticDelete, applyLocalDelete])
+  }, [addOptimisticDelete, removeOptimisticDelete])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)
     setShowAdd(true)
   }, [])
 
-  // Add handler after handleTap:
   const handleDuplicate = useCallback((txn) => {
     setEditTxn(null)
     setDuplicateTxn(txn)

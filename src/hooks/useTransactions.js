@@ -3,19 +3,9 @@ import { supabase } from '../lib/supabase'
 import { useAppData } from './useAppDataStore'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PERSISTENT CACHE
-//
-// Survives browser refresh, app close, and PWA reopen.
+// PERSISTENT CACHE — survives browser refresh, app close, and PWA reopen.
 // Structure in localStorage: { data: ..., ts: epoch_ms }
-// TTL: 5 minutes before a cache entry is considered stale (still served
-// instantly, then refreshed in background via stale-while-revalidate).
-// Hard expiry: 24 hours — after that, data is considered too stale to show.
-//
-// Why localStorage and not IndexedDB?
-// localStorage is synchronous — getCached() returns immediately on the
-// critical render path. IndexedDB is async, which would require an extra
-// render cycle before cached data appears. For ~10KB of financial data,
-// localStorage is the right tool.
+// TTL: 5 min soft (stale-while-revalidate), 24 hr hard.
 // ─────────────────────────────────────────────────────────────────────────────
 const CACHE_PREFIX = 'kosha_cache_'
 const SOFT_TTL = 5 * 60 * 1000   //  5 min  — serve fresh from network
@@ -76,10 +66,8 @@ function isFresh(entry, key) {
 const CACHE_INVALIDATION_EVENT = 'kosha:cache:invalidated'
 
 export function invalidateCache(pattern) {
-  // Mark matching cache entries as stale (ts=0) instead of deleting them.
-  // This preserves the stale-while-revalidate pattern: hooks can still serve
-  // the existing cached data instantly (avoiding a loading-skeleton flash)
-  // while the background refetch brings in fresh data.
+  // Mark matching cache entries as stale (ts=0) instead of deleting them,
+  // preserving the stale-while-revalidate pattern.
   try {
     const keys = Object.keys(localStorage)
     keys.forEach(k => {
@@ -97,9 +85,6 @@ export function invalidateCache(pattern) {
       }
     })
   } catch { /* ignore */ }
-  // Notify all mounted hook instances that their cache is stale.
-  // This ensures cross-page consistency: hooks on background pages immediately
-  // refetch rather than waiting until they are navigated-to again.
   try {
     window.dispatchEvent(new CustomEvent(CACHE_INVALIDATION_EVENT, { detail: { pattern } }))
   } catch { /* ignore */ }
@@ -211,13 +196,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
     pruneOptimisticDeletes,
   } = useAppData()
 
-  // ── Fetch version counter — prevents stale concurrent fetches from
-  // overwriting fresh data. Each fetch call stamps itself with a version.
-  // When the fetch completes, it only applies results if it is still the
-  // latest fetch (i.e. no newer fetch started after it). This fixes:
-  //   1. "Pop back" on delete/edit: a background fetch that started before
-  //      the mutation returns stale data after the cache is cleared.
-  //   2. "All" filter showing stale data while "Expenses" shows fresh data.
+  // Fetch version guard — discards stale concurrent fetches.
   const fetchVersionRef = useRef(0)
 
   const fetch = useCallback(async (force = false) => {
@@ -225,15 +204,12 @@ export function useTransactions({ type, category, search, limit } = {}) {
     const key = `txns:${type}:${category}:${search}:${limit}`
     const cached = getCached(key)
 
-    // Serve cache immediately (stale-while-revalidate) for non-forced fetches.
-    // For forced fetches (post-mutation) we skip serving the stale cache to
-    // avoid briefly showing outdated rows on top of the current optimistic state.
     if (cached) {
       if (!force) {
         setData(cached.data)
         setLoading(false)
       }
-      if (!force && isFresh(cached, key)) return   // fresh — skip network
+      if (!force && isFresh(cached, key)) return
     } else {
       setLoading(true)
     }
@@ -241,7 +217,6 @@ export function useTransactions({ type, category, search, limit } = {}) {
     try {
       let q = supabase
         .from('transactions')
-        // Only fetch columns we actually use — avoids pulling notes/created_at etc.
         .select('id, date, type, description, amount, category, investment_vehicle, is_repayment, payment_mode, notes')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -253,9 +228,6 @@ export function useTransactions({ type, category, search, limit } = {}) {
 
       const { data: rows, error: err } = await q
 
-      // Discard results if a newer fetch has since started. This prevents a
-      // slow background fetch from overwriting fresh data already applied by
-      // the latest (post-mutation) fetch.
       if (myVersion !== fetchVersionRef.current) return
 
       if (err) { setError(err); setLoading(false); return }
@@ -264,10 +236,9 @@ export function useTransactions({ type, category, search, limit } = {}) {
       setCached(key, result)
       setData(result)
       setLoading(false)
-      // Only prune optimistic adds/deletes when fetching the canonical full list:
-      // unpaginated + unfiltered (the "All" query). Pruning from filtered queries
-      // (e.g. "Expenses") can incorrectly clear optimistic state for rows that
-      // are still missing from "All", causing cross-filter desync.
+      // Only prune optimistic state on the canonical full list (unpaginated + unfiltered).
+      // Pruning from filtered/paginated queries can incorrectly clear optimistic state
+      // for transactions outside the current view.
       const isCanonicalFullList = !limit && !type && !category && !search
       if (isCanonicalFullList) {
         pruneOptimisticTxns(result)
@@ -283,8 +254,6 @@ export function useTransactions({ type, category, search, limit } = {}) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  // Re-fetch whenever any cache key matching 'txns:' is invalidated by a mutation
-  // on any page — ensures this hook instance is always up-to-date.
   useEffect(() => {
     const txnKey = `txns:${type}:${category}:${search}:${limit}`
     const handler = (e) => {
@@ -295,57 +264,21 @@ export function useTransactions({ type, category, search, limit } = {}) {
     return () => window.removeEventListener(CACHE_INVALIDATION_EVENT, handler)
   }, [type, category, search, limit, fetch])
 
-  // refetch() forces a fresh network fetch without re-dispatching a cache
-  // invalidation event. Mutation functions (addTransaction / updateTransaction /
-  // deleteTransaction) already call invalidateCache(), which clears the cache
-  // AND dispatches the event — triggering this hook's listener above. Calling
-  // invalidateCache() again here would fire a second event, starting yet another
-  // concurrent fetch that races against the one already in-flight, producing
-  // the "double fetch" pattern that was causing stale data flashes.
   const refetch = useCallback(() => fetch(true), [fetch])
 
-  // Local-only helpers for list-level optimism (Phase 1):
-  // They mutate the in-memory list used by this hook instance only.
   const applyLocalEdit = useCallback((id, updates) => {
-    // 1. Store in overlay so the edit survives the upcoming refetch()
     setLocalEdits(prev => ({ ...prev, [id]: updates }))
-    // 2. Also patch raw data immediately for instant render
     setData(prev => prev.map(row => (
       row.id === id ? { ...row, ...updates } : row
     )))
   }, [])
 
-  // Called after onConfirmed — removes the overlay once fresh server data is back
   const clearLocalEdit = useCallback((id) => {
     setLocalEdits(prev => {
       const next = { ...prev }
       delete next[id]
       return next
     })
-  }, [])
-
-  const applyLocalDelete = useCallback((id) => {
-    setData(prev => prev.filter(row => row.id !== id))
-  }, [])
-
-  // ── Optimistic prepend ────────────────────────────────────────────────
-  // Instantly inserts a transaction at the top of the list with a temp id.
-  // Called by Dashboard BEFORE the network save starts — zero latency UI.
-  // When refetch() is called after save, the real server row replaces it.
-  const prependOptimistic = useCallback((txn, optimisticId) => {
-    const tempTxn = {
-      ...txn,
-      id: optimisticId || '__optimistic__' + Date.now(),
-      created_at: new Date().toISOString(),
-    }
-    setData(prev => [tempTxn, ...prev].slice(0, limit || 999))
-  }, [limit])
-
-  const replaceOptimistic = useCallback((optimisticId, serverTxn) => {
-    if (!optimisticId || !serverTxn) return
-    setData(prev => prev.map(row => (
-      row.id === optimisticId ? { ...serverTxn } : row
-    )))
   }, [])
 
   const optimisticForList = optimisticTxns.filter(t => {
@@ -355,12 +288,15 @@ export function useTransactions({ type, category, search, limit } = {}) {
     return true
   })
 
-  const mergedData = optimisticForList.length
-    ? [...optimisticForList.map(t => ({
-      ...t,
-      id: t._id || t.id,
-    })), ...data].slice(0, limit || data.length || 999)
-    : data
+  // Merge optimistic adds on top of server data, deduplicating by ID to prevent
+  // duplicate rows if a resolved entry's real UUID also appears in server data.
+  const mergedData = (() => {
+    if (!optimisticForList.length) return data
+    const mapped = optimisticForList.map(t => ({ ...t, id: t._id || t.id }))
+    const optimisticIds = new Set(mapped.map(t => t.id))
+    const dedupedData = data.filter(t => !optimisticIds.has(t.id))
+    return [...mapped, ...dedupedData].slice(0, limit || data.length || 999)
+  })()
 
   const finalData = optimisticDeletedIds?.length
     ? mergedData.filter(t => !optimisticDeletedIds.includes(t.id))
@@ -376,11 +312,8 @@ export function useTransactions({ type, category, search, limit } = {}) {
     loading,
     error,
     refetch,
-    prependOptimistic,
-    replaceOptimistic,
     applyLocalEdit,
     clearLocalEdit,
-    applyLocalDelete,
   }
 }
 
