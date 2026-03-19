@@ -175,7 +175,7 @@ function getRecentConfirmedTxnIds() {
   const next = {}
   Object.entries(map).forEach(([id, ts]) => {
     const n = Number(ts)
-    if (Number.isFinite(n) && now - n <= RECENT_CONFIRMED_TXN_TTL) {
+    if (Number.isFinite(n) && n <= now && now - n <= RECENT_CONFIRMED_TXN_TTL) {
       next[id] = n
     } else {
       changed = true
@@ -206,18 +206,22 @@ function reconcileRecentConfirmedTxns({
   const recentIds = getRecentConfirmedTxnIds()
   if (!recentIds.size) return rows
 
-  const parsedFilter = { type, category, search, limit }
+  const filterOptions = { type, category, search, limit }
   const networkIds = new Set(rows.map((r) => r?.id).filter(Boolean))
   const missingRecentRows = cachedRows.filter((r) =>
-    r?.id &&
-    recentIds.has(r.id) &&
-    !networkIds.has(r.id) &&
-    txnMatchesCacheFilter(r, parsedFilter)
+    (r?.id && recentIds.has(r.id) && !networkIds.has(r.id)) &&
+    txnMatchesCacheFilter(r, filterOptions)
   )
   if (!missingRecentRows.length) return rows
 
+  const seenIds = new Set()
   const merged = [...rows, ...missingRecentRows]
-    .filter((r, i, arr) => r?.id ? arr.findIndex((x) => x?.id === r.id) === i : true)
+    .filter((r) => {
+      if (!r?.id) return true
+      if (seenIds.has(r.id)) return false
+      seenIds.add(r.id)
+      return true
+    })
     .sort(compareTxnRows)
 
   return limit ? merged.slice(0, limit) : merged
