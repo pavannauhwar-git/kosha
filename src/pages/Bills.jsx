@@ -20,7 +20,7 @@ function BillsSkeleton() {
 }
 
 export default function Bills() {
-  const { pending, paid, loading, refetch } = useLiabilities()
+  const { pending, paid, loading } = useLiabilities()
   const [tab, setTab] = useState('pending')
   const [showAdd, setShowAdd] = useState(false)
   const [delId, setDelId] = useState(null)
@@ -30,7 +30,7 @@ export default function Bills() {
     description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly',
   })
   const [formErr, setFormErr] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [errToast, setErrToast] = useState(null)
 
   const totalPending = useMemo(() => pending.reduce((s, b) => s + +b.amount, 0), [pending])
   const dueSoonAmount = useMemo(() => pending
@@ -43,24 +43,28 @@ export default function Bills() {
     if (!form.description.trim()) { setFormErr('Enter a description'); return }
     if (!form.amount || isNaN(+form.amount)) { setFormErr('Enter a valid amount'); return }
     if (!form.due_date) { setFormErr('Select a due date'); return }
-    setFormErr(''); setSaving(true)
+
+    const billData = {
+      description: form.description.trim(),
+      amount: +form.amount,
+      due_date: form.due_date,
+      is_recurring: form.is_recurring,
+      recurrence: form.is_recurring ? form.recurrence : null,
+      paid: false,
+    }
+
+    // Close sheet and reset form immediately so the optimistic update in
+    // addLiability() is the first thing the user sees — no waiting for Supabase.
+    setFormErr('')
+    setShowAdd(false)
+    setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
+
     try {
-      await addLiability({
-        description: form.description.trim(),
-        amount: +form.amount,
-        due_date: form.due_date,
-        is_recurring: form.is_recurring,
-        recurrence: form.is_recurring ? form.recurrence : null,
-        paid: false,
-      })
-      setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
-      setShowAdd(false)
-      // Force a refetch after the sheet closes so the UI always reflects
-      // the confirmed server data (guards against React batching the subscriber
-      // notification during the await).
-      refetch()
-    } catch (e) { setFormErr(e.message) }
-    finally { setSaving(false) }
+      await addLiability(billData)
+    } catch (e) {
+      setErrToast(e.message || 'Could not add bill. Check your connection.')
+      setTimeout(() => setErrToast(null), 4000)
+    }
   }
 
   async function handleMarkPaid(bill) {
@@ -333,10 +337,10 @@ export default function Bills() {
 
                 {formErr && <p className="text-expense-text text-sm mb-3">{formErr}</p>}
 
-                <button onClick={handleAdd} disabled={saving}
+                <button onClick={handleAdd}
                   className="w-full py-4 rounded-card bg-warning text-white font-semibold
-                             active:scale-[0.98] disabled:opacity-60 transition-all">
-                  {saving ? 'Saving…' : 'Add Bill'}
+                             active:scale-[0.98] transition-all">
+                  Add Bill
                 </button>
               </div>
             </motion.div>
@@ -348,6 +352,24 @@ export default function Bills() {
       <button className="fab-bills" onClick={() => setShowAdd(true)}>
         <Plus size={28} weight="bold" color="white" />
       </button>
+
+      {/* Error toast — shown when addLiability fails after the sheet has closed */}
+      <AnimatePresence>
+        {errToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-32 left-4 right-4 z-50 flex items-center gap-3
+                       bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
+          >
+            <span className="text-[13px] font-medium flex-1">{errToast}</span>
+            <button onClick={() => setErrToast(null)}
+              className="text-white opacity-60 text-xs font-semibold">Dismiss</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <DeleteDialog
         open={!!delId} label="this bill"

@@ -52,6 +52,7 @@ export default function Transactions() {
     data,
     applyLocalEdit,
     clearLocalEdit,
+    revertLocalEdit,
   } = useTransactions({
     type: typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter || undefined,
@@ -356,7 +357,7 @@ export default function Transactions() {
         }}
         onFailed={(msg) => {
           if (pendingEditId.current) {
-            clearLocalEdit(pendingEditId.current)
+            revertLocalEdit(pendingEditId.current)
             removeOptimisticEdit(pendingEditId.current)
             pendingEditId.current = null
           } else {
