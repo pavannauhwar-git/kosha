@@ -189,14 +189,12 @@ function BreakdownCard({ earned, spent, invested }) {
   const CIRC  = 2 * Math.PI * R
   const GAP   = 16
 
-  // Violet for invest — clearly distinct from rose/red expense
-  const INVEST_COLOR  = '#6D28D9'
   // Amber for leftover
   const LEFTOVER_COLOR = C.bills
 
   const segs = [
     { pct: spentPct,    color: C.expense      },
-    { pct: investedPct, color: INVEST_COLOR   },
+    { pct: investedPct, color: C.investText   },
     { pct: savedPct,    color: LEFTOVER_COLOR },
   ].filter(s => s.pct > 0)
 
@@ -244,7 +242,7 @@ function BreakdownCard({ earned, spent, invested }) {
         <div className="flex-1 space-y-3 pt-1">
           {[
             { label: 'Spent',    val: spent,    pct: spentPct,    dot: C.expense,      color: C.expense      },
-            { label: 'Invested', val: invested, pct: investedPct, dot: INVEST_COLOR,   color: INVEST_COLOR   },
+            { label: 'Invested', val: invested, pct: investedPct, dot: C.investText,   color: C.investText   },
             { label: 'Leftover', val: saved,    pct: savedPct,    dot: LEFTOVER_COLOR, color: LEFTOVER_COLOR },
           ].map(s => (
             <div key={s.label}>
