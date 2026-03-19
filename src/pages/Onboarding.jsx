@@ -27,7 +27,7 @@ function KoshaLogo({ size = 44 }) {
         x="32" y="36"
         textAnchor="middle"
         dominantBaseline="central"
-        fontFamily="Plus Jakarta Sans, system-ui, sans-serif"
+        fontFamily="Roboto, system-ui, sans-serif"
         fontSize="13"
         fontWeight="700"
         letterSpacing="0.8"

@@ -143,10 +143,10 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
       >
         {/* Category bubble */}
         <div
-          className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
           style={{ background: cat.bg }}
         >
-          <CategoryIcon categoryId={txn.category} size={18} />
+          <CategoryIcon categoryId={txn.category} size={20} />
         </div>
 
         {/* Text */}
@@ -160,7 +160,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
               : <span className="text-[12px] text-ink-3">{cat.label}</span>
             }
             {mode && (
-              <span className="text-[11px] font-medium text-ink-4 bg-kosha-surface-2 px-1.5 py-px rounded-[5px]">
+              <span className="text-[11px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
                 {mode}
               </span>
             )}

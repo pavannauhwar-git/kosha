@@ -21,7 +21,7 @@ function KoshaLogo({ size = 64 }) {
         x="32" y="36"
         textAnchor="middle"
         dominantBaseline="central"
-        fontFamily="Plus Jakarta Sans, system-ui, sans-serif"
+        fontFamily="Roboto, system-ui, sans-serif"
         fontSize="13"
         fontWeight="700"
         letterSpacing="0.8"
@@ -207,7 +207,7 @@ export default function Login() {
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="flex items-start gap-2 bg-expense-bg rounded-[10px] px-3 py-2.5"
+                  className="flex items-start gap-2 bg-expense-bg rounded-lg px-3 py-2.5"
                 >
                   <svg width="15" height="15" viewBox="0 0 15 15" className="shrink-0 mt-px"
                        fill="none">

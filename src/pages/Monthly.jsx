@@ -181,13 +181,13 @@ function BreakdownCard({ earned, spent, invested }) {
   const investedPct = earned > 0 ? Math.round((invested / earned) * 100) : 0
   const savedPct    = Math.max(0, 100 - spentPct - investedPct)
 
-  const SIZE  = 110
-  const SW    = 10
+  const SIZE  = 120
+  const SW    = 8
   const R     = (SIZE / 2) - SW
   const CX    = SIZE / 2
   const CY    = SIZE / 2
   const CIRC  = 2 * Math.PI * R
-  const GAP   = 3
+  const GAP   = 16
 
   const segs = [
     { pct: spentPct,    color: C.expense   },
@@ -215,7 +215,7 @@ function BreakdownCard({ earned, spent, invested }) {
               offset += seg.pct
               return (
                 <circle key={i} cx={CX} cy={CY} r={R}
-                  fill="none" stroke={seg.color} strokeWidth={SW}
+                  fill="none" stroke={seg.color} strokeWidth={SW} strokeLinecap="round"
                   strokeDasharray={`${dashLen} ${CIRC}`}
                   strokeDashoffset={-currentOffset * CIRC / 100}
                   transform={`rotate(-90 ${CX} ${CY})`}
@@ -225,11 +225,11 @@ function BreakdownCard({ earned, spent, invested }) {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <span style={{ fontSize: 15, fontWeight: 700, color: C.brand,
-                           fontFamily: 'Plus Jakarta Sans, system-ui', lineHeight: 1.1 }}>
+                           fontFamily: 'Roboto, system-ui', lineHeight: 1.1 }}>
               {savedPct}%
             </span>
             <span style={{ fontSize: 9, color: C.inkMuted,
-                           fontFamily: 'Plus Jakarta Sans, system-ui' }}>
+                           fontFamily: 'Roboto, system-ui' }}>
               saved
             </span>
           </div>

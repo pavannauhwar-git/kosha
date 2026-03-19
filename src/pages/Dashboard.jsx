@@ -29,7 +29,7 @@ const stagger = {
 // ── SVG arc progress bar — round-capped, matches Savings ring style ─────────
 function SvgArcBar({ pct, color }) {
   const W = 100  // viewBox width (%)
-  const H = 6    // height in px
+  const H = 8    // height in px
   const R = H / 2
   const max = W - R * 2
   const fill = Math.max(0, Math.min(pct, 100)) / 100 * max
@@ -37,7 +37,7 @@ function SvgArcBar({ pct, color }) {
     <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
       {/* Track */}
       <line x1={R} y1={R} x2={W - R} y2={R}
-        stroke="#D4CEFF" strokeWidth={H} strokeLinecap="round" />
+        stroke={C.brandBorder} strokeWidth={H} strokeLinecap="round" />
       {/* Fill */}
       {fill > 0 && (
         <line x1={R} y1={R} x2={R + fill} y2={R}
@@ -50,7 +50,7 @@ function SvgArcBar({ pct, color }) {
 // ── Savings rate ring — pure SVG arc, no recharts dep ────────────────────
 function SavingsRing({ rate }) {
   const size = 64
-  const sw = 6            // stroke-width
+  const sw = 8            // stroke-width
   const r = (size - sw * 2) / 2
   const cx = size / 2
   const cy = size / 2
@@ -75,7 +75,7 @@ function SavingsRing({ rate }) {
         textAnchor="middle" dominantBaseline="central"
         style={{
           fontSize: 14, fontWeight: 700, fill: C.brand,
-          fontFamily: 'Plus Jakarta Sans, system-ui'
+          fontFamily: 'Roboto, system-ui'
         }}>
         {rate}%
       </text>
@@ -83,7 +83,7 @@ function SavingsRing({ rate }) {
         textAnchor="middle"
         style={{
           fontSize: 9, fill: C.inkMuted,
-          fontFamily: 'Plus Jakarta Sans, system-ui'
+          fontFamily: 'Roboto, system-ui'
         }}>
         saved
       </text>
@@ -416,9 +416,9 @@ export default function Dashboard() {
               <div className="flex items-center gap-3 pt-3 border-t border-kosha-border
                               cursor-pointer active:opacity-80"
                 onClick={() => navigate('/transactions')}>
-                <div className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
-                  style={{ background: topCatInfo?.bg || '#F5F5F5' }}>
-                  <CategoryIcon categoryId={topCat[0]} size={16} />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: topCatInfo?.bg || '#E9EEF6' }}>
+                  <CategoryIcon categoryId={topCat[0]} size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-caption text-ink-3">Top spend</p>

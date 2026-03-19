@@ -5,15 +5,15 @@ import { CATEGORIES } from '../lib/categories'
 
 function SvgArcBar({ pct, color, overBudget = false }) {
   const W = 100
-  const H = 6
+  const H = 8
   const R = H / 2
   const max = W - R * 2
   const fill = Math.max(0, Math.min(pct, 100)) / 100 * max
-  const barColor = overBudget ? '#E11D48' : color
+  const barColor = overBudget ? C.expense : color
   return (
     <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
       <line x1={R} y1={R} x2={W - R} y2={R}
-        stroke="#D4CEFF" strokeWidth={H} strokeLinecap="round" />
+        stroke={C.brandBorder} strokeWidth={H} strokeLinecap="round" />
       {fill > 0 && (
         <line x1={R} y1={R} x2={R + fill} y2={R}
           stroke={barColor} strokeWidth={H} strokeLinecap="round" />
@@ -59,9 +59,9 @@ export default function CategorySpendingChart({
                           ${onCategoryClick ? 'active:bg-kosha-surface-2 transition-colors' : ''}
                           ${i < entries.length - 1 ? 'border-b border-kosha-border' : ''}`}
             >
-              <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
-                style={{ background: cat?.bg || '#F5F5F5' }}>
-                <CategoryIcon categoryId={catId} size={16} />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: cat?.bg || '#E9EEF6' }}>
+                <CategoryIcon categoryId={catId} size={20} />
               </div>
 
               <div className="flex-1 min-w-0">

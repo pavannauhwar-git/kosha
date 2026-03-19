@@ -44,10 +44,10 @@ const DarkTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: 'rgba(48,42,110,0.96)',
+      background: 'rgba(31,31,31,0.96)', // MD3 On-Surface (Dark tooltip)
       borderRadius: 12,
       padding: '10px 14px',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)', // MD3 elevation 2
       minWidth: 140,
       border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
@@ -75,7 +75,7 @@ function KpiCard({ label, value, prevValue, textCls, bg }) {
   const up = diff > 0
   return (
     <div className="card p-4">
-      <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center mb-3`}>
+      <div className={`w-8 h-8 rounded-full ${bg} flex items-center justify-center mb-3`}>
         <span className={`text-label font-bold ${textCls}`}>₹</span>
       </div>
       <p className="text-label text-ink-3 font-medium mb-0.5">{label}</p>
@@ -239,9 +239,10 @@ function PortfolioDonut({ vehicleData }) {
               data={pieData}
               cx={65} cy={65}
               innerRadius={42} outerRadius={60}
+              cornerRadius={6}
               dataKey="value"
               strokeWidth={0}
-              paddingAngle={2}
+              paddingAngle={4}
             >
               {pieData.map((_, i) => (
                 <Cell key={i} fill={PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length]} />
@@ -403,14 +404,14 @@ export default function Analytics() {
                   <YAxis hide />
                   <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
                   <Area dataKey="Income" type="monotone"
-                    stroke={C.chartIncome} strokeWidth={2}
+                    stroke={C.chartIncome} strokeWidth={3}
                     fill="url(#gIncome)" dot={false}
-                    activeDot={{ r: 4, fill: C.chartIncome, stroke: '#fff', strokeWidth: 1.5 }}
+                    activeDot={{ r: 5, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
                   />
                   <Area dataKey="Spent" type="monotone"
-                    stroke={C.chartExpense} strokeWidth={2}
+                    stroke={C.chartExpense} strokeWidth={3}
                     fill="url(#gExpense)" dot={false}
-                    activeDot={{ r: 4, fill: C.chartExpense, stroke: '#fff', strokeWidth: 1.5 }}
+                    activeDot={{ r: 5, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -441,7 +442,7 @@ export default function Analytics() {
                   <YAxis hide />
                   <Tooltip content={<DarkTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                   <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
-                  <Bar dataKey="Net" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                  <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={32}>
                     {netData.map((entry, i) => (
                       <Cell key={i}
                         fill={entry.Net >= 0 ? C.chartIncome : C.chartExpense}
