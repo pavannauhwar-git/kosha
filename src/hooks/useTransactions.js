@@ -14,6 +14,11 @@ const HISTORY_MONTH_SOFT_TTL = 20 * 60 * 1000 // 20 min for past months
 const HISTORY_YEAR_SOFT_TTL = 30 * 60 * 1000  // 30 min for yearly summaries
 const HARD_TTL = 24 * 60 * 60 * 1000  // 24 hrs — serve stale from cache
 const RECENT_CONFIRMED_TXN_TTL = 10 * 60 * 1000 // 10 min lag bridge for post-reload fetches
+// Age assigned to cache entries during invalidation so they are stale (beyond
+// every soft-TTL variant) but NOT expired (well within HARD_TTL).  getCached()
+// will still return the data, and isFresh() will return false, preserving the
+// stale-while-revalidate pattern.
+const FORCE_STALE_AGE = Math.max(SOFT_TTL, HISTORY_MONTH_SOFT_TTL, HISTORY_YEAR_SOFT_TTL) + 1
 
 function getCached(key) {
   try {
@@ -68,7 +73,7 @@ function isFresh(entry, key) {
 const CACHE_INVALIDATION_EVENT = 'kosha:cache:invalidated'
 
 export function invalidateCache(pattern) {
-  // Mark matching cache entries as stale (ts=0) instead of deleting them,
+  // Mark matching cache entries as stale instead of deleting them,
   // preserving the stale-while-revalidate pattern.
   try {
     const keys = Object.keys(localStorage)
@@ -80,7 +85,7 @@ export function invalidateCache(pattern) {
         if (raw) {
           try {
             const entry = JSON.parse(raw)
-            entry.ts = 0
+            entry.ts = Date.now() - FORCE_STALE_AGE
             localStorage.setItem(k, JSON.stringify(entry))
           } catch { /* corrupt entry — remove it */ localStorage.removeItem(k) }
         }
