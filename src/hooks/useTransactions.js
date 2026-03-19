@@ -8,10 +8,12 @@ import { useAppData } from './useAppDataStore'
 // TTL: 5 min soft (stale-while-revalidate), 24 hr hard.
 // ─────────────────────────────────────────────────────────────────────────────
 const CACHE_PREFIX = 'kosha_cache_'
+const RECENT_CONFIRMED_TXNS_KEY = 'kosha_recent_confirmed_txns'
 const SOFT_TTL = 5 * 60 * 1000   //  5 min  — serve fresh from network
 const HISTORY_MONTH_SOFT_TTL = 20 * 60 * 1000 // 20 min for past months
 const HISTORY_YEAR_SOFT_TTL = 30 * 60 * 1000  // 30 min for yearly summaries
 const HARD_TTL = 24 * 60 * 60 * 1000  // 24 hrs — serve stale from cache
+const RECENT_CONFIRMED_TXN_TTL = 10 * 60 * 1000 // 10 min lag bridge for post-reload fetches
 
 function getCached(key) {
   try {
@@ -147,6 +149,80 @@ function compareTxnRows(a, b) {
   return String(b?.created_at || '').localeCompare(String(a?.created_at || ''))
 }
 
+function readRecentConfirmedTxnMap() {
+  try {
+    const raw = localStorage.getItem(RECENT_CONFIRMED_TXNS_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeRecentConfirmedTxnMap(map) {
+  try {
+    localStorage.setItem(RECENT_CONFIRMED_TXNS_KEY, JSON.stringify(map))
+  } catch {
+    // ignore marker persistence errors
+  }
+}
+
+function getRecentConfirmedTxnIds() {
+  const now = Date.now()
+  const map = readRecentConfirmedTxnMap()
+  let changed = false
+  const next = {}
+  Object.entries(map).forEach(([id, ts]) => {
+    const n = Number(ts)
+    if (Number.isFinite(n) && now - n <= RECENT_CONFIRMED_TXN_TTL) {
+      next[id] = n
+    } else {
+      changed = true
+    }
+  })
+  if (changed) writeRecentConfirmedTxnMap(next)
+  return new Set(Object.keys(next))
+}
+
+function markRecentConfirmedTxn(id) {
+  if (!id) return
+  const map = readRecentConfirmedTxnMap()
+  map[id] = Date.now()
+  writeRecentConfirmedTxnMap(map)
+}
+
+function reconcileRecentConfirmedTxns({
+  rows,
+  cachedRows,
+  type,
+  category,
+  search,
+  limit,
+}) {
+  if (!Array.isArray(rows)) return rows || []
+  if (!Array.isArray(cachedRows) || !cachedRows.length) return rows
+
+  const recentIds = getRecentConfirmedTxnIds()
+  if (!recentIds.size) return rows
+
+  const parsedFilter = { type, category, search, limit }
+  const networkIds = new Set(rows.map((r) => r?.id).filter(Boolean))
+  const missingRecentRows = cachedRows.filter((r) =>
+    r?.id &&
+    recentIds.has(r.id) &&
+    !networkIds.has(r.id) &&
+    txnMatchesCacheFilter(r, parsedFilter)
+  )
+  if (!missingRecentRows.length) return rows
+
+  const merged = [...rows, ...missingRecentRows]
+    .filter((r, i, arr) => r?.id ? arr.findIndex((x) => x?.id === r.id) === i : true)
+    .sort(compareTxnRows)
+
+  return limit ? merged.slice(0, limit) : merged
+}
+
 /**
  * Writes a confirmed transaction into existing local caches immediately so a
  * page reload does not temporarily hide the new row while backend replicas or
@@ -154,6 +230,7 @@ function compareTxnRows(a, b) {
  */
 export function mergeConfirmedTransactionIntoCache(txn) {
   if (!txn?.id) return
+  markRecentConfirmedTxn(txn.id)
   try {
     const keys = Object.keys(localStorage)
     keys.forEach((fullKey) => {
@@ -399,7 +476,7 @@ export function useTransactions({ type, category, search, limit } = {}) {
     try {
       let q = supabase
         .from('transactions')
-        .select('id, date, type, description, amount, category, investment_vehicle, is_repayment, payment_mode, notes')
+        .select('id, date, type, description, amount, category, investment_vehicle, is_repayment, payment_mode, notes, created_at')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
 
@@ -414,7 +491,14 @@ export function useTransactions({ type, category, search, limit } = {}) {
 
       if (err) { setError(err); setLoading(false); return }
 
-      const result = rows || []
+      const result = reconcileRecentConfirmedTxns({
+        rows: rows || [],
+        cachedRows: cached?.data,
+        type,
+        category,
+        search,
+        limit,
+      })
       setCached(key, result)
       setData(result)
       setLoading(false)
