@@ -71,7 +71,7 @@ export default function Transactions() {
   // Brain hook — centralized add-transaction lifecycle manager.
   // Handles Phase 1 (global broadcast), Phase 2 (UUID swap), Phase 3 (background sync).
   const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
-    useGlobalTransactionMutation({ prependOptimistic, replaceOptimistic })
+    useGlobalTransactionMutation()
 
   // Ref to always have latest data for delete lookups (avoids stale closures)
   const dataRef = useRef(data)

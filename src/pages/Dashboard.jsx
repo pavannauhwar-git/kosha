@@ -128,7 +128,7 @@ export default function Dashboard() {
   // Brain hook — centralized add-transaction lifecycle manager.
   // Handles Phase 1 (global broadcast), Phase 2 (UUID swap), Phase 3 (background sync).
   const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
-    useGlobalTransactionMutation({ prependOptimistic, replaceOptimistic })
+    useGlobalTransactionMutation()
 
   const { data: summary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary } = useMonthSummary(

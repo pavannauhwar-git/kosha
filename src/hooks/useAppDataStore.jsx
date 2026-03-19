@@ -127,6 +127,11 @@ export function AppDataProvider({ children }) {
     })
   }, [])
 
+  const removeOptimisticTxn = useCallback((id) => {
+    if (!id) return
+    setOptimisticTxns(prev => prev.filter(t => (t._id || t.id) !== id))
+  }, [])
+
   const clearOptimisticTxns = useCallback(() => {
     setOptimisticTxns([])
   }, [])
@@ -152,6 +157,7 @@ export function AppDataProvider({ children }) {
     optimisticTxns,
     addOptimisticTxn,
     pruneOptimisticTxns,
+    removeOptimisticTxn,
     clearOptimisticTxns,
     resolveOptimisticTxn,
     optimisticDeletedIds,
