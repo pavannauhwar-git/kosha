@@ -228,6 +228,8 @@ export default function AddTransactionSheet({
     setError('')
   }
 
+  const [isSaving, setIsSaving] = useState(false)
+
   async function handleSave() {
     if (!amount || isNaN(+amount) || +amount <= 0) { setError('Enter a valid amount'); return }
     if (!desc.trim()) { setError('Enter a description'); return }
@@ -240,49 +242,33 @@ export default function AddTransactionSheet({
       date,
       payment_mode: mode,
       is_repayment: false,
-      notes: notes.trim() || null,   // ← included in payload; null if empty
+      notes: notes.trim() || null,
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
     }
 
-    const tempId = `__optimistic__${Date.now()}`
-    const enriched = editTxn
-      ? { ...payload, id: editTxn.id, _original: editTxn }
-      : { ...payload, id: tempId, created_at: new Date().toISOString() }
-
-    applyOptimisticUpdate(enriched.id, enriched)
-
-    onClose()
-    
-    onSaved && onSaved(enriched)
-
+    setIsSaving(true)
     let serverTxn = null
     try {
       if (editTxn) {
         serverTxn = await updateTransaction(editTxn.id, payload)
         if (onConfirmed) await onConfirmed(serverTxn)
-        // Invalidate caches after edit is confirmed — caller's optimistic edit guard is down
-        const editDate = serverTxn?.date || payload.date
-        const d = new Date(editDate)
+        const d = new Date(serverTxn?.date || payload.date)
         invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
-        invalidateCache(`balance:`)
-        invalidateCache(`txns:`)
         invalidateCache(`year:${d.getFullYear()}`)
       } else {
         serverTxn = await addTransaction(payload)
         if (onConfirmed) await onConfirmed(serverTxn)
-        // Cache invalidation for new transactions is handled by onConfirmed (Brain hook)
       }
+      
+      // Pessimistic Invalidation (Ensures UI is mathematically flawless)
+      invalidateCache('balance:')
+      invalidateCache('txns:')
+      
+      onClose()
     } catch (e) {
-      if (editTxn) {
-        // Force a corrective refetch so the UI snaps back to correct server data
-        // after a failed edit — the caller's onFailed will revert the local overlay.
-        const d = new Date(payload.date)
-        invalidateCache(`txns:`)
-        invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
-        invalidateCache(`balance:`)
-        invalidateCache(`year:${d.getFullYear()}`)
-      }
       onFailed && onFailed(e.message || 'Could not save. Check your connection.')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -476,10 +462,20 @@ export default function AddTransactionSheet({
               {/* Save button */}
               <button
                 onClick={handleSave}
-                className="w-full py-4 rounded-card text-[17px] font-semibold bg-brand text-white
-                           active:scale-[0.98] transition-all"
+                disabled={isSaving}
+                className={`w-full py-4 rounded-card text-[17px] font-semibold flex items-center justify-center gap-2 transition-all ${isSaving ? 'bg-brand/70 text-white/90 scale-[0.98]' : 'bg-brand text-white active:scale-[0.98]'}`}
               >
-                {editTxn ? 'Save Changes' : `Add ${activeType?.label}`}
+                {isSaving ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  editTxn ? 'Save Changes' : `Add ${activeType?.label}`
+                )}
               </button>
               <div className="h-2" />
             </div>

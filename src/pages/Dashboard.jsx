@@ -5,7 +5,7 @@ import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Search } from 'lucid
 import { useTransactions } from '../hooks/useTransactions'
 import { useMonthSummary } from '../hooks/useTransactions'
 import { useRunningBalance } from '../hooks/useTransactions'
-import { deleteTransaction, isOptimisticId, invalidateCache, applyOptimisticUpdate } from '../hooks/useTransactions'
+import { deleteTransaction, isOptimisticId, invalidateCache } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
 import { useGlobalTransactionMutation } from '../hooks/useGlobalTransactionMutation'
@@ -235,7 +235,7 @@ export default function Dashboard() {
     
 
     try {
-      applyOptimisticUpdate(id, null)
+      // Delete call - pessimistically auto invalidates via prune.
       await deleteTransaction(id)
       // Invalidate AFTER the delete — pruneOptimisticDeletes auto-cleans
       // when the refetch returns rows without this ID (no removeOptimisticDelete
