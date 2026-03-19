@@ -35,9 +35,9 @@ export const C = {
   expense:         '#E11D48',
   expenseBright:   '#E11D48',   // same — no separate "bright" needed
 
-  // ── Investment — Violet H=263° ──────────────────────────────────────
-  invest:          '#6D28D9',   // violet
-  investText:      '#5B21B6',   // dark violet
+  // ── Investment — Teal H=175° ──────────────────────────────────────
+  invest:          '#0D9488',   // teal-600 — fills, strokes
+  investText:      '#0F766E',   // teal-700 — text, dots
 
   saved:           '#3730A3',   // brand periwinkle — residual money in Kosha
 

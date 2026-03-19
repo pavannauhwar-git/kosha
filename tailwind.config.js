@@ -33,10 +33,10 @@ export default {
         'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#6D28D9',
-        'invest-bg':     '#EDE9FE',
-        'invest-text':   '#5B21B6',
-        'invest-border': '#C4B5FD',
+        'invest':        '#0D9488',   // teal-600
+        'invest-bg':     '#F0FDFA',   // teal-50
+        'invest-text':   '#0F766E',   // teal-700
+        'invest-border': '#99F6E4',   // teal-200
 
         // ── Repayment / Bills ─────────────────────────────────────────────
         'repay':        '#CA8A04',
