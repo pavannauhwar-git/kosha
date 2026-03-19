@@ -178,8 +178,15 @@ export function useRunningBalance(year, month) {
   return { balance: data, loading: isLoading }
 }
 
+async function getCurrentUserId() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user?.id) throw new Error('Not signed in')
+  return session.user.id
+}
+
 export async function addTransaction(payload) {
-  const { data, error } = await supabase.from('transactions').insert(payload).select().single()
+  const user_id = await getCurrentUserId()
+  const { data, error } = await supabase.from('transactions').insert({ ...payload, user_id }).select().single()
   if (error) throw error
   return data
 }
@@ -194,6 +201,14 @@ export async function deleteTransaction(id) {
   return true
 }
 
-export const invalidateCache = () => {}
+import { queryClient } from '../lib/queryClient'
+
+export const invalidateCache = (pattern) => {
+  if (!pattern) return
+  if (pattern.startsWith('txns:')) queryClient.invalidateQueries({ queryKey: ['transactions'] })
+  else if (pattern.startsWith('month:')) queryClient.invalidateQueries({ queryKey: ['month'] })
+  else if (pattern.startsWith('year:')) queryClient.invalidateQueries({ queryKey: ['year'] })
+  else if (pattern.startsWith('balance:')) queryClient.invalidateQueries({ queryKey: ['balance'] })
+}
 export const registerPrefetch = () => {}
 export const prefetch = () => {}
