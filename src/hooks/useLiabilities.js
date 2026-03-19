@@ -76,7 +76,11 @@ function withTimeout(promise, ms = 8000) {
   return Promise.race([
     promise,
     new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Request timed out. Check your connection.')), ms)
+      setTimeout(() => {
+        const err = new Error('Request timed out. Check your connection.')
+        err.isTimeout = true
+        reject(err)
+      }, ms)
     ),
   ])
 }
@@ -200,7 +204,12 @@ export async function addLiability(payload) {
     ).sort(compareDueDate)
     setCachedAndNotify(deduped)
   } catch (error) {
-    setCachedAndNotify(previousRows)
+    if (error.isTimeout) {
+      // Don't rollback — the insert may have succeeded on the server.
+      // The finally block's invalidateCache() will trigger a reconciling refetch.
+    } else {
+      setCachedAndNotify(previousRows)
+    }
     throw error
   } finally {
     invalidateCache()
@@ -261,7 +270,12 @@ export async function markPaid(liability) {
       )
     }
   } catch (error) {
-    setCachedAndNotify(previousRows)
+    if (error.isTimeout) {
+      // Don't rollback — the operation may have succeeded on the server.
+      // The finally block's invalidateCache() calls will trigger a reconciling refetch.
+    } else {
+      setCachedAndNotify(previousRows)
+    }
     throw error
   } finally {
     invalidateCache()
@@ -285,7 +299,12 @@ export async function deleteLiability(id) {
     )
     if (error) throw error
   } catch (error) {
-    setCachedAndNotify(previousRows)
+    if (error.isTimeout) {
+      // Don't rollback — the delete may have succeeded on the server.
+      // The finally block's invalidateCache() will trigger a reconciling refetch.
+    } else {
+      setCachedAndNotify(previousRows)
+    }
     throw error
   } finally {
     invalidateCache()
