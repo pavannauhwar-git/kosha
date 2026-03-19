@@ -39,7 +39,8 @@ export function useLiabilities() {
 
 // ── Writes — pessimistic: server first, then invalidate ───────────────────
 
-export async function addLiability(payload) {
+export async function addLiability(payload, options = {}) {
+  const { invalidate = true } = options
   const user_id = await getCurrentUserId()
   const { data, error } = await supabase
     .from('liabilities')
@@ -47,7 +48,9 @@ export async function addLiability(payload) {
     .select('id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
     .single()
   if (error) throw error
-  await invalidateLiabilityCache()
+  if (invalidate) {
+    await invalidateLiabilityCache()
+  }
   return data
 }
 
@@ -100,8 +103,11 @@ export async function markPaid(liability) {
   await Promise.all([invalidateLiabilityCache(), invalidateTxnCache()])
 }
 
-export async function deleteLiability(id) {
+export async function deleteLiability(id, options = {}) {
+  const { invalidate = true } = options
   const { error } = await supabase.from('liabilities').delete().eq('id', id)
   if (error) throw error
-  await invalidateLiabilityCache()
+  if (invalidate) {
+    await invalidateLiabilityCache()
+  }
 }

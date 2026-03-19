@@ -1,7 +1,13 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Check, Repeat, Loader2 } from 'lucide-react'
-import { useLiabilities, addLiability, markPaid, deleteLiability } from '../hooks/useLiabilities'
+import {
+  useLiabilities,
+  addLiability,
+  markPaid,
+  deleteLiability,
+  invalidateLiabilityCache,
+} from '../hooks/useLiabilities'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
@@ -56,7 +62,8 @@ export default function Bills() {
     setAddSaving(true)
 
     try {
-      await addLiability(billData)
+      await addLiability(billData, { invalidate: false })
+      await invalidateLiabilityCache()
       setShowAdd(false)
       setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
     } catch (e) {
@@ -83,7 +90,8 @@ export default function Bills() {
     if (!id || payingId || deletingId) return
     setDeletingId(id)
     try {
-      await deleteLiability(id)
+      await deleteLiability(id, { invalidate: false })
+      await invalidateLiabilityCache()
     } catch (e) {
       setErrToast(e.message || 'Could not delete bill. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)
