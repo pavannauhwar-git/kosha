@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CreditCard, NotePencil } from '@phosphor-icons/react'
 import { ChevronRight } from 'lucide-react'
-import { addTransaction, updateTransaction } from '../hooks/useTransactions'
+import { addTransaction, updateTransaction, invalidateCache } from '../hooks/useTransactions'
 import CategoryIcon from './CategoryIcon'
 import { CATEGORIES } from '../lib/categories'
 
@@ -237,11 +237,21 @@ export default function AddTransactionSheet({
 
     let serverTxn = null
     try {
-      if (editTxn) await updateTransaction(editTxn.id, payload)
-      else serverTxn = await addTransaction(payload)
-      if (onConfirmed) await onConfirmed(serverTxn)
+      if (editTxn) {
+        await updateTransaction(editTxn.id, payload)
+        if (onConfirmed) await onConfirmed(serverTxn)
+        // Invalidate caches after edit is confirmed — caller's optimistic edit guard is down
+        const d = new Date(payload.date)
+        invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
+        invalidateCache(`balance:`)
+        invalidateCache(`txns:`)
+        invalidateCache(`year:${d.getFullYear()}`)
+      } else {
+        serverTxn = await addTransaction(payload)
+        if (onConfirmed) await onConfirmed(serverTxn)
+        // Cache invalidation for new transactions is handled by onConfirmed (Brain hook)
+      }
     } catch (e) {
-      console.error('[Kosha] Save failed:', e.message)
       onFailed && onFailed(e.message || 'Could not save. Check your connection.')
     }
   }

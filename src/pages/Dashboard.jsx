@@ -5,7 +5,7 @@ import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { useTransactions } from '../hooks/useTransactions'
 import { useMonthSummary } from '../hooks/useTransactions'
 import { useRunningBalance } from '../hooks/useTransactions'
-import { deleteTransaction, isOptimisticId } from '../hooks/useTransactions'
+import { deleteTransaction, isOptimisticId, invalidateCache } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
 import { useAppData } from '../hooks/useAppDataStore'
@@ -236,7 +236,19 @@ export default function Dashboard() {
 
     try {
       await deleteTransaction(id)
-      removeOptimisticDelete(id)
+      // Invalidate AFTER the delete — pruneOptimisticDeletes auto-cleans
+      // when the refetch returns rows without this ID (no removeOptimisticDelete
+      // here to avoid the "guard dropped before refetch lands" race).
+      if (txn?.date) {
+        const d = new Date(txn.date)
+        invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
+        invalidateCache(`year:${d.getFullYear()}`)
+      } else {
+        invalidateCache('month:')
+        invalidateCache('year:')
+      }
+      invalidateCache('txns:')
+      invalidateCache('balance:')
     } catch (e) {
       removeOptimisticDelete(id)
       setToast(e.message || 'Could not delete transaction. Check your connection.')

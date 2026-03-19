@@ -39,34 +39,6 @@ function AnalyticsSkeleton() {
 }
 
 // ── Light tooltip (KPI cards, net savings) ───────────────────────────────
-const AppleTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null
-  return (
-    <div style={{
-      background: 'rgba(255,255,255,0.98)',
-      borderRadius: 12,
-      padding: '10px 14px',
-      boxShadow: '0 4px 20px rgba(30,27,75,0.14), 0 0 0 0.5px rgba(30,27,75,0.08)',
-      minWidth: 140,
-    }}>
-      <p style={{
-        fontSize: 12, fontWeight: 600, color: C.inkMuted,
-        letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase'
-      }}>
-        {label}
-      </p>
-      {payload.map(p => (
-        <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-          <span style={{ fontSize: 13, color: C.ink }}>{p.name}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: p.fill || p.color }}>
-            {fmt(p.value)}
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 // ── Dark tooltip (on dark chart card) ────────────────────────────────────
 const DarkTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null

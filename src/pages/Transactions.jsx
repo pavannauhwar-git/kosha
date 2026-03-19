@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useTransactions, deleteTransaction, useDebounce, isOptimisticId } from '../hooks/useTransactions'
+import { useTransactions, deleteTransaction, useDebounce, isOptimisticId, invalidateCache } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
@@ -84,7 +84,19 @@ export default function Transactions() {
 
     try {
       await deleteTransaction(id)
-      removeOptimisticDelete(id)
+      // Invalidate AFTER the delete — pruneOptimisticDeletes auto-cleans
+      // when the refetch returns rows without this ID (no removeOptimisticDelete
+      // here to avoid the "guard dropped before refetch lands" race).
+      if (txn?.date) {
+        const d = new Date(txn.date)
+        invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
+        invalidateCache(`year:${d.getFullYear()}`)
+      } else {
+        invalidateCache('month:')
+        invalidateCache('year:')
+      }
+      invalidateCache('txns:')
+      invalidateCache('balance:')
     } catch (e) {
       removeOptimisticDelete(id)
       setToast(e.message || 'Could not delete transaction. Check your connection.')
