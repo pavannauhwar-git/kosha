@@ -32,15 +32,24 @@ export function useGlobalTransactionMutation() {
   }, [addOptimisticTxn])
 
   /**
-   * Phase 2 — Cleanup.
+   * Phase 2 — Cleanup + Sync.
    * Call this from AddTransactionSheet.onConfirmed once Supabase responds.
-   * Removes the optimistic entry — the cache-invalidation refetch brings the real row.
+   * Removes the optimistic entry FIRST, then invalidates so the refetch brings
+   * the real row with the optimistic guard already down (no flash/revert).
+   * The caller (AddTransactionSheet) passes the serverTxn so we can invalidate
+   * the right month/year caches precisely.
    */
-  const onTransactionConfirmed = useCallback(() => {
+  const onTransactionConfirmed = useCallback((serverTxn) => {
     if (pendingOptimisticId.current) {
       resolveOptimisticTxn(pendingOptimisticId.current)
       pendingOptimisticId.current = null
     }
+    // Invalidate AFTER the optimistic entry is removed so the refetch lands clean
+    const date = serverTxn?.date ? new Date(serverTxn.date) : new Date()
+    invalidateCache(`month:${date.getFullYear()}:${date.getMonth() + 1}`)
+    invalidateCache(`balance:`)
+    invalidateCache(`txns:`)
+    invalidateCache(`year:${date.getFullYear()}`)
   }, [resolveOptimisticTxn])
 
   /**

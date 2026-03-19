@@ -20,7 +20,7 @@ function BillsSkeleton() {
 }
 
 export default function Bills() {
-  const { pending, paid, loading } = useLiabilities()
+  const { pending, paid, loading, refetch } = useLiabilities()
   const [tab, setTab] = useState('pending')
   const [showAdd, setShowAdd] = useState(false)
   const [delId, setDelId] = useState(null)
@@ -55,6 +55,10 @@ export default function Bills() {
       })
       setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
       setShowAdd(false)
+      // Force a refetch after the sheet closes so the UI always reflects
+      // the confirmed server data (guards against React batching the subscriber
+      // notification during the await).
+      refetch()
     } catch (e) { setFormErr(e.message) }
     finally { setSaving(false) }
   }

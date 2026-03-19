@@ -44,7 +44,6 @@ const NAV = [
 // ── Global header — ProfileMenu fixed top-right, rendered once ────────────
 // Same principle as BottomNav: one instance, one position, no per-page drift.
 // Hidden on auth/onboarding pages where the nav is also hidden.
-// ── Global header — ProfileMenu fixed top-right, rendered once ────────────
 function GlobalHeader() {
   const location = useLocation()
 

@@ -763,10 +763,6 @@ export function useYearSummary(year) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // useRunningBalance
-//
-// FIXED: The old version fetched ALL historical transactions with no lower
-// bound (potentially 500+ rows) just to sum them. This version uses a
-// Postgres aggregate — one number comes back instead of all rows.
 // ─────────────────────────────────────────────────────────────────────────────
 export function useRunningBalance(year, month) {
   const cacheKey = `balance:${year}:${month}`
@@ -883,12 +879,6 @@ export async function addTransaction(payload) {
       .single()
   )
   if (error) throw error
-  // Invalidate the specific month + balance, leave other months warm
-  const d = new Date((data && data.date) || payload.date)
-  invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
-  invalidateCache(`balance:`)
-  invalidateCache(`txns:`)
-  invalidateCache(`year:${d.getFullYear()}`)
   return data || null
 }
 
@@ -897,11 +887,6 @@ export async function updateTransaction(id, payload) {
     supabase.from('transactions').update(payload).eq('id', id)
   )
   if (error) throw error
-  const d = new Date(payload.date)
-  invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
-  invalidateCache(`balance:`)
-  invalidateCache(`txns:`)
-  invalidateCache(`year:${d.getFullYear()}`)
 }
 
 export async function deleteTransaction(id) {
@@ -909,9 +894,4 @@ export async function deleteTransaction(id) {
     supabase.from('transactions').delete().eq('id', id)
   )
   if (error) throw error
-  // Delete doesn't know the date, so invalidate broadly
-  invalidateCache('txns:')
-  invalidateCache('month:')
-  invalidateCache('balance:')
-  invalidateCache('year:')
 }
