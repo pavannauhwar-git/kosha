@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
-import { Sparkle } from '@phosphor-icons/react'
+import { Sparkle, Star } from '@phosphor-icons/react'
 import {
   AreaChart, Area,
   BarChart, Bar,
@@ -70,23 +70,119 @@ const DarkTooltip = ({ active, payload, label }) => {
   )
 }
 
-// ── KPI card ──────────────────────────────────────────────────────────────
-function KpiCard({ label, value, prevValue, textCls, bg }) {
-  const diff = prevValue != null ? value - prevValue : null
-  const up = diff > 0
+// ── Section heading with left-accent ─────────────────────────────────────
+function SectionHeading({ children, right }) {
   return (
-    <div className="card p-4">
-      <div className={`w-8 h-8 rounded-full ${bg} flex items-center justify-center mb-3`}>
-        <span className={`text-label font-bold ${textCls}`}>₹</span>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2.5">
+        <div className="w-[3px] h-[18px] rounded-full bg-brand opacity-50" />
+        <p className="section-label">{children}</p>
       </div>
-      <p className="text-label text-ink-3 font-medium mb-0.5">{label}</p>
-      <p className={`text-value font-bold ${textCls} tabular-nums`}>{fmt(value)}</p>
-      {diff !== null && Math.abs(diff) > 100 && (
-        <div className={`flex items-center gap-1 mt-2 ${up ? 'text-income-text' : 'text-expense-text'}`}>
-          {up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-          <span className="text-caption font-semibold">{fmt(Math.abs(diff))} vs prev year</span>
+      {right && <div>{right}</div>}
+    </div>
+  )
+}
+
+// ── Annual summary card (replaces 4 KPI cards) ────────────────────────────
+function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
+  const totalIncome     = data?.totalIncome     || 0
+  const totalExpense    = data?.totalExpense    || 0
+  const totalInvestment = data?.totalInvestment || 0
+  const avgSavings      = data?.avgSavings      || 0
+
+  const incomePct = prevData?.totalIncome > 0
+    ? Math.round(((totalIncome - prevData.totalIncome) / prevData.totalIncome) * 100)
+    : null
+
+  const expensePct = prevData?.totalExpense > 0
+    ? Math.round(((totalExpense - prevData.totalExpense) / prevData.totalExpense) * 100)
+    : null
+
+  const investPct = prevData?.totalInvestment > 0
+    ? Math.round(((totalInvestment - prevData.totalInvestment) / prevData.totalInvestment) * 100)
+    : null
+
+  // Savings-rate arc
+  const ARC = 52, SW = 5, R = ARC / 2 - SW
+  const CIRC = 2 * Math.PI * R
+  const arcFill = Math.max(0, Math.min(avgSavings, 100)) / 100 * CIRC
+
+  function YoyBadge({ pct, invertGood = false }) {
+    if (pct === null || Math.abs(pct) < 2) return null
+    const isGood = invertGood ? pct < 0 : pct > 0
+    return (
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full
+        ${isGood ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}>
+        {pct > 0 ? '↑' : '↓'}{Math.abs(pct)}%
+      </span>
+    )
+  }
+
+  return (
+    <div className="card overflow-hidden">
+      {/* ── Total Earned ── */}
+      <div className="px-5 pt-5 pb-4 border-b border-kosha-border">
+        <p className="text-caption text-ink-3 font-medium mb-1.5">Total Earned</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-bold tabular-nums text-income-text"
+            style={{ fontSize: 28, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+            {fmt(totalIncome)}
+          </p>
+          {incomePct !== null && Math.abs(incomePct) >= 2 && (
+            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold shrink-0
+              ${incomePct >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}>
+              {incomePct >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+              {Math.abs(incomePct)}% vs {year - 1}
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* ── Spent + Invested ── */}
+      <div className="grid grid-cols-2 border-b border-kosha-border">
+        <div className="px-5 py-4 border-r border-kosha-border">
+          <p className="text-caption text-ink-3 mb-1.5">Spent</p>
+          <p className="text-value font-bold text-expense-text tabular-nums">{fmt(totalExpense)}</p>
+          <div className="mt-1.5">
+            <YoyBadge pct={expensePct} invertGood={true} />
+          </div>
+        </div>
+        <div className="px-5 py-4">
+          <p className="text-caption text-ink-3 mb-1.5">Invested</p>
+          <p className="text-value font-bold text-invest-text tabular-nums">{fmt(totalInvestment)}</p>
+          <div className="mt-1.5">
+            <YoyBadge pct={investPct} invertGood={false} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Savings rate ── */}
+      <div className="flex items-center gap-4 px-5 py-4">
+        <div className="relative shrink-0" style={{ width: ARC, height: ARC }}>
+          <svg width={ARC} height={ARC} viewBox={`0 0 ${ARC} ${ARC}`}>
+            <circle cx={ARC / 2} cy={ARC / 2} r={R}
+              fill="none" stroke={C.brandBorder} strokeWidth={SW} />
+            {avgSavings > 0 && (
+              <circle cx={ARC / 2} cy={ARC / 2} r={R}
+                fill="none" stroke={C.brand} strokeWidth={SW}
+                strokeLinecap="round"
+                strokeDasharray={`${arcFill} ${CIRC}`}
+                strokeDashoffset={0}
+                transform={`rotate(-90 ${ARC / 2} ${ARC / 2})`}
+              />
+            )}
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="font-bold text-brand" style={{ fontSize: 11 }}>{avgSavings}%</span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-label font-semibold text-ink mb-1">Avg Savings Rate</p>
+          {spendTrend && (
+            <TrendPill current={spendTrend.current} previous={spendTrend.previous} label="spend" />
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -165,7 +261,7 @@ function YoYCards({ years, currentYear }) {
 
   return (
     <div className="space-y-3">
-      <p className="section-label">Year over Year</p>
+      <SectionHeading>Year over Year</SectionHeading>
       {yearsWithData.map((y, idx) => {
         const d = allData[y]
         const prev = allData[yearsWithData[idx - 1]]
@@ -254,8 +350,8 @@ function PortfolioDonut({ vehicleData }) {
 
   return (
     <div className="card p-5">
-      <p className="section-label mb-4">Portfolio Allocation</p>
-      <div className="flex items-center gap-4">
+      <SectionHeading>Portfolio Allocation</SectionHeading>
+      <div className="flex items-center gap-4 mt-4">
         <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
             <circle cx={CX} cy={CY} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
@@ -363,15 +459,26 @@ export default function Analytics() {
       {/* ── Year navigator ────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6 pr-14">
         <button onClick={() => setYear(y => y - 1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                     flex items-center justify-center active:bg-kosha-surface-2">
-          <ChevronLeft size={18} className="text-ink-2" />
+          className="w-10 h-10 rounded-full bg-kosha-surface-2 border border-kosha-border
+                     flex items-center justify-center active:scale-95 transition-transform">
+          <ChevronLeft size={20} className="text-ink-2" />
         </button>
-        <h1 className="text-display font-bold text-ink tracking-tight">{year}</h1>
-        <button onClick={() => setYear(y => y + 1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                     flex items-center justify-center active:bg-kosha-surface-2">
-          <ChevronRight size={18} className="text-ink-2" />
+        <div className="text-center">
+          <h1 className="text-display font-bold text-ink tracking-tight leading-none">{year}</h1>
+          {year === currentYear && (
+            <span className="text-[10px] font-bold text-brand bg-brand-container
+                             px-2.5 py-0.5 rounded-full mt-1.5 inline-block tracking-wide">
+              CURRENT
+            </span>
+          )}
+        </div>
+        <button onClick={() => setYear(y => Math.min(y + 1, currentYear))}
+          disabled={year >= currentYear}
+          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-transform
+            ${year >= currentYear
+              ? 'bg-kosha-surface-2/50 border-kosha-border/40 opacity-30 cursor-default'
+              : 'bg-kosha-surface-2 border-kosha-border active:scale-95'}`}>
+          <ChevronRight size={20} className="text-ink-2" />
         </button>
       </div>
 
@@ -384,73 +491,74 @@ export default function Analytics() {
           className="space-y-6"
         >
 
-
-          {/* ── Yearly Insights Takeaways ────────────────────────────── */}
+          {/* ── Yearly Insights ──────────────────────────────────────── */}
           {chartData.length > 0 && (
-            <div className="card p-5 bg-brand-container border border-brand/10">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkle size={18} className="text-brand" weight="fill" />
+            <div className="card p-5 overflow-hidden relative"
+              style={{ background: 'linear-gradient(135deg, #EDE9FF 0%, #F5F3FF 100%)' }}>
+              {/* decorative radial glow */}
+              <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
+                style={{
+                  background: 'radial-gradient(circle at 70% 30%, rgba(55,48,163,0.10) 0%, transparent 70%)',
+                  borderRadius: '50%',
+                  transform: 'translate(20%, -20%)',
+                }} />
+              <div className="flex items-center gap-2.5 mb-3 relative">
+                <div className="w-7 h-7 rounded-xl bg-brand flex items-center justify-center shrink-0">
+                  <Sparkle size={14} className="text-white" weight="fill" />
+                </div>
                 <h3 className="text-[15px] font-bold text-ink">Yearly Insights</h3>
               </div>
-              <p className="text-[14px] text-ink-2 leading-relaxed">
+              <p className="text-[14px] text-ink-2 leading-relaxed relative">
                 {(() => {
-                  let parts = [];
-                  const saved = (data?.totalIncome || 0) - ((data?.totalExpense || 0) + (data?.totalInvestment || 0));
-                  const inc = data?.totalIncome || 0;
-                  const rate = inc > 0 ? Math.round(((inc - (data?.totalExpense || 0)) / inc) * 100) : 0;
-                  
-                  if (rate > 20) parts.push(`You've had a strong year, saving ${rate}% of your earnings.`);
-                  else if (rate > 0) parts.push(`You saved ${rate}% of your income.`);
-                  else parts.push(`You spent more than you earned this year.`);
+                  let parts = []
+                  const inc = data?.totalIncome || 0
+                  const rate = inc > 0 ? Math.round(((inc - (data?.totalExpense || 0)) / inc) * 100) : 0
+
+                  if (rate > 20) parts.push(`You've had a strong year, saving ${rate}% of your earnings.`)
+                  else if (rate > 0) parts.push(`You saved ${rate}% of your income.`)
+                  else parts.push(`You spent more than you earned this year.`)
 
                   if (data?.monthly) {
-                     let maxExp = 0; let maxIdx = -1;
-                     data.monthly.forEach((m, i) => { if (m.expense > maxExp) { maxExp = m.expense; maxIdx = i; } });
-                     if (maxIdx >= 0 && maxExp > 0) parts.push(`${MONTH_SHORT[maxIdx]} was your highest spending month.`);
+                    let maxExp = 0, maxIdx = -1
+                    data.monthly.forEach((m, i) => { if (m.expense > maxExp) { maxExp = m.expense; maxIdx = i } })
+                    if (maxIdx >= 0 && maxExp > 0) parts.push(`${MONTH_SHORT[maxIdx]} was your highest spending month.`)
                   }
 
-                  if (catEntries && catEntries.length > 0) {
-                     const c = CATEGORIES.find(c => c.id === catEntries[0][0]);
-                     const pct = Math.round((catEntries[0][1] / Math.max(data?.totalExpense || 1, 1)) * 100);
-                     parts.push(`Your biggest expense was ${c ? c.label : catEntries[0][0]}, making up ${pct}% of all spending.`);
+                  if (catEntries?.length > 0) {
+                    const c = CATEGORIES.find(c => c.id === catEntries[0][0])
+                    const pct = Math.round((catEntries[0][1] / Math.max(data?.totalExpense || 1, 1)) * 100)
+                    parts.push(`Your biggest expense was ${c ? c.label : catEntries[0][0]}, making up ${pct}% of all spending.`)
                   }
-                  return parts.join(' ');
+                  return parts.join(' ')
                 })()}
               </p>
             </div>
           )}
-          
-          {/* ── 1. Annual KPIs ──────────────────────────────────────── */}
-          <div className="grid grid-cols-2 gap-3">
-            <KpiCard label="Total Earned"
-              value={data?.totalIncome || 0} prevValue={prevData?.totalIncome}
-              textCls="text-income-text" bg="bg-income-bg" />
-            <KpiCard label="Total Spent"
-              value={data?.totalExpense || 0} prevValue={prevData?.totalExpense}
-              textCls="text-expense-text" bg="bg-expense-bg" />
-            <KpiCard label="Total Invested"
-              value={data?.totalInvestment || 0} prevValue={prevData?.totalInvestment}
-              textCls="text-invest-text" bg="bg-invest-bg" />
-            <div className="card p-4">
-              <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center mb-3">
-                <span className="text-label font-bold text-brand-on">%</span>
-              </div>
-              <p className="text-label text-ink-3 font-medium mb-0.5">Avg Savings Rate</p>
-              <p className="text-value font-bold text-brand tabular-nums">{data?.avgSavings || 0}%</p>
-              {spendTrend && (
-                <div className="mt-2">
-                  <TrendPill current={spendTrend.current} previous={spendTrend.previous} label="spend" />
-                </div>
-              )}
-            </div>
-          </div>
+
+          {/* ── 1. Annual Summary card ───────────────────────────────── */}
+          <AnnualSummaryCard
+            data={data}
+            prevData={prevData}
+            spendTrend={spendTrend}
+            year={year}
+          />
 
           {/* ── 2. Cash Flow chart ──────────────────────────────────── */}
           {chartData.length > 0 && (
             <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background: C.chartDark }}>
-              <div className="px-5 pt-5 pb-2">
-                <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>Cash Flow</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Income vs spending by month</p>
+              <div className="px-5 pt-5 pb-2 flex items-start justify-between">
+                <div>
+                  <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>Cash Flow</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+                    Income vs spending by month
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold tabular-nums" style={{ fontSize: 15, color: C.chartIncome, letterSpacing: '-0.01em' }}>
+                    {fmt(data?.totalIncome || 0, true)}
+                  </p>
+                  <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>earned</p>
+                </div>
               </div>
               <ResponsiveContainer width="100%" height={chartH}>
                 <AreaChart data={chartData} margin={{ top: 8, right: 16, left: 16, bottom: 0 }}>
@@ -496,9 +604,30 @@ export default function Analytics() {
           {/* ── 3. Net Savings ──────────────────────────────────────── */}
           {netData.length > 0 && (
             <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background: C.chartDark }}>
-              <div className="px-5 pt-5 pb-2">
-                <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>Net Savings</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>After expenses &amp; investments</p>
+              <div className="px-5 pt-5 pb-2 flex items-start justify-between">
+                <div>
+                  <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>Net Savings</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+                    After expenses &amp; investments
+                  </p>
+                </div>
+                {(() => {
+                  const totalNet = netData.reduce((s, m) => s + m.Net, 0)
+                  return (
+                    <div className="text-right">
+                      <p className="font-bold tabular-nums" style={{
+                        fontSize: 15,
+                        color: totalNet >= 0 ? C.chartIncome : C.chartExpense,
+                        letterSpacing: '-0.01em',
+                      }}>
+                        {fmt(Math.abs(totalNet), true)}
+                      </p>
+                      <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
+                        {totalNet >= 0 ? 'net saved' : 'net deficit'}
+                      </p>
+                    </div>
+                  )
+                })()}
               </div>
               <ResponsiveContainer width="100%" height={130}>
                 <BarChart data={netData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
@@ -527,27 +656,41 @@ export default function Analytics() {
 
           {/* ── 5. Top 5 expenses ────────────────────────────────────── */}
           {top5.length > 0 && (
-            <div className="card p-5">
-              <p className="section-label mb-4">Top Expenses {year}</p>
-              <div className="space-y-0 overflow-hidden rounded-card">
-                {top5.map((t, i) => (
-                  <div key={t.id}
-                    className={`flex items-center gap-3 py-3.5 px-1
-                      ${i < top5.length - 1 ? 'border-b border-kosha-border' : ''}`}
-                  >
-                    <div className="w-6 h-6 rounded-full bg-kosha-surface-2 flex items-center justify-center shrink-0">
-                      <span className="text-caption font-bold text-ink-3">{i + 1}</span>
+            <div>
+              <SectionHeading>Top Expenses {year}</SectionHeading>
+              <div className="card p-0 overflow-hidden mt-3">
+                {top5.map((t, i) => {
+                  // Medal style for top 3
+                  const MEDAL = [
+                    { ringCls: 'ring-yellow-300/60', bg: 'bg-yellow-50', textCls: 'text-yellow-600' },
+                    { ringCls: 'ring-slate-300/60',  bg: 'bg-slate-50',  textCls: 'text-slate-500'  },
+                    { ringCls: 'ring-orange-300/60', bg: 'bg-orange-50', textCls: 'text-orange-500' },
+                  ]
+                  const medal = i < 3 ? MEDAL[i] : null
+
+                  return (
+                    <div key={t.id}
+                      className={`flex items-center gap-3 py-3.5 px-4
+                        ${i < top5.length - 1 ? 'border-b border-kosha-border' : ''}`}
+                    >
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0
+                        ${medal ? `${medal.bg} ring-1 ${medal.ringCls}` : 'bg-kosha-surface-2'}`}>
+                        {i === 0
+                          ? <Star size={12} weight="fill" className={medal.textCls} />
+                          : <span className={`text-[10px] font-bold ${medal ? medal.textCls : 'text-ink-3'}`}>{i + 1}</span>
+                        }
+                      </div>
+                      <CategoryIcon categoryId={t.category} size={14} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-label font-medium text-ink truncate">{t.description}</p>
+                        <p className="text-caption text-ink-3">{fmtDate(t.date)}</p>
+                      </div>
+                      <span className="text-label font-bold text-expense-text tabular-nums shrink-0">
+                        {fmt(t.amount)}
+                      </span>
                     </div>
-                    <CategoryIcon categoryId={t.category} size={14} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-label font-medium text-ink truncate">{t.description}</p>
-                      <p className="text-caption text-ink-3">{fmtDate(t.date)}</p>
-                    </div>
-                    <span className="text-label font-bold text-expense-text tabular-nums shrink-0">
-                      {fmt(t.amount)}
-                    </span>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
