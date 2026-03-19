@@ -198,7 +198,7 @@ export default function Bills() {
             const shadow = tab === 'pending' ? dueShadow(days) : 'card'
             const chipCls = dueChipClass(days)
             return (
-              <motion.div key={bill._uiKey || bill.id}
+              <motion.div key={bill.id}
                 layout
                 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}

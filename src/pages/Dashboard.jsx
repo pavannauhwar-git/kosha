@@ -81,7 +81,7 @@ export default function Dashboard() {
     if (!id) return
     try {
       await deleteTransaction(id)
-      invalidateCache()
+      await invalidateCache()
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)

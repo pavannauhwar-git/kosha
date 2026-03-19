@@ -4,14 +4,12 @@ import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
-// Data Store is dummy now
 import { useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import AuthGuard from './components/AuthGuard'
 import ProfileMenu from './components/ProfileMenu'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
 import { C } from './lib/colors'
-import { prefetch } from './hooks/useTransactions'
 import { useScrollDirection } from './hooks/useScrollDirection'
 
 // ── Eager: Dashboard and Login are needed immediately ────────────────────
@@ -93,10 +91,6 @@ function BottomNav() {
             <motion.button
               key={item.path}
               className="nav-float-item"
-              onPointerDown={() => {
-                // Warm the cache before the finger lifts — makes tab switches feel instant
-                prefetch(item.path)
-              }}
               onClick={() => {
                 if (navigator.vibrate) navigator.vibrate(6)
                 navigate(item.path)

@@ -189,10 +189,10 @@ export async function deleteTransaction(id) {
 }
 
 export function invalidateCache() {
-  queryClient.invalidateQueries({ queryKey: ['transactions'] })
-  queryClient.invalidateQueries({ queryKey: ['month'] })
-  queryClient.invalidateQueries({ queryKey: ['year'] })
-  queryClient.invalidateQueries({ queryKey: ['balance'] })
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+    queryClient.invalidateQueries({ queryKey: ['month'] }),
+    queryClient.invalidateQueries({ queryKey: ['year'] }),
+    queryClient.invalidateQueries({ queryKey: ['balance'] }),
+  ])
 }
-export const registerPrefetch = () => {}
-export const prefetch = () => {}

@@ -254,7 +254,7 @@ export default function AddTransactionSheet({
       } else {
         await addTransaction(payload)
       }
-      invalidateCache()
+      await invalidateCache()
       onClose()
     } catch (e) {
       setError(e.message || 'Could not save. Check your connection.')
