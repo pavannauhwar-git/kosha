@@ -1,14 +1,19 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Camera, Trash2 } from 'lucide-react'
+import { LogOut, Camera, Trash2, Pencil, UserPlus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import EditProfileNameDialog from './EditProfileNameDialog'
 
 export default function ProfileMenu({ className = '' }) {
   const { user, profile, signOut, updateProfile } = useAuth()
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState('')
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [photoError, setPhotoError] = useState('')
+  const [inviteError, setInviteError] = useState('')
+  const [inviteInfo, setInviteInfo] = useState('')
+  const [showEditName, setShowEditName] = useState(false)
   const fileInputRef = useRef(null)
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
@@ -18,7 +23,7 @@ export default function ProfileMenu({ className = '' }) {
     const file = e.target.files?.[0]
     if (!file || !user) return
 
-    setError('')
+    setPhotoError('')
     setUploading(true)
     try {
       const ext = file.name.split('.').pop() || 'jpg'
@@ -38,7 +43,7 @@ export default function ProfileMenu({ className = '' }) {
 
       await updateProfile({ avatar_url: publicUrl })
     } catch (e) {
-      setError(e.message || 'Could not update photo. Try again.')
+      setPhotoError(e.message || 'Could not update photo. Try again.')
     } finally {
       setUploading(false)
       // reset the input so the same file can be selected again if needed
@@ -46,14 +51,67 @@ export default function ProfileMenu({ className = '' }) {
     }
   }
   async function handleDeletePhoto() {
-    setError('')
+    setPhotoError('')
     setUploading(true)
     try {
       await updateProfile({ avatar_url: null })
     } catch (e) {
-      setError(e.message || 'Could not remove photo. Try again.')
+      setPhotoError(e.message || 'Could not remove photo. Try again.')
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function handleInvite() {
+    if (!user || uploading || inviteLoading) return
+
+    setInviteError('')
+    setInviteInfo('')
+    setInviteLoading(true)
+
+    try {
+      const { data, error: createInviteError } = await supabase
+        .from('invites')
+        .insert({ created_by: user.id })
+        .select('token')
+        .single()
+
+      if (createInviteError) throw createInviteError
+
+      const token = data?.token
+      if (!token) throw new Error('Could not create invite link. Try again.')
+
+      const joinUrl = `${window.location.origin}/join/${token}`
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Join me on Kosha',
+            text: 'Use my invite link to join Kosha.',
+            url: joinUrl,
+          })
+          setInviteInfo('Invite sent successfully.')
+        } catch (shareError) {
+          if (shareError?.name === 'AbortError') {
+            setInviteInfo('Share cancelled.')
+          } else {
+            throw shareError
+          }
+        }
+        return
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(joinUrl)
+        setInviteInfo('Invite link copied to clipboard.')
+      } else {
+        window.prompt('Copy this invite link:', joinUrl)
+        setInviteInfo('Invite link ready to share.')
+      }
+    } catch (e) {
+      setInviteError(e.message || 'Could not create invite right now. Please try again.')
+    } finally {
+      setInviteLoading(false)
     }
   }
   return (
@@ -114,6 +172,28 @@ export default function ProfileMenu({ className = '' }) {
               </div>
 
               <button
+                onClick={() => {
+                  setOpen(false)
+                  setShowEditName(true)
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                           text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
+              >
+                <Pencil size={15} />
+                Edit profile name
+              </button>
+
+              <button
+                onClick={handleInvite}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                           text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors disabled:opacity-60"
+                disabled={uploading || inviteLoading}
+              >
+                <UserPlus size={15} />
+                {inviteLoading ? 'Creating invite...' : 'Invite friends'}
+              </button>
+
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
                            text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors disabled:opacity-60"
@@ -135,9 +215,21 @@ export default function ProfileMenu({ className = '' }) {
                 </button>
               )}
 
-              {error && (
+              {photoError && (
                 <p className="px-3 pt-1 text-[11px] text-expense-text">
-                  {error}
+                  {photoError}
+                </p>
+              )}
+
+              {inviteError && (
+                <p className="px-3 pt-1 text-[11px] text-expense-text">
+                  {inviteError}
+                </p>
+              )}
+
+              {inviteInfo && (
+                <p className="px-3 pt-1 text-[11px] text-brand">
+                  {inviteInfo}
                 </p>
               )}
 
@@ -152,6 +244,11 @@ export default function ProfileMenu({ className = '' }) {
           </>
         )}
       </AnimatePresence>
+
+      <EditProfileNameDialog
+        open={showEditName}
+        onClose={() => setShowEditName(false)}
+      />
     </div>
   )
 }

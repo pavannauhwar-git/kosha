@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, createContext, useContext, createElement } from 'react'
 import { supabase } from '../lib/supabase'
+import { queryClient } from '../lib/queryClient'
+
+const USER_PROFILE_QUERY_KEY = ['user-profile']
+const PROFILE_COLUMNS = 'id, display_name, avatar_url, onboarded'
 
 // ── Auth Context ──────────────────────────────────────────────────────────
 const AuthContext = createContext(null)
@@ -10,22 +14,53 @@ function useAuthState() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const profileQueryKey = useCallback((userId) => ([...USER_PROFILE_QUERY_KEY, userId]), [])
+
+  const fetchProfileByUserId = useCallback(async (userId) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(PROFILE_COLUMNS)
+      .eq('id', userId)
+      .single()
+    if (error) throw error
+    return data || null
+  }, [])
+
   // Fire-and-forget: loads profile without blocking auth loading state.
   // The rest of the app renders immediately once user is known —
   // profile data arrives a moment later and slots in silently.
   const loadProfile = useCallback(async (userId) => {
     if (!userId) { setProfile(null); return }
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, display_name, avatar_url, onboarded')
-        .eq('id', userId)
-        .single()
-      setProfile(data || null)
+      const data = await queryClient.fetchQuery({
+        queryKey: profileQueryKey(userId),
+        queryFn: () => fetchProfileByUserId(userId),
+      })
+      setProfile(data)
     } catch {
       setProfile(null)
     }
-  }, [])
+  }, [fetchProfileByUserId, profileQueryKey])
+
+  const invalidateAndRefetchProfile = useCallback(async (userId) => {
+    if (!userId) {
+      setProfile(null)
+      return null
+    }
+
+    await queryClient.invalidateQueries({
+      queryKey: profileQueryKey(userId),
+      refetchType: 'all',
+    })
+
+    const fresh = await queryClient.fetchQuery({
+      queryKey: profileQueryKey(userId),
+      queryFn: () => fetchProfileByUserId(userId),
+    })
+
+    setProfile(fresh)
+    return fresh
+  }, [fetchProfileByUserId, profileQueryKey])
 
   useEffect(() => {
     // ── Single source of truth: onAuthStateChange ─────────────────────
@@ -158,6 +193,7 @@ function useAuthState() {
     } finally {
       setUser(null)
       setProfile(null)
+      queryClient.removeQueries({ queryKey: USER_PROFILE_QUERY_KEY })
     }
   }, [])
 
@@ -165,17 +201,36 @@ function useAuthState() {
     if (!user) throw new Error('Not signed in')
     const { data, error } = await supabase
       .from('profiles').update(updates).eq('id', user.id)
-      .select('id, display_name, avatar_url, onboarded')
+      .select(PROFILE_COLUMNS)
       .single()
     if (error) throw error
+    queryClient.setQueryData(profileQueryKey(user.id), data)
     setProfile(data)
     return data
-  }, [user])
+  }, [profileQueryKey, user])
+
+  const updateDisplayName = useCallback(async (displayName) => {
+    if (!user) throw new Error('Not signed in')
+
+    const trimmedName = String(displayName || '').trim()
+    if (!trimmedName) {
+      throw new Error('Display name cannot be empty')
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ display_name: trimmedName })
+      .eq('id', user.id)
+
+    if (error) throw error
+
+    return invalidateAndRefetchProfile(user.id)
+  }, [invalidateAndRefetchProfile, user])
 
   return {
     user, profile, loading,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
-    signOut, updateProfile,
+    signOut, updateProfile, updateDisplayName,
   }
 }
 
