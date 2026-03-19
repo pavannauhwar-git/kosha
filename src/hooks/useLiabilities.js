@@ -54,7 +54,8 @@ export async function addLiability(payload, options = {}) {
   return data
 }
 
-export async function markPaid(liability) {
+export async function markPaid(liability, options = {}) {
+  const { invalidate = true } = options
   const user_id = await getCurrentUserId()
 
   // 1. Insert an expense transaction linked to this bill
@@ -100,7 +101,9 @@ export async function markPaid(liability) {
   }
 
   // Invalidate both caches — UI refreshes with server truth
-  await Promise.all([invalidateLiabilityCache(), invalidateTxnCache()])
+  if (invalidate) {
+    await Promise.all([invalidateLiabilityCache(), invalidateTxnCache()])
+  }
 }
 
 export async function deleteLiability(id, options = {}) {

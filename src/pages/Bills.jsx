@@ -8,6 +8,7 @@ import {
   deleteLiability,
   invalidateLiabilityCache,
 } from '../hooks/useLiabilities'
+import { invalidateCache as invalidateTxnCache } from '../hooks/useTransactions'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
@@ -78,7 +79,8 @@ export default function Bills() {
     if (!bill?.id || payingId || deletingId) return
     setPayingId(bill.id)
     try {
-      await markPaid(bill)
+      await markPaid(bill, { invalidate: false })
+      await Promise.all([invalidateLiabilityCache(), invalidateTxnCache()])
     } catch (e) {
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)
