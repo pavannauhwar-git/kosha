@@ -1,21 +1,15 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Search } from 'lucide-react'
-import { useTransactions } from '../hooks/useTransactions'
-import { useMonthSummary } from '../hooks/useTransactions'
-import { useRunningBalance } from '../hooks/useTransactions'
-import { deleteTransaction, isOptimisticId, invalidateCache } from '../hooks/useTransactions'
+import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { useTransactions, useMonthSummary, useRunningBalance, deleteTransaction, invalidateCache } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
-import { useGlobalTransactionMutation } from '../hooks/useGlobalTransactionMutation'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import TransactionItem from '../components/TransactionItem'
 import { fmt, monthStr, savingsRate, daysUntil, groupByDate, dateLabel } from '../lib/utils'
-import { CATEGORIES } from '../lib/categories'
 import { C } from '../lib/colors'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
-import CategoryIcon from '../components/CategoryIcon'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 4 },
@@ -24,71 +18,6 @@ const fadeUp = {
 const stagger = {
   hidden: {},
   show: { transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
-}
-
-// ── SVG arc progress bar — round-capped, matches Savings ring style ─────────
-function SvgArcBar({ pct, color }) {
-  const W = 100  // viewBox width (%)
-  const H = 8    // height in px
-  const R = H / 2
-  const max = W - R * 2
-  const fill = Math.max(0, Math.min(pct, 100)) / 100 * max
-  return (
-    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
-      {/* Track */}
-      <line x1={R} y1={R} x2={W - R} y2={R}
-        stroke={C.brandBorder} strokeWidth={H} strokeLinecap="round" />
-      {/* Fill */}
-      {fill > 0 && (
-        <line x1={R} y1={R} x2={R + fill} y2={R}
-          stroke={color} strokeWidth={H} strokeLinecap="round" />
-      )}
-    </svg>
-  )
-}
-
-// ── Savings rate ring — pure SVG arc, no recharts dep ────────────────────
-function SavingsRing({ rate }) {
-  const size = 64
-  const sw = 8            // stroke-width
-  const r = (size - sw * 2) / 2
-  const cx = size / 2
-  const cy = size / 2
-  const circ = 2 * Math.PI * r
-  const dash = (Math.min(Math.max(rate, 0), 100) / 100) * circ
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {/* Track */}
-      <circle cx={cx} cy={cy} r={r}
-        fill="none" stroke={C.brandBorder} strokeWidth={sw} />
-      {/* Filled arc */}
-      <circle cx={cx} cy={cy} r={r}
-        fill="none" stroke={C.brand} strokeWidth={sw}
-        strokeDasharray={`${dash} ${circ}`}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${cx} ${cy})`}
-        style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.4,0,0.2,1)' }}
-      />
-      {/* Center label */}
-      <text x={cx} y={cy - 5}
-        textAnchor="middle" dominantBaseline="central"
-        style={{
-          fontSize: 14, fontWeight: 700, fill: C.brand,
-          fontFamily: 'Roboto, system-ui'
-        }}>
-        {rate}%
-      </text>
-      <text x={cx} y={cy + 9}
-        textAnchor="middle"
-        style={{
-          fontSize: 9, fill: C.inkMuted,
-          fontFamily: 'Roboto, system-ui'
-        }}>
-        saved
-      </text>
-    </svg>
-  )
 }
 
 export default function Dashboard() {
@@ -110,21 +39,7 @@ export default function Dashboard() {
   // ── Error toast ──────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
 
-  
-  // Tracks which transaction id is being edited so we can clear the
-  // localEdits overlay after onConfirmed (refetch returns fresh server data)
-  const pendingEditId = useRef(null)
-
-  const {
-    data: recent,
-    applyLocalEdit,
-    clearLocalEdit,
-    revertLocalEdit,
-  } = useTransactions({ limit: 8 })
-
-  // Brain hook — centralized add-transaction lifecycle manager.
-  const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
-    useGlobalTransactionMutation()
+  const { data: recent } = useTransactions({ limit: 8 })
 
   const { data: summary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary } = useMonthSummary(
@@ -139,29 +54,10 @@ export default function Dashboard() {
     [bills]
   )
 
-  // Month/Balance hooks merge optimistic transactions from AppDataProvider.
   const earned = summary?.earned || 0
   const spent = summary?.expense || 0
   const invested = summary?.investment || 0
   const rate = savingsRate(earned, spent)
-
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const dayOfMonth = now.getDate()
-  const monthPct = Math.round((dayOfMonth / daysInMonth) * 100)
-  const spendPct = earned > 0 ? Math.round((spent / earned) * 100) : 0
-  const onTrack = spendPct <= monthPct
-  const paceGap = Math.abs(spendPct - monthPct)
-
-  const catEntries = useMemo(
-    () => Object.entries(summary?.byCategory || {}).sort((a, b) => b[1] - a[1]),
-    [summary?.byCategory]
-  )
-  const topCat = catEntries[0]
-  const topCatPct = topCat && spent > 0 ? Math.round((topCat[1] / spent) * 100) : 0
-  const topCatInfo = useMemo(
-    () => (topCat ? CATEGORIES.find(c => c.id === topCat[0]) : null),
-    [topCat]
-  )
 
   const lastInvested = lastSummary?.investment || 0
   const investDiff = invested - lastInvested
@@ -175,50 +71,6 @@ export default function Dashboard() {
 
   const recentGroups = useMemo(() => groupByDate(recent), [recent])
 
-  // Ref to always have latest data for delete lookups (avoids stale closures)
-  const recentRef = useRef(recent)
-  recentRef.current = recent
-
-  // ── handleOptimisticSave: called immediately when user taps Save ────
-  const handleOptimisticSave = useCallback((payload) => {
-    if (payload.id) {
-      // Edit existing transaction — apply local + global optimistic edit
-      pendingEditId.current = payload.id
-      
-      if (payload._original) {
-        
-      }
-    } else {
-      // New transaction — Brain broadcasts to ALL caches simultaneously
-      onTransactionSaved(payload)
-    }
-  }, [applyLocalEdit, onTransactionSaved])
-
-  // ── handleConfirmed: save succeeded ──────────────────────────────────
-  const handleConfirmed = useCallback((serverTxn) => {
-    if (pendingEditId.current) {
-      
-      
-      pendingEditId.current = null
-    } else {
-      // New transaction — remove optimistic entry; refetch brings the real row
-      onTransactionConfirmed(serverTxn)
-    }
-  }, [clearLocalEdit, onTransactionConfirmed])
-
-  // ── handleFailed: save failed — roll back + show toast ────────────────
-  const handleFailed = useCallback((msg) => {
-    if (pendingEditId.current) {
-      
-      
-      pendingEditId.current = null
-    } else {
-      onTransactionFailed()
-    }
-    setToast(msg)
-    setTimeout(() => setToast(null), 4000)
-  }, [revertLocalEdit, onTransactionFailed])
-
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
     setEditTxn(null)
@@ -227,33 +79,13 @@ export default function Dashboard() {
 
   const handleDelete = useCallback(async (id) => {
     if (!id) return
-
-    // Guard: never attempt to delete an item with a temporary optimistic ID.
-    if (isOptimisticId(id)) return
-
-    const txn = recentRef.current.find(t => t.id === id)
-    
-
     try {
-      // Delete call - pessimistically auto invalidates via prune.
       await deleteTransaction(id)
-      // Invalidate AFTER the delete — pruneOptimisticDeletes auto-cleans
-      // when the refetch returns rows without this ID (no removeOptimisticDelete
-      // here to avoid the "guard dropped before refetch lands" race).
-      if (txn?.date) {
-        const d = new Date(txn.date)
-        invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
-        invalidateCache(`year:${d.getFullYear()}`)
-      } else {
-        invalidateCache('month:')
-        invalidateCache('year:')
-      }
-      invalidateCache('txns:')
-      invalidateCache('balance:')
+      invalidateCache()
     } catch (e) {
-      
-      setToast(e.message || 'Could not delete transaction. Check your connection.')
+      setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)
+      throw e  // re-throw so TransactionItem resets its loading state
     }
   }, [])
   const handleTap = useCallback((t) => {
@@ -342,36 +174,6 @@ export default function Dashboard() {
         </motion.div>
 
         
-        {/* ── Insights Carousel ─────────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="overflow-hidden -mx-4 px-4">
-          <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory flex-nowrap" style={{ maskImage: 'linear-gradient(to right, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)' }}>
-            <div className="snap-start shrink-0 w-64 p-4 rounded-3xl" style={{ background: C.brand + '15', border: `1px solid ${C.brand}30` }}>
-              <div className="flex items-center gap-2 mb-2" style={{ color: C.brand }}>
-                <TrendingUp size={16} weight="bold" />
-                <span className="text-xs font-bold uppercase tracking-wider">Pacing</span>
-              </div>
-              <p className="text-sm font-medium text-ink">You are saving <b style={{ color: C.brand }}>{rate}%</b> of your income this month. Great pace!</p>
-            </div>
-            {topCatInfo && (
-              <div className="snap-start shrink-0 w-64 p-4 rounded-3xl" style={{ background: C.expense + '15', border: `1px solid ${C.expense}30` }}>
-                <div className="flex items-center gap-2 mb-2" style={{ color: C.expense }}>
-                  <TrendingDown size={16} weight="bold" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Top Spend</span>
-                </div>
-                <p className="text-sm font-medium text-ink">Your largest expense is <b style={{ color: C.expense }}>{topCatInfo.label}</b> at {topCatPct}% of total spend.</p>
-              </div>
-            )}
-            {dueSoon.length > 0 && (
-              <div className="snap-start shrink-0 w-64 p-4 rounded-3xl" style={{ background: C.bills + '15', border: `1px solid ${C.bills}30` }}>
-                <div className="flex items-center gap-2 mb-2" style={{ color: C.bills }}>
-                  <Bell size={16} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Upcoming</span>
-                </div>
-                <p className="text-sm font-medium text-ink">You have <b>{dueSoon.length} bills</b> due within 7 days.</p>
-              </div>
-            )}
-          </div>
-        </motion.div>
 
         {/* ── Quick-action strip ────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="card py-4 px-2">
@@ -419,62 +221,6 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* ── Spending Pulse ────────────────────────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          <p className="section-label mb-3">Spending Pulse</p>
-          <div className="card p-4">
-            {/* Header row — status + day counter on left, savings ring on right */}
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <span className={`text-label font-bold block ${onTrack ? 'text-income-text' : 'text-expense-text'}`}>
-                  {onTrack ? `✓ On track` : `↑ ${paceGap}% ahead of pace`}
-                </span>
-                <span className="text-caption text-ink-3">Day {dayOfMonth} of {daysInMonth}</span>
-              </div>
-              <SavingsRing rate={rate} />
-            </div>
-
-            {/* Month elapsed — SVG arc bar */}
-            <div className="mb-4">
-              <div className="flex justify-between mb-2">
-                <span className="text-caption text-ink-3">Month elapsed</span>
-                <span className="text-caption font-semibold text-ink-2">{monthPct}%</span>
-              </div>
-              <SvgArcBar pct={monthPct} color={C.income} />
-            </div>
-
-            {/* Amount spent — SVG arc bar */}
-            <div className="mb-4">
-              <div className="flex justify-between mb-2">
-                <span className="text-caption text-ink-3">Amount spent</span>
-                <span className="text-caption font-semibold text-expense-text">{spendPct}%</span>
-              </div>
-              <SvgArcBar pct={Math.min(spendPct, 100)} color={C.expenseBright} />
-            </div>
-
-            {/* Top category */}
-            {topCat && (
-              <div className="flex items-center gap-3 pt-3 border-t border-kosha-border
-                              cursor-pointer active:opacity-80"
-                onClick={() => navigate('/transactions')}>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: topCatInfo?.bg || '#E9EEF6' }}>
-                  <CategoryIcon categoryId={topCat[0]} size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-caption text-ink-3">Top spend</p>
-                  <p className="text-label font-semibold text-ink truncate">
-                    {topCatInfo?.label || topCat[0]}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-label font-bold text-expense-text tabular-nums">{fmt(topCat[1])}</p>
-                  <p className="text-caption text-ink-3">{topCatPct}% of spend</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
 
         {/* ── Investments ───────────────────────────────────────────────── */}
         {invested > 0 && (
@@ -574,9 +320,6 @@ export default function Dashboard() {
         open={showAdd}
         duplicateTxn={duplicateTxn}
         onClose={() => { setShowAdd(false); setEditTxn(null); setDuplicateTxn(null) }}
-        onSaved={handleOptimisticSave}
-        onConfirmed={handleConfirmed}
-        onFailed={handleFailed}
         editTxn={editTxn}
         initialType={addType}
       />

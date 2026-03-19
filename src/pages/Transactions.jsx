@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useTransactions, deleteTransaction, useDebounce, isOptimisticId, invalidateCache } from '../hooks/useTransactions'
+import { useTransactions, deleteTransaction, useDebounce, invalidateCache } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus, DownloadSimple } from '@phosphor-icons/react'
-
-import { useGlobalTransactionMutation } from '../hooks/useGlobalTransactionMutation'
 
 const TYPES = [
   { id: 'all', label: 'All' },
@@ -41,19 +39,10 @@ export default function Transactions() {
   const [toast, setToast] = useState(null)
   const [duplicateTxn, setDuplicateTxn] = useState(null)
 
-  // Tracks which transaction id is being edited so we can clear the
-  // localEdits overlay after onConfirmed (refetch returns fresh server data)
-  const pendingEditId = useRef(null)
-
   const debouncedSearch = useDebounce(search, 300)
   useEffect(() => { setDisplayCount(50) }, [typeFilter, catFilter, debouncedSearch])
 
-  const {
-    data,
-    applyLocalEdit,
-    clearLocalEdit,
-    revertLocalEdit,
-  } = useTransactions({
+  const { data } = useTransactions({
     type: typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter || undefined,
     search: debouncedSearch || undefined,
@@ -64,43 +53,15 @@ export default function Transactions() {
   const hasMore = useMemo(() => data.length > displayCount, [data.length, displayCount])
   const filterCount = (catFilter ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
 
-  
-  // Brain hook — centralized add-transaction lifecycle manager.
-  const { onTransactionSaved, onTransactionConfirmed, onTransactionFailed } =
-    useGlobalTransactionMutation()
-
-  // Ref to always have latest data for delete lookups (avoids stale closures)
-  const dataRef = useRef(data)
-  dataRef.current = data
-
   const handleDelete = useCallback(async (id) => {
     if (!id) return
-
-    // Guard: never attempt to delete an item with a temporary optimistic ID.
-    if (isOptimisticId(id)) return
-
-    const txn = dataRef.current.find(t => t.id === id)
-    
-
     try {
       await deleteTransaction(id)
-      // Invalidate AFTER the delete — pruneOptimisticDeletes auto-cleans
-      // when the refetch returns rows without this ID (no removeOptimisticDelete
-      // here to avoid the "guard dropped before refetch lands" race).
-      if (txn?.date) {
-        const d = new Date(txn.date)
-        invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
-        invalidateCache(`year:${d.getFullYear()}`)
-      } else {
-        invalidateCache('month:')
-        invalidateCache('year:')
-      }
-      invalidateCache('txns:')
-      invalidateCache('balance:')
+      invalidateCache()
     } catch (e) {
-      
-      setToast(e.message || 'Could not delete transaction. Check your connection.')
+      setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)
+      throw e  // re-throw so TransactionItem resets its loading state
     }
   }, [])
   const handleTap = useCallback((t) => {
@@ -330,41 +291,6 @@ export default function Transactions() {
         onClose={() => { setShowAdd(false); setEditTxn(null); setDuplicateTxn(null) }}
         editTxn={editTxn}
         initialType={addType}
-        onSaved={(payload) => {
-          if (payload.id) {
-            // Edit existing transaction
-            pendingEditId.current = payload.id
-            
-            if (payload._original) {
-              
-            }
-          } else {
-            // New transaction — Brain broadcasts to all caches
-            onTransactionSaved(payload)
-            setDisplayCount(n => n + 1)
-          }
-        }}
-        onConfirmed={(serverTxn) => {
-          if (pendingEditId.current) {
-            
-            
-            pendingEditId.current = null
-          } else {
-            // New transaction — remove optimistic entry; refetch brings the real row
-            onTransactionConfirmed(serverTxn)
-          }
-        }}
-        onFailed={(msg) => {
-          if (pendingEditId.current) {
-            
-            
-            pendingEditId.current = null
-          } else {
-            onTransactionFailed()
-          }
-          setToast(msg)
-          setTimeout(() => setToast(null), 4000)
-        }}
       />
     </div>
   )

@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CreditCard, NotePencil } from '@phosphor-icons/react'
 import { ChevronRight } from 'lucide-react'
-import { addTransaction, updateTransaction, invalidateCache, applyOptimisticUpdate } from '../hooks/useTransactions'
+import { addTransaction, updateTransaction, invalidateCache } from '../hooks/useTransactions'
 import CategoryIcon from './CategoryIcon'
 import { CATEGORIES } from '../lib/categories'
 import { parseTransactionSmart } from '../lib/nlp'
@@ -151,7 +151,7 @@ function VehiclePicker({ selected, onSelect, onClose }) {
 
 // ── Main sheet ─────────────────────────────────────────────────────────────
 export default function AddTransactionSheet({
-  open, onClose, onSaved, onConfirmed, onFailed,
+  open, onClose,
   editTxn = null, duplicateTxn = null, initialType = 'expense',
 }) {
   const [type, setType] = useState('expense')
@@ -247,26 +247,17 @@ export default function AddTransactionSheet({
     }
 
     setIsSaving(true)
-    let serverTxn = null
+    setError('')
     try {
       if (editTxn) {
-        serverTxn = await updateTransaction(editTxn.id, payload)
-        if (onConfirmed) await onConfirmed(serverTxn)
-        const d = new Date(serverTxn?.date || payload.date)
-        invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
-        invalidateCache(`year:${d.getFullYear()}`)
+        await updateTransaction(editTxn.id, payload)
       } else {
-        serverTxn = await addTransaction(payload)
-        if (onConfirmed) await onConfirmed(serverTxn)
+        await addTransaction(payload)
       }
-      
-      // Pessimistic Invalidation (Ensures UI is mathematically flawless)
-      invalidateCache('balance:')
-      invalidateCache('txns:')
-      
+      invalidateCache()
       onClose()
     } catch (e) {
-      onFailed && onFailed(e.message || 'Could not save. Check your connection.')
+      setError(e.message || 'Could not save. Check your connection.')
     } finally {
       setIsSaving(false)
     }

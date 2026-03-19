@@ -1,4 +1,78 @@
-import { useState, useEffect, useCallback } from 'react'
+#!/usr/bin/env python3
+"""
+Complete pessimistic rewrite — removes all optimistic update logic,
+replaces with clean server-first + invalidate pattern.
+"""
+import os
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# ─── 1. useTransactions.js ────────────────────────────────────────────────
+def clean_use_transactions():
+    path = os.path.join(ROOT, 'src/hooks/useTransactions.js')
+    with open(path) as f:
+        content = f.read()
+
+    # Find where the mid-file `import { queryClient }` line is
+    marker = "import { queryClient } from '../lib/queryClient'"
+    idx = content.find(marker)
+    if idx == -1:
+        print("  ⚠ Could not find queryClient import marker")
+        return
+
+    before = content[:idx].rstrip() + '\n\n'
+
+    # Remove OPTIMISTIC_ID_PREFIX + isOptimisticId
+    before = before.replace(
+        "export const OPTIMISTIC_ID_PREFIX = '__optimistic__'\n\n"
+        "export function isOptimisticId(id) {\n"
+        "  return String(id).startsWith(OPTIMISTIC_ID_PREFIX)\n"
+        "}\n",
+        ""
+    )
+
+    # Add queryClient import at top (after supabase import)
+    before = before.replace(
+        "import { supabase } from '../lib/supabase'",
+        "import { supabase } from '../lib/supabase'\nimport { queryClient } from '../lib/queryClient'"
+    )
+
+    # Simplify useTransactions return — remove stub methods
+    old_return = (
+        "  return { \n"
+        "    data: data || [], \n"
+        "    loading: isLoading, \n"
+        "    error, \n"
+        "    refetch,\n"
+        "    // Stub these out or rely on the query layer\n"
+        "    applyLocalEdit: () => {},\n"
+        "    clearLocalEdit: () => {},\n"
+        "    revertLocalEdit: () => {}\n"
+        "  }"
+    )
+    new_return = "  return { data: data || [], loading: isLoading, error, refetch }"
+    before = before.replace(old_return, new_return)
+
+    new_end = (
+        "export function invalidateCache() {\n"
+        "  queryClient.invalidateQueries({ queryKey: ['transactions'] })\n"
+        "  queryClient.invalidateQueries({ queryKey: ['month'] })\n"
+        "  queryClient.invalidateQueries({ queryKey: ['year'] })\n"
+        "  queryClient.invalidateQueries({ queryKey: ['balance'] })\n"
+        "}\n"
+        "export const registerPrefetch = () => {}\n"
+        "export const prefetch = () => {}\n"
+    )
+
+    with open(path, 'w') as f:
+        f.write(before + new_end)
+    print("  ✓ useTransactions.js cleaned")
+
+
+# ─── 2. useLiabilities.js ─────────────────────────────────────────────────
+def clean_use_liabilities():
+    path = os.path.join(ROOT, 'src/hooks/useLiabilities.js')
+    new_content = r"""import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { invalidateCache as invalidateTxnCache } from './useTransactions'
 
@@ -156,3 +230,14 @@ export async function deleteLiability(id) {
   if (error) throw error
   invalidateCache()
 }
+"""
+    with open(path, 'w') as f:
+        f.write(new_content.lstrip())
+    print("  ✓ useLiabilities.js cleaned")
+
+
+if __name__ == '__main__':
+    print("Pessimistic cleanup — removing all optimistic code…")
+    clean_use_transactions()
+    clean_use_liabilities()
+    print("Done.")

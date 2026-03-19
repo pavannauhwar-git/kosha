@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Check, Repeat } from 'lucide-react'
-import { registerPrefetch } from '../hooks/useTransactions'
 import { useLiabilities, addLiability, markPaid, deleteLiability } from '../hooks/useLiabilities'
 import DeleteDialog from '../components/DeleteDialog'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
@@ -31,6 +30,7 @@ export default function Bills() {
   })
   const [formErr, setFormErr] = useState('')
   const [errToast, setErrToast] = useState(null)
+  const [addSaving, setAddSaving] = useState(false)
 
   const totalPending = useMemo(() => pending.reduce((s, b) => s + +b.amount, 0), [pending])
   const dueSoonAmount = useMemo(() => pending
@@ -53,17 +53,18 @@ export default function Bills() {
       paid: false,
     }
 
-    // Close sheet and reset form immediately so the optimistic update in
-    // addLiability() is the first thing the user sees — no waiting for Supabase.
     setFormErr('')
-    setShowAdd(false)
-    setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
+    setAddSaving(true)
 
     try {
       await addLiability(billData)
+      setShowAdd(false)
+      setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
     } catch (e) {
       setErrToast(e.message || 'Could not add bill. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)
+    } finally {
+      setAddSaving(false)
     }
   }
 
@@ -348,9 +349,10 @@ export default function Bills() {
                 {formErr && <p className="text-expense-text text-sm mb-3">{formErr}</p>}
 
                 <button onClick={handleAdd}
-                  className="w-full py-4 rounded-card bg-warning text-white font-semibold
-                             active:scale-[0.98] transition-all">
-                  Add Bill
+                  disabled={addSaving}
+                  className={`w-full py-4 rounded-card font-semibold transition-all
+                             ${addSaving ? 'bg-warning/70 text-white/90 scale-[0.98]' : 'bg-warning text-white active:scale-[0.98]'}`}>
+                  {addSaving ? 'Adding…' : 'Add Bill'}
                 </button>
               </div>
             </motion.div>

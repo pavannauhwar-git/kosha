@@ -1,15 +1,13 @@
 import { memo, useState } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { Trash, CopySimple } from '@phosphor-icons/react'
+import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
 import CategoryIcon from './CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../lib/utils'
 import { getCategory } from '../lib/categories'
 
 // ── Thresholds ────────────────────────────────────────────────────────────
 // PEEK   — row snaps here after a light swipe, revealing both action buttons
-// COMMIT — dragging past this auto-triggers delete (power-user shortcut)
 const PEEK_X   = 140   // px — both buttons fully visible at this offset
-const COMMIT_X = 260   // px — full drag auto-deletes, no tap needed
 
 const MODE_LABEL = {
   upi:         'UPI',
@@ -46,7 +44,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
   }
 
-  async function handleDragEnd(_, info) {
+  function handleDragEnd(_, info) {
     const ox = info.offset.x
 
     if (ox > 0) {
@@ -55,13 +53,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
       return
     }
 
-    if (ox < -COMMIT_X) {
-      // Full drag past commit threshold — auto delete
-      await animate(x, -500, { duration: 0.22 })
-      setDeleting(true)
-      if (navigator.vibrate) navigator.vibrate([10, 20, 10])
-      onDelete && onDelete(txn.id)
-    } else if (ox < -PEEK_X * 0.5) {
+    if (ox < -PEEK_X * 0.5) {
       // Past halfway to peek — snap to peek, show buttons
       snapToPeek()
     } else {
@@ -71,11 +63,18 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
   }
 
   // ── Action button handlers ────────────────────────────────────────────
-  function handleDeleteTap() {
+  async function handleDeleteTap() {
     setDeleting(true)
-    animate(x, -500, { duration: 0.2 })
+    animate(x, 0, { duration: 0.2 })
     if (navigator.vibrate) navigator.vibrate(10)
-    setTimeout(() => onDelete && onDelete(txn.id), 200)
+    
+    if (onDelete) {
+      try {
+        await onDelete(txn.id)
+      } catch (err) {
+        setDeleting(false)
+      }
+    }
   }
 
   function handleDuplicateTap() {
@@ -96,7 +95,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     onTap && onTap(txn)
   }
 
-  if (deleting) return null
+  // No early return, we show an inline loading state
 
   return (
     <div className="relative overflow-hidden bg-kosha-surface">
@@ -134,7 +133,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         className="list-row active:bg-kosha-surface-2"
         style={{ x }}
         drag="x"
-        dragConstraints={{ left: -COMMIT_X * 1.1, right: 0 }}
+        dragConstraints={{ left: -PEEK_X * 1.5, right: 0 }}
         dragElastic={{ left: 0.12, right: 0.02 }}
         onDragEnd={handleDragEnd}
         onClick={handleTap}
@@ -177,6 +176,12 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           {prefix}{fmt(txn.amount)}
         </span>
       </motion.div>
+
+      {deleting && (
+        <div className="absolute inset-0 bg-kosha-surface/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+          <CircleNotch size={24} className="animate-spin" weight="bold" style={{ color: 'var(--c-brand)' }} />
+        </div>
+      )}
 
       {!isLast && (
         <div className="absolute bottom-0 left-[60px] right-0 h-[0.5px] bg-kosha-border" />
