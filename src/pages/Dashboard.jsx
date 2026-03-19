@@ -191,7 +191,7 @@ export default function Dashboard() {
 
         {/* ── Pulse strip ───────────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="overflow-x-auto -mx-4 px-4">
-          <div className="flex gap-2 pb-1 w-max pr-4">
+          <div className="flex gap-2 w-max pr-4">
             {/* Today */}
             <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface border border-kosha-border">
               <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">Today</p>
