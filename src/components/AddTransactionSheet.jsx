@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CreditCard, NotePencil } from '@phosphor-icons/react'
 import { ChevronRight } from 'lucide-react'
-import { addTransaction, updateTransaction, invalidateCache } from '../hooks/useTransactions'
+import { addTransaction, updateTransaction, invalidateCache, applyOptimisticUpdate } from '../hooks/useTransactions'
 import CategoryIcon from './CategoryIcon'
 import { CATEGORIES } from '../lib/categories'
 
@@ -229,10 +229,15 @@ export default function AddTransactionSheet({
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
     }
 
-    onClose()
+    const tempId = `__optimistic__${Date.now()}`
     const enriched = editTxn
       ? { ...payload, id: editTxn.id, _original: editTxn }
-      : payload
+      : { ...payload, id: tempId, created_at: new Date().toISOString() }
+
+    applyOptimisticUpdate(enriched.id, enriched)
+
+    onClose()
+    
     onSaved && onSaved(enriched)
 
     let serverTxn = null

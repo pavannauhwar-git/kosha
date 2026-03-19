@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useTransactions, deleteTransaction, useDebounce, isOptimisticId, invalidateCache } from '../hooks/useTransactions'
+import { useTransactions, deleteTransaction, useDebounce, isOptimisticId, invalidateCache, applyOptimisticUpdate } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
@@ -83,6 +83,7 @@ export default function Transactions() {
     
 
     try {
+      applyOptimisticUpdate(id, null)
       await deleteTransaction(id)
       // Invalidate AFTER the delete — pruneOptimisticDeletes auto-cleans
       // when the refetch returns rows without this ID (no removeOptimisticDelete

@@ -203,6 +203,20 @@ export async function deleteTransaction(id) {
 
 import { queryClient } from '../lib/queryClient'
 
+export function applyOptimisticUpdate(id, payload) {
+  queryClient.setQueriesData({ queryKey: ['transactions'] }, (old) => {
+    if (!Array.isArray(old)) return old
+    if (payload === null) {
+      return old.filter(t => t.id !== id)
+    }
+    const exists = old.some(t => t.id === id)
+    if (exists) {
+      return old.map(t => t.id === id ? { ...t, ...payload } : t).sort((a,b) => new Date(b.date) - new Date(a.date))
+    }
+    return [{ id, ...payload }, ...old].sort((a,b) => new Date(b.date) - new Date(a.date))
+  })
+}
+
 export const invalidateCache = (pattern) => {
   if (!pattern) return
   if (pattern.startsWith('txns:')) queryClient.invalidateQueries({ queryKey: ['transactions'] })
