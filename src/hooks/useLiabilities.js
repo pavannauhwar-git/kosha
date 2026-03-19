@@ -12,7 +12,7 @@ async function getCurrentUserId() {
 }
 
 function invalidateCache() {
-  queryClient.invalidateQueries({ queryKey: ['liabilities'] })
+  return queryClient.invalidateQueries({ queryKey: ['liabilities'] })
 }
 
 // ── useLiabilities ────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ export async function addLiability(payload) {
     .select('id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
     .single()
   if (error) throw error
-  invalidateCache()
+  await invalidateCache()
   return data
 }
 
@@ -94,12 +94,11 @@ export async function markPaid(liability) {
   }
 
   // Invalidate both caches — UI refreshes with server truth
-  invalidateCache()
-  invalidateTxnCache()
+  await Promise.all([invalidateCache(), invalidateTxnCache()])
 }
 
 export async function deleteLiability(id) {
   const { error } = await supabase.from('liabilities').delete().eq('id', id)
   if (error) throw error
-  invalidateCache()
+  await invalidateCache()
 }
