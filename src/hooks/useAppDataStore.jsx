@@ -53,6 +53,8 @@ export function AppDataProvider({ children }) {
     if (!Array.isArray(serverRows) || serverRows.length === 0) return
 
     const serverIds = new Set(serverRows.map(r => r.id))
+    const isTempOptimisticId = (id) =>
+      typeof id === 'string' && id.startsWith('__optimistic__')
     const normDesc = (s) => String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
     const keyOf = (t) => [
       t.date,
@@ -68,6 +70,12 @@ export function AppDataProvider({ children }) {
     const serverKeys = new Set(serverRows.map(keyOf))
     setOptimisticTxns(prev => prev.filter(t => {
       const id = t._id || t.id
+      // Once a create is confirmed and we have the server UUID, only prune by ID.
+      // Pruning resolved rows by content key can drop a just-added row if a stale
+      // fetch contains an older transaction with the same fields.
+      if (!isTempOptimisticId(id)) {
+        return !(id && serverIds.has(id))
+      }
       if (id && serverIds.has(id)) return false
       return !serverKeys.has(keyOf(t))
     }))

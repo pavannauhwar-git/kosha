@@ -11,6 +11,8 @@ const CACHE_KEY = 'liabilities'
 export const LIABILITIES_INVALIDATION_EVENT = 'kosha:liabilities:invalidated'
 const subscribers = new Set()
 let optimisticCounter = 0
+const OPTIMISTIC_LIABILITY_PREFIX = '__optimistic_liability__'
+const optimisticLiabilityAdds = new Map()
 let activeFetchController = null
 let latestFetchToken = 0
 
@@ -43,6 +45,36 @@ function compareDueDate(a, b) {
   return left.localeCompare(right)
 }
 
+function isOptimisticLiabilityId(id) {
+  return typeof id === 'string' && id.startsWith(OPTIMISTIC_LIABILITY_PREFIX)
+}
+
+function normalizeDateKey(dateValue) {
+  if (!dateValue) return ''
+  // Keep only calendar date so client payloads ('YYYY-MM-DD') and potential
+  // server ISO values ('YYYY-MM-DDTHH:mm:ss...') reconcile consistently.
+  return String(dateValue).slice(0, 10)
+}
+
+function keyOfLiability(row) {
+  return [
+    String(row?.description || '').trim().toLowerCase().replace(/\s+/g, ' '),
+    Number(row?.amount) || 0,
+    normalizeDateKey(row?.due_date),
+    Boolean(row?.is_recurring),
+    row?.recurrence || '',
+    Boolean(row?.paid),
+  ].join('|')
+}
+
+function mergeRowsWithOptimisticAdds(rows = []) {
+  const merged = new Map((rows || []).map((row) => [row.id, row]))
+  optimisticLiabilityAdds.forEach((row, id) => {
+    if (!merged.has(id)) merged.set(id, row)
+  })
+  return Array.from(merged.values()).sort(compareDueDate)
+}
+
 function subscribe(listener) {
   subscribers.add(listener)
   return () => subscribers.delete(listener)
@@ -53,8 +85,9 @@ function notify(rows) {
 }
 
 function setCachedAndNotify(rows) {
-  setCached(rows)
-  notify(rows)
+  const merged = mergeRowsWithOptimisticAdds(rows)
+  setCached(merged)
+  notify(merged)
 }
 
 function cancelLiabilitiesFetches() {
@@ -122,9 +155,46 @@ export function useLiabilities() {
         .abortSignal(controller.signal)
 
       if (rows && token === latestFetchToken) {
-        setCachedAndNotify(rows)
-        setPending(rows.filter(r => !r.paid))
-        setPaid(rows.filter(r => r.paid))
+        const serverRows = rows || []
+        const serverIds = new Set(serverRows.map((r) => r.id))
+        const unresolvedByKey = new Map()
+        optimisticLiabilityAdds.forEach((optimisticRow, optimisticId) => {
+          if (!isOptimisticLiabilityId(optimisticId)) return
+          const k = keyOfLiability(optimisticRow)
+          if (!unresolvedByKey.has(k)) unresolvedByKey.set(k, [])
+          unresolvedByKey.get(k).push({ optimisticRow, optimisticId })
+        })
+
+        const unresolvedCountByKey = new Map(
+          Array.from(unresolvedByKey.entries()).map(([k, arr]) => [k, arr.length])
+        )
+
+        optimisticLiabilityAdds.forEach((optimisticRow, optimisticId) => {
+          if (serverIds.has(optimisticId)) {
+            optimisticLiabilityAdds.delete(optimisticId)
+          }
+        })
+
+        // Reconcile unresolved temporary rows (e.g. timeout case) with
+        // unmatched server rows by semantic content and count. This avoids
+        // collapsing multiple concurrent identical creates into a single row.
+        serverRows.forEach((serverRow) => {
+          const key = keyOfLiability(serverRow)
+          const remaining = unresolvedCountByKey.get(key) || 0
+          if (remaining <= 0) return
+          const queue = unresolvedByKey.get(key)
+          const next = queue?.shift()
+          if (!next) return
+          unresolvedCountByKey.set(key, remaining - 1)
+          optimisticLiabilityAdds.delete(next.optimisticId)
+          optimisticLiabilityAdds.set(serverRow.id, serverRow)
+        })
+
+        const mergedRows = mergeRowsWithOptimisticAdds(serverRows)
+        setCached(mergedRows)
+        notify(mergedRows)
+        setPending(mergedRows.filter(r => !r.paid))
+        setPaid(mergedRows.filter(r => r.paid))
       }
     } catch (error) {
       if (error?.name === 'AbortError') return
@@ -171,12 +241,13 @@ export function useLiabilities() {
 export async function addLiability(payload) {
   cancelLiabilitiesFetches()
   const previousRows = [...(getCached()?.rows || [])]
-  const optimisticId = globalThis.crypto?.randomUUID?.() || `temp-${Date.now()}-${++optimisticCounter}`
+  const optimisticId = `${OPTIMISTIC_LIABILITY_PREFIX}${Date.now()}-${++optimisticCounter}`
   const optimistic = {
     id: optimisticId,
     ...payload,
     linked_transaction_id: null,
   }
+  optimisticLiabilityAdds.set(optimisticId, optimistic)
   setCachedAndNotify([...previousRows, optimistic].sort(compareDueDate))
 
   try {
@@ -189,6 +260,11 @@ export async function addLiability(payload) {
         .single()
     )
     if (error) throw error
+    optimisticLiabilityAdds.delete(optimistic.id)
+    if (data?.id) {
+      // Keep the confirmed server row overlaid until canonical fetch includes it.
+      optimisticLiabilityAdds.set(data.id, data)
+    }
     let replaced = false
     const withServerRow = (getCached()?.rows || [])
       .map((row) => {
@@ -208,6 +284,7 @@ export async function addLiability(payload) {
       // Don't rollback — the insert may have succeeded on the server.
       // The finally block's invalidateCache() will trigger a reconciling refetch.
     } else {
+      optimisticLiabilityAdds.delete(optimistic.id)
       setCachedAndNotify(previousRows)
     }
     throw error
