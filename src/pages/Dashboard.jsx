@@ -222,7 +222,7 @@ export default function Dashboard() {
         {/* ── Monthly Pace card ─────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="card p-4">
           {/* Header row */}
-          <div className="mb-4">
+          <div className="mb-3">
             <p className={`text-[15px] font-bold leading-snug ${
               paceOk ? 'text-income-text' : 'text-expense-text'
             }`}>  
