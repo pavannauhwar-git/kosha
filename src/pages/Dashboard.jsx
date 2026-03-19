@@ -7,8 +7,10 @@ import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import TransactionItem from '../components/TransactionItem'
+import CategoryIcon from '../components/CategoryIcon'
 import { fmt, monthStr, savingsRate, daysUntil } from '../lib/utils'
 import { C } from '../lib/colors'
+import { getCategory } from '../lib/categories'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
 
 const fadeUp = {
@@ -93,6 +95,19 @@ export default function Dashboard() {
     if (rate >= 25)                return `Saving ${rate}% of income · outstanding month 🎯`
     return `Saving ${rate}% this month · right on track 👍`
   }, [earned, spent, dayOfMonth, daysInMonth, rate, dueSoon, investDiff])
+
+  // Top spending category this month (computed from recent transactions)
+  const topCategory = useMemo(() => {
+    const expenseTxns = (recent || []).filter(t => t.type === 'expense')
+    const catMap = {}
+    for (const t of expenseTxns) {
+      catMap[t.category] = (catMap[t.category] || 0) + +t.amount
+    }
+    const sorted = Object.entries(catMap).sort(([, a], [, b]) => b - a)
+    if (!sorted.length) return null
+    const [cat, amt] = sorted[0]
+    return { cat, amt, pct: spent > 0 ? Math.round((amt / spent) * 100) : 0 }
+  }, [recent, spent])
 
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
@@ -197,7 +212,7 @@ export default function Dashboard() {
 
         {/* ── Pulse strip ───────────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="overflow-x-auto -mx-4 px-4">
-          <div className="flex gap-2 pb-1">
+          <div className="flex gap-2 pb-1 w-max pr-4">
             {/* Today */}
             <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface border border-kosha-border">
               <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">Today</p>
@@ -205,15 +220,6 @@ export default function Dashboard() {
                 todaySpend > 0 ? 'text-expense-text' : 'text-income-text'
               }`}>
                 {todaySpend > 0 ? fmt(todaySpend, true) : 'All clear 🌿'}
-              </p>
-            </div>
-            {/* Monthly pace */}
-            <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface border border-kosha-border">
-              <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">Monthly pace</p>
-              <p className={`text-[13px] font-bold leading-none ${
-                paceOk ? 'text-income-text' : 'text-expense-text'
-              }`}>
-                {paceOk ? 'On track ✓' : 'Running hot'}
               </p>
             </div>
             {/* Bills due — only if any exist */}
@@ -226,12 +232,101 @@ export default function Dashboard() {
                 <p className="text-[13px] font-bold text-repay-text tabular-nums leading-none">{fmt(totalBillsAmt, true)}</p>
               </button>
             )}
-            {/* Contextual insight */}
-            <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface-2 border border-kosha-border min-w-[165px] max-w-[240px]">
+            {/* Contextual insight — fixed width so it never squishes */}
+            <div className="shrink-0 w-[175px] flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface-2 border border-kosha-border">
               <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">Insight</p>
               <p className="text-[12px] font-medium text-ink leading-snug">{insight}</p>
             </div>
           </div>
+        </motion.div>
+
+        {/* ── Monthly Pace card ─────────────────────────────────────────── */}
+        <motion.div variants={fadeUp} className="card p-4">
+          {/* Header row: status + savings ring */}
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <p className={`text-[15px] font-bold leading-snug ${
+                paceOk ? 'text-income-text' : 'text-expense-text'
+              }`}>
+                {paceOk ? '✓ On track' : '⚡ Running hot'}
+              </p>
+              <p className="text-caption text-ink-3">Day {dayOfMonth} of {daysInMonth}</p>
+            </div>
+            {/* Savings rate ring */}
+            <div className="relative w-[64px] h-[64px] shrink-0">
+              {(() => {
+                const R = 26
+                const circ = 2 * Math.PI * R
+                const fill = Math.min(rate, 100) / 100 * circ
+                return (
+                  <svg width="64" height="64" viewBox="0 0 64 64" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="32" cy="32" r={R} fill="none" stroke="#EDE9FF" strokeWidth="7" />
+                    <circle cx="32" cy="32" r={R} fill="none" stroke={C.brand} strokeWidth="7"
+                      strokeDasharray={`${fill} ${circ}`} strokeLinecap="round" />
+                  </svg>
+                )
+              })()}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[12px] font-bold text-ink leading-none">{rate}%</span>
+                <span className="text-[9px] text-ink-3 mt-0.5">saved</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress bars */}
+          <div className="space-y-3 mb-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-caption text-ink-3">Month elapsed</span>
+                <span className="text-caption font-semibold text-ink">{Math.round(dayOfMonth / daysInMonth * 100)}%</span>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FF' }}>
+                <motion.div className="h-full rounded-full bg-income"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${dayOfMonth / daysInMonth * 100}%` }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-caption text-ink-3">Amount spent</span>
+                <span className={`text-caption font-semibold ${
+                  paceOk ? 'text-ink' : 'text-expense-text'
+                }`}>
+                  {earned > 0 ? Math.round(spent / earned * 100) : 0}%
+                </span>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FF' }}>
+                <motion.div className="h-full rounded-full bg-expense"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${earned > 0 ? Math.min(spent / earned * 100, 100) : 0}%` }}
+                  transition={{ duration: 0.6, delay: 0.08, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Top spend category */}
+          {topCategory && (
+            <>
+              <div className="border-t border-kosha-border mb-3" />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: getCategory(topCategory.cat).bg }}>
+                  <CategoryIcon categoryId={topCategory.cat} size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-ink-3 font-medium">Top spend</p>
+                  <p className="text-[14px] font-bold text-ink truncate">{getCategory(topCategory.cat).label}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[14px] font-bold text-expense-text tabular-nums">{fmt(topCategory.amt)}</p>
+                  <p className="text-[11px] text-ink-3">{topCategory.pct}% of spend</p>
+                </div>
+              </div>
+            </>
+          )}
         </motion.div>
 
         {/* ── Quick-action strip ────────────────────────────────────────── */}
