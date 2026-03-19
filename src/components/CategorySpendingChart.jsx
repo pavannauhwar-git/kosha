@@ -3,31 +3,21 @@ import { fmt } from '../lib/utils'
 import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
 
-function SvgArcBar({ pct, color, overBudget = false, pacePct = null }) {
-  const W = 100
-  const H = 8
-  const R = H / 2
-  const max = W - R * 2
-  const fill = Math.max(0, Math.min(pct, 100)) / 100 * max
+function CategoryLine({ pct, color, overBudget = false }) {
+  const fillPct = Math.max(0, Math.min(pct, 100))
   const barColor = overBudget ? C.expense : color
-  
-  // Pace indicator position
-  let paceMarker = null;
-  if (pacePct !== null) {
-     const pacePos = Math.max(0, Math.min(pacePct, 100)) / 100 * max;
-     paceMarker = <line x1={R + pacePos} y1={0} x2={R + pacePos} y2={H} stroke={C.ink} strokeWidth={2.5} strokeLinecap="round" />
-  }
 
   return (
-    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{overflow: 'visible'}}>
-      <line x1={R} y1={R} x2={W - R} y2={R}
-        stroke={C.brandBorder} strokeWidth={H} strokeLinecap="round" />
-      {fill > 0 && (
-        <line x1={R} y1={R} x2={R + fill} y2={R}
-          stroke={barColor} strokeWidth={H} strokeLinecap="round" />
-      )}
-      {paceMarker}
-    </svg>
+    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FF' }}>
+      <div
+        className="h-full rounded-full"
+        style={{
+          width: `${fillPct}%`,
+          background: barColor,
+          transition: 'width 300ms ease-out',
+        }}
+      />
+    </div>
   )
 }
 
@@ -41,12 +31,6 @@ export default function CategorySpendingChart({
   month,
   year,
 }) {
-
-  const now = new Date()
-  const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear()
-  const daysInMonth = isCurrentMonth ? new Date(year, month, 0).getDate() : 30
-  const pacePct = isCurrentMonth ? Math.round((now.getDate() / daysInMonth) * 100) : null
-
   if (!entries.length) return null
 
   return (
@@ -100,7 +84,7 @@ export default function CategorySpendingChart({
                   )}
                 </div>
 
-                <SvgArcBar
+                <CategoryLine
                   pct={barPct}
                   color={cat?.color || C.income}
                   overBudget={overBudget}

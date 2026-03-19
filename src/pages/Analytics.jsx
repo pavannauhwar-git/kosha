@@ -331,7 +331,6 @@ function PortfolioAllocation({ vehicleData }) {
   const CX   = SIZE / 2
   const CY   = SIZE / 2
   const CIRC = 2 * Math.PI * R
-  const GAP  = 16
 
   const segs = vehicleData
     .map(([name, value], i) => ({
@@ -353,12 +352,12 @@ function PortfolioAllocation({ vehicleData }) {
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
             <circle cx={CX} cy={CY} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
             {segs.map((seg, i) => {
-              const dashLen       = Math.max(0, (seg.pct / 100) * CIRC - (GAP / 360) * CIRC)
+              const dashLen       = Math.max(0, (seg.pct / 100) * CIRC)
               const currentOffset = offset
               offset += seg.pct
               return (
                 <circle key={i} cx={CX} cy={CY} r={R}
-                  fill="none" stroke={seg.color} strokeWidth={SW} strokeLinecap="round"
+                  fill="none" stroke={seg.color} strokeWidth={SW} strokeLinecap="butt"
                   strokeDasharray={`${dashLen} ${CIRC}`}
                   strokeDashoffset={-currentOffset * CIRC / 100}
                   transform={`rotate(-90 ${CX} ${CY})`}
