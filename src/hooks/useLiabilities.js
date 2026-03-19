@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { invalidateCache as invalidateTxnCache } from './useTransactions'
+import { invalidateCache as invalidateTxnCache, applyOptimisticUpdate } from './useTransactions'
 
 // ── Cache — same stale-while-revalidate pattern as useTransactions ────────
 // Bills data changes rarely (a few times a day at most), so 90s TTL is fine.
@@ -319,19 +319,34 @@ export async function markPaid(liability) {
     .sort(compareDueDate)
   setCachedAndNotify(optimisticRows)
 
+  const optimisticTxnId = `__optimistic_bill_${Date.now()}`
+  const optimisticTxnPayload = {
+    id: optimisticTxnId,
+    date: new Date().toISOString().slice(0, 10),
+    type: 'expense',
+    description: liability.description,
+    amount: liability.amount,
+    category: 'bills',
+    is_repayment: false,
+    payment_mode: 'other',
+    notes: `Auto-created from bill: ${liability.description}`,
+    created_at: new Date().toISOString(),
+  }
+  applyOptimisticUpdate(optimisticTxnId, optimisticTxnPayload)
+
   try {
     const user_id = await getCurrentUserId()
 
     // 1. Insert an expense transaction linked to this bill
     const txnPayload = {
-      date:         new Date().toISOString().slice(0, 10),
+      date:         optimisticTxnPayload.date,
       type:         'expense',
       description:  liability.description,
       amount:       liability.amount,
       category:     'bills',
       is_repayment: false,
       payment_mode: 'other',
-      notes:        `Auto-created from bill: ${liability.description}`,
+      notes:        optimisticTxnPayload.notes,
       user_id,
     }
     const { data: txn, error: txnErr } = await withTimeout(

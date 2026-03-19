@@ -284,20 +284,7 @@ export default function Dashboard() {
         </motion.div>
 
         
-        {/* ── Search Pill ───────────────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="relative">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <Search size={18} className="text-ink-4" />
-          </div>
-          <input 
-            type="text" 
-            placeholder="Search transactions..."
-            onClick={() => navigate('/transactions')}
-            className="w-full bg-surface-2 text-ink rounded-full py-3.5 pl-12 pr-4 shadow-sm border border-kosha-border focus:outline-none focus:ring-2 focus:ring-brand/50 transition-shadow"
-          />
-        </motion.div>
-
-{/* ── Hero card ─────────────────────────────────────────────────── */}
+        {/* ── Hero card ─────────────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <p className="text-caption font-bold tracking-widest uppercase"
@@ -327,16 +314,16 @@ export default function Dashboard() {
             </span>
           </div>
           <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-1.5 sm:gap-2">
             {[
               { label: 'Earned', val: earned },
               { label: 'Spent', val: spent },
               { label: 'Invested', val: invested },
             ].map(s => (
-              <div key={s.label} className="px-3 py-2.5 rounded-2xl"
+              <div key={s.label} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl"
                 style={{ background: C.heroStatBg }}>
-                <p className="text-caption mb-0.5" style={{ color: C.heroLabel }}>{s.label}</p>
-                <p className="text-label font-bold text-white tabular-nums">{fmt(s.val)}</p>
+                <p className="text-[11px] sm:text-caption mb-0.5 truncate" style={{ color: C.heroLabel }}>{s.label}</p>
+                <p className="text-[12px] sm:text-label font-bold text-white tabular-nums truncate">{fmt(s.val)}</p>
               </div>
             ))}
           </div>

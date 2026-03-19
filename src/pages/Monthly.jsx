@@ -144,16 +144,16 @@ function MonthHeroCard({ month, year }) {
 
       <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
 
-      <div className="flex justify-between mb-5">
+      <div className="flex justify-between gap-1.5 sm:gap-2 mb-5">
         {[
           { label: 'Earned',   val: earned   },
           { label: 'Spent',    val: spent    },
           { label: 'Invested', val: invested },
         ].map(s => (
-          <div key={s.label} className="px-3 py-2.5 rounded-2xl"
+          <div key={s.label} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl"
                style={{ background: C.heroStatBg }}>
-            <p className="text-caption mb-0.5" style={{ color: C.heroLabel }}>{s.label}</p>
-            <p className="text-label font-bold text-white tabular-nums">{fmt(s.val)}</p>
+            <p className="text-[11px] sm:text-caption mb-0.5 truncate" style={{ color: C.heroLabel }}>{s.label}</p>
+            <p className="text-[12px] sm:text-label font-bold text-white tabular-nums truncate">{fmt(s.val)}</p>
           </div>
         ))}
       </div>
