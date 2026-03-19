@@ -238,10 +238,11 @@ export default function AddTransactionSheet({
     let serverTxn = null
     try {
       if (editTxn) {
-        await updateTransaction(editTxn.id, payload)
+        serverTxn = await updateTransaction(editTxn.id, payload)
         if (onConfirmed) await onConfirmed(serverTxn)
         // Invalidate caches after edit is confirmed — caller's optimistic edit guard is down
-        const d = new Date(payload.date)
+        const editDate = serverTxn?.date || payload.date
+        const d = new Date(editDate)
         invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
         invalidateCache(`balance:`)
         invalidateCache(`txns:`)
