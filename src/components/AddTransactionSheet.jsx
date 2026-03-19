@@ -5,6 +5,8 @@ import { ChevronRight } from 'lucide-react'
 import { addTransaction, updateTransaction, invalidateCache, applyOptimisticUpdate } from '../hooks/useTransactions'
 import CategoryIcon from './CategoryIcon'
 import { CATEGORIES } from '../lib/categories'
+import { parseTransactionSmart } from '../lib/nlp'
+import { Sparkle } from '@phosphor-icons/react'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function todayStr() {
@@ -162,6 +164,8 @@ export default function AddTransactionSheet({
   const [notes, setNotes] = useState('')
   const [showNotes, setShowNotes] = useState(false)
   const [error, setError] = useState('')
+  const [smartMode, setSmartMode] = useState(false)
+  const [smartText, setSmartText] = useState('')
 
   const [showCatPicker, setShowCatPicker] = useState(false)
   const [showModePicker, setShowModePicker] = useState(false)
@@ -175,6 +179,17 @@ export default function AddTransactionSheet({
   // default state), this runs synchronously DURING render so the very first
   // frame already shows the correct edit/duplicate/add form.
   const [prevInitSource, setPrevInitSource] = useState(null)
+
+  
+  const handleSmartTextChange = (val) => {
+    setSmartText(val)
+    const { amount: a, desc: d, category: c, mode: m, type: t } = parseTransactionSmart(val)
+    if (a) setAmount(a)
+    if (d) setDesc(d)
+    if (c) setCategory(c)
+    if (m) setMode(m)
+    // could set t but maybe not override type if they already picked it
+  }
 
   const initSource = editTxn?.id
     ? `edit-${editTxn.id}`
@@ -298,10 +313,32 @@ export default function AddTransactionSheet({
                 <h2 className="text-[20px] font-bold text-ink">
                   {editTxn ? 'Edit Transaction' : 'Add Transaction'}
                 </h2>
-                <button onClick={onClose} className="close-btn">
-                  <X size={16} className="text-ink-3" />
-                </button>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setSmartMode(!smartMode)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${smartMode ? 'bg-brand text-white shadow-sm' : 'bg-surface text-ink-3'}`}>
+                    <Sparkle size={14} weight={smartMode ? 'fill' : 'regular'} />
+                    Smart Entry
+                  </button>
+                  <button onClick={onClose} className="close-btn">
+                    <X size={16} className="text-ink-3" />
+                  </button>
+                </div>
               </div>
+
+              
+              {/* Smart Input Mode */}
+              <AnimatePresence>
+                {smartMode && (
+                  <motion.div initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} className="overflow-hidden">
+                    <textarea 
+                      placeholder="e.g. Paid 400 for lunch using UPI..."
+                      value={smartText}
+                      onChange={e => handleSmartTextChange(e.target.value)}
+                      className="w-full bg-brand/5 border border-brand/20 text-brand font-medium rounded-2xl p-4 min-h-[100px] outline-none focus:ring-2 ring-brand/50 resize-none shadow-inner"
+                    />
+                    <p className="text-[11px] text-ink-4 mt-2 px-2 flex items-center gap-1"><Sparkle size={12} /> Auto-fills amount, description, category, and mode.</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Type selector */}
               <div className="flex gap-2 mb-5">
