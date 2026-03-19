@@ -88,6 +88,7 @@ export function useMonthSummary(year, month) {
 
       return {
         earned, repayments, expense, investment, byCategory, byVehicle,
+        balance: earned + repayments - expense - investment,
         count: safeRows.length
       }
     }
