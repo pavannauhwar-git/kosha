@@ -61,14 +61,15 @@ export function useGlobalTransactionMutation({ prependOptimistic, replaceOptimis
   }, [addOptimisticTxn, prependOptimistic])
 
   /**
-   * Phase 2 — UUID Swap  +  Phase 3 — Background Sync.
+   * Phase 2 — UUID Swap.
    * Call this from AddTransactionSheet.onConfirmed once Supabase responds.
    *
    * Swaps the fake __optimistic__ ID with the real UUID so subsequent
    * deletes/edits always reference a real database row and never crash.
    *
-   * Then invalidates all related cache buckets so every mounted hook
-   * silently re-fetches and converges with the authoritative server state.
+   * Phase 3 (Background Sync) is handled entirely by the CRUD functions
+   * (addTransaction / updateTransaction) which call invalidateCache()
+   * internally. No duplicate invalidation is needed here.
    */
   const onTransactionConfirmed = useCallback((serverTxn) => {
     if (pendingOptimisticId.current) {
@@ -80,18 +81,6 @@ export function useGlobalTransactionMutation({ prependOptimistic, replaceOptimis
       }
       pendingOptimisticId.current = null
     }
-
-    // Phase 3 — Background sync: invalidate all related cache buckets so every
-    // hook silently re-fetches and converges with the authoritative server state.
-    // addTransaction() already called invalidateCache() internally, but we
-    // repeat it here in the settled position to guarantee a final sweep.
-    if (serverTxn?.date) {
-      const d = new Date(serverTxn.date)
-      invalidateCache(`month:${d.getFullYear()}:${d.getMonth() + 1}`)
-      invalidateCache(`year:${d.getFullYear()}`)
-    }
-    invalidateCache('txns:')
-    invalidateCache('balance:')
   }, [replaceOptimistic, resolveOptimisticTxn])
 
   /**

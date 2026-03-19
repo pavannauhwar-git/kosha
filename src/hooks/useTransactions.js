@@ -76,18 +76,28 @@ function isFresh(entry, key) {
 const CACHE_INVALIDATION_EVENT = 'kosha:cache:invalidated'
 
 export function invalidateCache(pattern) {
-  // If pattern provided, only clear matching keys — otherwise clear all Kosha cache
+  // Mark matching cache entries as stale (ts=0) instead of deleting them.
+  // This preserves the stale-while-revalidate pattern: hooks can still serve
+  // the existing cached data instantly (avoiding a loading-skeleton flash)
+  // while the background refetch brings in fresh data.
   try {
     const keys = Object.keys(localStorage)
     keys.forEach(k => {
       if (!k.startsWith(CACHE_PREFIX)) return
       const suffix = k.slice(CACHE_PREFIX.length)
       if (!pattern || suffix.startsWith(pattern)) {
-        localStorage.removeItem(k)
+        const raw = localStorage.getItem(k)
+        if (raw) {
+          try {
+            const entry = JSON.parse(raw)
+            entry.ts = 0
+            localStorage.setItem(k, JSON.stringify(entry))
+          } catch { /* corrupt entry — remove it */ localStorage.removeItem(k) }
+        }
       }
     })
   } catch { /* ignore */ }
-  // Notify all mounted hook instances that their cache may have been cleared.
+  // Notify all mounted hook instances that their cache is stale.
   // This ensures cross-page consistency: hooks on background pages immediately
   // refetch rather than waiting until they are navigated-to again.
   try {
@@ -385,7 +395,10 @@ export function useMonthSummary(year, month) {
 
   const { optimisticTxns, optimisticDeletedTxns, optimisticEdits } = useAppData()
 
+  const fetchVersionRef = useRef(0)
+
   const fetch = useCallback(async (force = false) => {
+    const myVersion = ++fetchVersionRef.current
     const cached = getCached(cacheKey)
     if (cached) {
       setData(cached.data)
@@ -405,6 +418,7 @@ export function useMonthSummary(year, month) {
         .gte('date', `${year}-${pad}-01`)
         .lte('date', `${year}-${pad}-${days}`)
 
+      if (myVersion !== fetchVersionRef.current) return
       if (!rows) { setLoading(false); return }
 
       const earned = rows.filter(r => r.type === 'income' && !r.is_repayment).reduce((s, r) => s + +r.amount, 0)
@@ -430,6 +444,7 @@ export function useMonthSummary(year, month) {
       setData(result)
       setLoading(false)
     } catch {
+      if (myVersion !== fetchVersionRef.current) return
       setLoading(false)
     }
   }, [year, month, cacheKey])
@@ -437,12 +452,14 @@ export function useMonthSummary(year, month) {
   useEffect(() => { fetch() }, [fetch])
   useVisibilityRefetch(fetch)
 
-  // Re-fetch whenever 'month:' cache entries are invalidated by mutations,
-  // or when transaction data changes (month summaries are derived from txns).
+  // Re-fetch whenever 'month:' cache entries are invalidated by mutations.
+  // All mutation functions already call invalidateCache('month:...') so we
+  // don't need to also listen for 'txns:' invalidations — that caused
+  // double-fetches on every mutation.
   useEffect(() => {
     const handler = (e) => {
       const { pattern } = e.detail || {}
-      if (!pattern || cacheKey.startsWith(pattern) || pattern.startsWith('txns:')) fetch(true)
+      if (!pattern || cacheKey.startsWith(pattern)) fetch(true)
     }
     window.addEventListener(CACHE_INVALIDATION_EVENT, handler)
     return () => window.removeEventListener(CACHE_INVALIDATION_EVENT, handler)
@@ -618,7 +635,10 @@ export function useYearSummary(year) {
 
   const { optimisticTxns, optimisticDeletedTxns, optimisticEdits } = useAppData()
 
+  const fetchVersionRef = useRef(0)
+
   const fetch = useCallback(async (force = false) => {
+    const myVersion = ++fetchVersionRef.current
     const cached = getCached(cacheKey)
     if (cached) {
       setData(cached.data)
@@ -635,6 +655,7 @@ export function useYearSummary(year) {
         .gte('date', `${year}-01-01`)
         .lte('date', `${year}-12-31`)
 
+      if (myVersion !== fetchVersionRef.current) return
       if (!rows) { setLoading(false); return }
 
       const monthly = Array.from({ length: 12 }, (_, i) => {
@@ -685,6 +706,7 @@ export function useYearSummary(year) {
       setData(result)
       setLoading(false)
     } catch {
+      if (myVersion !== fetchVersionRef.current) return
       setLoading(false)
     }
   }, [year, cacheKey])
@@ -824,7 +846,10 @@ export function useRunningBalance(year, month) {
 
   const { optimisticTxns, optimisticDeletedTxns, optimisticEdits } = useAppData()
 
+  const fetchVersionRef = useRef(0)
+
   const fetch = useCallback(async (force = false) => {
+    const myVersion = ++fetchVersionRef.current
     const cached = getCached(cacheKey)
     if (cached !== null && cached !== undefined) {
       setBalance(cached.data)
@@ -843,6 +868,7 @@ export function useRunningBalance(year, month) {
         .select('type, amount')
         .lte('date', endDate)
 
+      if (myVersion !== fetchVersionRef.current) return
       if (!rows) { setLoading(false); return }
 
       const cumulative = rows.reduce((sum, r) => {
@@ -856,6 +882,7 @@ export function useRunningBalance(year, month) {
       setBalance(cumulative)
       setLoading(false)
     } catch {
+      if (myVersion !== fetchVersionRef.current) return
       setLoading(false)
     }
   }, [year, month, cacheKey])

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal } from 'lucide-react'
-import { useTransactions, registerPrefetch, deleteTransaction, useDebounce, useMonthSummary, useRunningBalance, isOptimisticId } from '../hooks/useTransactions'
+import { useTransactions, deleteTransaction, useDebounce, isOptimisticId } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
@@ -50,7 +50,6 @@ export default function Transactions() {
 
   const {
     data,
-    refetch,
     prependOptimistic,
     replaceOptimistic,
     applyLocalEdit,
@@ -78,14 +77,6 @@ export default function Transactions() {
   const dataRef = useRef(data)
   dataRef.current = data
 
-  const now = new Date()
-  const { refetch: refetchSummary } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
-  const { refetch: refetchLastSummary } = useMonthSummary(
-    now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
-    now.getMonth() === 0 ? 12 : now.getMonth()
-  )
-  const { refetch: refetchBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
-
   const handleDelete = useCallback(async (id) => {
     if (!id) return
 
@@ -103,17 +94,16 @@ export default function Transactions() {
 
     try {
       await deleteTransaction(id)
-      await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
-      // Explicitly clean up optimistic delete after all refetches complete
-      // so summary/balance hooks don't double-subtract from already-updated server data.
+      // deleteTransaction already called invalidateCache which triggers
+      // background refetches on all mounted hooks via CACHE_INVALIDATION_EVENT.
+      // Clean up the optimistic overlay now that the server confirmed the delete.
       removeOptimisticDelete(id)
     } catch (e) {
       removeOptimisticDelete(id)
-      refetch()
       setToast(e.message || 'Could not delete transaction. Check your connection.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [addOptimisticDelete, removeOptimisticDelete, applyLocalDelete, refetch, refetchSummary, refetchLastSummary, refetchBalance])
+  }, [addOptimisticDelete, removeOptimisticDelete, applyLocalDelete])
   const handleTap = useCallback((t) => {
     setEditTxn(t)
     setAddType(t.type)
@@ -356,18 +346,16 @@ export default function Transactions() {
             setDisplayCount(n => n + 1)
           }
         }}
-        onConfirmed={async (serverTxn) => {
+        onConfirmed={(serverTxn) => {
           if (pendingEditId.current) {
-            // Edit: remove overlay BEFORE refetching so hooks don't double-count the delta
+            // Edit: remove overlays immediately — the event-driven refetch from
+            // updateTransaction's invalidateCache will bring fresh server data.
             removeOptimisticEdit(pendingEditId.current)
+            clearLocalEdit(pendingEditId.current)
+            pendingEditId.current = null
           } else {
             // New transaction — Phase 2: Brain swaps __optimistic__ ID with real UUID
             onTransactionConfirmed(serverTxn)
-          }
-          await Promise.all([refetch(), refetchSummary(), refetchLastSummary(), refetchBalance()])
-          if (pendingEditId.current) {
-            clearLocalEdit(pendingEditId.current)
-            pendingEditId.current = null
           }
         }}
         onFailed={(msg) => {
@@ -379,7 +367,6 @@ export default function Transactions() {
             // New transaction failed — Brain rolls back ghost row + syncs all caches
             onTransactionFailed()
           }
-          refetch()
           setToast(msg)
           setTimeout(() => setToast(null), 4000)
         }}

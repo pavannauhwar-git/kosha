@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { invalidateCache as invalidateTxnCache } from './useTransactions'
 
 // ── Cache — same stale-while-revalidate pattern as useTransactions ────────
 // Bills data changes rarely (a few times a day at most), so 90s TTL is fine.
@@ -264,6 +265,12 @@ export async function markPaid(liability) {
     throw error
   } finally {
     invalidateCache()
+    // markPaid creates an expense transaction, so invalidate transaction
+    // caches so Dashboard totals, month summary, and balance update.
+    invalidateTxnCache('txns:')
+    invalidateTxnCache('month:')
+    invalidateTxnCache('balance:')
+    invalidateTxnCache('year:')
   }
 }
 
