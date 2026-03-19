@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { invalidateQueryFamilies } from '../lib/queryClient'
+import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
 import { invalidateCache as invalidateTxnCache } from './useTransactions'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities']]
 
+
+const LIABILITY_QUERY_KEY = ['liabilities']
+const LIABILITY_COLUMNS = 'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 // ── Helpers ───────────────────────────────────────────────────────────────
 async function getCurrentUserId() {
   const { data: { session } } = await supabase.auth.getSession()
@@ -17,18 +20,28 @@ export function invalidateLiabilityCache() {
   return invalidateQueryFamilies(LIABILITY_INVALIDATION_KEYS)
 }
 
+async function fetchLiabilities() {
+  const { data: rows, error } = await supabase
+    .from('liabilities')
+    .select(LIABILITY_COLUMNS)
+    .order('due_date', { ascending: true })
+  if (error) throw error
+  return rows || []
+}
+
+export function refreshLiabilityCache() {
+  return queryClient.fetchQuery({
+    queryKey: LIABILITY_QUERY_KEY,
+    queryFn: fetchLiabilities,
+    staleTime: 0,
+  })
+}
+
 // ── useLiabilities ────────────────────────────────────────────────────────
 export function useLiabilities() {
   const { data: rows, isLoading } = useQuery({
-    queryKey: ['liabilities'],
-    queryFn: async () => {
-      const { data: rows, error } = await supabase
-        .from('liabilities')
-        .select('id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
-        .order('due_date', { ascending: true })
-      if (error) throw error
-      return rows || []
-    },
+    queryKey: LIABILITY_QUERY_KEY,
+    queryFn: fetchLiabilities,
   })
 
   const pending = useMemo(() => (rows || []).filter(r => !r.paid), [rows])

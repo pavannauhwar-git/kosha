@@ -6,7 +6,7 @@ import {
   addLiability,
   markPaid,
   deleteLiability,
-  invalidateLiabilityCache,
+  refreshLiabilityCache,
 } from '../hooks/useLiabilities'
 import { invalidateCache as invalidateTxnCache } from '../hooks/useTransactions'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
@@ -64,7 +64,7 @@ export default function Bills() {
 
     try {
       await addLiability(billData, { invalidate: false })
-      await invalidateLiabilityCache()
+      await refreshLiabilityCache()
       setShowAdd(false)
       setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
     } catch (e) {
@@ -80,7 +80,8 @@ export default function Bills() {
     setPayingId(bill.id)
     try {
       await markPaid(bill, { invalidate: false })
-      await Promise.all([invalidateLiabilityCache(), invalidateTxnCache()])
+      await refreshLiabilityCache()
+      void invalidateTxnCache().catch(() => {})
     } catch (e) {
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)
@@ -93,7 +94,7 @@ export default function Bills() {
     setDeletingId(id)
     try {
       await deleteLiability(id, { invalidate: false })
-      await invalidateLiabilityCache()
+      await refreshLiabilityCache()
     } catch (e) {
       setErrToast(e.message || 'Could not delete bill. Check your connection.')
       setTimeout(() => setErrToast(null), 4000)

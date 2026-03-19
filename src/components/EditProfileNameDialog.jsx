@@ -3,6 +3,10 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
+function nextFrame() {
+  return new Promise(resolve => requestAnimationFrame(resolve))
+}
+
 export default function EditProfileNameDialog({ open, onClose }) {
   const { profile, user, updateDisplayName } = useAuth()
   const [name, setName] = useState('')
@@ -28,6 +32,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
     setError('')
     try {
       await updateDisplayName(trimmed)
+      await nextFrame()
       onClose?.()
     } catch (e) {
       setError(e.message || 'Could not update name. Try again.')
