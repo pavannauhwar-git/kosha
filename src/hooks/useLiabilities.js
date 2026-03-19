@@ -13,6 +13,7 @@ const subscribers = new Set()
 let optimisticCounter = 0
 const OPTIMISTIC_LIABILITY_PREFIX = '__optimistic_liability__'
 const optimisticLiabilityAdds = new Map()
+const liabilityUiKeys = new Map()
 let activeFetchController = null
 let latestFetchToken = 0
 
@@ -67,10 +68,19 @@ function keyOfLiability(row) {
   ].join('|')
 }
 
+function attachLiabilityUiKey(row) {
+  if (!row?.id) return row
+  const existing = liabilityUiKeys.get(row.id)
+  const uiKey = existing || row._uiKey || row.id
+  if (!existing) liabilityUiKeys.set(row.id, uiKey)
+  if (row._uiKey === uiKey) return row
+  return { ...row, _uiKey: uiKey }
+}
+
 function mergeRowsWithOptimisticAdds(rows = []) {
-  const merged = new Map((rows || []).map((row) => [row.id, row]))
+  const merged = new Map((rows || []).map((row) => [row.id, attachLiabilityUiKey(row)]))
   optimisticLiabilityAdds.forEach((row, id) => {
-    if (!merged.has(id)) merged.set(id, row)
+    if (!merged.has(id)) merged.set(id, attachLiabilityUiKey(row))
   })
   return Array.from(merged.values()).sort(compareDueDate)
 }
@@ -187,7 +197,10 @@ export function useLiabilities() {
           if (!next) return
           unresolvedCountByKey.set(key, remaining - 1)
           optimisticLiabilityAdds.delete(next.optimisticId)
-          optimisticLiabilityAdds.set(serverRow.id, serverRow)
+          const stableUiKey = liabilityUiKeys.get(next.optimisticId) || next.optimisticId
+          liabilityUiKeys.delete(next.optimisticId)
+          liabilityUiKeys.set(serverRow.id, stableUiKey)
+          optimisticLiabilityAdds.set(serverRow.id, { ...serverRow, _uiKey: stableUiKey })
         })
 
         const mergedRows = mergeRowsWithOptimisticAdds(serverRows)
@@ -244,9 +257,11 @@ export async function addLiability(payload) {
   const optimisticId = `${OPTIMISTIC_LIABILITY_PREFIX}${Date.now()}-${++optimisticCounter}`
   const optimistic = {
     id: optimisticId,
+    _uiKey: optimisticId,
     ...payload,
     linked_transaction_id: null,
   }
+  liabilityUiKeys.set(optimisticId, optimisticId)
   optimisticLiabilityAdds.set(optimisticId, optimistic)
   setCachedAndNotify([...previousRows, optimistic].sort(compareDueDate))
 
@@ -262,8 +277,11 @@ export async function addLiability(payload) {
     if (error) throw error
     optimisticLiabilityAdds.delete(optimistic.id)
     if (data?.id) {
+      const stableUiKey = liabilityUiKeys.get(optimistic.id) || optimistic.id
+      liabilityUiKeys.delete(optimistic.id)
+      liabilityUiKeys.set(data.id, stableUiKey)
       // Keep the confirmed server row overlaid until canonical fetch includes it.
-      optimisticLiabilityAdds.set(data.id, data)
+      optimisticLiabilityAdds.set(data.id, { ...data, _uiKey: stableUiKey })
     }
     let replaced = false
     const withServerRow = (getCached()?.rows || [])

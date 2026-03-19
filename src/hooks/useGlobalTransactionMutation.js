@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { useAppData } from './useAppDataStore'
-import { invalidateCache } from './useTransactions'
+import { invalidateCache, mergeConfirmedTransactionIntoCache } from './useTransactions'
 
 /**
  * useGlobalTransactionMutation — centralized "Brain" hook for add-transaction mutations.
@@ -44,6 +44,9 @@ export function useGlobalTransactionMutation() {
       resolveOptimisticTxn(pendingOptimisticId.current, serverTxn)
       pendingOptimisticId.current = null
     }
+    // Patch local caches immediately with the confirmed row so refreshes
+    // never temporarily lose the just-added transaction while backend reads catch up.
+    mergeConfirmedTransactionIntoCache(serverTxn)
     // Invalidate AFTER the optimistic entry is removed so the refetch lands clean
     const date = serverTxn?.date ? new Date(serverTxn.date) : new Date()
     invalidateCache(`month:${date.getFullYear()}:${date.getMonth() + 1}`)
