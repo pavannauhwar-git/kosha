@@ -1,30 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
+import { queryClient } from '../lib/queryClient'
 import { invalidateCache as invalidateTxnCache } from './useTransactions'
-
-// ── Cache — stale-while-revalidate ────────────────────────────────────────
-let cachedRows = null
-let cachedTs   = 0
-const TTL_MS   = 90_000
-const INVALIDATION_EVENT = 'kosha:liabilities:invalidated'
-
-function getCached() {
-  return cachedRows ? { rows: cachedRows, ts: cachedTs } : null
-}
-
-function setCached(rows) {
-  cachedRows = rows
-  cachedTs   = Date.now()
-}
-
-function invalidateCache() {
-  cachedTs = 0
-  window.dispatchEvent(new CustomEvent(INVALIDATION_EVENT))
-}
-
-function isFresh() {
-  return cachedRows && Date.now() - cachedTs < TTL_MS
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 async function getCurrentUserId() {
@@ -33,59 +11,28 @@ async function getCurrentUserId() {
   return session.user.id
 }
 
+function invalidateCache() {
+  queryClient.invalidateQueries({ queryKey: ['liabilities'] })
+}
+
 // ── useLiabilities ────────────────────────────────────────────────────────
 export function useLiabilities() {
-  const [pending, setPending] = useState(() => cachedRows ? cachedRows.filter(r => !r.paid) : [])
-  const [paid, setPaid]       = useState(() => cachedRows ? cachedRows.filter(r => r.paid) : [])
-  const [loading, setLoading] = useState(() => !cachedRows)
-
-  const fetchData = useCallback(async (force = false) => {
-    if (cachedRows) {
-      setPending(cachedRows.filter(r => !r.paid))
-      setPaid(cachedRows.filter(r => r.paid))
-      setLoading(false)
-      if (!force && isFresh()) return
-    } else {
-      setLoading(true)
-    }
-
-    try {
+  const { data: rows, isLoading, refetch } = useQuery({
+    queryKey: ['liabilities'],
+    queryFn: async () => {
       const { data: rows, error } = await supabase
         .from('liabilities')
         .select('id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
         .order('due_date', { ascending: true })
-
       if (error) throw error
-      const sorted = rows || []
-      setCached(sorted)
-      setPending(sorted.filter(r => !r.paid))
-      setPaid(sorted.filter(r => r.paid))
-    } catch {
-      // Network failure — cached data stays visible
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+      return rows || []
+    },
+  })
 
-  useEffect(() => { fetchData() }, [fetchData])
+  const pending = useMemo(() => (rows || []).filter(r => !r.paid), [rows])
+  const paid = useMemo(() => (rows || []).filter(r => r.paid), [rows])
 
-  // Re-fetch when app returns from background
-  useEffect(() => {
-    const handler = () => { if (document.visibilityState === 'visible') fetchData() }
-    document.addEventListener('visibilitychange', handler)
-    return () => document.removeEventListener('visibilitychange', handler)
-  }, [fetchData])
-
-  // Re-fetch on cache invalidation
-  useEffect(() => {
-    const handler = () => fetchData(true)
-    window.addEventListener(INVALIDATION_EVENT, handler)
-    return () => window.removeEventListener(INVALIDATION_EVENT, handler)
-  }, [fetchData])
-
-  const refetch = useCallback(() => fetchData(true), [fetchData])
-
-  return { pending, paid, loading, refetch }
+  return { pending, paid, loading: isLoading, refetch }
 }
 
 // ── Writes — pessimistic: server first, then invalidate ───────────────────
