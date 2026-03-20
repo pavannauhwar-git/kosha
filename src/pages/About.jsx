@@ -11,7 +11,7 @@ export default function About({ asOverlay = false }) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
 
-  const UPI_ID = 'kumar.pavan.pk96@icici'
+  const UPI_ID = 'kumar.pavan.pk96@okicici'
   const REPO_URL = 'https://github.com/pavannauhwar-git/kosha'
 
   function copyUpi() {
