@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { consumeInviteToken, getInviteToken } from '../lib/invites'
 import { CATEGORIES } from '../lib/categories'
 import CategoryIcon from '../components/CategoryIcon'
+import KoshaLogo from '../components/KoshaLogo'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 8 },
@@ -17,29 +18,6 @@ const fadeUp = {
 const EXPENSE_CATS = CATEGORIES.filter(c =>
   ['food', 'groceries', 'transport', 'utilities', 'entertainment', 'health', 'shopping'].includes(c.id)
 )
-
-// ── Kosha logo mark — matches the app icon ────────────────────────────────
-function KoshaLogo({ size = 44 }) {
-  const r = Math.round(size * 0.22)
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <rect width="64" height="64" rx={r} fill={C.logoBg} />
-      <ellipse cx="54" cy="10" rx="14" ry="14" fill={C.logoHighlight} fillOpacity="0.13" />
-      <text
-        x="32" y="36"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontFamily="Roboto, system-ui, sans-serif"
-        fontSize="13"
-        fontWeight="700"
-        letterSpacing="0.8"
-        fill="white"
-      >
-        KOSHA
-      </text>
-    </svg>
-  )
-}
 
 // ── Step indicator — green pills ──────────────────────────────────────────
 function StepDots({ current, total }) {

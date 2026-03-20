@@ -4,29 +4,7 @@ import { X } from 'lucide-react'
 import { Heart, Code, CurrencyInr, Copy, Check, Coffee, GithubLogo } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
 import { useAuth } from '../context/AuthContext'
-
-// ── Kosha logo mark (same as Login page) ──────────────────────────────────
-function KoshaLogo({ size = 56 }) {
-  const r = Math.round(size * 0.22)
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <rect width="64" height="64" rx={r} fill={C.logoBg} />
-      <ellipse cx="54" cy="10" rx="14" ry="14" fill={C.logoHighlight} fillOpacity="0.13" />
-      <text
-        x="32" y="36"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontFamily="Roboto, system-ui, sans-serif"
-        fontSize="13"
-        fontWeight="700"
-        letterSpacing="0.8"
-        fill="white"
-      >
-        KOSHA
-      </text>
-    </svg>
-  )
-}
+import KoshaLogo from '../components/KoshaLogo'
 
 export default function About({ asOverlay = false }) {
   const navigate = useNavigate()

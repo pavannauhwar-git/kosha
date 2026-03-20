@@ -3,35 +3,12 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import AboutKoshaLink from '../components/AboutKoshaLink'
+import KoshaLogo from '../components/KoshaLogo'
 import { C } from '../lib/colors'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
   show:   { opacity: 1, y: 0,  transition: { duration: 0.22, ease: 'easeOut' } },
-}
-
-// ── Kosha logo mark — matches the generated PNG icon exactly ──────────────
-function KoshaLogo({ size = 64 }) {
-  const r = Math.round(size * 0.22)
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <rect width="64" height="64" rx={r} fill={C.logoBg} />
-      {/* Subtle lime highlight top-right, same as generated PNGs */}
-      <ellipse cx="54" cy="10" rx="14" ry="14" fill={C.logoHighlight} fillOpacity="0.13" />
-      <text
-        x="32" y="36"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontFamily="Roboto, system-ui, sans-serif"
-        fontSize="13"
-        fontWeight="700"
-        letterSpacing="0.8"
-        fill="white"
-      >
-        KOSHA
-      </text>
-    </svg>
-  )
 }
 
 // ── Google logo ───────────────────────────────────────────────────────────
