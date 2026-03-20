@@ -210,61 +210,81 @@ function GlobalRealtimeSync() {
   return null
 }
 
+function AppShell() {
+  const location = useLocation()
+  const backgroundLocation = location.state?.backgroundLocation
+  const showAboutOverlay = Boolean(backgroundLocation && location.pathname === '/about')
+
+  return (
+    <div className="min-h-dvh bg-kosha-bg">
+      <Routes location={backgroundLocation || location}>
+        {/* Public */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/join/:token" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+
+        {/* Onboarding */}
+        <Route path="/onboarding" element={
+          <AuthGuard><Onboarding /></AuthGuard>
+        } />
+
+        {/* Protected — eager */}
+        <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
+
+        {/* Protected — lazy (code-split, loaded on first navigation) */}
+        <Route path="/transactions" element={
+          <Suspense fallback={<PageFallback />}>
+            <AuthGuard><Transactions /></AuthGuard>
+          </Suspense>
+        } />
+        <Route path="/monthly" element={
+          <Suspense fallback={<PageFallback />}>
+            <AuthGuard><Monthly /></AuthGuard>
+          </Suspense>
+        } />
+        <Route path="/analytics" element={
+          <Suspense fallback={<PageFallback />}>
+            <AuthGuard><Analytics /></AuthGuard>
+          </Suspense>
+        } />
+        <Route path="/bills" element={
+          <Suspense fallback={<PageFallback />}>
+            <AuthGuard><Bills /></AuthGuard>
+          </Suspense>
+        } />
+        <Route path="/about" element={
+          <Suspense fallback={<PageFallback />}>
+            <About />
+          </Suspense>
+        } />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      {showAboutOverlay && (
+        <Routes>
+          <Route path="/about" element={
+            <Suspense fallback={<PageFallback />}>
+              <About asOverlay />
+            </Suspense>
+          } />
+        </Routes>
+      )}
+
+      <GlobalHeader />
+      <BottomNav />
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <GlobalRealtimeSync />
-          <div className="min-h-dvh bg-kosha-bg">
-            <Routes>
-              {/* Public */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/join/:token" element={<Login />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-
-              {/* Onboarding */}
-              <Route path="/onboarding" element={
-                <AuthGuard><Onboarding /></AuthGuard>
-              } />
-
-              {/* Protected — eager */}
-              <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
-
-              {/* Protected — lazy (code-split, loaded on first navigation) */}
-              <Route path="/transactions" element={
-                <Suspense fallback={<PageFallback />}>
-                  <AuthGuard><Transactions /></AuthGuard>
-                </Suspense>
-              } />
-              <Route path="/monthly" element={
-                <Suspense fallback={<PageFallback />}>
-                  <AuthGuard><Monthly /></AuthGuard>
-                </Suspense>
-              } />
-              <Route path="/analytics" element={
-                <Suspense fallback={<PageFallback />}>
-                  <AuthGuard><Analytics /></AuthGuard>
-                </Suspense>
-              } />
-              <Route path="/bills" element={
-                <Suspense fallback={<PageFallback />}>
-                  <AuthGuard><Bills /></AuthGuard>
-                </Suspense>
-              } />
-              <Route path="/about" element={
-                <Suspense fallback={<PageFallback />}>
-                  <About />
-                </Suspense>
-              } />
-
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-
-            <GlobalHeader />
-            <BottomNav />
-          </div>
+          <AppShell />
         </QueryClientProvider>
       </AuthProvider>
     </BrowserRouter>

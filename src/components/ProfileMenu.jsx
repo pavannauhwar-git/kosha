@@ -2,12 +2,13 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LogOut, Camera, Trash2, Pencil, UserPlus, Info } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from './EditProfileNameDialog'
 
 export default function ProfileMenu({ className = '' }) {
   const { user, profile, signOut, updateProfile } = useAuth()
+  const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -235,7 +236,10 @@ export default function ProfileMenu({ className = '' }) {
               )}
 
               <button
-                onClick={() => { setOpen(false); navigate('/about') }}
+                onClick={() => {
+                  setOpen(false)
+                  navigate('/about', { state: { backgroundLocation: location } })
+                }}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
                            text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
               >
