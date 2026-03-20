@@ -3,14 +3,26 @@ import {
   FirstAid, Lightning, User, FilmSlate, BookOpen, ShoppingBag,
   CookingPot, ShieldCheck, CreditCard, House, MonitorPlay,
   ArrowsLeftRight, Gift, Heart, Receipt, Package,
+  GasPump, Scissors, Barbell, PawPrint, Baby, Wrench, WifiHigh,
+  TShirt, CalendarCheck, Scales, FileText, MapPin,
+  QrCode, Bank, Money, Globe, Wallet, DotsThree,
+  ChartLineUp, TrendUp, Vault, Coin, Umbrella, Diamond,
+  Buildings, CurrencyBtc, Scroll, Briefcase, IdentificationBadge,
+  Certificate,
 } from '@phosphor-icons/react'
 import { getCategory } from '../lib/categories'
 
-const ICON_MAP = {
+export const ICON_MAP = {
   ForkKnife, ShoppingCart, Car, AirplaneTilt, DeviceMobile,
   FirstAid, Lightning, User, FilmSlate, BookOpen, ShoppingBag,
   CookingPot, ShieldCheck, CreditCard, House, MonitorPlay,
   ArrowsLeftRight, Gift, Heart, Receipt, Package,
+  GasPump, Scissors, Barbell, PawPrint, Baby, Wrench, WifiHigh,
+  TShirt, CalendarCheck, Scales, FileText, MapPin,
+  QrCode, Bank, Money, Globe, Wallet, DotsThree,
+  ChartLineUp, TrendUp, Vault, Coin, Umbrella, Diamond,
+  Buildings, CurrencyBtc, Scroll, Briefcase, IdentificationBadge,
+  Certificate,
 }
 
 export default function CategoryIcon({ categoryId, size = 20, className = '' }) {

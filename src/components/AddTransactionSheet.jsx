@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, CreditCard, NotePencil } from '@phosphor-icons/react'
+import { X, NotePencil } from '@phosphor-icons/react'
 import { ChevronRight } from 'lucide-react'
 import { addTransaction, updateTransaction } from '../hooks/useTransactions'
-import CategoryIcon from './CategoryIcon'
-import { CATEGORIES } from '../lib/categories'
+import CategoryIcon, { ICON_MAP } from './CategoryIcon'
+import { CATEGORIES, PAYMENT_MODES, INVESTMENT_VEHICLES } from '../lib/categories'
 import { parseTransactionSmart } from '../lib/nlp'
 import { Sparkle } from '@phosphor-icons/react'
 
@@ -19,19 +19,7 @@ const TYPES = [
   { id: 'investment', label: 'Investment', color: 'text-invest-text', bg: 'bg-invest-bg' },
 ]
 
-const PAYMENT_MODES = [
-  { id: 'upi', label: 'UPI' },
-  { id: 'credit_card', label: 'Credit Card' },
-  { id: 'debit_card', label: 'Debit Card' },
-  { id: 'cash', label: 'Cash' },
-  { id: 'net_banking', label: 'Net Banking' },
-  { id: 'other', label: 'Other' },
-]
 
-const INVESTMENT_VEHICLES = [
-  'Mutual Fund', 'Stocks', 'Fixed Deposit', 'PPF', 'NPS',
-  'Gold', 'Real Estate', 'Crypto', 'Bonds', 'Other',
-]
 
 // ── Sub-pickers ───────────────────────────────────────────────────────────
 function CategoryPicker({ selected, onSelect, onClose }) {
@@ -94,17 +82,26 @@ function ModePicker({ selected, onSelect, onClose }) {
             <button onClick={onClose} className="close-btn"><X size={16} className="text-ink-3" /></button>
           </div>
           <div className="list-card">
-            {PAYMENT_MODES.map(m => (
-              <button key={m.id}
-                className={`list-row w-full ${selected === m.id ? 'bg-brand-container' : ''}`}
-                onClick={() => { onSelect(m.id); onClose() }}
-              >
-                <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>
-                  {m.label}
-                </span>
-                <span className={`text-lg w-5 text-right ${selected === m.id ? 'text-brand' : 'invisible'}`}>✓</span>
-              </button>
-            ))}
+            {PAYMENT_MODES.map(m => {
+              const Icon = ICON_MAP[m.icon]
+              return (
+                <button key={m.id}
+                  className={`list-row w-full ${selected === m.id ? 'bg-brand-container' : ''}`}
+                  onClick={() => { onSelect(m.id); onClose() }}
+                >
+                  {Icon && (
+                    <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
+                      style={{ background: m.bg }}>
+                      <Icon size={16} weight="duotone" color={m.color} />
+                    </div>
+                  )}
+                  <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>
+                    {m.label}
+                  </span>
+                  <span className={`text-lg w-5 text-right ${selected === m.id ? 'text-brand' : 'invisible'}`}>✓</span>
+                </button>
+              )
+            })}
           </div>
         </div>
       </motion.div>
@@ -131,17 +128,26 @@ function VehiclePicker({ selected, onSelect, onClose }) {
             <button onClick={onClose} className="close-btn"><X size={16} className="text-ink-3" /></button>
           </div>
           <div className="list-card">
-            {INVESTMENT_VEHICLES.map(v => (
-              <button key={v}
-                className={`list-row w-full ${selected === v ? 'bg-brand-container' : ''}`}
-                onClick={() => { onSelect(v); onClose() }}
-              >
-                <span className={`flex-1 text-[15px] ${selected === v ? 'text-brand font-medium' : 'text-ink'}`}>
-                  {v}
-                </span>
-                <span className={`text-lg w-5 text-right ${selected === v ? 'text-brand' : 'invisible'}`}>✓</span>
-              </button>
-            ))}
+            {INVESTMENT_VEHICLES.map(v => {
+              const Icon = ICON_MAP[v.icon]
+              return (
+                <button key={v.id}
+                  className={`list-row w-full ${selected === v.label ? 'bg-brand-container' : ''}`}
+                  onClick={() => { onSelect(v.label); onClose() }}
+                >
+                  {Icon && (
+                    <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
+                      style={{ background: v.bg }}>
+                      <Icon size={16} weight="duotone" color={v.color} />
+                    </div>
+                  )}
+                  <span className={`flex-1 text-[15px] ${selected === v.label ? 'text-brand font-medium' : 'text-ink'}`}>
+                    {v.label}
+                  </span>
+                  <span className={`text-lg w-5 text-right ${selected === v.label ? 'text-brand' : 'invisible'}`}>✓</span>
+                </button>
+              )
+            })}
           </div>
         </div>
       </motion.div>
@@ -379,9 +385,20 @@ export default function AddTransactionSheet({
                 {/* Investment vehicle */}
                 {type === 'investment' && (
                   <button className="list-row w-full" onClick={() => setShowVehPicker(true)}>
-                    <div className="w-8 h-8 rounded-chip bg-invest-bg flex items-center justify-center shrink-0">
-                      <span className="text-invest-text text-xs font-bold">₹</span>
-                    </div>
+                    {(() => {
+                      const selVeh = INVESTMENT_VEHICLES.find(v => v.label === vehicle)
+                      const VehIcon = selVeh ? ICON_MAP[selVeh.icon] : null
+                      return VehIcon ? (
+                        <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
+                          style={{ background: selVeh.bg }}>
+                          <VehIcon size={15} weight="duotone" color={selVeh.color} />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded-chip bg-invest-bg flex items-center justify-center shrink-0">
+                          <span className="text-invest-text text-xs font-bold">₹</span>
+                        </div>
+                      )
+                    })()}
                     <span className="flex-1 text-[15px] text-ink text-left">Type of Investment</span>
                     <div className="flex items-center gap-1">
                       <span className="text-[13px] text-ink-3">{vehicle}</span>
@@ -392,9 +409,19 @@ export default function AddTransactionSheet({
 
                 {/* Payment mode */}
                 <button className="list-row w-full" onClick={() => setShowModePicker(true)}>
-                  <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
-                    <CreditCard size={15} className="text-brand" />
-                  </div>
+                  {(() => {
+                    const ModeIcon = selectedMode ? ICON_MAP[selectedMode.icon] : null
+                    return ModeIcon ? (
+                      <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
+                        style={{ background: selectedMode.bg }}>
+                        <ModeIcon size={15} weight="duotone" color={selectedMode.color} />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
+                        <span className="text-brand text-xs font-bold">₹</span>
+                      </div>
+                    )
+                  })()}
                   <span className="flex-1 text-[15px] text-ink text-left">Payment Mode</span>
                   <div className="flex items-center gap-1">
                     <span className="text-[13px] text-ink-3">{selectedMode?.label}</span>

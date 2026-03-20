@@ -26,6 +26,7 @@ const Transactions = lazy(() => import('./pages/Transactions'))
 const Monthly = lazy(() => import('./pages/Monthly'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const Bills = lazy(() => import('./pages/Bills'))
+const About = lazy(() => import('./pages/About'))
 
 // ── Skeleton fallback for lazy pages ─────────────────────────────────────
 // AuthGuard already shows per-route skeletons — we just need a minimal
@@ -249,6 +250,11 @@ export default function App() {
               <Route path="/bills" element={
                 <Suspense fallback={<PageFallback />}>
                   <AuthGuard><Bills /></AuthGuard>
+                </Suspense>
+              } />
+              <Route path="/about" element={
+                <Suspense fallback={<PageFallback />}>
+                  <About />
                 </Suspense>
               } />
 

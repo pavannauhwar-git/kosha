@@ -384,6 +384,16 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
+      {/* Footer */}
+      <div className="text-center pb-28 pt-4">
+        <button
+          onClick={() => navigate('/about')}
+          className="text-caption text-ink-4 active:text-brand transition-colors"
+        >
+          About Kosha
+        </button>
+      </div>
+
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={24} weight="bold" color="white" />

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import { Sparkle } from '@phosphor-icons/react'
@@ -396,6 +396,7 @@ export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
+  const yearRef = useRef(null)
   const { user } = useAuth()
 
   const { data, loading } = useYearSummary(year)
@@ -449,18 +450,20 @@ export default function Analytics() {
                      flex items-center justify-center active:bg-kosha-surface-2">
           <ChevronLeft size={18} className="text-ink-2" />
         </button>
-        <label className="relative cursor-pointer">
+        <button type="button" className="relative cursor-pointer"
+          onClick={() => yearRef.current?.showPicker?.()}>
           <h1 className="text-display font-bold text-ink tracking-tight">{year}</h1>
           <input
+            ref={yearRef}
             type="month"
             value={`${year}-01`}
             onChange={e => {
               const y = parseInt(e.target.value?.split('-')[0], 10)
               if (y) setYear(y)
             }}
-            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+            className="absolute inset-0 opacity-0 w-full h-full pointer-events-none"
           />
-        </label>
+        </button>
         <button onClick={() => setYear(y => y + 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">

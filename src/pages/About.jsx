@@ -1,0 +1,159 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
+import { Heart, Code, CurrencyInr, Copy, Check, Coffee, GithubLogo } from '@phosphor-icons/react'
+import { C } from '../lib/colors'
+
+// ── Kosha logo mark (same as Login page) ──────────────────────────────────
+function KoshaLogo({ size = 56 }) {
+  const r = Math.round(size * 0.22)
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <rect width="64" height="64" rx={r} fill={C.logoBg} />
+      <ellipse cx="54" cy="10" rx="14" ry="14" fill={C.logoHighlight} fillOpacity="0.13" />
+      <text
+        x="32" y="36"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontFamily="Roboto, system-ui, sans-serif"
+        fontSize="13"
+        fontWeight="700"
+        letterSpacing="0.8"
+        fill="white"
+      >
+        KOSHA
+      </text>
+    </svg>
+  )
+}
+
+export default function About() {
+  const navigate = useNavigate()
+  const [copied, setCopied] = useState(false)
+
+  const UPI_ID = 'kumar.pavan.pk96@icici'
+  const REPO_URL = 'https://github.com/pavannauhwar-git/kosha'
+
+  function copyUpi() {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(UPI_ID)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  return (
+    <div className="min-h-dvh bg-kosha-bg">
+      {/* ── Back button ─────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-10 bg-kosha-bg/80 backdrop-blur-md px-4 py-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                     flex items-center justify-center active:bg-kosha-surface-2"
+        >
+          <ArrowLeft size={18} className="text-ink-2" />
+        </button>
+      </div>
+
+      <div className="px-6 pb-24 max-w-[480px] mx-auto">
+
+        {/* ── Logo & name ───────────────────────────────────────────── */}
+        <div className="flex flex-col items-center mt-4 mb-8">
+          <KoshaLogo size={64} />
+          <h1 className="text-[24px] font-bold text-ink mt-4 tracking-tight">Kosha</h1>
+          <p className="text-caption text-ink-3 tracking-widest uppercase font-semibold mt-1">
+            Your Financial Sheath
+          </p>
+        </div>
+
+        {/* ── About blurb ───────────────────────────────────────────── */}
+        <div className="card p-5 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Code size={18} weight="duotone" color={C.brand} />
+            <h2 className="text-[16px] font-bold text-ink">About</h2>
+          </div>
+          <p className="text-[14px] text-ink-2 leading-relaxed">
+            Built by <span className="font-semibold text-ink">Pavan Kumar Nauhwar</span> — a
+            developer who wanted a better way to track finances. Kosha is designed to be
+            fast, private, and delightfully simple. No ads, no bloat — just clean personal
+            finance tracking that stays out of your way.
+          </p>
+        </div>
+
+        {/* ── Built with love ───────────────────────────────────────── */}
+        <div className="card p-5 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Heart size={18} weight="duotone" color="#DC2626" />
+            <h2 className="text-[16px] font-bold text-ink">Built With</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {['React', 'Supabase', 'Tailwind CSS', 'Vite', 'Framer Motion', 'Phosphor Icons'].map(tech => (
+              <span key={tech}
+                className="text-caption font-medium text-brand bg-brand-container
+                           px-2.5 py-1 rounded-full">
+                {tech}
+              </span>
+            ))}
+          </div>
+
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 w-full flex items-center justify-center gap-2.5 py-3
+                       rounded-[14px] border border-kosha-border bg-white
+                       active:bg-kosha-surface-2 transition-all duration-75"
+          >
+            <GithubLogo size={18} weight="fill" className="text-ink" />
+            <span className="text-[14px] font-semibold text-ink">View on GitHub</span>
+          </a>
+        </div>
+
+        {/* ── Support ───────────────────────────────────────────────── */}
+        <div className="card p-5 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Coffee size={18} weight="duotone" color={C.brand} />
+            <h2 className="text-[16px] font-bold text-ink">Support Kosha</h2>
+          </div>
+          <p className="text-[14px] text-ink-2 leading-relaxed mb-4">
+            If Kosha helps you manage your money better, consider supporting its development.
+            Every contribution helps keep this project alive and ad-free.
+          </p>
+
+          <div className="space-y-3">
+            {/* UPI — primary */}
+            <button
+              onClick={copyUpi}
+              className="w-full flex items-center justify-center gap-2.5 py-3.5
+                         rounded-[14px] bg-brand text-white
+                         text-[15px] font-semibold
+                         active:scale-[0.98] transition-all duration-75 shadow-sm"
+            >
+              <CurrencyInr size={18} weight="bold" />
+              {copied ? 'UPI ID Copied!' : 'Pay via UPI'}
+            </button>
+
+            {/* UPI ID display */}
+            <button
+              onClick={copyUpi}
+              className="w-full flex items-center justify-center gap-2 py-3
+                         rounded-[14px] border border-kosha-border bg-white
+                         active:bg-kosha-surface-2 transition-all duration-75"
+            >
+              <span className="text-[14px] font-mono text-ink-2">{UPI_ID}</span>
+              {copied
+                ? <Check size={14} weight="bold" className="text-income-text" />
+                : <Copy size={14} className="text-ink-3" />
+              }
+            </button>
+          </div>
+        </div>
+
+        {/* ── Version ───────────────────────────────────────────────── */}
+        <p className="text-center text-caption text-ink-4 mt-8">
+          Kosha v1.0 · Made with <Heart size={10} weight="fill" className="inline text-expense-text" /> in India
+        </p>
+      </div>
+    </div>
+  )
+}

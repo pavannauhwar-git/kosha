@@ -15,6 +15,7 @@ const MODE_LABEL = {
   debit_card:  'Card',
   cash:        'Cash',
   net_banking: 'Bank',
+  wallet:      'Wallet',
   other:       '',
 }
 

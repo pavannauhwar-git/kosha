@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Camera, Trash2, Pencil, UserPlus } from 'lucide-react'
+import { LogOut, Camera, Trash2, Pencil, UserPlus, Info } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from './EditProfileNameDialog'
 
 export default function ProfileMenu({ className = '' }) {
   const { user, profile, signOut, updateProfile } = useAuth()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [inviteLoading, setInviteLoading] = useState(false)
@@ -231,6 +233,15 @@ export default function ProfileMenu({ className = '' }) {
                   {inviteInfo}
                 </p>
               )}
+
+              <button
+                onClick={() => { setOpen(false); navigate('/about') }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                           text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
+              >
+                <Info size={15} />
+                About Kosha
+              </button>
 
               <button
                 onClick={() => { setOpen(false); signOut() }}
