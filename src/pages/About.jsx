@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Heart, Code, CurrencyInr, Copy, Check, Coffee, GithubLogo } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
+import { useAuth } from '../hooks/useAuth'
 
 // ── Kosha logo mark (same as Login page) ──────────────────────────────────
 function KoshaLogo({ size = 56 }) {
@@ -29,6 +30,7 @@ function KoshaLogo({ size = 56 }) {
 
 export default function About() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [copied, setCopied] = useState(false)
 
   const UPI_ID = 'kumar.pavan.pk96@icici'
@@ -42,16 +44,25 @@ export default function About() {
     }
   }
 
+  function handleClose() {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate(user ? '/' : '/login', { replace: true })
+  }
+
   return (
     <div className="min-h-dvh bg-kosha-bg">
-      {/* ── Back button ─────────────────────────────────────────────── */}
+      {/* ── Close button ────────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 bg-kosha-bg/80 backdrop-blur-md px-4 py-3">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleClose}
+          aria-label="Close"
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2"
         >
-          <ArrowLeft size={18} className="text-ink-2" />
+          <X size={18} className="text-ink-2" />
         </button>
       </div>
 

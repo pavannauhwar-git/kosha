@@ -7,6 +7,7 @@ import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../hooks/useAuth'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import TransactionItem from '../components/TransactionItem'
+import AboutKoshaLink from '../components/AboutKoshaLink'
 import { fmt, monthStr, savingsRate, daysUntil } from '../lib/utils'
 import { C } from '../lib/colors'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
@@ -384,15 +385,7 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Footer */}
-      <div className="text-center pb-28 pt-4">
-        <button
-          onClick={() => navigate('/about')}
-          className="text-caption text-ink-4 active:text-brand transition-colors"
-        >
-          About Kosha
-        </button>
-      </div>
+      <AboutKoshaLink />
 
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>

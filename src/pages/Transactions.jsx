@@ -247,7 +247,7 @@ export default function Transactions() {
       </AnimatePresence>
 
       {/* ── Transaction groups ───────────────────────────────────────── */}
-      <div className="space-y-4 pb-32">
+      <div className="space-y-4">
         {groups.map(([dateKey, txns]) => {
           const net = groupNet(txns)
           return (

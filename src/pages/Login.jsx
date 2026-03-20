@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
+import AboutKoshaLink from '../components/AboutKoshaLink'
 import { C } from '../lib/colors'
 
 const fadeUp = {
@@ -262,6 +263,7 @@ export default function Login() {
             {mode === 'signin' ? 'Sign up' : 'Sign in'}
           </button>
         </p>
+        <AboutKoshaLink className="text-center pt-3" />
       </div>
     </div>
   )

@@ -56,7 +56,7 @@ const REALTIME_INVALIDATION_POLICIES = [
 function GlobalHeader() {
   const location = useLocation()
 
-  const hideOn = ['/login', '/onboarding', '/join', '/auth']
+  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   return (
@@ -81,7 +81,7 @@ function BottomNav() {
   const navigate = useNavigate()
   const scrolledDown = useScrollDirection()
 
-  const hideOn = ['/login', '/onboarding', '/join', '/auth']
+  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   const active = NAV.findIndex(n =>
