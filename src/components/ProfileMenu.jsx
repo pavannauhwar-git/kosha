@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Camera, Trash2, Pencil, UserPlus, Info, Bug } from 'lucide-react'
+import { LogOut, Camera, Trash2, Pencil, UserPlus, Info, Bug, Heart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -239,7 +239,7 @@ export default function ProfileMenu({ className = '' }) {
               <button
                 onClick={() => {
                   setOpen(false)
-                  const currentPath = `${location.pathname}${location.search || ''}`
+                  const currentPath = `${location.pathname || '/'}${location.search || ''}` || '/'
                   navigate('/report-bug', {
                     state: {
                       source: 'profile-menu',
@@ -264,7 +264,10 @@ export default function ProfileMenu({ className = '' }) {
                            text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
               >
                 <Info size={15} />
-                About Kosha
+                <span className="inline-flex items-center gap-1">
+                  About Kosha
+                  <Heart size={13} className="text-expense-text" />
+                </span>
               </button>
 
               <button

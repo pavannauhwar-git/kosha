@@ -41,6 +41,13 @@ function parseTags(input) {
     .slice(0, 6)
 }
 
+function formatReportedScreen(route) {
+  const clean = String(route || '').trim()
+  if (!clean) return ''
+  if (clean === '/') return 'Dashboard (/)'
+  return clean
+}
+
 function fileSizeLabel(bytes) {
   if (!bytes) return '0 B'
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
@@ -91,7 +98,8 @@ export default function ReportBug() {
   const searchParams = new URLSearchParams(location.search)
   const source = location.state?.source || searchParams.get('source') || 'direct'
   const returnTo = location.state?.returnTo || null
-  const initialReportedRoute = location.state?.reportedRoute || searchParams.get('route') || returnTo || null
+  const initialReportedRouteRaw = location.state?.reportedRoute || searchParams.get('route') || returnTo || null
+  const initialReportedRoute = String(initialReportedRouteRaw || '').trim() || (source === 'profile-menu' ? '/' : null)
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -108,6 +116,7 @@ export default function ReportBug() {
   const [contextRoute, setContextRoute] = useState(initialReportedRoute)
 
   const parsedTags = useMemo(() => parseTags(tagsInput), [tagsInput])
+  const displayReportedScreen = useMemo(() => formatReportedScreen(contextRoute), [contextRoute])
   const homePath = user ? '/' : '/login'
 
   useEffect(() => {
@@ -138,7 +147,10 @@ export default function ReportBug() {
     if (prefill.description) setDescription(prev => prev || String(prefill.description).slice(0, 1500))
     if (prefill.steps) setSteps(prev => prev || String(prefill.steps).slice(0, 2000))
     if (prefill.tagsInput) setTagsInput(prev => prev || String(prefill.tagsInput))
-    if (prefill.reportedRoute) setContextRoute(String(prefill.reportedRoute))
+    if (prefill.reportedRoute) {
+      const normalizedRoute = String(prefill.reportedRoute || '').trim()
+      if (normalizedRoute) setContextRoute(normalizedRoute)
+    }
     if (typeof prefill.includeDiagnostics === 'boolean') setIncludeDiagnostics(prefill.includeDiagnostics)
     if (SEVERITIES.some(s => s.id === prefill.severity)) {
       setSeverity(prefill.severity)
@@ -288,7 +300,7 @@ export default function ReportBug() {
     <div
       className="min-h-dvh bg-kosha-bg"
       style={{
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        paddingTop: '0px',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
@@ -372,9 +384,9 @@ export default function ReportBug() {
                 <p className="text-caption text-ink-3 mt-1.5">
                   Share what broke, what you expected, and a screenshot if possible. No financial entries are attached automatically.
                 </p>
-                {contextRoute && (
+                {displayReportedScreen && (
                   <p className="text-[11px] text-ink-3 mt-3">
-                    Reported screen: <span className="font-mono text-ink-2">{contextRoute}</span>
+                    Reported screen: <span className="font-mono text-ink-2">{displayReportedScreen}</span>
                   </p>
                 )}
               </div>
