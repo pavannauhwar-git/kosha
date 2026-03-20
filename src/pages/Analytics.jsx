@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useMemo, useRef } from 'react'
+import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react'
 import { Sparkle } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
@@ -22,6 +22,7 @@ const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2023 + i)
 
+// Portfolio colours — green family, darkest to lightest
 const PORTFOLIO_COLORS = C.portfolio
 
 const CASH_CHART_BG =
@@ -46,14 +47,16 @@ function AnalyticsSkeleton() {
   )
 }
 
+// ── Light tooltip (KPI cards, net savings) ───────────────────────────────
+// ── Dark tooltip (on dark chart card) ────────────────────────────────────
 const DarkTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: 'rgba(31,31,31,0.96)',
+      background: 'rgba(31,31,31,0.96)', // MD3 On-Surface (Dark tooltip)
       borderRadius: 12,
       padding: '10px 14px',
-      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
+      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)', // MD3 elevation 2
       minWidth: 140,
       border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
@@ -105,6 +108,7 @@ const NetTooltip = ({ active, payload, label }) => {
   )
 }
 
+// ── Section heading ───────────────────────────────────────────────────────
 function SectionHeading({ children, right }) {
   return (
     <div className="flex items-center justify-between">
@@ -114,6 +118,7 @@ function SectionHeading({ children, right }) {
   )
 }
 
+// ── Annual summary card (replaces 4 KPI cards) ────────────────────────────
 function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
   const totalIncome     = data?.totalIncome     || 0
   const totalExpense    = data?.totalExpense    || 0
@@ -132,6 +137,7 @@ function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
     ? Math.round(((totalInvestment - prevData.totalInvestment) / prevData.totalInvestment) * 100)
     : null
 
+  // Savings-rate arc
   const ARC = 52, SW = 5, R = ARC / 2 - SW
   const CIRC = 2 * Math.PI * R
   const arcFill = Math.max(0, Math.min(avgSavings, 100)) / 100 * CIRC
@@ -149,6 +155,7 @@ function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
 
   return (
     <div className="card overflow-hidden">
+      {/* ── Total Earned ── */}
       <div className="px-5 pt-5 pb-4 border-b border-kosha-border">
         <p className="text-caption text-ink-3 font-medium mb-1.5">Total Earned</p>
         <div className="flex items-center justify-between gap-3">
@@ -166,6 +173,7 @@ function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
         </div>
       </div>
 
+      {/* ── Spent + Invested ── */}
       <div className="grid grid-cols-2 border-b border-kosha-border">
         <div className="px-5 py-4 border-r border-kosha-border">
           <p className="text-caption text-ink-3 mb-1.5">Spent</p>
@@ -183,6 +191,7 @@ function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
         </div>
       </div>
 
+      {/* ── Savings rate ── */}
       <div className="flex items-center gap-4 px-5 py-4">
         <div className="relative shrink-0" style={{ width: ARC, height: ARC }}>
           <svg width={ARC} height={ARC} viewBox={`0 0 ${ARC} ${ARC}`}>
@@ -213,6 +222,7 @@ function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
   )
 }
 
+// ── Trend pill ────────────────────────────────────────────────────────────
 function TrendPill({ current, previous, label }) {
   if (!previous || previous === 0) return null
   const pct = Math.round(((current - previous) / previous) * 100)
@@ -226,6 +236,7 @@ function TrendPill({ current, previous, label }) {
   )
 }
 
+// ── Year-over-year CARDS (replaces scrollable table) ─────────────────────
 function YoYCards({ years, currentYear, userId }) {
   const yearsKey = useMemo(
     () => years.slice().sort((a, b) => a - b).join(','),
@@ -345,6 +356,7 @@ function YoYCards({ years, currentYear, userId }) {
   )
 }
 
+// ── Portfolio allocation — matches Monthly BreakdownCard layout ──────────
 function PortfolioAllocation({ vehicleData }) {
   const total = vehicleData.reduce((s, [, v]) => s + (Number(v) || 0), 0)
   if (!vehicleData.length || total === 0) return null
@@ -371,6 +383,7 @@ function PortfolioAllocation({ vehicleData }) {
     <div className="card p-5">
       <p className="section-label mb-4">Portfolio Allocation</p>
       <div className="flex gap-4 items-center">
+        {/* Donut */}
         <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
             <circle cx={CX} cy={CY} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
@@ -396,6 +409,7 @@ function PortfolioAllocation({ vehicleData }) {
           </div>
         </div>
 
+        {/* Rows */}
         <div className="flex-1 space-y-3 pt-1 min-w-0">
           {segs.map(seg => (
             <div key={seg.name}>
@@ -417,8 +431,8 @@ function PortfolioAllocation({ vehicleData }) {
 export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
-  const [year,       setYear]       = useState(currentYear)
-  const [showPicker, setShowPicker] = useState(false)
+  const [year, setYear] = useState(currentYear)
+  const yearRef = useRef(null)
   const { user } = useAuth()
 
   const { data, loading } = useYearSummary(year)
@@ -471,47 +485,26 @@ export default function Analytics() {
     <div className="page">
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
-      <div className="relative flex items-center justify-between mb-6 pr-14">
+      <div className="flex items-center justify-between mb-6 pr-14">
         <button onClick={() => setYear(y => y - 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">
           <ChevronLeft size={18} className="text-ink-2" />
         </button>
-
-        <div className="relative">
-          <button type="button" onClick={() => setShowPicker(v => !v)}>
-            <h1 className="text-display font-bold text-ink tracking-tight">{year}</h1>
-          </button>
-          <AnimatePresence>
-            {showPicker && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute top-10 left-1/2 -translate-x-1/2 z-50 card p-4 shadow-card-lg"
-                  style={{ minWidth: 200 }}
-                >
-                  <div className="grid grid-cols-3 gap-2">
-                    {YEARS.map(y => (
-                      <button
-                        key={y}
-                        onClick={() => { setYear(y); setShowPicker(false) }}
-                        className={`py-1.5 rounded-card text-[12px] font-semibold transition-colors
-                          ${year === y ? 'bg-brand text-white' : 'bg-kosha-surface-2 text-ink-2'}`}
-                      >
-                        {y}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
-
+        <button type="button" className="relative cursor-pointer"
+          onClick={() => yearRef.current?.showPicker?.()}>
+          <h1 className="text-display font-bold text-ink tracking-tight">{year}</h1>
+          <input
+            ref={yearRef}
+            type="month"
+            value={`${year}-01`}
+            onChange={e => {
+              const y = parseInt(e.target.value?.split('-')[0], 10)
+              if (y) setYear(y)
+            }}
+            className="absolute inset-0 opacity-0 w-full h-full pointer-events-none"
+          />
+        </button>
         <button onClick={() => setYear(y => y + 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">
@@ -532,6 +525,7 @@ export default function Analytics() {
           {chartData.length > 0 && (
             <div className="card p-4 overflow-hidden relative"
               style={{ background: 'linear-gradient(135deg, #EDE9FF 0%, #F5F3FF 100%)' }}>
+              {/* decorative radial glow */}
               <div className="absolute top-0 right-0 w-28 h-28 pointer-events-none"
                 style={{
                   background: 'radial-gradient(circle at 70% 30%, rgba(55,48,163,0.10) 0%, transparent 70%)',
@@ -571,7 +565,7 @@ export default function Analytics() {
             </div>
           )}
 
-          {/* ── Annual Summary card ───────────────────────────────────── */}
+          {/* ── 1. Annual Summary card ───────────────────────────────── */}
           <AnnualSummaryCard
             data={data}
             prevData={prevData}
@@ -579,7 +573,7 @@ export default function Analytics() {
             year={year}
           />
 
-          {/* ── Cash Flow chart ──────────────────────────────────────── */}
+          {/* ── 2. Cash Flow chart ──────────────────────────────────── */}
           {chartData.length > 0 && (
             <div
               className="rounded-card overflow-hidden shadow-card-lg"
@@ -643,7 +637,7 @@ export default function Analytics() {
             </div>
           )}
 
-          {/* ── Net Savings ──────────────────────────────────────────── */}
+          {/* ── 3. Net Savings ──────────────────────────────────────── */}
           {netData.length > 0 && (
             <div
               className="rounded-card overflow-hidden shadow-card-lg"
@@ -699,12 +693,13 @@ export default function Analytics() {
             </div>
           )}
 
-          {/* ── Year-over-year cards ─────────────────────────────────── */}
+          {/* ── 4. Year-over-year stacked cards ─────────────────────── */}
           <YoYCards years={yoyYears} currentYear={year} userId={user?.id} />
 
-          {/* ── Top 3 expenses ───────────────────────────────────────── */}
+          {/* ── 5. Top 3 expenses — victory podium ───────────────────── */}
           {top5.length > 0 && (() => {
             const top3 = top5.slice(0, 3)
+            // Display order: 2nd left, 1st center (tallest), 3rd right
             const PODIUM = [
               { rank: 2, platformH: 56, grad: `linear-gradient(170deg,${C.brandContainer},${C.brandLight})`, rankColor: C.brand },
               { rank: 1, platformH: 80, grad: `linear-gradient(170deg,${C.brandLight},${C.brand})`, rankColor: '#FFFFFF' },
@@ -719,6 +714,7 @@ export default function Analytics() {
                   <div className="flex items-end gap-1.5 px-3 pt-5">
                     {slots.map(({ rank, platformH, grad, rankColor, item }) => (
                       <div key={rank} className="flex flex-col flex-1 items-center min-w-0">
+                        {/* Info above platform */}
                         <div className="w-full flex flex-col items-center pb-3 px-0.5">
                           <CategoryIcon categoryId={item.category} size={14} />
                           <p className="text-[11px] font-medium text-ink text-center mt-1.5 leading-tight line-clamp-2">
@@ -729,6 +725,7 @@ export default function Analytics() {
                           </p>
                           <p className="text-[10px] text-ink-3 mt-0.5">{fmtDate(item.date)}</p>
                         </div>
+                        {/* Podium platform */}
                         <div className="w-full rounded-t-xl flex items-center justify-center"
                           style={{ height: platformH, background: grad }}>
                           <span className="text-[13px] font-extrabold" style={{ color: rankColor }}>
@@ -743,12 +740,12 @@ export default function Analytics() {
             )
           })()}
 
-          {/* ── Portfolio allocation ──────────────────────────────────── */}
+          {/* ── 6. Portfolio allocation ──────────────────────────────── */}
           {vehicleData.length > 0 && (
             <PortfolioAllocation vehicleData={vehicleData} />
           )}
 
-          {/* ── Spending by Category ──────────────────────────────────── */}
+          {/* ── 7. Spending by Category ──────────────────────────────── */}
           {catEntries.length > 0 && (
             <CategorySpendingChart
               entries={catEntries}
