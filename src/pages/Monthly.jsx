@@ -3,9 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useMonthSummary } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
-import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../context/AuthContext'
 import CategoryIcon from '../components/CategoryIcon'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt, savingsRate } from '../lib/utils'
@@ -265,42 +262,12 @@ function BreakdownCard({ earned, spent, invested }) {
   )
 }
 
-// ── Hook: earliest transaction year ──────────────────────────────────────
-function useEarliestYear(userId) {
-  const { data: earliestYear } = useQuery({
-    queryKey: ['earliest-year', userId],
-    enabled: Boolean(userId),
-    staleTime: Infinity,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('date')
-        .eq('user_id', userId)
-        .order('date', { ascending: true })
-        .limit(1)
-        .single()
-      if (error || !data) return new Date().getFullYear()
-      return Number(String(data.date).slice(0, 4))
-    },
-  })
-  return earliestYear || new Date().getFullYear()
-}
-
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Monthly() {
-  const now = new Date()
-  const currentYear = now.getFullYear()
-  const [year,       setYear]       = useState(currentYear)
+  const now   = new Date()
+  const [year,       setYear]       = useState(now.getFullYear())
   const [month,      setMonth]      = useState(now.getMonth() + 1)
   const [showPicker, setShowPicker] = useState(false)
-  const { user } = useAuth()
-
-  const earliestYear = useEarliestYear(user?.id)
-  const years = useMemo(() => {
-    const result = []
-    for (let y = earliestYear; y <= currentYear; y++) result.push(y)
-    return result
-  }, [earliestYear, currentYear])
 
   const { data, loading } = useMonthSummary(year, month)
   const { budgets, setBudget, removeBudget } = useBudgets()
@@ -308,18 +275,12 @@ export default function Monthly() {
   const [budgetCat, setBudgetCat] = useState(null)
 
   function prev() {
-    if (month === 1) {
-      if (year > earliestYear) { setMonth(12); setYear(y => y - 1) }
-    } else {
-      setMonth(m => m - 1)
-    }
+    if (month === 1) { setMonth(12); setYear(y => y - 1) }
+    else setMonth(m => m - 1)
   }
   function next() {
-    if (month === 12) {
-      if (year < currentYear) { setMonth(1); setYear(y => y + 1) }
-    } else {
-      setMonth(m => m + 1)
-    }
+    if (month === 12) { setMonth(1); setYear(y => y + 1) }
+    else setMonth(m => m + 1)
   }
 
   const earned   = data?.earned     || 0
@@ -364,37 +325,31 @@ export default function Monthly() {
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
                 <motion.div
-                  initial={{ opacity: 0, y: -6 }}
+                  initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
+                  exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 card p-4 shadow-card-lg"
-                  style={{ minWidth: 280 }}
+                  className="absolute top-10 left-1/2 -translate-x-1/2 z-50 card p-4 shadow-card-lg"
+                  style={{ minWidth: 260 }}
                 >
-                  {/* Year row */}
                   <div className="flex items-center justify-between mb-3">
-                    <button
-                      onClick={() => setYear(y => Math.max(y - 1, earliestYear))}
+                    <button onClick={() => setYear(y => y - 1)}
                       className="w-8 h-8 rounded-full bg-kosha-surface-2 flex items-center justify-center">
                       <ChevronLeft size={16} className="text-ink-2" />
                     </button>
                     <span className="text-label font-bold text-ink">{year}</span>
-                    <button
-                      onClick={() => setYear(y => Math.min(y + 1, currentYear))}
+                    <button onClick={() => setYear(y => y + 1)}
                       className="w-8 h-8 rounded-full bg-kosha-surface-2 flex items-center justify-center">
                       <ChevronRight size={16} className="text-ink-2" />
                     </button>
                   </div>
-                  {/* Month grid */}
                   <div className="grid grid-cols-4 gap-2">
                     {MONTH_NAMES.map((name, i) => (
                       <button
                         key={i}
                         onClick={() => { setMonth(i + 1); setShowPicker(false) }}
                         className={`py-1.5 rounded-card text-[12px] font-semibold transition-colors
-                          ${month === i + 1 && year === year
-                            ? 'bg-brand text-white'
-                            : 'bg-kosha-surface-2 text-ink-2'}`}
+                          ${month === i + 1 ? 'bg-brand text-white' : 'bg-kosha-surface-2 text-ink-2'}`}
                       >
                         {name.slice(0, 3)}
                       </button>

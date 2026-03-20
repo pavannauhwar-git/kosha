@@ -20,6 +20,7 @@ import { C } from '../lib/colors'
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2023 + i)
 
 const PORTFOLIO_COLORS = C.portfolio
 
@@ -78,6 +79,7 @@ const NetTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   const val = Number(payload[0]?.value || 0)
   const valueColor = val >= 0 ? C.chartIncome : C.chartExpense
+
   return (
     <div style={{
       background: 'rgba(31,31,31,0.96)',
@@ -95,7 +97,9 @@ const NetTooltip = ({ active, payload, label }) => {
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
         <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.78)' }}>Net</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: valueColor }}>{fmt(val)}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: valueColor }}>
+          {fmt(val)}
+        </span>
       </div>
     </div>
   )
@@ -119,9 +123,11 @@ function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
   const incomePct = prevData?.totalIncome > 0
     ? Math.round(((totalIncome - prevData.totalIncome) / prevData.totalIncome) * 100)
     : null
+
   const expensePct = prevData?.totalExpense > 0
     ? Math.round(((totalExpense - prevData.totalExpense) / prevData.totalExpense) * 100)
     : null
+
   const investPct = prevData?.totalInvestment > 0
     ? Math.round(((totalInvestment - prevData.totalInvestment) / prevData.totalInvestment) * 100)
     : null
@@ -164,12 +170,16 @@ function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
         <div className="px-5 py-4 border-r border-kosha-border">
           <p className="text-caption text-ink-3 mb-1.5">Spent</p>
           <p className="text-value font-bold text-expense-text tabular-nums">{fmt(totalExpense)}</p>
-          <div className="mt-1.5"><YoyBadge pct={expensePct} invertGood={true} /></div>
+          <div className="mt-1.5">
+            <YoyBadge pct={expensePct} invertGood={true} />
+          </div>
         </div>
         <div className="px-5 py-4">
           <p className="text-caption text-ink-3 mb-1.5">Invested</p>
           <p className="text-value font-bold text-invest-text tabular-nums">{fmt(totalInvestment)}</p>
-          <div className="mt-1.5"><YoyBadge pct={investPct} invertGood={false} /></div>
+          <div className="mt-1.5">
+            <YoyBadge pct={investPct} invertGood={false} />
+          </div>
         </div>
       </div>
 
@@ -241,7 +251,9 @@ function YoYCards({ years, currentYear, userId }) {
         if (error) throw error
 
         const totals = {}
-        years.forEach((y) => { totals[y] = { income: 0, spent: 0, invest: 0 } })
+        years.forEach((y) => {
+          totals[y] = { income: 0, spent: 0, invest: 0 }
+        })
 
         ;(rows || []).forEach((r) => {
           const y = Number(String(r.date).slice(0, 4))
@@ -297,6 +309,7 @@ function YoYCards({ years, currentYear, userId }) {
                     </span>
                   )}
                 </div>
+
                 <div className="space-y-2.5">
                   {[
                     { label: 'Earned',   key: 'income', cls: isCurrent ? 'text-income-text'  : 'text-ink-2' },
@@ -336,8 +349,11 @@ function PortfolioAllocation({ vehicleData }) {
   const total = vehicleData.reduce((s, [, v]) => s + (Number(v) || 0), 0)
   if (!vehicleData.length || total === 0) return null
 
-  const SIZE = 120, SW = 8, R = SIZE / 2 - SW
-  const CX = SIZE / 2, CY = SIZE / 2
+  const SIZE = 120
+  const SW   = 8
+  const R    = SIZE / 2 - SW
+  const CX   = SIZE / 2
+  const CY   = SIZE / 2
   const CIRC = 2 * Math.PI * R
 
   const segs = vehicleData
@@ -359,7 +375,7 @@ function PortfolioAllocation({ vehicleData }) {
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
             <circle cx={CX} cy={CY} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
             {segs.map((seg, i) => {
-              const dashLen = Math.max(0, (seg.pct / 100) * CIRC)
+              const dashLen       = Math.max(0, (seg.pct / 100) * CIRC)
               const currentOffset = offset
               offset += seg.pct
               return (
@@ -379,6 +395,7 @@ function PortfolioAllocation({ vehicleData }) {
             <span style={{ fontSize: 9, color: C.inkMuted }}>total</span>
           </div>
         </div>
+
         <div className="flex-1 space-y-3 pt-1 min-w-0">
           {segs.map(seg => (
             <div key={seg.name}>
@@ -396,27 +413,6 @@ function PortfolioAllocation({ vehicleData }) {
   )
 }
 
-// ── Hook: earliest transaction year ──────────────────────────────────────
-function useEarliestYear(userId) {
-  const { data: earliestYear } = useQuery({
-    queryKey: ['earliest-year', userId],
-    enabled: Boolean(userId),
-    staleTime: Infinity,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('date')
-        .eq('user_id', userId)
-        .order('date', { ascending: true })
-        .limit(1)
-        .single()
-      if (error || !data) return new Date().getFullYear()
-      return Number(String(data.date).slice(0, 4))
-    },
-  })
-  return earliestYear || new Date().getFullYear()
-}
-
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
   const now = new Date()
@@ -424,13 +420,6 @@ export default function Analytics() {
   const [year,       setYear]       = useState(currentYear)
   const [showPicker, setShowPicker] = useState(false)
   const { user } = useAuth()
-
-  const earliestYear = useEarliestYear(user?.id)
-  const years = useMemo(() => {
-    const result = []
-    for (let y = earliestYear; y <= currentYear; y++) result.push(y)
-    return result
-  }, [earliestYear, currentYear])
 
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1)
@@ -459,7 +448,7 @@ export default function Analytics() {
     return Math.max(1000, Math.ceil(maxAbs * 1.15))
   }, [netData])
 
-  const yoyYears = useMemo(() => years.filter(y => y <= currentYear), [years, currentYear])
+  const yoyYears = useMemo(() => YEARS.filter(y => y <= currentYear), [currentYear])
 
   const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
     .sort((a, b) => b[1] - a[1]).slice(0, 8), [data?.byCategory])
@@ -483,7 +472,7 @@ export default function Analytics() {
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
       <div className="relative flex items-center justify-between mb-6 pr-14">
-        <button onClick={() => setYear(y => Math.max(y - 1, earliestYear))}
+        <button onClick={() => setYear(y => y - 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">
           <ChevronLeft size={18} className="text-ink-2" />
@@ -498,15 +487,15 @@ export default function Analytics() {
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
                 <motion.div
-                  initial={{ opacity: 0, y: -6 }}
+                  initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
+                  exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 card p-4 shadow-card-lg"
+                  className="absolute top-10 left-1/2 -translate-x-1/2 z-50 card p-4 shadow-card-lg"
                   style={{ minWidth: 200 }}
                 >
                   <div className="grid grid-cols-3 gap-2">
-                    {years.map(y => (
+                    {YEARS.map(y => (
                       <button
                         key={y}
                         onClick={() => { setYear(y); setShowPicker(false) }}
@@ -523,7 +512,7 @@ export default function Analytics() {
           </AnimatePresence>
         </div>
 
-        <button onClick={() => setYear(y => Math.min(y + 1, currentYear))}
+        <button onClick={() => setYear(y => y + 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">
           <ChevronRight size={18} className="text-ink-2" />
@@ -560,14 +549,17 @@ export default function Analytics() {
                   let parts = []
                   const inc = data?.totalIncome || 0
                   const rate = inc > 0 ? Math.round(((inc - (data?.totalExpense || 0)) / inc) * 100) : 0
+
                   if (rate > 20) parts.push(`You've had a strong year, saving ${rate}% of your earnings.`)
                   else if (rate > 0) parts.push(`You saved ${rate}% of your income.`)
                   else parts.push(`You spent more than you earned this year.`)
+
                   if (data?.monthly) {
                     let maxExp = 0, maxIdx = -1
                     data.monthly.forEach((m, i) => { if (m.expense > maxExp) { maxExp = m.expense; maxIdx = i } })
                     if (maxIdx >= 0 && maxExp > 0) parts.push(`${MONTH_SHORT[maxIdx]} was your highest spending month.`)
                   }
+
                   if (catEntries?.length > 0) {
                     const c = CATEGORIES.find(c => c.id === catEntries[0][0])
                     const pct = Math.round((catEntries[0][1] / Math.max(data?.totalExpense || 1, 1)) * 100)
@@ -591,7 +583,10 @@ export default function Analytics() {
           {chartData.length > 0 && (
             <div
               className="rounded-card overflow-hidden shadow-card-lg"
-              style={{ background: CASH_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
+              style={{
+                background: CASH_CHART_BG,
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}
             >
               <div className="px-5 pt-5 pb-2 flex items-start justify-between">
                 <div>
@@ -652,7 +647,10 @@ export default function Analytics() {
           {netData.length > 0 && (
             <div
               className="rounded-card overflow-hidden shadow-card-lg"
-              style={{ background: NET_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
+              style={{
+                background: NET_CHART_BG,
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}
             >
               <div className="px-5 pt-5 pb-2 flex items-start justify-between">
                 <div>
@@ -713,6 +711,7 @@ export default function Analytics() {
               { rank: 3, platformH: 40, grad: `linear-gradient(170deg,#F7F5FF,${C.brandBorder})`, rankColor: C.brandMid },
             ]
             const slots = PODIUM.map(p => ({ ...p, item: top3[p.rank - 1] })).filter(p => p.item)
+
             return (
               <div>
                 <SectionHeading>Top Expenses {year}</SectionHeading>
