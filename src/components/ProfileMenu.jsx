@@ -121,9 +121,14 @@ export default function ProfileMenu({ className = '' }) {
     }
   }
 
-  function handleBugSubmitted(id) {
-    const shortId = id ? String(id).slice(0, 8) : 'saved'
-    setBugToast(`Bug report submitted (#${shortId}). Thank you!`)
+  function handleBugSubmitted(payload) {
+    const shortId = payload?.id ? String(payload.id).slice(0, 8) : 'saved'
+    if (payload?.isDuplicate) {
+      const count = payload?.occurrenceCount || 2
+      setBugToast(`Matched existing report (#${shortId}) · occurrences: ${count}`)
+    } else {
+      setBugToast(`Bug report submitted (#${shortId}). Thank you!`)
+    }
     setTimeout(() => setBugToast(''), 4200)
   }
 

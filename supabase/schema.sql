@@ -354,3 +354,224 @@ drop policy if exists "bug_reports: select own" on public.bug_reports;
 create policy "bug_reports: select own" on public.bug_reports
 for select to public
 using (auth.uid() = user_id);
+
+drop policy if exists "bug_reports: update own" on public.bug_reports;
+create policy "bug_reports: update own" on public.bug_reports
+for update to public
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Phase 2: Bug reporting triage, screenshots, and duplicate handling
+-- ─────────────────────────────────────────────────────────────────────────────
+
+alter table public.bug_reports
+  add column if not exists priority text not null default 'p2',
+  add column if not exists tags text[] not null default '{}'::text[],
+  add column if not exists assignee text,
+  add column if not exists duplicate_of uuid references public.bug_reports(id) on delete set null,
+  add column if not exists fingerprint text,
+  add column if not exists occurrence_count integer not null default 1,
+  add column if not exists reporter_email text,
+  add column if not exists screenshot_path text,
+  add column if not exists environment jsonb,
+  add column if not exists last_reported_at timestamptz,
+  add column if not exists updated_at timestamptz not null default now(),
+  add column if not exists triaged_at timestamptz,
+  add column if not exists resolved_at timestamptz,
+  add column if not exists release_version text,
+  add column if not exists notified_at timestamptz;
+
+update public.bug_reports
+set priority = case severity
+  when 'high' then 'p1'
+  when 'medium' then 'p2'
+  else 'p3'
+end
+where priority is null;
+
+alter table public.bug_reports drop constraint if exists bug_reports_priority_check;
+alter table public.bug_reports
+  add constraint bug_reports_priority_check
+  check (priority in ('p0', 'p1', 'p2', 'p3'));
+
+alter table public.bug_reports drop constraint if exists bug_reports_status_check;
+alter table public.bug_reports
+  add constraint bug_reports_status_check
+  check (status in ('open', 'triaged', 'in_progress', 'fixed', 'released', 'resolved'));
+
+create index if not exists idx_bug_reports_priority on public.bug_reports(priority);
+create index if not exists idx_bug_reports_last_reported on public.bug_reports(last_reported_at desc);
+create index if not exists idx_bug_reports_fingerprint_route on public.bug_reports(fingerprint, route);
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'bug-reports',
+  'bug-reports',
+  false,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do nothing;
+
+drop policy if exists "bug_reports_storage: upload own" on storage.objects;
+create policy "bug_reports_storage: upload own" on storage.objects
+for insert to authenticated
+with check (
+  bucket_id = 'bug-reports'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "bug_reports_storage: read own" on storage.objects;
+create policy "bug_reports_storage: read own" on storage.objects
+for select to authenticated
+using (
+  bucket_id = 'bug-reports'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "bug_reports_storage: delete own" on storage.objects;
+create policy "bug_reports_storage: delete own" on storage.objects
+for delete to authenticated
+using (
+  bucket_id = 'bug-reports'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+create or replace function public.submit_bug_report(
+  p_title text,
+  p_description text,
+  p_steps text default null,
+  p_severity text default 'medium',
+  p_route text default null,
+  p_app_version text default null,
+  p_diagnostics jsonb default null,
+  p_environment jsonb default null,
+  p_screenshot_path text default null,
+  p_reporter_email text default null,
+  p_fingerprint text default null,
+  p_tags text[] default null
+)
+returns table(report_id uuid, is_duplicate boolean, occurrence_count integer)
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_existing_id uuid;
+  v_existing_occ integer;
+  v_priority text;
+  v_recent_count integer;
+  v_tags text[] := coalesce(p_tags, '{}'::text[]);
+begin
+  if v_uid is null then
+    raise exception 'You must be signed in to submit bug reports.';
+  end if;
+
+  if p_title is null or btrim(p_title) = '' then
+    raise exception 'Bug title is required.';
+  end if;
+
+  if p_description is null or btrim(p_description) = '' then
+    raise exception 'Bug description is required.';
+  end if;
+
+  if p_severity not in ('low', 'medium', 'high') then
+    p_severity := 'medium';
+  end if;
+
+  select count(*) into v_recent_count
+  from public.bug_reports
+  where user_id = v_uid
+    and created_at > now() - interval '2 minutes';
+
+  if v_recent_count >= 5 then
+    raise exception 'Too many reports in a short time. Please wait a moment and try again.';
+  end if;
+
+  if p_severity = 'high' then
+    v_priority := 'p1';
+  elsif p_severity = 'medium' then
+    v_priority := 'p2';
+  else
+    v_priority := 'p3';
+  end if;
+
+  select id, occurrence_count
+    into v_existing_id, v_existing_occ
+  from public.bug_reports
+  where user_id = v_uid
+    and coalesce(fingerprint, '') = coalesce(p_fingerprint, '')
+    and coalesce(route, '') = coalesce(p_route, '')
+    and created_at > now() - interval '7 days'
+  order by created_at desc
+  limit 1;
+
+  if v_existing_id is not null and coalesce(p_fingerprint, '') <> '' then
+    update public.bug_reports
+    set
+      occurrence_count = coalesce(occurrence_count, 1) + 1,
+      last_reported_at = now(),
+      updated_at = now(),
+      steps = coalesce(nullif(btrim(coalesce(p_steps, '')), ''), steps),
+      diagnostics = coalesce(p_diagnostics, diagnostics),
+      environment = coalesce(p_environment, environment),
+      reporter_email = coalesce(nullif(btrim(coalesce(p_reporter_email, '')), ''), reporter_email),
+      screenshot_path = coalesce(nullif(p_screenshot_path, ''), screenshot_path),
+      tags = case
+        when array_length(v_tags, 1) is null then tags
+        else (
+          select array_agg(distinct t)
+          from unnest(coalesce(tags, '{}'::text[]) || v_tags) as t
+        )
+      end
+    where id = v_existing_id and user_id = v_uid;
+
+    return query
+      select v_existing_id, true, coalesce(v_existing_occ, 1) + 1;
+    return;
+  end if;
+
+  insert into public.bug_reports (
+    user_id,
+    title,
+    description,
+    steps,
+    severity,
+    priority,
+    route,
+    app_version,
+    diagnostics,
+    environment,
+    screenshot_path,
+    reporter_email,
+    fingerprint,
+    tags,
+    occurrence_count,
+    last_reported_at,
+    updated_at
+  ) values (
+    v_uid,
+    btrim(p_title),
+    btrim(p_description),
+    nullif(btrim(coalesce(p_steps, '')), ''),
+    p_severity,
+    v_priority,
+    nullif(p_route, ''),
+    nullif(p_app_version, ''),
+    p_diagnostics,
+    p_environment,
+    nullif(p_screenshot_path, ''),
+    nullif(btrim(coalesce(p_reporter_email, '')), ''),
+    nullif(p_fingerprint, ''),
+    v_tags,
+    1,
+    now(),
+    now()
+  ) returning id into v_existing_id;
+
+  return query
+    select v_existing_id, false, 1;
+end;
+$$;

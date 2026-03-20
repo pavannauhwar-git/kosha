@@ -65,3 +65,33 @@ npm run dev
 ```
 
 > 💡 **Tip:** The application will instantly compile and load at `http://localhost:5173`.
+
+## 🐞 Bug Reporting (Phase 2)
+
+Kosha includes an in-app **Report bug** flow in the profile menu.
+
+### 1) Apply database schema updates
+
+Run [supabase/schema.sql](supabase/schema.sql) in Supabase SQL Editor.
+
+This creates/updates:
+- `bug_reports` triage fields (`priority`, `tags`, `occurrence_count`, `fingerprint`, etc.)
+- screenshot storage bucket policies (`bug-reports`)
+- `submit_bug_report` RPC (duplicate detection + rate limiting)
+
+### 2) Deploy the notifier edge function
+
+Function source: [supabase/functions/bug-report-notify/index.ts](supabase/functions/bug-report-notify/index.ts)
+
+Set function secrets:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `BUG_REPORT_WEBHOOK_URL`
+
+Then deploy:
+
+```bash
+supabase functions deploy bug-report-notify
+```
+
+If webhook URL is missing, submissions still succeed and notifications are skipped.
