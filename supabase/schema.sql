@@ -298,3 +298,25 @@ end $$;
 -- - RLS enabled on profiles, transactions, liabilities, invites
 -- - Invite link support via token-based onboarding
 -- ─────────────────────────────────────────────────────────────────────────────
+-- 1. Enable RLS on all tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.liabilities ENABLE ROW LEVEL SECURITY;
+
+-- 2. Profiles Policies
+CREATE POLICY "Users can view own profile" 
+ON public.profiles FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" 
+ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" 
+ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- 3. Transactions Policies
+CREATE POLICY "Users can fully manage own transactions" 
+ON public.transactions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- 4. Liabilities (Bills) Policies
+CREATE POLICY "Users can fully manage own liabilities" 
+ON public.liabilities FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
