@@ -320,3 +320,37 @@ ON public.transactions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid
 -- 4. Liabilities (Bills) Policies
 CREATE POLICY "Users can fully manage own liabilities" 
 ON public.liabilities FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Phase 1: Bug reports
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create table if not exists public.bug_reports (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid references auth.users(id) on delete set null,
+  title        text not null check (char_length(title) <= 160),
+  description  text not null,
+  steps        text,
+  severity     text not null default 'medium' check (severity in ('low', 'medium', 'high')),
+  route        text,
+  app_version  text,
+  diagnostics  jsonb,
+  status       text not null default 'open' check (status in ('open', 'triaged', 'resolved')),
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists idx_bug_reports_created_at on public.bug_reports(created_at desc);
+create index if not exists idx_bug_reports_user on public.bug_reports(user_id);
+create index if not exists idx_bug_reports_status on public.bug_reports(status);
+
+alter table public.bug_reports enable row level security;
+
+drop policy if exists "bug_reports: insert own" on public.bug_reports;
+create policy "bug_reports: insert own" on public.bug_reports
+for insert to public
+with check (auth.uid() = user_id);
+
+drop policy if exists "bug_reports: select own" on public.bug_reports;
+create policy "bug_reports: select own" on public.bug_reports
+for select to public
+using (auth.uid() = user_id);

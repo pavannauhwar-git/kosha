@@ -31,20 +31,32 @@ export default function About({ asOverlay = false }) {
   }
 
   const wrapperClass = asOverlay
-    ? 'fixed inset-0 z-50 flex items-start justify-center pt-12 px-4'
+    ? 'fixed inset-0 z-50 flex items-start justify-center px-4'
     : 'min-h-dvh bg-kosha-bg'
 
   const contentWrapperClass = asOverlay
-    ? 'relative w-full max-w-[480px] max-h-[85dvh] overflow-y-auto rounded-2xl bg-kosha-bg shadow-2xl'
+    ? 'relative w-full max-w-[480px] overflow-y-auto rounded-2xl bg-kosha-bg shadow-2xl'
     : 'min-h-dvh bg-kosha-bg'
 
   const contentBottomPad = asOverlay ? 'pb-6' : 'pb-24'
+  const overlayWrapperStyle = asOverlay
+    ? {
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+      }
+    : undefined
+
+  const overlayContentStyle = asOverlay
+    ? {
+        maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px)',
+      }
+    : undefined
 
   return (
-    <div className={wrapperClass}>
+    <div className={wrapperClass} style={overlayWrapperStyle}>
       {asOverlay && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />}
 
-      <div className={contentWrapperClass}>
+      <div className={contentWrapperClass} style={overlayContentStyle}>
         {/* ── Close button ──────────────────────────────────────────── */}
         <div className="sticky top-0 z-10 bg-kosha-bg/85 backdrop-blur-md px-4 py-3 flex justify-end">
           <button
@@ -60,7 +72,7 @@ export default function About({ asOverlay = false }) {
         <div className={`px-6 ${contentBottomPad} max-w-[480px] mx-auto`}>
 
           {/* ── Logo & name ─────────────────────────────────────────── */}
-          <div className="flex flex-col items-center mt-4 mb-8">
+          <div className="flex flex-col items-center mt-1 mb-8">
             <KoshaLogo size={64} />
             <p className="text-caption text-ink-3 tracking-widest uppercase font-semibold mt-3">
               Your Financial Sheath

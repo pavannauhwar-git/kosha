@@ -90,12 +90,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-dvh bg-white flex flex-col">
-
-      {/* Top spacer — matches footer height so content is visually centred */}
-      <div className="pb-10 pointer-events-none" aria-hidden="true">
-        <p className="text-label invisible">&nbsp;</p>
-      </div>
+    <div
+      className="min-h-dvh bg-white flex flex-col"
+      style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))' }}
+    >
 
       {/* ── Main content — vertically centred ────────────────────────── */}
       <div className="flex-1 flex flex-col items-center justify-center px-6">
@@ -107,10 +105,10 @@ export default function Login() {
         >
 
           {/* ── Logo ──────────────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="flex flex-col items-center mb-10">
+          <motion.div variants={fadeUp} className="flex flex-col items-center mt-1 mb-8">
             <KoshaLogo size={64} />
             <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
-              Your financial sheath
+              Your Financial Sheath
             </p>
           </motion.div>
 
@@ -226,21 +224,24 @@ export default function Login() {
             </button>
           </motion.form>
 
+          <motion.div variants={fadeUp} className="mt-5 text-center">
+            <p className="text-label text-ink-3">
+              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+              <button
+                onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null) }}
+                className="text-brand font-semibold"
+              >
+                {mode === 'signin' ? 'Sign up' : 'Sign in'}
+              </button>
+            </p>
+          </motion.div>
+
         </motion.div>
       </div>
 
-      {/* ── Footer — toggle mode ──────────────────────────────────────── */}
-      <div className="pb-10 text-center space-y-4">
-        <p className="text-label text-ink-3">
-          {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-          <button
-            onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null) }}
-            className="text-brand font-semibold"
-          >
-            {mode === 'signin' ? 'Sign up' : 'Sign in'}
-          </button>
-        </p>
-        <AboutKoshaLink className="text-center" />
+      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      <div className="text-center pb-2">
+        <AboutKoshaLink className="text-center pt-1" />
       </div>
     </div>
   )

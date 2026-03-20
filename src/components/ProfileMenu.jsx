@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Camera, Trash2, Pencil, UserPlus, Info } from 'lucide-react'
+import { LogOut, Camera, Trash2, Pencil, UserPlus, Info, Bug } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from './EditProfileNameDialog'
+import ReportBugSheet from './ReportBugSheet'
 
 export default function ProfileMenu({ className = '' }) {
   const { user, profile, signOut, updateProfile } = useAuth()
@@ -17,6 +18,8 @@ export default function ProfileMenu({ className = '' }) {
   const [inviteError, setInviteError] = useState('')
   const [inviteInfo, setInviteInfo] = useState('')
   const [showEditName, setShowEditName] = useState(false)
+  const [showReportBug, setShowReportBug] = useState(false)
+  const [bugToast, setBugToast] = useState('')
   const fileInputRef = useRef(null)
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
@@ -117,6 +120,13 @@ export default function ProfileMenu({ className = '' }) {
       setInviteLoading(false)
     }
   }
+
+  function handleBugSubmitted(id) {
+    const shortId = id ? String(id).slice(0, 8) : 'saved'
+    setBugToast(`Bug report submitted (#${shortId}). Thank you!`)
+    setTimeout(() => setBugToast(''), 4200)
+  }
+
   return (
     <div className={`relative ${className}`.trim()}>
       <button
@@ -152,9 +162,9 @@ export default function ProfileMenu({ className = '' }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -4 }}
               transition={{ duration: 0.12, ease: 'easeOut' }}
-              className="absolute right-0 top-11 z-40 w-60 card p-2"
+              className="absolute right-0 top-11 z-40 w-56 card p-1.5"
             >
-              <div className="px-3 py-2.5 border-b border-kosha-border mb-1 flex items-center gap-3">
+              <div className="px-2.5 py-2 border-b border-kosha-border mb-1 flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center overflow-hidden shrink-0">
                   {avatarUrl ? (
                     <img
@@ -178,7 +188,7 @@ export default function ProfileMenu({ className = '' }) {
                 onClick={() => {
                   setShowEditName(true)
                 }}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
                            text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
               >
                 <Pencil size={15} />
@@ -187,7 +197,7 @@ export default function ProfileMenu({ className = '' }) {
 
               <button
                 onClick={handleInvite}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
                            text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors disabled:opacity-60"
                 disabled={uploading || inviteLoading}
               >
@@ -197,7 +207,7 @@ export default function ProfileMenu({ className = '' }) {
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
                            text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors disabled:opacity-60"
                 disabled={uploading}
               >
@@ -208,7 +218,7 @@ export default function ProfileMenu({ className = '' }) {
               {avatarUrl && (
                 <button
                   onClick={handleDeletePhoto}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
                text-label font-medium text-expense-text hover:bg-expense-bg transition-colors disabled:opacity-60"
                   disabled={uploading}
                 >
@@ -218,19 +228,19 @@ export default function ProfileMenu({ className = '' }) {
               )}
 
               {photoError && (
-                <p className="px-3 pt-1 text-[11px] text-expense-text">
+                <p className="px-2.5 pt-1 text-[11px] text-expense-text">
                   {photoError}
                 </p>
               )}
 
               {inviteError && (
-                <p className="px-3 pt-1 text-[11px] text-expense-text">
+                <p className="px-2.5 pt-1 text-[11px] text-expense-text">
                   {inviteError}
                 </p>
               )}
 
               {inviteInfo && (
-                <p className="px-3 pt-1 text-[11px] text-brand">
+                <p className="px-2.5 pt-1 text-[11px] text-brand">
                   {inviteInfo}
                 </p>
               )}
@@ -238,9 +248,21 @@ export default function ProfileMenu({ className = '' }) {
               <button
                 onClick={() => {
                   setOpen(false)
+                  setShowReportBug(true)
+                }}
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
+                           text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
+              >
+                <Bug size={15} />
+                Report bug
+              </button>
+
+              <button
+                onClick={() => {
+                  setOpen(false)
                   navigate('/about', { state: { backgroundLocation: location } })
                 }}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
                            text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
               >
                 <Info size={15} />
@@ -249,13 +271,33 @@ export default function ProfileMenu({ className = '' }) {
 
               <button
                 onClick={() => { setOpen(false); signOut() }}
-                className="mt-1 w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                className="mt-1 w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
                            text-label font-medium text-expense-text hover:bg-expense-bg transition-colors"
               >
                 <LogOut size={15} /> Sign out
               </button>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      <ReportBugSheet
+        open={showReportBug}
+        onClose={() => setShowReportBug(false)}
+        onSubmitted={handleBugSubmitted}
+      />
+
+      <AnimatePresence>
+        {bugToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-32 left-4 right-4 z-50 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
+          >
+            <p className="text-[13px] font-medium">{bugToast}</p>
+          </motion.div>
         )}
       </AnimatePresence>
 
