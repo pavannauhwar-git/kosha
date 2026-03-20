@@ -88,7 +88,7 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-dvh bg-kosha-bg px-4 flex flex-col justify-center items-center"
+      className="min-h-screen bg-kosha-bg px-4 flex items-center justify-center"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="w-full max-w-[380px]">
@@ -105,7 +105,7 @@ export default function Login() {
           >
 
             {/* ── Logo ──────────────────────────────────────────────────── */}
-            <div className="flex flex-col items-center mb-5">
+            <div className="flex flex-col items-center mb-4">
               <KoshaLogo size={56} />
               <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
                 Your Financial Sheath
