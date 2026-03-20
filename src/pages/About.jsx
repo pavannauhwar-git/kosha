@@ -171,7 +171,7 @@ export default function About({ asOverlay = false }) {
 
           {/* ── Version ─────────────────────────────────────────────── */}
           <p className="text-center text-caption text-ink-4 mt-8">
-            Kosha v1.0 · Made with <Heart size={15} weight="fill" className="inline text-expense-text" style={{ verticalAlign: '-0.1em' }} /> in India
+            Kosha v1.0 · Made with <Heart size={15} weight="fill" className="inline text-expense-text" /> in India
           </p>
         </div>
       </div>

@@ -266,7 +266,7 @@ export default function ProfileMenu({ className = '' }) {
                 <Info size={15} />
                 <span className="inline-flex items-center gap-1">
                   About Kosha
-                  <Heart size={13} className="text-expense-text" />
+                  <Heart size={13} weight="fill" className="text-expense-text" />
                 </span>
               </button>
 
