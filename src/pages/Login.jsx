@@ -11,7 +11,6 @@ const fadeUp = {
   show:   { opacity: 1, y: 0,  transition: { duration: 0.22, ease: 'easeOut' } },
 }
 
-// ── Google logo ───────────────────────────────────────────────────────────
 function GoogleLogo() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -29,21 +28,19 @@ export default function Login() {
   const { token } = useParams()
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
 
-  const [mode,          setMode]         = useState('signin')
-  const [email,         setEmail]        = useState('')
-  const [password,      setPassword]     = useState('')
-  const [error,         setError]        = useState(null)
-  const [loading,       setLoading]      = useState(false)
+  const [mode,          setMode]          = useState('signin')
+  const [email,         setEmail]         = useState('')
+  const [password,      setPassword]      = useState('')
+  const [error,         setError]         = useState(null)
+  const [loading,       setLoading]       = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
   const from = location.state?.from || '/'
 
-  // Already signed in — redirect immediately
   useEffect(() => {
     if (user) navigate(from, { replace: true })
   }, [user])
 
-  // Persist invite token across auth redirects so onboarding can consume it.
   useEffect(() => {
     if (token) {
       sessionStorage.setItem('pendingInviteToken', token)
@@ -91,73 +88,70 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-dvh bg-white flex flex-col"
+      className="min-h-dvh bg-kosha-bg flex flex-col items-center justify-center px-4"
       style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))' }}
     >
-
-      {/* ── Main content — vertically centred ────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
+      <motion.div
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+        initial="hidden"
+        animate="show"
+        className="w-full max-w-[380px]"
+      >
+        {/* ── Card ─────────────────────────────────────────────────────── */}
         <motion.div
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-          initial="hidden"
-          animate="show"
-          className="w-full max-w-[360px]"
+          variants={fadeUp}
+          className="card p-6 mb-4"
         >
 
           {/* ── Logo ──────────────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="flex flex-col items-center mt-1 mb-8">
-            <KoshaLogo size={64} />
+          <div className="flex flex-col items-center mb-7">
+            <KoshaLogo size={56} />
             <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
               Your Financial Sheath
             </p>
-          </motion.div>
+          </div>
 
           {/* ── Heading ───────────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="mb-8">
-            <h1 className="text-[28px] font-bold text-ink tracking-tight leading-tight">
+          <div className="mb-6">
+            <h1 className="text-[26px] font-bold text-ink tracking-tight leading-tight mb-1.5">
               {mode === 'signin' ? 'Welcome back' : 'Create account'}
             </h1>
-            <p className="text-label text-ink-3 mt-1.5">
+            <p className="text-label text-ink-3">
               {mode === 'signin'
                 ? 'Sign in to continue to Kosha'
                 : 'Start tracking your finances today'}
             </p>
-          </motion.div>
+          </div>
 
           {/* ── Google ────────────────────────────────────────────────── */}
-          <motion.button
-            variants={fadeUp}
+          <button
             onClick={handleGoogle}
             disabled={googleLoading || loading}
             className="w-full flex items-center justify-center gap-3 py-3.5
-                       rounded-[14px] border border-kosha-border bg-white
-                       text-[15px] font-semibold text-ink
+                       rounded-card border border-kosha-border bg-kosha-surface
+                       text-label font-semibold text-ink
                        active:scale-[0.98] transition-all duration-75
-                       disabled:opacity-60 mb-5 shadow-sm"
+                       disabled:opacity-60 mb-5 shadow-card"
           >
             <GoogleLogo />
             {googleLoading ? 'Redirecting…' : 'Continue with Google'}
-          </motion.button>
+          </button>
 
           {/* ── Divider ───────────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-kosha-border" />
             <span className="text-caption text-ink-4 font-medium">or</span>
             <div className="flex-1 h-px bg-kosha-border" />
-          </motion.div>
+          </div>
 
           {/* ── Email / password form ─────────────────────────────────── */}
-          <motion.form variants={fadeUp} onSubmit={handleSubmit} className="space-y-3">
-            {/* Email */}
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-caption font-semibold text-ink-2 mb-1.5">
+              <label className="block text-caption font-semibold text-ink-3 mb-1.5">
                 Email address
               </label>
               <input
-                className="w-full px-4 py-3.5 rounded-[14px] border border-kosha-border
-                           bg-kosha-surface-2 text-ink text-[15px] placeholder-ink-4
-                           focus:outline-none focus:border-brand focus:bg-white
-                           transition-all duration-150"
+                className="input"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
@@ -167,19 +161,15 @@ export default function Login() {
               />
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-caption font-semibold text-ink-2 mb-1.5">
+              <label className="block text-caption font-semibold text-ink-3 mb-1.5">
                 Password
                 {mode === 'signup' && (
                   <span className="font-normal text-ink-4 ml-1">· min 8 characters</span>
                 )}
               </label>
               <input
-                className="w-full px-4 py-3.5 rounded-[14px] border border-kosha-border
-                           bg-kosha-surface-2 text-ink text-[15px] placeholder-ink-4
-                           focus:outline-none focus:border-brand focus:bg-white
-                           transition-all duration-150"
+                className="input"
                 type="password"
                 placeholder={mode === 'signin' ? '••••••••' : 'At least 8 characters'}
                 value={password}
@@ -189,60 +179,56 @@ export default function Login() {
               />
             </div>
 
-            {/* Error */}
+            {/* ── Error ─────────────────────────────────────────────── */}
             <AnimatePresence>
               {error && (
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="flex items-start gap-2 bg-expense-bg rounded-lg px-3 py-2.5"
+                  className="flex items-start gap-2 bg-expense-bg rounded-card px-3 py-2.5"
                 >
-                  <svg width="15" height="15" viewBox="0 0 15 15" className="shrink-0 mt-px"
-                       fill="none">
+                  <svg width="15" height="15" viewBox="0 0 15 15" className="shrink-0 mt-px" fill="none">
                     <circle cx="7.5" cy="7.5" r="7" stroke={C.expense} strokeWidth="1.2"/>
-                    <path d="M7.5 4.5v3.5M7.5 10v.5" stroke={C.expense} strokeWidth="1.4"
-                          strokeLinecap="round"/>
+                    <path d="M7.5 4.5v3.5M7.5 10v.5" stroke={C.expense} strokeWidth="1.4" strokeLinecap="round"/>
                   </svg>
                   <p className="text-caption text-expense-text font-medium">{error}</p>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Submit */}
+            {/* ── Submit ────────────────────────────────────────────── */}
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="w-full py-4 rounded-[14px] bg-brand text-white
-                         text-[15px] font-semibold
+              className="w-full py-4 rounded-card bg-brand text-white
+                         text-body font-semibold mt-1
                          active:scale-[0.98] transition-all duration-75
-                         disabled:opacity-60 mt-1"
+                         disabled:opacity-60"
             >
               {loading
                 ? (mode === 'signin' ? 'Signing in…' : 'Creating account…')
                 : (mode === 'signin' ? 'Sign in' : 'Create account')}
             </button>
-          </motion.form>
+          </form>
 
-          <motion.div variants={fadeUp} className="mt-5 text-center">
-            <p className="text-label text-ink-3">
-              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-              <button
-                onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null) }}
-                className="text-brand font-semibold"
-              >
-                {mode === 'signin' ? 'Sign up' : 'Sign in'}
-              </button>
-            </p>
-          </motion.div>
-
+          {/* ── Toggle mode ───────────────────────────────────────────── */}
+          <p className="text-label text-ink-3 text-center mt-5">
+            {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+            <button
+              onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null) }}
+              className="text-brand font-semibold"
+            >
+              {mode === 'signin' ? 'Sign up' : 'Sign in'}
+            </button>
+          </p>
         </motion.div>
-      </div>
 
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
-      <div className="text-center pb-2">
-        <AboutKoshaLink className="text-center pt-1" />
-      </div>
+        {/* ── Footer ─────────────────────────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <AboutKoshaLink className="text-center pt-1" />
+        </motion.div>
+      </motion.div>
     </div>
   )
 }
