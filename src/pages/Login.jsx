@@ -88,14 +88,14 @@ export default function Login() {
 
   return (
     <div
-      className="h-dvh bg-kosha-bg flex flex-col items-center px-4"
+      className="h-dvh bg-kosha-bg flex flex-col items-center px-4 overflow-hidden"
       style={{ paddingTop: 'max(12px, env(safe-area-inset-top, 0px))', paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))' }}
     >
       <motion.div
         variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
         initial="hidden"
         animate="show"
-        className="w-full max-w-[380px] flex-1 flex flex-col justify-center"
+        className="w-full max-w-[380px] flex-1 flex flex-col justify-center overflow-y-auto"
       >
         {/* ── Card ─────────────────────────────────────────────────────── */}
         <motion.div
@@ -104,7 +104,7 @@ export default function Login() {
         >
 
           {/* ── Logo ──────────────────────────────────────────────────── */}
-          <div className="flex flex-col items-center mb-7">
+          <div className="flex flex-col items-center mb-5">
             <KoshaLogo size={56} />
             <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
               Your Financial Sheath
@@ -112,7 +112,7 @@ export default function Login() {
           </div>
 
           {/* ── Heading ───────────────────────────────────────────────── */}
-          <div className="mb-6">
+          <div className="mb-4">
             <h1 className="text-[26px] font-bold text-ink tracking-tight leading-tight mb-1.5">
               {mode === 'signin' ? 'Welcome back' : 'Create account'}
             </h1>
@@ -131,14 +131,14 @@ export default function Login() {
                        rounded-card border border-kosha-border bg-kosha-surface
                        text-label font-semibold text-ink
                        active:scale-[0.98] transition-all duration-75
-                       disabled:opacity-60 mb-5 shadow-card"
+                       disabled:opacity-60 mb-4 shadow-card"
           >
             <GoogleLogo />
             {googleLoading ? 'Redirecting…' : 'Continue with Google'}
           </button>
 
           {/* ── Divider ───────────────────────────────────────────────── */}
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 h-px bg-kosha-border" />
             <span className="text-caption text-ink-4 font-medium">or</span>
             <div className="flex-1 h-px bg-kosha-border" />
@@ -213,7 +213,7 @@ export default function Login() {
           </form>
 
           {/* ── Toggle mode ───────────────────────────────────────────── */}
-          <p className="text-label text-ink-3 text-center mt-5">
+          <p className="text-label text-ink-3 text-center mt-4">
             {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
             <button
               onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null) }}
