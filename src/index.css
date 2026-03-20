@@ -353,6 +353,9 @@
   .page {
     @apply min-h-dvh pt-6 px-4;
     padding-bottom: calc(var(--nav-height) + 0.5rem);
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   /* -- Progress bars ───────────────────────────────────────────────── */
