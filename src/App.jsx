@@ -18,6 +18,7 @@ import { useScrollDirection } from './hooks/useScrollDirection'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Onboarding from './pages/Onboarding'
+import NotFound from './pages/NotFound'
 
 // ── Lazy: heavier pages loaded on first visit ────────────────────────────
 // Reduces the initial JS bundle the phone has to parse on first open.
@@ -56,7 +57,7 @@ const REALTIME_INVALIDATION_POLICIES = [
 function GlobalHeader() {
   const location = useLocation()
 
-  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about']
+  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   return (
@@ -81,7 +82,7 @@ function BottomNav() {
   const navigate = useNavigate()
   const scrolledDown = useScrollDirection()
 
-  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about']
+  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   const active = NAV.findIndex(n =>
@@ -222,6 +223,7 @@ function AppShell() {
         <Route path="/login" element={<Login />} />
         <Route path="/join/:token" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/not-found" element={<NotFound />} />
 
         {/* Onboarding */}
         <Route path="/onboarding" element={
@@ -259,7 +261,7 @@ function AppShell() {
         } />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/not-found" replace />} />
       </Routes>
 
       {showAboutOverlay && (

@@ -1,39 +1,54 @@
-import React from 'react';
+import React from 'react'
+import { Home, RotateCw } from 'lucide-react'
+import KoshaErrorPage from './KoshaErrorPage'
 
 export class GlobalErrorBoundary extends React.Component {
   constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
+    super(props)
+    this.state = { hasError: false, error: null }
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return { hasError: true, error }
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("Uncaught rendering error:", error, errorInfo);
+    console.error('Uncaught rendering error:', error, errorInfo)
   }
 
   handleReload = () => {
-    window.location.reload();
-  };
+    window.location.reload()
+  }
+
+  handleGoHome = () => {
+    window.location.assign('/')
+  }
 
   render() {
     if (this.state.hasError) {
+      const err = this.state.error
+      const detail = [err?.message, err?.stack]
+        .filter(Boolean)
+        .join('\n\n')
+        .slice(0, 1800)
+
       return (
-        <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Something went wrong.</h1>
-          <p style={{ color: '#666', marginBottom: '2rem' }}>We encountered an unexpected error in the application.</p>
-          <button 
-            onClick={this.handleReload}
-            style={{ padding: '0.75rem 1.5rem', backgroundColor: '#000', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
-          >
-            Reload Page
-          </button>
-        </div>
-      );
+        <KoshaErrorPage
+          type="runtime"
+          title="Kosha hit an unexpected snag"
+          description="Something broke while rendering this screen. Your financial data remains safe."
+          helperText="A reload usually fixes temporary issues. If this keeps happening, copy details and use Profile > Report bug."
+          detail={detail}
+          primaryLabel="Reload app"
+          secondaryLabel="Go to dashboard"
+          onPrimary={this.handleReload}
+          onSecondary={this.handleGoHome}
+          primaryIcon={RotateCw}
+          secondaryIcon={Home}
+        />
+      )
     }
 
-    return this.props.children;
+    return this.props.children
   }
 }
