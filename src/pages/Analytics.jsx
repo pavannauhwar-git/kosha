@@ -449,7 +449,18 @@ export default function Analytics() {
                      flex items-center justify-center active:bg-kosha-surface-2">
           <ChevronLeft size={18} className="text-ink-2" />
         </button>
-        <h1 className="text-display font-bold text-ink tracking-tight">{year}</h1>
+        <label className="relative cursor-pointer">
+          <h1 className="text-display font-bold text-ink tracking-tight">{year}</h1>
+          <input
+            type="month"
+            value={`${year}-01`}
+            onChange={e => {
+              const y = parseInt(e.target.value?.split('-')[0], 10)
+              if (y) setYear(y)
+            }}
+            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+          />
+        </label>
         <button onClick={() => setYear(y => y + 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">

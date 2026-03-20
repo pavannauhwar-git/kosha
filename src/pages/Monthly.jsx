@@ -317,9 +317,20 @@ export default function Monthly() {
                      flex items-center justify-center active:bg-kosha-surface-2">
           <ChevronLeft size={18} className="text-ink-2" />
         </button>
-        <h1 className="text-display font-bold text-ink tracking-tight">
-          {MONTH_NAMES[month - 1]} {year}
-        </h1>
+        <label className="relative cursor-pointer">
+          <h1 className="text-display font-bold text-ink tracking-tight">
+            {MONTH_NAMES[month - 1]} {year}
+          </h1>
+          <input
+            type="month"
+            value={`${year}-${String(month).padStart(2, '0')}`}
+            onChange={e => {
+              const [y, m] = e.target.value.split('-').map(Number)
+              if (y && m) { setYear(y); setMonth(m) }
+            }}
+            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+          />
+        </label>
         <button onClick={next}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">
