@@ -230,7 +230,7 @@ export default function Login() {
       </div>
 
       {/* ── Footer — toggle mode ──────────────────────────────────────── */}
-      <div className="pb-10 text-center">
+      <div className="pb-10 text-center space-y-4">
         <p className="text-label text-ink-3">
           {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
           <button
@@ -240,7 +240,7 @@ export default function Login() {
             {mode === 'signin' ? 'Sign up' : 'Sign in'}
           </button>
         </p>
-        <AboutKoshaLink className="text-center pt-3" />
+        <AboutKoshaLink className="text-center" />
       </div>
     </div>
   )

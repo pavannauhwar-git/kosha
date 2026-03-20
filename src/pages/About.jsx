@@ -31,18 +31,18 @@ export default function About({ asOverlay = false }) {
   }
 
   const wrapperClass = asOverlay
-    ? 'relative z-50'
+    ? 'fixed inset-0 z-50 flex items-start justify-center pt-12 px-4'
     : 'min-h-dvh bg-kosha-bg'
 
   const contentWrapperClass = asOverlay
-    ? 'sheet-panel bg-kosha-bg'
+    ? 'relative w-full max-w-[480px] max-h-[85dvh] overflow-y-auto rounded-2xl bg-kosha-bg shadow-2xl'
     : 'min-h-dvh bg-kosha-bg'
 
   const contentBottomPad = asOverlay ? 'pb-6' : 'pb-24'
 
   return (
     <div className={wrapperClass}>
-      {asOverlay && <div className="sheet-backdrop" onClick={handleClose} />}
+      {asOverlay && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />}
 
       <div className={contentWrapperClass}>
         {/* ── Close button ──────────────────────────────────────────── */}
@@ -62,8 +62,7 @@ export default function About({ asOverlay = false }) {
           {/* ── Logo & name ─────────────────────────────────────────── */}
           <div className="flex flex-col items-center mt-4 mb-8">
             <KoshaLogo size={64} />
-            <h1 className="text-[24px] font-bold text-ink mt-4 tracking-tight">Kosha</h1>
-            <p className="text-caption text-ink-3 tracking-widest uppercase font-semibold mt-1">
+            <p className="text-caption text-ink-3 tracking-widest uppercase font-semibold mt-3">
               Your Financial Sheath
             </p>
           </div>
