@@ -88,10 +88,10 @@ export default function Login() {
 
   return (
     <div
-      className="h-dvh bg-kosha-bg px-4 flex flex-col items-center"
+      className="min-h-dvh bg-kosha-bg px-4 flex flex-col items-center"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="w-full max-w-[380px] flex-1 flex flex-col justify-center">
+      <div className="w-full max-w-[380px] mt-6">
         <motion.div
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
           initial="hidden"
