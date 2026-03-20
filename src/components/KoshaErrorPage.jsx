@@ -11,10 +11,13 @@ export default function KoshaErrorPage({
   detail = '',
   primaryLabel = 'Reload app',
   secondaryLabel = 'Go home',
+  tertiaryLabel = '',
   onPrimary,
   onSecondary,
+  onTertiary,
   primaryIcon: PrimaryIcon = RotateCw,
   secondaryIcon: SecondaryIcon = Home,
+  tertiaryIcon: TertiaryIcon,
 }) {
   const [copied, setCopied] = useState(false)
   const normalizedDetail = useMemo(() => String(detail || '').trim().slice(0, 1800), [detail])
@@ -34,7 +37,7 @@ export default function KoshaErrorPage({
 
   return (
     <div
-      className="relative min-h-dvh overflow-hidden bg-kosha-bg"
+      className="fixed inset-0 z-[80] overflow-hidden bg-kosha-bg"
       style={{
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
@@ -51,12 +54,12 @@ export default function KoshaErrorPage({
         />
       </div>
 
-      <div className="relative flex min-h-dvh items-center justify-center px-4 py-8">
+      <div className="relative flex h-full items-center justify-center px-4 py-8">
         <motion.section
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.24, ease: 'easeOut' }}
-          className="w-full max-w-[470px] rounded-[28px] border border-kosha-border bg-white p-6 shadow-apple-card"
+          className="w-full max-w-[470px] max-h-full overflow-y-auto rounded-[28px] border border-kosha-border bg-white p-6 shadow-apple-card"
         >
           <div className="mb-5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -107,6 +110,17 @@ export default function KoshaErrorPage({
               {secondaryLabel}
             </button>
           </div>
+
+          {tertiaryLabel && onTertiary && TertiaryIcon && (
+            <button
+              type="button"
+              onClick={onTertiary}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-brand transition-all duration-100 active:scale-[0.98]"
+            >
+              <TertiaryIcon size={16} />
+              {tertiaryLabel}
+            </button>
+          )}
 
           {normalizedDetail && (
             <div className="mt-4 rounded-card border border-kosha-border bg-kosha-surface-2">

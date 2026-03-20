@@ -28,6 +28,7 @@ const Monthly = lazy(() => import('./pages/Monthly'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const Bills = lazy(() => import('./pages/Bills'))
 const About = lazy(() => import('./pages/About'))
+const ReportBug = lazy(() => import('./pages/ReportBug'))
 
 // ── Skeleton fallback for lazy pages ─────────────────────────────────────
 // AuthGuard already shows per-route skeletons — we just need a minimal
@@ -57,7 +58,7 @@ const REALTIME_INVALIDATION_POLICIES = [
 function GlobalHeader() {
   const location = useLocation()
 
-  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found']
+  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   return (
@@ -82,7 +83,7 @@ function BottomNav() {
   const navigate = useNavigate()
   const scrolledDown = useScrollDirection()
 
-  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found']
+  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   const active = NAV.findIndex(n =>
@@ -257,6 +258,11 @@ function AppShell() {
         <Route path="/about" element={
           <Suspense fallback={<PageFallback />}>
             <About />
+          </Suspense>
+        } />
+        <Route path="/report-bug" element={
+          <Suspense fallback={<PageFallback />}>
+            <ReportBug />
           </Suspense>
         } />
 

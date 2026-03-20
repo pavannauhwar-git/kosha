@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Bug, X } from 'lucide-react'
-import { useLocation } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { ArrowLeft, Bug, Check, Copy, Home, LogIn } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -10,6 +10,8 @@ const SEVERITIES = [
   { id: 'medium', label: 'Medium' },
   { id: 'high', label: 'High' },
 ]
+
+const RUNTIME_PREFILL_KEY = 'kosha-runtime-bug-prefill'
 
 function normalizeText(v) {
   return String(v || '').toLowerCase().replace(/\s+/g, ' ').trim()
@@ -23,7 +25,6 @@ function buildFingerprint({ route, severity, title, description }) {
     normalizeText(description).slice(0, 180),
   ].join('|')
 
-  // Tiny deterministic hash for duplicate clustering.
   let hash = 0
   for (let i = 0; i < base.length; i += 1) {
     hash = ((hash << 5) - hash) + base.charCodeAt(i)
@@ -82,74 +83,90 @@ async function compressImage(file) {
   }
 }
 
-export default function ReportBugSheet({ open, onClose, onSubmitted }) {
+export default function ReportBug() {
   const { user } = useAuth()
   const location = useLocation()
-  const panelRef = useRef(null)
+  const navigate = useNavigate()
+
+  const searchParams = new URLSearchParams(location.search)
+  const source = location.state?.source || searchParams.get('source') || 'direct'
+  const returnTo = location.state?.returnTo || null
+  const initialReportedRoute = location.state?.reportedRoute || searchParams.get('route') || returnTo || null
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [steps, setSteps] = useState('')
   const [tagsInput, setTagsInput] = useState('')
-  const [reporterEmail, setReporterEmail] = useState('')
+  const [reporterEmail, setReporterEmail] = useState(user?.email || '')
   const [screenshot, setScreenshot] = useState(null)
   const [severity, setSeverity] = useState('medium')
   const [includeDiagnostics, setIncludeDiagnostics] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [submitted, setSubmitted] = useState(null)
+  const [copiedRef, setCopiedRef] = useState(false)
+  const [contextRoute, setContextRoute] = useState(initialReportedRoute)
 
   const parsedTags = useMemo(() => parseTags(tagsInput), [tagsInput])
+  const homePath = user ? '/' : '/login'
 
   useEffect(() => {
-    if (open) {
-      setReporterEmail(user?.email || '')
-      // Lock body scroll when sheet is open
-      const scrollY = window.scrollY
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
-      return () => {
-        document.body.style.position = ''
-        document.body.style.top = ''
-        document.body.style.left = ''
-        document.body.style.right = ''
-        window.scrollTo(0, scrollY)
+    setReporterEmail(user?.email || '')
+  }, [user?.email])
+
+  useEffect(() => {
+    let prefill = location.state?.prefill || null
+
+    if (!prefill && source === 'runtime-error') {
+      try {
+        const raw = sessionStorage.getItem(RUNTIME_PREFILL_KEY)
+        prefill = raw ? JSON.parse(raw) : null
+      } catch {
+        prefill = null
+      } finally {
+        try {
+          sessionStorage.removeItem(RUNTIME_PREFILL_KEY)
+        } catch {
+          // Ignore cleanup errors.
+        }
       }
     }
 
-    if (!open) {
-      setTitle('')
-      setDescription('')
-      setSteps('')
-      setTagsInput('')
-      setReporterEmail(user?.email || '')
-      setScreenshot(null)
-      setSeverity('medium')
-      setIncludeDiagnostics(true)
-      setSaving(false)
-      setError('')
+    if (!prefill) return
+
+    if (prefill.title) setTitle(prev => prev || String(prefill.title).slice(0, 160))
+    if (prefill.description) setDescription(prev => prev || String(prefill.description).slice(0, 1500))
+    if (prefill.steps) setSteps(prev => prev || String(prefill.steps).slice(0, 2000))
+    if (prefill.tagsInput) setTagsInput(prev => prev || String(prefill.tagsInput))
+    if (prefill.reportedRoute) setContextRoute(String(prefill.reportedRoute))
+    if (typeof prefill.includeDiagnostics === 'boolean') setIncludeDiagnostics(prefill.includeDiagnostics)
+    if (SEVERITIES.some(s => s.id === prefill.severity)) {
+      setSeverity(prefill.severity)
     }
-  }, [open, user?.email])
+  }, [location.state?.prefill, source])
 
-  // Scroll focused input into view inside the panel when mobile keyboard opens
-  useEffect(() => {
-    if (!open) return
-    const panel = panelRef.current
-    if (!panel) return
+  function goDashboard() {
+    navigate(homePath, { replace: true })
+  }
 
-    function handleFocusIn(e) {
-      const el = e.target
-      if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return
-      // Wait for keyboard to finish animating
-      setTimeout(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 300)
+  function handleBack() {
+    if (source === 'runtime-error') {
+      goDashboard()
+      return
     }
 
-    panel.addEventListener('focusin', handleFocusIn)
-    return () => panel.removeEventListener('focusin', handleFocusIn)
-  }, [open])
+    if (returnTo) {
+      navigate(returnTo, { replace: true })
+      return
+    }
+
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+
+    goDashboard()
+  }
 
   async function uploadScreenshot() {
     if (!screenshot || !user?.id) return null
@@ -190,10 +207,10 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
       return setError('Please enter a valid contact email or leave it empty.')
     }
 
-    const route = `${location.pathname}${location.search || ''}`
+    const routeForReport = contextRoute || `${location.pathname}${location.search || ''}`
     const appVersion = import.meta.env.VITE_APP_VERSION || `web-${import.meta.env.MODE || 'prod'}`
     const fingerprint = buildFingerprint({
-      route,
+      route: routeForReport,
       severity,
       title: cleanTitle,
       description: cleanDescription,
@@ -215,6 +232,7 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
           language: navigator.language,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           viewport: `${window.innerWidth}x${window.innerHeight}`,
+          source,
         }
       : null
 
@@ -228,7 +246,7 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
           p_description: cleanDescription,
           p_steps: cleanSteps || null,
           p_severity: severity,
-          p_route: route,
+          p_route: routeForReport,
           p_app_version: appVersion,
           p_diagnostics: diagnostics,
           p_environment: environment,
@@ -245,15 +263,13 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
       const isDuplicate = Boolean(data?.is_duplicate)
       const occurrenceCount = Number(data?.occurrence_count || 1)
 
-      // Fire-and-forget notifier; report submission should not fail if this misses.
       if (reportId) {
         void supabase.functions.invoke('bug-report-notify', {
           body: { reportId },
         }).catch(() => {})
       }
 
-      onSubmitted?.({ id: reportId, isDuplicate, occurrenceCount })
-      onClose()
+      setSubmitted({ id: reportId, isDuplicate, occurrenceCount })
     } catch (e2) {
       setError(e2.message || 'Could not submit the bug report. Please try again.')
     } finally {
@@ -261,45 +277,109 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
     }
   }
 
+  async function handleCopyReference() {
+    if (!submitted?.id || !navigator.clipboard?.writeText) return
+    await navigator.clipboard.writeText(String(submitted.id))
+    setCopiedRef(true)
+    setTimeout(() => setCopiedRef(false), 1500)
+  }
+
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            className="sheet-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
+    <div
+      className="min-h-dvh bg-kosha-bg"
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}
+    >
+      <div className="mx-auto max-w-[560px]">
+        <div className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-kosha-border">
+          <button type="button" onClick={handleBack} className="close-btn">
+            <ArrowLeft size={16} className="text-ink-3" />
+          </button>
 
-          <motion.div
-            className="sheet-panel"
-            ref={panelRef}
-            initial={{ y: '100%' }}
-            animate={{ y: 0, transition: { type: 'spring', stiffness: 420, damping: 34 } }}
-            exit={{ y: '100%', transition: { duration: 0.2 } }}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-chip bg-brand-container flex items-center justify-center">
+              <Bug size={14} className="text-brand" />
+            </div>
+            <h1 className="text-[17px] font-bold text-ink tracking-tight">Report Bug</h1>
+          </div>
+
+          <button
+            type="button"
+            onClick={goDashboard}
+            className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
+            aria-label="Go to dashboard"
           >
-            <div className="sheet-handle" />
+            <Home size={16} className="text-ink-3" />
+          </button>
+        </div>
 
-            <form onSubmit={handleSubmit} className="px-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center">
-                    <Bug size={16} className="text-brand" />
-                  </div>
-                  <h2 className="text-[20px] font-bold text-ink">Report Bug</h2>
-                </div>
-                <button type="button" onClick={onClose} className="close-btn">
-                  <X size={16} className="text-ink-3" />
-                </button>
+        <div className="px-4 pt-4 pb-36 space-y-4">
+          {submitted ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card p-5"
+            >
+              <div className="w-11 h-11 rounded-pill bg-income-bg text-income-text border border-income-border flex items-center justify-center mb-3">
+                <Check size={18} />
               </div>
-
-              <p className="text-caption text-ink-3 mb-4">
-                Share what broke and we will investigate it quickly.
+              <h2 className="text-[22px] leading-tight font-bold text-ink tracking-tight">
+                {submitted.isDuplicate ? 'Matched an existing report' : 'Report submitted'}
+              </h2>
+              <p className="text-label text-ink-2 mt-2">
+                {submitted.isDuplicate
+                  ? `We linked your report to an existing issue and incremented occurrences to ${submitted.occurrenceCount}.`
+                  : 'Thank you for reporting this. We will investigate it quickly.'}
               </p>
 
-              <div className="space-y-3">
+              <div className="mt-4 card-inset p-3 border border-kosha-border">
+                <p className="text-caption text-ink-3">Reference</p>
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <p className="font-mono text-[13px] text-ink">#{submitted.id}</p>
+                  <button
+                    type="button"
+                    onClick={handleCopyReference}
+                    className="px-2.5 py-1 rounded-pill border border-kosha-border bg-white text-[11px] font-semibold text-ink"
+                  >
+                    {copiedRef ? 'Copied' : 'Copy ID'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-[14px] font-semibold text-ink"
+                >
+                  Done
+                </button>
+                <button
+                  type="button"
+                  onClick={goDashboard}
+                  className="py-3 rounded-card bg-brand text-white text-[14px] font-semibold"
+                >
+                  Go to dashboard
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              <div className="card p-4">
+                <p className="text-label font-semibold text-ink">Help us fix this quickly</p>
+                <p className="text-caption text-ink-3 mt-1.5">
+                  Share what broke, what you expected, and a screenshot if possible. No financial entries are attached automatically.
+                </p>
+                {contextRoute && (
+                  <p className="text-[11px] text-ink-3 mt-3">
+                    Reported screen: <span className="font-mono text-ink-2">{contextRoute}</span>
+                  </p>
+                )}
+              </div>
+
+              <form id="report-bug-form" onSubmit={handleSubmit} className="space-y-3">
                 <input
                   className="input"
                   placeholder="Bug title"
@@ -309,7 +389,7 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
                 />
 
                 <textarea
-                  className="input min-h-[104px] resize-none"
+                  className="input min-h-[112px] resize-none"
                   placeholder="What happened?"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
@@ -421,22 +501,51 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
                 </p>
 
                 {error && <p className="text-sm text-expense-text">{error}</p>}
+              </form>
+            </>
+          )}
+        </div>
+      </div>
 
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className={`w-full py-4 rounded-card font-semibold transition-all
-                    ${saving
-                      ? 'bg-brand/70 text-white/90 scale-[0.98]'
-                      : 'bg-brand text-white active:scale-[0.98]'}`}
-                >
-                  {saving ? 'Submitting…' : 'Submit report'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </>
+      {!submitted && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-kosha-border bg-kosha-bg/95 backdrop-blur-md">
+          <div
+            className="mx-auto max-w-[560px] px-4 pt-3 grid grid-cols-2 gap-2"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+          >
+            <button
+              type="button"
+              onClick={goDashboard}
+              className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-[14px] font-semibold text-ink"
+            >
+              Go to dashboard
+            </button>
+
+            {user ? (
+              <button
+                type="submit"
+                form="report-bug-form"
+                disabled={saving}
+                className={`py-3 rounded-card text-[14px] font-semibold transition-all
+                  ${saving
+                    ? 'bg-brand/70 text-white/90 scale-[0.98]'
+                    : 'bg-brand text-white active:scale-[0.98]'}`}
+              >
+                {saving ? 'Submitting…' : 'Submit report'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate('/login', { state: { from: '/report-bug' } })}
+                className="inline-flex items-center justify-center gap-2 py-3 rounded-card bg-brand text-white text-[14px] font-semibold"
+              >
+                <LogIn size={15} />
+                Sign in to report
+              </button>
+            )}
+          </div>
+        </div>
       )}
-    </AnimatePresence>
+    </div>
   )
 }

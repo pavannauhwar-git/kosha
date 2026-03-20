@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from './EditProfileNameDialog'
-import ReportBugSheet from './ReportBugSheet'
 
 export default function ProfileMenu({ className = '' }) {
   const { user, profile, signOut, updateProfile } = useAuth()
@@ -18,8 +17,6 @@ export default function ProfileMenu({ className = '' }) {
   const [inviteError, setInviteError] = useState('')
   const [inviteInfo, setInviteInfo] = useState('')
   const [showEditName, setShowEditName] = useState(false)
-  const [showReportBug, setShowReportBug] = useState(false)
-  const [bugToast, setBugToast] = useState('')
   const fileInputRef = useRef(null)
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
@@ -119,17 +116,6 @@ export default function ProfileMenu({ className = '' }) {
     } finally {
       setInviteLoading(false)
     }
-  }
-
-  function handleBugSubmitted(payload) {
-    const shortId = payload?.id ? String(payload.id).slice(0, 8) : 'saved'
-    if (payload?.isDuplicate) {
-      const count = payload?.occurrenceCount || 2
-      setBugToast(`Matched existing report (#${shortId}) · occurrences: ${count}`)
-    } else {
-      setBugToast(`Bug report submitted (#${shortId}). Thank you!`)
-    }
-    setTimeout(() => setBugToast(''), 4200)
   }
 
   return (
@@ -253,7 +239,14 @@ export default function ProfileMenu({ className = '' }) {
               <button
                 onClick={() => {
                   setOpen(false)
-                  setShowReportBug(true)
+                  const currentPath = `${location.pathname}${location.search || ''}`
+                  navigate('/report-bug', {
+                    state: {
+                      source: 'profile-menu',
+                      returnTo: currentPath,
+                      reportedRoute: currentPath,
+                    },
+                  })
                 }}
                 className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
                            text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
@@ -283,26 +276,6 @@ export default function ProfileMenu({ className = '' }) {
               </button>
             </motion.div>
           </>
-        )}
-      </AnimatePresence>
-
-      <ReportBugSheet
-        open={showReportBug}
-        onClose={() => setShowReportBug(false)}
-        onSubmitted={handleBugSubmitted}
-      />
-
-      <AnimatePresence>
-        {bugToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-32 left-4 right-4 z-50 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
-          >
-            <p className="text-[13px] font-medium">{bugToast}</p>
-          </motion.div>
         )}
       </AnimatePresence>
 
