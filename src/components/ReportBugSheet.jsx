@@ -243,6 +243,7 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
 
           <motion.div
             className="sheet-panel"
+            style={{ maxHeight: 'min(94dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 10px))' }}
             initial={{ y: '100%' }}
             animate={{ y: 0, transition: { type: 'spring', stiffness: 420, damping: 34 } }}
             exit={{ y: '100%', transition: { duration: 0.2 } }}
