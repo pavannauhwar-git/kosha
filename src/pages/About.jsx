@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { Heart, Code, CurrencyInr, Copy, Check, Coffee, GithubLogo } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../context/AuthContext'
 
 // ── Kosha logo mark (same as Login page) ──────────────────────────────────
 function KoshaLogo({ size = 56 }) {

@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, Cell,
 } from 'recharts'
 import { useYearSummary } from '../hooks/useTransactions'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import CategoryIcon from '../components/CategoryIcon'
 import CategorySpendingChart from '../components/CategorySpendingChart'

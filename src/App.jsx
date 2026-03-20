@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
-import { AuthProvider, useAuth } from './hooks/useAuth'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
 import { useEffect } from 'react'

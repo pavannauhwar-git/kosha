@@ -1,15 +1,12 @@
-import { useState, useEffect, useCallback, createContext, useContext, createElement } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 
 const USER_PROFILE_QUERY_KEY = ['user-profile']
 const PROFILE_COLUMNS = 'id, display_name, avatar_url, onboarded'
 
-// ── Auth Context ──────────────────────────────────────────────────────────
-const AuthContext = createContext(null)
-
-// ── Internal hook (single instance, lives inside AuthProvider) ────────────
-function useAuthState() {
+// ── Auth Hook ─────────────────────────────────────────────────────────────
+export function useAuthState() {
   const [user,    setUser]    = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -234,15 +231,3 @@ function useAuthState() {
   }
 }
 
-// ── AuthProvider — wrap your app once in App.jsx ──────────────────────────
-export function AuthProvider({ children }) {
-  const auth = useAuthState()
-  return createElement(AuthContext.Provider, { value: auth }, children)
-}
-
-// ── useAuth — same export name, same import path, zero changes elsewhere ──
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')
-  return ctx
-}

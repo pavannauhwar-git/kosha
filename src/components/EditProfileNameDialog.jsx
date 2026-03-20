@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, X } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../context/AuthContext'
 
 function nextFrame() {
   return new Promise(resolve => requestAnimationFrame(resolve))

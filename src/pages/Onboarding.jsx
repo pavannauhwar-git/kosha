@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../context/AuthContext'
 import { C } from '../lib/colors'
 import { addTransaction } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
