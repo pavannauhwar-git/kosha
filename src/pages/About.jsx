@@ -153,16 +153,6 @@ export default function About({ asOverlay = false }) {
                 {copied ? 'UPI ID Copied!' : 'Pay via UPI'}
               </button>
 
-              {/* QR Code */}
-              <div className="flex flex-col items-center py-3">
-                <img
-                  src="/icons/upi-qr.png"
-                  alt="Scan to pay via UPI"
-                  className="w-44 h-44 rounded-xl border border-kosha-border"
-                />
-                <p className="text-caption text-ink-4 mt-2">Scan with any UPI app</p>
-              </div>
-
               {/* UPI ID display */}
               <button
                 onClick={copyUpi}

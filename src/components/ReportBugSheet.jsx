@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Bug, X } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
@@ -85,6 +85,7 @@ async function compressImage(file) {
 export default function ReportBugSheet({ open, onClose, onSubmitted }) {
   const { user } = useAuth()
   const location = useLocation()
+  const panelRef = useRef(null)
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -102,7 +103,19 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
   useEffect(() => {
     if (open) {
       setReporterEmail(user?.email || '')
-      return
+      // Lock body scroll when sheet is open
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      return () => {
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        window.scrollTo(0, scrollY)
+      }
     }
 
     if (!open) {
@@ -118,6 +131,25 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
       setError('')
     }
   }, [open, user?.email])
+
+  // Scroll focused input into view inside the panel when mobile keyboard opens
+  useEffect(() => {
+    if (!open) return
+    const panel = panelRef.current
+    if (!panel) return
+
+    function handleFocusIn(e) {
+      const el = e.target
+      if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return
+      // Wait for keyboard to finish animating
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+    }
+
+    panel.addEventListener('focusin', handleFocusIn)
+    return () => panel.removeEventListener('focusin', handleFocusIn)
+  }, [open])
 
   async function uploadScreenshot() {
     if (!screenshot || !user?.id) return null
@@ -243,7 +275,7 @@ export default function ReportBugSheet({ open, onClose, onSubmitted }) {
 
           <motion.div
             className="sheet-panel"
-            style={{ maxHeight: 'min(94dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 10px))' }}
+            ref={panelRef}
             initial={{ y: '100%' }}
             animate={{ y: 0, transition: { type: 'spring', stiffness: 420, damping: 34 } }}
             exit={{ y: '100%', transition: { duration: 0.2 } }}
