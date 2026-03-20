@@ -91,7 +91,15 @@ export default function Login() {
       className="min-h-dvh bg-kosha-bg px-4 flex flex-col justify-center items-center"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="w-full max-w-[380px]">
+
+      <div className="w-full max-w-[380px] flex flex-col items-center">
+        {/* ── Logo and App Name Above Card ── */}
+        <div className="flex flex-col items-center mb-7 mt-8">
+          <KoshaLogo size={56} />
+          <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
+            Your Financial Sheath
+          </p>
+        </div>
         <motion.div
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
           initial="hidden"
@@ -103,14 +111,6 @@ export default function Login() {
             className="card p-6 mb-4"
             style={{ minHeight: '400px' }}
           >
-
-            {/* ── Logo ──────────────────────────────────────────────────── */}
-            <div className="flex flex-col items-center mb-5">
-              <KoshaLogo size={56} />
-              <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
-                Your Financial Sheath
-              </p>
-            </div>
 
             {/* ── Heading ───────────────────────────────────────────────── */}
             <div className="mb-4">
