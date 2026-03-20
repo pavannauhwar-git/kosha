@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useMonthSummary } from '../hooks/useTransactions'
@@ -107,7 +107,7 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
   )
 }
 
-// ── Hero card — clean, original design ───────────────────────────────────
+// ── Hero card ─────────────────────────────────────────────────────────────
 function MonthHeroCard({ month, year }) {
   const { data } = useMonthSummary(year, month)
   const earned   = data?.earned     || 0
@@ -174,7 +174,7 @@ function MonthHeroCard({ month, year }) {
   )
 }
 
-// ── Breakdown donut card — separate from hero ─────────────────────────────
+// ── Breakdown donut card ──────────────────────────────────────────────────
 function BreakdownCard({ earned, spent, invested }) {
   const saved       = Math.max(0, earned - spent - invested)
   const spentPct    = earned > 0 ? Math.round((spent    / earned) * 100) : 0
@@ -188,7 +188,6 @@ function BreakdownCard({ earned, spent, invested }) {
   const CY    = SIZE / 2
   const CIRC  = 2 * Math.PI * R
 
-  // Amber for leftover
   const LEFTOVER_COLOR = C.bills
 
   const segs = [
@@ -205,8 +204,6 @@ function BreakdownCard({ earned, spent, invested }) {
     <div className="card p-5">
       <p className="section-label mb-4">Budget Breakdown</p>
       <div className="flex gap-4 items-center">
-
-        {/* Donut */}
         <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
             <circle cx={CX} cy={CY} r={R} fill="none"
@@ -237,7 +234,6 @@ function BreakdownCard({ earned, spent, invested }) {
           </div>
         </div>
 
-        {/* Rows */}
         <div className="flex-1 space-y-3 pt-1">
           {[
             { label: 'Spent',    val: spent,    pct: spentPct,    dot: C.expense,      color: C.expense      },
@@ -256,7 +252,6 @@ function BreakdownCard({ earned, spent, invested }) {
         </div>
       </div>
 
-      {/* Income total */}
       <div className="mt-4 pt-3 border-t border-kosha-border">
         <div className="flex justify-between">
           <span className="text-caption text-ink-3">Total income</span>
@@ -270,9 +265,9 @@ function BreakdownCard({ earned, spent, invested }) {
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Monthly() {
   const now   = new Date()
-  const [year,  setYear]  = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
-  const monthRef = useRef(null)
+  const [year,       setYear]       = useState(now.getFullYear())
+  const [month,      setMonth]      = useState(now.getMonth() + 1)
+  const [showPicker, setShowPicker] = useState(false)
 
   const { data, loading } = useMonthSummary(year, month)
   const { budgets, setBudget, removeBudget } = useBudgets()
@@ -312,28 +307,60 @@ export default function Monthly() {
     <div className="page">
 
       {/* ── Month navigator ───────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-6 pr-14">
+      <div className="relative flex items-center justify-between mb-6 pr-14">
         <button onClick={prev}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">
           <ChevronLeft size={18} className="text-ink-2" />
         </button>
-        <button type="button" className="relative cursor-pointer"
-          onClick={() => monthRef.current?.showPicker?.()}>
-          <h1 className="text-display font-bold text-ink tracking-tight">
-            {MONTH_NAMES[month - 1]} {year}
-          </h1>
-          <input
-            ref={monthRef}
-            type="month"
-            value={`${year}-${String(month).padStart(2, '0')}`}
-            onChange={e => {
-              const [y, m] = e.target.value.split('-').map(Number)
-              if (y && m) { setYear(y); setMonth(m) }
-            }}
-            className="absolute inset-0 opacity-0 w-full h-full pointer-events-none"
-          />
-        </button>
+
+        <div className="relative">
+          <button type="button" onClick={() => setShowPicker(v => !v)}>
+            <h1 className="text-display font-bold text-ink tracking-tight">
+              {MONTH_NAMES[month - 1]} {year}
+            </h1>
+          </button>
+          <AnimatePresence>
+            {showPicker && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-10 left-1/2 -translate-x-1/2 z-50 card p-4 shadow-card-lg"
+                  style={{ minWidth: 260 }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setYear(y => y - 1)}
+                      className="w-8 h-8 rounded-full bg-kosha-surface-2 flex items-center justify-center">
+                      <ChevronLeft size={16} className="text-ink-2" />
+                    </button>
+                    <span className="text-label font-bold text-ink">{year}</span>
+                    <button onClick={() => setYear(y => y + 1)}
+                      className="w-8 h-8 rounded-full bg-kosha-surface-2 flex items-center justify-center">
+                      <ChevronRight size={16} className="text-ink-2" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {MONTH_NAMES.map((name, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { setMonth(i + 1); setShowPicker(false) }}
+                        className={`py-1.5 rounded-card text-[12px] font-semibold transition-colors
+                          ${month === i + 1 ? 'bg-brand text-white' : 'bg-kosha-surface-2 text-ink-2'}`}
+                      >
+                        {name.slice(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+
         <button onClick={next}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">
