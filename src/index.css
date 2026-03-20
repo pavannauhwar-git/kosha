@@ -203,16 +203,18 @@
 
   /* -- FAB ─────────────────────────────────────────────────────────── */
   .fab {
-    @apply fixed right-4 w-14 h-14 bg-brand text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 bg-brand text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
     bottom: calc(var(--nav-height) + 1rem);
+    right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
   }
 
   /* Bills page FAB — amber/warning to match bills colour theme */
   .fab-bills {
-    @apply fixed right-4 w-14 h-14 bg-warning text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 bg-warning text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
     bottom: calc(var(--nav-height) + 1rem);
+    right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
   }

@@ -63,7 +63,7 @@ function GlobalHeader() {
 
   return (
     // Added mt-[env(safe-area-inset-top)] to push it below the mobile status bar
-    <div className="fixed top-6 right-4 z-30 mt-[env(safe-area-inset-top)]">
+    <div className="fixed top-6 z-30 mt-[env(safe-area-inset-top)]" style={{ right: 'max(1rem, calc((100vw - 560px) / 2 + 1rem))' }} >
       <ProfileMenu />
     </div>
   )
