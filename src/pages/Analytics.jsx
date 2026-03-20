@@ -25,6 +25,12 @@ const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i)
 // Portfolio colours — green family, darkest to lightest
 const PORTFOLIO_COLORS = C.portfolio
 
+const CASH_CHART_BG =
+  'radial-gradient(circle at 82% 12%, rgba(91,81,224,0.22) 0%, rgba(91,81,224,0) 58%), linear-gradient(180deg, #272163 0%, #1E1B4B 100%)'
+
+const NET_CHART_BG =
+  'radial-gradient(circle at 18% 18%, rgba(52,211,153,0.14) 0%, rgba(52,211,153,0) 52%), linear-gradient(180deg, #241F5D 0%, #1A1746 100%)'
+
 function AnalyticsSkeleton() {
   return (
     <div className="space-y-4">
@@ -68,6 +74,36 @@ const DarkTooltip = ({ active, payload, label }) => {
           </span>
         </div>
       ))}
+    </div>
+  )
+}
+
+const NetTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  const val = Number(payload[0]?.value || 0)
+  const valueColor = val >= 0 ? C.chartIncome : C.chartExpense
+
+  return (
+    <div style={{
+      background: 'rgba(31,31,31,0.96)',
+      borderRadius: 12,
+      padding: '10px 14px',
+      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
+      minWidth: 140,
+      border: '0.5px solid rgba(255,255,255,0.10)',
+    }}>
+      <p style={{
+        fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+        letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase'
+      }}>
+        {label}
+      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.78)' }}>Net</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: valueColor }}>
+          {fmt(val)}
+        </span>
+      </div>
     </div>
   )
 }
@@ -421,6 +457,11 @@ export default function Analytics() {
     }))
     .filter(m => m.Net !== 0), [data?.monthly])
 
+  const netAxisMax = useMemo(() => {
+    const maxAbs = netData.reduce((m, row) => Math.max(m, Math.abs(row.Net)), 0)
+    return Math.max(1000, Math.ceil(maxAbs * 1.15))
+  }, [netData])
+
   const yoyYears = useMemo(() => YEARS.filter(y => y <= currentYear), [currentYear])
 
   const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
@@ -534,7 +575,13 @@ export default function Analytics() {
 
           {/* ── 2. Cash Flow chart ──────────────────────────────────── */}
           {chartData.length > 0 && (
-            <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background: C.chartDark }}>
+            <div
+              className="rounded-card overflow-hidden shadow-card-lg"
+              style={{
+                background: CASH_CHART_BG,
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
               <div className="px-5 pt-5 pb-2 flex items-start justify-between">
                 <div>
                   <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>Cash Flow</p>
@@ -592,7 +639,13 @@ export default function Analytics() {
 
           {/* ── 3. Net Savings ──────────────────────────────────────── */}
           {netData.length > 0 && (
-            <div className="rounded-card overflow-hidden shadow-card-lg" style={{ background: C.chartDark }}>
+            <div
+              className="rounded-card overflow-hidden shadow-card-lg"
+              style={{
+                background: NET_CHART_BG,
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
               <div className="px-5 pt-5 pb-2 flex items-start justify-between">
                 <div>
                   <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>Net Savings</p>
@@ -621,13 +674,13 @@ export default function Analytics() {
               <ResponsiveContainer width="100%" height={130}>
                 <BarChart data={netData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
                   <XAxis dataKey="name"
-                    tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.40)', fontWeight: 500 }}
+                    tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.50)', fontWeight: 500 }}
                     axisLine={false} tickLine={false} interval={0}
                   />
-                  <YAxis hide />
-                  <Tooltip content={<DarkTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-                  <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
-                  <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={32}>
+                  <YAxis hide domain={[-netAxisMax, netAxisMax]} />
+                  <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                  <ReferenceLine y={0} stroke="rgba(255,255,255,0.16)" strokeWidth={1} />
+                  <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={32} minPointSize={4}>
                     {netData.map((entry, i) => (
                       <Cell key={i}
                         fill={entry.Net >= 0 ? C.chartIncome : C.chartExpense}
@@ -648,9 +701,9 @@ export default function Analytics() {
             const top3 = top5.slice(0, 3)
             // Display order: 2nd left, 1st center (tallest), 3rd right
             const PODIUM = [
-              { rank: 2, platformH: 56, grad: 'linear-gradient(170deg,#E2E8F0,#94A3B8)', rankColor: '#475569' },
-              { rank: 1, platformH: 80, grad: 'linear-gradient(170deg,#FDE68A,#F59E0B)', rankColor: '#92400E' },
-              { rank: 3, platformH: 40, grad: 'linear-gradient(170deg,#FED7AA,#F97316)', rankColor: '#9A3412' },
+              { rank: 2, platformH: 56, grad: `linear-gradient(170deg,${C.brandContainer},${C.brandLight})`, rankColor: C.brand },
+              { rank: 1, platformH: 80, grad: `linear-gradient(170deg,${C.brandLight},${C.brand})`, rankColor: '#FFFFFF' },
+              { rank: 3, platformH: 40, grad: `linear-gradient(170deg,#F7F5FF,${C.brandBorder})`, rankColor: C.brandMid },
             ]
             const slots = PODIUM.map(p => ({ ...p, item: top3[p.rank - 1] })).filter(p => p.item)
 
