@@ -88,20 +88,20 @@ export default function Login() {
 
   return (
     <div
-      className="h-dvh bg-kosha-bg overflow-y-auto px-4"
-      style={{ paddingTop: 'max(12px, env(safe-area-inset-top, 0px))', paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))' }}
+      className="h-dvh bg-kosha-bg px-4 flex flex-col items-center"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="min-h-full flex flex-col items-center justify-center">
+      <div className="w-full max-w-[380px] flex-1 flex flex-col justify-center">
         <motion.div
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
           initial="hidden"
           animate="show"
-          className="w-full max-w-[380px]"
         >
           {/* ── Card ─────────────────────────────────────────────────────── */}
           <motion.div
             variants={fadeUp}
             className="card p-6 mb-4"
+            style={{ minHeight: '400px' }}
           >
 
             {/* ── Logo ──────────────────────────────────────────────────── */}
