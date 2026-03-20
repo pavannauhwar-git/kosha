@@ -65,7 +65,7 @@ function CategoryPicker({ selected, onSelect, onClose }) {
                 <span className={`flex-1 text-[15px] ${selected === cat.id ? 'text-brand font-medium' : 'text-ink'}`}>
                   {cat.label}
                 </span>
-                {selected === cat.id && <span className="text-brand text-lg">✓</span>}
+                <span className={`text-lg w-5 text-right ${selected === cat.id ? 'text-brand' : 'invisible'}`}>✓</span>
               </button>
             ))}
           </div>
@@ -102,7 +102,7 @@ function ModePicker({ selected, onSelect, onClose }) {
                 <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>
                   {m.label}
                 </span>
-                {selected === m.id && <span className="text-brand text-lg">✓</span>}
+                <span className={`text-lg w-5 text-right ${selected === m.id ? 'text-brand' : 'invisible'}`}>✓</span>
               </button>
             ))}
           </div>
@@ -139,7 +139,7 @@ function VehiclePicker({ selected, onSelect, onClose }) {
                 <span className={`flex-1 text-[15px] ${selected === v ? 'text-brand font-medium' : 'text-ink'}`}>
                   {v}
                 </span>
-                {selected === v && <span className="text-brand text-lg">✓</span>}
+                <span className={`text-lg w-5 text-right ${selected === v ? 'text-brand' : 'invisible'}`}>✓</span>
               </button>
             ))}
           </div>

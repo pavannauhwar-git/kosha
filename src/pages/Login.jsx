@@ -114,8 +114,13 @@ export default function Login() {
   return (
     <div className="min-h-dvh bg-white flex flex-col">
 
+      {/* Top spacer — matches footer height so content is visually centred */}
+      <div className="pb-10 pointer-events-none" aria-hidden="true">
+        <p className="text-label invisible">&nbsp;</p>
+      </div>
+
       {/* ── Main content — vertically centred ────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
         <motion.div
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
           initial="hidden"
