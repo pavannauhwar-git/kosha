@@ -38,13 +38,11 @@ def generate_icon(size):
     # Draw thick bold white KOSHA text
     text = "KOSHA"
     font_size = round(size * 0.20)
+    font_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'fonts', 'Roboto-Black.ttf')
     try:
-        font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Black.ttf", font_size)
+        font = ImageFont.truetype(font_path, font_size)
     except (IOError, OSError):
-        try:
-            font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", font_size)
-        except (IOError, OSError):
-            font = ImageFont.load_default()
+        font = ImageFont.load_default()
 
     text_draw = ImageDraw.Draw(img)
     bbox = text_draw.textbbox((0, 0), text, font=font)

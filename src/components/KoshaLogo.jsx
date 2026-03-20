@@ -12,10 +12,10 @@ export default function KoshaLogo({ size = 64 }) {
       </defs>
       <rect width="64" height="64" rx={r} fill="url(#kosha-hero-grad)" />
       <text
-        x="32" y="36"
+        x="32" y="32"
         textAnchor="middle"
         dominantBaseline="central"
-        fontFamily="'Arial Black', 'Roboto', system-ui, sans-serif"
+        fontFamily="Roboto, system-ui, sans-serif"
         fontSize="13"
         fontWeight="900"
         letterSpacing="1"
