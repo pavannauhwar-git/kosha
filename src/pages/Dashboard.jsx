@@ -72,21 +72,21 @@ export default function Dashboard() {
       : hour < 21 ? 'Good evening'
         : 'Good night'
 
-  const daysInMonth    = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const dayOfMonth     = now.getDate()
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const dayOfMonth = now.getDate()
 
   // On-pace: spending fraction ≤ days-elapsed fraction + 5% buffer
-  const paceOk        = earned === 0 || spent / earned <= dayOfMonth / daysInMonth + 0.05
+  const paceOk = earned === 0 || spent / earned <= dayOfMonth / daysInMonth + 0.05
   const totalBillsAmt = useMemo(() => bills.reduce((s, b) => s + +b.amount, 0), [bills])
-  const insight       = useMemo(() => {
+  const insight = useMemo(() => {
     const spendPct = earned > 0 ? spent / earned : 0
-    const dayPct   = dayOfMonth / daysInMonth
-    if (!earned && !spent)         return 'Log a transaction to start your money story 📊'
-    if (spendPct < dayPct - 0.15)  return `Under pace · ${rate}% saved so far ✨`
-    if (spendPct > dayPct + 0.15)  return 'Spending running hot this month · ease up 📈'
-    if (dueSoon.length > 0)        return `${dueSoon.length} bill${dueSoon.length > 1 ? 's' : ''} coming due · plan ahead 📅`
-    if (investDiff > 0)            return `Invested ${fmt(Math.abs(investDiff))} more than last month 💪`
-    if (rate >= 25)                return `Saving ${rate}% of income · outstanding month 🎯`
+    const dayPct = dayOfMonth / daysInMonth
+    if (!earned && !spent) return 'Log a transaction to start your money story 📊'
+    if (spendPct < dayPct - 0.15) return `Under pace · ${rate}% saved so far ✨`
+    if (spendPct > dayPct + 0.15) return 'Spending running hot this month · ease up 📈'
+    if (dueSoon.length > 0) return `${dueSoon.length} bill${dueSoon.length > 1 ? 's' : ''} coming due · plan ahead 📅`
+    if (investDiff > 0) return `Invested ${fmt(Math.abs(investDiff))} more than last month 💪`
+    if (rate >= 25) return `Saving ${rate}% of income · outstanding month 🎯`
     return `Saving ${rate}% this month · right on track 👍`
   }, [earned, spent, dayOfMonth, daysInMonth, rate, dueSoon, investDiff])
 
@@ -122,7 +122,7 @@ export default function Dashboard() {
   return (
     <div className="page">
       <PageHeader title="Dashboard" />
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5 max-w-[560px] md:max-w-3xl mx-auto px-4 md:px-8 pt-4">
 
         {/* ── Greeting ──────────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
@@ -134,7 +134,7 @@ export default function Dashboard() {
           </h1>
         </motion.div>
 
-        
+
         {/* ── Hero card ─────────────────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="card-hero p-6 relative overflow-hidden">
           <div className="flex items-center justify-between mb-4">
@@ -153,8 +153,8 @@ export default function Dashboard() {
               <div className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white/70 uppercase tracking-wider">Tap</div>
             </div>
             <p className="text-hero font-bold text-white leading-none tracking-tight tabular-nums">
-              {heroMode === 'balance' 
-                ? (runningBalance !== null ? fmt(runningBalance) : '—') 
+              {heroMode === 'balance'
+                ? (runningBalance !== null ? fmt(runningBalance) : '—')
                 : (runningBalance !== null ? fmt(Math.max(0, runningBalance - bills.reduce((acc, b) => acc + b.amount, 0))) : '—')}
             </p>
           </div>
@@ -198,9 +198,8 @@ export default function Dashboard() {
             {/* Today */}
             <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface border border-kosha-border">
               <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">Today</p>
-              <p className={`text-[13px] font-bold tabular-nums leading-none ${
-                todaySpend > 0 ? 'text-expense-text' : 'text-income-text'
-              }`}>  
+              <p className={`text-[13px] font-bold tabular-nums leading-none ${todaySpend > 0 ? 'text-expense-text' : 'text-income-text'
+                }`}>
                 {todaySpend > 0 ? fmt(todaySpend, true) : 'All clear 🌿'}
               </p>
             </div>
@@ -213,7 +212,7 @@ export default function Dashboard() {
                 <p className="text-[10px] font-semibold text-repay-text uppercase tracking-wider">Bills due</p>
                 <p className="text-[13px] font-bold text-repay-text tabular-nums leading-none">{fmt(totalBillsAmt, true)}</p>
               </button>
-            )}  
+            )}
             {/* Contextual insight — fixed width so it never squishes */}
             <div className="shrink-0 w-[175px] flex flex-col gap-1 px-3 py-2.5 rounded-2xl bg-kosha-surface-2 border border-kosha-border">
               <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">Insight</p>
@@ -226,9 +225,8 @@ export default function Dashboard() {
         <motion.div variants={fadeUp} className="card p-4">
           {/* Header row */}
           <div className="mb-3">
-            <p className={`text-[15px] font-bold leading-snug ${
-              paceOk ? 'text-income-text' : 'text-expense-text'
-            }`}>  
+            <p className={`text-[15px] font-bold leading-snug ${paceOk ? 'text-income-text' : 'text-expense-text'
+              }`}>
               {paceOk ? '✓ On track' : '⚡ Running hot'}
             </p>
             <p className="text-caption text-ink-3">Day {dayOfMonth} of {daysInMonth}</p>
@@ -252,9 +250,8 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-caption text-ink-3">Amount spent</span>
-                <span className={`text-caption font-semibold ${
-                  paceOk ? 'text-ink' : 'text-expense-text'
-                }`}>  
+                <span className={`text-caption font-semibold ${paceOk ? 'text-ink' : 'text-expense-text'
+                  }`}>
                   {earned > 0 ? Math.round(spent / earned * 100) : 0}%
                 </span>
               </div>
@@ -326,7 +323,7 @@ export default function Dashboard() {
                     : investUp ? <TrendingUp size={12} className="text-income-text" />
                       : <TrendingDown size={12} className="text-expense-text" />}
                   <span className={`text-caption font-semibold ${investDiff === 0 ? 'text-ink-3'
-                    : investUp ? 'text-income-text' : 'text-expense-text'}`}>  
+                    : investUp ? 'text-income-text' : 'text-expense-text'}`}>
                     {investDiff === 0 ? 'Same as last month'
                       : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
                   </span>
@@ -377,8 +374,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-32 left-4 right-4 z-50 flex items-center gap-3
-                       bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
+            className="fixed bottom-32 left-4 right-4 md:left-[236px] md:bottom-8 z-50 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
           >
             <span className="text-[13px] font-medium flex-1">{toast}</span>
             <button onClick={() => setToast(null)}

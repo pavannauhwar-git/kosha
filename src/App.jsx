@@ -133,35 +133,10 @@ function DesktopSidebar() {
 
       {/* Profile footer */}
       <div
-        className="flex items-center gap-2.5 px-2 pt-4"
+        className="px-2 pt-4"
         style={{ borderTop: `1px solid ${C.brandBorder}` }}
       >
-        <div
-          className="w-8 h-8 rounded-full bg-brand-container flex items-center
-                     justify-center overflow-hidden shrink-0"
-        >
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-[12px] font-bold text-brand">{initial}</span>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-ink truncate">{displayName}</p>
-        </div>
-        {/* Settings shortcut */}
-        <button
-          onClick={() => navigate('/settings')}
-          className="w-7 h-7 rounded-full flex items-center justify-center
-                     hover:bg-kosha-surface-2 transition-colors shrink-0"
-          title="Account Settings"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke={C.ink3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-          </svg>
-        </button>
+        <ProfileMenu />
       </div>
     </aside>
   )
@@ -282,6 +257,16 @@ function GlobalRealtimeSync() {
   return null
 }
 
+function ContentWrapper({ children }) {
+  const location = useLocation()
+  const hasSidebar = !NAV_HIDE_ON.some(p => location.pathname.startsWith(p))
+  return (
+    <div className={hasSidebar ? 'md:ml-[220px]' : ''}>
+      {children}
+    </div>
+  )
+}
+
 // ── App shell ─────────────────────────────────────────────────────────────
 function AppShell() {
   return (
@@ -291,7 +276,7 @@ function AppShell() {
       <DesktopSidebar />
 
       {/* Content — offset by sidebar width on desktop */}
-      <div className="md:ml-[220px]">
+      <ContentWrapper>
         <Routes>
           {/* Public */}
           <Route path="/login"         element={<Login />} />
@@ -345,7 +330,7 @@ function AppShell() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/not-found" replace />} />
         </Routes>
-      </div>
+      </ContentWrapper>
 
       {/* Mobile only */}
       <BottomNav />

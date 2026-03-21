@@ -1,5 +1,15 @@
 export const CHANGELOG = [
   {
+    version: '1.3',
+    date: 'March 2026',
+    items: [
+      'Profile menu now clickable in desktop sidebar',
+      'Sticky page title bar on desktop for all main pages',
+      'Fixed layout shift on report bug, about, and settings pages',
+      'FAB, sheets, and toasts repositioned correctly on desktop',
+    ],
+  },
+  {
     version: '1.2',
     date: 'March 2026',
     items: [
