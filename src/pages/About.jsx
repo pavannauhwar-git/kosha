@@ -86,14 +86,12 @@ export default function About() {
 
       {/* ── Sticky header ─────────────────────────────────────────── */}
       <div
-        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md
-                   px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 2rem)' }}
+        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0))' }}
       >
         <button
           onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                     flex items-center justify-center active:bg-kosha-surface-2"
+          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center active:bg-kosha-surface-2"
         >
           <ArrowLeft size={16} className="text-ink-2" />
         </button>
