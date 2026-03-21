@@ -153,7 +153,7 @@ export default function Transactions() {
             title="Export CSV"
             className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                  flex items-center justify-center active:bg-kosha-surface-2
-                 transition-colors shrink-0 mt-1"
+                 transition-colors shrink-0"
           >
             <DownloadSimple size={16} className="text-ink-2" />
           </button>
