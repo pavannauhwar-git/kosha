@@ -239,13 +239,13 @@ export default function ReportBug() {
 
     const diagnostics = includeDiagnostics
       ? {
-          userAgent: navigator.userAgent,
-          platform: navigator.platform,
-          language: navigator.language,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          viewport: `${window.innerWidth}x${window.innerHeight}`,
-          source,
-        }
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        source,
+      }
       : null
 
     setSaving(true)
@@ -278,7 +278,7 @@ export default function ReportBug() {
       if (reportId) {
         void supabase.functions.invoke('bug-report-notify', {
           body: { reportId },
-        }).catch(() => {})
+        }).catch(() => { })
       }
 
       setSubmitted({ id: reportId, isDuplicate, occurrenceCount })
@@ -304,12 +304,11 @@ export default function ReportBug() {
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      <div className="mx-auto max-w-[560px]">
-        <div className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-kosha-border">
-          <button type="button" onClick={handleBack} className="close-btn">
-            <ArrowLeft size={16} className="text-ink-3" />
-          </button>
-
+      <div className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-kosha-border">
+        <button type="button" onClick={handleBack} className="close-btn">
+          <ArrowLeft size={16} className="text-ink-3" />
+        </button>
+        <div className="mx-auto max-w-[560px]">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-chip bg-brand-container flex items-center justify-center">
               <Bug size={14} className="text-brand" />

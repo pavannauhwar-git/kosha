@@ -7,7 +7,7 @@ export default function PageHeader({ title }) {
                  border-b border-kosha-border
                  flex items-center justify-between
                  px-4 md:px-8 py-3"
-      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px))' }}
     >
       <h1 className="text-[17px] md:text-[20px] font-bold text-ink tracking-tight">{title}</h1>
       <div className="md:hidden">
