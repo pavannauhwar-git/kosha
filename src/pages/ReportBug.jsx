@@ -236,13 +236,13 @@ export default function ReportBug() {
 
     const diagnostics = includeDiagnostics
       ? {
-          userAgent: navigator.userAgent,
-          platform: navigator.platform,
-          language: navigator.language,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          viewport: `${window.innerWidth}x${window.innerHeight}`,
-          source,
-        }
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        source,
+      }
       : null
 
     setSaving(true)
@@ -275,7 +275,7 @@ export default function ReportBug() {
       if (reportId) {
         void supabase.functions.invoke('bug-report-notify', {
           body: { reportId },
-        }).catch(() => {})
+        }).catch(() => { })
       }
 
       setSubmitted({ id: reportId, isDuplicate, occurrenceCount })
@@ -299,10 +299,10 @@ export default function ReportBug() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* ── Sticky header — full width ─────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md
-                      border-b border-kosha-border px-4 py-3
-                      flex items-center justify-between">
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
+      <div
+        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md border-b border-kosha-border px-4 flex items-center justify-between"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)', paddingBottom: '0.75rem' }}
+      >
         <button type="button" onClick={handleBack} className="close-btn">
           <ArrowLeft size={16} className="text-ink-3" />
         </button>
