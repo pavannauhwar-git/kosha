@@ -334,12 +334,15 @@
 
   .sheet-panel {
     @apply fixed bottom-0 bg-kosha-surface z-50;
-    left: max(0px, calc((100vw - 560px) / 2));
-    right: max(0px, calc((100vw - 560px) / 2));
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 560px;
     box-shadow: 0 -2px 40px rgba(0, 0, 0, 0.15);
     border-radius: 20px 20px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
-    max-height: 94dvh;
+    max-height: 100dvh;
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -461,5 +464,9 @@
   .sheet-panel {
     left: max(220px, calc((100vw - 860px) / 2 + 220px));
     right: max(0px, calc((100vw - 860px) / 2));
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 560px;
+    max-height: 94dvh;
   }
 }

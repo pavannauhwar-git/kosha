@@ -60,7 +60,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 card p-5"
+            className="fixed top-1/2 left-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 card p-5 m-0"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[17px] font-semibold text-ink">Edit Profile Name</h3>
