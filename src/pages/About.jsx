@@ -87,7 +87,7 @@ export default function About() {
       {/* ── Sticky header ─────────────────────────────────────────── */}
       <div
         className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 2px))' }}
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 2px), 2px)' }}
       >
         <button
           onClick={() => navigate(-1)}

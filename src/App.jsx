@@ -140,7 +140,6 @@ function DesktopSidebar() {
           <ProfileMenu dropUp />
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-semibold text-ink truncate">{displayName}</p>
-            <p className="text-[11px] text-ink-3 truncate">{user?.email}</p>
           </div>
         </div>
       </div>
