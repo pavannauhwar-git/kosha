@@ -71,6 +71,7 @@ function Divider() {
 export default function About() {
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
+  const [showAllVersions, setShowAllVersions] = useState(false)
 
   function copyUpi() {
     if (navigator.clipboard?.writeText) {
@@ -113,9 +114,8 @@ export default function About() {
               <p className="text-caption font-semibold text-ink-3 tracking-widest uppercase mt-1">
                 Your Financial Sheath
               </p>
-              <p className="text-[12px] text-ink-4 mt-2">Version 1.0</p>
             </div>
-            <KoshaLogo size={64} />
+            <KoshaLogo size={56} />
           </motion.div>
 
           {/* ── About ─────────────────────────────────────────────── */}
@@ -148,38 +148,59 @@ export default function About() {
           <motion.div variants={fadeUp}>
             <SectionLabel>What's New</SectionLabel>
             <div className="card overflow-hidden p-0">
-              {CHANGELOG.map((release, ri) => (
-                <div key={release.version}>
-                  {ri > 0 && <Divider />}
-                  <div className="flex items-center justify-between px-4 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-chip bg-brand-container
-                        flex items-center justify-center shrink-0">
-                        <StarIcon size={17} weight="duotone" color={C.brand} />
+
+              {CHANGELOG
+                .slice(0, showAllVersions ? CHANGELOG.length : 1)
+                .map((release, ri) => (
+                  <div key={release.version}>
+                    {ri > 0 && <Divider />}
+                    <div className="flex items-center justify-between px-4 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-chip bg-brand-container
+                              flex items-center justify-center shrink-0">
+                          <StarIcon size={17} weight="duotone" color={C.brand} />
+                        </div>
+                        <div>
+                          <p className="text-[15px] font-semibold text-ink">Version {release.version}</p>
+                          <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[15px] font-semibold text-ink">Version {release.version}</p>
-                        <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
-                      </div>
+                      {ri === 0 && (
+                        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
+                               bg-income-bg text-income-text">
+                          Latest
+                        </span>
+                      )}
                     </div>
-                    {ri === 0 && (
-                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
-                         bg-income-bg text-income-text">
-                        Latest
-                      </span>
-                    )}
+                    <Divider />
+                    <div className="px-4 py-3.5 space-y-2.5">
+                      {release.items.map((item, i) => (
+                        <div key={i} className="flex items-start gap-2.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-brand mt-[6px] shrink-0" />
+                          <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                ))
+              }
+
+              {/* Toggle — only shows if there's more than 1 release */}
+              {CHANGELOG.length > 1 && (
+                <>
                   <Divider />
-                  <div className="px-4 py-3.5 space-y-2.5">
-                    {release.items.map((item, i) => (
-                      <div key={i} className="flex items-start gap-2.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-brand mt-[6px] shrink-0" />
-                        <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                  <button
+                    onClick={() => setShowAllVersions(v => !v)}
+                    className="w-full px-4 py-3 text-[13px] font-semibold text-brand
+                     text-center active:bg-kosha-surface-2 transition-colors"
+                  >
+                    {showAllVersions
+                      ? 'Hide older versions'
+                      : `Show older versions (${CHANGELOG.length - 1})`}
+                  </button>
+                </>
+              )}
+
             </div>
           </motion.div>
 

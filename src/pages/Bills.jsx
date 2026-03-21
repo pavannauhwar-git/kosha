@@ -8,6 +8,7 @@ import {
   deleteLiability,
 } from '../hooks/useLiabilities'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
+import PageHeader from '../components/PageHeader'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 
@@ -99,6 +100,7 @@ export default function Bills() {
 
   return (
     <div className="page">
+      <PageHeader title="Bills & Dues" />
 
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-4">

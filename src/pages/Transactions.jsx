@@ -8,6 +8,7 @@ import { CATEGORIES } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus, DownloadSimple } from '@phosphor-icons/react'
+import PageHeader from '../components/PageHeader'
 
 const TYPES = [
   { id: 'all', label: 'All' },
@@ -136,9 +137,10 @@ export default function Transactions() {
 
   return (
     <div className="page">
+      <PageHeader title="Transactions" />
 
       {/* ── Header ───────────────────────────────────────────────────── */}
-      <div className="mb-4 flex items-start justify-between pr-14">
+      <div className="mb-4 flex items-start justify-between">
         <div>
           <h1 className="font-display text-display font-bold text-ink">Transactions</h1>
           <p className="text-caption text-ink-3 mt-0.5">

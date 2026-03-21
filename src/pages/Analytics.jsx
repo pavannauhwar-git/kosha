@@ -17,6 +17,7 @@ import CategorySpendingChart from '../components/CategorySpendingChart'
 import { CATEGORIES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
+import PageHeader from '../components/PageHeader'
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -483,9 +484,10 @@ export default function Analytics() {
 
   return (
     <div className="page">
+      <PageHeader title="Analytics" />
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-6 pr-14">
+      <div className="flex items-center justify-between mb-6">
         <button onClick={() => setYear(y => y - 1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">

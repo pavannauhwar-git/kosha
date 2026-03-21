@@ -11,6 +11,7 @@ import AboutKoshaLink from '../components/AboutKoshaLink'
 import { fmt, monthStr, savingsRate, daysUntil } from '../lib/utils'
 import { C } from '../lib/colors'
 import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
+import PageHeader from '../components/PageHeader'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 4 },
@@ -120,6 +121,7 @@ export default function Dashboard() {
 
   return (
     <div className="page">
+      <PageHeader title="Dashboard" />
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
 
         {/* ── Greeting ──────────────────────────────────────────────────── */}

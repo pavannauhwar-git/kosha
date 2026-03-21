@@ -7,6 +7,7 @@ import CategoryIcon from '../components/CategoryIcon'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt, savingsRate } from '../lib/utils'
 import { C } from '../lib/colors'
+import PageHeader from '../components/PageHeader'
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
@@ -310,9 +311,10 @@ export default function Monthly() {
 
   return (
     <div className="page">
+      <PageHeader title="Monthly" />
 
       {/* ── Month navigator ───────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-6 pr-14">
+      <div className="flex items-center justify-between mb-6">
         <button onClick={prev}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">

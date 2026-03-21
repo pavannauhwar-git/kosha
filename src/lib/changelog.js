@@ -1,5 +1,15 @@
 export const CHANGELOG = [
   {
+    version: '1.2',
+    date: 'March 2026',
+    items: [
+      'Desktop sidebar with logo and navigation',
+      'Sticky page header with title on mobile',
+      'Bottom nav hidden on desktop, sidebar takes over',
+      'Account Settings and About pages redesigned',
+    ],
+  },
+  {
     version: '1.1',
     date: 'March 2026',
     items: [
