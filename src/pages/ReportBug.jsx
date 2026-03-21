@@ -521,7 +521,7 @@ export default function ReportBug() {
 
       {/* ── Bottom action bar ──────────────────────────────────────── */}
       {!submitted && (
-        <div className="fixed inset-x-0 md:left-[220px] bottom-0 z-30 border-t border-kosha-border bg-kosha-bg/95 backdrop-blur-md">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-kosha-border bg-kosha-bg/95 backdrop-blur-md">
           <div
             className="mx-auto max-w-[560px] px-4 pt-3 grid grid-cols-2 gap-2"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
