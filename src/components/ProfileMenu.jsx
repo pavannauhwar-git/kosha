@@ -1,118 +1,75 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Camera, Trash2, Pencil, UserPlus, Info, Bug, Heart } from 'lucide-react'
+import { Settings, UserPlus, LogOut, Bug, Info } from 'lucide-react'
+import { Heart } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import EditProfileNameDialog from './EditProfileNameDialog'
+
+function MenuRow({ icon, label, onClick, destructive = false, disabled = false }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
+                  text-label font-medium transition-colors disabled:opacity-60
+                  ${destructive
+                    ? 'text-expense-text hover:bg-expense-bg'
+                    : 'text-ink hover:bg-kosha-surface-2'}`}
+    >
+      <span className="shrink-0 w-4 h-4 flex items-center justify-center">
+        {icon}
+      </span>
+      {label}
+    </button>
+  )
+}
+
+function MenuDivider() {
+  return <div className="my-1 h-px bg-kosha-border mx-1" />
+}
 
 export default function ProfileMenu({ className = '' }) {
-  const { user, profile, signOut, updateProfile } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [inviteLoading, setInviteLoading] = useState(false)
-  const [photoError, setPhotoError] = useState('')
-  const [inviteError, setInviteError] = useState('')
-  const [inviteInfo, setInviteInfo] = useState('')
-  const [showEditName, setShowEditName] = useState(false)
-  const fileInputRef = useRef(null)
+  const [inviteMsg, setInviteMsg] = useState('')
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
+  const displayName = profile?.display_name || 'My Account'
 
-  async function handleFileChange(e) {
-    const file = e.target.files?.[0]
-    if (!file || !user) return
-
-    setPhotoError('')
-    setUploading(true)
-    try {
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = `avatars/${user.id}-${Date.now()}.${ext}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(path, file, { cacheControl: '3600', upsert: true })
-      if (uploadError) throw uploadError
-
-      const { data: publicUrlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(path)
-
-      const publicUrl = publicUrlData?.publicUrl
-      if (!publicUrl) throw new Error('Could not get public URL for avatar.')
-
-      await updateProfile({ avatar_url: publicUrl })
-    } catch (e) {
-      setPhotoError(e.message || 'Could not update photo. Try again.')
-    } finally {
-      setUploading(false)
-      // reset the input so the same file can be selected again if needed
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }
-  async function handleDeletePhoto() {
-    setPhotoError('')
-    setUploading(true)
-    try {
-      await updateProfile({ avatar_url: null })
-    } catch (e) {
-      setPhotoError(e.message || 'Could not remove photo. Try again.')
-    } finally {
-      setUploading(false)
-    }
+  function close() {
+    setOpen(false)
+    setInviteMsg('')
   }
 
   async function handleInvite() {
-    if (!user || uploading || inviteLoading) return
-
-    setInviteError('')
-    setInviteInfo('')
+    if (!user || inviteLoading) return
+    setInviteMsg('')
     setInviteLoading(true)
-
     try {
-      const { data, error: createInviteError } = await supabase
+      const { data, error } = await supabase
         .from('invites')
         .insert({ created_by: user.id })
         .select('token')
         .single()
 
-      if (createInviteError) throw createInviteError
-
-      const token = data?.token
-      if (!token) throw new Error('Could not create invite link. Try again.')
-
-      const joinUrl = `${window.location.origin}/join/${token}`
+      if (error) throw error
+      const joinUrl = `${window.location.origin}/join/${data.token}`
 
       if (navigator.share) {
-        try {
-          await navigator.share({
-            title: 'Join me on Kosha',
-            text: 'Use my invite link to join Kosha.',
-            url: joinUrl,
-          })
-          setInviteInfo('Invite sent successfully.')
-        } catch (shareError) {
-          if (shareError?.name === 'AbortError') {
-            setInviteInfo('Share cancelled.')
-          } else {
-            throw shareError
-          }
-        }
-        return
-      }
-
-      if (navigator.clipboard?.writeText) {
+        await navigator.share({ title: 'Join me on Kosha', url: joinUrl }).catch(() => {})
+      } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(joinUrl)
-        setInviteInfo('Invite link copied to clipboard.')
+        setInviteMsg('Invite link copied!')
       } else {
-        window.prompt('Copy this invite link:', joinUrl)
-        setInviteInfo('Invite link ready to share.')
+        window.prompt('Copy invite link:', joinUrl)
       }
     } catch (e) {
-      setInviteError(e.message || 'Could not create invite right now. Please try again.')
+      setInviteMsg('Could not create invite. Try again.')
     } finally {
       setInviteLoading(false)
     }
@@ -120,6 +77,7 @@ export default function ProfileMenu({ className = '' }) {
 
   return (
     <div className={`relative ${className}`.trim()}>
+      {/* ── Avatar button ────────────────────────────────────────── */}
       <button
         onClick={() => setOpen(v => !v)}
         className="w-9 h-9 rounded-full bg-brand-container flex items-center
@@ -128,7 +86,7 @@ export default function ProfileMenu({ className = '' }) {
         {avatarUrl ? (
           <img
             src={avatarUrl}
-            alt={profile?.display_name || user?.email || 'Profile'}
+            alt={displayName}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -136,156 +94,86 @@ export default function ProfileMenu({ className = '' }) {
         )}
       </button>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileChange}
-      />
-
       <AnimatePresence>
         {open && (
           <>
-            <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-30" onClick={close} />
+
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -4 }}
               transition={{ duration: 0.12, ease: 'easeOut' }}
-              className="absolute right-0 top-11 z-40 w-56 card p-1.5"
+              className="absolute right-0 top-11 z-40 w-60 card p-1.5"
             >
-              <div className="px-2.5 py-2 border-b border-kosha-border mb-1 flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center overflow-hidden shrink-0">
+              {/* ── Identity header ───────────────────────────────── */}
+              <div className="flex items-center gap-2.5 px-3 py-2.5 mb-1">
+                <div className="w-9 h-9 rounded-full bg-brand-container
+                                flex items-center justify-center overflow-hidden shrink-0">
                   {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={profile?.display_name || user?.email || 'Profile'}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-label font-bold text-brand-on">{initial}</span>
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-label font-semibold text-ink truncate">
-                    {profile?.display_name || 'My Account'}
-                  </p>
+                  <p className="text-label font-semibold text-ink truncate">{displayName}</p>
                   <p className="text-caption text-ink-3 truncate">{user?.email}</p>
                 </div>
               </div>
 
-              <button
-                onClick={() => {
-                  setShowEditName(true)
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
-                           text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
-              >
-                <Pencil size={15} />
-                Edit profile name
-              </button>
+              <MenuDivider />
 
-              <button
+              {/* ── Group 1: Account ──────────────────────────────── */}
+              <MenuRow
+                icon={<Settings size={15} />}
+                label="Account Settings"
+                onClick={() => { close(); navigate('/settings') }}
+              />
+              <MenuRow
+                icon={<UserPlus size={15} />}
+                label={inviteLoading ? 'Creating invite…' : 'Invite Friends'}
                 onClick={handleInvite}
-                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
-                           text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors disabled:opacity-60"
-                disabled={uploading || inviteLoading}
-              >
-                <UserPlus size={15} />
-                {inviteLoading ? 'Creating invite...' : 'Invite friends'}
-              </button>
-
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
-                           text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors disabled:opacity-60"
-                disabled={uploading}
-              >
-                <Camera size={15} />
-                {uploading ? 'Updating photo…' : 'Change photo'}
-              </button>
-
-              {avatarUrl && (
-                <button
-                  onClick={handleDeletePhoto}
-                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
-               text-label font-medium text-expense-text hover:bg-expense-bg transition-colors disabled:opacity-60"
-                  disabled={uploading}
-                >
-                  <Trash2 size={15} />
-                  {uploading ? 'Removing…' : 'Remove photo'}
-                </button>
+                disabled={inviteLoading}
+              />
+              {inviteMsg && (
+                <p className="text-[11px] px-3 pb-1 text-brand">{inviteMsg}</p>
               )}
 
-              {photoError && (
-                <p className="px-2.5 pt-1 text-[11px] text-expense-text">
-                  {photoError}
-                </p>
-              )}
+              <MenuDivider />
 
-              {inviteError && (
-                <p className="px-2.5 pt-1 text-[11px] text-expense-text">
-                  {inviteError}
-                </p>
-              )}
-
-              {inviteInfo && (
-                <p className="px-2.5 pt-1 text-[11px] text-brand">
-                  {inviteInfo}
-                </p>
-              )}
-
-              <button
+              {/* ── Group 2: App ──────────────────────────────────── */}
+              <MenuRow
+                icon={<Bug size={15} />}
+                label="Report a Bug"
                 onClick={() => {
-                  setOpen(false)
-                  const currentPath = `${location.pathname || '/'}${location.search || ''}` || '/'
+                  close()
+                  const currentPath = `${location.pathname}${location.search || ''}`
                   navigate('/report-bug', {
-                    state: {
-                      source: 'profile-menu',
-                      returnTo: currentPath,
-                      reportedRoute: currentPath,
-                    },
+                    state: { source: 'profile-menu', returnTo: currentPath, reportedRoute: currentPath },
                   })
                 }}
-                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
-                           text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
-              >
-                <Bug size={15} />
-                Report bug
-              </button>
+              />
+              <MenuRow
+                icon={<Info size={15} />}
+                label="About Kosha"
+                onClick={() => { close(); navigate('/about', { state: { backgroundLocation: location } }) }}
+              />
 
-              <button
-                onClick={() => {
-                  setOpen(false)
-                  navigate('/about', { state: { backgroundLocation: location } })
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
-                           text-label font-medium text-ink hover:bg-kosha-surface-2 transition-colors"
-              >
-                <Info size={15} />
-                <span className="inline-flex items-center gap-1">
-                  About Kosha
-                  <Heart size={13} weight="fill" className="text-expense-text" />
-                </span>
-              </button>
+              <MenuDivider />
 
-              <button
-                onClick={() => { setOpen(false); signOut() }}
-                className="mt-1 w-full flex items-center gap-2 px-2.5 py-2 rounded-chip
-                           text-label font-medium text-expense-text hover:bg-expense-bg transition-colors"
-              >
-                <LogOut size={15} /> Sign out
-              </button>
+              {/* ── Group 3: Sign out ─────────────────────────────── */}
+              <MenuRow
+                icon={<LogOut size={15} />}
+                label="Sign Out"
+                onClick={() => { close(); signOut() }}
+                destructive
+              />
             </motion.div>
           </>
         )}
       </AnimatePresence>
-
-      <EditProfileNameDialog
-        open={showEditName}
-        onClose={() => setShowEditName(false)}
-      />
     </div>
   )
 }

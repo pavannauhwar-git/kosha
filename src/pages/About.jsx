@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
-import { Heart, Code, CurrencyInr, Copy, Check, Coffee, GithubLogo } from '@phosphor-icons/react'
+import { HeartIcon, CodeIcon, CurrencyInrIcon, CopyIcon, CheckIcon, CoffeeIcon, GithubLogoIcon } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
 import { useAuth } from '../context/AuthContext'
 import KoshaLogo from '../components/KoshaLogo'
@@ -82,7 +82,7 @@ export default function About({ asOverlay = false }) {
           {/* ── About blurb ─────────────────────────────────────────── */}
           <div className="card p-5 mb-4">
             <div className="flex items-center gap-2 mb-3">
-              <Code size={18} weight="duotone" color={C.brand} />
+              <CodeIcon size={18} weight="duotone" color={C.brand} />
               <h2 className="text-[16px] font-bold text-ink">About</h2>
             </div>
             <p className="text-[14px] text-ink-2 leading-relaxed">
@@ -103,7 +103,7 @@ export default function About({ asOverlay = false }) {
           {/* ── Built with love ─────────────────────────────────────── */}
           <div className="card p-5 mb-4">
             <div className="flex items-center gap-2 mb-3">
-              <Heart size={18} weight="duotone" color="#DC2626" />
+              <HeartIcon size={18} weight="duotone" color="#DC2626" />
               <h2 className="text-[16px] font-bold text-ink">Built With</h2>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -124,7 +124,7 @@ export default function About({ asOverlay = false }) {
                        rounded-[14px] border border-kosha-border bg-white
                        active:bg-kosha-surface-2 transition-all duration-75"
             >
-              <GithubLogo size={18} weight="fill" className="text-ink" />
+              <GithubLogoIcon size={18} weight="fill" className="text-ink" />
               <span className="text-[14px] font-semibold text-ink">View on GitHub</span>
             </a>
           </div>
@@ -132,7 +132,7 @@ export default function About({ asOverlay = false }) {
           {/* ── Support ─────────────────────────────────────────────── */}
           <div className="card p-5 mb-4">
             <div className="flex items-center gap-2 mb-3">
-              <Coffee size={18} weight="duotone" color={C.brand} />
+              <CoffeeIcon size={18} weight="duotone" color={C.brand} />
               <h2 className="text-[16px] font-bold text-ink">Support Kosha</h2>
             </div>
             <p className="text-[14px] text-ink-2 leading-relaxed mb-4">
@@ -149,7 +149,7 @@ export default function About({ asOverlay = false }) {
                          text-[15px] font-semibold
                          active:scale-[0.98] transition-all duration-75 shadow-sm"
               >
-                <CurrencyInr size={18} weight="bold" />
+                <CurrencyInrIcon size={18} weight="bold" />
                 {copied ? 'UPI ID Copied!' : 'Pay via UPI'}
               </button>
 
@@ -162,8 +162,8 @@ export default function About({ asOverlay = false }) {
               >
                 <span className="text-[14px] font-mono text-ink-2">{UPI_ID}</span>
                 {copied
-                  ? <Check size={14} weight="bold" className="text-income-text" />
-                  : <Copy size={14} className="text-ink-3" />
+                  ? <CheckIcon size={14} weight="bold" className="text-income-text" />
+                  : <CopyIcon size={14} className="text-ink-3" />
                 }
               </button>
             </div>
@@ -171,7 +171,7 @@ export default function About({ asOverlay = false }) {
 
           {/* ── Version ─────────────────────────────────────────────── */}
           <p className="text-center text-caption text-ink-4 mt-8">
-            Kosha v1.0 · Made with <Heart size={15} weight="fill" className="inline text-expense-text" /> in India
+            Kosha v1.0 · Made with <HeartIcon size={15} weight="fill" className="inline text-expense-text" /> in India
           </p>
         </div>
       </div>

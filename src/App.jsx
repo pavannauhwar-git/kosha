@@ -10,7 +10,7 @@ import { TRANSACTION_INVALIDATION_KEYS } from './hooks/useTransactions'
 import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
 import AuthGuard from './components/AuthGuard'
 import ProfileMenu from './components/ProfileMenu'
-import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
+import { HouseIcon, ListIcon, CalendarDotsIcon, ChartBarIcon, ReceiptIcon } from '@phosphor-icons/react'
 import { C } from './lib/colors'
 import { useScrollDirection } from './hooks/useScrollDirection'
 
@@ -29,6 +29,7 @@ const Analytics = lazy(() => import('./pages/Analytics'))
 const Bills = lazy(() => import('./pages/Bills'))
 const About = lazy(() => import('./pages/About'))
 const ReportBug = lazy(() => import('./pages/ReportBug'))
+const Settings = lazy(() => import('./pages/Settings'))
 
 // ── Skeleton fallback for lazy pages ─────────────────────────────────────
 // AuthGuard already shows per-route skeletons — we just need a minimal
@@ -40,11 +41,11 @@ function PageFallback() {
 }
 
 const NAV = [
-  { path: '/', label: 'Home', Icon: House },
-  { path: '/transactions', label: 'Activity', Icon: List },
-  { path: '/monthly', label: 'Monthly', Icon: CalendarDots },
-  { path: '/analytics', label: 'Insights', Icon: ChartBar },
-  { path: '/bills', label: 'Bills', Icon: Receipt },
+  { path: '/', label: 'Home', Icon: HouseIcon },
+  { path: '/transactions', label: 'Activity', Icon: ListIcon },
+  { path: '/monthly', label: 'Monthly', Icon: CalendarDotsIcon },
+  { path: '/analytics', label: 'Insights', Icon: ChartBarIcon },
+  { path: '/bills', label: 'Bills', Icon: ReceiptIcon },
 ]
 
 const REALTIME_INVALIDATION_POLICIES = [
@@ -58,7 +59,7 @@ const REALTIME_INVALIDATION_POLICIES = [
 function GlobalHeader() {
   const location = useLocation()
 
-  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug']
+  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   return (
@@ -83,7 +84,7 @@ function BottomNav() {
   const navigate = useNavigate()
   const scrolledDown = useScrollDirection()
 
-  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug']
+  const hideOn = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings']
   if (hideOn.some(p => location.pathname.startsWith(p))) return null
 
   const active = NAV.findIndex(n =>
@@ -253,6 +254,11 @@ function AppShell() {
         <Route path="/bills" element={
           <Suspense fallback={<PageFallback />}>
             <AuthGuard><Bills /></AuthGuard>
+          </Suspense>
+        } />
+        <Route path="/settings" element={
+          <Suspense fallback={<PageFallback />}>
+            <AuthGuard><Settings /></AuthGuard>
           </Suspense>
         } />
         <Route path="/about" element={
