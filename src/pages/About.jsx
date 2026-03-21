@@ -8,19 +8,20 @@ import {
 } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
 import KoshaLogo from '../components/KoshaLogo'
+import { CHANGELOG } from '../lib/changelog'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 6 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
 }
 const stagger = {
   hidden: {},
-  show:   { transition: { staggerChildren: 0.06, delayChildren: 0.04 } },
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.04 } },
 }
 
-const UPI_ID    = 'kumar.pavan.pk96@okicici'
-const REPO_URL  = 'https://github.com/pavannauhwar-git/kosha'
-const LINKEDIN  = 'https://www.linkedin.com/in/pavannauhwar/'
+const UPI_ID = 'kumar.pavan.pk96@okicici'
+const REPO_URL = 'https://github.com/pavannauhwar-git/kosha'
+const LINKEDIN = 'https://www.linkedin.com/in/pavannauhwar/'
 
 function SectionLabel({ children }) {
   return (
@@ -68,8 +69,8 @@ function Divider() {
 }
 
 export default function About() {
-  const navigate  = useNavigate()
-  const [copied, setCopied]   = useState(false)
+  const navigate = useNavigate()
+  const [copied, setCopied] = useState(false)
 
   function copyUpi() {
     if (navigator.clipboard?.writeText) {
@@ -147,40 +148,38 @@ export default function About() {
           <motion.div variants={fadeUp}>
             <SectionLabel>What's New</SectionLabel>
             <div className="card overflow-hidden p-0">
-              {/* Version header */}
-              <div className="flex items-center justify-between px-4 py-3.5">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-chip bg-brand-container
-                                  flex items-center justify-center shrink-0">
-                    <StarIcon size={17} weight="duotone" color={C.brand} />
+              {CHANGELOG.map((release, ri) => (
+                <div key={release.version}>
+                  {ri > 0 && <Divider />}
+                  <div className="flex items-center justify-between px-4 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-chip bg-brand-container
+                        flex items-center justify-center shrink-0">
+                        <StarIcon size={17} weight="duotone" color={C.brand} />
+                      </div>
+                      <div>
+                        <p className="text-[15px] font-semibold text-ink">Version {release.version}</p>
+                        <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
+                      </div>
+                    </div>
+                    {ri === 0 && (
+                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
+                         bg-income-bg text-income-text">
+                        Latest
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-ink">Version 1.0</p>
-                    <p className="text-[12px] text-ink-3 mt-0.5">Launch release</p>
+                  <Divider />
+                  <div className="px-4 py-3.5 space-y-2.5">
+                    {release.items.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-brand mt-[6px] shrink-0" />
+                        <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
-                                 bg-income-bg text-income-text">
-                  Latest
-                </span>
-              </div>
-              <Divider />
-              {/* Changelog items */}
-              <div className="px-4 py-3.5 space-y-2.5">
-                {[
-                  'Income, expense & investment tracking',
-                  'Bills & dues with recurring support',
-                  'Monthly breakdown with category budgets',
-                  'Year-over-year analytics',
-                  'Smart Entry — natural language input',
-                  'PWA — installable on iOS & Android',
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-2.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-brand mt-[6px] shrink-0" />
-                    <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </motion.div>
 
@@ -271,7 +270,7 @@ export default function About() {
             className="flex items-center justify-center gap-1.5 pt-2 pb-2"
           >
             <p className="text-caption text-ink-4">
-              Kosha v1.0 · Made with
+              Kosha v{CHANGELOG[0].version} · Made with
             </p>
             <HeartIcon size={12} weight="fill" className="text-expense-text" />
             <p className="text-caption text-ink-4">in India</p>
