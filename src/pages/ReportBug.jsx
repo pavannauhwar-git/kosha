@@ -166,17 +166,14 @@ export default function ReportBug() {
       goDashboard()
       return
     }
-
     if (returnTo) {
       navigate(returnTo, { replace: true })
       return
     }
-
     if (window.history.length > 1) {
       navigate(-1)
       return
     }
-
     goDashboard()
   }
 
@@ -239,13 +236,13 @@ export default function ReportBug() {
 
     const diagnostics = includeDiagnostics
       ? {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        viewport: `${window.innerWidth}x${window.innerHeight}`,
-        source,
-      }
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          language: navigator.language,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          viewport: `${window.innerWidth}x${window.innerHeight}`,
+          source,
+        }
       : null
 
     setSaving(true)
@@ -278,7 +275,7 @@ export default function ReportBug() {
       if (reportId) {
         void supabase.functions.invoke('bug-report-notify', {
           body: { reportId },
-        }).catch(() => { })
+        }).catch(() => {})
       }
 
       setSubmitted({ id: reportId, isDuplicate, occurrenceCount })
@@ -299,33 +296,36 @@ export default function ReportBug() {
   return (
     <div
       className="min-h-dvh bg-kosha-bg"
-      style={{
-        paddingTop: '0px',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-      }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-kosha-border">
+      {/* ── Sticky header — full width ─────────────────────────────── */}
+      <div className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md
+                      border-b border-kosha-border px-4 py-3
+                      flex items-center justify-between">
         <button type="button" onClick={handleBack} className="close-btn">
           <ArrowLeft size={16} className="text-ink-3" />
         </button>
-        <div className="mx-auto max-w-[560px]">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-chip bg-brand-container flex items-center justify-center">
-              <Bug size={14} className="text-brand" />
-            </div>
-            <h1 className="text-[17px] font-bold text-ink tracking-tight">Report Bug</h1>
-          </div>
 
-          <button
-            type="button"
-            onClick={goDashboard}
-            className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
-            aria-label="Go to dashboard"
-          >
-            <Home size={16} className="text-ink-3" />
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-chip bg-brand-container flex items-center justify-center">
+            <Bug size={14} className="text-brand" />
+          </div>
+          <h1 className="text-[17px] font-bold text-ink tracking-tight">Report Bug</h1>
         </div>
 
+        <button
+          type="button"
+          onClick={goDashboard}
+          className="w-9 h-9 rounded-pill flex items-center justify-center
+                     bg-kosha-surface-2 active:bg-kosha-border"
+          aria-label="Go to dashboard"
+        >
+          <Home size={16} className="text-ink-3" />
+        </button>
+      </div>
+
+      {/* ── Content — constrained ──────────────────────────────────── */}
+      <div className="mx-auto max-w-[560px]">
         <div className="px-4 pt-4 pb-36 space-y-4">
           {submitted ? (
             <motion.div
@@ -518,6 +518,7 @@ export default function ReportBug() {
         </div>
       </div>
 
+      {/* ── Bottom action bar ──────────────────────────────────────── */}
       {!submitted && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-kosha-border bg-kosha-bg/95 backdrop-blur-md">
           <div

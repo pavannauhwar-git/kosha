@@ -314,7 +314,7 @@ export default function Monthly() {
       <PageHeader title="Monthly" />
 
       {/* ── Month navigator ───────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 mt-4">
         <button onClick={prev}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2">
