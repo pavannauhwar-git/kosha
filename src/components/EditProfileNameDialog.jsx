@@ -1,128 +1,43 @@
-import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, X } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import React from "react";
 
-function nextFrame() {
-  return new Promise(resolve => requestAnimationFrame(resolve))
-}
-
-export default function EditProfileNameDialog({ open, onClose }) {
-  const { profile, user, updateDisplayName } = useAuth()
-  const [name, setName] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (!open) return
-    setName(profile?.display_name || user?.user_metadata?.full_name || '')
-    setError('')
-  }, [open, profile?.display_name, user?.user_metadata?.full_name])
-
-  async function handleSave(e) {
-    e.preventDefault()
-    const trimmed = name.trim()
-    if (!trimmed) {
-      setError('Display name cannot be empty.')
-      return
-    }
-
-    // Strict pessimistic flow: keep dialog open until write + refetch completes.
-    setIsSaving(true)
-    setError('')
-    try {
-      await updateDisplayName(trimmed)
-      await nextFrame()
-      onClose?.()
-    } catch (e) {
-      setError(e.message || 'Could not update name. Try again.')
-    } finally {
-      setIsSaving(false)
-    }
-  }
+export default function EditProfileNameDialog({ isOpen, onClose, onSave }) {
+  if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            className="fixed inset-0 z-40 bg-ink/20"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => {
-              if (!isSaving) onClose?.()
-            }}
-          />
+    // 1. Backdrop Wrapper: FIXED, FULLSCREEN, CENTERED, PADDED
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop Overlay */}
+      <div
+        className="absolute inset-0 bg-black bg-opacity-40"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      {/* 2. Modal Box: FULL WIDTH (padded by parent), MAX WIDTH, BACKGROUND, ROUNDED, PADDED */}
+      <div className="relative w-full max-w-sm bg-kosha-bg rounded-2xl p-6 overflow-hidden shadow-lg z-10">
+        {/* Dialog Content */}
+        <h2 className="text-xl font-semibold mb-4">Edit Profile Name</h2>
+        <input
+          type="text"
+          className="w-full border border-gray-300 rounded-xl px-4 py-2 mb-6 focus:outline-none focus:ring focus:border-blue-400"
+          placeholder="Your new name"
+        />
 
-          <motion.div
-            initial={{ opacity: 0, y: 14, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.98 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="fixed top-1/2 left-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 card p-5 m-0"
+        {/* 3. Buttons Row: EVEN SPACING OR END-ALIGNED, GAP, FULL-WIDTH (as per constraints) */}
+        <div className="w-full flex gap-3 mt-6">
+          <button
+            className="flex-1 py-2 px-4 rounded-xl border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition"
+            onClick={onClose}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[17px] font-semibold text-ink">Edit Profile Name</h3>
-              <button
-                type="button"
-                className="close-btn"
-                onClick={() => {
-                  if (!isSaving) onClose?.()
-                }}
-                disabled={isSaving}
-                aria-label="Close"
-              >
-                <X size={16} className="text-ink-3" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-3">
-              <label className="block text-[12px] font-medium text-ink-3" htmlFor="profile-name-input">
-                Display Name
-              </label>
-              <input
-                id="profile-name-input"
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                disabled={isSaving}
-                maxLength={60}
-                className="w-full bg-kosha-surface-2 rounded-card px-4 py-3 text-ink border border-transparent
-                           focus:outline-none focus:ring-2 focus:ring-brand-container focus:border-brand-container
-                           disabled:opacity-70"
-                placeholder="Your name"
-              />
-
-              {error && (
-                <p className="text-[12px] text-expense-text">{error}</p>
-              )}
-
-              <div className="pt-1 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => onClose?.()}
-                  disabled={isSaving}
-                  className="flex-1 py-2.5 rounded-card border border-kosha-border text-label font-medium text-ink-2
-                             bg-kosha-surface hover:bg-kosha-surface-2 transition-colors disabled:opacity-60"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex-1 py-2.5 rounded-card text-label font-semibold text-white bg-brand
-                             hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-70
-                             flex items-center justify-center gap-2"
-                >
-                  {isSaving && <Loader2 size={14} className="animate-spin" />}
-                  {isSaving ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  )
+            Cancel
+          </button>
+          <button
+            className="flex-1 py-2 px-4 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition"
+            onClick={onSave}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
