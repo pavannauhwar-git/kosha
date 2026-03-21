@@ -215,12 +215,9 @@ function GlobalRealtimeSync() {
 
 function AppShell() {
   const location = useLocation()
-  const backgroundLocation = location.state?.backgroundLocation
-  const showAboutOverlay = Boolean(backgroundLocation && location.pathname === '/about')
-
   return (
     <div className="min-h-dvh bg-kosha-bg">
-      <Routes location={backgroundLocation || location}>
+      <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
         <Route path="/join/:token" element={<Login />} />
@@ -275,16 +272,6 @@ function AppShell() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/not-found" replace />} />
       </Routes>
-
-      {showAboutOverlay && (
-        <Routes>
-          <Route path="/about" element={
-            <Suspense fallback={<PageFallback />}>
-              <About asOverlay />
-            </Suspense>
-          } />
-        </Routes>
-      )}
 
       <GlobalHeader />
       <BottomNav />

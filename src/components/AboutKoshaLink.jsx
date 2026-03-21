@@ -9,7 +9,7 @@ export default function AboutKoshaLink({ className = 'text-center pt-4' }) {
     <div className={className}>
       <button
         type="button"
-        onClick={() => navigate('/about', { state: { backgroundLocation: location } })}
+        onClick={() => navigate('/about')}
         className="inline-flex items-center gap-1 text-caption text-ink-4 active:text-brand transition-colors"
       >
         About Kosha

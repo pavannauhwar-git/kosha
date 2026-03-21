@@ -158,7 +158,7 @@ export default function ProfileMenu({ className = '' }) {
               <MenuRow
                 icon={<Info size={15} />}
                 label="About Kosha"
-                onClick={() => { close(); navigate('/about', { state: { backgroundLocation: location } }) }}
+                onClick={() => { close(); navigate('/about') }}
               />
 
               <MenuDivider />
