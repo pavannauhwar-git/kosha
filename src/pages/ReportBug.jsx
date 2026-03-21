@@ -296,12 +296,12 @@ export default function ReportBug() {
   return (
     <div
       className="min-h-dvh bg-kosha-bg"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 2px)' }}
     >
       {/* ── Sticky header — full width ─────────────────────────────── */}
       <div
         className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md border-b border-kosha-border px-4 flex items-center justify-between"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0))' }}
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 2px))' }}
       >
         <button type="button" onClick={handleBack} className="close-btn">
           <ArrowLeft size={16} className="text-ink-3" />
