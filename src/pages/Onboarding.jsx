@@ -15,9 +15,7 @@ const fadeUp = {
   show:   { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
 }
 
-const EXPENSE_CATS = CATEGORIES.filter(c =>
-  ['food', 'groceries', 'transport', 'utilities', 'entertainment', 'health', 'shopping'].includes(c.id)
-)
+const EXPENSE_CATS = CATEGORIES
 
 // ── Step indicator — green pills ──────────────────────────────────────────
 function StepDots({ current, total }) {
@@ -108,18 +106,16 @@ function StepIncome({ name, onNext, onBack }) {
         Used to calculate your savings rate. You can change this anytime.
       </motion.p>
 
-      <motion.div variants={fadeUp} className="card px-4 py-4 flex items-center gap-2 mb-3">
-        <span className="text-display font-medium text-ink-3">₹</span>
-        <input
-          className="flex-1 bg-transparent text-display text-ink outline-none placeholder-ink-4 tabular-nums"
-          type="number"
-          inputMode="numeric"
-          placeholder="0"
-          value={income}
-          onChange={e => setIncome(e.target.value)}
-          autoFocus
-        />
-      </motion.div>
+      <motion.input
+        variants={fadeUp}
+        className="input mb-3"
+        type="number"
+        inputMode="numeric"
+        placeholder="0"
+        value={income}
+        onChange={e => setIncome(e.target.value)}
+        autoFocus
+      />
 
       <motion.button
         variants={fadeUp}
@@ -186,37 +182,31 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       <motion.h2 variants={fadeUp} className="text-display font-bold text-ink tracking-tight mb-2">
         Add your first expense
       </motion.h2>
-      <motion.p variants={fadeUp} className="text-label text-ink-3 mb-6">
+      <motion.p variants={fadeUp} className="text-label text-ink-3 mb-8">
         Start with something recent — a coffee, groceries, anything.
       </motion.p>
 
-      {/* Amount */}
-      <motion.div variants={fadeUp} className="card px-4 py-4 flex items-center gap-2 mb-3">
-        <span className="text-display font-medium text-ink-3">₹</span>
-        <input
-          className="flex-1 bg-transparent text-display text-ink outline-none placeholder-ink-4 tabular-nums"
-          type="number"
-          inputMode="decimal"
-          placeholder="0"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-          autoFocus
-        />
-      </motion.div>
+      <motion.input
+        variants={fadeUp}
+        className="input mb-3"
+        type="number"
+        inputMode="decimal"
+        placeholder="0"
+        value={amount}
+        onChange={e => setAmount(e.target.value)}
+        autoFocus
+      />
 
-      {/* Description */}
-      <motion.div variants={fadeUp} className="card px-4 py-3.5 mb-3">
-        <input
-          className="w-full bg-transparent text-body text-ink placeholder-ink-4 outline-none"
-          placeholder="What was it for?"
-          value={desc}
-          onChange={e => setDesc(e.target.value)}
-        />
-      </motion.div>
+      <motion.input
+        variants={fadeUp}
+        className="input mb-3"
+        placeholder="What was it for?"
+        value={desc}
+        onChange={e => setDesc(e.target.value)}
+      />
 
-      {/* Category grid */}
-      <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2 mb-5">
-        {EXPENSE_CATS.slice(0, 8).map(cat => (
+      <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2 mb-5 max-h-64 overflow-y-auto">
+        {EXPENSE_CATS.map(cat => (
           <button
             key={cat.id}
             onClick={() => setCategory(cat.id)}
