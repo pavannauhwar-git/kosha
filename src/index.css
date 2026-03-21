@@ -444,7 +444,6 @@
     max-width: 860px;
     padding-left: 2rem;
     padding-right: 2rem;
-    padding-top: 1.5rem; /* was 0, restore breathing room */
     padding-bottom: 3rem;
   }
 }
