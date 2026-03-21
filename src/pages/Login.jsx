@@ -89,7 +89,7 @@ export default function Login() {
   return (
     <div
       className="h-dvh bg-kosha-bg px-4 overflow-y-auto"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      style={{paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="min-h-full flex flex-col items-center justify-center py-8">
         <div className="w-full max-w-[380px]">

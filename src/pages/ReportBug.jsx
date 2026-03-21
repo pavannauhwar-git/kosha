@@ -302,6 +302,7 @@ export default function ReportBug() {
       <div className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md
                       border-b border-kosha-border px-4 py-3
                       flex items-center justify-between">
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
         <button type="button" onClick={handleBack} className="close-btn">
           <ArrowLeft size={16} className="text-ink-3" />
         </button>
