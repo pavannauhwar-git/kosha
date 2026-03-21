@@ -106,7 +106,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-dvh bg-kosha-bg md:ml-[220px]">
+    <div className="min-h-dvh bg-kosha-bg">
       {/* ── Header ────────────────────────────────────────────────── */}
       <div
         className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md

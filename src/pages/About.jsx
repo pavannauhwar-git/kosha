@@ -82,7 +82,7 @@ export default function About() {
   }
 
   return (
-    <div className="min-h-dvh bg-kosha-bg md:ml-[220px]">
+    <div className="min-h-dvh bg-kosha-bg">
 
       {/* ── Sticky header ─────────────────────────────────────────── */}
       <div

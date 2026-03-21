@@ -295,7 +295,7 @@ export default function ReportBug() {
 
   return (
     <div
-      className="min-h-dvh bg-kosha-bg md:ml-[220px]"
+      className="min-h-dvh bg-kosha-bg"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}
     >
       {/* ── Sticky header — full width ─────────────────────────────── */}
