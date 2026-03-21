@@ -1,19 +1,5 @@
 import ProfileMenu from './ProfileMenu'
 
-//PageHeader
-// before — two divs with md:hidden / hidden md:flex split
-export default function PageHeader({ title }) {
-  return (
-    <>
-      {/* Mobile */}
-      <div className="... md:hidden">...</div>
-      {/* Desktop */}
-      <div className="hidden md:flex ...">...</div>
-    </>
-  )
-}
-
-// after — single bar, always visible
 export default function PageHeader({ title }) {
   return (
     <div
