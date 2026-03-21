@@ -25,10 +25,6 @@
     @apply bg-kosha-bg text-ink font-sans;
     min-height: 100dvh;
     overscroll-behavior: none;
-    /* Push all content below the Dynamic Island / status bar.
-       viewport-fit=cover in index.html lets us fill edge-to-edge,
-       this padding reclaims the top safe area so nothing is hidden. */
-    padding-top: env(safe-area-inset-top, 0px);
   }
 
   :root {
