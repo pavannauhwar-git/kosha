@@ -140,10 +140,9 @@ export default function Transactions() {
       <PageHeader title="Transactions" />
 
       {/* ── Header ───────────────────────────────────────────────────── */}
-      <div className="mb-4 flex items-start justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-display font-bold text-ink">Transactions</h1>
-          <p className="text-caption text-ink-3 mt-0.5">
+          <p className="text-caption text-ink-3">
             {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
             {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
           </p>

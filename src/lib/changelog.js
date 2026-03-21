@@ -4,9 +4,11 @@ export const CHANGELOG = [
     date: 'March 2026',
     items: [
       'Profile menu now clickable in desktop sidebar',
-      'Sticky page title bar on desktop for all main pages',
-      'Fixed layout shift on report bug, about, and settings pages',
-      'FAB, sheets, and toasts repositioned correctly on desktop',
+      'Unified sticky page header across all screen sizes',
+      'Removed duplicate page titles on Transactions and Bills',
+      'Restored name and email in sidebar profile footer',
+      'Fixed content spacing on Monthly and Analytics pages',
+      'Fixed layout on report bug, about, and settings pages',
     ],
   },
   {

@@ -29,7 +29,7 @@ function MenuDivider() {
   return <div className="my-1 h-px bg-kosha-border mx-1" />
 }
 
-export default function ProfileMenu({ className = '' }) {
+export default function ProfileMenu({ className = '', dropUp = false }) {
   const { user, profile, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -105,7 +105,7 @@ export default function ProfileMenu({ className = '' }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -4 }}
               transition={{ duration: 0.12, ease: 'easeOut' }}
-              className="absolute right-0 top-11 z-40 w-60 card p-1.5"
+              className={`absolute z-40 w-60 card p-1.5 ${dropUp ? 'bottom-11 left-0' : 'top-11 right-0'}`}
             >
               {/* ── Identity header ───────────────────────────────── */}
               <div className="flex items-center gap-2.5 px-3 py-2.5 mb-1">
