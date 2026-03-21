@@ -140,7 +140,7 @@ export default function Transactions() {
       <PageHeader title="Transactions" />
 
       {/* ── Header ───────────────────────────────────────────────────── */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between mt-4">
         <div>
           <p className="text-caption text-ink-3">
             {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
