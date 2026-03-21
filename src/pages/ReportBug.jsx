@@ -295,13 +295,13 @@ export default function ReportBug() {
 
   return (
     <div
-      className="min-h-dvh bg-kosha-bg"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 2px)' }}
+      className="min-h-dvh bg-kosha-bg md:ml-[220px]"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}
     >
       {/* ── Sticky header — full width ─────────────────────────────── */}
       <div
         className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md border-b border-kosha-border px-4 flex items-center justify-between"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 2px), 2px)' }}
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0.75rem), 0.75rem)', paddingBottom: '0.75rem' }}
       >
         <button type="button" onClick={handleBack} className="close-btn">
           <ArrowLeft size={16} className="text-ink-3" />
@@ -521,7 +521,7 @@ export default function ReportBug() {
 
       {/* ── Bottom action bar ──────────────────────────────────────── */}
       {!submitted && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-kosha-border bg-kosha-bg/95 backdrop-blur-md">
+        <div className="fixed inset-x-0 md:left-[220px] bottom-0 z-30 border-t border-kosha-border bg-kosha-bg/95 backdrop-blur-md">
           <div
             className="mx-auto max-w-[560px] px-4 pt-3 grid grid-cols-2 gap-2"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
