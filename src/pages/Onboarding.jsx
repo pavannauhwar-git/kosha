@@ -292,9 +292,10 @@ export default function Onboarding() {
     try {
       await consumeInvite()
       await updateProfile({ onboarded: true })
-    } catch (_) {}
-    finally {
       navigate('/', { replace: true })
+    } catch (e) {
+      console.error('[Kosha] Onboarding finish failed', e)
+      setSaving(false)
     }
   }
 
