@@ -24,17 +24,35 @@ function logQueryError(scope, error) {
 // ── Cache helpers ─────────────────────────────────────────────────────────
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  // Update all queries whose key starts with ['transactions'] (deep match)
+  // Refined: Only patch queries where the transaction matches the filters, and respect limit/order
   const allQueries = queryClient.getQueryCache().getAll()
   for (const q of allQueries) {
     const queryKey = q.queryKey
     if (!Array.isArray(queryKey) || queryKey[0] !== 'transactions') continue
+    // Only patch data queries (not count, today-expenses, etc)
+    if (queryKey[1] !== 'data') continue
+    const filters = queryKey[2] || {}
+    const { type, category, search, limit } = filters
+    // Check if transaction matches filters
+    if (type && txn.type !== type) continue
+    if (category && txn.category !== category) continue
+    if (search && !((txn.description || '').toLowerCase().includes(search.toLowerCase()))) continue
     const old = q.state.data
     if (!old?.rows) continue
     let updated = old
     if (mode === 'add') {
       if (!old.rows.some(t => t.id === txn.id)) {
-        updated = { ...old, rows: [txn, ...old.rows], total: (old.total || 0) + 1 }
+        // Insert at top, sort, trim to limit
+        let newRows = [txn, ...old.rows]
+        newRows = newRows.sort((a, b) => {
+          // Sort by date desc, then created_at desc
+          const d1 = new Date(a.date), d2 = new Date(b.date)
+          if (d1 > d2) return -1
+          if (d1 < d2) return 1
+          return new Date(b.created_at) - new Date(a.created_at)
+        })
+        if (limit) newRows = newRows.slice(0, limit)
+        updated = { ...old, rows: newRows, total: (old.total || 0) + 1 }
       }
     } else if (mode === 'update') {
       updated = { ...old, rows: old.rows.map(t => t.id === txn.id ? txn : t) }
