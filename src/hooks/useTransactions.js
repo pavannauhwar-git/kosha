@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
+import { suppress } from '../lib/mutationGuard'
 
 export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactions'],
@@ -15,20 +16,13 @@ const TRANSACTION_LIST_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes'
 const TRANSACTION_MUTATION_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes'
-const TRANSACTION_MONTH_COLUMNS = 'type, amount, category, investment_vehicle, is_repayment'
-const TRANSACTION_YEAR_COLUMNS = 'date, type, amount, category, investment_vehicle, is_repayment'
-const TRANSACTION_TOP_EXPENSE_COLUMNS = 'id, date, type, amount, description, category'
 
 function logQueryError(scope, error) {
   console.error(`[Kosha] ${scope} query failed`, error)
 }
 
-// ── Cache helpers ──────────────────────────────────────────────────────────
+// ── Cache helpers ─────────────────────────────────────────────────────────
 
-/**
- * Injects a new or updated transaction into all transaction list caches.
- * Called synchronously after a successful DB mutation.
- */
 function injectTransactionIntoLists(txn, mode = 'add') {
   queryClient.setQueriesData(
     { queryKey: ['transactions'], exact: false },
@@ -43,7 +37,7 @@ function injectTransactionIntoLists(txn, mode = 'add') {
       if (mode === 'delete') {
         return {
           ...old,
-          rows: old.rows.filter(t => t.id !== txn.id),
+          rows:  old.rows.filter(t => t.id !== txn.id),
           total: Math.max(0, (old.total || 0) - 1),
         }
       }
@@ -52,9 +46,6 @@ function injectTransactionIntoLists(txn, mode = 'add') {
   )
 }
 
-/**
- * Updates running balance caches by a delta amount.
- */
 function adjustBalanceCaches(delta) {
   if (!delta) return
   queryClient.setQueriesData(
@@ -63,30 +54,22 @@ function adjustBalanceCaches(delta) {
   )
 }
 
-/**
- * Returns the signed balance delta for a transaction.
- * Income adds to balance; expense and investment subtract.
- */
 function balanceDelta(txn) {
   if (!txn) return 0
   return txn.type === 'income' ? +Number(txn.amount) : -Number(txn.amount)
 }
 
-/**
- * Updates the month summary cache for the month containing txn.date.
- * mode 'add' applies the transaction; mode 'remove' reverses it.
- */
 function patchMonthSummary(txn, mode = 'add') {
   if (!txn?.date) return
-  const d = new Date(txn.date)
-  const yr = d.getFullYear()
-  const mo = d.getMonth() + 1
+  const d    = new Date(txn.date)
+  const yr   = d.getFullYear()
+  const mo   = d.getMonth() + 1
   const sign = mode === 'add' ? 1 : -1
 
   queryClient.setQueryData(['month', yr, mo], (old) => {
     if (!old) return old
     const amount = Number(txn.amount) * sign
-    const next = { ...old, byCategory: { ...old.byCategory }, byVehicle: { ...old.byVehicle } }
+    const next   = { ...old, byCategory: { ...old.byCategory }, byVehicle: { ...old.byVehicle } }
 
     if (txn.type === 'income') {
       if (txn.is_repayment) next.repayments = Math.max(0, (next.repayments || 0) + amount)
@@ -108,10 +91,6 @@ function patchMonthSummary(txn, mode = 'add') {
   })
 }
 
-/**
- * Finds a transaction by ID across all transaction list caches.
- * Used by update/delete to retrieve the pre-mutation state for cache diffing.
- */
 function findCachedTransaction(id) {
   const all = queryClient.getQueriesData({ queryKey: ['transactions'] })
   for (const [, data] of all) {
@@ -126,7 +105,10 @@ function findCachedTransaction(id) {
 // ── Background invalidation ───────────────────────────────────────────────
 
 export function invalidateCache() {
-  // NOT awaited by callers — runs in the background after cache injection.
+  // FIX (defect 3.2): Call suppress() before invalidating so GlobalRealtimeSync
+  // skips its own invalidation when it receives the Postgres broadcast for this
+  // same change ~300–500ms later. Eliminates the double-fetch on every mutation.
+  suppress('transactions')
   return invalidateQueryFamilies(TRANSACTION_INVALIDATION_KEYS)
 }
 
@@ -144,18 +126,24 @@ export function useDebounce(value, ms = 300) {
 // ── Query hooks ───────────────────────────────────────────────────────────
 
 export function useTransactions({ type, category, search, limit, withCount = false } = {}) {
-  const queryKey = ['transactions', { type, category, search, limit, withCount }]
+  // FIX (defect 3.7): Separated data query from count query.
+  // Previously withCount: true caused PostgREST to execute a separate COUNT(*)
+  // on every single search keystroke after debounce, doubling the query cost.
+  //
+  // Now: the data query never fetches a count. A separate count query fires only
+  // on filter changes (type, category) — NOT on search keystrokes — and is cached
+  // for 60s so it is not hammered on every render cycle.
+  const dataKey  = ['transactions', 'data',  { type, category, search, limit }]
+  const countKey = ['transactions', 'count', { type, category }]
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey,
+  const { data: rows, isLoading, error, refetch } = useQuery({
+    queryKey: dataKey,
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
-        const selectOptions = withCount ? { count: 'exact' } : undefined
-
         let q = supabase
           .from('transactions')
-          .select(TRANSACTION_LIST_COLUMNS, selectOptions)
+          .select(TRANSACTION_LIST_COLUMNS)
           .eq('user_id', userId)
           .order('date', { ascending: false })
           .order('created_at', { ascending: false })
@@ -165,13 +153,9 @@ export function useTransactions({ type, category, search, limit, withCount = fal
         if (search)   q = q.ilike('description', `%${search}%`)
         if (limit)    q = q.limit(limit)
 
-        const { data: rows, error: err, count } = await q
+        const { data, error: err } = await q
         if (err) throw err
-
-        return {
-          rows: rows || [],
-          total: typeof count === 'number' ? count : (rows || []).length,
-        }
+        return data || []
       } catch (err) {
         logQueryError('transactions list', err)
         throw err
@@ -179,17 +163,39 @@ export function useTransactions({ type, category, search, limit, withCount = fal
     },
   })
 
-  return {
-    data: data?.rows || [],
-    total: data?.total ?? 0,
-    loading: isLoading,
-    error,
-    refetch,
-  }
+  const { data: countData } = useQuery({
+    queryKey: countKey,
+    enabled: withCount,
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      try {
+        const userId = getAuthUserId()
+        let q = supabase
+          .from('transactions')
+          .select('id', { count: 'exact', head: true })  // head: true — fetches zero rows
+          .eq('user_id', userId)
+
+        if (type)     q = q.eq('type', type)
+        if (category) q = q.eq('category', category)
+
+        const { count, error: err } = await q
+        if (err) throw err
+        return count || 0
+      } catch (err) {
+        logQueryError('transactions count', err)
+        return 0
+      }
+    },
+  })
+
+  const safeRows = rows  || []
+  const total    = withCount ? (countData ?? safeRows.length) : safeRows.length
+
+  return { data: safeRows, total, loading: isLoading, error, refetch }
 }
 
 export function useTodayExpenses() {
-  const today = new Date()
+  const today    = new Date()
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   const { data, isLoading, error } = useQuery({
@@ -197,7 +203,7 @@ export function useTodayExpenses() {
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
-        const { data: rows, error: qError } = await supabase
+        const { data: r, error: qError } = await supabase
           .from('transactions')
           .select('amount')
           .eq('user_id', userId)
@@ -205,7 +211,7 @@ export function useTodayExpenses() {
           .eq('date', todayISO)
 
         if (qError) throw qError
-        return (rows || []).reduce((sum, r) => sum + Number(r.amount || 0), 0)
+        return (r || []).reduce((sum, row) => sum + Number(row.amount || 0), 0)
       } catch (err) {
         logQueryError('today expenses', err)
         throw err
@@ -222,32 +228,35 @@ export function useMonthSummary(year, month) {
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
-        const pad  = String(month).padStart(2, '0')
-        const days = new Date(year, month, 0).getDate()
 
-        const { data: rows, error: qError } = await supabase
-          .from('transactions')
-          .select(TRANSACTION_MONTH_COLUMNS)
-          .eq('user_id', userId)
-          .gte('date', `${year}-${pad}-01`)
-          .lte('date', `${year}-${pad}-${days}`)
+        // FIX (defect 3.5): replaced raw-row fetch + JS for-loop with the
+        // get_month_summary RPC. Previously sent ~50–300 raw rows to the client
+        // to sum in JavaScript. RPC does GROUP BY on the server, returning
+        // ~5–30 pre-aggregated rows instead.
+        const { data: rows, error: qError } = await supabase.rpc('get_month_summary', {
+          p_user_id: userId,
+          p_year:    year,
+          p_month:   month,
+        })
 
         if (qError) throw qError
 
-        const safeRows = rows || []
+        const safeRows   = rows || []
         const byCategory = {}
         const byVehicle  = {}
         let earned = 0, repayments = 0, expense = 0, investment = 0
 
         for (const row of safeRows) {
-          const amount = Number(row.amount || 0)
+          const amount = Number(row.total || 0)
           if (row.type === 'income') {
             if (row.is_repayment) repayments += amount
             else earned += amount
           }
           if (row.type === 'expense') {
             expense += amount
-            byCategory[row.category] = (byCategory[row.category] || 0) + amount
+            if (row.category) {
+              byCategory[row.category] = (byCategory[row.category] || 0) + amount
+            }
           }
           if (row.type === 'investment') {
             investment += amount
@@ -260,7 +269,7 @@ export function useMonthSummary(year, month) {
           earned, repayments, expense, investment,
           byCategory, byVehicle,
           balance: earned + repayments - expense - investment,
-          count: safeRows.length,
+          count:   safeRows.length,
         }
       } catch (err) {
         logQueryError('month summary', err)
@@ -279,61 +288,39 @@ export function useYearSummary(year) {
       try {
         const userId = getAuthUserId()
 
-        const [baseRes, topExpenseRes] = await Promise.all([
-          supabase
-            .from('transactions')
-            .select(TRANSACTION_YEAR_COLUMNS)
-            .eq('user_id', userId)
-            .gte('date', `${year}-01-01`)
-            .lte('date', `${year}-12-31`),
-          supabase
-            .from('transactions')
-            .select(TRANSACTION_TOP_EXPENSE_COLUMNS)
-            .eq('user_id', userId)
-            .eq('type', 'expense')
-            .gte('date', `${year}-01-01`)
-            .lte('date', `${year}-12-31`)
-            .order('amount', { ascending: false })
-            .limit(5),
-        ])
+        // FIX (defect 3.5): replaced raw-row fetch + JS aggregation with the
+        // get_year_summary RPC. Previously fetched ALL transactions for the year
+        // (~100–1000+ rows) and computed monthly buckets in JavaScript.
+        // RPC does all aggregation on the server and returns one structured row.
+        const { data: result, error: rpcError } = await supabase
+          .rpc('get_year_summary', { p_user_id: userId, p_year: year })
+          .single()
 
-        if (baseRes.error)       throw baseRes.error
-        if (topExpenseRes.error) throw topExpenseRes.error
+        if (rpcError) throw rpcError
+        if (!result)  return null
 
-        const baseRows = baseRes.data || []
-        const top5     = topExpenseRes.data || []
+        const monthlyRaw = result.monthly_data  || []
+        const totals     = result.totals         || {}
+        const byCategory = result.category_data  || {}
+        const byVehicle  = result.vehicle_data   || {}
+        const top5       = result.top5_expenses  || []
 
-        const monthly = Array.from({ length: 12 }, (_, i) => ({
-          month: i + 1, income: 0, expense: 0, investment: 0,
-        }))
-
-        const byCategory = {}
-        const byVehicle  = {}
-        let totalIncome = 0, totalRepayments = 0, totalExpense = 0, totalInvestment = 0
-
-        for (const row of baseRows) {
-          const amount     = Number(row.amount || 0)
-          const monthIndex = Number(String(row.date).slice(5, 7)) - 1
-
-          if (row.type === 'income') {
-            if (row.is_repayment) totalRepayments += amount
-            else {
-              totalIncome += amount
-              if (monthIndex >= 0 && monthIndex < 12) monthly[monthIndex].income += amount
-            }
+        // Build the full 12-month array — RPC only returns months with data
+        const monthMap = Object.fromEntries(monthlyRaw.map(m => [m.month_num, m]))
+        const monthly  = Array.from({ length: 12 }, (_, i) => {
+          const m = monthMap[i + 1] || {}
+          return {
+            month:      i + 1,
+            income:     Number(m.income     || 0),
+            expense:    Number(m.expense    || 0),
+            investment: Number(m.investment || 0),
           }
-          if (row.type === 'expense') {
-            totalExpense += amount
-            if (monthIndex >= 0 && monthIndex < 12) monthly[monthIndex].expense += amount
-            byCategory[row.category] = (byCategory[row.category] || 0) + amount
-          }
-          if (row.type === 'investment') {
-            totalInvestment += amount
-            if (monthIndex >= 0 && monthIndex < 12) monthly[monthIndex].investment += amount
-            const vehicle = row.investment_vehicle || 'Other'
-            byVehicle[vehicle] = (byVehicle[vehicle] || 0) + amount
-          }
-        }
+        })
+
+        const totalIncome     = Number(totals.income     || 0)
+        const totalRepayments = Number(totals.repayments || 0)
+        const totalExpense    = Number(totals.expense    || 0)
+        const totalInvestment = Number(totals.investment || 0)
 
         const monthsWithIncome = monthly.filter(m => m.income > 0)
         const avgSavings = monthsWithIncome.length
@@ -346,7 +333,8 @@ export function useYearSummary(year) {
 
         return {
           monthly, totalIncome, totalRepayments, totalExpense, totalInvestment,
-          avgSavings, byCategory, byVehicle, top5, count: baseRows.length,
+          avgSavings, byCategory, byVehicle, top5,
+          count: Number(totals.count || 0),
         }
       } catch (err) {
         logQueryError('year summary', err)
@@ -366,19 +354,17 @@ export function useRunningBalance(year, month) {
         const userId  = getAuthUserId()
         const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
-        const [incomeRes, outflowRes] = await Promise.all([
-          supabase.from('transactions').select('amount')
-            .eq('user_id', userId).eq('type', 'income').lte('date', endDate),
-          supabase.from('transactions').select('amount')
-            .eq('user_id', userId).in('type', ['expense', 'investment']).lte('date', endDate),
-        ])
+        // FIX (defect 3.4): replaced full-table scan with server-side SUM RPC.
+        // Previously fetched every income row + every expense/investment row ever
+        // recorded (potentially thousands of rows) just to sum them in JS.
+        // The RPC does SUM(...) in a single query and returns one number.
+        const { data: balance, error: rpcError } = await supabase.rpc(
+          'get_running_balance',
+          { p_user_id: userId, p_end_date: endDate }
+        )
 
-        if (incomeRes.error)  throw incomeRes.error
-        if (outflowRes.error) throw outflowRes.error
-
-        const incomeTotal  = (incomeRes.data  || []).reduce((s, r) => s + Number(r.amount || 0), 0)
-        const outflowTotal = (outflowRes.data || []).reduce((s, r) => s + Number(r.amount || 0), 0)
-        return incomeTotal - outflowTotal
+        if (rpcError) throw rpcError
+        return Number(balance || 0)
       } catch (err) {
         logQueryError('running balance', err)
         throw err
@@ -390,18 +376,8 @@ export function useRunningBalance(year, month) {
 }
 
 // ── Mutations ─────────────────────────────────────────────────────────────
-//
-// Pattern — "Fast Pessimistic UI with Cache Injection":
-//   1. getAuthUserId() — synchronous, no network, no race window
-//   2. await DB call
-//   3. Inject result into React Query caches synchronously (instant UI update)
-//   4. Fire background invalidation WITHOUT await (dialog is already closed)
-//
-// The calling component can call onClose() immediately after the await
-// because the DB response is back and the cache is already updated.
 
 export async function addTransaction(payload) {
-  // FIX (defect 2.1): synchronous, reads from authStore, no getSession() race
   const userId = getAuthUserId()
 
   const { data, error } = await supabase
@@ -412,12 +388,9 @@ export async function addTransaction(payload) {
 
   if (error) throw error
 
-  // FIX (defect 1.2): inject into caches so UI updates instantly
   injectTransactionIntoLists(data, 'add')
   adjustBalanceCaches(balanceDelta(data))
   patchMonthSummary(data, 'add')
-
-  // FIX (defect 1.1): no await — fires in background, dialog already closed
   invalidateCache()
 
   return data
@@ -425,8 +398,6 @@ export async function addTransaction(payload) {
 
 export async function updateTransaction(id, payload) {
   const userId = getAuthUserId()
-
-  // Snapshot old transaction from cache for accurate delta calculation
   const oldTxn = findCachedTransaction(id)
 
   const { data, error } = await supabase
@@ -439,15 +410,12 @@ export async function updateTransaction(id, payload) {
 
   if (error) throw error
 
-  // Update list caches
   injectTransactionIntoLists(data, 'update')
 
-  // Adjust balance by the net delta between old and new amounts
   if (oldTxn) {
     const diff = balanceDelta(data) - balanceDelta(oldTxn)
     adjustBalanceCaches(diff)
 
-    // Reverse old values in month summary, apply new values
     if (oldTxn.date !== data.date || oldTxn.type !== data.type ||
         oldTxn.amount !== data.amount || oldTxn.category !== data.category) {
       patchMonthSummary(oldTxn, 'remove')
@@ -455,16 +423,12 @@ export async function updateTransaction(id, payload) {
     }
   }
 
-  // Background invalidation — no await
   invalidateCache()
-
   return data
 }
 
 export async function deleteTransaction(id) {
-  const userId = getAuthUserId()
-
-  // Snapshot before delete for cache cleanup
+  const userId     = getAuthUserId()
   const deletedTxn = findCachedTransaction(id)
 
   const { error } = await supabase
@@ -475,13 +439,11 @@ export async function deleteTransaction(id) {
 
   if (error) throw error
 
-  // Remove from list caches
   if (deletedTxn) {
     injectTransactionIntoLists(deletedTxn, 'delete')
     adjustBalanceCaches(-balanceDelta(deletedTxn))
     patchMonthSummary(deletedTxn, 'remove')
   } else {
-    // Fallback: we didn't find it in cache, just remove by ID
     queryClient.setQueriesData(
       { queryKey: ['transactions'], exact: false },
       (old) => {
@@ -491,8 +453,6 @@ export async function deleteTransaction(id) {
     )
   }
 
-  // Background invalidation — no await
   invalidateCache()
-
   return true
 }

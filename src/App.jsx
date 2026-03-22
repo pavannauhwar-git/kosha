@@ -14,6 +14,7 @@ import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/re
 import { C } from './lib/colors'
 import { useScrollDirection } from './hooks/useScrollDirection'
 import KoshaLogo from './components/KoshaLogo'
+import { isSuppressed } from './lib/mutationGuard'
 
 // ── Eager ────────────────────────────────────────────────────────────────
 import Dashboard from './pages/Dashboard'
@@ -23,28 +24,28 @@ import NotFound from './pages/NotFound'
 
 // ── Lazy ─────────────────────────────────────────────────────────────────
 const Transactions = lazy(() => import('./pages/Transactions'))
-const Monthly      = lazy(() => import('./pages/Monthly'))
-const Analytics    = lazy(() => import('./pages/Analytics'))
-const Bills        = lazy(() => import('./pages/Bills'))
-const About        = lazy(() => import('./pages/About'))
-const ReportBug    = lazy(() => import('./pages/ReportBug'))
-const Settings     = lazy(() => import('./pages/Settings'))
+const Monthly = lazy(() => import('./pages/Monthly'))
+const Analytics = lazy(() => import('./pages/Analytics'))
+const Bills = lazy(() => import('./pages/Bills'))
+const About = lazy(() => import('./pages/About'))
+const ReportBug = lazy(() => import('./pages/ReportBug'))
+const Settings = lazy(() => import('./pages/Settings'))
 
 function PageFallback() {
   return <div className="min-h-dvh bg-kosha-bg" />
 }
 
 const NAV = [
-  { path: '/',             label: 'Home',     Icon: House      },
-  { path: '/transactions', label: 'Activity', Icon: List       },
-  { path: '/monthly',      label: 'Monthly',  Icon: CalendarDots },
-  { path: '/analytics',    label: 'Insights', Icon: ChartBar   },
-  { path: '/bills',        label: 'Bills',    Icon: Receipt    },
+  { path: '/', label: 'Home', Icon: House },
+  { path: '/transactions', label: 'Activity', Icon: List },
+  { path: '/monthly', label: 'Monthly', Icon: CalendarDots },
+  { path: '/analytics', label: 'Insights', Icon: ChartBar },
+  { path: '/bills', label: 'Bills', Icon: Receipt },
 ]
 
 const REALTIME_INVALIDATION_POLICIES = [
   { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS },
-  { key: 'liabilities',  table: 'liabilities',  queryKeys: LIABILITY_INVALIDATION_KEYS  },
+  { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
 ]
 
 const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings']
@@ -52,7 +53,7 @@ const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-
 // ── Desktop sidebar ───────────────────────────────────────────────────────
 function DesktopSidebar() {
   const location = useLocation()
-  const navigate  = useNavigate()
+  const navigate = useNavigate()
   const { profile, user, signOut } = useAuth()
 
   if (NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
@@ -62,8 +63,8 @@ function DesktopSidebar() {
   )
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'Account'
-  const initial     = displayName[0].toUpperCase()
-  const avatarUrl   = profile?.avatar_url || null
+  const initial = displayName[0].toUpperCase()
+  const avatarUrl = profile?.avatar_url || null
 
   return (
     <aside
@@ -120,7 +121,7 @@ function DesktopSidebar() {
               <span
                 className="text-[14px]"
                 style={{
-                  color:      isActive ? C.brand : C.inkMuted,
+                  color: isActive ? C.brand : C.inkMuted,
                   fontWeight: isActive ? 700 : 500,
                 }}
               >
@@ -149,8 +150,8 @@ function DesktopSidebar() {
 
 // ── Mobile bottom nav (pill) — unchanged, hidden on md+ ──────────────────
 function BottomNav() {
-  const location    = useLocation()
-  const navigate    = useNavigate()
+  const location = useLocation()
+  const navigate = useNavigate()
   const scrolledDown = useScrollDirection()
 
   if (NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
@@ -203,7 +204,7 @@ function BottomNav() {
               <motion.span
                 className="nav-label"
                 animate={{
-                  color:      isActive ? C.brand : C.inkMuted,
+                  color: isActive ? C.brand : C.inkMuted,
                   fontWeight: isActive ? 700 : 500,
                 }}
                 transition={{ duration: 0.15 }}
@@ -235,10 +236,14 @@ function GlobalRealtimeSync() {
     if (!user) return
 
     const timeoutIds = new Map()
+
     const scheduleInvalidate = (key, invalidate) => {
+      if (isSuppressed(key)) return
+
       clearTimeout(timeoutIds.get(key))
       timeoutIds.set(key, setTimeout(() => {
         timeoutIds.delete(key)
+        if (isSuppressed(key)) return
         void invalidate()
       }, 300))
     }
@@ -257,9 +262,7 @@ function GlobalRealtimeSync() {
       timeoutIds.forEach(id => clearTimeout(id))
       supabase.removeChannel(channel)
     }
-  }, [user])
-
-  return null
+  }, [user?.id])
 }
 
 function ContentWrapper({ children }) {
@@ -284,10 +287,10 @@ function AppShell() {
       <ContentWrapper>
         <Routes>
           {/* Public */}
-          <Route path="/login"         element={<Login />} />
-          <Route path="/join/:token"   element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/join/:token" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/not-found"     element={<NotFound />} />
+          <Route path="/not-found" element={<NotFound />} />
 
           {/* Onboarding */}
           <Route path="/onboarding" element={<AuthGuard><Onboarding /></AuthGuard>} />

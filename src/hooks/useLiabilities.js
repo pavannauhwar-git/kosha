@@ -2,6 +2,7 @@ import { useQueries } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
+import { suppress } from '../lib/mutationGuard'
 import { invalidateCache as invalidateTxnCache } from './useTransactions'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities']]
@@ -12,12 +13,10 @@ const LIABILITY_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
 export function invalidateLiabilityCache() {
+  // FIX (defect 3.2): suppress realtime double-fetch for liabilities table
+  suppress('liabilities')
   return invalidateQueryFamilies(LIABILITY_INVALIDATION_KEYS)
 }
-
-// FIX (defect 2.1, 2.2): Removed getCurrentUserId() which called getSession().
-// All functions now use getAuthUserId() from authStore — synchronous,
-// reads from the in-memory user updated by onAuthStateChange, no race window.
 
 async function fetchLiabilitiesByPaid(paidValue) {
   const userId = getAuthUserId()
@@ -37,12 +36,12 @@ export function useLiabilities({ includePaid = true } = {}) {
     queries: [
       {
         queryKey: LIABILITY_PENDING_QUERY_KEY,
-        queryFn: () => fetchLiabilitiesByPaid(false),
+        queryFn:  () => fetchLiabilitiesByPaid(false),
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY,
-        queryFn: () => fetchLiabilitiesByPaid(true),
-        enabled: includePaid,
+        queryFn:  () => fetchLiabilitiesByPaid(true),
+        enabled:  includePaid,
       },
     ],
   })
@@ -68,17 +67,14 @@ export async function addLiability(payload, options = {}) {
 
     if (error) throw error
 
-    // Inject into pending cache immediately
+    // Inject into pending cache in due-date order
     queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (old) => {
       if (!Array.isArray(old)) return old
-      // Insert in due-date order
-      const next = [...old, data].sort(
+      return [...old, data].sort(
         (a, b) => new Date(a.due_date) - new Date(b.due_date)
       )
-      return next
     })
 
-    // FIX (defect 1.1): no await — background only
     if (invalidate) invalidateLiabilityCache()
 
     return data
@@ -94,62 +90,37 @@ export async function markPaid(liability, options = {}) {
   try {
     const userId = getAuthUserId()
 
-    const { data: txn, error: txnErr } = await supabase
-      .from('transactions')
-      .insert([{
-        date:         new Date().toISOString().slice(0, 10),
-        type:         'expense',
-        description:  liability.description,
-        amount:       liability.amount,
-        category:     'bills',
-        is_repayment: false,
-        payment_mode: 'other',
-        notes:        `Auto-created from bill: ${liability.description}`,
-        user_id:      userId,
-      }])
-      .select('id')
-      .single()
+    // FIX (defect 3.3): Replaced 3 sequential non-atomic client-side DB calls
+    // with a single atomic RPC. Previously:
+    //   Call 1: INSERT transaction   (~200ms)
+    //   Call 2: UPDATE liability     (~200ms)  — if this failed, orphaned txn existed
+    //   Call 3: INSERT next recurrence (~200ms)
+    //
+    // Now: all 3 steps run inside a single Postgres transaction via the
+    // mark_liability_paid RPC. Either all succeed or all roll back.
+    // Network cost: 1 round trip (~150–200ms) vs 2–3 (~400–600ms).
+    const { data: result, error: rpcError } = await supabase
+      .rpc('mark_liability_paid', {
+        p_liability_id: liability.id,
+        p_user_id:      userId,
+      })
 
-    if (txnErr) throw txnErr
+    if (rpcError) throw rpcError
 
-    const { error: liabErr } = await supabase
-      .from('liabilities')
-      .update({ paid: true, linked_transaction_id: txn.id })
-      .eq('id', liability.id)
-      .eq('user_id', userId)
-
-    if (liabErr) throw liabErr
-
-    if (liability.is_recurring && liability.recurrence) {
-      const due    = new Date(liability.due_date)
-      const months = { monthly: 1, quarterly: 3, yearly: 12 }
-      due.setMonth(due.getMonth() + (months[liability.recurrence] || 1))
-
-      const { error: recurringError } = await supabase
-        .from('liabilities')
-        .insert([{
-          description:  liability.description,
-          amount:       liability.amount,
-          due_date:     due.toISOString().slice(0, 10),
-          is_recurring: true,
-          recurrence:   liability.recurrence,
-          paid:         false,
-          user_id:      userId,
-        }])
-
-      if (recurringError) throw recurringError
-    }
-
-    // Optimistically move the liability from pending to paid in cache
+    // Optimistically move liability from pending to paid in cache
     queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (old) =>
       Array.isArray(old) ? old.filter(b => b.id !== liability.id) : old
     )
     queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (old) => {
       if (!Array.isArray(old)) return old
-      return [{ ...liability, paid: true, linked_transaction_id: txn.id }, ...old]
+      const paidLiability = {
+        ...liability,
+        paid:                  true,
+        linked_transaction_id: result?.transaction_id || null,
+      }
+      return [paidLiability, ...old]
     })
 
-    // FIX (defect 1.1): no await — fire and forget
     if (invalidate) {
       invalidateLiabilityCache()
       invalidateTxnCache()
@@ -173,14 +144,12 @@ export async function deleteLiability(id, options = {}) {
 
     if (error) throw error
 
-    // Remove from both caches immediately
     const removeById = (old) =>
       Array.isArray(old) ? old.filter(b => b.id !== id) : old
 
     queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, removeById)
     queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY,    removeById)
 
-    // Background invalidation — no await
     if (invalidate) invalidateLiabilityCache()
   } catch (err) {
     console.error('[Kosha] deleteLiability failed', err)

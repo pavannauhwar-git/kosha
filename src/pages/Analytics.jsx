@@ -18,6 +18,7 @@ import { CATEGORIES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
 import { C } from '../lib/colors'
 import PageHeader from '../components/PageHeader'
+import { queryClient } from '../lib/queryClient'
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -121,10 +122,10 @@ function SectionHeading({ children, right }) {
 
 // ── Annual summary card (replaces 4 KPI cards) ────────────────────────────
 function AnnualSummaryCard({ data, prevData, spendTrend, year }) {
-  const totalIncome     = data?.totalIncome     || 0
-  const totalExpense    = data?.totalExpense    || 0
+  const totalIncome = data?.totalIncome || 0
+  const totalExpense = data?.totalExpense || 0
   const totalInvestment = data?.totalInvestment || 0
-  const avgSavings      = data?.avgSavings      || 0
+  const avgSavings = data?.avgSavings || 0
 
   const incomePct = prevData?.totalIncome > 0
     ? Math.round(((totalIncome - prevData.totalIncome) / prevData.totalIncome) * 100)
@@ -238,59 +239,20 @@ function TrendPill({ current, previous, label }) {
 }
 
 // ── Year-over-year CARDS (replaces scrollable table) ─────────────────────
-function YoYCards({ years, currentYear, userId }) {
-  const yearsKey = useMemo(
-    () => years.slice().sort((a, b) => a - b).join(','),
-    [years]
-  )
+function YoYCards({ years, currentYear }) {
+  // FIX (defect 3.6): Read from the React Query cache instead of making
+  // a separate DB query. useYearSummary already populates ['year', year]
+  // for the selected year. For other years in the YoY list, use whatever
+  // is cached — if a year hasn't been visited yet, its entry will be null
+  // and that card simply won't render until the user navigates to that year.
 
-  const { data: allData = {} } = useQuery({
-    queryKey: ['yoy', userId, yearsKey],
-    enabled: Boolean(userId) && years.length > 0,
-    queryFn: async () => {
-      try {
-        const startYear = Math.min(...years)
-        const endYear = Math.max(...years)
-        const yearsSet = new Set(years)
+  const yearsWithData = useMemo(() => {
+    return years.filter(y => {
+      const cached = queryClient.getQueryData(['year', y])
+      return cached && (cached.totalIncome > 0 || cached.totalExpense > 0)
+    })
+  }, [years])
 
-        const { data: rows, error } = await supabase
-          .from('transactions')
-          .select('type, amount, date, is_repayment')
-          .eq('user_id', userId)
-          .gte('date', `${startYear}-01-01`)
-          .lte('date', `${endYear}-12-31`)
-
-        if (error) throw error
-
-        const totals = {}
-        years.forEach((y) => {
-          totals[y] = { income: 0, spent: 0, invest: 0 }
-        })
-
-        ;(rows || []).forEach((r) => {
-          const y = Number(String(r.date).slice(0, 4))
-          if (!yearsSet.has(y)) return
-          if (r.type === 'income' && !r.is_repayment) totals[y].income += +r.amount
-          if (r.type === 'expense') totals[y].spent += +r.amount
-          if (r.type === 'investment') totals[y].invest += +r.amount
-        })
-
-        years.forEach((y) => {
-          const entry = totals[y]
-          entry.rate = entry.income > 0
-            ? Math.round(((entry.income - entry.spent) / entry.income) * 100)
-            : 0
-        })
-
-        return totals
-      } catch (err) {
-        console.error('[Kosha] YoY query failed', err)
-        throw err
-      }
-    },
-  })
-
-  const yearsWithData = years.filter(y => allData[y]?.income > 0 || allData[y]?.spent > 0)
   if (yearsWithData.length < 2) return null
 
   return (
@@ -299,14 +261,22 @@ function YoYCards({ years, currentYear, userId }) {
       <div className="overflow-x-auto no-scrollbar -mx-4 px-4 mt-3">
         <div className="flex gap-3 pb-1 pr-4" style={{ minWidth: 'max-content' }}>
           {yearsWithData.map((y, idx) => {
-            const d = allData[y]
-            const prev = allData[yearsWithData[idx - 1]]
+            // Read directly from cache — synchronous, zero network cost
+            const d = queryClient.getQueryData(['year', y])
+            const prev = queryClient.getQueryData(['year', yearsWithData[idx - 1]])
             const isCurrent = y === currentYear
+
+            if (!d) return null
 
             function delta(curr, prv) {
               if (!prv || prv === 0) return null
               return Math.round(((curr - prv) / prv) * 100)
             }
+
+            const income = d.totalIncome || 0
+            const spent = d.totalExpense || 0
+            const invest = d.totalInvestment || 0
+            const rate = income > 0 ? Math.round(((income - spent) / income) * 100) : 0
 
             return (
               <div key={y}
@@ -314,7 +284,9 @@ function YoYCards({ years, currentYear, userId }) {
                 style={isCurrent ? { borderWidth: '1.5px' } : {}}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`text-label font-bold ${isCurrent ? 'text-ink' : 'text-ink-3'}`}>{y}</span>
+                  <span className={`text-label font-bold ${isCurrent ? 'text-ink' : 'text-ink-3'}`}>
+                    {y}
+                  </span>
                   {isCurrent && (
                     <span className="text-[9px] font-bold bg-brand-container text-brand-on px-1.5 py-0.5 rounded-full">
                       Now
@@ -324,19 +296,18 @@ function YoYCards({ years, currentYear, userId }) {
 
                 <div className="space-y-2.5">
                   {[
-                    { label: 'Earned',   key: 'income', cls: isCurrent ? 'text-income-text'  : 'text-ink-2' },
-                    { label: 'Spent',    key: 'spent',  cls: isCurrent ? 'text-expense-text' : 'text-ink-2' },
-                    { label: 'Invested', key: 'invest', cls: isCurrent ? 'text-invest-text'  : 'text-ink-2' },
-                    { label: 'Leftover', key: 'rate',   cls: isCurrent ? 'text-repay-text'   : 'text-ink-2', suffix: '%' },
+                    { label: 'Earned', val: income, prevVal: prev?.totalIncome, cls: isCurrent ? 'text-income-text' : 'text-ink-2' },
+                    { label: 'Spent', val: spent, prevVal: prev?.totalExpense, cls: isCurrent ? 'text-expense-text' : 'text-ink-2' },
+                    { label: 'Invested', val: invest, prevVal: prev?.totalInvestment, cls: isCurrent ? 'text-invest-text' : 'text-ink-2' },
+                    { label: 'Leftover', val: rate, prevVal: null, cls: isCurrent ? 'text-repay-text' : 'text-ink-2', suffix: '%' },
                   ].map(row => {
-                    const val = d?.[row.key] ?? 0
-                    const d2  = delta(val, prev?.[row.key])
+                    const d2 = row.prevVal != null ? delta(row.val, row.prevVal) : null
                     return (
-                      <div key={row.key}>
+                      <div key={row.label}>
                         <p className="text-[10px] text-ink-3 mb-0.5">{row.label}</p>
                         <div className="flex items-baseline gap-1">
                           <p className={`text-[12px] font-bold tabular-nums ${row.cls}`}>
-                            {row.suffix ? `${val}%` : fmt(val, true)}
+                            {row.suffix ? `${row.val}%` : fmt(row.val, true)}
                           </p>
                           {d2 !== null && Math.abs(d2) >= 3 && (
                             <span className={`text-[9px] font-bold ${d2 > 0 ? 'text-income-text' : 'text-expense-text'}`}>
@@ -363,10 +334,10 @@ function PortfolioAllocation({ vehicleData }) {
   if (!vehicleData.length || total === 0) return null
 
   const SIZE = 120
-  const SW   = 8
-  const R    = SIZE / 2 - SW
-  const CX   = SIZE / 2
-  const CY   = SIZE / 2
+  const SW = 8
+  const R = SIZE / 2 - SW
+  const CX = SIZE / 2
+  const CY = SIZE / 2
   const CIRC = 2 * Math.PI * R
 
   const segs = vehicleData
@@ -389,7 +360,7 @@ function PortfolioAllocation({ vehicleData }) {
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
             <circle cx={CX} cy={CY} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
             {segs.map((seg, i) => {
-              const dashLen       = Math.max(0, (seg.pct / 100) * CIRC)
+              const dashLen = Math.max(0, (seg.pct / 100) * CIRC)
               const currentOffset = offset
               offset += seg.pct
               return (
