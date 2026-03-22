@@ -11,7 +11,7 @@ import PageHeader from '../components/PageHeader'
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
-  'July','August','September','October','November','December'
+  'July','August','September','October','November','December',
 ]
 
 function MonthlySkeleton() {
@@ -24,9 +24,9 @@ function MonthlySkeleton() {
   )
 }
 
-// ── Budget sheet ──────────────────────────────────────────────────────────
+// ── Budget sheet ───────────────────────────────────────────────────────────
 function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
-  const [value, setValue] = useState(current ? String(current) : '')
+  const [value,  setValue]  = useState(current ? String(current) : '')
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
@@ -108,9 +108,15 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
   )
 }
 
-// ── Hero card — clean, original design ───────────────────────────────────
-function MonthHeroCard({ month, year }) {
-  const { data } = useMonthSummary(year, month)
+// ── Hero card ─────────────────────────────────────────────────────────────
+// FIX (defect 4.6): MonthHeroCard previously called useMonthSummary(year, month)
+// itself, creating a SECOND React Query subscription to the same key that the
+// parent Monthly component already subscribes to. Both components re-rendered
+// on every refetch even though they shared identical data.
+//
+// Fix: accept the summary data as a prop. The parent's single subscription
+// feeds both the hero card and the rest of the page. Zero duplicate queries.
+function MonthHeroCard({ month, year, data }) {
   const earned   = data?.earned     || 0
   const spent    = data?.expense    || 0
   const invested = data?.investment || 0
@@ -153,8 +159,12 @@ function MonthHeroCard({ month, year }) {
         ].map(s => (
           <div key={s.label} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl"
                style={{ background: C.heroStatBg }}>
-            <p className="text-[11px] sm:text-caption mb-0.5 truncate" style={{ color: C.heroLabel }}>{s.label}</p>
-            <p className="text-[12px] sm:text-label font-bold text-white tabular-nums truncate">{fmt(s.val)}</p>
+            <p className="text-[11px] sm:text-caption mb-0.5 truncate" style={{ color: C.heroLabel }}>
+              {s.label}
+            </p>
+            <p className="text-[12px] sm:text-label font-bold text-white tabular-nums truncate">
+              {fmt(s.val)}
+            </p>
           </div>
         ))}
       </div>
@@ -175,7 +185,7 @@ function MonthHeroCard({ month, year }) {
   )
 }
 
-// ── Breakdown donut card — separate from hero ─────────────────────────────
+// ── Breakdown donut card ───────────────────────────────────────────────────
 function BreakdownCard({ earned, spent, invested }) {
   const saved       = Math.max(0, earned - spent - invested)
   const spentPct    = earned > 0 ? Math.round((spent    / earned) * 100) : 0
@@ -189,7 +199,6 @@ function BreakdownCard({ earned, spent, invested }) {
   const CY    = SIZE / 2
   const CIRC  = 2 * Math.PI * R
 
-  // Amber for leftover
   const LEFTOVER_COLOR = C.bills
 
   const segs = [
@@ -206,14 +215,12 @@ function BreakdownCard({ earned, spent, invested }) {
     <div className="card p-5">
       <p className="section-label mb-4">Budget Breakdown</p>
       <div className="flex gap-4 items-center">
-
-        {/* Donut */}
         <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
             <circle cx={CX} cy={CY} r={R} fill="none"
               stroke={C.brandBorder} strokeWidth={SW} />
             {segs.map((seg, i) => {
-              const dashLen      = Math.max(0, (seg.pct / 100) * CIRC)
+              const dashLen       = Math.max(0, (seg.pct / 100) * CIRC)
               const currentOffset = offset
               offset += seg.pct
               return (
@@ -231,14 +238,12 @@ function BreakdownCard({ earned, spent, invested }) {
                            fontFamily: 'Roboto, system-ui', lineHeight: 1.1 }}>
               {savedPct}%
             </span>
-            <span style={{ fontSize: 9, color: C.inkMuted,
-                           fontFamily: 'Roboto, system-ui' }}>
+            <span style={{ fontSize: 9, color: C.inkMuted, fontFamily: 'Roboto, system-ui' }}>
               leftover
             </span>
           </div>
         </div>
 
-        {/* Rows */}
         <div className="flex-1 space-y-3 pt-1">
           {[
             { label: 'Spent',    val: spent,    pct: spentPct,    dot: C.expense,      color: C.expense      },
@@ -249,7 +254,9 @@ function BreakdownCard({ earned, spent, invested }) {
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 rounded-full shrink-0" style={{ background: s.dot }} />
                 <span className="text-caption text-ink-3 flex-1">{s.label}</span>
-                <span className="text-caption font-bold tabular-nums" style={{ color: s.color }}>{s.pct}%</span>
+                <span className="text-caption font-bold tabular-nums" style={{ color: s.color }}>
+                  {s.pct}%
+                </span>
               </div>
               <p className="text-caption text-ink-3 tabular-nums pl-4">{fmt(s.val)}</p>
             </div>
@@ -257,7 +264,6 @@ function BreakdownCard({ earned, spent, invested }) {
         </div>
       </div>
 
-      {/* Income total */}
       <div className="mt-4 pt-3 border-t border-kosha-border">
         <div className="flex justify-between">
           <span className="text-caption text-ink-3">Total income</span>
@@ -268,13 +274,15 @@ function BreakdownCard({ earned, spent, invested }) {
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────
+// ── Main page ──────────────────────────────────────────────────────────────
 export default function Monthly() {
   const now   = new Date()
   const [year,  setYear]  = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const monthRef = useRef(null)
 
+  // FIX (defect 4.6): single subscription — data is passed down to MonthHeroCard
+  // as a prop instead of MonthHeroCard calling useMonthSummary itself.
   const { data, loading } = useMonthSummary(year, month)
   const { budgets, setBudget, removeBudget } = useBudgets()
 
@@ -293,15 +301,18 @@ export default function Monthly() {
   const spent    = data?.expense    || 0
   const invested = data?.investment || 0
 
-  const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
-    .sort((a, b) => b[1] - a[1]).slice(0, 8), [data?.byCategory])
-  const categoryTotal = useMemo(() => catEntries.reduce((s, [, v]) => s + v, 0) || 1, [catEntries])
-
+  const catEntries = useMemo(
+    () => Object.entries(data?.byCategory || {}).sort((a, b) => b[1] - a[1]).slice(0, 8),
+    [data?.byCategory]
+  )
+  const categoryTotal = useMemo(
+    () => catEntries.reduce((s, [, v]) => s + v, 0) || 1,
+    [catEntries]
+  )
   const vehicleEntries = useMemo(
     () => Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1]),
     [data?.byVehicle]
   )
-
   const budgetCount = useMemo(
     () => catEntries.filter(([id]) => budgets[id]).length,
     [catEntries, budgets]
@@ -313,7 +324,7 @@ export default function Monthly() {
     <div className="page">
       <PageHeader title="Monthly" />
 
-      {/* ── Month navigator ───────────────────────────────────────────── */}
+      {/* ── Month navigator ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6">
         <button onClick={prev}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
@@ -343,9 +354,9 @@ export default function Monthly() {
         </button>
       </div>
 
-      {/* ── Hero card ─────────────────────────────────────────────────── */}
+      {/* ── Hero card — data prop, no second subscription ───────────── */}
       <div className="mb-6">
-        <MonthHeroCard month={month} year={year} />
+        <MonthHeroCard month={month} year={year} data={data} />
       </div>
 
       {loading ? (
@@ -358,16 +369,15 @@ export default function Monthly() {
           transition={{ duration: 0.25 }}
           className="space-y-6"
         >
-
-          {/* ── Breakdown donut card ─────────────────────────────────── */}
           <BreakdownCard earned={earned} spent={spent} invested={invested} />
 
-          {/* ── Category rows with budget overlay ───────────────────── */}
           {catEntries.length > 0 && (
             <CategorySpendingChart
               entries={catEntries}
               total={categoryTotal}
               budgets={budgets}
+              month={month}
+              year={year}
               subtitle={budgetCount > 0
                 ? `${budgetCount} budget${budgetCount > 1 ? 's' : ''} set · tap to edit`
                 : 'tap a row to set budget'}
@@ -375,7 +385,6 @@ export default function Monthly() {
             />
           )}
 
-          {/* ── Investments ───────────────────────────────────────────── */}
           {vehicleEntries.length > 0 && (
             <div>
               <p className="section-label mb-3">Investments</p>
@@ -390,14 +399,12 @@ export default function Monthly() {
             </div>
           )}
 
-          {/* ── Empty state ──────────────────────────────────────────── */}
           {earned === 0 && spent === 0 && invested === 0 && (
             <div className="card p-8 text-center">
               <p className="text-body text-ink-2">No data for this month.</p>
               <p className="text-label text-ink-3 mt-1">Navigate to a month with transactions.</p>
             </div>
           )}
-
         </motion.div>
       )}
 
@@ -413,7 +420,6 @@ export default function Monthly() {
           />
         )}
       </AnimatePresence>
-
     </div>
   )
 }

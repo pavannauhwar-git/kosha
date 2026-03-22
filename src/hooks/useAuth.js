@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
-import { setAuthUser, clearAuthUser } from '../lib/authStore'
+import { setAuthUser, clearAuthUser, getAuthUserId } from '../lib/authStore'
 
 const USER_PROFILE_QUERY_KEY = ['user-profile']
 const PROFILE_COLUMNS = 'id, display_name, avatar_url, onboarded'
@@ -165,20 +165,30 @@ export function useAuthState() {
     }
   }, [])
 
+  // FIX (defect 4.5): updateProfile and updateDisplayName previously closed over
+  // the `user` state variable, meaning they were recreated as new function
+  // references on every auth event (since `user` gets a new object reference
+  // each time AuthContext re-renders). Any component with these in a useCallback
+  // dep array would also recreate its own callbacks, propagating instability.
+  //
+  // Fix: read the userId synchronously from authStore (stable module singleton)
+  // instead of from the `user` closure. The dep array becomes [] — these
+  // functions are now created once and never recreated.
   const updateProfile = useCallback(async (updates) => {
-    if (!user) throw new Error('Not signed in')
+    const userId = getAuthUserId()
     const { data, error } = await supabase
-      .from('profiles').update(updates).eq('id', user.id)
+      .from('profiles').update(updates).eq('id', userId)
       .select(PROFILE_COLUMNS)
       .single()
     if (error) throw error
-    queryClient.setQueryData(profileQueryKey(user.id), data)
+    queryClient.setQueryData(profileQueryKey(userId), data)
     setProfile(data)
     return data
-  }, [profileQueryKey, user])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileQueryKey])   // removed `user` from deps — uses authStore instead
 
   const updateDisplayName = useCallback(async (displayName) => {
-    if (!user) throw new Error('Not signed in')
+    const userId = getAuthUserId()
 
     const trimmedName = String(displayName || '').trim()
     if (!trimmedName) throw new Error('Display name cannot be empty')
@@ -186,12 +196,13 @@ export function useAuthState() {
     const { error } = await supabase
       .from('profiles')
       .update({ display_name: trimmedName })
-      .eq('id', user.id)
+      .eq('id', userId)
 
     if (error) throw error
 
-    return invalidateAndRefetchProfile(user.id)
-  }, [invalidateAndRefetchProfile, user])
+    return invalidateAndRefetchProfile(userId)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invalidateAndRefetchProfile])   // removed `user` from deps
 
   return {
     user, profile, loading,
