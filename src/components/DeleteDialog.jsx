@@ -12,16 +12,20 @@ export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this 
               <motion.div
                 className="fixed inset-0 bg-ink/30 z-50"
                 style={{ backdropFilter: 'blur(2px)' }}
-                initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               />
             </Dialog.Overlay>
             <Dialog.Content asChild>
               <motion.div
                 className="fixed left-4 right-4 bottom-6 z-50 bg-kosha-surface rounded-hero p-6 shadow-card-lg"
-                style={{ maxWidth: 480, margin: '0 auto' }}
-                initial={{ y:60, opacity:0 }}
-                animate={{ y:0, opacity:1, transition:{ type:'spring', stiffness:400, damping:30 } }}
-                exit={{ y:60, opacity:0, transition:{ duration:0.2 } }}
+                style={{
+                  maxWidth: 480,
+                  margin: '0 auto',
+                  bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+                }}
+                initial={{ y: 60, opacity: 0 }}
+                animate={{ y: 0, opacity: 1, transition: { type: 'spring', stiffness: 400, damping: 30 } }}
+                exit={{ y: 60, opacity: 0, transition: { duration: 0.2 } }}
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-card bg-expense-bg flex items-center justify-center">
@@ -35,7 +39,7 @@ export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this 
                   This cannot be undone. The transaction will be permanently removed.
                 </Dialog.Description>
                 <div className="flex gap-3">
-                  <button onClick={onCancel}  className="btn-ghost flex-1 py-3 rounded-card border border-kosha-border">
+                  <button onClick={onCancel} className="btn-ghost flex-1 py-3 rounded-card border border-kosha-border">
                     Cancel
                   </button>
                   <button onClick={onConfirm} className="btn-danger flex-1 py-3 rounded-card">

@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { Plus, DownloadSimple } from '@phosphor-icons/react'
 import PageHeader from '../components/PageHeader'
+import { getAuthUserId } from '../lib/authStore'
 
 const TYPES = [
   { id: 'all',        label: 'All'      },
@@ -103,10 +104,7 @@ export default function Transactions() {
 
   const exportCSV = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const userId = session?.user?.id
-      if (!userId) throw new Error('Not signed in')
-
+      const userId = getAuthUserId()
       let q = supabase
         .from('transactions')
         .select('date, type, description, amount, category, investment_vehicle, payment_mode, notes')

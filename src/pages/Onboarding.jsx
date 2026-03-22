@@ -160,7 +160,6 @@ function StepFirstTransaction({ onFinish, onSkip }) {
         category,
         is_repayment: false,
         payment_mode: 'upi',
-        user_id:      user.id,
       })
       onFinish()
     } catch (e) {

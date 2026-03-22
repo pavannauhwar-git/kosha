@@ -575,3 +575,304 @@ begin
     select v_existing_id, false, 1;
 end;
 $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Migration 002: Performance RPCs
+-- Run in: Supabase Dashboard → SQL Editor → New query → Run
+--
+-- WHAT THIS FIXES:
+--   1. get_running_balance  — replaces full table scan with server-side SUM()
+--   2. get_month_summary    — replaces raw row fetch + JS aggregation
+--   3. get_year_summary     — replaces raw row fetch + JS aggregation
+--   4. mark_liability_paid  — makes 3-step bill payment atomic (data safety fix)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+
+-- ── 1. get_running_balance ───────────────────────────────────────────────────
+-- Previously: fetched ALL income rows and ALL expense+investment rows ever
+--             recorded, returning thousands of `amount` values to the client
+--             just to sum them in JavaScript.
+-- Now: single query, server-side SUM, returns one row with one number.
+
+create or replace function public.get_running_balance(
+  p_user_id uuid,
+  p_end_date date
+)
+returns numeric
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select coalesce(
+    sum(case when type = 'income' then amount else -amount end),
+    0
+  )
+  from transactions
+  where user_id  = p_user_id
+    and date    <= p_end_date
+$$;
+
+
+-- ── 2. get_month_summary ─────────────────────────────────────────────────────
+-- Previously: fetched every raw transaction row for the month (~50–300 rows),
+--             then ran a JavaScript for-loop to sum by type/category/vehicle.
+-- Now: GROUP BY on the server, returns ~5–30 pre-aggregated rows.
+--
+-- Returns one row per (type, is_repayment, category, investment_vehicle) group.
+-- The JS hook aggregates these ~5–30 rows instead of ~50–300 raw rows.
+
+create or replace function public.get_month_summary(
+  p_user_id uuid,
+  p_year    int,
+  p_month   int
+)
+returns table (
+  type               text,
+  is_repayment       boolean,
+  category           text,
+  investment_vehicle text,
+  total              numeric
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select
+    type,
+    is_repayment,
+    coalesce(category, 'other')           as category,
+    coalesce(investment_vehicle, 'Other') as investment_vehicle,
+    sum(amount)                           as total
+  from transactions
+  where user_id = p_user_id
+    and date   >= make_date(p_year, p_month, 1)
+    and date   <= (make_date(p_year, p_month, 1) + interval '1 month - 1 day')::date
+  group by type, is_repayment, category, investment_vehicle
+$$;
+
+
+-- ── 3. get_year_summary ──────────────────────────────────────────────────────
+-- Previously: fetched ALL transactions for the year (~100–1000+ rows) and
+--             computed monthly buckets + category/vehicle totals in JavaScript.
+-- Now: two queries returned as JSON arrays, fully aggregated on the server.
+--
+-- Returns a single row with:
+--   monthly_data  — 12-entry JSON array [{month, income, expense, investment}]
+--   category_data — JSON object {category: total}
+--   vehicle_data  — JSON object {vehicle: total}
+--   totals        — JSON object {income, repayments, expense, investment}
+--   top5_expenses — JSON array of top 5 expense transactions
+
+create or replace function public.get_year_summary(
+  p_user_id uuid,
+  p_year    int
+)
+returns table (
+  monthly_data  json,
+  category_data json,
+  vehicle_data  json,
+  totals        json,
+  top5_expenses json
+)
+language plpgsql
+stable
+security invoker
+set search_path = public
+as $$
+declare
+  v_monthly  json;
+  v_category json;
+  v_vehicle  json;
+  v_totals   json;
+  v_top5     json;
+begin
+  -- Monthly income / expense / investment buckets
+  select json_agg(row_to_json(m) order by m.month_num)
+  into v_monthly
+  from (
+    select
+      extract(month from date)::int                                   as month_num,
+      sum(case when type = 'income' and not is_repayment then amount else 0 end) as income,
+      sum(case when type = 'expense'    then amount else 0 end)       as expense,
+      sum(case when type = 'investment' then amount else 0 end)       as investment
+    from transactions
+    where user_id = p_user_id
+      and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31)
+    group by extract(month from date)
+  ) m;
+
+  -- Category totals (expenses only)
+  select json_object_agg(category, cat_total)
+  into v_category
+  from (
+    select coalesce(category, 'other') as category, sum(amount) as cat_total
+    from transactions
+    where user_id = p_user_id
+      and type    = 'expense'
+      and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31)
+    group by category
+  ) c;
+
+  -- Investment vehicle totals
+  select json_object_agg(vehicle, veh_total)
+  into v_vehicle
+  from (
+    select coalesce(investment_vehicle, 'Other') as vehicle, sum(amount) as veh_total
+    from transactions
+    where user_id = p_user_id
+      and type    = 'investment'
+      and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31)
+    group by investment_vehicle
+  ) v;
+
+  -- Grand totals
+  select json_build_object(
+    'income',      coalesce(sum(case when type = 'income' and not is_repayment then amount end), 0),
+    'repayments',  coalesce(sum(case when type = 'income' and is_repayment     then amount end), 0),
+    'expense',     coalesce(sum(case when type = 'expense'    then amount end), 0),
+    'investment',  coalesce(sum(case when type = 'investment' then amount end), 0),
+    'count',       count(*)
+  )
+  into v_totals
+  from transactions
+  where user_id = p_user_id
+    and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31);
+
+  -- Top 5 expenses
+  select json_agg(row_to_json(e))
+  into v_top5
+  from (
+    select id, date, type, amount, description, category
+    from transactions
+    where user_id = p_user_id
+      and type    = 'expense'
+      and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31)
+    order by amount desc
+    limit 5
+  ) e;
+
+  return query select v_monthly, v_category, v_vehicle, v_totals, v_top5;
+end;
+$$;
+
+
+-- ── 4. mark_liability_paid ───────────────────────────────────────────────────
+-- Previously: 3 sequential client-side DB calls with no atomicity.
+--             If call 2 or 3 failed after call 1 succeeded, an expense
+--             transaction was created without the liability being marked paid.
+-- Now: single atomic transaction — all 3 operations succeed or all roll back.
+
+create or replace function public.mark_liability_paid(
+  p_liability_id uuid,
+  p_user_id      uuid
+)
+returns json
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_liability  liabilities%rowtype;
+  v_txn_id     uuid;
+  v_next_due   date;
+begin
+  -- Lock and fetch the liability row
+  select * into v_liability
+  from liabilities
+  where id = p_liability_id and user_id = p_user_id
+  for update;
+
+  if not found then
+    raise exception 'Liability not found or access denied';
+  end if;
+
+  if v_liability.paid then
+    raise exception 'Liability is already marked paid';
+  end if;
+
+  -- Step 1: Insert the linked expense transaction
+  insert into transactions (
+    date, type, description, amount, category,
+    is_repayment, payment_mode, notes, user_id
+  ) values (
+    current_date,
+    'expense',
+    v_liability.description,
+    v_liability.amount,
+    'bills',
+    false,
+    'other',
+    'Auto-created from bill: ' || v_liability.description,
+    p_user_id
+  )
+  returning id into v_txn_id;
+
+  -- Step 2: Mark the liability as paid
+  update liabilities
+  set paid                  = true,
+      linked_transaction_id = v_txn_id
+  where id = p_liability_id;
+
+  -- Step 3: If recurring, insert the next period
+  if v_liability.is_recurring and v_liability.recurrence is not null then
+    v_next_due := case v_liability.recurrence
+      when 'monthly'   then v_liability.due_date + interval '1 month'
+      when 'quarterly' then v_liability.due_date + interval '3 months'
+      when 'yearly'    then v_liability.due_date + interval '1 year'
+      else                  v_liability.due_date + interval '1 month'
+    end;
+
+    insert into liabilities (
+      description, amount, due_date, is_recurring, recurrence, paid, user_id
+    ) values (
+      v_liability.description,
+      v_liability.amount,
+      v_next_due,
+      true,
+      v_liability.recurrence,
+      false,
+      p_user_id
+    );
+  end if;
+
+  -- Return the created transaction ID for cache injection
+  return json_build_object(
+    'transaction_id',    v_txn_id,
+    'liability_id',      p_liability_id,
+    'next_due_date',     v_next_due
+  );
+end;
+$$;
+
+-- ── Migration 003: budgets table ─────────────────────────────────────────────
+create table if not exists public.budgets (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  category   text not null,
+  amount     numeric(12,2) not null check (amount > 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, category)
+);
+
+create index if not exists idx_budgets_user on public.budgets(user_id);
+
+alter table public.budgets enable row level security;
+
+drop policy if exists "budgets: select own" on public.budgets;
+create policy "budgets: select own" on public.budgets
+  for select to public using (auth.uid() = user_id);
+
+drop policy if exists "budgets: insert own" on public.budgets;
+create policy "budgets: insert own" on public.budgets
+  for insert to public with check (auth.uid() = user_id);
+
+drop policy if exists "budgets: update own" on public.budgets;
+create policy "budgets: update own" on public.budgets
+  for update to public using (auth.uid() = user_id);
+
+drop policy if exists "budgets: delete own" on public.budgets;
+create policy "budgets: delete own" on public.budgets
+  for delete to public using (auth.uid() = user_id);

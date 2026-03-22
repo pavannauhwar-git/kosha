@@ -51,7 +51,11 @@ export default function EditProfileNameDialog({ open, onClose }) {
           />
           <motion.div
             className="fixed left-4 right-4 bottom-6 z-50 bg-kosha-surface rounded-hero p-6 shadow-card-lg"
-            style={{ maxWidth: 480, margin: '0 auto' }}
+            style={{
+              maxWidth: 480,
+              margin: '0 auto',
+              bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+            }}
             initial={{ y: 60, opacity: 0 }}
             animate={{ y: 0, opacity: 1, transition: { type: 'spring', stiffness: 400, damping: 30 } }}
             exit={{ y: 60, opacity: 0, transition: { duration: 0.2 } }}
