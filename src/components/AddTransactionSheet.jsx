@@ -186,7 +186,7 @@ export default function AddTransactionSheet({
   // frame already shows the correct edit/duplicate/add form.
   const [prevInitSource, setPrevInitSource] = useState(null)
 
-  
+
   const handleSmartTextChange = (val) => {
     setSmartText(val)
     const { amount: a, desc: d, category: c, mode: m, type: t } = parseTransactionSmart(val)
@@ -254,17 +254,18 @@ export default function AddTransactionSheet({
 
     setIsSaving(true)
     setError('')
+
     try {
       if (editTxn) {
         await updateTransaction(editTxn.id, payload)
       } else {
         await addTransaction(payload)
       }
+      setIsSaving(false)
       onClose()
     } catch (e) {
-      setError(e.message || 'Could not save. Check your connection.')
-    } finally {
       setIsSaving(false)
+      setError(e.message || 'Could not save. Check your connection.')
     }
   }
 
@@ -306,12 +307,12 @@ export default function AddTransactionSheet({
                 </div>
               </div>
 
-              
+
               {/* Smart Input Mode */}
               <AnimatePresence>
                 {smartMode && (
                   <motion.div initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} className="overflow-hidden">
-                    <textarea 
+                    <textarea
                       placeholder="e.g. Paid 400 for lunch using UPI..."
                       value={smartText}
                       onChange={e => handleSmartTextChange(e.target.value)}
