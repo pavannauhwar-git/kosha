@@ -297,7 +297,6 @@ export default function Onboarding() {
       console.error('[Kosha] Onboarding finish failed', e)
       setSaving(false)
     }
-    }
   }
 
   return (
