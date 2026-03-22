@@ -24,7 +24,6 @@ function logQueryError(scope, error) {
 // ── Cache helpers ─────────────────────────────────────────────────────────
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  // Refined: Only patch queries where the transaction matches the filters, and respect limit/order
   const allQueries = queryClient.getQueryCache().getAll()
   for (const q of allQueries) {
     const queryKey = q.queryKey
@@ -33,6 +32,8 @@ function injectTransactionIntoLists(txn, mode = 'add') {
     if (queryKey[1] !== 'data') continue
     const filters = queryKey[2] || {}
     const { type, category, search, limit } = filters
+    // Debug: Log each transaction list query key and filters
+    console.log('[DEBUG] Transaction list queryKey:', queryKey, 'filters:', filters)
     // Check if transaction matches filters
     if (type && txn.type !== type) continue
     if (category && txn.category !== category) continue
@@ -410,6 +411,9 @@ export async function addTransaction(payload) {
     .single()
 
   if (error) throw error
+
+  // Debug: Log the inserted transaction object
+  console.log('[DEBUG] Inserted transaction:', data)
 
   injectTransactionIntoLists(data, 'add')
   adjustBalanceCaches(balanceDelta(data))
