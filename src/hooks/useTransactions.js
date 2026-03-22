@@ -24,13 +24,15 @@ function logQueryError(scope, error) {
 // ── Cache helpers ─────────────────────────────────────────────────────────
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  // Update all queries whose key starts with ['transactions']
-  const allTxnQueries = queryClient.getQueriesData({ queryKey: ['transactions'] })
-  for (const [queryKey, old] of allTxnQueries) {
+  // Update all queries whose key starts with ['transactions'] (deep match)
+  const allQueries = queryClient.getQueryCache().getAll()
+  for (const q of allQueries) {
+    const queryKey = q.queryKey
+    if (!Array.isArray(queryKey) || queryKey[0] !== 'transactions') continue
+    const old = q.state.data
     if (!old?.rows) continue
     let updated = old
     if (mode === 'add') {
-      // Prevent duplicates: only add if not present
       if (!old.rows.some(t => t.id === txn.id)) {
         updated = { ...old, rows: [txn, ...old.rows], total: (old.total || 0) + 1 }
       }
