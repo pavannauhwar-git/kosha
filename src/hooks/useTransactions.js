@@ -24,26 +24,29 @@ function logQueryError(scope, error) {
 // ── Cache helpers ─────────────────────────────────────────────────────────
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  queryClient.setQueriesData(
-    { queryKey: ['transactions'], exact: false },
-    (old) => {
-      if (!old?.rows) return old
-      if (mode === 'add') {
-        return { ...old, rows: [txn, ...old.rows], total: (old.total || 0) + 1 }
+  // Update all queries whose key starts with ['transactions']
+  const allTxnQueries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  for (const [queryKey, old] of allTxnQueries) {
+    if (!old?.rows) continue
+    let updated = old
+    if (mode === 'add') {
+      // Prevent duplicates: only add if not present
+      if (!old.rows.some(t => t.id === txn.id)) {
+        updated = { ...old, rows: [txn, ...old.rows], total: (old.total || 0) + 1 }
       }
-      if (mode === 'update') {
-        return { ...old, rows: old.rows.map(t => t.id === txn.id ? txn : t) }
+    } else if (mode === 'update') {
+      updated = { ...old, rows: old.rows.map(t => t.id === txn.id ? txn : t) }
+    } else if (mode === 'delete') {
+      updated = {
+        ...old,
+        rows:  old.rows.filter(t => t.id !== txn.id),
+        total: Math.max(0, (old.total || 0) - 1),
       }
-      if (mode === 'delete') {
-        return {
-          ...old,
-          rows:  old.rows.filter(t => t.id !== txn.id),
-          total: Math.max(0, (old.total || 0) - 1),
-        }
-      }
-      return old
     }
-  )
+    if (updated !== old) {
+      queryClient.setQueryData(queryKey, updated)
+    }
+  }
 }
 
 function adjustBalanceCaches(delta) {
