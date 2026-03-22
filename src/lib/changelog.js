@@ -1,5 +1,22 @@
 export const CHANGELOG = [
   {
+    version: '1.4',
+    date: 'March 2026',
+    items: [
+      'Fixed "Not signed in" error when adding transactions or bills on first app open',
+      'Dialogs now close instantly after saving — no more 1–3 second freeze',
+      'Transaction list, balance, and monthly summary update immediately after any change',
+      'Bills now use an atomic database operation — no risk of mismatched data on payment',
+      'Running balance calculation moved server-side — faster and scales with history',
+      'Monthly and yearly summaries now computed on the server — significantly faster load',
+      'Fixed duplicate network requests triggered after every local change',
+      'Search in Transactions no longer triggers unnecessary database count queries',
+      'Dashboard sections now update independently — changing one no longer redraws all',
+      'Fixed month rollover on Dashboard not detecting until up to 60 seconds after midnight',
+      'Reduced unnecessary re-renders across Dashboard, Monthly, Analytics, and Transactions',
+    ],
+  },
+  {
     version: '1.3',
     date: 'March 2026',
     items: [

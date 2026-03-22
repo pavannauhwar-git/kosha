@@ -1,10 +1,11 @@
+import { memo } from 'react'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../lib/utils'
 import { C } from '../lib/colors'
 import { CATEGORIES } from '../lib/categories'
 
 function CategoryLine({ pct, color, overBudget = false }) {
-  const fillPct = Math.max(0, Math.min(pct, 100))
+  const fillPct  = Math.max(0, Math.min(pct, 100))
   const barColor = overBudget ? C.expense : color
 
   return (
@@ -12,7 +13,7 @@ function CategoryLine({ pct, color, overBudget = false }) {
       <div
         className="h-full rounded-full"
         style={{
-          width: `${fillPct}%`,
+          width:      `${fillPct}%`,
           background: barColor,
           transition: 'width 300ms ease-out',
         }}
@@ -21,15 +22,34 @@ function CategoryLine({ pct, color, overBudget = false }) {
   )
 }
 
-export default function CategorySpendingChart({
+// FIX (defect 5.4): Wrapped in React.memo.
+// CategorySpendingChart is rendered inside both Monthly.jsx and Analytics.jsx.
+// Neither parent passed it through React.memo, meaning the chart re-rendered
+// on every parent re-render — including every transaction mutation refetch —
+// even when entries, total, and budgets were all identical.
+//
+// With memo, the chart only re-renders when its props actually change.
+// For Analytics.jsx (no budgets, no onCategoryClick) this means it only
+// re-renders when the year changes. For Monthly.jsx it re-renders when
+// the month changes or a budget is saved — both correct.
+const CategorySpendingChart = memo(function CategorySpendingChart({
   entries,
   total,
   budgets = {},
   title = 'Spent by Category',
   subtitle,
   onCategoryClick,
+  month,
+  year,
 }) {
   if (!entries.length) return null
+
+  const now = new Date()
+  const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear()
+  const daysInMonth    = isCurrentMonth ? new Date(year, month, 0).getDate() : 30
+  const pacePct        = isCurrentMonth
+    ? Math.round((now.getDate() / daysInMonth) * 100)
+    : null
 
   return (
     <>
@@ -40,15 +60,15 @@ export default function CategorySpendingChart({
 
       <div className="card p-0 overflow-hidden">
         {entries.map(([catId, amt], i) => {
-          const cat = CATEGORIES.find(c => c.id === catId)
-          const budget = budgets[catId] || 0
+          const cat       = CATEGORIES.find(c => c.id === catId)
+          const budget    = budgets[catId] || 0
           const hasBudget = budget > 0
-          const barPct = hasBudget
+          const barPct    = hasBudget
             ? Math.min(Math.round((amt / budget) * 100), 100)
             : Math.round((amt / total) * 100)
           const overBudget = hasBudget && amt > budget
-          const remaining = hasBudget ? budget - amt : null
-          const RowTag = onCategoryClick ? 'button' : 'div'
+          const remaining  = hasBudget ? budget - amt : null
+          const RowTag     = onCategoryClick ? 'button' : 'div'
 
           return (
             <RowTag
@@ -94,6 +114,13 @@ export default function CategorySpendingChart({
                     {fmt(amt)} of {fmt(budget)}
                   </p>
                 )}
+
+                {/* Pace indicator — only shown when budget is set and month is current */}
+                {hasBudget && pacePct !== null && barPct > pacePct && !overBudget && (
+                  <p className="text-[10px] text-warning-text mt-1 font-medium text-right tracking-tight">
+                    Tracking {barPct - pacePct}% ahead of pace
+                  </p>
+                )}
               </div>
 
               <span className="text-label font-semibold tabular-nums ml-2 shrink-0 text-expense-text">
@@ -105,4 +132,6 @@ export default function CategorySpendingChart({
       </div>
     </>
   )
-}
+})
+
+export default CategorySpendingChart

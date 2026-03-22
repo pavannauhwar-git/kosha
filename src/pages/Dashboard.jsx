@@ -39,8 +39,41 @@ export default function Dashboard() {
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000)
-    return () => clearInterval(id)
+    // FIX (defect 5.6): The old setInterval(60s) could take up to 60 seconds
+    // to detect a month rollover at midnight on the 1st. The running balance
+    // query would continue using the old month for that entire window.
+    //
+    // Fix: align the first tick to the start of the next minute for precision,
+    // then use 60s intervals. On each tick, compare date/month/year and only
+    // update state if something meaningful changed — avoids re-renders on ticks
+    // where nothing visible to the user has changed.
+    let intervalId = null
+
+    function tick() {
+      const next = new Date()
+      setNow(prev => {
+        if (
+          prev.getFullYear() !== next.getFullYear() ||
+          prev.getMonth()    !== next.getMonth()    ||
+          prev.getDate()     !== next.getDate()     ||
+          prev.getHours()    !== next.getHours()
+        ) {
+          return next
+        }
+        return prev  // same object reference — no re-render
+      })
+    }
+
+    const msUntilNextMinute = (60 - new Date().getSeconds()) * 1000
+    const timeoutId = setTimeout(() => {
+      tick()
+      intervalId = setInterval(tick, 60_000)
+    }, msUntilNextMinute)
+
+    return () => {
+      clearTimeout(timeoutId)
+      if (intervalId) clearInterval(intervalId)
+    }
   }, [])
 
   const { profile } = useAuth()
@@ -83,16 +116,24 @@ export default function Dashboard() {
   const dayOfMonth  = now.getDate()
   const paceOk      = earned === 0 || spent / earned <= dayOfMonth / daysInMonth + 0.05
 
-  // Stable array reference: only recomputes when bills data actually changes
-  const dueSoon = useMemo(
-    () => bills.filter(b => daysUntil(b.due_date) <= 7),
+  // FIX (defect 5.3): The old code derived dueSoon and insight from `bills`
+  // directly. When the liabilities query refetched (even with identical data),
+  // `bills` got a new array reference, invalidating dueSoon's memo, which
+  // invalidated insight's memo — a chain re-evaluation on every background
+  // refetch regardless of whether any data actually changed.
+  //
+  // Fix: derive stable primitive values from bills ONCE, then use those
+  // primitives as memo deps. Array reference changes that don't change the
+  // derived values no longer trigger downstream recalculations.
+  const dueSoonCount   = useMemo(() => bills.filter(b => daysUntil(b.due_date) <= 7).length, [bills])
+  const dueSoonDescs   = useMemo(
+    () => bills.filter(b => daysUntil(b.due_date) <= 7).slice(0, 2).map(b => b.description).join(' · '),
     [bills]
   )
+  const totalBillsAmt  = useMemo(() => bills.reduce((s, b) => s + +b.amount, 0), [bills])
 
-  const totalBillsAmt = useMemo(
-    () => bills.reduce((s, b) => s + +b.amount, 0),
-    [bills]
-  )
+  // dueSoon array kept for the bill alert section (needs .map on descriptions above)
+  const dueSoon = useMemo(() => bills.filter(b => daysUntil(b.due_date) <= 7), [bills])
 
   const insight = useMemo(() => {
     const spendPct = earned > 0 ? spent / earned : 0
@@ -100,11 +141,14 @@ export default function Dashboard() {
     if (!earned && !spent) return 'Log a transaction to start your money story 📊'
     if (spendPct < dayPct - 0.15) return `Under pace · ${rate}% saved so far ✨`
     if (spendPct > dayPct + 0.15) return 'Spending running hot this month · ease up 📈'
-    if (dueSoon.length > 0) return `${dueSoon.length} bill${dueSoon.length > 1 ? 's' : ''} coming due · plan ahead 📅`
-    if (investDiff > 0)     return `Invested ${fmt(Math.abs(investDiff))} more than last month 💪`
-    if (rate >= 25)         return `Saving ${rate}% of income · outstanding month 🎯`
+    if (dueSoonCount > 0) return `${dueSoonCount} bill${dueSoonCount > 1 ? 's' : ''} coming due · plan ahead 📅`
+    if (investDiff > 0)   return `Invested ${fmt(Math.abs(investDiff))} more than last month 💪`
+    if (rate >= 25)       return `Saving ${rate}% of income · outstanding month 🎯`
     return `Saving ${rate}% this month · right on track 👍`
-  }, [earned, spent, dayOfMonth, daysInMonth, rate, dueSoon, investDiff])
+  // FIX (defect 5.3): deps are now primitives (dueSoonCount) not the bills array.
+  // This memo only recalculates when earned/spent/rate/dueSoonCount/investDiff
+  // actually change in value — not on every array reference change from a refetch.
+  }, [earned, spent, dayOfMonth, daysInMonth, rate, dueSoonCount, investDiff])
 
   // ── Stable callbacks — useCallback deps are all stable primitives ──────
   const openQuickAdd = useCallback((type) => {
@@ -215,7 +259,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Bill alert ────────────────────────────────────────────── */}
-        {dueSoon.length > 0 && (
+        {dueSoonCount > 0 && (
           <motion.div variants={fadeUp}>
             <button onClick={() => navigate('/bills')}
               className="card-warn w-full flex items-center justify-between px-4 py-4 text-left">
@@ -225,11 +269,9 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-body font-semibold text-ink">
-                    {dueSoon.length} bill{dueSoon.length > 1 ? 's' : ''} due soon
+                    {dueSoonCount} bill{dueSoonCount > 1 ? 's' : ''} due soon
                   </p>
-                  <p className="text-label text-ink-3">
-                    {dueSoon.slice(0, 2).map(b => b.description).join(' · ')}
-                  </p>
+                  <p className="text-label text-ink-3">{dueSoonDescs}</p>
                 </div>
               </div>
               <ArrowRight size={15} className="text-ink-4 shrink-0" />

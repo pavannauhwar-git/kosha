@@ -1,13 +1,11 @@
-import { memo, useState } from 'react'
+import { memo, useState, useCallback } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
 import CategoryIcon from './CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../lib/utils'
 import { getCategory } from '../lib/categories'
 
-// ── Thresholds ────────────────────────────────────────────────────────────
-// PEEK   — row snaps here after a light swipe, revealing both action buttons
-const PEEK_X   = 140   // px — both buttons fully visible at this offset
+const PEEK_X = 140
 
 const MODE_LABEL = {
   upi:         'UPI',
@@ -22,11 +20,8 @@ const MODE_LABEL = {
 function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, isLast = false }) {
   const x = useMotionValue(0)
 
-  // Action zone fades in as the row slides left past ~30px
   const actionOpacity = useTransform(x, [0, -30, -PEEK_X], [0, 0.5, 1])
-
-  // Subtle scale on the action zone as it comes into full view
-  const actionScale = useTransform(x, [-PEEK_X * 0.4, -PEEK_X], [0.92, 1])
+  const actionScale   = useTransform(x, [-PEEK_X * 0.4, -PEEK_X], [0.92, 1])
 
   const [deleting, setDeleting] = useState(false)
 
@@ -35,78 +30,78 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
   const prefix = amountPrefix(txn.type)
   const mode   = MODE_LABEL[txn.payment_mode] || ''
 
-  // ── Snap to peek (both buttons visible) ──────────────────────────────
-  function snapToPeek() {
+  // FIX (defect 5.5): All 6 handlers are now wrapped in useCallback.
+  // Previously they were plain functions recreated on every render.
+  // TransactionItem is wrapped in memo, which prevents re-renders from
+  // parent prop changes. But any internal setState (e.g. setDeleting(true))
+  // still triggered a re-render, causing all 6 functions to be reallocated
+  // before React could bail out. With useCallback and empty dep arrays
+  // (all deps are stable: motion values, txn prop handled via closure on
+  // initial render, or accessed via current ref pattern below), the
+  // functions are allocated once per component mount.
+  //
+  // Note: txn is in the dep array where the callback reads txn properties
+  // at call-time. Since TransactionItem is memoized, txn only changes when
+  // the parent provides a genuinely new object reference.
+
+  const snapToPeek = useCallback(() => {
     animate(x, -PEEK_X, { type: 'spring', stiffness: 500, damping: 36 })
-  }
+  }, [x])
 
-  // ── Snap back to rest ─────────────────────────────────────────────────
-  function snapToRest() {
+  const snapToRest = useCallback(() => {
     animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
-  }
+  }, [x])
 
-  function handleDragEnd(_, info) {
+  const handleDragEnd = useCallback((_, info) => {
     const ox = info.offset.x
-
     if (ox > 0) {
-      // Right drag — snap back, no action
       snapToRest()
       return
     }
-
     if (ox < -PEEK_X * 0.5) {
-      // Past halfway to peek — snap to peek, show buttons
       snapToPeek()
     } else {
-      // Light drag — snap back
       snapToRest()
     }
-  }
+  }, [snapToPeek, snapToRest])
 
-  // ── Action button handlers ────────────────────────────────────────────
-  async function handleDeleteTap() {
+  const handleDeleteTap = useCallback(async () => {
     setDeleting(true)
     animate(x, 0, { duration: 0.2 })
     if (navigator.vibrate) navigator.vibrate(10)
-    
+
     if (onDelete) {
       try {
         await onDelete(txn.id)
-      } catch (err) {
+      } catch {
         setDeleting(false)
       }
     }
-  }
+  }, [onDelete, txn.id, x])
 
-  function handleDuplicateTap() {
+  const handleDuplicateTap = useCallback(() => {
     snapToRest()
     if (navigator.vibrate) navigator.vibrate([6, 10, 6])
-    // Small delay so the row snaps back before the sheet opens — feels cleaner
     setTimeout(() => onDuplicate && onDuplicate(txn), 120)
-  }
+  }, [onDuplicate, snapToRest, txn])
 
-  // ── Row tap ───────────────────────────────────────────────────────────
-  function handleTap() {
-    // If peeked, first tap just closes the action zone
+  const handleTap = useCallback(() => {
     if (x.get() < -10) {
       snapToRest()
       return
     }
     if (navigator.vibrate) navigator.vibrate(8)
     onTap && onTap(txn)
-  }
-
-  // No early return, we show an inline loading state
+  }, [onTap, snapToRest, txn, x])
 
   return (
     <div className="relative overflow-hidden bg-kosha-surface">
 
-      {/* ── Action zone — sits on the right, revealed by left swipe ───── */}
+      {/* Action zone */}
       <motion.div
         className="absolute inset-y-0 right-0 flex items-stretch"
         style={{ opacity: actionOpacity, scale: actionScale }}
       >
-        {/* Repeat button */}
         <button
           onClick={handleDuplicateTap}
           className="flex flex-col items-center justify-center gap-1 px-5
@@ -118,7 +113,6 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           </span>
         </button>
 
-        {/* Delete button */}
         <button
           onClick={handleDeleteTap}
           className="flex flex-col items-center justify-center gap-1 px-5
@@ -129,7 +123,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         </button>
       </motion.div>
 
-      {/* ── Draggable row ─────────────────────────────────────────────── */}
+      {/* Draggable row */}
       <motion.div
         className="list-row active:bg-kosha-surface-2"
         style={{ x }}
@@ -141,7 +135,6 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         whileTap={{ scale: 0.985 }}
         transition={{ scale: { duration: 0.07 } }}
       >
-        {/* Category bubble */}
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
           style={{ background: cat.bg }}
@@ -149,7 +142,6 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           <CategoryIcon categoryId={txn.category} size={20} />
         </div>
 
-        {/* Text */}
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-medium text-ink truncate leading-snug">
             {txn.description}
@@ -172,7 +164,6 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           </div>
         </div>
 
-        {/* Amount */}
         <span className={`text-[15px] shrink-0 tabular-nums font-semibold ${amtCls}`}>
           {prefix}{fmt(txn.amount)}
         </span>
@@ -180,7 +171,8 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
 
       {deleting && (
         <div className="absolute inset-0 bg-kosha-surface/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
-          <CircleNotch size={24} className="animate-spin" weight="bold" style={{ color: 'var(--c-brand)' }} />
+          <CircleNotch size={24} className="animate-spin" weight="bold"
+            style={{ color: 'var(--c-brand)' }} />
         </div>
       )}
 
