@@ -176,16 +176,15 @@ export function useAuthState() {
   // functions are now created once and never recreated.
   const updateProfile = useCallback(async (updates) => {
     const userId = getAuthUserId()
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('profiles').update(updates).eq('id', userId)
       .select(PROFILE_COLUMNS)
       .single()
     if (error) throw error
-    queryClient.setQueryData(profileQueryKey(userId), data)
-    setProfile(data)
-    return data
+    // Strict server-truth: await full invalidation and refetch
+    return await invalidateAndRefetchProfile(userId)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileQueryKey])   // removed `user` from deps — uses authStore instead
+  }, [invalidateAndRefetchProfile])
 
   const updateDisplayName = useCallback(async (displayName) => {
     const userId = getAuthUserId()

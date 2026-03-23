@@ -33,23 +33,33 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
     const amt = parseFloat(value)
     if (!amt || amt <= 0) return
     setSaving(true)
-    try { await onSave(cat.id, amt); onClose() }
-    catch { }
-    finally { setSaving(false) }
+    try {
+      await onSave(cat.id, amt) // onSave must strictly await mutation+refetch
+      onClose()
+    } catch {
+      // Optionally: show error UI here
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleRemove() {
     setSaving(true)
-    try { await onRemove(cat.id); onClose() }
-    catch { }
-    finally { setSaving(false) }
+    try {
+      await onRemove(cat.id) // onRemove must strictly await mutation+refetch
+      onClose()
+    } catch {
+      // Optionally: show error UI here
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <>
       <motion.div className="sheet-backdrop"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-        onClick={onClose}
+        onClick={saving ? undefined : onClose}
       />
       <motion.div className="sheet-panel"
         initial={{ y: '100%' }}
@@ -63,7 +73,7 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
               <CategoryIcon categoryId={cat.id} size={18} />
               <h2 className="text-[20px] font-bold text-ink">{cat.label} Budget</h2>
             </div>
-            <button onClick={onClose} className="close-btn">
+            <button onClick={saving ? undefined : onClose} className="close-btn" disabled={saving}>
               <X size={16} className="text-ink-3" />
             </button>
           </div>
@@ -76,8 +86,9 @@ function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
               value={value}
               onChange={e => setValue(e.target.value)}
               autoFocus
+              disabled={saving}
               className="flex-1 bg-transparent font-display text-3xl font-bold text-ink
-                         outline-none tabular-nums placeholder-ink-4"
+                         outline-none tabular-nums placeholder-ink-4 disabled:opacity-50"
             />
           </div>
 

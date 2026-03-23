@@ -25,7 +25,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
     setSaving(true)
     setError('')
     try {
-      await updateDisplayName(trimmed)
+      await updateDisplayName(trimmed) // must strictly await mutation+refetch
       onClose()
     } catch (e) {
       setError(e.message || 'Could not update name. Try again.')
@@ -36,7 +36,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') handleSave()
-    if (e.key === 'Escape') onClose()
+    if (e.key === 'Escape' && !saving) onClose()
   }
 
   return (
@@ -47,7 +47,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
             className="fixed inset-0 z-50 bg-ink/30"
             style={{ backdropFilter: 'blur(2px)' }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={saving ? undefined : onClose}
           />
           <motion.div
             className="fixed left-4 right-4 bottom-6 z-50 bg-kosha-surface rounded-hero p-6 shadow-card-lg"
@@ -62,7 +62,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
           >
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-[18px] font-bold text-ink">Edit Display Name</h2>
-              <button onClick={onClose} className="close-btn">
+              <button onClick={saving ? undefined : onClose} className="close-btn" disabled={saving}>
                 <X size={16} className="text-ink-3" />
               </button>
             </div>
@@ -76,6 +76,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
               onKeyDown={handleKeyDown}
               className="input mb-3"
               maxLength={50}
+              disabled={saving}
             />
 
             {error && (
@@ -84,8 +85,9 @@ export default function EditProfileNameDialog({ open, onClose }) {
 
             <div className="flex gap-3">
               <button
-                onClick={onClose}
+                onClick={saving ? undefined : onClose}
                 className="btn-ghost flex-1 py-3 rounded-card border border-kosha-border"
+                disabled={saving}
               >
                 Cancel
               </button>
