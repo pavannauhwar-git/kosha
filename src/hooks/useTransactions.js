@@ -22,35 +22,45 @@ function logQueryError(scope, error) {
 }
 
 // ── Cache helpers ─────────────────────────────────────────────────────────
+//
+// setQueriesData with any filter variant (partial key, exact: false, predicate)
+// proved unreliable for updating the transaction list cache in React Query v5.
+// Balance and monthly work because they use setQueryData with exact keys.
+//
+// Fix: use queryClient.getQueryCache().findAll() to get Query objects directly,
+// read their exact queryKey and current state.data, then call setQueryData with
+// the exact key. This is guaranteed to work regardless of key structure.
 
-// Data queries are stored under ['transactions', 'data', {...filters}].
-// Count queries are stored under ['transactions', 'count', {...filters}].
-// We target only data queries via predicate to avoid touching count caches.
-const DATA_QUERY_PREDICATE = {
-  predicate: (query) => {
-    const key = query.queryKey
-    return Array.isArray(key) && key[0] === 'transactions' && key[1] === 'data'
-  },
+function getTransactionListQueries() {
+  // Returns all Query objects whose key starts with ['transactions', 'data']
+  return queryClient
+    .getQueryCache()
+    .findAll({ queryKey: ['transactions', 'data'], exact: false })
 }
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  queryClient.setQueriesData(DATA_QUERY_PREDICATE, (old) => {
-    if (!Array.isArray(old)) return old
+  const queries = getTransactionListQueries()
+  for (const query of queries) {
+    const old = query.state.data
+    if (!Array.isArray(old)) continue
+
+    let next
     if (mode === 'add') {
-      return [txn, ...old].sort(
+      next = [txn, ...old].sort(
         (a, b) =>
           new Date(b.date) - new Date(a.date) ||
           new Date(b.created_at) - new Date(a.created_at)
       )
+    } else if (mode === 'update') {
+      next = old.map(t => (t.id === txn.id ? txn : t))
+    } else if (mode === 'delete') {
+      next = old.filter(t => t.id !== txn.id)
+    } else {
+      continue
     }
-    if (mode === 'update') {
-      return old.map(t => (t.id === txn.id ? txn : t))
-    }
-    if (mode === 'delete') {
-      return old.filter(t => t.id !== txn.id)
-    }
-    return old
-  })
+
+    queryClient.setQueryData(query.queryKey, next)
+  }
 }
 
 function adjustBalanceCaches(delta) {
@@ -99,10 +109,9 @@ function patchMonthSummary(txn, mode = 'add') {
 }
 
 function findCachedTransaction(id) {
-  // Use the same predicate so we only search data queries (plain arrays),
-  // never the count queries (numbers).
-  const all = queryClient.getQueriesData(DATA_QUERY_PREDICATE)
-  for (const [, data] of all) {
+  const queries = getTransactionListQueries()
+  for (const query of queries) {
+    const data = query.state.data
     if (Array.isArray(data)) {
       const found = data.find(t => t.id === id)
       if (found) return found
@@ -434,11 +443,14 @@ export async function deleteTransaction(id) {
     adjustBalanceCaches(-balanceDelta(deletedTxn))
     patchMonthSummary(deletedTxn, 'remove')
   } else {
-    // Fallback: deletedTxn not found in cache — filter by id directly
-    queryClient.setQueriesData(DATA_QUERY_PREDICATE, (old) => {
-      if (!Array.isArray(old)) return old
-      return old.filter(t => t.id !== id)
-    })
+    // Fallback: not found in cache, filter by id across all list queries
+    const queries = getTransactionListQueries()
+    for (const query of queries) {
+      const data = query.state.data
+      if (Array.isArray(data)) {
+        queryClient.setQueryData(query.queryKey, data.filter(t => t.id !== id))
+      }
+    }
   }
 
   invalidateCache()
