@@ -29,7 +29,8 @@ const LIABILITY_COLUMNS =
  */
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  await invalidateQueryFamilies(LIABILITY_INVALIDATION_KEYS)
+  // Fuzzy match all sub-keys for liabilities
+  await queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'active' })
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {
@@ -51,11 +52,17 @@ export function useLiabilities({ includePaid = true } = {}) {
       {
         queryKey: LIABILITY_PENDING_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(false),
+        staleTime: 0,
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: true,
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(true),
         enabled:  includePaid,
+        staleTime: 0,
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: true,
       },
     ],
   })
