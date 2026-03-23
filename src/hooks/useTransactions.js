@@ -24,50 +24,28 @@ function logQueryError(scope, error) {
 // ── Cache helpers ─────────────────────────────────────────────────────────
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  const allQueries = queryClient.getQueryCache().getAll()
-  for (const q of allQueries) {
-    const queryKey = q.queryKey
-    if (!Array.isArray(queryKey) || queryKey[0] !== 'transactions') continue
-    // Only patch data queries (not count, today-expenses, etc)
-    if (queryKey[1] !== 'data') continue
-    const filters = queryKey[2] || {}
-    const { type, category, search, limit } = filters
-    // Debug: Log each transaction list query key and filters
-    console.log('[DEBUG] Transaction list queryKey:', queryKey, 'filters:', filters)
-    // Check if transaction matches filters
-    if (type && txn.type !== type) continue
-    if (category && txn.category !== category) continue
-    if (search && !((txn.description || '').toLowerCase().includes(search.toLowerCase()))) continue
-    const old = q.state.data
-    if (!old?.rows) continue
-    let updated = old
-    if (mode === 'add') {
-      if (!old.rows.some(t => t.id === txn.id)) {
-        // Insert at top, sort, trim to limit
-        let newRows = [txn, ...old.rows]
-        newRows = newRows.sort((a, b) => {
-          // Sort by date desc, then created_at desc
-          const d1 = new Date(a.date), d2 = new Date(b.date)
-          if (d1 > d2) return -1
-          if (d1 < d2) return 1
-          return new Date(b.created_at) - new Date(a.created_at)
-        })
-        if (limit) newRows = newRows.slice(0, limit)
-        updated = { ...old, rows: newRows, total: (old.total || 0) + 1 }
+  queryClient.setQueriesData(
+    { queryKey: ['transactions'], exact: false },
+    (old) => {
+      // Query data is a plain array (queryFn returns data || []).
+      // Previous check was `old?.rows` which is always undefined → always no-op.
+      if (!Array.isArray(old)) return old
+      if (mode === 'add') {
+        return [txn, ...old].sort(
+          (a, b) =>
+            new Date(b.date) - new Date(a.date) ||
+            new Date(b.created_at) - new Date(a.created_at)
+        )
       }
-    } else if (mode === 'update') {
-      updated = { ...old, rows: old.rows.map(t => t.id === txn.id ? txn : t) }
-    } else if (mode === 'delete') {
-      updated = {
-        ...old,
-        rows:  old.rows.filter(t => t.id !== txn.id),
-        total: Math.max(0, (old.total || 0) - 1),
+      if (mode === 'update') {
+        return old.map(t => t.id === txn.id ? txn : t)
       }
+      if (mode === 'delete') {
+        return old.filter(t => t.id !== txn.id)
+      }
+      return old
     }
-    if (updated !== old) {
-      queryClient.setQueryData(queryKey, updated)
-    }
-  }
+  )
 }
 
 function adjustBalanceCaches(delta) {
@@ -118,8 +96,9 @@ function patchMonthSummary(txn, mode = 'add') {
 function findCachedTransaction(id) {
   const all = queryClient.getQueriesData({ queryKey: ['transactions'] })
   for (const [, data] of all) {
-    if (data?.rows) {
-      const found = data.rows.find(t => t.id === id)
+    // Query data is a plain array, not { rows: [] }
+    if (Array.isArray(data)) {
+      const found = data.find(t => t.id === id)
       if (found) return found
     }
   }
@@ -129,9 +108,6 @@ function findCachedTransaction(id) {
 // ── Background invalidation ───────────────────────────────────────────────
 
 export function invalidateCache() {
-  // FIX (defect 3.2): Call suppress() before invalidating so GlobalRealtimeSync
-  // skips its own invalidation when it receives the Postgres broadcast for this
-  // same change ~300–500ms later. Eliminates the double-fetch on every mutation.
   suppress('transactions')
   return invalidateQueryFamilies(TRANSACTION_INVALIDATION_KEYS)
 }
@@ -150,13 +126,6 @@ export function useDebounce(value, ms = 300) {
 // ── Query hooks ───────────────────────────────────────────────────────────
 
 export function useTransactions({ type, category, search, limit, withCount = false } = {}) {
-  // FIX (defect 3.7): Separated data query from count query.
-  // Previously withCount: true caused PostgREST to execute a separate COUNT(*)
-  // on every single search keystroke after debounce, doubling the query cost.
-  //
-  // Now: the data query never fetches a count. A separate count query fires only
-  // on filter changes (type, category) — NOT on search keystrokes — and is cached
-  // for 60s so it is not hammered on every render cycle.
   const dataKey  = ['transactions', 'data',  { type, category, search, limit }]
   const countKey = ['transactions', 'count', { type, category }]
 
@@ -196,7 +165,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
         const userId = getAuthUserId()
         let q = supabase
           .from('transactions')
-          .select('id', { count: 'exact', head: true })  // head: true — fetches zero rows
+          .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
 
         if (type)     q = q.eq('type', type)
@@ -253,10 +222,6 @@ export function useMonthSummary(year, month) {
       try {
         const userId = getAuthUserId()
 
-        // FIX (defect 3.5): replaced raw-row fetch + JS for-loop with the
-        // get_month_summary RPC. Previously sent ~50–300 raw rows to the client
-        // to sum in JavaScript. RPC does GROUP BY on the server, returning
-        // ~5–30 pre-aggregated rows instead.
         const { data: rows, error: qError } = await supabase.rpc('get_month_summary', {
           p_user_id: userId,
           p_year:    year,
@@ -312,10 +277,6 @@ export function useYearSummary(year) {
       try {
         const userId = getAuthUserId()
 
-        // FIX (defect 3.5): replaced raw-row fetch + JS aggregation with the
-        // get_year_summary RPC. Previously fetched ALL transactions for the year
-        // (~100–1000+ rows) and computed monthly buckets in JavaScript.
-        // RPC does all aggregation on the server and returns one structured row.
         const { data: result, error: rpcError } = await supabase
           .rpc('get_year_summary', { p_user_id: userId, p_year: year })
           .single()
@@ -329,7 +290,6 @@ export function useYearSummary(year) {
         const byVehicle  = result.vehicle_data   || {}
         const top5       = result.top5_expenses  || []
 
-        // Build the full 12-month array — RPC only returns months with data
         const monthMap = Object.fromEntries(monthlyRaw.map(m => [m.month_num, m]))
         const monthly  = Array.from({ length: 12 }, (_, i) => {
           const m = monthMap[i + 1] || {}
@@ -378,10 +338,6 @@ export function useRunningBalance(year, month) {
         const userId  = getAuthUserId()
         const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
-        // FIX (defect 3.4): replaced full-table scan with server-side SUM RPC.
-        // Previously fetched every income row + every expense/investment row ever
-        // recorded (potentially thousands of rows) just to sum them in JS.
-        // The RPC does SUM(...) in a single query and returns one number.
         const { data: balance, error: rpcError } = await supabase.rpc(
           'get_running_balance',
           { p_user_id: userId, p_end_date: endDate }
@@ -411,9 +367,6 @@ export async function addTransaction(payload) {
     .single()
 
   if (error) throw error
-
-  // Debug: Log the inserted transaction object
-  console.log('[DEBUG] Inserted transaction:', data)
 
   injectTransactionIntoLists(data, 'add')
   adjustBalanceCaches(balanceDelta(data))
@@ -474,8 +427,8 @@ export async function deleteTransaction(id) {
     queryClient.setQueriesData(
       { queryKey: ['transactions'], exact: false },
       (old) => {
-        if (!old?.rows) return old
-        return { ...old, rows: old.rows.filter(t => t.id !== id) }
+        if (!Array.isArray(old)) return old
+        return old.filter(t => t.id !== id)
       }
     )
   }
