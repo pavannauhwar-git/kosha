@@ -88,6 +88,9 @@ export async function addLiability(payload, options = {}) {
   const tempId = 'temp-' + Date.now()
   const optimistic = { ...payload, id: tempId, user_id: userId, isPending: true }
 
+  // Cancel outgoing queries before optimistic update
+  await queryClient.cancelQueries({ queryKey: ['liabilities'] })
+
   // Optimistically inject
   queryClient.setQueryData(['liabilities', 'pending'], old =>
     Array.isArray(old) ? [optimistic, ...(old || [])] : [optimistic]
