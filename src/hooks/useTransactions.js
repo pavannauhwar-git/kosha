@@ -351,13 +351,6 @@ export async function deleteTransaction(id) {
 
   if (error) throw error
 
-  // Optimistically remove from all transactions lists
-  queryClient.getQueryCache().findAll(['transactions']).forEach(query => {
-    queryClient.setQueryData(query.queryKey, old =>
-      Array.isArray(old) ? old.filter(t => t.id !== id) : old
-    )
-  })
-
   await invalidateCache()
 
   return true
