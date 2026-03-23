@@ -77,19 +77,35 @@ export function useLiabilities({ includePaid = true } = {}) {
  */
 export async function addLiability(payload, options = {}) {
   const { invalidate = true } = options
-
   const userId = getAuthUserId()
-  const { data, error } = await supabase
+  const tempId = 'temp-' + Date.now()
+  const optimistic = { ...payload, id: tempId, user_id: userId, isPending: true }
+
+  // Optimistically inject
+  queryClient.setQueryData(['liabilities', 'pending'], old =>
+    Array.isArray(old) ? [optimistic, ...(old || [])] : [optimistic]
+  )
+
+  // Fire-and-forget: resolve background
+  supabase
     .from('liabilities')
     .insert([{ ...payload, user_id: userId }])
     .select(LIABILITY_COLUMNS)
     .single()
+    .then(({ data, error }) => {
+      if (error) {
+        // Revert optimistic
+        queryClient.setQueryData(['liabilities', 'pending'], old =>
+          (old || []).filter(b => b.id !== tempId)
+        )
+        throw error
+      }
+      if (invalidate) invalidateLiabilityCache()
+    })
+    .catch(() => {/* Optionally: show toast here if you want global error handling */})
 
-  if (error) throw error
-
-  if (invalidate) await invalidateLiabilityCache()
-
-  return data
+  // Return the optimistic row immediately
+  return optimistic
 }
 
 /**

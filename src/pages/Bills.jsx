@@ -61,16 +61,13 @@ export default function Bills() {
     setFormErr('')
     setAddSaving(true)
 
-    try {
-      await addLiability(billData)
-      // Reset state before closing to avoid setState-on-unmount
-      setAddSaving(false)
-      setShowAdd(false)
-      setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
-    } catch (e) {
-      setAddSaving(false)
+    // Fire-and-forget: do not await
+    addLiability(billData).catch(e => {
       setErrToast(e.message || 'Could not add bill. Check your connection.')
-    }
+    })
+    setAddSaving(false)
+    setShowAdd(false)
+    setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
   }
 
   async function handleMarkPaid(bill) {
@@ -204,8 +201,9 @@ export default function Bills() {
             const days = daysUntil(bill.due_date)
             const shadow = tab === 'pending' ? dueShadow(days) : 'card'
             const chipCls = dueChipClass(days)
+            const isPending = bill.isPending
             return (
-              <div key={bill.id} className={`${shadow} p-4`}>
+              <div key={bill.id} className={`${shadow} p-4 ${isPending ? 'opacity-60 pointer-events-none' : ''}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -237,25 +235,25 @@ export default function Bills() {
                     {tab === 'pending' && (
                       <button
                         onClick={() => handleMarkPaid(bill)}
-                        disabled={!!payingId || !!deletingId}
+                        disabled={!!payingId || !!deletingId || isPending}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-card
                                    bg-income-bg text-income-text text-xs font-semibold
                                    border border-income-border active:scale-95 transition-all
                                    disabled:opacity-60"
                       >
-                        {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                        {payingId === bill.id ? 'Paying…' : 'Paid'}
+                        {isPending ? <Loader2 size={13} className="animate-spin" /> : (payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />)}
+                        {isPending ? 'Syncing…' : (payingId === bill.id ? 'Paying…' : 'Paid')}
                       </button>
                     )}
                     <button
                       onClick={() => handleDelete(bill.id)}
-                      disabled={!!payingId || !!deletingId}
+                      disabled={!!payingId || !!deletingId || isPending}
                       className="flex items-center justify-center px-3 py-2 rounded-card
                                  bg-expense-bg text-expense-text text-xs font-semibold
                                  border border-expense-border active:scale-95 transition-all
                                  disabled:opacity-60"
                     >
-                      {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                      {isPending ? <Loader2 size={13} className="animate-spin" /> : (deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />)}
                     </button>
                   </div>
                 </div>
