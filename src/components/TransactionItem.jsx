@@ -70,13 +70,20 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     animate(x, 0, { duration: 0.2 })
     if (navigator.vibrate) navigator.vibrate(10)
 
-    if (onDelete) {
-      try {
-        await onDelete(txn.id)
-      } catch {
-        setDeleting(false)
-      }
+    if (!onDelete) {
+      setDeleting(false)
+      return
     }
+
+    try {
+      await onDelete(txn.id)
+    } catch {
+      // Keep UI responsive even if delete fails.
+      setDeleting(false)
+      return
+    }
+
+    setDeleting(false)
   }, [onDelete, txn.id, x])
 
   const handleDuplicateTap = useCallback(() => {
