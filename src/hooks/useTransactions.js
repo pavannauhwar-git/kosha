@@ -1,34 +1,3 @@
-/**
- * useTransactions.js — Strict Server-Truth Architecture
- *
- * ARCHITECTURE PRINCIPLES (Principal Staff Engineer Standard):
- *
- * 1. NO cache injection. Zero `queryClient.setQueryData` calls.
- *    The server is the single source of truth, always.
- *
- * 2. Mutations follow a strict Await Chain:
- *    a. await Supabase DB operation
- *    b. await queryClient.invalidateQueries({ refetchType: 'active' })
- *       — invalidateQueries with refetchType:'active' returns a Promise that
- *         resolves ONLY when all active query refetches complete. This means
- *         the mutation Promise does not resolve until fresh data is in cache.
- *    c. The calling component only proceeds (e.g. closes a sheet) after this
- *       full chain resolves.
- *
- * 3. UI BLOCKING: Components must await the mutation Promise. The sheet stays
- *    open and inputs are disabled until the server round-trip finishes.
- *
- * 4. GLOBAL SYNC: Because we await invalidation, every mounted component
- *    subscribed to affected query keys will re-render simultaneously with
- *    fresh server data. No stale pockets anywhere in the tree.
- *
- * WHY THIS BEATS OPTIMISTIC UPDATES FOR KOSHA:
- * - Kosha is a personal finance app. Accuracy > perceived speed.
- * - Optimistic updates require rollback logic that is hard to get right.
- * - A 200-400ms wait on a deliberate financial entry is acceptable UX.
- * - Eliminating the cache injection layer removes an entire class of bugs.
- */
-
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
@@ -40,11 +9,6 @@ import { suppress } from '../lib/mutationGuard'
 const txnListKey  = (filters) => ['transactions', filters]
 const txnCountKey = (filters) => ['txnCount', filters]
 
-/**
- * All query families that must be invalidated after any transaction mutation.
- * Keeping this as a named export allows useLiabilities and other hooks to
- * declare the same dependency without circular imports.
- */
 export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactions'],
   ['txnCount'],
@@ -66,25 +30,11 @@ function logQueryError(scope, error) {
 
 // ── Cache invalidation (exported for cross-hook use) ──────────────────────
 
-/**
- * Invalidates all transaction-related query families.
- *
- * IMPORTANT: This function returns a Promise. Callers inside mutations
- * MUST await it to ensure the full refetch cycle completes before the
- * mutation Promise resolves. Failing to await breaks the Strict Await Chain
- * and allows the UI to close before fresh data arrives.
- *
- * refetchType: 'active' means only queries currently subscribed to by a
- * mounted component will be refetched. Inactive cached queries are merely
- * marked stale and will refetch on next mount — this is the correct behavior.
- */
 export async function invalidateCache() {
   // Suppress the realtime double-fetch that would otherwise fire
   // ~300-500ms later for the same mutation.
-  console.log('[Kosha][Cache] invalidateCache: called')
   suppress('transactions')
   await invalidateQueryFamilies(TRANSACTION_INVALIDATION_KEYS)
-  console.log('[Kosha][Cache] invalidateCache: complete')
 }
 
 // ── Debounce hook ─────────────────────────────────────────────────────────
@@ -348,20 +298,8 @@ export function useRunningBalance(year, month) {
 // DO NOT add setQueryData calls here. If you find yourself wanting to
 // "patch the cache for speed," reach for a loading skeleton instead.
 
-/**
- * Add a new transaction.
- *
- * @returns {Promise<Object>} The newly created transaction row from Supabase.
- * @throws  {Error}          On DB error or auth failure.
- *
- * Awaiting this function guarantees:
- *  - The row is in the database
- *  - All active queries (dashboard balance, monthly summary, transaction list)
- *    have been refetched and hold the new server data
- */
 export async function addTransaction(payload) {
   const userId = getAuthUserId()
-  console.log('[Kosha][Mutation] addTransaction: starting', payload)
 
   const { data, error } = await supabase
     .from('transactions')
@@ -369,26 +307,15 @@ export async function addTransaction(payload) {
     .select(TRANSACTION_MUTATION_COLUMNS)
     .single()
 
-  if (error) {
-    console.error('[Kosha][Mutation] addTransaction: DB error', error)
-    throw error
-  }
+  if (error) throw error
 
-  console.log('[Kosha][Mutation] addTransaction: DB write complete, invalidating cache')
   await invalidateCache()
-  console.log('[Kosha][Mutation] addTransaction: cache invalidated, returning data', data)
+
   return data
 }
 
-/**
- * Update an existing transaction.
- *
- * Same contract as addTransaction — awaiting guarantees server confirmation
- * AND active query refresh before the Promise resolves.
- */
 export async function updateTransaction(id, payload) {
   const userId = getAuthUserId()
-  console.log('[Kosha][Mutation] updateTransaction: starting', id, payload)
 
   const { data, error } = await supabase
     .from('transactions')
@@ -398,26 +325,15 @@ export async function updateTransaction(id, payload) {
     .select(TRANSACTION_MUTATION_COLUMNS)
     .single()
 
-  if (error) {
-    console.error('[Kosha][Mutation] updateTransaction: DB error', error)
-    throw error
-  }
+  if (error) throw error
 
-  console.log('[Kosha][Mutation] updateTransaction: DB write complete, invalidating cache')
   await invalidateCache()
-  console.log('[Kosha][Mutation] updateTransaction: cache invalidated, returning data', data)
+
   return data
 }
 
-/**
- * Delete a transaction by ID.
- *
- * Same contract — awaiting guarantees the row is gone from DB AND all
- * active queries reflect the deletion before the Promise resolves.
- */
 export async function deleteTransaction(id) {
   const userId = getAuthUserId()
-  console.log('[Kosha][Mutation] deleteTransaction: starting', id)
 
   const { error } = await supabase
     .from('transactions')
@@ -425,13 +341,9 @@ export async function deleteTransaction(id) {
     .eq('id', id)
     .eq('user_id', userId)
 
-  if (error) {
-    console.error('[Kosha][Mutation] deleteTransaction: DB error', error)
-    throw error
-  }
+  if (error) throw error
 
-  console.log('[Kosha][Mutation] deleteTransaction: DB delete complete, invalidating cache')
   await invalidateCache()
-  console.log('[Kosha][Mutation] deleteTransaction: cache invalidated, returning true')
+
   return true
 }
