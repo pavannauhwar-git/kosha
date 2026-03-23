@@ -318,13 +318,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         await addTransaction(payload)
       }
 
-      // 2. Instantly close the sheet for smooth exit animation
+      // Mutation includes cache invalidation; close only after fresh data is available.
       onClose()
-
-      // 3. Defer cache invalidation until after animation
-      setTimeout(() => {
-        invalidateCache()
-      }, 300)
     } catch (e) {
       dispatch({
         type: 'SAVING_ERROR',

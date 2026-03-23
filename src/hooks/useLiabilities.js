@@ -1,6 +1,6 @@
 import { useQueries } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
+import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { invalidateCache as invalidateTxnCache } from './useTransactions'
@@ -73,6 +73,10 @@ export async function addLiability(payload, options = {}) {
 
   if (error) throw error
 
+  if (invalidate) {
+    await invalidateLiabilityCache()
+  }
+
   return data
 }
 
@@ -88,6 +92,13 @@ export async function markPaid(liability, options = {}) {
 
   if (rpcError) throw rpcError
 
+  if (invalidate) {
+    await Promise.all([
+      invalidateLiabilityCache(),
+      invalidateTxnCache(),
+    ])
+  }
+
   return result;
 }
 
@@ -102,6 +113,10 @@ export async function deleteLiability(id, options = {}) {
     .eq('user_id', userId)
 
   if (error) throw error
+
+  if (invalidate) {
+    await invalidateLiabilityCache()
+  }
 
   return true;
 }

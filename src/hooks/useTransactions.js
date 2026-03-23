@@ -306,7 +306,8 @@ export function useRunningBalance(year, month) {
 // DO NOT add setQueryData calls here. If you find yourself wanting to
 // "patch the cache for speed," reach for a loading skeleton instead.
 
-export async function addTransaction(payload) {
+export async function addTransaction(payload, options = {}) {
+  const { invalidate = true } = options
   const userId = getAuthUserId()
 
   const { data, error } = await supabase
@@ -317,10 +318,15 @@ export async function addTransaction(payload) {
 
   if (error) throw error
 
+  if (invalidate) {
+    await invalidateCache()
+  }
+
   return data;
 }
 
-export async function updateTransaction(id, payload) {
+export async function updateTransaction(id, payload, options = {}) {
+  const { invalidate = true } = options
   const userId = getAuthUserId()
 
   const { data, error } = await supabase
@@ -333,10 +339,15 @@ export async function updateTransaction(id, payload) {
 
   if (error) throw error
 
+  if (invalidate) {
+    await invalidateCache()
+  }
+
   return data;
 }
 
-export async function deleteTransaction(id) {
+export async function deleteTransaction(id, options = {}) {
+  const { invalidate = true } = options
   const userId = getAuthUserId()
 
   const { error } = await supabase
@@ -346,6 +357,10 @@ export async function deleteTransaction(id) {
     .eq('user_id', userId)
 
   if (error) throw error
+
+  if (invalidate) {
+    await invalidateCache()
+  }
 
   return true;
 }

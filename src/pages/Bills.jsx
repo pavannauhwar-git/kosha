@@ -64,11 +64,8 @@ export default function Bills() {
     try {
       await addLiability(billData)
       setShowAdd(false)
-      setTimeout(() => {
-        invalidateLiabilityCache()
-        setAddSaving(false)
-        setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
-      }, 300)
+      setAddSaving(false)
+      setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
     } catch (e) {
       setAddSaving(false)
       setErrToast(e.message || 'Could not add bill. Check your connection.')
@@ -81,10 +78,6 @@ export default function Bills() {
     try {
       await markPaid(bill)
       setPayingId(null)
-      setTimeout(() => {
-        invalidateLiabilityCache()
-        invalidateTxnCache()
-      }, 300)
     } catch (e) {
       setPayingId(null)
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
@@ -97,9 +90,6 @@ export default function Bills() {
     try {
       await deleteLiability(id)
       setDeletingId(null)
-      setTimeout(() => {
-        invalidateLiabilityCache()
-      }, 300)
     } catch (e) {
       setDeletingId(null)
       setErrToast(e.message || 'Could not delete bill. Check your connection.')
