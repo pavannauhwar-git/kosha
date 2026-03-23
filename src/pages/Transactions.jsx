@@ -81,8 +81,17 @@ export default function Transactions() {
   const handleDelete = useCallback(async (id) => {
     if (!id) return
     try {
+      setToast(null)
+      setIsDeleting && setIsDeleting(true)
       await deleteTransaction(id)
+      // Instantly drop the UI lock (if any)
+      setIsDeleting && setIsDeleting(false)
+      // Deferred cache invalidation for smooth animation
+      setTimeout(() => {
+        invalidateCache()
+      }, 300)
     } catch (e) {
+      setIsDeleting && setIsDeleting(false)
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)
       throw e
