@@ -61,12 +61,19 @@ export default function Bills() {
     setFormErr('')
     setAddSaving(true)
 
-    setAddSaving(true)
     try {
       await addLiability(billData)
-      setAddSaving(false)
+      
+      // 1. Drop the sheet immediately for 0ms lag perception
       setShowAdd(false)
-      setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
+      
+      // 2. Wait for the Framer Motion slide-down to finish BEFORE clearing the text, 
+      // otherwise the text awkwardly vanishes mid-slide.
+      setTimeout(() => {
+        setAddSaving(false)
+        setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
+      }, 250)
+      
     } catch (e) {
       setAddSaving(false)
       setErrToast(e.message || 'Could not add bill. Check your connection.')

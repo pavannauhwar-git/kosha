@@ -312,27 +312,17 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     dispatch({ type: 'SAVING_START' })
 
     try {
-      // STEP 2: Await the full mutation chain:
-      //   - Supabase write
-      //   - invalidateCache() → awaits active query refetches
-      //
-      // This Promise does not resolve until every active subscriber
-      // (dashboard balance, monthly summary, transaction list) has
-      // fresh data from the server. This is the core contract.
       if (editTxn) {
         await updateTransaction(editTxn.id, payload)
       } else {
         await addTransaction(payload)
       }
 
-      // STEP 3: ONLY close the sheet after the full chain resolves.
-      // At this point, all UI is already up to date. The user will see
-      // accurate numbers the instant the sheet finishes its exit animation.
+      // De-conflict the main thread: Let the sheet start animating away 
+      // BEFORE we release the UI block, ensuring a buttery smooth drop.
       onClose()
-
+      
     } catch (e) {
-      // STEP 4: On failure, re-enable the form so the user can retry.
-      // Never swallow errors silently.
       dispatch({
         type: 'SAVING_ERROR',
         value: e.message || 'Could not save. Check your connection and try again.',
