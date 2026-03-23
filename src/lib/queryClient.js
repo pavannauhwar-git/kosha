@@ -27,8 +27,15 @@ export const queryClient = new QueryClient({
  */
 export async function invalidateQueryFamilies(queryKeys) {
   await Promise.all(
-    queryKeys.map(queryKey =>
-      queryClient.invalidateQueries({ queryKey, refetchType: 'active' })
-    )
+    queryKeys.map(queryKey => {
+      // Special handling for transactions: use predicate to match all keys starting with ['transactions']
+      if (Array.isArray(queryKey) && queryKey[0] === 'transactions') {
+        return queryClient.invalidateQueries({
+          predicate: q => Array.isArray(q.queryKey) && q.queryKey[0] === 'transactions',
+          refetchType: 'active',
+        })
+      }
+      return queryClient.invalidateQueries({ queryKey, refetchType: 'active' })
+    })
   )
 }
