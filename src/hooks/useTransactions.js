@@ -81,8 +81,10 @@ function logQueryError(scope, error) {
 export async function invalidateCache() {
   // Suppress the realtime double-fetch that would otherwise fire
   // ~300-500ms later for the same mutation.
+  console.log('[Kosha][Cache] invalidateCache: called')
   suppress('transactions')
   await invalidateQueryFamilies(TRANSACTION_INVALIDATION_KEYS)
+  console.log('[Kosha][Cache] invalidateCache: complete')
 }
 
 // ── Debounce hook ─────────────────────────────────────────────────────────
@@ -100,7 +102,6 @@ export function useDebounce(value, ms = 300) {
 
 export function useTransactions({ type, category, search, limit, withCount = false } = {}) {
   const filters = { type, category, search, limit }
-
   const { data: rows, isLoading, error, refetch } = useQuery({
     queryKey: txnListKey(filters),
     queryFn: async () => {
@@ -120,6 +121,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
 
         const { data, error: err } = await q
         if (err) throw err
+        console.log('[Kosha][Query] useTransactions: fetched', { filters, data })
         return data || []
       } catch (err) {
         logQueryError('transactions list', err)
@@ -359,6 +361,7 @@ export function useRunningBalance(year, month) {
  */
 export async function addTransaction(payload) {
   const userId = getAuthUserId()
+  console.log('[Kosha][Mutation] addTransaction: starting', payload)
 
   const { data, error } = await supabase
     .from('transactions')
@@ -366,12 +369,14 @@ export async function addTransaction(payload) {
     .select(TRANSACTION_MUTATION_COLUMNS)
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('[Kosha][Mutation] addTransaction: DB error', error)
+    throw error
+  }
 
-  // STRICT AWAIT: do not remove the await. The Promise must not resolve
-  // until all active subscribers have fresh data from the server.
+  console.log('[Kosha][Mutation] addTransaction: DB write complete, invalidating cache')
   await invalidateCache()
-
+  console.log('[Kosha][Mutation] addTransaction: cache invalidated, returning data', data)
   return data
 }
 
@@ -383,6 +388,7 @@ export async function addTransaction(payload) {
  */
 export async function updateTransaction(id, payload) {
   const userId = getAuthUserId()
+  console.log('[Kosha][Mutation] updateTransaction: starting', id, payload)
 
   const { data, error } = await supabase
     .from('transactions')
@@ -392,10 +398,14 @@ export async function updateTransaction(id, payload) {
     .select(TRANSACTION_MUTATION_COLUMNS)
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('[Kosha][Mutation] updateTransaction: DB error', error)
+    throw error
+  }
 
+  console.log('[Kosha][Mutation] updateTransaction: DB write complete, invalidating cache')
   await invalidateCache()
-
+  console.log('[Kosha][Mutation] updateTransaction: cache invalidated, returning data', data)
   return data
 }
 
@@ -407,6 +417,7 @@ export async function updateTransaction(id, payload) {
  */
 export async function deleteTransaction(id) {
   const userId = getAuthUserId()
+  console.log('[Kosha][Mutation] deleteTransaction: starting', id)
 
   const { error } = await supabase
     .from('transactions')
@@ -414,9 +425,13 @@ export async function deleteTransaction(id) {
     .eq('id', id)
     .eq('user_id', userId)
 
-  if (error) throw error
+  if (error) {
+    console.error('[Kosha][Mutation] deleteTransaction: DB error', error)
+    throw error
+  }
 
+  console.log('[Kosha][Mutation] deleteTransaction: DB delete complete, invalidating cache')
   await invalidateCache()
-
+  console.log('[Kosha][Mutation] deleteTransaction: cache invalidated, returning true')
   return true
 }
