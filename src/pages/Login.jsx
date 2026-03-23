@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation, useParams } from 'react-router-dom'
+import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import AboutKoshaLink from '../components/AboutKoshaLink'
@@ -25,12 +25,25 @@ function GoogleLogo() {
 export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const { token } = useParams()
-  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
+  const {
+    user,
+    signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    requestPasswordReset,
+    updatePassword,
+  } = useAuth()
 
-  const [mode, setMode] = useState('signin')
+  const isRecoveryFlow = searchParams.get('reset') === '1'
+
+  const [mode, setMode] = useState(isRecoveryFlow ? 'reset' : 'signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [notice, setNotice] = useState(null)
+  const [resetCountdown, setResetCountdown] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -38,8 +51,31 @@ export default function Login() {
   const from = location.state?.from || '/'
 
   useEffect(() => {
-    if (user) navigate(from, { replace: true })
-  }, [user])
+    if (user && !isRecoveryFlow) navigate(from, { replace: true })
+  }, [user, from, navigate, isRecoveryFlow])
+
+  useEffect(() => {
+    setMode(isRecoveryFlow ? 'reset' : 'signin')
+    setError(null)
+    setNotice(null)
+    setResetCountdown(null)
+  }, [isRecoveryFlow])
+
+  useEffect(() => {
+    if (resetCountdown === null) return
+    if (resetCountdown <= 0) {
+      navigate('/login', { replace: true })
+      return
+    }
+
+    const timer = setTimeout(() => {
+      setResetCountdown((s) => (s === null ? null : s - 1))
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [resetCountdown, navigate])
+
+  const isRedirectingAfterReset = resetCountdown !== null
 
   useEffect(() => {
     if (token) {
@@ -49,6 +85,7 @@ export default function Login() {
 
   async function handleGoogle() {
     setError(null)
+    setNotice(null)
     setGoogleLoading(true)
     try {
       await signInWithGoogle()
@@ -61,6 +98,43 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
+    setNotice(null)
+
+    if (mode === 'forgot') {
+      if (!email.trim()) return setError('Enter your email address.')
+      setLoading(true)
+      try {
+        await requestPasswordReset(email)
+        setNotice('Password reset link sent. Check your email inbox.')
+      } catch (e) {
+        setError(e.message || 'Could not send reset link. Try again.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    if (mode === 'reset') {
+      if (!password.trim()) return setError('Enter a new password.')
+      if (password.length < 8) return setError('Password must be at least 8 characters.')
+      if (password !== confirmPassword) return setError('Passwords do not match.')
+
+      setLoading(true)
+      try {
+        await updatePassword(password)
+        setNotice('Password updated successfully.')
+        setMode('signin')
+        setPassword('')
+        setConfirmPassword('')
+        setResetCountdown(2)
+      } catch (e) {
+        setError(e.message || 'Could not update password. Open the reset link again.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
     if (!email.trim()) return setError('Enter your email address.')
     if (!password.trim()) return setError('Enter your password.')
     if (mode === 'signup' && password.length < 8)
@@ -115,57 +189,73 @@ export default function Login() {
               {/* ── Heading ───────────────────────────────────────────────── */}
               <div className="mb-4">
                 <h1 className="text-[26px] font-bold text-ink tracking-tight leading-tight mb-1.5">
-                  {mode === 'signin' ? 'Welcome back' : 'Create account'}
+                  {mode === 'signin'
+                    ? 'Welcome back'
+                    : mode === 'signup'
+                      ? 'Create account'
+                      : mode === 'forgot'
+                        ? 'Reset password'
+                        : 'Set new password'}
                 </h1>
                 <p className="text-label text-ink-3">
                   {mode === 'signin'
                     ? 'Sign in to continue to Kosha'
-                    : 'Start tracking your finances today'}
+                    : mode === 'signup'
+                      ? 'Start tracking your finances today'
+                      : mode === 'forgot'
+                        ? 'We will email a secure reset link.'
+                        : 'Choose a strong new password for your account.'}
                 </p>
               </div>
 
               {/* ── Google ────────────────────────────────────────────────── */}
-              <button
-                onClick={handleGoogle}
-                disabled={googleLoading || loading}
-                className="w-full flex items-center justify-center gap-3 py-3.5
+              {(mode === 'signin' || mode === 'signup') && (
+                <button
+                  onClick={handleGoogle}
+                  disabled={googleLoading || loading}
+                  className="w-full flex items-center justify-center gap-3 py-3.5
                        rounded-card border border-kosha-border bg-kosha-surface
                        text-label font-semibold text-ink
                        active:scale-[0.98] transition-all duration-75
                        disabled:opacity-60 mb-4 shadow-card"
-              >
-                <GoogleLogo />
-                {googleLoading ? 'Redirecting…' : 'Continue with Google'}
-              </button>
+                >
+                  <GoogleLogo />
+                  {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+                </button>
+              )}
 
               {/* ── Divider ───────────────────────────────────────────────── */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-kosha-border" />
-                <span className="text-caption text-ink-4 font-medium">or</span>
-                <div className="flex-1 h-px bg-kosha-border" />
-              </div>
+              {(mode === 'signin' || mode === 'signup') && (
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex-1 h-px bg-kosha-border" />
+                  <span className="text-caption text-ink-4 font-medium">or</span>
+                  <div className="flex-1 h-px bg-kosha-border" />
+                </div>
+              )}
 
               {/* ── Email / password form ─────────────────────────────────── */}
               <form onSubmit={handleSubmit} className="space-y-3">
-                <div>
-                  <label className="block text-caption font-semibold text-ink-3 mb-1.5">
-                    Email address
-                  </label>
-                  <input
-                    className="input"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    autoComplete="email"
-                    disabled={loading}
-                  />
-                </div>
+                {mode !== 'reset' && (
+                  <div>
+                    <label className="block text-caption font-semibold text-ink-3 mb-1.5">
+                      Email address
+                    </label>
+                    <input
+                      className="input"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      autoComplete="email"
+                      disabled={loading || isRedirectingAfterReset}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-caption font-semibold text-ink-3 mb-1.5">
-                    Password
-                    {mode === 'signup' && (
+                    {mode === 'reset' ? 'New password' : 'Password'}
+                    {(mode === 'signup' || mode === 'reset') && (
                       <span className="font-normal text-ink-4 ml-1">· min 8 characters</span>
                     )}
                   </label>
@@ -176,9 +266,71 @@ export default function Login() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                    disabled={loading}
+                    disabled={loading || isRedirectingAfterReset}
                   />
                 </div>
+
+                {mode === 'reset' && (
+                  <div>
+                    <label className="block text-caption font-semibold text-ink-3 mb-1.5">
+                      Confirm new password
+                    </label>
+                    <input
+                      className="input"
+                      type="password"
+                      placeholder="Re-enter your password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
+                      disabled={loading || isRedirectingAfterReset}
+                    />
+                  </div>
+                )}
+
+                {mode === 'signin' && (
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('forgot')
+                        setPassword('')
+                        setError(null)
+                        setNotice(null)
+                      }}
+                      className="text-label font-semibold text-brand"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+
+                <AnimatePresence>
+                  {notice && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-start gap-2 bg-income-bg rounded-card px-3 py-2.5"
+                    >
+                      <p className="text-caption text-income-text font-medium">{notice}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {isRedirectingAfterReset && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-start gap-2 bg-brand-container rounded-card px-3 py-2.5"
+                    >
+                      <p className="text-caption text-brand font-medium">
+                        Redirecting to sign in in {resetCountdown}s...
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* ── Error ─────────────────────────────────────────────── */}
                 <AnimatePresence>
@@ -201,28 +353,74 @@ export default function Login() {
                 {/* ── Submit ────────────────────────────────────────────── */}
                 <button
                   type="submit"
-                  disabled={loading || googleLoading}
+                  disabled={loading || googleLoading || isRedirectingAfterReset}
                   className="w-full py-4 rounded-card bg-brand text-white
                          text-body font-semibold mt-1
                          active:scale-[0.98] transition-all duration-75
                          disabled:opacity-60"
                 >
                   {loading
-                    ? (mode === 'signin' ? 'Signing in…' : 'Creating account…')
-                    : (mode === 'signin' ? 'Sign in' : 'Create account')}
+                    ? (mode === 'signin'
+                      ? 'Signing in…'
+                      : mode === 'signup'
+                        ? 'Creating account…'
+                        : mode === 'forgot'
+                          ? 'Sending link…'
+                          : 'Updating password…')
+                    : (mode === 'signin'
+                      ? 'Sign in'
+                      : mode === 'signup'
+                        ? 'Create account'
+                        : mode === 'forgot'
+                          ? 'Send reset link'
+                          : 'Update password')}
                 </button>
               </form>
 
               {/* ── Toggle mode ───────────────────────────────────────────── */}
-              <p className="text-label text-ink-3 text-center mt-4">
-                {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-                <button
-                  onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null) }}
-                  className="text-brand font-semibold"
-                >
-                  {mode === 'signin' ? 'Sign up' : 'Sign in'}
-                </button>
-              </p>
+              {mode === 'forgot' ? (
+                <p className="text-label text-ink-3 text-center mt-4">
+                  Remembered your password?{' '}
+                  <button
+                    onClick={() => {
+                      setMode('signin')
+                      setError(null)
+                      setNotice(null)
+                    }}
+                    className="text-brand font-semibold"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              ) : mode === 'reset' ? (
+                <p className="text-label text-ink-3 text-center mt-4">
+                  Opened the wrong page?{' '}
+                  <button
+                    onClick={() => {
+                      setMode('signin')
+                      setError(null)
+                      setNotice(null)
+                    }}
+                    className="text-brand font-semibold"
+                  >
+                    Back to sign in
+                  </button>
+                </p>
+              ) : (
+                <p className="text-label text-ink-3 text-center mt-4">
+                  {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+                  <button
+                    onClick={() => {
+                      setMode(mode === 'signin' ? 'signup' : 'signin')
+                      setError(null)
+                      setNotice(null)
+                    }}
+                    className="text-brand font-semibold"
+                  >
+                    {mode === 'signin' ? 'Sign up' : 'Sign in'}
+                  </button>
+                </p>
+              )}
             </motion.div>
 
             {/* ── Footer ─────────────────────────────────────────────────── */}

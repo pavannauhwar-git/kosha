@@ -152,6 +152,21 @@ export function useAuthState() {
     return data
   }, [])
 
+  const requestPasswordReset = useCallback(async (email) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      { redirectTo: `${window.location.origin}/login?reset=1` }
+    )
+    if (error) throw error
+    return data
+  }, [])
+
+  const updatePassword = useCallback(async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+    return data
+  }, [])
+
   const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut()
@@ -206,6 +221,7 @@ export function useAuthState() {
   return {
     user, profile, loading,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
+    requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
   }
 }

@@ -1,5 +1,17 @@
 export const CHANGELOG = [
   {
+    version: '1.5',
+    date: 'March 2026',
+    items: [
+      'Fixed stale transaction and bills lists — now refresh immediately after add, edit, delete, and mark-paid actions',
+      'Moved mutation invalidation into shared transaction/liability hooks for consistent server-truth updates across pages',
+      'Fixed transaction row delete spinner getting stuck in edge cases',
+      'Added Forgot Password flow with reset email support from Login',
+      'Added Set New Password flow after reset-link redirect',
+      'Added post-reset success confirmation with automatic redirect back to Sign in',
+    ],
+  },
+  {
     version: '1.4',
     date: 'March 2026',
     items: [

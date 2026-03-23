@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const {
     user, profile, loading,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
+    requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
   } = useAuthState()
 
@@ -19,10 +20,12 @@ export function AuthProvider({ children }) {
   const value = useMemo(() => ({
     user, profile, loading,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
+    requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
   }), [
     user, profile, loading,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
+    requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
   ])
 
