@@ -54,7 +54,7 @@ const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-
 function DesktopSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { profile, user, signOut } = useAuth()
+  const { profile, user } = useAuth()
 
   if (NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
 
@@ -63,17 +63,13 @@ function DesktopSidebar() {
   )
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'Account'
-  const initial = displayName[0].toUpperCase()
-  const avatarUrl = profile?.avatar_url || null
 
   return (
     <aside
       className="hidden md:flex flex-col"
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        bottom: 0,
+        top: 0, left: 0, bottom: 0,
         width: 220,
         background: 'rgba(255,255,255,0.94)',
         backdropFilter: 'blur(16px)',
@@ -85,46 +81,26 @@ function DesktopSidebar() {
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
       }}
     >
-      {/* Logo */}
       <div className="flex items-center gap-2.5 px-2 pb-6 pt-2">
         <KoshaLogo size={32} />
         <div>
           <p className="text-[15px] font-bold text-ink tracking-tight leading-none">Kosha</p>
-          <p className="text-[10px] text-ink-3 font-medium tracking-widest uppercase mt-0.5">
-            Finance
-          </p>
+          <p className="text-[10px] text-ink-3 font-medium tracking-widest uppercase mt-0.5">Finance</p>
         </div>
       </div>
 
-      {/* Nav items */}
       <nav className="flex flex-col gap-1 flex-1">
         {NAV.map((item, i) => {
           const isActive = i === active
           return (
             <button
               key={item.path}
-              onClick={() => {
-                if (navigator.vibrate) navigator.vibrate(6)
-                navigate(item.path)
-              }}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-card
-                         transition-colors duration-100 w-full text-left"
-              style={{
-                background: isActive ? C.brandContainer : 'transparent',
-              }}
+              onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-100 w-full text-left"
+              style={{ background: isActive ? C.brandContainer : 'transparent' }}
             >
-              <item.Icon
-                size={20}
-                weight={isActive ? 'fill' : 'regular'}
-                color={isActive ? C.brand : C.inkMuted}
-              />
-              <span
-                className="text-[14px]"
-                style={{
-                  color: isActive ? C.brand : C.inkMuted,
-                  fontWeight: isActive ? 700 : 500,
-                }}
-              >
+              <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.brand : C.inkMuted} />
+              <span className="text-[14px]" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
                 {item.label}
               </span>
             </button>
@@ -132,11 +108,7 @@ function DesktopSidebar() {
         })}
       </nav>
 
-      {/* Profile footer */}
-      <div
-        className="px-2 pt-4"
-        style={{ borderTop: `1px solid ${C.brandBorder}` }}
-      >
+      <div className="px-2 pt-4" style={{ borderTop: `1px solid ${C.brandBorder}` }}>
         <div className="flex items-center gap-2.5">
           <ProfileMenu dropUp />
           <div className="flex-1 min-w-0">
@@ -148,7 +120,7 @@ function DesktopSidebar() {
   )
 }
 
-// ── Mobile bottom nav (pill) ──────────────────────────────────────────────
+// ── Mobile bottom nav ─────────────────────────────────────────────────────
 function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -161,9 +133,7 @@ function BottomNav() {
   )
 
   return (
-    <div
-      className={`nav-float-wrap md:hidden ${scrolledDown ? 'nav-float-wrap--hidden' : ''}`}
-    >
+    <div className={`nav-float-wrap md:hidden ${scrolledDown ? 'nav-float-wrap--hidden' : ''}`}>
       <nav className="nav-float">
         {NAV.map((item, i) => {
           const isActive = i === active
@@ -171,44 +141,25 @@ function BottomNav() {
             <motion.button
               key={item.path}
               className="nav-float-item"
-              onClick={() => {
-                if (navigator.vibrate) navigator.vibrate(6)
-                navigate(item.path)
-              }}
+              onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
               whileTap={{ scale: 0.78 }}
               transition={{ type: 'spring', stiffness: 600, damping: 28 }}
             >
               <div className="nav-icon-wrap">
                 {isActive && (
-                  <motion.div
-                    layoutId="nav-pill"
-                    className="nav-icon-bg"
-                    transition={{ type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }}
-                  />
+                  <motion.div layoutId="nav-pill" className="nav-icon-bg"
+                    transition={{ type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }} />
                 )}
-                <motion.span
-                  className="nav-icon-layer"
-                  animate={{ opacity: isActive ? 1 : 0 }}
-                  transition={{ duration: 0.15 }}
-                >
+                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.15 }}>
                   <item.Icon size={22} weight="fill" color={C.brand} />
                 </motion.span>
-                <motion.span
-                  className="nav-icon-layer"
-                  animate={{ opacity: isActive ? 0 : 1 }}
-                  transition={{ duration: 0.15 }}
-                >
+                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 0 : 1 }} transition={{ duration: 0.15 }}>
                   <item.Icon size={22} weight="regular" color={C.inkMuted} />
                 </motion.span>
               </div>
-              <motion.span
-                className="nav-label"
-                animate={{
-                  color: isActive ? C.brand : C.inkMuted,
-                  fontWeight: isActive ? 700 : 500,
-                }}
-                transition={{ duration: 0.15 }}
-              >
+              <motion.span className="nav-label"
+                animate={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}
+                transition={{ duration: 0.15 }}>
                 {item.label}
               </motion.span>
             </motion.button>
@@ -229,10 +180,11 @@ function AuthCallback() {
 }
 
 // ── Global Realtime Sync ──────────────────────────────────────────────────
-// Uses exponential backoff so a failing WebSocket (e.g. Realtime not enabled
-// on the Supabase project) does not spam retries and block the JS thread.
-// The app works without Realtime — mutations do local cache injection and
-// invalidation directly. Realtime is only needed for multi-device/tab sync.
+// Probes the WebSocket once. If it fails, calls supabase.realtime.disconnect()
+// to stop ALL internal Supabase retry loops — these fire at the browser level
+// and flood the connection pool, blocking REST API refetches.
+// The app works fully without Realtime via local cache injection on mutations.
+// Realtime only adds multi-device / multi-tab sync on top of that.
 function GlobalRealtimeSync() {
   const { user } = useAuth()
 
@@ -241,10 +193,7 @@ function GlobalRealtimeSync() {
 
     const timeoutIds = new Map()
     let channel = null
-    let retryTimeout = null
-    let retryCount = 0
-    const MAX_RETRIES = 3
-    const BASE_DELAY_MS = 5000   // 5s → 10s → 20s
+    let gaveUp = false
 
     function scheduleInvalidate(key, invalidate) {
       if (isSuppressed(key)) return
@@ -255,40 +204,48 @@ function GlobalRealtimeSync() {
       }, 300))
     }
 
-    function subscribe() {
-      if (retryCount >= MAX_RETRIES) {
-        console.warn('[Kosha] Realtime unavailable after', MAX_RETRIES, 'attempts — using mutation-only updates.')
-        return
+    // Give the WebSocket 8 seconds to connect. If it hasn't by then,
+    // disconnect realtime entirely to stop browser-level retry spam.
+    const giveUpTimer = setTimeout(() => {
+      if (!gaveUp && channel) {
+        gaveUp = true
+        console.warn('[Kosha] Realtime WebSocket did not connect within 8s. Disabling to unblock HTTP requests.')
+        supabase.removeChannel(channel)
+        channel = null
+        // This stops ALL internal Supabase realtime retry loops.
+        supabase.realtime.disconnect()
       }
+    }, 8000)
 
-      channel = supabase.channel(`schema-db-changes-${user.id}-${retryCount}`)
+    channel = supabase.channel(`kosha-sync-${user.id}`)
 
-      for (const policy of REALTIME_INVALIDATION_POLICIES) {
-        channel = channel.on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: policy.table },
-          () => scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
-        )
-      }
-
-      channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          retryCount = 0
-        }
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          supabase.removeChannel(channel)
-          channel = null
-          retryCount++
-          const delay = BASE_DELAY_MS * Math.pow(2, retryCount - 1)
-          retryTimeout = setTimeout(subscribe, delay)
-        }
-      })
+    for (const policy of REALTIME_INVALIDATION_POLICIES) {
+      channel = channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: policy.table },
+        () => scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
+      )
     }
 
-    subscribe()
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        // Connected — cancel the give-up timer
+        clearTimeout(giveUpTimer)
+      }
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        if (!gaveUp) {
+          gaveUp = true
+          clearTimeout(giveUpTimer)
+          console.warn('[Kosha] Realtime channel error. Disabling to unblock HTTP requests.')
+          supabase.removeChannel(channel)
+          channel = null
+          supabase.realtime.disconnect()
+        }
+      }
+    })
 
     return () => {
-      clearTimeout(retryTimeout)
+      clearTimeout(giveUpTimer)
       timeoutIds.forEach(id => clearTimeout(id))
       if (channel) supabase.removeChannel(channel)
     }
@@ -311,68 +268,25 @@ function ContentWrapper({ children }) {
 function AppShell() {
   return (
     <div className="min-h-dvh bg-kosha-bg">
-
-      {/* Desktop sidebar — hidden on mobile */}
       <DesktopSidebar />
-
-      {/* Content — offset by sidebar width on desktop */}
       <ContentWrapper>
         <Routes>
-          {/* Public */}
           <Route path="/login" element={<Login />} />
           <Route path="/join/:token" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/not-found" element={<NotFound />} />
-
-          {/* Onboarding */}
           <Route path="/onboarding" element={<AuthGuard><Onboarding /></AuthGuard>} />
-
-          {/* Protected — eager */}
           <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
-
-          {/* Protected — lazy */}
-          <Route path="/transactions" element={
-            <Suspense fallback={<PageFallback />}>
-              <AuthGuard><Transactions /></AuthGuard>
-            </Suspense>
-          } />
-          <Route path="/monthly" element={
-            <Suspense fallback={<PageFallback />}>
-              <AuthGuard><Monthly /></AuthGuard>
-            </Suspense>
-          } />
-          <Route path="/analytics" element={
-            <Suspense fallback={<PageFallback />}>
-              <AuthGuard><Analytics /></AuthGuard>
-            </Suspense>
-          } />
-          <Route path="/bills" element={
-            <Suspense fallback={<PageFallback />}>
-              <AuthGuard><Bills /></AuthGuard>
-            </Suspense>
-          } />
-          <Route path="/settings" element={
-            <Suspense fallback={<PageFallback />}>
-              <AuthGuard><Settings /></AuthGuard>
-            </Suspense>
-          } />
-          <Route path="/about" element={
-            <Suspense fallback={<PageFallback />}>
-              <About />
-            </Suspense>
-          } />
-          <Route path="/report-bug" element={
-            <Suspense fallback={<PageFallback />}>
-              <ReportBug />
-            </Suspense>
-          } />
-
-          {/* Fallback */}
+          <Route path="/transactions" element={<Suspense fallback={<PageFallback />}><AuthGuard><Transactions /></AuthGuard></Suspense>} />
+          <Route path="/monthly" element={<Suspense fallback={<PageFallback />}><AuthGuard><Monthly /></AuthGuard></Suspense>} />
+          <Route path="/analytics" element={<Suspense fallback={<PageFallback />}><AuthGuard><Analytics /></AuthGuard></Suspense>} />
+          <Route path="/bills" element={<Suspense fallback={<PageFallback />}><AuthGuard><Bills /></AuthGuard></Suspense>} />
+          <Route path="/settings" element={<Suspense fallback={<PageFallback />}><AuthGuard><Settings /></AuthGuard></Suspense>} />
+          <Route path="/about" element={<Suspense fallback={<PageFallback />}><About /></Suspense>} />
+          <Route path="/report-bug" element={<Suspense fallback={<PageFallback />}><ReportBug /></Suspense>} />
           <Route path="*" element={<Navigate to="/not-found" replace />} />
         </Routes>
       </ContentWrapper>
-
-      {/* Mobile only */}
       <BottomNav />
     </div>
   )
