@@ -5,8 +5,18 @@ import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 
+// ── Query key factories ───────────────────────────────────────────────────
+// List:  ['transactions', filters]   — plain array data
+// Count: ['txnCount', filters]       — number, separate root key
+// Keeping count under a different root means any operation targeting
+// ['transactions'] never accidentally touches the count cache.
+
+const txnListKey = (filters) => ['transactions', filters]
+const txnCountKey = (filters) => ['txnCount', filters]
+
 export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactions'],
+  ['txnCount'],
   ['month'],
   ['year'],
   ['balance'],
@@ -22,59 +32,59 @@ function logQueryError(scope, error) {
 }
 
 // ── Cache helpers ─────────────────────────────────────────────────────────
+// Use getQueryCache().getAll() to get every query in the cache, then filter
+// manually and call setQueryData with the exact queryKey from each query object.
+// This avoids all fuzzy-matching issues with setQueriesData.
+
+function getAllListQueries() {
+  return queryClient
+    .getQueryCache()
+    .getAll()
+    .filter(q => Array.isArray(q.queryKey) && q.queryKey[0] === 'transactions')
+}
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  const allQueries = queryClient.getQueryCache().getAll()
-  for (const q of allQueries) {
-    const queryKey = q.queryKey
-    if (!Array.isArray(queryKey) || queryKey[0] !== 'transactions') continue
-    // Only patch data queries (not count, today-expenses, etc)
-    if (queryKey[1] !== 'data') continue
-    const filters = queryKey[2] || {}
-    const { type, category, search, limit } = filters
-    // Debug: Log each transaction list query key and filters
-    console.log('[DEBUG] Transaction list queryKey:', queryKey, 'filters:', filters)
-    // Check if transaction matches filters
-    if (type && txn.type !== type) continue
-    if (category && txn.category !== category) continue
-    if (search && !((txn.description || '').toLowerCase().includes(search.toLowerCase()))) continue
-    const old = q.state.data
-    if (!old?.rows) continue
-    let updated = old
+  const queries = getAllListQueries()
+  for (const query of queries) {
+    const old = query.state.data
+    if (!Array.isArray(old)) continue
+
+    let next
     if (mode === 'add') {
-      if (!old.rows.some(t => t.id === txn.id)) {
-        // Insert at top, sort, trim to limit
-        let newRows = [txn, ...old.rows]
-        newRows = newRows.sort((a, b) => {
-          // Sort by date desc, then created_at desc
-          const d1 = new Date(a.date), d2 = new Date(b.date)
-          if (d1 > d2) return -1
-          if (d1 < d2) return 1
-          return new Date(b.created_at) - new Date(a.created_at)
-        })
-        if (limit) newRows = newRows.slice(0, limit)
-        updated = { ...old, rows: newRows, total: (old.total || 0) + 1 }
-      }
+      next = [txn, ...old].sort(
+        (a, b) =>
+          new Date(b.date) - new Date(a.date) ||
+          new Date(b.created_at) - new Date(a.created_at)
+      )
     } else if (mode === 'update') {
-      updated = { ...old, rows: old.rows.map(t => t.id === txn.id ? txn : t) }
+      next = old.map(t => (t.id === txn.id ? txn : t))
     } else if (mode === 'delete') {
-      updated = {
-        ...old,
-        rows:  old.rows.filter(t => t.id !== txn.id),
-        total: Math.max(0, (old.total || 0) - 1),
-      }
+      next = old.filter(t => t.id !== txn.id)
+    } else {
+      continue
     }
-    if (updated !== old) {
-      queryClient.setQueryData(queryKey, updated)
+
+    // Use the exact queryKey from the cache object — no matching needed
+    queryClient.setQueryData(query.queryKey, next)
+  }
+}
+
+function findCachedTransaction(id) {
+  for (const query of getAllListQueries()) {
+    const data = query.state.data
+    if (Array.isArray(data)) {
+      const found = data.find(t => t.id === id)
+      if (found) return found
     }
   }
+  return null
 }
 
 function adjustBalanceCaches(delta) {
   if (!delta) return
   queryClient.setQueriesData(
     { queryKey: ['balance'], exact: false },
-    (old) => typeof old === 'number' ? old + delta : old
+    (old) => (typeof old === 'number' ? old + delta : old)
   )
 }
 
@@ -115,23 +125,9 @@ function patchMonthSummary(txn, mode = 'add') {
   })
 }
 
-function findCachedTransaction(id) {
-  const all = queryClient.getQueriesData({ queryKey: ['transactions'] })
-  for (const [, data] of all) {
-    if (data?.rows) {
-      const found = data.rows.find(t => t.id === id)
-      if (found) return found
-    }
-  }
-  return null
-}
-
 // ── Background invalidation ───────────────────────────────────────────────
 
 export function invalidateCache() {
-  // FIX (defect 3.2): Call suppress() before invalidating so GlobalRealtimeSync
-  // skips its own invalidation when it receives the Postgres broadcast for this
-  // same change ~300–500ms later. Eliminates the double-fetch on every mutation.
   suppress('transactions')
   return invalidateQueryFamilies(TRANSACTION_INVALIDATION_KEYS)
 }
@@ -150,18 +146,10 @@ export function useDebounce(value, ms = 300) {
 // ── Query hooks ───────────────────────────────────────────────────────────
 
 export function useTransactions({ type, category, search, limit, withCount = false } = {}) {
-  // FIX (defect 3.7): Separated data query from count query.
-  // Previously withCount: true caused PostgREST to execute a separate COUNT(*)
-  // on every single search keystroke after debounce, doubling the query cost.
-  //
-  // Now: the data query never fetches a count. A separate count query fires only
-  // on filter changes (type, category) — NOT on search keystrokes — and is cached
-  // for 60s so it is not hammered on every render cycle.
-  const dataKey  = ['transactions', 'data',  { type, category, search, limit }]
-  const countKey = ['transactions', 'count', { type, category }]
+  const filters = { type, category, search, limit }
 
   const { data: rows, isLoading, error, refetch } = useQuery({
-    queryKey: dataKey,
+    queryKey: txnListKey(filters),
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
@@ -188,7 +176,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
   })
 
   const { data: countData } = useQuery({
-    queryKey: countKey,
+    queryKey: txnCountKey({ type, category }),
     enabled: withCount,
     staleTime: 60 * 1000,
     queryFn: async () => {
@@ -196,7 +184,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
         const userId = getAuthUserId()
         let q = supabase
           .from('transactions')
-          .select('id', { count: 'exact', head: true })  // head: true — fetches zero rows
+          .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
 
         if (type)     q = q.eq('type', type)
@@ -212,7 +200,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
     },
   })
 
-  const safeRows = rows  || []
+  const safeRows = rows || []
   const total    = withCount ? (countData ?? safeRows.length) : safeRows.length
 
   return { data: safeRows, total, loading: isLoading, error, refetch }
@@ -223,7 +211,7 @@ export function useTodayExpenses() {
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['transactions', 'today-expenses', todayISO],
+    queryKey: ['todayExpenses', todayISO],
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
@@ -253,10 +241,6 @@ export function useMonthSummary(year, month) {
       try {
         const userId = getAuthUserId()
 
-        // FIX (defect 3.5): replaced raw-row fetch + JS for-loop with the
-        // get_month_summary RPC. Previously sent ~50–300 raw rows to the client
-        // to sum in JavaScript. RPC does GROUP BY on the server, returning
-        // ~5–30 pre-aggregated rows instead.
         const { data: rows, error: qError } = await supabase.rpc('get_month_summary', {
           p_user_id: userId,
           p_year:    year,
@@ -312,10 +296,6 @@ export function useYearSummary(year) {
       try {
         const userId = getAuthUserId()
 
-        // FIX (defect 3.5): replaced raw-row fetch + JS aggregation with the
-        // get_year_summary RPC. Previously fetched ALL transactions for the year
-        // (~100–1000+ rows) and computed monthly buckets in JavaScript.
-        // RPC does all aggregation on the server and returns one structured row.
         const { data: result, error: rpcError } = await supabase
           .rpc('get_year_summary', { p_user_id: userId, p_year: year })
           .single()
@@ -329,7 +309,6 @@ export function useYearSummary(year) {
         const byVehicle  = result.vehicle_data   || {}
         const top5       = result.top5_expenses  || []
 
-        // Build the full 12-month array — RPC only returns months with data
         const monthMap = Object.fromEntries(monthlyRaw.map(m => [m.month_num, m]))
         const monthly  = Array.from({ length: 12 }, (_, i) => {
           const m = monthMap[i + 1] || {}
@@ -378,10 +357,6 @@ export function useRunningBalance(year, month) {
         const userId  = getAuthUserId()
         const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
-        // FIX (defect 3.4): replaced full-table scan with server-side SUM RPC.
-        // Previously fetched every income row + every expense/investment row ever
-        // recorded (potentially thousands of rows) just to sum them in JS.
-        // The RPC does SUM(...) in a single query and returns one number.
         const { data: balance, error: rpcError } = await supabase.rpc(
           'get_running_balance',
           { p_user_id: userId, p_end_date: endDate }
@@ -412,9 +387,6 @@ export async function addTransaction(payload) {
 
   if (error) throw error
 
-  // Debug: Log the inserted transaction object
-  console.log('[DEBUG] Inserted transaction:', data)
-
   injectTransactionIntoLists(data, 'add')
   adjustBalanceCaches(balanceDelta(data))
   patchMonthSummary(data, 'add')
@@ -442,9 +414,12 @@ export async function updateTransaction(id, payload) {
   if (oldTxn) {
     const diff = balanceDelta(data) - balanceDelta(oldTxn)
     adjustBalanceCaches(diff)
-
-    if (oldTxn.date !== data.date || oldTxn.type !== data.type ||
-        oldTxn.amount !== data.amount || oldTxn.category !== data.category) {
+    if (
+      oldTxn.date     !== data.date     ||
+      oldTxn.type     !== data.type     ||
+      oldTxn.amount   !== data.amount   ||
+      oldTxn.category !== data.category
+    ) {
       patchMonthSummary(oldTxn, 'remove')
       patchMonthSummary(data,   'add')
     }
@@ -471,13 +446,13 @@ export async function deleteTransaction(id) {
     adjustBalanceCaches(-balanceDelta(deletedTxn))
     patchMonthSummary(deletedTxn, 'remove')
   } else {
-    queryClient.setQueriesData(
-      { queryKey: ['transactions'], exact: false },
-      (old) => {
-        if (!old?.rows) return old
-        return { ...old, rows: old.rows.filter(t => t.id !== id) }
+    // Fallback: id not in cache, filter all list queries directly
+    for (const query of getAllListQueries()) {
+      const old = query.state.data
+      if (Array.isArray(old)) {
+        queryClient.setQueryData(query.queryKey, old.filter(t => t.id !== id))
       }
-    )
+    }
   }
 
   invalidateCache()
