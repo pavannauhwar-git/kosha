@@ -148,7 +148,7 @@ function DesktopSidebar() {
   )
 }
 
-// ── Mobile bottom nav (pill) — unchanged, hidden on md+ ──────────────────
+// ── Mobile bottom nav (pill) ──────────────────────────────────────────────
 function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -229,6 +229,10 @@ function AuthCallback() {
 }
 
 // ── Global Realtime Sync ──────────────────────────────────────────────────
+// Uses exponential backoff so a failing WebSocket (e.g. Realtime not enabled
+// on the Supabase project) does not spam retries and block the JS thread.
+// The app works without Realtime — mutations do local cache injection and
+// invalidation directly. Realtime is only needed for multi-device/tab sync.
 function GlobalRealtimeSync() {
   const { user } = useAuth()
 
@@ -236,33 +240,61 @@ function GlobalRealtimeSync() {
     if (!user) return
 
     const timeoutIds = new Map()
+    let channel = null
+    let retryTimeout = null
+    let retryCount = 0
+    const MAX_RETRIES = 3
+    const BASE_DELAY_MS = 5000   // 5s → 10s → 20s
 
-    const scheduleInvalidate = (key, invalidate) => {
+    function scheduleInvalidate(key, invalidate) {
       if (isSuppressed(key)) return
-
       clearTimeout(timeoutIds.get(key))
       timeoutIds.set(key, setTimeout(() => {
         timeoutIds.delete(key)
-        if (isSuppressed(key)) return
-        void invalidate()
+        if (!isSuppressed(key)) void invalidate()
       }, 300))
     }
 
-    let channel = supabase.channel(`schema-db-changes-${user.id}`)
-    for (const policy of REALTIME_INVALIDATION_POLICIES) {
-      channel = channel.on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: policy.table },
-        () => scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
-      )
+    function subscribe() {
+      if (retryCount >= MAX_RETRIES) {
+        console.warn('[Kosha] Realtime unavailable after', MAX_RETRIES, 'attempts — using mutation-only updates.')
+        return
+      }
+
+      channel = supabase.channel(`schema-db-changes-${user.id}-${retryCount}`)
+
+      for (const policy of REALTIME_INVALIDATION_POLICIES) {
+        channel = channel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: policy.table },
+          () => scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
+        )
+      }
+
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          retryCount = 0
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          supabase.removeChannel(channel)
+          channel = null
+          retryCount++
+          const delay = BASE_DELAY_MS * Math.pow(2, retryCount - 1)
+          retryTimeout = setTimeout(subscribe, delay)
+        }
+      })
     }
-    channel = channel.subscribe()
+
+    subscribe()
 
     return () => {
+      clearTimeout(retryTimeout)
       timeoutIds.forEach(id => clearTimeout(id))
-      supabase.removeChannel(channel)
+      if (channel) supabase.removeChannel(channel)
     }
   }, [user?.id])
+
+  return null
 }
 
 function ContentWrapper({ children }) {
