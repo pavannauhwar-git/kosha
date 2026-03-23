@@ -317,12 +317,16 @@ export async function addTransaction(payload) {
 
   if (error) throw error
 
-  // 2. Instant Cache Injection for Lists (Kills the UI lag)
-  queryClient.setQueriesData({ queryKey: ['transactions'] }, (old) => {
-    if (!Array.isArray(old)) return old;
-    return [data, ...old];
+  // 2. Brute Force Injector
+  queryClient.getQueryCache().findAll().forEach(query => {
+    if (query.queryKey[0] === 'transactions') {
+      queryClient.setQueryData(query.queryKey, (old) => {
+        const safeOld = Array.isArray(old) ? old : [];
+        return [data, ...safeOld];
+      });
+    }
   });
-  invalidateCache(); // Background sync
+  invalidateCache();
   return data;
 }
 
@@ -339,9 +343,13 @@ export async function updateTransaction(id, payload) {
 
   if (error) throw error
 
-  queryClient.setQueriesData({ queryKey: ['transactions'] }, (old) => {
-    if (!Array.isArray(old)) return old;
-    return old.map(t => t.id === id ? data : t);
+  queryClient.getQueryCache().findAll().forEach(query => {
+    if (query.queryKey[0] === 'transactions') {
+      queryClient.setQueryData(query.queryKey, (old) => {
+        const safeOld = Array.isArray(old) ? old : [];
+        return safeOld.map(t => t.id === id ? data : t);
+      });
+    }
   });
   invalidateCache();
   return data;
@@ -358,9 +366,13 @@ export async function deleteTransaction(id) {
 
   if (error) throw error
 
-  queryClient.setQueriesData({ queryKey: ['transactions'] }, (old) => {
-    if (!Array.isArray(old)) return old;
-    return old.filter(t => t.id !== id);
+  queryClient.getQueryCache().findAll().forEach(query => {
+    if (query.queryKey[0] === 'transactions') {
+      queryClient.setQueryData(query.queryKey, (old) => {
+        const safeOld = Array.isArray(old) ? old : [];
+        return safeOld.filter(t => t.id !== id);
+      });
+    }
   });
   invalidateCache();
   return true;

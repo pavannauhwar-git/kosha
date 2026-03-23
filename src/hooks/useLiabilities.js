@@ -73,10 +73,14 @@ export async function addLiability(payload, options = {}) {
 
   if (error) throw error
 
-  // 2. Instant Cache Injection for Lists (Kills UI lag)
-  queryClient.setQueriesData({ queryKey: ['liabilities', 'pending'] }, (old) => {
-    if (!Array.isArray(old)) return old;
-    return [data, ...old];
+  // 2. Brute Force Injector
+  queryClient.getQueryCache().findAll().forEach(query => {
+    if (query.queryKey[0] === 'liabilities' && query.queryKey[1] === 'pending') {
+      queryClient.setQueryData(query.queryKey, (old) => {
+        const safeOld = Array.isArray(old) ? old : [];
+        return [data, ...safeOld];
+      });
+    }
   });
 
   // 3. Fire-and-Forget Background Sync (NO AWAIT)
@@ -97,15 +101,21 @@ export async function markPaid(liability, options = {}) {
 
   if (rpcError) throw rpcError
 
-  // 1. Remove from pending
-  queryClient.setQueriesData({ queryKey: ['liabilities', 'pending'] }, (old) => {
-    if (!Array.isArray(old)) return old;
-    return old.filter(l => l.id !== liability.id);
-  });
-  // 2. Add to paid
-  queryClient.setQueriesData({ queryKey: ['liabilities', 'paid'] }, (old) => {
-    if (!Array.isArray(old)) return old;
-    return [{ ...liability, paid: true }, ...old];
+  queryClient.getQueryCache().findAll().forEach(query => {
+    // Remove from pending
+    if (query.queryKey[0] === 'liabilities' && query.queryKey[1] === 'pending') {
+      queryClient.setQueryData(query.queryKey, (old) => {
+        const safeOld = Array.isArray(old) ? old : [];
+        return safeOld.filter(l => l.id !== liability.id);
+      });
+    }
+    // Add to paid
+    if (query.queryKey[0] === 'liabilities' && query.queryKey[1] === 'paid') {
+      queryClient.setQueryData(query.queryKey, (old) => {
+        const safeOld = Array.isArray(old) ? old : [];
+        return [{ ...liability, paid: true }, ...safeOld];
+      });
+    }
   });
   if (invalidate) {
     invalidateLiabilityCache();
@@ -126,9 +136,13 @@ export async function deleteLiability(id, options = {}) {
 
   if (error) throw error
 
-  queryClient.setQueriesData({ queryKey: ['liabilities'] }, (old) => {
-    if (!Array.isArray(old)) return old;
-    return old.filter(l => l.id !== id);
+  queryClient.getQueryCache().findAll().forEach(query => {
+    if (query.queryKey[0] === 'liabilities') {
+      queryClient.setQueryData(query.queryKey, (old) => {
+        const safeOld = Array.isArray(old) ? old : [];
+        return safeOld.filter(l => l.id !== id);
+      });
+    }
   });
   if (invalidate) invalidateLiabilityCache();
 }
