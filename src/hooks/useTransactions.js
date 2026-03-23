@@ -23,36 +23,41 @@ function logQueryError(scope, error) {
 
 // ── Cache helpers ─────────────────────────────────────────────────────────
 
+// Data queries are stored under ['transactions', 'data', {...filters}].
+// Count queries are stored under ['transactions', 'count', {...filters}].
+// We target only data queries via predicate to avoid touching count caches.
+const DATA_QUERY_PREDICATE = {
+  predicate: (query) => {
+    const key = query.queryKey
+    return Array.isArray(key) && key[0] === 'transactions' && key[1] === 'data'
+  },
+}
+
 function injectTransactionIntoLists(txn, mode = 'add') {
-  queryClient.setQueriesData(
-    { queryKey: ['transactions'], exact: false },
-    (old) => {
-      // Query data is a plain array (queryFn returns data || []).
-      // Previous check was `old?.rows` which is always undefined → always no-op.
-      if (!Array.isArray(old)) return old
-      if (mode === 'add') {
-        return [txn, ...old].sort(
-          (a, b) =>
-            new Date(b.date) - new Date(a.date) ||
-            new Date(b.created_at) - new Date(a.created_at)
-        )
-      }
-      if (mode === 'update') {
-        return old.map(t => t.id === txn.id ? txn : t)
-      }
-      if (mode === 'delete') {
-        return old.filter(t => t.id !== txn.id)
-      }
-      return old
+  queryClient.setQueriesData(DATA_QUERY_PREDICATE, (old) => {
+    if (!Array.isArray(old)) return old
+    if (mode === 'add') {
+      return [txn, ...old].sort(
+        (a, b) =>
+          new Date(b.date) - new Date(a.date) ||
+          new Date(b.created_at) - new Date(a.created_at)
+      )
     }
-  )
+    if (mode === 'update') {
+      return old.map(t => (t.id === txn.id ? txn : t))
+    }
+    if (mode === 'delete') {
+      return old.filter(t => t.id !== txn.id)
+    }
+    return old
+  })
 }
 
 function adjustBalanceCaches(delta) {
   if (!delta) return
   queryClient.setQueriesData(
     { queryKey: ['balance'], exact: false },
-    (old) => typeof old === 'number' ? old + delta : old
+    (old) => (typeof old === 'number' ? old + delta : old)
   )
 }
 
@@ -94,9 +99,10 @@ function patchMonthSummary(txn, mode = 'add') {
 }
 
 function findCachedTransaction(id) {
-  const all = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  // Use the same predicate so we only search data queries (plain arrays),
+  // never the count queries (numbers).
+  const all = queryClient.getQueriesData(DATA_QUERY_PREDICATE)
   for (const [, data] of all) {
-    // Query data is a plain array, not { rows: [] }
     if (Array.isArray(data)) {
       const found = data.find(t => t.id === id)
       if (found) return found
@@ -181,7 +187,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
     },
   })
 
-  const safeRows = rows  || []
+  const safeRows = rows || []
   const total    = withCount ? (countData ?? safeRows.length) : safeRows.length
 
   return { data: safeRows, total, loading: isLoading, error, refetch }
@@ -396,8 +402,12 @@ export async function updateTransaction(id, payload) {
     const diff = balanceDelta(data) - balanceDelta(oldTxn)
     adjustBalanceCaches(diff)
 
-    if (oldTxn.date !== data.date || oldTxn.type !== data.type ||
-        oldTxn.amount !== data.amount || oldTxn.category !== data.category) {
+    if (
+      oldTxn.date !== data.date ||
+      oldTxn.type !== data.type ||
+      oldTxn.amount !== data.amount ||
+      oldTxn.category !== data.category
+    ) {
       patchMonthSummary(oldTxn, 'remove')
       patchMonthSummary(data,   'add')
     }
@@ -424,13 +434,11 @@ export async function deleteTransaction(id) {
     adjustBalanceCaches(-balanceDelta(deletedTxn))
     patchMonthSummary(deletedTxn, 'remove')
   } else {
-    queryClient.setQueriesData(
-      { queryKey: ['transactions'], exact: false },
-      (old) => {
-        if (!Array.isArray(old)) return old
-        return old.filter(t => t.id !== id)
-      }
-    )
+    // Fallback: deletedTxn not found in cache — filter by id directly
+    queryClient.setQueriesData(DATA_QUERY_PREDICATE, (old) => {
+      if (!Array.isArray(old)) return old
+      return old.filter(t => t.id !== id)
+    })
   }
 
   invalidateCache()
