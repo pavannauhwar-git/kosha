@@ -44,29 +44,30 @@ function getAllListQueries() {
 }
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  const queries = getAllListQueries()
-  for (const query of queries) {
-    const old = query.state.data
-    if (!Array.isArray(old)) continue
-
-    let next
-    if (mode === 'add') {
-      next = [txn, ...old].sort(
-        (a, b) =>
-          new Date(b.date) - new Date(a.date) ||
-          new Date(b.created_at) - new Date(a.created_at)
-      )
-    } else if (mode === 'update') {
-      next = old.map(t => (t.id === txn.id ? txn : t))
-    } else if (mode === 'delete') {
-      next = old.filter(t => t.id !== txn.id)
-    } else {
-      continue
+  queryClient.setQueriesData(
+    {
+      predicate: (query) =>
+        Array.isArray(query.queryKey) && query.queryKey[0] === 'transactions',
+    },
+    (old) => {
+      if (!Array.isArray(old)) return old
+ 
+      if (mode === 'add') {
+        return [txn, ...old].sort(
+          (a, b) =>
+            new Date(b.date) - new Date(a.date) ||
+            new Date(b.created_at) - new Date(a.created_at)
+        )
+      }
+      if (mode === 'update') {
+        return old.map(t => (t.id === txn.id ? txn : t))
+      }
+      if (mode === 'delete') {
+        return old.filter(t => t.id !== txn.id)
+      }
+      return old
     }
-
-    // Use the exact queryKey from the cache object — no matching needed
-    queryClient.setQueryData(query.queryKey, next)
-  }
+  )
 }
 
 function findCachedTransaction(id) {
