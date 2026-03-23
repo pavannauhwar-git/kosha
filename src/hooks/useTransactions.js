@@ -317,16 +317,6 @@ export async function addTransaction(payload) {
 
   if (error) throw error
 
-  // 2. Brute Force Injector
-  queryClient.getQueryCache().findAll().forEach(query => {
-    if (query.queryKey[0] === 'transactions') {
-      queryClient.setQueryData(query.queryKey, (old) => {
-        const safeOld = Array.isArray(old) ? old : [];
-        return [data, ...safeOld];
-      });
-    }
-  });
-  invalidateCache();
   return data;
 }
 
@@ -343,15 +333,6 @@ export async function updateTransaction(id, payload) {
 
   if (error) throw error
 
-  queryClient.getQueryCache().findAll().forEach(query => {
-    if (query.queryKey[0] === 'transactions') {
-      queryClient.setQueryData(query.queryKey, (old) => {
-        const safeOld = Array.isArray(old) ? old : [];
-        return safeOld.map(t => t.id === id ? data : t);
-      });
-    }
-  });
-  invalidateCache();
   return data;
 }
 
@@ -366,14 +347,5 @@ export async function deleteTransaction(id) {
 
   if (error) throw error
 
-  queryClient.getQueryCache().findAll().forEach(query => {
-    if (query.queryKey[0] === 'transactions') {
-      queryClient.setQueryData(query.queryKey, (old) => {
-        const safeOld = Array.isArray(old) ? old : [];
-        return safeOld.filter(t => t.id !== id);
-      });
-    }
-  });
-  invalidateCache();
   return true;
 }

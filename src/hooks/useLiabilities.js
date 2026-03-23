@@ -73,19 +73,6 @@ export async function addLiability(payload, options = {}) {
 
   if (error) throw error
 
-  // 2. Brute Force Injector
-  queryClient.getQueryCache().findAll().forEach(query => {
-    if (query.queryKey[0] === 'liabilities' && query.queryKey[1] === 'pending') {
-      queryClient.setQueryData(query.queryKey, (old) => {
-        const safeOld = Array.isArray(old) ? old : [];
-        return [data, ...safeOld];
-      });
-    }
-  });
-
-  // 3. Fire-and-Forget Background Sync (NO AWAIT)
-  if (invalidate) invalidateLiabilityCache()
-
   return data
 }
 
@@ -101,26 +88,6 @@ export async function markPaid(liability, options = {}) {
 
   if (rpcError) throw rpcError
 
-  queryClient.getQueryCache().findAll().forEach(query => {
-    // Remove from pending
-    if (query.queryKey[0] === 'liabilities' && query.queryKey[1] === 'pending') {
-      queryClient.setQueryData(query.queryKey, (old) => {
-        const safeOld = Array.isArray(old) ? old : [];
-        return safeOld.filter(l => l.id !== liability.id);
-      });
-    }
-    // Add to paid
-    if (query.queryKey[0] === 'liabilities' && query.queryKey[1] === 'paid') {
-      queryClient.setQueryData(query.queryKey, (old) => {
-        const safeOld = Array.isArray(old) ? old : [];
-        return [{ ...liability, paid: true }, ...safeOld];
-      });
-    }
-  });
-  if (invalidate) {
-    invalidateLiabilityCache();
-    invalidateTxnCache();
-  }
   return result;
 }
 
@@ -136,13 +103,5 @@ export async function deleteLiability(id, options = {}) {
 
   if (error) throw error
 
-  queryClient.getQueryCache().findAll().forEach(query => {
-    if (query.queryKey[0] === 'liabilities') {
-      queryClient.setQueryData(query.queryKey, (old) => {
-        const safeOld = Array.isArray(old) ? old : [];
-        return safeOld.filter(l => l.id !== id);
-      });
-    }
-  });
-  if (invalidate) invalidateLiabilityCache();
+  return true;
 }

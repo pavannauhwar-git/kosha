@@ -318,10 +318,13 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         await addTransaction(payload)
       }
 
-      // De-conflict the main thread: Let the sheet start animating away 
-      // BEFORE we release the UI block, ensuring a buttery smooth drop.
+      // 2. Instantly close the sheet for smooth exit animation
       onClose()
-      
+
+      // 3. Defer cache invalidation until after animation
+      setTimeout(() => {
+        invalidateCache()
+      }, 300)
     } catch (e) {
       dispatch({
         type: 'SAVING_ERROR',
