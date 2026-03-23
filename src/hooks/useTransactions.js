@@ -78,6 +78,9 @@ export function useTransactions({ type, category, search, limit, withCount = fal
         throw err
       }
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   })
 
   const { data: countData } = useQuery({
