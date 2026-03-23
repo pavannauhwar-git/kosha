@@ -1,3 +1,14 @@
+/**
+ * useLiabilities.js — Strict Server-Truth Architecture
+ *
+ * Follows the same mutation contract as useTransactions.js:
+ *   1. await Supabase DB operation
+ *   2. await invalidateCache() — waits for full refetch cycle
+ *   3. Promise resolves only after server confirms AND fresh data is in cache
+ *
+ * NO setQueryData. NO optimistic updates. Server is the single source of truth.
+ */
+
 import { useQueries } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
@@ -12,10 +23,13 @@ const LIABILITY_PAID_QUERY_KEY    = ['liabilities', 'paid']
 const LIABILITY_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
-export function invalidateLiabilityCache() {
-  // FIX (defect 3.2): suppress realtime double-fetch for liabilities table
+/**
+ * Invalidates all liability queries and awaits the full refetch cycle.
+ * Always await this inside mutations.
+ */
+export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  return invalidateQueryFamilies(LIABILITY_INVALIDATION_KEYS)
+  await invalidateQueryFamilies(LIABILITY_INVALIDATION_KEYS)
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {
@@ -54,105 +68,83 @@ export function useLiabilities({ includePaid = true } = {}) {
   }
 }
 
+/**
+ * Add a new liability (bill/due).
+ *
+ * Strict Await Chain:
+ *   1. await Supabase insert
+ *   2. await invalidateLiabilityCache() — refetch completes before resolving
+ */
 export async function addLiability(payload, options = {}) {
   const { invalidate = true } = options
 
-  try {
-    const userId = getAuthUserId()
-    const { data, error } = await supabase
-      .from('liabilities')
-      .insert([{ ...payload, user_id: userId }])
-      .select(LIABILITY_COLUMNS)
-      .single()
+  const userId = getAuthUserId()
+  const { data, error } = await supabase
+    .from('liabilities')
+    .insert([{ ...payload, user_id: userId }])
+    .select(LIABILITY_COLUMNS)
+    .single()
 
-    if (error) throw error
+  if (error) throw error
 
-    // Inject into pending cache in due-date order
-    queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (old) => {
-      if (!Array.isArray(old)) return old
-      return [...old, data].sort(
-        (a, b) => new Date(a.due_date) - new Date(b.due_date)
-      )
-    })
+  if (invalidate) await invalidateLiabilityCache()
 
-    if (invalidate) invalidateLiabilityCache()
-
-    return data
-  } catch (err) {
-    console.error('[Kosha] addLiability failed', err)
-    throw err
-  }
+  return data
 }
 
+/**
+ * Mark a liability as paid using the atomic RPC.
+ *
+ * Strict Await Chain:
+ *   1. await Supabase RPC (atomic: inserts txn + marks paid + creates recurrence)
+ *   2. await both liability and transaction cache invalidations
+ *
+ * Both invalidations are awaited in parallel via Promise.all to minimize
+ * total wait time while still guaranteeing all active queries are fresh.
+ */
 export async function markPaid(liability, options = {}) {
   const { invalidate = true } = options
 
-  try {
-    const userId = getAuthUserId()
+  const userId = getAuthUserId()
 
-    // FIX (defect 3.3): Replaced 3 sequential non-atomic client-side DB calls
-    // with a single atomic RPC. Previously:
-    //   Call 1: INSERT transaction   (~200ms)
-    //   Call 2: UPDATE liability     (~200ms)  — if this failed, orphaned txn existed
-    //   Call 3: INSERT next recurrence (~200ms)
-    //
-    // Now: all 3 steps run inside a single Postgres transaction via the
-    // mark_liability_paid RPC. Either all succeed or all roll back.
-    // Network cost: 1 round trip (~150–200ms) vs 2–3 (~400–600ms).
-    const { data: result, error: rpcError } = await supabase
-      .rpc('mark_liability_paid', {
-        p_liability_id: liability.id,
-        p_user_id:      userId,
-      })
-
-    if (rpcError) throw rpcError
-
-    // Optimistically move liability from pending to paid in cache
-    queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (old) =>
-      Array.isArray(old) ? old.filter(b => b.id !== liability.id) : old
-    )
-    queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (old) => {
-      if (!Array.isArray(old)) return old
-      const paidLiability = {
-        ...liability,
-        paid:                  true,
-        linked_transaction_id: result?.transaction_id || null,
-      }
-      return [paidLiability, ...old]
+  const { data: result, error: rpcError } = await supabase
+    .rpc('mark_liability_paid', {
+      p_liability_id: liability.id,
+      p_user_id:      userId,
     })
 
-    if (invalidate) {
-      invalidateLiabilityCache()
-      invalidateTxnCache()
-    }
-  } catch (err) {
-    console.error('[Kosha] markPaid failed', err)
-    throw err
+  if (rpcError) throw rpcError
+
+  if (invalidate) {
+    // Await both in parallel — both must complete before the mutation
+    // Promise resolves and the UI is allowed to proceed.
+    await Promise.all([
+      invalidateLiabilityCache(),
+      invalidateTxnCache(),
+    ])
   }
+
+  return result
 }
 
+/**
+ * Delete a liability.
+ *
+ * Strict Await Chain:
+ *   1. await Supabase delete
+ *   2. await invalidateLiabilityCache()
+ */
 export async function deleteLiability(id, options = {}) {
   const { invalidate = true } = options
 
-  try {
-    const userId = getAuthUserId()
-    const { error } = await supabase
-      .from('liabilities')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', userId)
+  const userId = getAuthUserId()
+  const { error } = await supabase
+    .from('liabilities')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId)
 
-    if (error) throw error
+  if (error) throw error
 
-    const removeById = (old) =>
-      Array.isArray(old) ? old.filter(b => b.id !== id) : old
-
-    queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, removeById)
-    queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY,    removeById)
-
-    if (invalidate) invalidateLiabilityCache()
-  } catch (err) {
-    console.error('[Kosha] deleteLiability failed', err)
-    throw err
-  }
+  if (invalidate) await invalidateLiabilityCache()
 }

@@ -1,3 +1,29 @@
+/**
+ * AddTransactionSheet.jsx — Strict Server-Truth UI Contract
+ *
+ * UI BLOCKING CONTRACT:
+ *
+ * The sheet must NOT call onClose() until the full mutation + refetch
+ * Promise chain resolves. This is enforced by:
+ *
+ *   1. isSaving state disables all inputs and the submit button
+ *      the moment the user taps "Save".
+ *
+ *   2. The save handler awaits addTransaction() / updateTransaction(),
+ *      which themselves await the full invalidateCache() cycle before
+ *      resolving (see useTransactions.js).
+ *
+ *   3. onClose() is called ONLY inside the try block AFTER the await
+ *      resolves — never in a finally block, never before the server confirms.
+ *
+ *   4. On error, isSaving is reset to false so the user can retry.
+ *
+ * This means the user sees a spinner for 200-500ms after tapping save.
+ * That is the correct and intentional UX for a financial application.
+ * The dashboard, monthly summary, and running balance will all be accurate
+ * the moment the sheet closes because the refetch has already completed.
+ */
+
 import { useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, NotePencil } from '@phosphor-icons/react'
@@ -19,16 +45,6 @@ const TYPES = [
 ]
 
 // ── Form state via useReducer ─────────────────────────────────────────────
-// FIX (defect 5.1): The old code called 9 separate setState() calls during
-// the render phase (inside an if-block comparing prevInitSource to initSource).
-// React docs explicitly discourage setState during render — it schedules up to
-// 9 cascading re-renders per form open/edit action.
-//
-// Fix: a single useReducer replaces all 9 state vars. Form initialisation is
-// now a single INIT action that sets all fields atomically in one re-render.
-// The component key trick resets the reducer automatically when the sheet
-// closes and re-opens for a new transaction.
-
 function buildInitialState(editTxn, duplicateTxn, initialType) {
   if (editTxn) {
     return {
@@ -84,8 +100,10 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
 function formReducer(state, action) {
   switch (action.type) {
     case 'SET':         return { ...state, [action.key]: action.value }
-    case 'SET_SAVING':  return { ...state, isSaving: action.value, error: action.error || state.error }
-    case 'SET_ERROR':   return { ...state, error: action.value, isSaving: false }
+    // SAVING_START: disable all inputs immediately when user taps submit
+    case 'SAVING_START': return { ...state, isSaving: true, error: '' }
+    // SAVING_ERROR: re-enable inputs so user can retry
+    case 'SAVING_ERROR': return { ...state, isSaving: false, error: action.value }
     case 'SMART_PARSE': return { ...state, ...action.parsed, smartText: action.smartText }
     default:            return state
   }
@@ -232,19 +250,11 @@ function VehiclePicker({ selected, onSelect, onClose }) {
   )
 }
 
-// ── Inner sheet — receives a stable key so useReducer resets on re-open ───
+// ── Inner sheet ───────────────────────────────────────────────────────────
 
-function AddTransactionSheetInner({
-  onClose,
-  editTxn,
-  duplicateTxn,
-  initialType,
-}) {
+function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType }) {
   const [state, dispatch] = useReducer(
     formReducer,
-    // FIX (defect 5.1): buildInitialState runs ONCE when this component
-    // mounts (controlled by the `key` prop on the outer wrapper).
-    // No setState-during-render, no cascading re-renders.
     buildInitialState(editTxn, duplicateTxn, initialType)
   )
 
@@ -276,12 +286,13 @@ function AddTransactionSheetInner({
   }
 
   async function handleSave() {
+    // Client-side validation — fast, no async
     if (!amount || isNaN(+amount) || +amount <= 0) {
-      dispatch({ type: 'SET_ERROR', value: 'Enter a valid amount' })
+      dispatch({ type: 'SAVING_ERROR', value: 'Enter a valid amount' })
       return
     }
     if (!desc.trim()) {
-      dispatch({ type: 'SET_ERROR', value: 'Enter a description' })
+      dispatch({ type: 'SAVING_ERROR', value: 'Enter a description' })
       return
     }
 
@@ -297,32 +308,48 @@ function AddTransactionSheetInner({
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
     }
 
-    dispatch({ type: 'SET_SAVING', value: true, error: '' })
+    // STEP 1: Disable UI immediately. User cannot interact until server confirms.
+    dispatch({ type: 'SAVING_START' })
 
     try {
+      // STEP 2: Await the full mutation chain:
+      //   - Supabase write
+      //   - invalidateCache() → awaits active query refetches
+      //
+      // This Promise does not resolve until every active subscriber
+      // (dashboard balance, monthly summary, transaction list) has
+      // fresh data from the server. This is the core contract.
       if (editTxn) {
         await updateTransaction(editTxn.id, payload)
       } else {
         await addTransaction(payload)
       }
-      // FIX (from Batch 1 patch): reset saving state BEFORE closing to avoid
-      // setState-on-unmounted-component warning
-      dispatch({ type: 'SET_SAVING', value: false })
+
+      // STEP 3: ONLY close the sheet after the full chain resolves.
+      // At this point, all UI is already up to date. The user will see
+      // accurate numbers the instant the sheet finishes its exit animation.
       onClose()
+
     } catch (e) {
-      dispatch({ type: 'SET_ERROR', value: e.message || 'Could not save. Check your connection.' })
+      // STEP 4: On failure, re-enable the form so the user can retry.
+      // Never swallow errors silently.
+      dispatch({
+        type: 'SAVING_ERROR',
+        value: e.message || 'Could not save. Check your connection and try again.',
+      })
     }
   }
 
-  const activeType  = TYPES.find(t => t.id === type)
-  const selectedCat = CATEGORIES.find(c => c.id === category)
+  const activeType   = TYPES.find(t => t.id === type)
+  const selectedCat  = CATEGORIES.find(c => c.id === category)
   const selectedMode = PAYMENT_MODES.find(m => m.id === mode)
 
   return (
     <>
       <motion.div className="sheet-backdrop"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-        onClick={onClose}
+        // Prevent closing by tapping backdrop while saving — data integrity
+        onClick={isSaving ? undefined : onClose}
       />
       <motion.div
         className="sheet-panel"
@@ -342,13 +369,20 @@ function AddTransactionSheetInner({
             <div className="flex items-center gap-3">
               <button
                 onClick={() => set('smartMode', !smartMode)}
+                disabled={isSaving}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors
-                  ${smartMode ? 'bg-brand text-white shadow-sm' : 'bg-surface text-ink-3'}`}
+                  ${smartMode ? 'bg-brand text-white shadow-sm' : 'bg-surface text-ink-3'}
+                  disabled:opacity-50`}
               >
                 <Sparkle size={14} weight={smartMode ? 'fill' : 'regular'} />
                 Smart Entry
               </button>
-              <button onClick={onClose} className="close-btn">
+              {/* X button disabled while saving to prevent accidental close mid-flight */}
+              <button
+                onClick={isSaving ? undefined : onClose}
+                disabled={isSaving}
+                className="close-btn disabled:opacity-40"
+              >
                 <X size={16} className="text-ink-3" />
               </button>
             </div>
@@ -367,9 +401,10 @@ function AddTransactionSheetInner({
                   placeholder="e.g. Paid 400 for lunch using UPI..."
                   value={smartText}
                   onChange={e => handleSmartTextChange(e.target.value)}
+                  disabled={isSaving}
                   className="w-full bg-brand/5 border border-brand/20 text-brand font-medium
                              rounded-2xl p-4 min-h-[100px] outline-none focus:ring-2
-                             ring-brand/50 resize-none shadow-inner"
+                             ring-brand/50 resize-none shadow-inner disabled:opacity-50"
                 />
                 <p className="text-[11px] text-ink-4 mt-2 px-2 flex items-center gap-1">
                   <Sparkle size={12} /> Auto-fills amount, description, category, and mode.
@@ -383,7 +418,9 @@ function AddTransactionSheetInner({
             {TYPES.map(t => (
               <button key={t.id}
                 onClick={() => set('type', t.id)}
+                disabled={isSaving}
                 className={`flex-1 py-2 rounded-card text-[13px] font-semibold border transition-all
+                  disabled:opacity-50
                   ${type === t.id
                     ? `${t.bg} ${t.color} border-transparent`
                     : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
@@ -401,8 +438,9 @@ function AddTransactionSheetInner({
               type="number" inputMode="decimal" placeholder="0.00"
               value={amount}
               onChange={e => set('amount', e.target.value)}
+              disabled={isSaving}
               className="flex-1 bg-transparent font-display text-3xl font-bold text-ink
-                         outline-none tabular-nums placeholder-ink-4"
+                         outline-none tabular-nums placeholder-ink-4 disabled:opacity-50"
             />
           </div>
 
@@ -410,25 +448,31 @@ function AddTransactionSheetInner({
           <input
             type="text" placeholder="Description"
             value={desc} onChange={e => set('desc', e.target.value)}
-            className="input mb-3"
+            disabled={isSaving}
+            className="input mb-3 disabled:opacity-50"
           />
 
           {/* Field rows */}
           <div className="list-card mb-3">
 
             {/* Date */}
-            <label className="list-row w-full cursor-pointer">
+            <label className={`list-row w-full cursor-pointer ${isSaving ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
                 <span className="text-brand text-xs font-bold">📅</span>
               </div>
               <span className="flex-1 text-[15px] text-ink">Date</span>
               <input type="date" value={date} onChange={e => set('date', e.target.value)}
-                className="text-[15px] text-ink-3 bg-transparent outline-none text-right" />
+                disabled={isSaving}
+                className="text-[15px] text-ink-3 bg-transparent outline-none text-right disabled:opacity-50" />
             </label>
 
             {/* Category */}
             {type !== 'investment' && (
-              <button className="list-row w-full" onClick={() => setShowCatPicker()}>
+              <button
+                className="list-row w-full disabled:opacity-50"
+                onClick={() => setShowCatPicker()}
+                disabled={isSaving}
+              >
                 <CategoryIcon categoryId={category} size={16} />
                 <span className="flex-1 text-[15px] text-ink text-left">Category</span>
                 <div className="flex items-center gap-1">
@@ -440,7 +484,11 @@ function AddTransactionSheetInner({
 
             {/* Investment vehicle */}
             {type === 'investment' && (
-              <button className="list-row w-full" onClick={() => setShowVehPicker()}>
+              <button
+                className="list-row w-full disabled:opacity-50"
+                onClick={() => setShowVehPicker()}
+                disabled={isSaving}
+              >
                 {(() => {
                   const selVeh  = INVESTMENT_VEHICLES.find(v => v.label === vehicle)
                   const VehIcon = selVeh ? ICON_MAP[selVeh.icon] : null
@@ -464,7 +512,11 @@ function AddTransactionSheetInner({
             )}
 
             {/* Payment mode */}
-            <button className="list-row w-full" onClick={() => setShowModePicker()}>
+            <button
+              className="list-row w-full disabled:opacity-50"
+              onClick={() => setShowModePicker()}
+              disabled={isSaving}
+            >
               {(() => {
                 const ModeIcon = selectedMode ? ICON_MAP[selectedMode.icon] : null
                 return ModeIcon ? (
@@ -486,7 +538,11 @@ function AddTransactionSheetInner({
             </button>
 
             {/* Notes */}
-            <button className="list-row w-full" onClick={() => set('showNotes', !showNotes)}>
+            <button
+              className="list-row w-full disabled:opacity-50"
+              onClick={() => set('showNotes', !showNotes)}
+              disabled={isSaving}
+            >
               <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 flex items-center justify-center shrink-0">
                 <NotePencil size={15} className="text-ink-3" />
               </div>
@@ -514,10 +570,11 @@ function AddTransactionSheetInner({
                       placeholder="e.g. Q1 advance tax, flight reimbursement…"
                       value={notes}
                       onChange={e => set('notes', e.target.value)}
+                      disabled={isSaving}
                       className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-[14px]
                                  text-ink placeholder-ink-4 outline-none resize-none
                                  border border-transparent focus:border-brand-border
-                                 transition-colors duration-150"
+                                 transition-colors duration-150 disabled:opacity-50"
                     />
                   </div>
                 </motion.div>
@@ -525,16 +582,25 @@ function AddTransactionSheetInner({
             </AnimatePresence>
           </div>
 
+          {/* Error message */}
           {error && <p className="text-expense-text text-[13px] mb-3 px-1">{error}</p>}
 
-          {/* Save button */}
+          {/*
+            Save button — the most important element.
+
+            States:
+            - Normal:  "Add Expense" / "Save Changes" — full brand color
+            - Saving:  Spinner + "Saving..." — dimmed, disabled
+              The spinner persists for the ENTIRE mutation + refetch chain.
+              When it disappears, the sheet closes and the data is accurate.
+          */}
           <button
             onClick={handleSave}
             disabled={isSaving}
             className={`w-full py-4 rounded-card text-[17px] font-semibold flex items-center
                         justify-center gap-2 transition-all
                         ${isSaving
-                          ? 'bg-brand/70 text-white/90 scale-[0.98]'
+                          ? 'bg-brand/70 text-white/90 scale-[0.98] cursor-not-allowed'
                           : 'bg-brand text-white active:scale-[0.98]'}`}
           >
             {isSaving ? (
@@ -570,14 +636,6 @@ export default function AddTransactionSheet({
   open, onClose,
   editTxn = null, duplicateTxn = null, initialType = 'expense',
 }) {
-  // FIX (defect 5.1): The `key` prop causes React to fully unmount and remount
-  // AddTransactionSheetInner whenever the sheet transitions between:
-  //   - closed → open for new entry
-  //   - open for edit A → open for edit B
-  //   - open for edit → open for duplicate
-  //
-  // This resets the useReducer to a clean initial state with a single mount,
-  // replacing the 9-setState render-phase cascade entirely.
   const sheetKey = open
     ? editTxn      ? `edit-${editTxn.id}`
     : duplicateTxn ? `dup-${duplicateTxn.id}`

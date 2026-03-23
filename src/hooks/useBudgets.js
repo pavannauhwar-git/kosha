@@ -1,25 +1,27 @@
 /**
- * useBudgets
+ * useBudgets.js — Strict Server-Truth Architecture
  *
- * Manages per-category monthly spend limits.
- * Budgets are stored once and apply to every month — set it, forget it.
+ * Follows the same mutation contract as useTransactions.js:
+ *   1. await Supabase DB operation
+ *   2. await invalidateCache() — waits for full refetch cycle
  *
- * Returns: { budgets: { [categoryId]: amount }, loading, setBudget, removeBudget }
+ * NO setQueryData. NO cache injection. Server truth only.
  */
 
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
+import { invalidateQueryFamilies } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 
 export const BUDGET_INVALIDATION_KEYS = [['budgets']]
 
-// FIX (defect 2.1, 2.2): Removed getUserId() which called getSession().
-// All functions now use getAuthUserId() — synchronous, no race window.
-
-function invalidate() {
-  return invalidateQueryFamilies(BUDGET_INVALIDATION_KEYS)
+/**
+ * Invalidates all budget queries and awaits the full refetch cycle.
+ * Always await this inside mutations.
+ */
+async function invalidateBudgetCache() {
+  await invalidateQueryFamilies(BUDGET_INVALIDATION_KEYS)
 }
 
 export function useBudgets() {
@@ -41,6 +43,16 @@ export function useBudgets() {
     },
   })
 
+  /**
+   * Set or update a budget for a category.
+   *
+   * Strict Await Chain:
+   *   1. await Supabase upsert
+   *   2. await invalidateBudgetCache() — active queries refetch before resolve
+   *
+   * The calling component must await this and keep isSaving=true until it
+   * resolves to ensure the UI reflects the confirmed server state.
+   */
   const setBudget = useCallback(async (category, amount) => {
     try {
       const userId = getAuthUserId()
@@ -49,21 +61,20 @@ export function useBudgets() {
         .upsert({ user_id: userId, category, amount }, { onConflict: 'user_id,category' })
       if (error) throw error
 
-      // FIX (defect 1.2): inject into cache immediately so the budget bar
-      // updates the instant the sheet closes, without waiting for a refetch
-      queryClient.setQueryData(['budgets'], (old) => {
-        if (!old) return { [category]: amount }
-        return { ...old, [category]: amount }
-      })
-
-      // FIX (defect 1.1): no await — background only
-      invalidate()
+      // STRICT AWAIT: the budget bar in CategorySpendingChart must not update
+      // until the server confirms the write AND the query has refetched.
+      await invalidateBudgetCache()
     } catch (err) {
       console.error('[Kosha] setBudget failed', err)
       throw err
     }
   }, [])
 
+  /**
+   * Remove a budget for a category.
+   *
+   * Same strict await contract.
+   */
   const removeBudget = useCallback(async (category) => {
     try {
       const userId = getAuthUserId()
@@ -74,16 +85,7 @@ export function useBudgets() {
         .eq('user_id', userId)
       if (error) throw error
 
-      // Remove from cache immediately
-      queryClient.setQueryData(['budgets'], (old) => {
-        if (!old) return {}
-        const next = { ...old }
-        delete next[category]
-        return next
-      })
-
-      // Background invalidation — no await
-      invalidate()
+      await invalidateBudgetCache()
     } catch (err) {
       console.error('[Kosha] removeBudget failed', err)
       throw err

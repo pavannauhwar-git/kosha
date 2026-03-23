@@ -1,3 +1,34 @@
+/**
+ * useTransactions.js — Strict Server-Truth Architecture
+ *
+ * ARCHITECTURE PRINCIPLES (Principal Staff Engineer Standard):
+ *
+ * 1. NO cache injection. Zero `queryClient.setQueryData` calls.
+ *    The server is the single source of truth, always.
+ *
+ * 2. Mutations follow a strict Await Chain:
+ *    a. await Supabase DB operation
+ *    b. await queryClient.invalidateQueries({ refetchType: 'active' })
+ *       — invalidateQueries with refetchType:'active' returns a Promise that
+ *         resolves ONLY when all active query refetches complete. This means
+ *         the mutation Promise does not resolve until fresh data is in cache.
+ *    c. The calling component only proceeds (e.g. closes a sheet) after this
+ *       full chain resolves.
+ *
+ * 3. UI BLOCKING: Components must await the mutation Promise. The sheet stays
+ *    open and inputs are disabled until the server round-trip finishes.
+ *
+ * 4. GLOBAL SYNC: Because we await invalidation, every mounted component
+ *    subscribed to affected query keys will re-render simultaneously with
+ *    fresh server data. No stale pockets anywhere in the tree.
+ *
+ * WHY THIS BEATS OPTIMISTIC UPDATES FOR KOSHA:
+ * - Kosha is a personal finance app. Accuracy > perceived speed.
+ * - Optimistic updates require rollback logic that is hard to get right.
+ * - A 200-400ms wait on a deliberate financial entry is acceptable UX.
+ * - Eliminating the cache injection layer removes an entire class of bugs.
+ */
+
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
@@ -6,24 +37,26 @@ import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 
 // ── Query key factories ───────────────────────────────────────────────────
-// List:  ['transactions', filters]   — plain array data
-// Count: ['txnCount', filters]       — number, separate root key
-// Keeping count under a different root means any operation targeting
-// ['transactions'] never accidentally touches the count cache.
-
-const txnListKey = (filters) => ['transactions', filters]
+const txnListKey  = (filters) => ['transactions', filters]
 const txnCountKey = (filters) => ['txnCount', filters]
 
+/**
+ * All query families that must be invalidated after any transaction mutation.
+ * Keeping this as a named export allows useLiabilities and other hooks to
+ * declare the same dependency without circular imports.
+ */
 export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactions'],
   ['txnCount'],
   ['month'],
   ['year'],
   ['balance'],
+  ['todayExpenses'],
 ]
 
 const TRANSACTION_LIST_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes'
+
 const TRANSACTION_MUTATION_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes'
 
@@ -31,106 +64,25 @@ function logQueryError(scope, error) {
   console.error(`[Kosha] ${scope} query failed`, error)
 }
 
-// ── Cache helpers ─────────────────────────────────────────────────────────
-// Use getQueryCache().getAll() to get every query in the cache, then filter
-// manually and call setQueryData with the exact queryKey from each query object.
-// This avoids all fuzzy-matching issues with setQueriesData.
+// ── Cache invalidation (exported for cross-hook use) ──────────────────────
 
-function getAllListQueries() {
-  return queryClient
-    .getQueryCache()
-    .getAll()
-    .filter(q => Array.isArray(q.queryKey) && q.queryKey[0] === 'transactions')
-}
-
-function injectTransactionIntoLists(txn, mode = 'add') {
-  queryClient.setQueriesData(
-    {
-      predicate: (query) =>
-        Array.isArray(query.queryKey) && query.queryKey[0] === 'transactions',
-    },
-    (old) => {
-      if (!Array.isArray(old)) return old
- 
-      if (mode === 'add') {
-        return [txn, ...old].sort(
-          (a, b) =>
-            new Date(b.date) - new Date(a.date) ||
-            new Date(b.created_at) - new Date(a.created_at)
-        )
-      }
-      if (mode === 'update') {
-        return old.map(t => (t.id === txn.id ? txn : t))
-      }
-      if (mode === 'delete') {
-        return old.filter(t => t.id !== txn.id)
-      }
-      return old
-    }
-  )
-}
-
-function findCachedTransaction(id) {
-  for (const query of getAllListQueries()) {
-    const data = query.state.data
-    if (Array.isArray(data)) {
-      const found = data.find(t => t.id === id)
-      if (found) return found
-    }
-  }
-  return null
-}
-
-function adjustBalanceCaches(delta) {
-  if (!delta) return
-  queryClient.setQueriesData(
-    { queryKey: ['balance'], exact: false },
-    (old) => (typeof old === 'number' ? old + delta : old)
-  )
-}
-
-function balanceDelta(txn) {
-  if (!txn) return 0
-  return txn.type === 'income' ? +Number(txn.amount) : -Number(txn.amount)
-}
-
-function patchMonthSummary(txn, mode = 'add') {
-  if (!txn?.date) return
-  const d    = new Date(txn.date)
-  const yr   = d.getFullYear()
-  const mo   = d.getMonth() + 1
-  const sign = mode === 'add' ? 1 : -1
-
-  queryClient.setQueryData(['month', yr, mo], (old) => {
-    if (!old) return old
-    const amount = Number(txn.amount) * sign
-    const next   = { ...old, byCategory: { ...old.byCategory }, byVehicle: { ...old.byVehicle } }
-
-    if (txn.type === 'income') {
-      if (txn.is_repayment) next.repayments = Math.max(0, (next.repayments || 0) + amount)
-      else next.earned = Math.max(0, (next.earned || 0) + amount)
-    } else if (txn.type === 'expense') {
-      next.expense = Math.max(0, (next.expense || 0) + amount)
-      if (txn.category) {
-        next.byCategory[txn.category] = Math.max(0, (next.byCategory[txn.category] || 0) + amount)
-      }
-    } else if (txn.type === 'investment') {
-      next.investment = Math.max(0, (next.investment || 0) + amount)
-      const v = txn.investment_vehicle || 'Other'
-      next.byVehicle[v] = Math.max(0, (next.byVehicle[v] || 0) + amount)
-    }
-
-    next.balance =
-      (next.earned || 0) + (next.repayments || 0) - (next.expense || 0) - (next.investment || 0)
-    return next
-  })
-}
-
-// ── Background invalidation ───────────────────────────────────────────────
-
-export function invalidateCache() {
+/**
+ * Invalidates all transaction-related query families.
+ *
+ * IMPORTANT: This function returns a Promise. Callers inside mutations
+ * MUST await it to ensure the full refetch cycle completes before the
+ * mutation Promise resolves. Failing to await breaks the Strict Await Chain
+ * and allows the UI to close before fresh data arrives.
+ *
+ * refetchType: 'active' means only queries currently subscribed to by a
+ * mounted component will be refetched. Inactive cached queries are merely
+ * marked stale and will refetch on next mount — this is the correct behavior.
+ */
+export async function invalidateCache() {
+  // Suppress the realtime double-fetch that would otherwise fire
+  // ~300-500ms later for the same mutation.
   suppress('transactions')
-  return invalidateQueryFamilies(TRANSACTION_INVALIDATION_KEYS)
+  await invalidateQueryFamilies(TRANSACTION_INVALIDATION_KEYS)
 }
 
 // ── Debounce hook ─────────────────────────────────────────────────────────
@@ -158,7 +110,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
           .from('transactions')
           .select(TRANSACTION_LIST_COLUMNS)
           .eq('user_id', userId)
-          .order('date', { ascending: false })
+          .order('date',       { ascending: false })
           .order('created_at', { ascending: false })
 
         if (type)     q = q.eq('type', type)
@@ -178,7 +130,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
 
   const { data: countData } = useQuery({
     queryKey: txnCountKey({ type, category }),
-    enabled: withCount,
+    enabled:  withCount,
     staleTime: 60 * 1000,
     queryFn: async () => {
       try {
@@ -375,8 +327,36 @@ export function useRunningBalance(year, month) {
   return { balance: data, loading: isLoading, error }
 }
 
-// ── Mutations ─────────────────────────────────────────────────────────────
+// ── Mutations — Strict Server-Truth Pattern ───────────────────────────────
+//
+// Each mutation follows this invariant:
+//
+//   async function mutate(payload) {
+//     const userId = getAuthUserId()          // 1. auth (sync, no race)
+//     const { data, error } = await supabase  // 2. server write
+//     if (error) throw error
+//     await invalidateCache()                 // 3. await full refetch cycle
+//     return data                             // 4. resolve only after server confirms
+//   }
+//
+// The calling component (AddTransactionSheet) awaits this function.
+// It shows a spinner during the entire chain and only calls onClose()
+// after the Promise resolves. This is the contract.
+//
+// DO NOT add setQueryData calls here. If you find yourself wanting to
+// "patch the cache for speed," reach for a loading skeleton instead.
 
+/**
+ * Add a new transaction.
+ *
+ * @returns {Promise<Object>} The newly created transaction row from Supabase.
+ * @throws  {Error}          On DB error or auth failure.
+ *
+ * Awaiting this function guarantees:
+ *  - The row is in the database
+ *  - All active queries (dashboard balance, monthly summary, transaction list)
+ *    have been refetched and hold the new server data
+ */
 export async function addTransaction(payload) {
   const userId = getAuthUserId()
 
@@ -388,17 +368,21 @@ export async function addTransaction(payload) {
 
   if (error) throw error
 
-  injectTransactionIntoLists(data, 'add')
-  adjustBalanceCaches(balanceDelta(data))
-  patchMonthSummary(data, 'add')
-  invalidateCache()
+  // STRICT AWAIT: do not remove the await. The Promise must not resolve
+  // until all active subscribers have fresh data from the server.
+  await invalidateCache()
 
   return data
 }
 
+/**
+ * Update an existing transaction.
+ *
+ * Same contract as addTransaction — awaiting guarantees server confirmation
+ * AND active query refresh before the Promise resolves.
+ */
 export async function updateTransaction(id, payload) {
   const userId = getAuthUserId()
-  const oldTxn = findCachedTransaction(id)
 
   const { data, error } = await supabase
     .from('transactions')
@@ -410,29 +394,19 @@ export async function updateTransaction(id, payload) {
 
   if (error) throw error
 
-  injectTransactionIntoLists(data, 'update')
+  await invalidateCache()
 
-  if (oldTxn) {
-    const diff = balanceDelta(data) - balanceDelta(oldTxn)
-    adjustBalanceCaches(diff)
-    if (
-      oldTxn.date     !== data.date     ||
-      oldTxn.type     !== data.type     ||
-      oldTxn.amount   !== data.amount   ||
-      oldTxn.category !== data.category
-    ) {
-      patchMonthSummary(oldTxn, 'remove')
-      patchMonthSummary(data,   'add')
-    }
-  }
-
-  invalidateCache()
   return data
 }
 
+/**
+ * Delete a transaction by ID.
+ *
+ * Same contract — awaiting guarantees the row is gone from DB AND all
+ * active queries reflect the deletion before the Promise resolves.
+ */
 export async function deleteTransaction(id) {
-  const userId     = getAuthUserId()
-  const deletedTxn = findCachedTransaction(id)
+  const userId = getAuthUserId()
 
   const { error } = await supabase
     .from('transactions')
@@ -442,20 +416,7 @@ export async function deleteTransaction(id) {
 
   if (error) throw error
 
-  if (deletedTxn) {
-    injectTransactionIntoLists(deletedTxn, 'delete')
-    adjustBalanceCaches(-balanceDelta(deletedTxn))
-    patchMonthSummary(deletedTxn, 'remove')
-  } else {
-    // Fallback: id not in cache, filter all list queries directly
-    for (const query of getAllListQueries()) {
-      const old = query.state.data
-      if (Array.isArray(old)) {
-        queryClient.setQueryData(query.queryKey, old.filter(t => t.id !== id))
-      }
-    }
-  }
+  await invalidateCache()
 
-  invalidateCache()
   return true
 }
