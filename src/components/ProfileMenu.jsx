@@ -1,7 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, UserPlus, LogOut, Bug, Info } from 'lucide-react'
-import { Heart } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'

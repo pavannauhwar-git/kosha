@@ -1,10 +1,9 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
-import { useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import { TRANSACTION_INVALIDATION_KEYS } from './hooks/useTransactions'
 import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
@@ -17,12 +16,12 @@ import KoshaLogo from './components/KoshaLogo'
 import { isSuppressed } from './lib/mutationGuard'
 
 // ── Eager ────────────────────────────────────────────────────────────────
-import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
-import Onboarding from './pages/Onboarding'
-import NotFound from './pages/NotFound'
 
 // ── Lazy ─────────────────────────────────────────────────────────────────
+const Onboarding = lazy(() => import('./pages/Onboarding'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Monthly = lazy(() => import('./pages/Monthly'))
 const Analytics = lazy(() => import('./pages/Analytics'))
@@ -274,9 +273,9 @@ function AppShell() {
           <Route path="/login" element={<Login />} />
           <Route path="/join/:token" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/not-found" element={<NotFound />} />
-          <Route path="/onboarding" element={<AuthGuard><Onboarding /></AuthGuard>} />
-          <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
+          <Route path="/not-found" element={<Suspense fallback={<PageFallback />}><NotFound /></Suspense>} />
+          <Route path="/onboarding" element={<Suspense fallback={<PageFallback />}><AuthGuard><Onboarding /></AuthGuard></Suspense>} />
+          <Route path="/" element={<Suspense fallback={<PageFallback />}><AuthGuard><Dashboard /></AuthGuard></Suspense>} />
           <Route path="/transactions" element={<Suspense fallback={<PageFallback />}><AuthGuard><Transactions /></AuthGuard></Suspense>} />
           <Route path="/monthly" element={<Suspense fallback={<PageFallback />}><AuthGuard><Monthly /></AuthGuard></Suspense>} />
           <Route path="/analytics" element={<Suspense fallback={<PageFallback />}><AuthGuard><Analytics /></AuthGuard></Suspense>} />

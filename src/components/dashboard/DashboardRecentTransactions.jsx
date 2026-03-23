@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react'
+import { memo, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import TransactionItem from '../TransactionItem'
@@ -21,8 +21,10 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
   onDuplicate,
 }) {
   const navigate = useNavigate()
+  const visibleRecent = useMemo(() => (recent || []).slice(0, 8), [recent])
+  const lastIndex = visibleRecent.length - 1
 
-  if (!recent || recent.length === 0) {
+  if (visibleRecent.length === 0) {
     return (
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -49,12 +51,12 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
       </div>
 
       <div className="list-card">
-        {recent.slice(0, 8).map((t, i) => (
+        {visibleRecent.map((t, i) => (
           <TransactionItem
             key={t.id}
             txn={t}
             showDate
-            isLast={i === Math.min(recent.length, 8) - 1}
+            isLast={i === lastIndex}
             onDelete={onDelete}
             onTap={onTap}
             onDuplicate={onDuplicate}

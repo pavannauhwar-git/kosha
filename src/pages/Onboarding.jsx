@@ -9,11 +9,10 @@ import { consumeInviteToken, getInviteToken } from '../lib/invites'
 import { CATEGORIES } from '../lib/categories'
 import CategoryIcon from '../components/CategoryIcon'
 import KoshaLogo from '../components/KoshaLogo'
+import { createFadeUp, createStagger } from '../lib/animations'
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 8 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
-}
+const fadeUp = createFadeUp(8, 0.2)
+const stepStagger = createStagger(0.07, 0)
 
 const EXPENSE_CATS = CATEGORIES
 
@@ -46,7 +45,7 @@ function StepName({ onNext }) {
   return (
     <motion.div
       key="step-name"
-      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+      variants={stepStagger}
       initial="hidden" animate="show"
       className="flex flex-col"
     >
@@ -92,7 +91,7 @@ function StepIncome({ name, onNext, onBack }) {
   return (
     <motion.div
       key="step-income"
-      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+      variants={stepStagger}
       initial="hidden" animate="show"
       className="flex flex-col"
     >
@@ -140,7 +139,6 @@ function StepIncome({ name, onNext, onBack }) {
 
 // ── Step 3 — First transaction ────────────────────────────────────────────
 function StepFirstTransaction({ onFinish, onSkip }) {
-  const { user } = useAuth()
   const [amount,   setAmount]   = useState('')
   const [desc,     setDesc]     = useState('')
   const [category, setCategory] = useState('food')
@@ -171,7 +169,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
   return (
     <motion.div
       key="step-txn"
-      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+      variants={stepStagger}
       initial="hidden" animate="show"
       className="flex flex-col"
     >

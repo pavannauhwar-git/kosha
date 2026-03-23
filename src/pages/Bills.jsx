@@ -9,19 +9,9 @@ import {
 } from '../hooks/useLiabilities'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
 import PageHeader from '../components/PageHeader'
+import SkeletonLayout from '../components/common/SkeletonLayout'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
-
-function BillsSkeleton() {
-  return (
-    <div className="space-y-3">
-      <div className="skeleton shimmer h-[120px]" />
-      <div className="skeleton shimmer h-[92px]" />
-      <div className="skeleton shimmer h-[92px]" />
-      <div className="skeleton shimmer h-[92px]" />
-    </div>
-  )
-}
 
 export default function Bills() {
   const { pending, paid, loading } = useLiabilities()
@@ -162,7 +152,15 @@ export default function Bills() {
       </div>
 
       {loading ? (
-        <BillsSkeleton />
+        <SkeletonLayout
+          className="space-y-3"
+          sections={[
+            { type: 'block', height: 'h-[120px]' },
+            { type: 'block', height: 'h-[92px]' },
+            { type: 'block', height: 'h-[92px]' },
+            { type: 'block', height: 'h-[92px]' },
+          ]}
+        />
       ) : (
         <div className="space-y-3">
 

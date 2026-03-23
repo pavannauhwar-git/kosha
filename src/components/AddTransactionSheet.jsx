@@ -26,13 +26,11 @@
 
 import { useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, NotePencil } from '@phosphor-icons/react'
-import { ChevronRight } from 'lucide-react'
+import { X, NotePencil, CaretRight, Sparkle } from '@phosphor-icons/react'
 import { addTransaction, updateTransaction } from '../hooks/useTransactions'
 import CategoryIcon, { ICON_MAP } from './CategoryIcon'
 import { CATEGORIES, PAYMENT_MODES, INVESTMENT_VEHICLES } from '../lib/categories'
 import { parseTransactionSmart } from '../lib/nlp'
-import { Sparkle } from '@phosphor-icons/react'
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -465,7 +463,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 <span className="flex-1 text-[15px] text-ink text-left">Category</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[13px] text-ink-3">{selectedCat?.label}</span>
-                  <ChevronRight size={14} className="text-ink-4" />
+                  <CaretRight size={14} className="text-ink-4" />
                 </div>
               </button>
             )}
@@ -494,7 +492,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 <span className="flex-1 text-[15px] text-ink text-left">Type of Investment</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[13px] text-ink-3">{vehicle}</span>
-                  <ChevronRight size={14} className="text-ink-4" />
+                  <CaretRight size={14} className="text-ink-4" />
                 </div>
               </button>
             )}
@@ -521,7 +519,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <span className="flex-1 text-[15px] text-ink text-left">Payment Mode</span>
               <div className="flex items-center gap-1">
                 <span className="text-[13px] text-ink-3">{selectedMode?.label}</span>
-                <ChevronRight size={14} className="text-ink-4" />
+                <CaretRight size={14} className="text-ink-4" />
               </div>
             </button>
 
@@ -539,7 +537,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               </span>
               {notes.trim()
                 ? <span className="text-[12px] text-ink-3 max-w-[120px] truncate">{notes.trim()}</span>
-                : <ChevronRight size={14} className={`text-ink-4 transition-transform duration-200 ${showNotes ? 'rotate-90' : ''}`} />
+                : <CaretRight size={14} className={`text-ink-4 transition-transform duration-200 ${showNotes ? 'rotate-90' : ''}`} />
               }
             </button>
 

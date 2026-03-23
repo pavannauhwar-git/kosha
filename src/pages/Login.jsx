@@ -5,11 +5,9 @@ import { useAuth } from '../context/AuthContext'
 import AboutKoshaLink from '../components/AboutKoshaLink'
 import KoshaLogo from '../components/KoshaLogo'
 import { C } from '../lib/colors'
+import { createFadeUp } from '../lib/animations'
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' } },
-}
+const fadeUp = createFadeUp(10, 0.22)
 
 function GoogleLogo() {
   return (

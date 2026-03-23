@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat } from 'lucide-react'
 import {
   useTransactions,
   useMonthSummary,
@@ -13,8 +13,8 @@ import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import AboutKoshaLink from '../components/AboutKoshaLink'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
-import { Plus, ArrowUp, ArrowDown, ChartLine, Receipt } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
+import { createFadeUp, createStagger } from '../lib/animations'
 
 // FIX (defect 4.3): Extracted sub-components. Each renders independently —
 // a transaction list refetch no longer re-renders the hero card or pace card,
@@ -25,14 +25,15 @@ import DashboardPaceCard          from '../components/dashboard/DashboardPaceCar
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
 import PageHeader                 from '../components/PageHeader'
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 4 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
-}
-const stagger = {
-  hidden: {},
-  show:   { transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
-}
+const fadeUp = createFadeUp(4, 0.18)
+const stagger = createStagger(0.04, 0.04)
+
+const QUICK_ACTIONS = [
+  { label: 'Income', Icon: TrendingUp, bg: 'bg-income-bg', color: '#047857', type: 'income', strokeWidth: 2.4 },
+  { label: 'Expense', Icon: TrendingDown, bg: 'bg-expense-bg', color: '#E11D48', type: 'expense', strokeWidth: 2.4 },
+  { label: 'Invest', Icon: Plus, bg: 'bg-invest-bg', color: '#0369A1', type: 'investment', strokeWidth: 2.6 },
+  { label: 'Bills', Icon: Repeat, bg: 'bg-repay-bg', color: '#CA8A04', type: 'bills', strokeWidth: 2.4 },
+]
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -112,6 +113,11 @@ export default function Dashboard() {
     : hour < 21  ? 'Good evening'
     : 'Good night'
 
+  const firstName = useMemo(
+    () => profile?.display_name?.split(' ')[0] || '',
+    [profile?.display_name]
+  )
+
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const dayOfMonth  = now.getDate()
   const paceOk      = earned === 0 || spent / earned <= dayOfMonth / daysInMonth + 0.05
@@ -125,15 +131,25 @@ export default function Dashboard() {
   // Fix: derive stable primitive values from bills ONCE, then use those
   // primitives as memo deps. Array reference changes that don't change the
   // derived values no longer trigger downstream recalculations.
-  const dueSoonCount   = useMemo(() => bills.filter(b => daysUntil(b.due_date) <= 7).length, [bills])
-  const dueSoonDescs   = useMemo(
-    () => bills.filter(b => daysUntil(b.due_date) <= 7).slice(0, 2).map(b => b.description).join(' · '),
-    [bills]
-  )
-  const totalBillsAmt  = useMemo(() => bills.reduce((s, b) => s + +b.amount, 0), [bills])
+  const { dueSoonCount, dueSoonDescs, totalBillsAmt } = useMemo(() => {
+    let count = 0
+    let total = 0
+    const descs = []
 
-  // dueSoon array kept for the bill alert section (needs .map on descriptions above)
-  const dueSoon = useMemo(() => bills.filter(b => daysUntil(b.due_date) <= 7), [bills])
+    for (const b of bills) {
+      total += +b.amount
+      if (daysUntil(b.due_date) <= 7) {
+        count += 1
+        if (descs.length < 2) descs.push(b.description)
+      }
+    }
+
+    return {
+      dueSoonCount: count,
+      dueSoonDescs: descs.join(' · '),
+      totalBillsAmt: total,
+    }
+  }, [bills])
 
   const insight = useMemo(() => {
     const spendPct = earned > 0 ? spent / earned : 0
@@ -196,7 +212,7 @@ export default function Dashboard() {
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           <h1 className="text-display font-bold text-ink tracking-tight">
-            {greeting}{profile?.display_name ? `, ${profile.display_name.split(' ')[0]}` : ''} 👋
+            {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
         </motion.div>
 
@@ -238,19 +254,14 @@ export default function Dashboard() {
         {/* ── Quick-action strip ────────────────────────────────────── */}
         <motion.div variants={fadeUp} className="card py-4 px-2">
           <div className="flex justify-around">
-            {[
-              { label: 'Income',  icon: <ArrowUp   size={20} weight="bold" />, bg: 'bg-income-bg',  color: '#047857',  type: 'income'     },
-              { label: 'Expense', icon: <ArrowDown  size={20} weight="bold" />, bg: 'bg-expense-bg', color: '#E11D48',  type: 'expense'    },
-              { label: 'Invest',  icon: <ChartLine  size={20} weight="bold" />, bg: 'bg-invest-bg',  color: '#0369A1',  type: 'investment' },
-              { label: 'Bills',   icon: <Receipt    size={20} weight="bold" />, bg: 'bg-repay-bg',   color: '#CA8A04',  type: 'bills'      },
-            ].map(({ label, icon, bg, color, type }) => (
+            {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
               <button key={label}
                 onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
                 className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-75"
               >
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
                   style={{ color }}>
-                  {icon}
+                  <Icon size={20} strokeWidth={strokeWidth} />
                 </div>
                 <span className="text-[11px] font-semibold text-ink-3">{label}</span>
               </button>
@@ -339,7 +350,7 @@ export default function Dashboard() {
 
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
-        <Plus size={24} weight="bold" color="white" />
+        <Plus size={24} className="text-white" />
       </button>
 
       <AddTransactionSheet

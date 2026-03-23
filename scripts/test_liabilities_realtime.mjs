@@ -84,12 +84,14 @@ async function main() {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       let attemptChannel = null
       let attemptLiabilityId = null
+      let clearAttemptTimer = () => {}
 
       try {
         const eventPromise = new Promise((resolve, reject) => {
           const timer = setTimeout(() => {
             reject(new Error(`No liabilities realtime event received within ${EVENT_TIMEOUT_MS / 1000} seconds`))
           }, EVENT_TIMEOUT_MS)
+          clearAttemptTimer = () => clearTimeout(timer)
 
           attemptChannel = listenerClient
             .channel(`${channelName}-${attempt}`)
@@ -129,12 +131,14 @@ async function main() {
 
         attemptLiabilityId = liability.id
         await eventPromise
+        clearAttemptTimer()
 
         realtimeChannel = attemptChannel
         insertedLiabilityId = attemptLiabilityId
         delivered = true
         break
       } catch (error) {
+        clearAttemptTimer()
         if (attemptLiabilityId) {
           await actorClient.from('liabilities').delete().eq('id', attemptLiabilityId)
         }

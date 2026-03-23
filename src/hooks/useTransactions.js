@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
+import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
+import { traceQuery } from '../lib/queryTrace'
 
 // ── Query key factories ───────────────────────────────────────────────────
 const txnListKey  = (filters) => ['transactions', filters]
@@ -23,6 +24,8 @@ const TRANSACTION_LIST_COLUMNS =
 
 const TRANSACTION_MUTATION_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes'
+
+const TXN_FRESH_WINDOW_MS = 15 * 1000
 
 function logQueryError(scope, error) {
   console.error(`[Kosha] ${scope} query failed`, error)
@@ -59,7 +62,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
   const filters = { type, category, search, limit }
   const { data: rows, isLoading, error, refetch } = useQuery({
     queryKey: txnListKey(filters),
-    queryFn: async () => {
+    queryFn: () => traceQuery('transactions:list', async () => {
       try {
         const userId = getAuthUserId()
         let q = supabase
@@ -76,23 +79,22 @@ export function useTransactions({ type, category, search, limit, withCount = fal
 
         const { data, error: err } = await q
         if (err) throw err
-        console.log('[Kosha][Query] useTransactions: fetched', { filters, data })
         return data || []
       } catch (err) {
         logQueryError('transactions list', err)
         throw err
       }
-    },
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    }),
+    // Keep list fresh enough for rapid edits while avoiding redundant
+    // remount/focus refetches during short navigation hops.
+    staleTime: TXN_FRESH_WINDOW_MS,
   })
 
   const { data: countData } = useQuery({
     queryKey: txnCountKey({ type, category }),
     enabled:  withCount,
     staleTime: 60 * 1000,
-    queryFn: async () => {
+    queryFn: () => traceQuery('transactions:count', async () => {
       try {
         const userId = getAuthUserId()
         let q = supabase
@@ -110,7 +112,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
         logQueryError('transactions count', err)
         return 0
       }
-    },
+    }),
   })
 
   const safeRows = rows || []
@@ -125,7 +127,7 @@ export function useTodayExpenses() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['todayExpenses', todayISO],
-    queryFn: async () => {
+    queryFn: () => traceQuery('transactions:today-expenses', async () => {
       try {
         const userId = getAuthUserId()
         const { data: r, error: qError } = await supabase
@@ -141,7 +143,7 @@ export function useTodayExpenses() {
         logQueryError('today expenses', err)
         throw err
       }
-    },
+    }),
   })
 
   return { todaySpend: data ?? 0, loading: isLoading, error }

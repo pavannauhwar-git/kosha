@@ -1,13 +1,12 @@
 import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X, SlidersHorizontal } from 'lucide-react'
+import { Search, X, SlidersHorizontal, Plus, Download } from 'lucide-react'
 import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
-import { Plus, DownloadSimple } from '@phosphor-icons/react'
 import PageHeader from '../components/PageHeader'
 import { getAuthUserId } from '../lib/authStore'
 
@@ -169,7 +168,7 @@ export default function Transactions() {
             className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
                        flex items-center justify-center active:bg-kosha-surface-2
                        transition-colors shrink-0">
-            <DownloadSimple size={16} className="text-ink-2" />
+            <Download size={16} className="text-ink-2" />
           </button>
         )}
       </div>
@@ -309,7 +308,7 @@ export default function Transactions() {
       </AnimatePresence>
 
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
-        <Plus size={24} weight="bold" color="white" />
+        <Plus size={24} className="text-white" />
       </button>
 
       <AddTransactionSheet

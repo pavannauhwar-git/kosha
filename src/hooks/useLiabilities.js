@@ -4,6 +4,7 @@ import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { invalidateCache as invalidateTxnCache } from './useTransactions'
+import { traceQuery } from '../lib/queryTrace'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities']]
 
@@ -12,6 +13,8 @@ const LIABILITY_PAID_QUERY_KEY    = ['liabilities', 'paid']
 const LIABILITY_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
+const LIABILITY_FRESH_WINDOW_MS = 15 * 1000
+
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
   // Fuzzy match all sub-keys for liabilities
@@ -19,16 +22,18 @@ export async function invalidateLiabilityCache() {
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {
-  const userId = getAuthUserId()
-  const { data: rows, error } = await supabase
-    .from('liabilities')
-    .select(LIABILITY_COLUMNS)
-    .eq('user_id', userId)
-    .eq('paid', paidValue)
-    .order('due_date', { ascending: true })
+  return traceQuery(`liabilities:${paidValue ? 'paid' : 'pending'}`, async () => {
+    const userId = getAuthUserId()
+    const { data: rows, error } = await supabase
+      .from('liabilities')
+      .select(LIABILITY_COLUMNS)
+      .eq('user_id', userId)
+      .eq('paid', paidValue)
+      .order('due_date', { ascending: true })
 
-  if (error) throw error
-  return rows || []
+    if (error) throw error
+    return rows || []
+  })
 }
 
 export function useLiabilities({ includePaid = true } = {}) {
@@ -37,17 +42,13 @@ export function useLiabilities({ includePaid = true } = {}) {
       {
         queryKey: LIABILITY_PENDING_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(false),
-        staleTime: 0,
-        refetchOnMount: 'always',
-        refetchOnWindowFocus: true,
+        staleTime: LIABILITY_FRESH_WINDOW_MS,
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(true),
         enabled:  includePaid,
-        staleTime: 0,
-        refetchOnMount: 'always',
-        refetchOnWindowFocus: true,
+        staleTime: LIABILITY_FRESH_WINDOW_MS,
       },
     ],
   })

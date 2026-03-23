@@ -15,7 +15,6 @@
     "@fontsource/roboto": "^5.2.10",
     "@phosphor-icons/react": "^2.1.7",
     "@radix-ui/react-dialog": "^1.0.5",
-    "@radix-ui/react-tabs": "^1.0.4",
     "@supabase/supabase-js": "^2.39.0",
     "@tanstack/react-query": "^5.91.0",
     "framer-motion": "^11.0.3",

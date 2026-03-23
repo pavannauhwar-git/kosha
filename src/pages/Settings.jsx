@@ -5,15 +5,11 @@ import { ArrowLeft, Camera, Trash2, Pencil, Check } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/EditProfileNameDialog'
+import Divider from '../components/common/Divider'
+import { createFadeUp, createStagger } from '../lib/animations'
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 6 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
-}
-const stagger = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.05, delayChildren: 0.04 } },
-}
+const fadeUp = createFadeUp(6, 0.18)
+const stagger = createStagger(0.05, 0.04)
 
 function SettingRow({ icon, label, sublabel, onClick, destructive = false, disabled = false, rightElement }) {
   return (
@@ -43,10 +39,6 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
       )}
     </button>
   )
-}
-
-function Divider() {
-  return <div className="h-px bg-kosha-border mx-4" />
 }
 
 export default function Settings() {

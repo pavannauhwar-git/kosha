@@ -1,23 +1,19 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft } from 'lucide-react'
 import {
+  ArrowLeftIcon,
   HeartIcon, CodeIcon, CurrencyInrIcon, CopyIcon, CheckIcon,
   GithubLogoIcon, LockIcon, StarIcon, CaretDownIcon, CaretUpIcon,
 } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
 import KoshaLogo from '../components/KoshaLogo'
 import { CHANGELOG } from '../lib/changelog'
+import Divider from '../components/common/Divider'
+import { createFadeUp, createStagger } from '../lib/animations'
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 6 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } },
-}
-const stagger = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06, delayChildren: 0.04 } },
-}
+const fadeUp = createFadeUp(6, 0.18)
+const stagger = createStagger(0.06, 0.04)
 
 const UPI_ID = 'kumar.pavan.pk96@okicici'
 const REPO_URL = 'https://github.com/pavannauhwar-git/kosha'
@@ -63,10 +59,6 @@ function CardRow({ icon, label, sublabel, right, onClick, href }) {
   )
 }
 
-function Divider() {
-  return <div className="h-px bg-kosha-border mx-4" />
-}
-
 export default function About() {
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
@@ -92,7 +84,7 @@ export default function About() {
           onClick={() => navigate(-1)}
           className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center active:bg-kosha-surface-2"
         >
-          <ArrowLeft size={16} className="text-ink-2" />
+          <ArrowLeftIcon size={16} className="text-ink-2" />
         </button>
         <h1 className="text-[17px] font-bold text-ink tracking-tight">About</h1>
       </div>

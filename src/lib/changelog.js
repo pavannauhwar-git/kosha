@@ -1,5 +1,18 @@
 export const CHANGELOG = [
   {
+    version: '1.6',
+    date: 'March 2026',
+    items: [
+      'Reduced initial app bundle by route-splitting Dashboard, Onboarding, and NotFound pages',
+      'Unified mixed icon usage per file and cleaned redundant icon imports',
+      'Extracted shared navigator and skeleton components to reduce duplication',
+      'Optimized Dashboard render paths by consolidating bill-derived calculations',
+      'Tuned transaction and liability query freshness windows to reduce redundant remount/focus refetches',
+      'Added optional dev-only query timing traces via localStorage flag kosha:trace-queries=1',
+      'Fixed liabilities realtime E2E test flake by cleaning up attempt timers to prevent false post-pass failures',
+    ],
+  },
+  {
     version: '1.5',
     date: 'March 2026',
     items: [

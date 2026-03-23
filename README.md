@@ -66,6 +66,45 @@ npm run dev
 
 > 💡 **Tip:** The application will instantly compile and load at `http://localhost:5173`.
 
+## ✅ Runtime Verification Scripts
+
+Kosha ships two runtime checks for Supabase-backed flows:
+
+```bash
+npm run test:join-flow
+npm run test:liabilities-realtime
+```
+
+Both scripts require these env vars to be present in your local env:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+If these are missing, scripts fail fast with a missing-env error.
+
+## 🔍 Dev Query Tracing (Optional)
+
+You can enable lightweight query timing logs in development:
+
+1. Open the browser devtools console on local dev.
+2. Run:
+
+```js
+localStorage.setItem('kosha:trace-queries', '1')
+```
+
+3. Refresh the app.
+
+You will see debug lines such as:
+
+`[Kosha][QueryTrace] transactions:list: 42ms`
+
+Disable with:
+
+```js
+localStorage.removeItem('kosha:trace-queries')
+```
+
 ## 🐞 Bug Reporting (Phase 2)
 
 Kosha includes an in-app **Report bug** flow in the profile menu.
