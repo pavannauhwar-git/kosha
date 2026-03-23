@@ -74,11 +74,9 @@ export async function addLiability(payload, options = {}) {
   if (error) throw error
 
   // 2. Instant Cache Injection for Lists (Kills UI lag)
-  queryClient.getQueryCache().findAll({ queryKey: ['liabilities'] }).forEach(query => {
-    queryClient.setQueryData(query.queryKey, old => {
-      if (!Array.isArray(old)) return old;
-      return [data, ...old]; // Unshift new bill into the list
-    });
+  queryClient.setQueriesData({ queryKey: ['liabilities', 'pending'] }, (old) => {
+    if (!Array.isArray(old)) return old;
+    return [data, ...old];
   });
 
   // 3. Fire-and-Forget Background Sync (NO AWAIT)
@@ -99,21 +97,21 @@ export async function markPaid(liability, options = {}) {
 
   if (rpcError) throw rpcError
 
-  // Instantly remove the paid bill from the pending list UI
-  queryClient.getQueryCache().findAll({ queryKey: ['liabilities'] }).forEach(query => {
-    queryClient.setQueryData(query.queryKey, old => {
-      if (!Array.isArray(old)) return old;
-      return old.filter(l => l.id !== liability.id);
-    });
+  // 1. Remove from pending
+  queryClient.setQueriesData({ queryKey: ['liabilities', 'pending'] }, (old) => {
+    if (!Array.isArray(old)) return old;
+    return old.filter(l => l.id !== liability.id);
   });
-
-  // Fire-and-Forget Background Sync (NO AWAIT)
+  // 2. Add to paid
+  queryClient.setQueriesData({ queryKey: ['liabilities', 'paid'] }, (old) => {
+    if (!Array.isArray(old)) return old;
+    return [{ ...liability, paid: true }, ...old];
+  });
   if (invalidate) {
-    invalidateLiabilityCache()
-    invalidateTxnCache()
+    invalidateLiabilityCache();
+    invalidateTxnCache();
   }
-
-  return result
+  return result;
 }
 
 export async function deleteLiability(id, options = {}) {
@@ -128,14 +126,9 @@ export async function deleteLiability(id, options = {}) {
 
   if (error) throw error
 
-  // Instantly remove from UI
-  queryClient.getQueryCache().findAll({ queryKey: ['liabilities'] }).forEach(query => {
-    queryClient.setQueryData(query.queryKey, old => {
-      if (!Array.isArray(old)) return old;
-      return old.filter(l => l.id !== id);
-    });
+  queryClient.setQueriesData({ queryKey: ['liabilities'] }, (old) => {
+    if (!Array.isArray(old)) return old;
+    return old.filter(l => l.id !== id);
   });
-
-  // Fire-and-Forget Background Sync (NO AWAIT)
-  if (invalidate) invalidateLiabilityCache()
+  if (invalidate) invalidateLiabilityCache();
 }

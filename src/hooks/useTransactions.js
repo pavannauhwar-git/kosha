@@ -309,7 +309,6 @@ export function useRunningBalance(year, month) {
 export async function addTransaction(payload) {
   const userId = getAuthUserId()
 
-  // 1. Strict Server Write (Safe)
   const { data, error } = await supabase
     .from('transactions')
     .insert({ ...payload, user_id: userId })
@@ -319,18 +318,12 @@ export async function addTransaction(payload) {
   if (error) throw error
 
   // 2. Instant Cache Injection for Lists (Kills the UI lag)
-  queryClient.getQueryCache().findAll({ queryKey: ['transactions'] }).forEach(query => {
-    queryClient.setQueryData(query.queryKey, old => {
-      if (!Array.isArray(old)) return old;
-      return [data, ...old]; // Unshift new data
-    });
+  queryClient.setQueriesData({ queryKey: ['transactions'] }, (old) => {
+    if (!Array.isArray(old)) return old;
+    return [data, ...old];
   });
-
-  // 3. Fire-and-Forget Background Sync for Balances
-  // Notice there is NO 'await' here. We don't block the UI for math.
-  invalidateCache()
-
-  return data
+  invalidateCache(); // Background sync
+  return data;
 }
 
 export async function updateTransaction(id, payload) {
@@ -346,15 +339,12 @@ export async function updateTransaction(id, payload) {
 
   if (error) throw error
 
-  queryClient.getQueryCache().findAll({ queryKey: ['transactions'] }).forEach(query => {
-    queryClient.setQueryData(query.queryKey, old => {
-      if (!Array.isArray(old)) return old;
-      return old.map(t => t.id === id ? data : t);
-    });
+  queryClient.setQueriesData({ queryKey: ['transactions'] }, (old) => {
+    if (!Array.isArray(old)) return old;
+    return old.map(t => t.id === id ? data : t);
   });
-
-  invalidateCache()
-  return data
+  invalidateCache();
+  return data;
 }
 
 export async function deleteTransaction(id) {
@@ -368,13 +358,10 @@ export async function deleteTransaction(id) {
 
   if (error) throw error
 
-  queryClient.getQueryCache().findAll({ queryKey: ['transactions'] }).forEach(query => {
-    queryClient.setQueryData(query.queryKey, old => {
-      if (!Array.isArray(old)) return old;
-      return old.filter(t => t.id !== id);
-    });
+  queryClient.setQueriesData({ queryKey: ['transactions'] }, (old) => {
+    if (!Array.isArray(old)) return old;
+    return old.filter(t => t.id !== id);
   });
-
-  invalidateCache()
-  return true
+  invalidateCache();
+  return true;
 }
