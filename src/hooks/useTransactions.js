@@ -22,45 +22,48 @@ function logQueryError(scope, error) {
 }
 
 // ── Cache helpers ─────────────────────────────────────────────────────────
+// Query keys use a flat 2-level structure so prefix matching is reliable:
+//   DATA:  ['transactions', { type, category, search, limit }]
+//   COUNT: ['transactions', 'count', { type, category }]
 //
-// setQueriesData with any filter variant (partial key, exact: false, predicate)
-// proved unreliable for updating the transaction list cache in React Query v5.
-// Balance and monthly work because they use setQueryData with exact keys.
-//
-// Fix: use queryClient.getQueryCache().findAll() to get Query objects directly,
-// read their exact queryKey and current state.data, then call setQueryData with
-// the exact key. This is guaranteed to work regardless of key structure.
-
-function getTransactionListQueries() {
-  // Returns all Query objects whose key starts with ['transactions', 'data']
-  return queryClient
-    .getQueryCache()
-    .findAll({ queryKey: ['transactions', 'data'], exact: false })
-}
+// setQueriesData({ queryKey: ['transactions'], exact: false }) matches data
+// queries because the updater guards non-array values with Array.isArray.
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  const queries = getTransactionListQueries()
-  for (const query of queries) {
-    const old = query.state.data
-    if (!Array.isArray(old)) continue
+  // Log what's in the cache so we can debug if still broken
+  const allCached = queryClient.getQueriesData({ queryKey: ['transactions'], exact: false })
+  console.log('[Kosha] injectTransactionIntoLists', mode, 'cache entries:', allCached.length,
+    allCached.map(([k, v]) => ({ key: k, isArray: Array.isArray(v), len: Array.isArray(v) ? v.length : typeof v })))
 
-    let next
-    if (mode === 'add') {
-      next = [txn, ...old].sort(
-        (a, b) =>
-          new Date(b.date) - new Date(a.date) ||
-          new Date(b.created_at) - new Date(a.created_at)
-      )
-    } else if (mode === 'update') {
-      next = old.map(t => (t.id === txn.id ? txn : t))
-    } else if (mode === 'delete') {
-      next = old.filter(t => t.id !== txn.id)
-    } else {
-      continue
+  queryClient.setQueriesData(
+    { queryKey: ['transactions'], exact: false },
+    (old) => {
+      if (!Array.isArray(old)) return old
+
+      if (mode === 'add') {
+        const next = [txn, ...old].sort(
+          (a, b) =>
+            new Date(b.date) - new Date(a.date) ||
+            new Date(b.created_at) - new Date(a.created_at)
+        )
+        return next
+      }
+      if (mode === 'update') return old.map(t => (t.id === txn.id ? txn : t))
+      if (mode === 'delete') return old.filter(t => t.id !== txn.id)
+      return old
     }
+  )
+}
 
-    queryClient.setQueryData(query.queryKey, next)
+function findCachedTransaction(id) {
+  const allCached = queryClient.getQueriesData({ queryKey: ['transactions'], exact: false })
+  for (const [, data] of allCached) {
+    if (Array.isArray(data)) {
+      const found = data.find(t => t.id === id)
+      if (found) return found
+    }
   }
+  return null
 }
 
 function adjustBalanceCaches(delta) {
@@ -108,18 +111,6 @@ function patchMonthSummary(txn, mode = 'add') {
   })
 }
 
-function findCachedTransaction(id) {
-  const queries = getTransactionListQueries()
-  for (const query of queries) {
-    const data = query.state.data
-    if (Array.isArray(data)) {
-      const found = data.find(t => t.id === id)
-      if (found) return found
-    }
-  }
-  return null
-}
-
 // ── Background invalidation ───────────────────────────────────────────────
 
 export function invalidateCache() {
@@ -141,7 +132,9 @@ export function useDebounce(value, ms = 300) {
 // ── Query hooks ───────────────────────────────────────────────────────────
 
 export function useTransactions({ type, category, search, limit, withCount = false } = {}) {
-  const dataKey  = ['transactions', 'data',  { type, category, search, limit }]
+  // FLAT key: ['transactions', { type, category, search, limit }]
+  // No 'data' sub-level — makes prefix matching reliable
+  const dataKey  = ['transactions', { type, category, search, limit }]
   const countKey = ['transactions', 'count', { type, category }]
 
   const { data: rows, isLoading, error, refetch } = useQuery({
@@ -412,9 +405,9 @@ export async function updateTransaction(id, payload) {
     adjustBalanceCaches(diff)
 
     if (
-      oldTxn.date !== data.date ||
-      oldTxn.type !== data.type ||
-      oldTxn.amount !== data.amount ||
+      oldTxn.date     !== data.date     ||
+      oldTxn.type     !== data.type     ||
+      oldTxn.amount   !== data.amount   ||
       oldTxn.category !== data.category
     ) {
       patchMonthSummary(oldTxn, 'remove')
@@ -443,14 +436,13 @@ export async function deleteTransaction(id) {
     adjustBalanceCaches(-balanceDelta(deletedTxn))
     patchMonthSummary(deletedTxn, 'remove')
   } else {
-    // Fallback: not found in cache, filter by id across all list queries
-    const queries = getTransactionListQueries()
-    for (const query of queries) {
-      const data = query.state.data
-      if (Array.isArray(data)) {
-        queryClient.setQueryData(query.queryKey, data.filter(t => t.id !== id))
+    queryClient.setQueriesData(
+      { queryKey: ['transactions'], exact: false },
+      (old) => {
+        if (!Array.isArray(old)) return old
+        return old.filter(t => t.id !== id)
       }
-    }
+    )
   }
 
   invalidateCache()
