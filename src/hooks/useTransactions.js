@@ -34,7 +34,12 @@ export async function invalidateCache() {
   // Suppress the realtime double-fetch that would otherwise fire
   // ~300-500ms later for the same mutation.
   suppress('transactions')
-  await invalidateQueryFamilies(TRANSACTION_INVALIDATION_KEYS)
+  // Fuzzy match all sub-keys for each family
+  await Promise.all(
+    TRANSACTION_INVALIDATION_KEYS.map(queryKey =>
+      queryClient.invalidateQueries({ queryKey, refetchType: 'active' })
+    )
+  )
 }
 
 // ── Debounce hook ─────────────────────────────────────────────────────────
@@ -312,6 +317,18 @@ export async function addTransaction(payload) {
 
   if (error) throw error
 
+  // Optimistically inject new transaction into all transaction lists
+  queryClient.getQueryCache().findAll(['transactions']).forEach(query => {
+    queryClient.setQueryData(query.queryKey, old => {
+      if (Array.isArray(old)) {
+        // Prevent duplicates if the server returns the same row
+        if (old.some(t => t.id === data.id)) return old
+        return [data, ...old]
+      }
+      return old
+    })
+  })
+
   await invalidateCache()
 
   return data
@@ -329,6 +346,16 @@ export async function updateTransaction(id, payload) {
     .single()
 
   if (error) throw error
+
+  // Optimistically update the transaction in all transaction lists
+  queryClient.getQueryCache().findAll(['transactions']).forEach(query => {
+    queryClient.setQueryData(query.queryKey, old => {
+      if (Array.isArray(old)) {
+        return old.map(t => t.id === id ? data : t)
+      }
+      return old
+    })
+  })
 
   await invalidateCache()
 
