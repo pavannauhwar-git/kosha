@@ -5,8 +5,18 @@ import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 
+// ── Query key factories ───────────────────────────────────────────────────
+// List:  ['transactions', filters]   — plain array data
+// Count: ['txnCount', filters]       — number, separate root key
+// Keeping count under a different root means any operation targeting
+// ['transactions'] never accidentally touches the count cache.
+
+const txnListKey = (filters) => ['transactions', filters]
+const txnCountKey = (filters) => ['txnCount', filters]
+
 export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactions'],
+  ['txnCount'],
   ['month'],
   ['year'],
   ['balance'],
@@ -22,42 +32,46 @@ function logQueryError(scope, error) {
 }
 
 // ── Cache helpers ─────────────────────────────────────────────────────────
-// Query keys use a flat 2-level structure so prefix matching is reliable:
-//   DATA:  ['transactions', { type, category, search, limit }]
-//   COUNT: ['transactions', 'count', { type, category }]
-//
-// setQueriesData({ queryKey: ['transactions'], exact: false }) matches data
-// queries because the updater guards non-array values with Array.isArray.
+// Use getQueryCache().getAll() to get every query in the cache, then filter
+// manually and call setQueryData with the exact queryKey from each query object.
+// This avoids all fuzzy-matching issues with setQueriesData.
+
+function getAllListQueries() {
+  return queryClient
+    .getQueryCache()
+    .getAll()
+    .filter(q => Array.isArray(q.queryKey) && q.queryKey[0] === 'transactions')
+}
 
 function injectTransactionIntoLists(txn, mode = 'add') {
-  // Log what's in the cache so we can debug if still broken
-  const allCached = queryClient.getQueriesData({ queryKey: ['transactions'], exact: false })
-  console.log('[Kosha] injectTransactionIntoLists', mode, 'cache entries:', allCached.length,
-    allCached.map(([k, v]) => ({ key: k, isArray: Array.isArray(v), len: Array.isArray(v) ? v.length : typeof v })))
+  const queries = getAllListQueries()
+  for (const query of queries) {
+    const old = query.state.data
+    if (!Array.isArray(old)) continue
 
-  queryClient.setQueriesData(
-    { queryKey: ['transactions'], exact: false },
-    (old) => {
-      if (!Array.isArray(old)) return old
-
-      if (mode === 'add') {
-        const next = [txn, ...old].sort(
-          (a, b) =>
-            new Date(b.date) - new Date(a.date) ||
-            new Date(b.created_at) - new Date(a.created_at)
-        )
-        return next
-      }
-      if (mode === 'update') return old.map(t => (t.id === txn.id ? txn : t))
-      if (mode === 'delete') return old.filter(t => t.id !== txn.id)
-      return old
+    let next
+    if (mode === 'add') {
+      next = [txn, ...old].sort(
+        (a, b) =>
+          new Date(b.date) - new Date(a.date) ||
+          new Date(b.created_at) - new Date(a.created_at)
+      )
+    } else if (mode === 'update') {
+      next = old.map(t => (t.id === txn.id ? txn : t))
+    } else if (mode === 'delete') {
+      next = old.filter(t => t.id !== txn.id)
+    } else {
+      continue
     }
-  )
+
+    // Use the exact queryKey from the cache object — no matching needed
+    queryClient.setQueryData(query.queryKey, next)
+  }
 }
 
 function findCachedTransaction(id) {
-  const allCached = queryClient.getQueriesData({ queryKey: ['transactions'], exact: false })
-  for (const [, data] of allCached) {
+  for (const query of getAllListQueries()) {
+    const data = query.state.data
     if (Array.isArray(data)) {
       const found = data.find(t => t.id === id)
       if (found) return found
@@ -132,13 +146,10 @@ export function useDebounce(value, ms = 300) {
 // ── Query hooks ───────────────────────────────────────────────────────────
 
 export function useTransactions({ type, category, search, limit, withCount = false } = {}) {
-  // FLAT key: ['transactions', { type, category, search, limit }]
-  // No 'data' sub-level — makes prefix matching reliable
-  const dataKey  = ['transactions', { type, category, search, limit }]
-  const countKey = ['transactions', 'count', { type, category }]
+  const filters = { type, category, search, limit }
 
   const { data: rows, isLoading, error, refetch } = useQuery({
-    queryKey: dataKey,
+    queryKey: txnListKey(filters),
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
@@ -165,7 +176,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
   })
 
   const { data: countData } = useQuery({
-    queryKey: countKey,
+    queryKey: txnCountKey({ type, category }),
     enabled: withCount,
     staleTime: 60 * 1000,
     queryFn: async () => {
@@ -200,7 +211,7 @@ export function useTodayExpenses() {
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['transactions', 'today-expenses', todayISO],
+    queryKey: ['todayExpenses', todayISO],
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
@@ -403,7 +414,6 @@ export async function updateTransaction(id, payload) {
   if (oldTxn) {
     const diff = balanceDelta(data) - balanceDelta(oldTxn)
     adjustBalanceCaches(diff)
-
     if (
       oldTxn.date     !== data.date     ||
       oldTxn.type     !== data.type     ||
@@ -436,13 +446,13 @@ export async function deleteTransaction(id) {
     adjustBalanceCaches(-balanceDelta(deletedTxn))
     patchMonthSummary(deletedTxn, 'remove')
   } else {
-    queryClient.setQueriesData(
-      { queryKey: ['transactions'], exact: false },
-      (old) => {
-        if (!Array.isArray(old)) return old
-        return old.filter(t => t.id !== id)
+    // Fallback: id not in cache, filter all list queries directly
+    for (const query of getAllListQueries()) {
+      const old = query.state.data
+      if (Array.isArray(old)) {
+        queryClient.setQueryData(query.queryKey, old.filter(t => t.id !== id))
       }
-    )
+    }
   }
 
   invalidateCache()
