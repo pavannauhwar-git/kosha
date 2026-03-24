@@ -143,6 +143,34 @@ export default function Monthly() {
     }
   }, [catEntries, budgets, year, month])
 
+  const monthCloseSummary = useMemo(() => {
+    const totalOutflow = spent + invested
+    const net = earned - totalOutflow
+
+    const periodEnd = new Date(year, month, 0)
+    periodEnd.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const daysLeft = Math.max(0, Math.ceil((periodEnd.getTime() - today.getTime()) / (24 * 60 * 60 * 1000)))
+    const isPastOrCurrentMonth = year < today.getFullYear() || (year === today.getFullYear() && month <= (today.getMonth() + 1))
+
+    const health = net >= 0 ? 'healthy' : 'at-risk'
+    const message = isPastOrCurrentMonth
+      ? (net >= 0
+          ? 'You are closing this month with a positive net position.'
+          : 'Current pace indicates a negative month-close unless outflow slows.')
+      : 'This is a future month snapshot; projections will improve as real transactions land.'
+
+    return {
+      totalOutflow,
+      net,
+      daysLeft,
+      health,
+      message,
+    }
+  }, [earned, spent, invested, year, month])
+
   const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
 
   return (
@@ -206,6 +234,37 @@ export default function Monthly() {
           className="space-y-6"
         >
           <BreakdownCard earned={earned} spent={spent} invested={invested} />
+
+          <div className="card p-4">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="section-label">Month close summary</p>
+                <p className="text-caption text-ink-3 mt-0.5">Outcome projection and runway</p>
+              </div>
+              <span className={`text-xs px-2 py-1 rounded-full font-semibold ${monthCloseSummary.health === 'healthy' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                {monthCloseSummary.health === 'healthy' ? 'On track' : 'Needs correction'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                <p className="text-caption text-ink-3">Net close</p>
+                <p className={`text-sm font-bold tabular-nums ${monthCloseSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                  {monthCloseSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(monthCloseSummary.net))}
+                </p>
+              </div>
+              <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                <p className="text-caption text-ink-3">Outflow</p>
+                <p className="text-sm font-bold tabular-nums text-ink-2">{fmt(monthCloseSummary.totalOutflow)}</p>
+              </div>
+              <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                <p className="text-caption text-ink-3">Days left</p>
+                <p className="text-sm font-bold tabular-nums text-ink-2">{monthCloseSummary.daysLeft}</p>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-ink-3">{monthCloseSummary.message}</p>
+          </div>
 
           {budgetVariance.hasBudgets && (
             <div className="card p-4">

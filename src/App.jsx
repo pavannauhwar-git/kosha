@@ -14,6 +14,7 @@ import { C } from './lib/colors'
 import { useScrollDirection } from './hooks/useScrollDirection'
 import KoshaLogo from './components/KoshaLogo'
 import { isSuppressed } from './lib/mutationGuard'
+import { recordRuntimeRoute } from './lib/runtimeMonitor'
 
 // ── Eager ────────────────────────────────────────────────────────────────
 import Login from './pages/Login'
@@ -265,10 +266,22 @@ function ContentWrapper({ children }) {
   )
 }
 
+function RuntimeRouteTracker() {
+  const location = useLocation()
+
+  useEffect(() => {
+    const path = `${location.pathname}${location.search || ''}`
+    recordRuntimeRoute(path)
+  }, [location.pathname, location.search])
+
+  return null
+}
+
 // ── App shell ─────────────────────────────────────────────────────────────
 function AppShell() {
   return (
     <div className="min-h-dvh bg-kosha-bg">
+      <RuntimeRouteTracker />
       <DesktopSidebar />
       <ContentWrapper>
         <Routes>

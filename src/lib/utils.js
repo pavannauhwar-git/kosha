@@ -1,26 +1,37 @@
+import { getPreferredCurrency, getPreferredLocale } from './locale'
+
 // ── Number formatting ─────────────────────────────────────────────────────
 export function fmt(n, compact = false) {
   if (n === null || n === undefined) return '—'
+  const locale = getPreferredLocale()
+  const currency = getPreferredCurrency()
   const abs = Math.abs(n)
   if (compact) {
-    if (abs >= 1_00_000) return `₹${(n / 1_00_000).toFixed(1)}L`
-    if (abs >= 1_000)    return `₹${(n / 1_000).toFixed(1)}K`
+    if (currency === 'INR') {
+      if (abs >= 1_00_000) return `₹${(n / 1_00_000).toFixed(1)}L`
+      if (abs >= 1_000) return `₹${(n / 1_000).toFixed(1)}K`
+    } else {
+      if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
+      if (abs >= 1_000) return `$${(n / 1_000).toFixed(1)}K`
+    }
   }
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
+  return new Intl.NumberFormat(locale, {
+    style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(n)
 }
 
 export function fmtFull(n) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
+  const locale = getPreferredLocale()
+  const currency = getPreferredCurrency()
+  return new Intl.NumberFormat(locale, {
+    style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(n ?? 0)
 }
 
 // ── Date helpers ──────────────────────────────────────────────────────────
 export function fmtDate(dateStr) {
   if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-IN', {
+  return new Date(dateStr).toLocaleDateString(getPreferredLocale(), {
     day: 'numeric', month: 'short', year: 'numeric',
   })
 }
@@ -30,7 +41,7 @@ export function todayStr() {
 }
 
 export function monthStr(date = new Date()) {
-  return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+  return date.toLocaleDateString(getPreferredLocale(), { month: 'long', year: 'numeric' })
 }
 
 export function dateLabel(dateStr) {
@@ -40,7 +51,7 @@ export function dateLabel(dateStr) {
   const dLocal  = new Date(d); dLocal.setHours(0,0,0,0)
   if (dLocal.getTime() === today.getTime())  return 'Today'
   if (dLocal.getTime() === yest.getTime())   return 'Yesterday'
-  return d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' })
+  return d.toLocaleDateString(getPreferredLocale(), { weekday:'short', day:'numeric', month:'short' })
 }
 
 export function groupByDate(transactions) {

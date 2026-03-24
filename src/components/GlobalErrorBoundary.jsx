@@ -1,6 +1,7 @@
 import React from 'react'
 import { Bug, Home, RotateCw } from 'lucide-react'
 import KoshaErrorPage from './KoshaErrorPage'
+import { getRuntimeDiagnostics } from '../lib/runtimeMonitor'
 
 const RUNTIME_PREFILL_KEY = 'kosha-runtime-bug-prefill'
 
@@ -31,11 +32,21 @@ export class GlobalErrorBoundary extends React.Component {
     const route = `${window.location.pathname}${window.location.search || ''}`
     const message = String(err?.message || 'Unexpected runtime rendering error')
     const stack = String(err?.stack || '').slice(0, 1200)
+    let diagnosticsBlock = ''
+
+    try {
+      diagnosticsBlock = JSON.stringify(getRuntimeDiagnostics(), null, 2).slice(0, 1400)
+    } catch {
+      diagnosticsBlock = ''
+    }
 
     const prefill = {
       title: `Runtime error on ${window.location.pathname || '/'}`.slice(0, 160),
       description: `The app crashed unexpectedly while rendering this screen. ${message}`.slice(0, 1500),
-      steps: stack ? `Crash stack:\n${stack}` : `App crashed while rendering ${route}.`,
+      steps: [
+        stack ? `Crash stack:\n${stack}` : `App crashed while rendering ${route}.`,
+        diagnosticsBlock ? `\nRecent runtime diagnostics:\n${diagnosticsBlock}` : '',
+      ].join(''),
       tagsInput: 'runtime,crash',
       severity: 'high',
       includeDiagnostics: true,

@@ -9,6 +9,45 @@ export function getInviteToken(locationSearch = '') {
   return null
 }
 
+export async function createInvite({ supabaseClient, userId }) {
+  if (!supabaseClient) throw new Error('supabaseClient is required')
+  if (!userId) throw new Error('userId is required')
+
+  const { data, error } = await supabaseClient
+    .from('invites')
+    .insert({ created_by: userId })
+    .select('id, token, created_at, used_by, used_at')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function listInvites({ supabaseClient, userId, limit = 8 }) {
+  if (!supabaseClient) throw new Error('supabaseClient is required')
+  if (!userId) return []
+
+  const { data, error } = await supabaseClient
+    .from('invites')
+    .select('id, token, created_at, used_by, used_at')
+    .eq('created_by', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data || []
+}
+
+export function buildJoinInviteUrl(token, origin = window?.location?.origin || '') {
+  if (!token) return ''
+  return `${origin}/join/${token}`
+}
+
+export function inviteStatusLabel(inviteRow) {
+  if (inviteRow?.used_by && inviteRow?.used_at) return 'Joined'
+  return 'Pending'
+}
+
 export async function consumeInviteToken({ supabaseClient, inviteToken, userId }) {
   if (!supabaseClient) throw new Error('supabaseClient is required')
   if (!inviteToken || !userId) {

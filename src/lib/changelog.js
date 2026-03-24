@@ -3,6 +3,9 @@ export const CHANGELOG = [
     version: '1.1.9',
     date: 'March 2026',
     items: [
+      'Completed Phase 4 roadmap by shipping shared-wallet invite management in Settings with one-tap link creation/copy and live join status',
+      'Added localization foundation with user-selectable regional formats and locale-aware currency/date rendering across core finance surfaces',
+      'Added deep analytics narratives: weekly change digest in Analytics and month-close summary projection in Monthly',
       'Added confidence drift detection to flag when 7-day matching quality drops >15% below 30-day baseline',
       'Confidence drift alerts appear in Reconciliation with actionable advice (reset aliases or monitor decisions)',
       'Drift visibility card now shown in Analytics page when confidence drops below baseline',

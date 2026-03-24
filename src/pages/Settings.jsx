@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Camera, Trash2, Pencil, Check, BellRing, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Camera, Trash2, Pencil, Check, BellRing, ShieldAlert, Users, Link2, Copy } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/EditProfileNameDialog'
@@ -13,6 +13,9 @@ import {
   getNotificationPermission,
   requestNotificationPermission,
 } from '../lib/reminders'
+import { buildJoinInviteUrl, createInvite, inviteStatusLabel, listInvites } from '../lib/invites'
+import { fmtDate } from '../lib/utils'
+import { getPreferredLocale, setPreferredLocale, SUPPORTED_LOCALES } from '../lib/locale'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -58,10 +61,41 @@ export default function Settings() {
   const [reminderPrefs, setReminderPrefsState] = useState(() => getReminderPrefs())
   const [notificationPermission, setNotificationPermission] = useState(() => getNotificationPermission())
   const [reminderMsg, setReminderMsg] = useState('')
+  const [locale, setLocale] = useState(() => getPreferredLocale())
+  const [walletInvites, setWalletInvites] = useState([])
+  const [walletLoading, setWalletLoading] = useState(false)
+  const [walletError, setWalletError] = useState('')
+  const [walletMsg, setWalletMsg] = useState('')
+  const [creatingInvite, setCreatingInvite] = useState(false)
 
   useEffect(() => {
     setReminderPrefs(reminderPrefs)
   }, [reminderPrefs])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadWalletInvites() {
+      if (!user?.id) return
+      setWalletLoading(true)
+      setWalletError('')
+      try {
+        const rows = await listInvites({
+          supabaseClient: supabase,
+          userId: user.id,
+          limit: 6,
+        })
+        if (!cancelled) setWalletInvites(rows)
+      } catch (error) {
+        if (!cancelled) setWalletError(error?.message || 'Could not load shared wallet invites.')
+      } finally {
+        if (!cancelled) setWalletLoading(false)
+      }
+    }
+
+    void loadWalletInvites()
+    return () => { cancelled = true }
+  }, [user?.id])
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
@@ -126,6 +160,42 @@ export default function Settings() {
     if (permission === 'denied') {
       setReminderMsg('Notifications blocked. Enable them from browser settings.')
       setTimeout(() => setReminderMsg(''), 3200)
+    }
+  }
+
+  function handleLocaleChange(nextLocale) {
+    const normalized = setPreferredLocale(nextLocale)
+    setLocale(normalized)
+    setReminderMsg('Language and formatting preference saved.')
+    setTimeout(() => setReminderMsg(''), 2000)
+  }
+
+  async function copyInviteLink(token) {
+    const url = buildJoinInviteUrl(token)
+    if (!url) return
+
+    try {
+      await navigator.clipboard.writeText(url)
+      setWalletMsg('Invite link copied.')
+      setTimeout(() => setWalletMsg(''), 2200)
+    } catch {
+      setWalletMsg('Could not copy automatically. Share manually from this screen.')
+      setTimeout(() => setWalletMsg(''), 3000)
+    }
+  }
+
+  async function handleCreateInvite() {
+    if (!user?.id || creatingInvite) return
+    setCreatingInvite(true)
+    setWalletError('')
+    try {
+      const row = await createInvite({ supabaseClient: supabase, userId: user.id })
+      setWalletInvites((prev) => [row, ...prev].slice(0, 6))
+      await copyInviteLink(row.token)
+    } catch (error) {
+      setWalletError(error?.message || 'Could not create invite link.')
+    } finally {
+      setCreatingInvite(false)
     }
   }
 
@@ -266,6 +336,85 @@ export default function Settings() {
             {reminderMsg && (
               <p className="text-[12px] text-ink-3 mt-2 px-1">{reminderMsg}</p>
             )}
+          </motion.div>
+
+          {/* ── Shared wallet section ───────────────────────────────── */}
+          <motion.div variants={fadeUp}>
+            <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
+              Shared Wallet
+            </p>
+            <div className="card overflow-hidden p-0">
+              <SettingRow
+                icon={<Users size={16} className="text-brand" />}
+                label={creatingInvite ? 'Creating invite…' : 'Create invite link'}
+                sublabel="Invite a partner to join your wallet workflow"
+                onClick={() => { void handleCreateInvite() }}
+                disabled={creatingInvite}
+                rightElement={<Link2 size={14} />}
+              />
+              <Divider />
+              <div className="px-4 py-3 space-y-2">
+                <p className="text-[12px] font-semibold text-ink-3">Recent invites</p>
+                {walletLoading ? (
+                  <p className="text-[12px] text-ink-3">Loading invites…</p>
+                ) : walletInvites.length === 0 ? (
+                  <p className="text-[12px] text-ink-3">No invite links yet.</p>
+                ) : (
+                  walletInvites.map((invite) => {
+                    const status = inviteStatusLabel(invite)
+                    return (
+                      <div key={invite.id} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] text-ink-3">{fmtDate(invite.created_at)}</p>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                            {status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-ink-2 mt-1 truncate">{buildJoinInviteUrl(invite.token)}</p>
+                        <button
+                          type="button"
+                          className="text-[11px] mt-1.5 text-brand font-semibold inline-flex items-center gap-1"
+                          onClick={() => { void copyInviteLink(invite.token) }}
+                        >
+                          <Copy size={12} /> Copy link
+                        </button>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+            {(walletMsg || walletError) && (
+              <p className={`text-[12px] mt-2 px-1 ${walletError ? 'text-expense-text' : 'text-ink-3'}`}>
+                {walletError || walletMsg}
+              </p>
+            )}
+          </motion.div>
+
+          {/* ── Localization section ────────────────────────────────── */}
+          <motion.div variants={fadeUp}>
+            <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
+              Localization
+            </p>
+            <div className="card p-3">
+              <p className="text-[13px] text-ink-2 mb-2 px-1">Language and regional formatting</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {SUPPORTED_LOCALES.map((option) => {
+                  const active = locale === option.id
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => handleLocaleChange(option.id)}
+                      className={`rounded-card border px-3 py-2 text-left transition-colors ${active ? 'border-brand bg-brand-container/35' : 'border-kosha-border bg-kosha-surface'}`}
+                    >
+                      <p className={`text-[12px] font-semibold ${active ? 'text-brand' : 'text-ink-2'}`}>{option.label}</p>
+                      <p className="text-[11px] text-ink-3 mt-0.5">{option.id}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </motion.div>
 
         </motion.div>

@@ -45,21 +45,20 @@ Kosha is designed as a mobile-first finance app with:
 ### Original phase plan status
 
 1. Phase 1 (2 weeks): Security + monitoring + CI gate + exports
-   - Status: mostly complete
-   - Completed: CI gate hardening, deploy-readiness checks, release candidate command, CSV exports, ownership/governance templates
-   - Remaining: deeper production monitoring polish
+   - Status: complete
+   - Completed: CI gate hardening, deploy-readiness checks, release candidate command, CSV exports, ownership/governance templates, runtime error monitoring polish (global error boundary prefill + unhandled error capture)
 
 2. Phase 2 (2 to 3 weeks): Recurring transaction engine + reminders + undo
    - Status: complete
    - Completed: recurring transaction engine (schema, generation RPC, UI wiring, export visibility), reminders, and undo flows
 
 3. Phase 3 (2 weeks): Reconciliation + advanced budget model
-   - Status: in progress
-   - Completed: reconciliation workspace with review queue, quick category fixes, statement-style matching, monthly entry point, budget variance intelligence, and server-backed review persistence
-   - Remaining: matching confidence tuning and reconciliation-focused automated tests
+   - Status: complete
+   - Completed: reconciliation workspace with review queue, quick category fixes, statement-style matching, linked/reviewed queue filtering, confidence drift/trend analytics, monthly entry point, budget variance intelligence, server-backed review persistence, and deterministic reconciliation-focused automated tests
 
 4. Phase 4 (ongoing): Shared wallets, localization, deep analytics
-   - Status: planned
+   - Status: complete
+   - Completed: shared-wallet collaboration UX hardening (invite generation/copy/status in Settings), localization foundation (user-selectable locale and locale-aware date/currency formatting), and deeper analytics narratives (weekly digest + month-close summary cards)
 
 ### Adoption-quality release track
 
