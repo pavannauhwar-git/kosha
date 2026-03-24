@@ -321,7 +321,7 @@ export default function Bills() {
                   </label>
                 </div>
 
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex flex-wrap items-center gap-3 mb-3">
                   <button
                     onClick={() => setForm(f => ({ ...f, is_recurring: !f.is_recurring }))}
                     className={`flex items-center gap-2 px-3 py-2 rounded-card text-sm font-medium
@@ -333,7 +333,7 @@ export default function Bills() {
                     <Repeat size={14} /> Recurring
                   </button>
                   {form.is_recurring && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {RECURRENCE.map(r => (
                         <button key={r}
                           onClick={() => setForm(f => ({ ...f, recurrence: r }))}
@@ -349,12 +349,14 @@ export default function Bills() {
 
                 {formErr && <p className="text-expense-text text-sm mb-3">{formErr}</p>}
 
-                <button onClick={handleAdd}
-                  disabled={addSaving}
-                  className={`w-full py-4 rounded-card font-semibold transition-all
-                             ${addSaving ? 'bg-warning/70 text-white/90 scale-[0.98]' : 'bg-warning text-white active:scale-[0.98]'}`}>
-                  {addSaving ? 'Adding…' : 'Add Bill'}
-                </button>
+                <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
+                  <button onClick={handleAdd}
+                    disabled={addSaving}
+                    className={`w-full py-4 rounded-card font-semibold transition-all
+                               ${addSaving ? 'bg-warning/70 text-white/90 scale-[0.98]' : 'bg-warning text-white active:scale-[0.98]'}`}>
+                    {addSaving ? 'Adding…' : 'Add Bill'}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </>

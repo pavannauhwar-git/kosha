@@ -400,13 +400,13 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           </AnimatePresence>
 
           {/* Type selector */}
-          <div className="flex gap-2 mb-5">
+          <div className="grid grid-cols-3 gap-2 mb-5 min-w-0">
             {TYPES.map(t => (
               <button key={t.id}
                 onClick={() => set('type', t.id)}
                 disabled={isSaving}
                 className={`flex-1 py-2 rounded-card text-[13px] font-semibold border transition-all
-                  disabled:opacity-50
+                  min-w-0 truncate disabled:opacity-50
                   ${type === t.id
                     ? `${t.bg} ${t.color} border-transparent`
                     : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
@@ -580,31 +580,33 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               The spinner persists for the ENTIRE mutation + refetch chain.
               When it disappears, the sheet closes and the data is accurate.
           */}
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`w-full py-4 rounded-card text-[17px] font-semibold flex items-center
-                        justify-center gap-2 transition-all
-                        ${isSaving
-                          ? 'bg-brand/70 text-white/90 scale-[0.98] cursor-not-allowed'
-                          : 'bg-brand text-white active:scale-[0.98]'}`}
-          >
-            {isSaving ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
-                  fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10"
-                    stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <span>Saving...</span>
-              </>
-            ) : (
-              editTxn ? 'Save Changes' : `Add ${activeType?.label}`
-            )}
-          </button>
-          <div className="h-2" />
+          <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`w-full py-4 rounded-card text-[17px] font-semibold flex items-center
+                          justify-center gap-2 transition-all
+                          ${isSaving
+                            ? 'bg-brand/70 text-white/90 scale-[0.98] cursor-not-allowed'
+                            : 'bg-brand text-white active:scale-[0.98]'}`}
+            >
+              {isSaving ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                    fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                editTxn ? 'Save Changes' : `Add ${activeType?.label}`
+              )}
+            </button>
+            <div className="h-2" />
+          </div>
         </div>
       </motion.div>
 

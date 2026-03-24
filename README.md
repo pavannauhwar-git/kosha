@@ -1,136 +1,333 @@
 # Kosha
 
-[![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://semver.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+Kosha is a personal finance Progressive Web App (PWA) for tracking transactions, bills, monthly budgets, and financial insights.
 
-## ⚡ The Pitch
+## Table of contents
 
-Kosha is a lightning-fast, offline-capable Progressive Web App (PWA) designed to be your ultimate financial sheath. It provides an intuitive, seamless personal finance tracking experience that helps you manage transactions, monitor bills, and visualize your financial health anywhere, anytime.
+- Overview
+- Features
+- Tech stack
+- Project structure
+- Prerequisites
+- Quick start
+- Environment variables
+- Database and Supabase setup
+- Available scripts
+- End-to-end verification
+- Deployment
+- Contributing
+- Release process
+- Bug reporting function (Supabase Edge Function)
+- Troubleshooting
 
-## 🌟 Core Features
+## Overview
 
-- **Transactions:** Full feed with search, granular type/category filters, swipe-to-delete, and inline editing.
-- **Bill Reminders:** Keep track of pending, recurring, and paid bills, including a quick "mark-as-paid" action that auto-creates expense transactions.
-- **Interactive Analytics:** Deep dive into your finances with Year KPIs, monthly cash flow charts, net savings charts, top 5 expenses, and your investment portfolio.
-- **PWA Support:** Fully installable to iOS & Android home screens with Workbox-powered offline caching for unmatched speed.
+Kosha is designed as a mobile-first finance app with:
 
-## 🛠 Tech Stack
+- fast client navigation (React + Vite)
+- offline-friendly PWA behavior
+- Supabase-backed authentication and storage
+- server-truth data model with cache reconciliation for responsive UI updates
 
-| Layer | Technology |
-| --- | --- |
-| **Frontend Framework** | React 18 |
-| **Build Tool & PWA**| Vite 5 & `vite-plugin-pwa` |
-| **Styling** | Tailwind CSS 3 & Framer Motion |
-| **Data Fetching** | React Query (`@tanstack/react-query`) |
-| **Backend & Auth** | Supabase (Postgres, Auth, RLS) |
-| **Visualization** | Recharts |
-| **Icons & UI** | Phosphor Icons, Lucide React, Radix UI |
+## Features
 
-## 📸 Screenshots
+- Transaction tracking: add, edit, delete, filter, and search
+- Bills and dues: pending and paid states, recurring support, mark as paid
+- Dashboard cards and recent activity
+- Monthly and yearly analytics
+- Invite and join flow
+- In-app bug reporting flow
+- Installable PWA for Android and iOS
 
-| Mobile Dashboard | Analytics Overview |
-| :---: | :---: |
-| ![Dashboard View](docs/dashboard.png) | ![Analytics View](docs/analytics.png) |
+## Tech stack
 
-## 🚀 Local Development Setup
+- Frontend: React 18, React Router 6, Framer Motion
+- Data layer: @tanstack/react-query v5
+- Backend: Supabase (Postgres, Auth, Realtime, Edge Functions)
+- Styling: Tailwind CSS
+- Build tooling: Vite 5, vite-plugin-pwa
+- Charts: Recharts
 
-Follow these exact steps to get Kosha running locally on your machine.
+## Project structure
 
-**1. Clone the repository**
+```text
+.
+├── src/
+│   ├── components/
+│   ├── context/
+│   ├── hooks/
+│   ├── lib/
+│   └── pages/
+├── scripts/
+│   ├── load_env.mjs
+│   ├── test_join_flow.mjs
+│   ├── test_liabilities_realtime.mjs
+│   └── test_mutation_stress.mjs
+├── supabase/
+│   ├── schema.sql
+│   └── functions/
+│       └── bug-report-notify/
+├── index.html
+├── package.json
+└── vite.config.js
+```
+
+## Prerequisites
+
+- Node.js 22+ recommended
+- npm 9+
+- A Supabase project with access to SQL Editor
+- Test users in Supabase Auth for runtime tests
+
+## Quick start
+
+### 1) Clone the repository
+
 ```bash
-git clone https://github.com/your-username/kosha.git
+git clone <your-repository-url>
 cd kosha
 ```
 
-**2. Install dependencies**
+### 2) Install dependencies
+
 ```bash
 npm install
 ```
 
-**3. Configure environment variables**
-Copy the example environment file:
+### 3) Configure environment variables
+
+Create a local env file:
+
 ```bash
-cp .env.example .env.local
-```
-Open `.env.local` and add your Supabase credentials:
-```env
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGci...your-anon-key-here
+cp .env.local.example .env.local
 ```
 
-**4. Run the development server**
+If `.env.local.example` does not exist in your clone, create `.env.local` manually and use the template in the Environment variables section below.
+
+### 4) Apply database schema
+
+Open Supabase SQL Editor and run:
+
+- `supabase/schema.sql`
+
+### 5) Run the app
+
 ```bash
 npm run dev
 ```
 
-> 💡 **Tip:** The application will instantly compile and load at `http://localhost:5173`.
+Default local URL:
 
-## ✅ Runtime Verification Scripts
+- `http://localhost:5173`
 
-Kosha ships two runtime checks for Supabase-backed flows:
+## Environment variables
+
+Add these values in `.env.local`.
+
+### Required for app runtime
+
+```env
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<supabase-anon-key>
+```
+
+### Required for runtime verification scripts
+
+```env
+APP_BASE_URL=http://localhost:5173
+
+E2E_CREATOR_EMAIL=<email>
+E2E_CREATOR_PASSWORD=<password>
+
+E2E_JOINER_EMAIL=<email>
+E2E_JOINER_PASSWORD=<password>
+
+E2E_SESSION_EMAIL=<email>
+E2E_SESSION_PASSWORD=<password>
+```
+
+Notes:
+
+- `scripts/load_env.mjs` auto-loads `.env` and `.env.local`.
+- Keep these values private. Do not commit `.env.local`.
+
+## Database and Supabase setup
+
+1. Create a Supabase project.
+2. Run `supabase/schema.sql` in SQL Editor.
+3. Confirm required tables and policies are present.
+4. Create the E2E users in Supabase Auth used by your local tests.
+
+## Available scripts
+
+From project root:
 
 ```bash
+npm run dev
+npm run build
+npm run preview
 npm run test:join-flow
 npm run test:liabilities-realtime
+npm run test:mutation-stress
 ```
 
-Both scripts require these env vars to be present in your local env:
+What each test does:
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `test:join-flow`: validates invite token creation and consumption across accounts
+- `test:liabilities-realtime`: validates realtime INSERT delivery across sessions
+- `test:mutation-stress`: validates rapid transaction and liability mutation consistency and cleanup
 
-If these are missing, scripts fail fast with a missing-env error.
+## End-to-end verification
 
-## 🔍 Dev Query Tracing (Optional)
+Run the full verification sequence:
 
-You can enable lightweight query timing logs in development:
-
-1. Open the browser devtools console on local dev.
-2. Run:
-
-```js
-localStorage.setItem('kosha:trace-queries', '1')
+```bash
+npm run build
+npm run test:join-flow
+npm run test:liabilities-realtime
+npm run test:mutation-stress
 ```
 
-3. Refresh the app.
+Expected outcome:
 
-You will see debug lines such as:
+- Build succeeds
+- All test scripts print `PASS` and exit with code 0
 
-`[Kosha][QueryTrace] transactions:list: 42ms`
+## Deployment
 
-Disable with:
+### Vercel
 
-```js
-localStorage.removeItem('kosha:trace-queries')
+This project is configured for SPA routing via `vercel.json` rewrite:
+
+- all routes rewrite to `index.html`
+
+Deployment checklist:
+
+1. Import project in Vercel.
+2. Set production environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+3. Deploy.
+
+## Contributing
+
+1. Create a feature branch from your main integration branch.
+
+```bash
+git checkout -b feat/your-change-name
 ```
 
-## 🐞 Bug Reporting (Phase 2)
+2. Implement your change with focused commits.
+3. Run quality checks locally:
 
-Kosha includes an in-app **Report bug** flow in the profile menu.
+```bash
+npm run build
+npm run test:join-flow
+npm run test:liabilities-realtime
+npm run test:mutation-stress
+```
 
-### 1) Apply database schema updates
+4. Update documentation when behavior, env vars, setup, or scripts change.
+5. Open a pull request with:
+   - clear problem statement
+   - implementation summary
+   - test evidence (commands + outcome)
 
-Run [supabase/schema.sql](supabase/schema.sql) in Supabase SQL Editor.
+Recommended commit style:
 
-This creates/updates:
-- `bug_reports` triage fields (`priority`, `tags`, `occurrence_count`, `fingerprint`, etc.)
-- screenshot storage bucket policies (`bug-reports`)
-- `submit_bug_report` RPC (duplicate detection + rate limiting)
+- `feat: ...`
+- `fix: ...`
+- `refactor: ...`
+- `docs: ...`
+- `test: ...`
 
-### 2) Deploy the notifier edge function
+## Release process
 
-Function source: [supabase/functions/bug-report-notify/index.ts](supabase/functions/bug-report-notify/index.ts)
+Use this checklist before every release.
 
-Set function secrets:
+1. Pull latest changes and install dependencies.
+
+```bash
+git pull
+npm install
+```
+
+2. Confirm environment variables are present for runtime checks.
+3. Run full verification:
+
+```bash
+npm run build
+npm run test:join-flow
+npm run test:liabilities-realtime
+npm run test:mutation-stress
+```
+
+4. Update changelog entry in `src/lib/changelog.js`.
+5. Tag release commit (if your workflow uses tags).
+
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+6. Deploy to Vercel and run a quick smoke test:
+   - sign in
+   - add transaction
+   - add bill
+   - verify dashboard and list refresh behavior
+   - verify bug report submission path (optional but recommended)
+
+Rollback guidance:
+
+- Re-deploy the previous known-good commit from Vercel.
+- Keep DB schema backward-compatible where possible to reduce rollback risk.
+
+## Bug reporting function (Supabase Edge Function)
+
+Path:
+
+- `supabase/functions/bug-report-notify`
+
+Required Supabase function secrets:
+
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `BUG_REPORT_WEBHOOK_URL`
+- `BUG_REPORT_WEBHOOK_URL` (Slack or Discord webhook)
 
-Then deploy:
+Deploy command:
 
 ```bash
 supabase functions deploy bug-report-notify
 ```
 
-If webhook URL is missing, submissions still succeed and notifications are skipped.
+Behavior:
+
+- If webhook URL is missing, bug submission still succeeds and notification is skipped.
+
+## Troubleshooting
+
+### App cannot connect to Supabase
+
+- Verify `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- Confirm project is active and network allows access.
+
+### Realtime test fails
+
+- Use Node 22+ (or install `ws` package if your runtime does not provide WebSocket).
+- Recheck Supabase Realtime configuration and table replication.
+
+### Join flow test fails
+
+- Ensure creator and joiner are different accounts.
+- Ensure both users are confirmed and can sign in.
+
+### Mutation stress test fails
+
+- Verify E2E session account has permissions for transactions and liabilities.
+- Re-run after cleanup if previous run was interrupted.
+
+## Security notes
+
+- Do not commit secrets to git.
+- Use anon key on frontend only.
+- Keep service role keys restricted to server-side or Edge Function environments.
