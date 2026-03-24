@@ -1,4 +1,8 @@
-import { parseStatementLines, matchStatementEntries } from '../src/lib/statementMatching.js'
+import {
+  buildLearnedStatementAliases,
+  parseStatementLines,
+  matchStatementEntries,
+} from '../src/lib/statementMatching.js'
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
@@ -58,9 +62,36 @@ function testMatching() {
   assert(matches[1].best?.txn?.id !== 't3', 'direction/type scoring should avoid wrong income candidate')
 }
 
+function testLearnedAliasMatching() {
+  const txns = [
+    {
+      id: 't100',
+      date: '2026-03-20',
+      amount: 999,
+      type: 'expense',
+      description: 'Swiggy Instamart',
+    },
+  ]
+
+  const reviewRows = [
+    {
+      status: 'linked',
+      statement_line: '20/03/2026, BLINKBASKET ONLINE, 999.00',
+      transaction_id: 't100',
+    },
+  ]
+
+  const aliases = buildLearnedStatementAliases(reviewRows, txns)
+  const entries = parseStatementLines('24/03/2026, BLINKBASKET ORDER, 999.00')
+  const matches = matchStatementEntries(entries, txns, { aliases })
+
+  assert(matches[0].best?.txn?.id === 't100', 'learned alias should help map similar merchant strings')
+}
+
 function main() {
   testParse()
   testMatching()
+  testLearnedAliasMatching()
   console.log('PASS: statement matching heuristics are stable.')
 }
 

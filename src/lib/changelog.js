@@ -10,6 +10,7 @@ export const CHANGELOG = [
       'Added Phase 3 reconciliation workspace with queue metrics, quick category correction, and one-tap reviewed state',
       'Added statement-style matching panel in Reconciliation to parse pasted statement lines and suggest likely transaction links',
       'Improved statement matching confidence with merchant-noise cleanup, transaction-direction inference, and stronger tie-break scoring',
+      'Added adaptive alias learning from previously linked statement lines so recurring merchant variants match more reliably over time',
       'Persisted reconciliation reviewed/linked state to Supabase with secure per-user access policies and local fallback when migration is not yet applied',
       'Extended deploy-readiness verification to explicitly check reconciliation_reviews table availability',
       'Added deterministic statement-matching test and wired it into the release-candidate verification pipeline',

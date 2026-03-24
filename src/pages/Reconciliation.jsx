@@ -8,7 +8,11 @@ import { useTransactions, updateTransaction } from '../hooks/useTransactions'
 import { useReconciliationReviews, upsertReconciliationReview } from '../hooks/useReconciliationReviews'
 import { CATEGORIES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
-import { matchStatementEntries, parseStatementLines } from '../lib/statementMatching'
+import {
+  buildLearnedStatementAliases,
+  matchStatementEntries,
+  parseStatementLines,
+} from '../lib/statementMatching'
 import {
   buildReconciliationInsights,
   getReviewedReconciliationIds,
@@ -32,6 +36,7 @@ export default function Reconciliation() {
 
   const { data, loading } = useTransactions({ limit: 250 })
   const {
+    rows: reviewRows,
     reviewedIdSet: serverReviewedIds,
     linkedIdSet,
     unavailable: reviewTableUnavailable,
@@ -59,9 +64,14 @@ export default function Reconciliation() {
     [statementInput]
   )
 
+  const learnedAliases = useMemo(
+    () => buildLearnedStatementAliases(reviewRows, data),
+    [reviewRows, data]
+  )
+
   const statementMatches = useMemo(
-    () => matchStatementEntries(statementEntries, data),
-    [statementEntries, data]
+    () => matchStatementEntries(statementEntries, data, { aliases: learnedAliases }),
+    [statementEntries, data, learnedAliases]
   )
 
   const statementSummary = useMemo(() => {

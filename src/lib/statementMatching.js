@@ -121,6 +121,45 @@ export function parseStatementLines(rawText) {
   })
 }
 
+function buildAliasHintsMap(aliases) {
+  const hints = new Map()
+  for (const alias of aliases || []) {
+    const aliasTokens = tokenize(alias?.statement || '')
+    const canonicalTokens = tokenize(alias?.canonical || '')
+    if (!aliasTokens.length || !canonicalTokens.length) continue
+
+    for (const aliasToken of aliasTokens) {
+      if (!hints.has(aliasToken)) hints.set(aliasToken, new Set())
+      const bucket = hints.get(aliasToken)
+      for (const canonicalToken of canonicalTokens) {
+        bucket.add(canonicalToken)
+      }
+    }
+  }
+  return hints
+}
+
+export function buildLearnedStatementAliases(reviewRows, transactions) {
+  const txById = new Map((Array.isArray(transactions) ? transactions : []).map((txn) => [txn?.id, txn]))
+  const aliases = []
+
+  for (const row of reviewRows || []) {
+    if (row?.status !== 'linked') continue
+    if (!row?.statement_line || !row?.transaction_id) continue
+    const txn = txById.get(row.transaction_id)
+    if (!txn?.description) continue
+
+    const parsed = parseStatementLines(row.statement_line)
+    const statementDescription = parsed?.[0]?.description || row.statement_line
+    aliases.push({
+      statement: statementDescription,
+      canonical: txn.description,
+    })
+  }
+
+  return aliases
+}
+
 function buildTransactionIndex(transactions) {
   return (Array.isArray(transactions) ? transactions : []).map((txn) => ({
     txn,
@@ -137,7 +176,7 @@ function typeCompatibility(entryDirection, txnType) {
   return 0.6
 }
 
-function scoreCandidate(entry, candidate) {
+function scoreCandidate(entry, candidate, aliasHints = new Map()) {
   const amountDiff = Math.abs((entry.amount || 0) - Math.abs(candidate.amount || 0))
   if (amountDiff > 2) return null
 
@@ -145,12 +184,20 @@ function scoreCandidate(entry, candidate) {
   if (days > 7) return null
 
   const descriptionScore = overlapScore(entry.tokens, candidate.tokens)
+  const expandedTokens = new Set(entry.tokens)
+  for (const token of entry.tokens) {
+    const linked = aliasHints.get(token)
+    if (!linked) continue
+    for (const synonym of linked) expandedTokens.add(synonym)
+  }
+  const aliasBoostScore = overlapScore(expandedTokens, candidate.tokens)
   const dateScore = Math.max(0, 1 - days / 7)
   const amountScore = Math.max(0, 1 - amountDiff / 2)
   const txnTypeScore = typeCompatibility(entry.direction, candidate.type)
   const finalScore = Number((
-    0.45 * dateScore +
-    0.3 * descriptionScore +
+    0.4 * dateScore +
+    0.25 * descriptionScore +
+    0.1 * aliasBoostScore +
     0.2 * amountScore +
     0.05 * txnTypeScore
   ).toFixed(3))
@@ -163,8 +210,9 @@ function scoreCandidate(entry, candidate) {
   }
 }
 
-export function matchStatementEntries(statementEntries, transactions) {
+export function matchStatementEntries(statementEntries, transactions, options = {}) {
   const txnIndex = buildTransactionIndex(transactions)
+  const aliasHints = buildAliasHintsMap(options?.aliases)
 
   return (Array.isArray(statementEntries) ? statementEntries : []).map((entry) => {
     if (!entry?.isValid) {
@@ -177,7 +225,7 @@ export function matchStatementEntries(statementEntries, transactions) {
     }
 
     const scored = txnIndex
-      .map((candidate) => scoreCandidate(entry, candidate))
+      .map((candidate) => scoreCandidate(entry, candidate, aliasHints))
       .filter(Boolean)
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score
