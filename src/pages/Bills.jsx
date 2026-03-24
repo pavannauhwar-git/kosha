@@ -235,7 +235,7 @@ export default function Bills() {
       <PageHeader title="Bills & Dues" />
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           {visiblePending.length > 0 ? (
             <p className="text-caption text-ink-3 mt-0.5">
@@ -257,7 +257,7 @@ export default function Bills() {
       </div>
 
       {showGuideHint && (
-        <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
+        <div className="card mb-5 p-4 border border-brand-border bg-brand-container/40">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
               <BookOpen size={16} className="text-brand" />
@@ -281,7 +281,7 @@ export default function Bills() {
 
       {/* ── Structured summary card ───────────────────────────────────── */}
       {visiblePending.length > 0 && (
-        <div className="card mb-4 p-4">
+        <div className="card mb-5 p-4">
           <div className="flex items-center justify-between mb-1">
             <span className="text-caption text-ink-3">Total pending</span>
             <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2
@@ -315,7 +315,7 @@ export default function Bills() {
       )}
 
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="flex gap-2 mb-5">
+      <div className="flex gap-2 mb-6">
         {[
           { id: 'pending', label: `Pending (${visiblePending.length})` },
           { id: 'paid', label: `Paid (${visiblePaid.length})` },

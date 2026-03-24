@@ -131,6 +131,10 @@
     border: 0.5px solid rgba(18, 28, 74, 0.06);
   }
 
+  .page-stack {
+    @apply space-y-6 md:space-y-7;
+  }
+
   .card-md {
     @apply bg-kosha-surface rounded-card shadow-card-md;
   }
@@ -392,10 +396,10 @@
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
   .page {
-    @apply min-h-dvh px-4;
-    padding-top: 0.25rem;
-    padding-bottom: calc(var(--nav-height) + 0.9rem);
-    max-width: 560px;
+    @apply min-h-dvh px-4 md:px-5;
+    padding-top: 0.6rem;
+    padding-bottom: calc(var(--nav-height) + 1.1rem);
+    max-width: 640px;
     margin-left: auto;
     margin-right: auto;
   }
@@ -489,10 +493,10 @@
 
 @media (min-width: 768px) {
   .page {
-    max-width: 860px;
+    max-width: 920px;
     padding-left: 2rem;
     padding-right: 2rem;
-    padding-top: 0.5rem;
+    padding-top: 0.7rem;
     padding-bottom: 3.5rem;
   }
 }

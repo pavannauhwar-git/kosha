@@ -267,7 +267,7 @@ export default function Transactions() {
     <div className="page">
       <PageHeader title="Transactions" />
 
-      <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <p className="text-caption text-ink-3">
             {total > 0 ? `${Math.max(0, total - pendingDeleteIds.length)} transaction${Math.max(0, total - pendingDeleteIds.length) !== 1 ? 's' : ''}` : 'No results'}
@@ -283,7 +283,7 @@ export default function Transactions() {
       </div>
 
       {showGuideHint && (
-        <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
+        <div className="card mb-5 p-4 border border-brand-border bg-brand-container/40">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
               <BookOpen size={16} className="text-brand" />
@@ -306,7 +306,7 @@ export default function Transactions() {
       )}
 
       {/* Search */}
-      <div className="relative mb-4">
+      <div className="relative mb-5">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
         <input
           className="input pl-9 pr-9 py-3"
@@ -323,7 +323,7 @@ export default function Transactions() {
       </div>
 
       {/* Filter chips */}
-      <div className="flex items-center gap-2 mb-5 overflow-x-auto scrollbar-none pb-0.5">
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-none pb-0.5">
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
@@ -362,7 +362,7 @@ export default function Transactions() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="card mb-4 p-3 grid grid-cols-3 gap-2"
+            className="card mb-5 p-3 grid grid-cols-3 gap-2"
           >
             {CATEGORIES.map(c => (
               <button key={c.id}
@@ -381,7 +381,7 @@ export default function Transactions() {
       </AnimatePresence>
 
       {/* Transaction groups */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         {groups.map(([dateKey, txns]) => {
           const net = groupNet(txns)
           return (

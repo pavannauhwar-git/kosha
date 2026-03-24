@@ -234,7 +234,7 @@ export default function Dashboard() {
   return (
     <div className="page">
       <PageHeader title="Dashboard" />
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack">
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
