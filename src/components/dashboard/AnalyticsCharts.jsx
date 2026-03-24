@@ -2,6 +2,7 @@ import { memo } from 'react'
 import {
   AreaChart, Area,
   BarChart, Bar,
+  LineChart, Line,
   XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, Cell,
 } from 'recharts'
@@ -196,6 +197,104 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
             ))}
           </Bar>
         </BarChart>
+      </ResponsiveContainer>
+      <div className="h-4" />
+    </div>
+  )
+})
+
+const TREND_CHART_BG =
+  'radial-gradient(circle at 85% 20%, rgba(52,211,153,0.14) 0%, rgba(52,211,153,0) 58%), linear-gradient(180deg, #202551 0%, #151A3D 100%)'
+
+const ConfidenceTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  const point = payload[0]?.payload
+  return (
+    <div style={{
+      background: 'rgba(31,31,31,0.96)',
+      borderRadius: 12,
+      padding: '10px 14px',
+      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
+      minWidth: 140,
+      border: '0.5px solid rgba(255,255,255,0.10)',
+    }}>
+      <p style={{
+        fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+        letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
+      }}>
+        {label}
+      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Confidence</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: C.chartIncome }}>
+          {point?.confidence == null ? 'No data' : `${point.confidence}%`}
+        </span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Signals</span>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.78)' }}>
+          {point?.linked || 0} linked · {point?.rejected || 0} mismatch
+        </span>
+      </div>
+    </div>
+  )
+}
+
+export const ConfidenceTrendChart = memo(function ConfidenceTrendChart({ trendData }) {
+  if (!Array.isArray(trendData) || trendData.length === 0) return null
+
+  const latest = [...trendData].reverse().find((p) => p?.confidence != null)
+  const latestConfidence = latest?.confidence ?? null
+
+  return (
+    <div
+      className="rounded-card overflow-hidden shadow-card-lg"
+      style={{ background: TREND_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
+    >
+      <div className="px-5 pt-5 pb-2 flex items-start justify-between">
+        <div>
+          <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
+            Confidence Trend
+          </p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+            Daily linked vs mismatch quality (last 30 days)
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-bold tabular-nums" style={{
+            fontSize: 15,
+            color: latestConfidence != null && latestConfidence >= 70 ? C.chartIncome : C.chartExpense,
+            letterSpacing: '-0.01em',
+          }}>
+            {latestConfidence == null ? '—' : `${latestConfidence}%`}
+          </p>
+          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>latest day</p>
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={130}>
+        <LineChart data={trendData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
+          <XAxis
+            dataKey="dateShort"
+            tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.45)', fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+            interval="preserveStartEnd"
+            minTickGap={20}
+          />
+          <YAxis hide domain={[0, 100]} />
+          <Tooltip content={<ConfidenceTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
+          <ReferenceLine y={70} stroke="rgba(255,255,255,0.18)" strokeDasharray="3 3" />
+          <Line
+            dataKey="confidence"
+            type="monotone"
+            stroke={C.chartIncome}
+            strokeWidth={2.5}
+            dot={false}
+            connectNulls={false}
+            activeDot={{ r: 4, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
+          />
+        </LineChart>
       </ResponsiveContainer>
       <div className="h-4" />
     </div>

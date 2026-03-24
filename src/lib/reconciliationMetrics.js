@@ -232,3 +232,62 @@ export function identifyMerchantsInCooldown(rows, cooldownDays = 14) {
 
   return inCooldown
 }
+
+/**
+ * Calculate daily confidence trend over the last N days
+ * Returns array of {date, confidence} for charting
+ */
+export function calculateConfidenceTrend(rows, trendDays = 30) {
+  if (!rows || rows.length === 0) {
+    return []
+  }
+
+  const now = new Date()
+  const dailyStats = new Map() // 'YYYY-MM-DD' => { linked, rejected }
+
+  // Group by date
+  for (const row of rows) {
+    const updatedAt = String(row.updated_at || '')
+    if (!updatedAt) continue
+
+    const date = new Date(updatedAt)
+    if (!Number.isFinite(date.getTime())) continue
+
+    const dayKey = date.toISOString().split('T')[0]
+    if (!dailyStats.has(dayKey)) {
+      dailyStats.set(dayKey, { linked: 0, rejected: 0 })
+    }
+
+    const stats = dailyStats.get(dayKey)
+    if (row?.status === 'linked' && !isRejected(row)) {
+      stats.linked += 1
+    } else if (isRejected(row)) {
+      stats.rejected += 1
+    }
+  }
+
+  // Build trend data for the last trendDays
+  const trend = []
+  for (let i = trendDays - 1; i >= 0; i--) {
+    const date = new Date(now)
+    date.setDate(date.getDate() - i)
+    const dayKey = date.toISOString().split('T')[0]
+
+    const stats = dailyStats.get(dayKey) || { linked: 0, rejected: 0 }
+    const total = stats.linked + stats.rejected
+    const confidence = total > 0
+      ? Math.round((stats.linked / total) * 100)
+      : null
+
+    trend.push({
+      date: dayKey,
+      dateShort: dayKey.slice(5),  // MM-DD format
+      confidence,
+      linked: stats.linked,
+      rejected: stats.rejected,
+      total,
+    })
+  }
+
+  return trend
+}

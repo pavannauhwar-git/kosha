@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { AlertCircle } from 'lucide-react'
-import { CashFlowChart, NetSavingsChart } from '../components/dashboard/AnalyticsCharts'
+import { CashFlowChart, NetSavingsChart, ConfidenceTrendChart } from '../components/dashboard/AnalyticsCharts'
 import { useYearSummary } from '../hooks/useTransactions'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt } from '../lib/utils'
@@ -15,7 +15,7 @@ import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
 import YearlyInsightsCard from '../components/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
-import { detectConfidenceDrift } from '../lib/reconciliationMetrics'
+import { detectConfidenceDrift, calculateConfidenceTrend } from '../lib/reconciliationMetrics'
 
 const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2023 + i)
 
@@ -101,6 +101,11 @@ export default function Analytics() {
       drift,
     }
   }, [reconciliationRows])
+
+  const confidenceTrend = useMemo(
+    () => calculateConfidenceTrend(reconciliationRows, 30),
+    [reconciliationRows]
+  )
 
   return (
     <div className="page">
@@ -193,6 +198,8 @@ export default function Analytics() {
               </motion.div>
             )}
           </div>
+
+          <ConfidenceTrendChart trendData={confidenceTrend} />
 
           <TopExpensesPodium top5={top5} year={year} />
 

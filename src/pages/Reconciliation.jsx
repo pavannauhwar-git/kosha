@@ -32,9 +32,16 @@ const FILTERS = [
   { id: 'duplicates', label: 'Potential duplicates' },
 ]
 
+const REVIEW_STATE_FILTERS = [
+  { id: 'queue', label: 'In queue' },
+  { id: 'linked', label: 'Linked' },
+  { id: 'reviewed', label: 'Reviewed' },
+]
+
 export default function Reconciliation() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
+  const [reviewStateFilter, setReviewStateFilter] = useState('queue')
   const [localReviewedIds, setLocalReviewedIds] = useState(() => getReviewedReconciliationIds())
   const [savingId, setSavingId] = useState(null)
   const [resettingAliases, setResettingAliases] = useState(false)
@@ -138,14 +145,25 @@ export default function Reconciliation() {
   }, [reviewRows, data])
 
   const visibleItems = useMemo(() => {
-    const base = insights.queue
+    let base = insights.candidates
+    if (reviewStateFilter === 'queue') {
+      base = base.filter((item) => !effectiveReviewedIds.has(item?.txn?.id))
+    } else if (reviewStateFilter === 'linked') {
+      base = base.filter((item) => linkedIdSet.has(item?.txn?.id))
+    } else if (reviewStateFilter === 'reviewed') {
+      base = base.filter((item) => {
+        const id = item?.txn?.id
+        return effectiveReviewedIds.has(id) && !linkedIdSet.has(id)
+      })
+    }
+
     if (filter === 'missing-category') return base.filter((item) => item.flags.missingCategory)
     if (filter === 'missing-details') {
       return base.filter((item) => item.flags.missingDescription || item.flags.missingPaymentMode)
     }
     if (filter === 'duplicates') return base.filter((item) => item.flags.potentialDuplicate)
     return base
-  }, [insights.queue, filter])
+  }, [insights.candidates, reviewStateFilter, effectiveReviewedIds, linkedIdSet, filter])
 
   const markReviewedLocal = useCallback((id) => {
     if (!id) return
@@ -449,6 +467,22 @@ export default function Reconciliation() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
+        {REVIEW_STATE_FILTERS.map((chip) => {
+          const active = chip.id === reviewStateFilter
+          return (
+            <button
+              key={chip.id}
+              type="button"
+              onClick={() => setReviewStateFilter(chip.id)}
+              className={`chip ${active ? 'chip-active' : ''}`}
+            >
+              {chip.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
         {FILTERS.map((chip) => {
           const active = chip.id === filter
           return (
@@ -475,8 +509,18 @@ export default function Reconciliation() {
       ) : visibleItems.length === 0 ? (
         <div className="card p-8 text-center">
           <CheckCircle2 size={22} className="mx-auto text-income-text mb-2" />
-          <p className="text-body text-ink-2">No pending reconciliation items.</p>
-          <p className="text-caption text-ink-3 mt-1">Everything in your review queue is clean.</p>
+          <p className="text-body text-ink-2">
+            {reviewStateFilter === 'queue'
+              ? 'No pending reconciliation items.'
+              : reviewStateFilter === 'linked'
+                ? 'No linked reconciliation items found.'
+                : 'No reviewed reconciliation items found.'}
+          </p>
+          <p className="text-caption text-ink-3 mt-1">
+            {reviewStateFilter === 'queue'
+              ? 'Everything in your review queue is clean.'
+              : 'Try switching filters or categories to inspect more items.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
