@@ -4,6 +4,7 @@ const CHECKS = [
   { label: 'Build', command: ['npm', ['run', 'build']] },
   { label: 'Statement matching', command: ['npm', ['run', 'test:statement-matching']] },
   { label: 'Reconciliation flow', command: ['npm', ['run', 'test:reconciliation-flow']] },
+  { label: 'Reconciliation metrics', command: ['npm', ['run', 'test:reconciliation-metrics']] },
   { label: 'Deploy readiness', command: ['npm', ['run', 'test:deploy-readiness']] },
   { label: 'Join flow', command: ['npm', ['run', 'test:join-flow']] },
   { label: 'Liabilities realtime', command: ['npm', ['run', 'test:liabilities-realtime']] },

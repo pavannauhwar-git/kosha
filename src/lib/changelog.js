@@ -5,6 +5,7 @@ export const CHANGELOG = [
     items: [
       'Added confidence drift detection to flag when 7-day matching quality drops >15% below 30-day baseline',
       'Confidence drift alerts appear in Reconciliation with actionable advice (reset aliases or monitor decisions)',
+      'Drift visibility card now shown in Analytics page when confidence drops below baseline',
       'Added self-healing alias auto-demotion that removes learned merchant aliases appearing in 2+ rejected matches within 30 days',
       'Auto-demoted aliases are excluded from future matching until successfully re-linked by user, preventing repeated false positives',
       'Added alias quality dashboard showing top-performing merchants and currently auto-demoted merchants with success/rejection ratios',
@@ -13,6 +14,7 @@ export const CHANGELOG = [
       'Added linked status badge on statement matches that are already reconciled for at-a-glance confirmation',
       'Improved parsing error guidance with collapsible formatting tips for failed statement lines',
       'Hide "Report mismatch" button on already-linked statement matches to streamline UI',
+      'Added deterministic edge-case tests for drift detection and alias demotion math in release-candidate verification',
       'Reduced dashboard latest transaction section to a compact snapshot (top 3) to cut cognitive load',
       'Added contextual dismissible guide hints on Transactions and Bills for in-flow feature education',
       'Added local reminder infrastructure with settings controls, notification permission flow, and throttled dashboard alerts',

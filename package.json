@@ -12,6 +12,7 @@
     "test:deploy-readiness": "node scripts/check_deploy_readiness.mjs",
     "test:statement-matching": "node scripts/test_statement_matching.mjs",
     "test:reconciliation-flow": "node scripts/test_reconciliation_flow.mjs",
+    "test:reconciliation-metrics": "node scripts/test_reconciliation_metrics.mjs",
     "test:join-flow": "node scripts/test_join_flow.mjs",
     "test:liabilities-realtime": "node scripts/test_liabilities_realtime.mjs",
     "test:mutation-stress": "node scripts/test_mutation_stress.mjs"
