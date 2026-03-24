@@ -156,11 +156,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                 }}
               />
               <MenuRow
-                icon={<BookOpen size={15} />}
-                label="Setup Guide"
-                onClick={() => { close(); navigate('/guide') }}
-              />
-              <MenuRow
                 icon={<Info size={15} />}
                 label="About Kosha"
                 onClick={() => { close(); navigate('/about') }}
@@ -169,6 +164,11 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               <MenuDivider />
 
               {/* ── Group 3: Sign out ─────────────────────────────── */}
+              <MenuRow
+                icon={<BookOpen size={15} />}
+                label="Setup Guide"
+                onClick={() => { close(); navigate('/guide') }}
+              />
               <MenuRow
                 icon={<LogOut size={15} />}
                 label="Sign Out"

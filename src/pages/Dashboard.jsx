@@ -11,7 +11,6 @@ import {
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/AddTransactionSheet'
-import AboutKoshaLink from '../components/AboutKoshaLink'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { createFadeUp, createStagger } from '../lib/animations'
@@ -381,8 +380,6 @@ export default function Dashboard() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <AboutKoshaLink />
 
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
