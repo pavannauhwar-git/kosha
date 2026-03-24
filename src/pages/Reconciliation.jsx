@@ -575,8 +575,12 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
   const entry = row.entry
   const isLinked = !!(best?.txn?.id && linkedIdSet?.has(best.txn.id))
 
+  const borderColor = row.confidence === 'high' ? 'border-l-income-text' 
+                     : row.confidence === 'medium' ? 'border-l-warning-text' 
+                     : 'border-l-ink-3'
+
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-3">
+    <div className={`rounded-card border border-kosha-border border-l-4 ${borderColor} bg-kosha-surface p-3`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-ink-2 truncate">{entry.description || entry.line}</p>
@@ -584,23 +588,43 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
             {entry.date || 'No date'} · {entry.amount != null ? fmt(entry.amount) : 'No amount'}
           </p>
         </div>
-        <span className={`text-[11px] px-2 py-1 rounded-full font-semibold whitespace-nowrap ${
-          row.confidence === 'high'
-            ? 'bg-income-bg text-income-text'
-            : row.confidence === 'medium'
-              ? 'bg-warning-bg text-warning-text'
-              : 'bg-kosha-surface-2 text-ink-3'
-        }`}>
-          {row.confidence}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className={`text-[11px] px-2 py-1 rounded-full font-semibold whitespace-nowrap ${
+            row.confidence === 'high'
+              ? 'bg-income-bg text-income-text'
+              : row.confidence === 'medium'
+                ? 'bg-warning-bg text-warning-text'
+                : 'bg-kosha-surface-2 text-ink-3'
+          }`}>
+            {row.confidence}
+          </span>
+          {isLinked && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-income-bg text-income-text font-semibold">
+              ✓ Linked
+            </span>
+          )}
+        </div>
       </div>
 
       {!entry.isValid ? (
-        <p className="text-caption text-expense-text mt-2">Could not parse this line. Use a date and numeric amount.</p>
+        <div className="mt-2">
+          <p className="text-caption text-expense-text">Could not parse this line.</p>
+          <details className="text-caption text-ink-3 mt-1">
+            <summary className="cursor-pointer font-semibold">Formatting tips</summary>
+            <ul className="list-disc list-inside text-[11px] mt-1 space-y-0.5">
+              <li>Include a date (e.g., 24/03/2026 or 2026-03-24)</li>
+              <li>Include an amount (e.g., 542.00 or 542)</li>
+              <li>Separate fields with comma, pipe, or tab</li>
+              <li>Examples: &quot;24/03, Swiggy, 542&quot; or &quot;2026-03-24 | Uber | 318&quot;</li>
+            </ul>
+          </details>
+        </div>
       ) : !best ? (
         <p className="text-caption text-ink-3 mt-2">No candidate found in current transactions.</p>
       ) : (
-        <div className="mt-2 rounded-card border border-kosha-border bg-white p-2.5">
+        <div className={`mt-2 rounded-card border p-2.5 ${
+          isLinked ? 'border-income-text/30 bg-income-bg/5' : 'border-kosha-border bg-white'
+        }`}>
           <p className="text-caption text-ink-3">
             Best: {best.txn.description || 'No description'} · {fmt(best.txn.amount)} · {fmtDate(best.txn.date)}
           </p>
@@ -615,13 +639,15 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
             >
               {isLinked ? 'Linked' : 'Mark linked'}
             </button>
-            <button
-              type="button"
-              onClick={() => { if (best?.txn?.id) void onReject(best.txn.id, entry.line) }}
-              className="btn-ghost h-8 px-3"
-            >
-              Report mismatch
-            </button>
+            {!isLinked && (
+              <button
+                type="button"
+                onClick={() => { if (best?.txn?.id) void onReject(best.txn.id, entry.line) }}
+                className="btn-ghost h-8 px-3"
+              >
+                Report mismatch
+              </button>
+            )}
           </div>
         </div>
       )}
