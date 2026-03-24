@@ -91,6 +91,14 @@ async function main() {
     if (error) throw error
   }))
 
+  checks.push(await runCheck('reconciliation_reviews table accessible', async () => {
+    const { error } = await client
+      .from('reconciliation_reviews')
+      .select('id, user_id, transaction_id, status, statement_line, updated_at', { head: true, count: 'exact' })
+      .eq('user_id', user.id)
+    if (error) throw error
+  }))
+
   checks.push(await runCheck('mark_liability_paid RPC available', async () => {
     const { error } = await client.rpc('mark_liability_paid', {
       p_liability_id: '00000000-0000-0000-0000-000000000000',
