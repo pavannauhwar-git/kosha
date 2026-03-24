@@ -268,24 +268,25 @@ export default function Transactions() {
       <PageHeader title="Transactions" />
 
       <div className="mb-5 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-caption text-ink-3">
+        <div className="min-w-0">
+          <p className="text-caption text-ink-3 tracking-wide uppercase">Your ledger</p>
+          <p className="text-[15px] font-semibold text-ink truncate">
             {total > 0 ? `${Math.max(0, total - pendingDeleteIds.length)} transaction${Math.max(0, total - pendingDeleteIds.length) !== 1 ? 's' : ''}` : 'No results'}
-            {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
+            {(typeFilter !== 'all' || catFilter) ? ' · filtered' : ''}
           </p>
         </div>
         {total > 0 && (
           <button onClick={exportCSV} title="Export CSV"
-            className="close-btn border border-kosha-border shrink-0">
+            className="close-btn shrink-0">
             <Download size={16} className="text-ink-2" />
           </button>
         )}
       </div>
 
       {showGuideHint && (
-        <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
+        <div className="card mb-4 p-4 border border-brand-border bg-gradient-to-r from-brand-container/55 to-kosha-surface">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-white/75 border border-brand-border/55 flex items-center justify-center shrink-0">
               <BookOpen size={16} className="text-brand" />
             </div>
             <div className="flex-1 min-w-0">
@@ -309,7 +310,7 @@ export default function Transactions() {
       <div className="relative mb-4">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
         <input
-          className="input pl-9 pr-9 py-3"
+          className="input pl-9 pr-9 py-3.5"
           placeholder="Search transactions…"
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -327,10 +328,7 @@ export default function Transactions() {
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
-            className={`shrink-0 px-3.5 py-2 rounded-pill text-label font-semibold border
-                        transition-colors ${typeFilter === t.id
-              ? TYPE_CHIP[t.id]
-              : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+            className={`chip shrink-0 ${typeFilter === t.id ? 'chip-active' : ''}`}
           >
             {t.label}
           </button>
@@ -338,11 +336,7 @@ export default function Transactions() {
 
         <button
           onClick={() => setShowCats(v => !v)}
-          className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-pill
-                      text-label font-semibold border transition-colors
-                      ${catFilter
-            ? 'bg-brand-container text-brand-on border-brand-container'
-            : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+          className={`chip shrink-0 flex items-center ${catFilter ? 'chip-active' : ''}`}
         >
           <SlidersHorizontal size={12} />
           {catFilter ? CATEGORIES.find(c => c.id === catFilter)?.label || 'Category' : 'Category'}
@@ -367,11 +361,11 @@ export default function Transactions() {
             {CATEGORIES.map(c => (
               <button key={c.id}
                 onClick={() => { handleCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
-                className={`px-2 py-1.5 rounded-chip text-[11px] font-semibold text-center
+                className={`px-2 py-2 rounded-chip text-[11px] font-semibold text-center
                             border transition-colors
                             ${catFilter === c.id
-                  ? 'bg-brand-container text-brand-on border-brand-container'
-                  : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+                  ? 'bg-brand-container text-brand-on border-brand-border'
+                  : 'bg-kosha-surface-2 text-ink-3 border-kosha-border'}`}
               >
                 {c.label}
               </button>
@@ -414,8 +408,7 @@ export default function Transactions() {
       {hasMore && (
         <button
           onClick={() => setDisplayCount(n => n + 50)}
-          className="w-full py-3.5 text-label font-semibold text-brand text-center
-                     bg-kosha-surface border border-kosha-border rounded-card mt-2.5"
+          className="btn-tonal w-full py-3.5 text-label font-semibold text-center mt-2.5"
         >
           Show more ({total - data.length} remaining)
         </button>

@@ -236,13 +236,14 @@ export default function Bills() {
 
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-5 flex items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
+          <p className="text-caption text-ink-3 tracking-wide uppercase">Payment runway</p>
           {visiblePending.length > 0 ? (
-            <p className="text-caption text-ink-3 mt-0.5">
+            <p className="text-[15px] font-semibold text-ink mt-0.5 truncate">
               Next due in {Math.min(...visiblePending.map(b => Math.max(0, daysUntil(b.due_date))))} days
             </p>
           ) : (
-            <p className="text-caption text-ink-3 mt-0.5">{totalBills} bill{totalBills !== 1 ? 's' : ''}</p>
+            <p className="text-[15px] font-semibold text-ink mt-0.5">{totalBills} bill{totalBills !== 1 ? 's' : ''}</p>
           )}
         </div>
         {totalBills > 0 && (
@@ -257,9 +258,9 @@ export default function Bills() {
       </div>
 
       {showGuideHint && (
-        <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
+        <div className="card mb-4 p-4 border border-brand-border bg-gradient-to-r from-brand-container/55 to-kosha-surface">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-white/75 border border-brand-border/55 flex items-center justify-center shrink-0">
               <BookOpen size={16} className="text-brand" />
             </div>
             <div className="flex-1 min-w-0">
@@ -281,7 +282,7 @@ export default function Bills() {
 
       {/* ── Structured summary card ───────────────────────────────────── */}
       {visiblePending.length > 0 && (
-        <div className="card mb-4 p-4">
+        <div className="card mb-4 p-4 bg-gradient-to-b from-kosha-surface to-kosha-surface-2/40">
           <div className="flex items-center justify-between mb-1">
             <span className="text-caption text-ink-3">Total pending</span>
             <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2
@@ -321,9 +322,9 @@ export default function Bills() {
           { id: 'paid', label: `Paid (${visiblePaid.length})` },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 py-3 rounded-card text-sm font-semibold border transition-all
+            className={`flex-1 py-3 rounded-pill text-sm font-semibold border transition-all
               ${tab === t.id
-                ? 'bg-brand-container text-brand-on border-brand-container'
+                ? 'bg-brand-container text-brand-on border-brand-border shadow-card'
                 : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
           >
             {t.label}
@@ -393,7 +394,7 @@ export default function Bills() {
                       {bill.is_recurring && (
                         <Repeat size={12} className="text-brand shrink-0" />
                       )}
-                      <p className="text-sm font-semibold text-ink truncate">
+                      <p className="text-[15px] font-semibold text-ink truncate">
                         {bill.description}
                       </p>
                     </div>

@@ -4,57 +4,57 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ── App backgrounds ───────────────────────────────────────────────
-        'kosha-bg':            '#FAFBFF',
-        'kosha-bg-2':          '#F2F5FF',
+        // ── Material You inspired surfaces ───────────────────────────────
+        'kosha-bg':            '#F5F8FF',
+        'kosha-bg-2':          '#EAF1FF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F2F5FF',
-        'kosha-border':        '#D8DEFF',
-        'kosha-border-strong': '#8C98FF',
+        'kosha-surface-2':     '#F1F4FA',
+        'kosha-border':        '#D9E2F1',
+        'kosha-border-strong': '#A9B8D3',
 
-        // ── Brand — Periwinkle + Electric Lime ───────────────────────────
-        'brand':           '#2F3BCE',   // deep indigo — buttons, FAB, active
-        'brand-dark':      '#1E1B4B',   // near-black indigo
-        'brand-mid':       '#5C6CFF',   // mid cobalt — hero gradient
-        'brand-container': '#E9EDFF',   // cool tint — nav pill, tonal bg
-        'brand-on':        '#2F3BCE',   // text on brand-container
-        'brand-accent':    '#E2FF5A',   // electric lime — hero chip, savings
+        // ── Primary / Tonal palette (Google blue family) ────────────────
+        'brand':           '#0B57D0',
+        'brand-dark':      '#0A3F99',
+        'brand-mid':       '#4285F4',
+        'brand-container': '#D3E3FD',
+        'brand-on':        '#0842A0',
+        'brand-accent':    '#A8C7FA',
 
         // ── Income ────────────────────────────────────────────────────────
-        'income':        '#059669',
-        'income-bg':     '#ECFDF5',
-        'income-text':   '#047857',
-        'income-border': '#A7F3D0',
+        'income':        '#0F9D58',
+        'income-bg':     '#E6F4EA',
+        'income-text':   '#137333',
+        'income-border': '#B7E1CD',
 
         // ── Expense ───────────────────────────────────────────────────────
-        'expense':        '#E11D48',
-        'expense-bg':     '#FFF1F2',
-        'expense-text':   '#BE123C',
-        'expense-border': '#FECDD3',
+        'expense':        '#C5221F',
+        'expense-bg':     '#FCE8E6',
+        'expense-text':   '#A50E0E',
+        'expense-border': '#F6AEA9',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#0284C7',   // sky-600
-        'invest-bg':     '#F0F9FF',   // sky-50
-        'invest-text':   '#0369A1',   // sky-700
-        'invest-border': '#BAE6FD',   // sky-200
+        'invest':        '#1A73E8',
+        'invest-bg':     '#E8F0FE',
+        'invest-text':   '#174EA6',
+        'invest-border': '#C6DAFC',
 
         // ── Repayment / Bills ─────────────────────────────────────────────
-        'repay':        '#CA8A04',
-        'repay-bg':     '#FEFCE8',
-        'repay-text':   '#A16207',
-        'repay-border': '#FEF08A',
+        'repay':        '#B06000',
+        'repay-bg':     '#FEEFC3',
+        'repay-text':   '#8A4B00',
+        'repay-border': '#F8D57E',
 
         // ── Warning ───────────────────────────────────────────────────────
-        'warning':        '#D97706',
-        'warning-bg':     '#FFFBEB',
-        'warning-border': '#FDE68A',
-        'warning-text':   '#B45309',
+        'warning':        '#C26401',
+        'warning-bg':     '#FFF4E5',
+        'warning-border': '#FBD8A4',
+        'warning-text':   '#9D4E00',
 
         // ── Ink — indigo-tinted neutrals ──────────────────────────────────
-        'ink':   '#1E1B4B',
-        'ink-2': '#312E81',
-        'ink-3': '#6E7699',
-        'ink-4': '#A3ABC8',
+        'ink':   '#1F2937',
+        'ink-2': '#334155',
+        'ink-3': '#64748B',
+        'ink-4': '#94A3B8',
 
         // ── Utility ───────────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',
@@ -64,36 +64,36 @@ export default {
       },
 
       fontFamily: {
-        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        sans:    ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        display: ['Roboto', 'system-ui', 'sans-serif'],
+        sans:    ['Roboto', 'system-ui', 'sans-serif'],
       },
 
       fontSize: {
-        'caption': ['12px', { lineHeight: '1.4',  letterSpacing: '0.01em'  }],
-        'label':   ['14px', { lineHeight: '1.4',  letterSpacing: '0em'     }],
-        'body':    ['16px', { lineHeight: '1.5',  letterSpacing: '0em'     }],
-        'value':   ['20px', { lineHeight: '1.3',  letterSpacing: '-0.01em' }],
-        'display': ['28px', { lineHeight: '1.15', letterSpacing: '-0.01em' }],
-        'hero':    ['36px', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
+        'caption': ['12px', { lineHeight: '1.35', letterSpacing: '0.01em'  }],
+        'label':   ['14px', { lineHeight: '1.35', letterSpacing: '0.005em' }],
+        'body':    ['16px', { lineHeight: '1.45', letterSpacing: '0.005em' }],
+        'value':   ['22px', { lineHeight: '1.2',  letterSpacing: '-0.01em' }],
+        'display': ['30px', { lineHeight: '1.08', letterSpacing: '-0.015em' }],
+        'hero':    ['38px', { lineHeight: '1.02', letterSpacing: '-0.02em' }],
       },
 
       borderRadius: {
-        'card':    '16px',
-        'card-lg': '20px',
-        'hero':    '24px',
-        'chip':    '8px',
+        'card':    '20px',
+        'card-lg': '26px',
+        'hero':    '30px',
+        'chip':    '10px',
         'pill':    '9999px',
       },
 
       boxShadow: {
-        'card':       '0 2px 7px rgba(18,28,74,0.06), 0 0 0 0.5px rgba(18,28,74,0.08)',
-        'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
-        'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
-        'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
-        'fab':        '0 4px 14px rgba(47,59,206,0.36)',
-        'focus':      '0 0 0 3px rgba(92,108,255,0.30)',
-        'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
-        'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
+        'card':       '0 1px 2px rgba(15,23,42,0.06), 0 0 0 1px rgba(148,163,184,0.14)',
+        'card-md':    '0 6px 18px rgba(15,23,42,0.10), 0 0 0 1px rgba(148,163,184,0.16)',
+        'card-lg':    '0 14px 30px rgba(15,23,42,0.14), 0 0 0 1px rgba(148,163,184,0.18)',
+        'apple-card': '0 24px 50px rgba(11,87,208,0.22), 0 10px 28px rgba(15,23,42,0.14)',
+        'fab':        '0 8px 24px rgba(11,87,208,0.30)',
+        'focus':      '0 0 0 3px rgba(66,133,244,0.28)',
+        'urgent':     '0 8px 22px rgba(197,34,31,0.18), 0 0 0 1px rgba(197,34,31,0.20)',
+        'warn':       '0 8px 22px rgba(194,100,1,0.16), 0 0 0 1px rgba(194,100,1,0.18)',
       },
 
       keyframes: {

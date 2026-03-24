@@ -160,10 +160,15 @@ export default function Login() {
 
   return (
     <div
-      className="h-dvh bg-kosha-bg px-4 overflow-y-auto"
-      style={{paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="h-dvh bg-kosha-bg px-4 overflow-y-auto relative"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="min-h-full flex flex-col items-center justify-center py-8">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 -left-12 h-56 w-56 rounded-full bg-brand/10 blur-3xl" />
+        <div className="absolute top-24 -right-12 h-64 w-64 rounded-full bg-income/10 blur-3xl" />
+      </div>
+
+      <div className="min-h-full flex flex-col items-center justify-center py-8 relative z-10">
         <div className="w-full max-w-[380px]">
           <motion.div
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
@@ -173,11 +178,11 @@ export default function Login() {
             {/* ── Card ─────────────────────────────────────────────────────── */}
             <motion.div
               variants={fadeUp}
-              className="card p-6 mb-4"
+              className="card p-6 sm:p-7 mb-4 border border-brand-border/70 shadow-card-md"
             >
 
               {/* ── Logo ──────────────────────────────────────────────────── */}
-              <div className="flex flex-col items-center mb-4">
+              <div className="flex flex-col items-center mb-5">
                 <KoshaLogo size={56} />
                 <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
                   Your Financial Sheath
@@ -185,8 +190,8 @@ export default function Login() {
               </div>
 
               {/* ── Heading ───────────────────────────────────────────────── */}
-              <div className="mb-4">
-                <h1 className="text-[26px] font-bold text-ink tracking-tight leading-tight mb-1.5">
+              <div className="mb-5">
+                <h1 className="text-[28px] font-bold text-ink tracking-tight leading-tight mb-1.5">
                   {mode === 'signin'
                     ? 'Welcome back'
                     : mode === 'signup'
@@ -195,7 +200,7 @@ export default function Login() {
                         ? 'Reset password'
                         : 'Set new password'}
                 </h1>
-                <p className="text-label text-ink-3">
+                <p className="text-label text-ink-3 leading-relaxed">
                   {mode === 'signin'
                     ? 'Sign in to continue to Kosha'
                     : mode === 'signup'
@@ -212,10 +217,10 @@ export default function Login() {
                   onClick={handleGoogle}
                   disabled={googleLoading || loading}
                   className="w-full flex items-center justify-center gap-3 py-3.5
-                       rounded-card border border-kosha-border bg-kosha-surface
+                       rounded-card border border-kosha-border bg-kosha-surface/90
                        text-label font-semibold text-ink
                        active:scale-[0.98] transition-all duration-75
-                       disabled:opacity-60 mb-4 shadow-card"
+                       disabled:opacity-60 mb-4 shadow-card hover:border-brand/30"
                 >
                   <GoogleLogo />
                   {googleLoading ? 'Redirecting…' : 'Continue with Google'}
@@ -355,7 +360,7 @@ export default function Login() {
                   type="submit"
                   disabled={loading || googleLoading || isRedirectingAfterReset}
                   className="w-full py-4 rounded-card bg-brand text-white
-                         text-body font-semibold mt-1
+                         text-body font-semibold mt-1 shadow-[0_12px_24px_rgba(11,87,208,0.28)]
                          active:scale-[0.98] transition-all duration-75
                          disabled:opacity-60"
                 >
@@ -379,7 +384,7 @@ export default function Login() {
 
               {/* ── Toggle mode ───────────────────────────────────────────── */}
               {mode === 'forgot' ? (
-                <p className="text-label text-ink-3 text-center mt-4">
+                <p className="text-label text-ink-3 text-center mt-5">
                   Remembered your password?{' '}
                   <button
                     onClick={() => {
@@ -393,7 +398,7 @@ export default function Login() {
                   </button>
                 </p>
               ) : mode === 'reset' ? (
-                <p className="text-label text-ink-3 text-center mt-4">
+                <p className="text-label text-ink-3 text-center mt-5">
                   Opened the wrong page?{' '}
                   <button
                     onClick={() => {
@@ -407,7 +412,7 @@ export default function Login() {
                   </button>
                 </p>
               ) : (
-                <p className="text-label text-ink-3 text-center mt-4">
+                <p className="text-label text-ink-3 text-center mt-5">
                   {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
                   <button
                     onClick={() => {
@@ -425,7 +430,7 @@ export default function Login() {
 
             {/* ── Footer ─────────────────────────────────────────────────── */}
             <motion.div variants={fadeUp}>
-              <AboutKoshaLink className="text-center pt-1" />
+              <AboutKoshaLink className="text-center pt-2" />
             </motion.div>
           </motion.div>
         </div>

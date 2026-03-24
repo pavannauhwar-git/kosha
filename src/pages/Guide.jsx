@@ -16,7 +16,6 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import PageHeader from '../components/PageHeader'
 import { createFadeUp, createStagger } from '../lib/animations'
 
 const fadeUp = createFadeUp(4, 0.18)
@@ -236,11 +235,28 @@ export default function Guide() {
   }, [])
 
   return (
-    <div className="page">
-      <PageHeader title="Guide" />
+    <div className="min-h-dvh bg-kosha-bg relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -left-20 h-72 w-72 rounded-full bg-brand/10 blur-3xl" />
+        <div className="absolute top-24 -right-20 h-72 w-72 rounded-full bg-invest-text/10 blur-3xl" />
+      </div>
 
+      <div
+        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0.75rem), 0.75rem)', paddingBottom: '0.75rem' }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center active:bg-kosha-surface-2"
+        >
+          <ArrowLeft size={16} className="text-ink-2" />
+        </button>
+        <h1 className="text-[17px] font-bold text-ink tracking-tight">Guide</h1>
+      </div>
+
+      <div className="px-4 pt-5 pb-24 max-w-[860px] mx-auto relative z-10">
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
-        <motion.div variants={fadeUp} className="card p-4">
+        <motion.div variants={fadeUp} className="card p-4 border border-brand-border/70 bg-brand-container/45 shadow-card-md">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
               <BookOpen size={18} className="text-brand" />
@@ -254,7 +270,7 @@ export default function Guide() {
           </div>
         </motion.div>
 
-        <motion.section variants={fadeUp}>
+        <motion.section variants={fadeUp} className="max-w-[760px] mx-auto w-full">
           <p className="section-label mb-2">Start here</p>
           <div className="list-card">
             {START_HERE.map((step, i) => (
@@ -265,7 +281,7 @@ export default function Guide() {
           </div>
         </motion.section>
 
-        <motion.section variants={fadeUp}>
+        <motion.section variants={fadeUp} className="max-w-[760px] mx-auto w-full">
           <p className="section-label mb-2">Feature explorer</p>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3">
             {GUIDE_TABS.map((tab) => {
@@ -290,7 +306,7 @@ export default function Guide() {
               Viewed {viewedCount}/{FEATURE_CARDS.length}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 place-items-stretch">
             {filteredCards.map((card) => {
               const Icon = card.icon
               const isViewed = viewed.has(card.id)
@@ -302,7 +318,7 @@ export default function Guide() {
                   whileTap={{ scale: 0.985 }}
                   transition={{ duration: 0.14 }}
                   onClick={() => openFeature(card.id)}
-                  className="card p-4 text-left"
+                  className="card p-4 text-left h-full border border-kosha-border/75 shadow-card"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -328,18 +344,18 @@ export default function Guide() {
           </div>
         </motion.section>
 
-        <motion.section variants={fadeUp}>
+        <motion.section variants={fadeUp} className="max-w-[760px] mx-auto w-full">
           <p className="section-label mb-2">Playbook cadence</p>
-          <div className="card p-4 space-y-2.5">
+          <div className="card p-4 space-y-2.5 border border-brand-border/60">
             <p className="text-[13px] text-ink-2"><span className="font-semibold">Daily:</span> Dashboard pulse + quick capture</p>
             <p className="text-[13px] text-ink-2"><span className="font-semibold">Weekly:</span> Bills check + Reconciliation cleanup</p>
             <p className="text-[13px] text-ink-2"><span className="font-semibold">Monthly:</span> Analytics review + export backup</p>
           </div>
         </motion.section>
 
-        <motion.section variants={fadeUp}>
+        <motion.section variants={fadeUp} className="max-w-[760px] mx-auto w-full">
           <p className="section-label mb-2">Trust and privacy</p>
-          <div className="card p-4 space-y-2">
+          <div className="card p-4 space-y-2 border border-brand-border/60">
             <div className="flex items-start gap-2">
               <ShieldCheck size={16} className="text-brand mt-0.5" />
               <p className="text-label text-ink-2">Your app data stays within your Supabase project under row-level security policies.</p>
@@ -349,7 +365,7 @@ export default function Guide() {
           </div>
         </motion.section>
 
-        <motion.div variants={fadeUp} className="card p-4 bg-brand-container border border-brand-border">
+        <motion.div variants={fadeUp} className="card p-4 bg-brand-container border border-brand-border max-w-[760px] mx-auto w-full">
           <div className="flex items-center gap-2 mb-1">
             <Sparkles size={15} className="text-brand" />
             <p className="text-body font-semibold text-brand-on">Today tip</p>
@@ -357,7 +373,7 @@ export default function Guide() {
           <p className="text-label text-brand-on/90">{todayTip}</p>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="flex gap-2">
+        <motion.div variants={fadeUp} className="flex gap-2 max-w-[760px] mx-auto w-full">
           <button
             onClick={() => navigate('/')}
             className="btn-tonal flex-1 py-3"
@@ -372,6 +388,7 @@ export default function Guide() {
           </button>
         </motion.div>
       </motion.div>
+      </div>
 
       <AnimatePresence>
         {selectedFeature && (
@@ -400,7 +417,7 @@ export default function Guide() {
                   if (info.offset.x < -70) moveFeature(1)
                   if (info.offset.x > 70) moveFeature(-1)
                 }}
-                className="card p-4 md:p-5 max-h-[78vh] overflow-y-auto w-full max-w-[560px]"
+                className="card p-4 md:p-5 max-h-[78vh] overflow-y-auto w-full max-w-[560px] border border-brand-border/70 shadow-card-md"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
@@ -417,14 +434,14 @@ export default function Guide() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <p className="text-[11px] text-ink-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                  <p className="text-[11px] text-ink-3 shrink-0">
                     Card {selectedIndex + 1} of {navigationPool.length}
                   </p>
-                  <div className="flex items-center gap-1.5">
+                  <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto">
                     <button
                       type="button"
-                      className="chip"
+                      className="chip justify-center"
                       onClick={() => moveFeature(-1)}
                       disabled={selectedIndex <= 0}
                     >
@@ -432,7 +449,7 @@ export default function Guide() {
                     </button>
                     <button
                       type="button"
-                      className="chip"
+                      className="chip justify-center"
                       onClick={() => moveFeature(1)}
                       disabled={selectedIndex >= navigationPool.length - 1}
                     >

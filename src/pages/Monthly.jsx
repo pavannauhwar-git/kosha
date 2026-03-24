@@ -174,7 +174,13 @@ export default function Monthly() {
   const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
 
   return (
-    <div className="page">
+    <div className="page relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -left-20 h-72 w-72 rounded-full bg-brand/10 blur-3xl" />
+        <div className="absolute top-20 -right-20 h-72 w-72 rounded-full bg-invest-text/10 blur-3xl" />
+      </div>
+
+      <div className="relative z-10">
       <PageHeader title="Monthly" />
 
       <PickerNavigator
@@ -200,7 +206,7 @@ export default function Monthly() {
       <button
         type="button"
         onClick={() => navigate('/reconciliation')}
-        className="card p-4 mb-6 w-full text-left"
+        className="card p-4 mb-6 w-full text-left border border-brand-border/70 shadow-card-md"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -235,7 +241,7 @@ export default function Monthly() {
         >
           <BreakdownCard earned={earned} spent={spent} invested={invested} />
 
-          <div className="card p-4">
+          <div className="card p-4 border border-brand-border/70">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div>
                 <p className="section-label">Month close summary</p>
@@ -267,7 +273,7 @@ export default function Monthly() {
           </div>
 
           {budgetVariance.hasBudgets && (
-            <div className="card p-4">
+            <div className="card p-4 border border-brand-border/60">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
                   <p className="section-label">Budget variance</p>
@@ -331,7 +337,7 @@ export default function Monthly() {
               <p className="section-label mb-3">Investments</p>
               <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
                 {vehicleEntries.map(([vehicle, amt]) => (
-                  <div key={vehicle} className="card p-4 shrink-0 min-w-[120px]">
+                  <div key={vehicle} className="card p-4 shrink-0 min-w-[120px] border border-kosha-border/70">
                     <p className="text-caption text-ink-3 font-medium mb-1 truncate">{vehicle}</p>
                     <p className="text-value font-bold text-invest-text tabular-nums">{fmt(amt)}</p>
                   </div>
@@ -360,6 +366,7 @@ export default function Monthly() {
           />
         )}
       </AnimatePresence>
+      </div>
     </div>
   )
 }
