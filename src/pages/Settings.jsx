@@ -15,7 +15,6 @@ import {
 } from '../lib/reminders'
 import { buildJoinInviteUrl, createInvite, inviteStatusLabel, listInvites, MAX_ACTIVE_INVITES } from '../lib/invites'
 import { fmtDate } from '../lib/utils'
-import { getPreferredLocale, setPreferredLocale, SUPPORTED_LOCALES } from '../lib/locale'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -61,7 +60,6 @@ export default function Settings() {
   const [reminderPrefs, setReminderPrefsState] = useState(() => getReminderPrefs())
   const [notificationPermission, setNotificationPermission] = useState(() => getNotificationPermission())
   const [reminderMsg, setReminderMsg] = useState('')
-  const [locale, setLocale] = useState(() => getPreferredLocale())
   const [walletInvites, setWalletInvites] = useState([])
   const [walletLoading, setWalletLoading] = useState(false)
   const [walletError, setWalletError] = useState('')
@@ -163,13 +161,6 @@ export default function Settings() {
       setReminderMsg('Notifications blocked. Enable them from browser settings.')
       setTimeout(() => setReminderMsg(''), 3200)
     }
-  }
-
-  function handleLocaleChange(nextLocale) {
-    const normalized = setPreferredLocale(nextLocale)
-    setLocale(normalized)
-    setReminderMsg('Language and formatting preference saved.')
-    setTimeout(() => setReminderMsg(''), 2000)
   }
 
   async function copyInviteLink(token) {
@@ -391,32 +382,6 @@ export default function Settings() {
                 {walletError || walletMsg}
               </p>
             )}
-          </motion.div>
-
-          {/* ── Localization section ────────────────────────────────── */}
-          <motion.div variants={fadeUp}>
-            <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
-              Localization
-            </p>
-            <div className="card p-3">
-              <p className="text-[13px] text-ink-2 mb-2 px-1">Language and regional formatting</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {SUPPORTED_LOCALES.map((option) => {
-                  const active = locale === option.id
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => handleLocaleChange(option.id)}
-                      className={`rounded-card border px-3 py-2 text-left transition-colors ${active ? 'border-brand bg-brand-container/35' : 'border-kosha-border bg-kosha-surface'}`}
-                    >
-                      <p className={`text-[12px] font-semibold ${active ? 'text-brand' : 'text-ink-2'}`}>{option.label}</p>
-                      <p className="text-[11px] text-ink-3 mt-0.5">{option.id}</p>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
           </motion.div>
 
         </motion.div>

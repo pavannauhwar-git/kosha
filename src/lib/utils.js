@@ -7,13 +7,8 @@ export function fmt(n, compact = false) {
   const currency = getPreferredCurrency()
   const abs = Math.abs(n)
   if (compact) {
-    if (currency === 'INR') {
-      if (abs >= 1_00_000) return `₹${(n / 1_00_000).toFixed(1)}L`
-      if (abs >= 1_000) return `₹${(n / 1_000).toFixed(1)}K`
-    } else {
-      if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-      if (abs >= 1_000) return `$${(n / 1_000).toFixed(1)}K`
-    }
+    if (abs >= 1_00_000) return `₹${(n / 1_00_000).toFixed(1)}L`
+    if (abs >= 1_000) return `₹${(n / 1_000).toFixed(1)}K`
   }
   return new Intl.NumberFormat(locale, {
     style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2,

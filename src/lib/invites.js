@@ -1,4 +1,4 @@
-export const MAX_ACTIVE_INVITES = 3
+export const MAX_ACTIVE_INVITES = 1
 
 export function getInviteToken(locationSearch = '') {
   const queryToken = new URLSearchParams(locationSearch || '').get('invite')

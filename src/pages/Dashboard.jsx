@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat, BookOpen } from 'lucide-react'
+import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat } from 'lucide-react'
 import {
   useTransactions,
   useMonthSummary,
@@ -245,24 +245,6 @@ export default function Dashboard() {
           <h1 className="text-display font-bold text-ink tracking-tight">
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <button
-            onClick={() => navigate('/guide')}
-            className="card w-full flex items-center justify-between px-4 py-3 text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-kosha-surface-2 flex items-center justify-center shrink-0">
-                <BookOpen size={15} className="text-ink-3" />
-              </div>
-              <div>
-                <p className="text-label font-semibold text-ink-2">Need help? Open guide</p>
-                <p className="text-[11px] text-ink-4">Workflows, recurring setup, and monthly routines</p>
-              </div>
-            </div>
-            <ArrowRight size={15} className="text-ink-4 shrink-0" />
-          </button>
         </motion.div>
 
         {/* ── Hero card — sub-component, renders independently ─────── */}
