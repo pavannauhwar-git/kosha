@@ -7,6 +7,8 @@ export const CHANGELOG = [
       'Confidence drift alerts appear in Reconciliation with actionable advice (reset aliases or monitor decisions)',
       'Added self-healing alias auto-demotion that removes learned merchant aliases appearing in 2+ rejected matches within 30 days',
       'Auto-demoted aliases are excluded from future matching until successfully re-linked by user, preventing repeated false positives',
+      'Added alias quality dashboard showing top-performing merchants and currently auto-demoted merchants with success/rejection ratios',
+      'Alias quality scores displayed as success percentages with color-coded health status (green ≥90%, blue ≥70%, orange <70%)',
       'Reduced dashboard latest transaction section to a compact snapshot (top 3) to cut cognitive load',
       'Added contextual dismissible guide hints on Transactions and Bills for in-flow feature education',
       'Added local reminder infrastructure with settings controls, notification permission flow, and throttled dashboard alerts',

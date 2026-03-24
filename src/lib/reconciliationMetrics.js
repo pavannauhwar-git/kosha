@@ -118,3 +118,66 @@ export function identifyDemotedAliases(rows, transactions, threshold = 2, timeWi
 
   return demoted
 }
+
+/**
+ * Calculate quality score for each learned alias based on success/rejection ratio
+ * Returns array of {merchant, successCount, rejectionCount, qualityScore} sorted by quality
+ */
+export function calculateAliasQuality(rows, transactions, timeWindowDays = 30) {
+  if (!rows || rows.length === 0) {
+    return []
+  }
+
+  const now = new Date()
+  const windowMs = timeWindowDays * 24 * 60 * 60 * 1000
+  const cutoffTime = new Date(now.getTime() - windowMs).toISOString()
+
+  // Filter rows in time window
+  const windowRows = rows.filter((row) => {
+    const updatedAt = String(row.updated_at || '')
+    return updatedAt >= cutoffTime
+  })
+
+  // Track success and rejection counts by merchant
+  const aliasStats = new Map()
+
+  // Count linked (successful) matches
+  for (const row of windowRows) {
+    if (row?.status !== 'linked' || !row?.statement_line) continue
+    const merchant = row.statement_line.split(/[,|]/)[0]?.trim() || row.statement_line
+    if (!aliasStats.has(merchant)) {
+      aliasStats.set(merchant, { successCount: 0, rejectionCount: 0 })
+    }
+    aliasStats.get(merchant).successCount += 1
+  }
+
+  // Count rejected matches
+  for (const row of windowRows) {
+    if (!isRejected(row) || !row?.statement_line) continue
+    const line = String(row.statement_line || '')
+    const cleanLine = line.startsWith('REJECTED:') ? line.slice(9).trim() : line
+    const merchant = cleanLine.split(/[,|]/)[0]?.trim() || cleanLine
+    if (!aliasStats.has(merchant)) {
+      aliasStats.set(merchant, { successCount: 0, rejectionCount: 0 })
+    }
+    aliasStats.get(merchant).rejectionCount += 1
+  }
+
+  // Calculate quality score and build result array
+  const aliasQualities = []
+  for (const [merchant, stats] of aliasStats.entries()) {
+    const total = stats.successCount + stats.rejectionCount
+    if (total === 0) continue
+    const qualityScore = Math.round((stats.successCount / total) * 100)
+    aliasQualities.push({
+      merchant,
+      successCount: stats.successCount,
+      rejectionCount: stats.rejectionCount,
+      qualityScore,
+      total,
+    })
+  }
+
+  // Sort by quality score descending
+  return aliasQualities.sort((a, b) => b.qualityScore - a.qualityScore)
+}

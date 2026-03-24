@@ -23,7 +23,7 @@ import {
   getReviewedReconciliationIds,
   setReviewedReconciliationIds,
 } from '../lib/reconciliation'
-import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases } from '../lib/reconciliationMetrics'
+import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases, calculateAliasQuality } from '../lib/reconciliationMetrics'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -73,6 +73,11 @@ export default function Reconciliation() {
 
   const demotedMerchants = useMemo(
     () => identifyDemotedAliases(reviewRows, data, 2, 30),
+    [reviewRows, data]
+  )
+
+  const aliasQualities = useMemo(
+    () => calculateAliasQuality(reviewRows, data, 30),
     [reviewRows, data]
   )
 
@@ -379,6 +384,52 @@ export default function Reconciliation() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {(aliasQualities.length > 0 || demotedMerchants.size > 0) && (
+          <div className="mt-4 border-t border-kosha-border pt-3">
+            <p className="text-[12px] font-semibold text-ink-2 mb-2">Alias quality & health</p>
+            
+            {aliasQualities.length > 0 && (
+              <div className="mb-3">
+                <p className="text-[11px] text-ink-3 mb-1.5">Top performers (30-day)</p>
+                <div className="space-y-1">
+                  {aliasQualities.slice(0, 3).map((alias) => (
+                    <div key={alias.merchant} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-ink-2 truncate">{alias.merchant}</p>
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                          alias.qualityScore >= 90 ? 'bg-income-bg text-income-text'
+                          : alias.qualityScore >= 70 ? 'bg-brand-bg text-brand'
+                          : 'bg-warning-bg text-warning-text'
+                        }`}>
+                          {alias.qualityScore}%
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-ink-4 mt-0.5">{alias.successCount} linked, {alias.rejectionCount} rejected</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {demotedMerchants.size > 0 && (
+              <div>
+                <p className="text-[11px] text-ink-3 mb-1.5">Currently auto-demoted (≥2 rejections)</p>
+                <div className="space-y-1">
+                  {Array.from(demotedMerchants).slice(0, 3).map((merchant) => (
+                    <div key={merchant} className="rounded-card border border-kosha-border bg-expense-bg/10 px-2.5 py-1.5">
+                      <p className="text-[11px] text-expense-text truncate">{merchant}</p>
+                      <p className="text-[10px] text-ink-4 mt-0.5">Excluded from alias hints until re-linked</p>
+                    </div>
+                  ))}
+                </div>
+                {demotedMerchants.size > 3 && (
+                  <p className="text-[10px] text-ink-4 mt-1.5">+{demotedMerchants.size - 3} more demoted merchants</p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
