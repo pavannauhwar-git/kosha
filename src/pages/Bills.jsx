@@ -235,7 +235,7 @@ export default function Bills() {
       <PageHeader title="Bills & Dues" />
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           {visiblePending.length > 0 ? (
             <p className="text-caption text-ink-3 mt-0.5">
@@ -249,9 +249,7 @@ export default function Bills() {
           <button
             onClick={handleExportCsv}
             title={`Export ${tab} bills CSV`}
-            className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                       flex items-center justify-center active:bg-kosha-surface-2
-                       transition-colors shrink-0"
+            className="close-btn border border-kosha-border shrink-0"
           >
             <Download size={16} className="text-ink-2" />
           </button>
@@ -317,13 +315,13 @@ export default function Bills() {
       )}
 
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-5">
         {[
           { id: 'pending', label: `Pending (${visiblePending.length})` },
           { id: 'paid', label: `Paid (${visiblePaid.length})` },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 py-2.5 rounded-card text-sm font-semibold border transition-all
+            className={`flex-1 py-3 rounded-card text-sm font-semibold border transition-all
               ${tab === t.id
                 ? 'bg-brand-container text-brand-on border-brand-container'
                 : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
@@ -423,7 +421,7 @@ export default function Bills() {
                         disabled={!!payingId}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-card
                                    bg-income-bg text-income-text text-xs font-semibold
-                                   border border-income-border active:scale-95 transition-all
+                                   border border-income-border active:scale-[0.98] transition-all duration-100
                                    disabled:opacity-60"
                       >
                         {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
@@ -435,7 +433,7 @@ export default function Bills() {
                       disabled={!!payingId}
                       className="flex items-center justify-center px-3 py-2 rounded-card
                                  bg-expense-bg text-expense-text text-xs font-semibold
-                                 border border-expense-border active:scale-95 transition-all
+                                 border border-expense-border active:scale-[0.98] transition-all duration-100
                                  disabled:opacity-60"
                     >
                       <X size={13} />
@@ -471,11 +469,7 @@ export default function Bills() {
                 </div>
 
                 <input
-                  className="w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink
-                             placeholder-ink-4 text-base border border-transparent
-                             focus:outline-none focus:border-warning-border
-                             focus:ring-2 focus:ring-warning-border/50 focus:bg-white
-                             transition-all duration-150 mb-3"
+                  className="input mb-3"
                   placeholder="Description (e.g. Car EMI)"
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -483,9 +477,9 @@ export default function Bills() {
 
                 <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3 overflow-hidden
                                 flex items-center gap-2 border border-transparent
-                                focus-within:border-warning-border
-                                focus-within:ring-2 focus-within:ring-warning-border/50
-                                transition-all duration-150">
+                                focus-within:border-brand
+                                focus-within:ring-2 focus-within:ring-brand/25
+                                transition-all duration-100">
                   <span className="font-display text-xl text-warning-text">₹</span>
                   <input className="flex-1 bg-transparent font-display text-2xl text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" placeholder="0"
@@ -539,7 +533,7 @@ export default function Bills() {
                   <button onClick={handleAdd}
                     disabled={addSaving}
                     className={`w-full py-4 rounded-card font-semibold transition-all
-                               ${addSaving ? 'bg-warning/70 text-white/90 scale-[0.98]' : 'bg-warning text-white active:scale-[0.98]'}`}>
+                               ${addSaving ? 'bg-warning/70 text-white/90 scale-[0.99]' : 'bg-warning text-white active:scale-[0.99]'}`}>
                     {addSaving ? 'Adding…' : 'Add Bill'}
                   </button>
                 </div>

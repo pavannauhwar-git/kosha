@@ -221,7 +221,11 @@ export default function Analytics() {
           {/* ── 4. Year-over-year stacked cards ─────────────────────── */}
           <YoYCards years={yoyYears} currentYear={year} />
 
-          <div className="card p-4">
+          <motion.div
+            whileHover={{ y: -1 }}
+            transition={{ duration: 0.14 }}
+            className="card p-4"
+          >
             <div className="flex items-center justify-between mb-3">
               <p className="section-label">Reconciliation confidence</p>
               <span className="text-caption text-ink-4">Last 7 days signal</span>
@@ -241,6 +245,7 @@ export default function Analytics() {
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -1 }}
                 className="rounded-card border border-warning-border bg-warning-bg p-2.5 flex items-start gap-2"
               >
                 <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
@@ -252,12 +257,16 @@ export default function Analytics() {
                 </div>
               </motion.div>
             )}
-          </div>
+          </motion.div>
 
           <ConfidenceTrendChart trendData={confidenceTrend} />
 
           {weeklyDigest.hasSignals && (
-            <div className="card p-4">
+            <motion.div
+              whileHover={{ y: -1 }}
+              transition={{ duration: 0.14 }}
+              className="card p-4"
+            >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <p className="section-label">What changed this week</p>
@@ -280,7 +289,7 @@ export default function Analytics() {
                   Top spend category this week: <span className="font-semibold text-ink-2">{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
                 </p>
               )}
-            </div>
+            </motion.div>
           )}
 
           <TopExpensesPodium top5={top5} year={year} />

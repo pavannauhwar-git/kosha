@@ -267,7 +267,7 @@ export default function Transactions() {
     <div className="page">
       <PageHeader title="Transactions" />
 
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <p className="text-caption text-ink-3">
             {total > 0 ? `${Math.max(0, total - pendingDeleteIds.length)} transaction${Math.max(0, total - pendingDeleteIds.length) !== 1 ? 's' : ''}` : 'No results'}
@@ -276,9 +276,7 @@ export default function Transactions() {
         </div>
         {total > 0 && (
           <button onClick={exportCSV} title="Export CSV"
-            className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                       flex items-center justify-center active:bg-kosha-surface-2
-                       transition-colors shrink-0">
+            className="close-btn border border-kosha-border shrink-0">
             <Download size={16} className="text-ink-2" />
           </button>
         )}
@@ -308,12 +306,10 @@ export default function Transactions() {
       )}
 
       {/* Search */}
-      <div className="relative mb-3">
+      <div className="relative mb-4">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
         <input
-          className="w-full bg-kosha-surface border border-kosha-border rounded-card
-                     pl-9 pr-9 py-2.5 text-[14px] text-ink placeholder-ink-4 outline-none
-                     focus:border-brand transition-colors"
+          className="input pl-9 pr-9 py-3"
           placeholder="Search transactions…"
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -327,11 +323,11 @@ export default function Transactions() {
       </div>
 
       {/* Filter chips */}
-      <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-2 mb-5 overflow-x-auto scrollbar-none pb-0.5">
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
-            className={`shrink-0 px-3 py-1.5 rounded-pill text-label font-semibold border
+            className={`shrink-0 px-3.5 py-2 rounded-pill text-label font-semibold border
                         transition-colors ${typeFilter === t.id
               ? TYPE_CHIP[t.id]
               : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
@@ -342,7 +338,7 @@ export default function Transactions() {
 
         <button
           onClick={() => setShowCats(v => !v)}
-          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-pill
+          className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-pill
                       text-label font-semibold border transition-colors
                       ${catFilter
             ? 'bg-brand-container text-brand-on border-brand-container'
@@ -418,8 +414,8 @@ export default function Transactions() {
       {hasMore && (
         <button
           onClick={() => setDisplayCount(n => n + 50)}
-          className="w-full py-3 text-label font-semibold text-brand text-center
-                     bg-kosha-surface border border-kosha-border rounded-card mt-2"
+          className="w-full py-3.5 text-label font-semibold text-brand text-center
+                     bg-kosha-surface border border-kosha-border rounded-card mt-2.5"
         >
           Show more ({total - data.length} remaining)
         </button>

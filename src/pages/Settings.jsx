@@ -13,7 +13,7 @@ import {
   getNotificationPermission,
   requestNotificationPermission,
 } from '../lib/reminders'
-import { buildJoinInviteUrl, createInvite, inviteStatusLabel, listInvites } from '../lib/invites'
+import { buildJoinInviteUrl, createInvite, inviteStatusLabel, listInvites, MAX_ACTIVE_INVITES } from '../lib/invites'
 import { fmtDate } from '../lib/utils'
 import { getPreferredLocale, setPreferredLocale, SUPPORTED_LOCALES } from '../lib/locale'
 
@@ -83,7 +83,7 @@ export default function Settings() {
         const rows = await listInvites({
           supabaseClient: supabase,
           userId: user.id,
-          limit: 6,
+          limit: MAX_ACTIVE_INVITES,
         })
         if (!cancelled) setWalletInvites(rows)
       } catch (error) {
@@ -100,6 +100,8 @@ export default function Settings() {
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
   const displayName = profile?.display_name || 'My Account'
+  const pendingInviteCount = walletInvites.filter((invite) => !invite?.used_by).length
+  const inviteCapReached = pendingInviteCount >= MAX_ACTIVE_INVITES
 
   async function handleFileChange(e) {
     const file = e.target.files?.[0]
@@ -185,12 +187,12 @@ export default function Settings() {
   }
 
   async function handleCreateInvite() {
-    if (!user?.id || creatingInvite) return
+    if (!user?.id || creatingInvite || inviteCapReached) return
     setCreatingInvite(true)
     setWalletError('')
     try {
       const row = await createInvite({ supabaseClient: supabase, userId: user.id })
-      setWalletInvites((prev) => [row, ...prev].slice(0, 6))
+      setWalletInvites((prev) => [row, ...prev].slice(0, MAX_ACTIVE_INVITES))
       await copyInviteLink(row.token)
     } catch (error) {
       setWalletError(error?.message || 'Could not create invite link.')
@@ -346,15 +348,15 @@ export default function Settings() {
             <div className="card overflow-hidden p-0">
               <SettingRow
                 icon={<Users size={16} className="text-brand" />}
-                label={creatingInvite ? 'Creating invite…' : 'Create invite link'}
-                sublabel="Invite a partner to join your wallet workflow"
+                label={creatingInvite ? 'Creating invite…' : inviteCapReached ? 'Invite limit reached' : 'Create invite link'}
+                sublabel={inviteCapReached ? `Only ${MAX_ACTIVE_INVITES} active links allowed. Reuse an existing link.` : 'Invite a partner to join your wallet workflow'}
                 onClick={() => { void handleCreateInvite() }}
-                disabled={creatingInvite}
+                disabled={creatingInvite || inviteCapReached}
                 rightElement={<Link2 size={14} />}
               />
               <Divider />
               <div className="px-4 py-3 space-y-2">
-                <p className="text-[12px] font-semibold text-ink-3">Recent invites</p>
+                <p className="text-[12px] font-semibold text-ink-3">Recent invites ({pendingInviteCount}/{MAX_ACTIVE_INVITES} active)</p>
                 {walletLoading ? (
                   <p className="text-[12px] text-ink-3">Loading invites…</p>
                 ) : walletInvites.length === 0 ? (

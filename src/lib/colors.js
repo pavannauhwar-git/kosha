@@ -13,12 +13,12 @@
 
 export const C = {
 
-  // ── Brand — Periwinkle ────────────────────────────────────────────
-  brand:           '#3730A3',   // deep indigo — buttons, FAB, active states
-  brandMid:        '#5B51E0',   // mid periwinkle — hero gradient end
-  brandLight:      '#8B83E6',   // lighter periwinkle
-  brandContainer:  '#EDE9FF',   // lavender tint — nav pill, tonal bg
-  brandBorder:     '#D4CEFF',   // card borders, separators
+  // ── Brand — Cobalt Indigo ────────────────────────────────────────
+  brand:           '#2F3BCE',   // deep indigo — buttons, FAB, active states
+  brandMid:        '#5C6CFF',   // bright cobalt accent
+  brandLight:      '#8C98FF',   // light cobalt tint
+  brandContainer:  '#E9EDFF',   // soft selected-surface tint
+  brandBorder:     '#D8DEFF',   // separators and subtle borders
 
   // ── Accent — Electric Lime ────────────────────────────────────────
   // Used ONLY against dark periwinkle backgrounds (hero card, logo).
@@ -39,14 +39,14 @@ export const C = {
   invest:          '#0284C7',   // sky-600
   investText:      '#0369A1',   // sky-700
 
-  saved:           '#3730A3',   // brand periwinkle — residual money in Kosha
+  saved:           '#2F3BCE',   // brand cobalt — residual money in Kosha
 
   // ── Bills — Amber H=84° ───────────────────────────────────────────
   bills:           '#CA8A04',
 
   // ── Ink — indigo-tinted neutrals ─────────────────────────────────
   ink:             '#1E1B4B',
-  inkMuted:        '#9590B8',   // inactive nav icons, chart axis ticks
+  inkMuted:        '#6E7699',   // inactive nav icons, chart axis ticks
 
   // ── Hero card overlays (lime/white on deep periwinkle) ────────────
   heroAccent:      'rgba(226,255,90,0.75)',   // savings bar fill
@@ -68,14 +68,14 @@ export const C = {
   // ── Portfolio donut — periwinkle family, darkest → lightest ──────
   portfolio: [
     '#1E1B4B',   // ink (darkest)
-    '#3730A3',   // brand
-    '#5B51E0',   // brand-mid
-    '#8B83E6',   // brand-light
-    '#EDE9FF',   // brand-container
-    '#D4CEFF',   // brand-border (lightest)
+    '#2F3BCE',   // brand
+    '#5C6CFF',   // brand-mid
+    '#8C98FF',   // brand-light
+    '#E9EDFF',   // brand-container
+    '#D8DEFF',   // brand-border (lightest)
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#3730A3',   // deep indigo rounded-rect fill
+  logoBg:        '#2F3BCE',   // deep indigo rounded-rect fill
   logoHighlight: '#E2FF5A',   // electric lime top-right glow
 }

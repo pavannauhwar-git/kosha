@@ -115,7 +115,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         <button
           onClick={handleDuplicateTap}
           className="flex flex-col items-center justify-center gap-1 px-5
-                     bg-brand-container active:opacity-80 transition-opacity"
+                     bg-brand-container active:opacity-80 transition-opacity duration-100"
         >
           <CopySimple size={18} weight="bold" color="var(--c-brand)" />
           <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
@@ -126,7 +126,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         <button
           onClick={handleDeleteTap}
           className="flex flex-col items-center justify-center gap-1 px-5
-                     bg-expense active:opacity-80 transition-opacity"
+                     bg-expense active:opacity-80 transition-opacity duration-100"
         >
           <Trash size={18} weight="bold" color="white" />
           <span className="text-[10px] font-semibold text-white">Delete</span>
@@ -142,8 +142,8 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         dragElastic={{ left: 0.12, right: 0.02 }}
         onDragEnd={handleDragEnd}
         onClick={handleTap}
-        whileTap={{ scale: 0.985 }}
-        transition={{ scale: { duration: 0.07 } }}
+        whileTap={{ scale: 0.992 }}
+        transition={{ scale: { duration: 0.08 } }}
       >
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
@@ -153,7 +153,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[15px] font-medium text-ink truncate leading-snug">
+          <p className="text-[15px] font-semibold text-ink truncate leading-snug">
             {txn.description}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">

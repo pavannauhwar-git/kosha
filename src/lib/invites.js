@@ -1,3 +1,5 @@
+export const MAX_ACTIVE_INVITES = 3
+
 export function getInviteToken(locationSearch = '') {
   const queryToken = new URLSearchParams(locationSearch || '').get('invite')
   if (queryToken) return queryToken
@@ -13,6 +15,17 @@ export async function createInvite({ supabaseClient, userId }) {
   if (!supabaseClient) throw new Error('supabaseClient is required')
   if (!userId) throw new Error('userId is required')
 
+  const { count, error: countError } = await supabaseClient
+    .from('invites')
+    .select('id', { count: 'exact', head: true })
+    .eq('created_by', userId)
+    .is('used_by', null)
+
+  if (countError) throw countError
+  if ((count || 0) >= MAX_ACTIVE_INVITES) {
+    throw new Error(`Invite limit reached. You can keep only ${MAX_ACTIVE_INVITES} active links.`)
+  }
+
   const { data, error } = await supabaseClient
     .from('invites')
     .insert({ created_by: userId })
@@ -23,16 +36,18 @@ export async function createInvite({ supabaseClient, userId }) {
   return data
 }
 
-export async function listInvites({ supabaseClient, userId, limit = 8 }) {
+export async function listInvites({ supabaseClient, userId, limit = MAX_ACTIVE_INVITES }) {
   if (!supabaseClient) throw new Error('supabaseClient is required')
   if (!userId) return []
+
+  const safeLimit = Math.max(1, Math.min(Number(limit || MAX_ACTIVE_INVITES), MAX_ACTIVE_INVITES))
 
   const { data, error } = await supabaseClient
     .from('invites')
     .select('id, token, created_at, used_by, used_at')
     .eq('created_by', userId)
     .order('created_at', { ascending: false })
-    .limit(limit)
+    .limit(safeLimit)
 
   if (error) throw error
   return data || []

@@ -235,7 +235,7 @@ export default function Dashboard() {
   return (
     <div className="page">
       <PageHeader title="Dashboard" />
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
@@ -301,12 +301,12 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Quick-action strip ────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="card py-4 px-2">
-          <div className="flex justify-around">
+        <motion.div variants={fadeUp} className="card py-4 px-3">
+          <div className="flex justify-between gap-1.5">
             {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
               <button key={label}
                 onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
-                className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-75"
+                className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[62px]"
               >
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
                   style={{ color }}>

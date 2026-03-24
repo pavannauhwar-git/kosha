@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, ArrowRight, CheckCircle2, History, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
@@ -164,6 +164,22 @@ export default function Reconciliation() {
     if (filter === 'duplicates') return base.filter((item) => item.flags.potentialDuplicate)
     return base
   }, [insights.candidates, reviewStateFilter, effectiveReviewedIds, linkedIdSet, filter])
+
+  const reviewCounts = useMemo(() => ({
+    queue: insights.candidates.filter((item) => !effectiveReviewedIds.has(item?.txn?.id)).length,
+    linked: insights.candidates.filter((item) => linkedIdSet.has(item?.txn?.id)).length,
+    reviewed: insights.candidates.filter((item) => {
+      const id = item?.txn?.id
+      return effectiveReviewedIds.has(id) && !linkedIdSet.has(id)
+    }).length,
+  }), [insights.candidates, effectiveReviewedIds, linkedIdSet])
+
+  const qualityCounts = useMemo(() => ({
+    all: insights.candidates.length,
+    'missing-category': insights.candidates.filter((item) => item.flags.missingCategory).length,
+    'missing-details': insights.candidates.filter((item) => item.flags.missingDescription || item.flags.missingPaymentMode).length,
+    duplicates: insights.candidates.filter((item) => item.flags.potentialDuplicate).length,
+  }), [insights.candidates])
 
   const markReviewedLocal = useCallback((id) => {
     if (!id) return
@@ -469,15 +485,23 @@ export default function Reconciliation() {
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
         {REVIEW_STATE_FILTERS.map((chip) => {
           const active = chip.id === reviewStateFilter
+          const count = reviewCounts[chip.id] || 0
           return (
-            <button
+            <motion.button
               key={chip.id}
               type="button"
               onClick={() => setReviewStateFilter(chip.id)}
-              className={`chip ${active ? 'chip-active' : ''}`}
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.12 }}
+              aria-pressed={active}
+              className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center gap-1.5`}
             >
               {chip.label}
-            </button>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                {count}
+              </span>
+            </motion.button>
           )
         })}
       </div>
@@ -485,15 +509,23 @@ export default function Reconciliation() {
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
         {FILTERS.map((chip) => {
           const active = chip.id === filter
+          const count = qualityCounts[chip.id] || 0
           return (
-            <button
+            <motion.button
               key={chip.id}
               type="button"
               onClick={() => setFilter(chip.id)}
-              className={`chip ${active ? 'chip-active' : ''}`}
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.12 }}
+              aria-pressed={active}
+              className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center gap-1.5`}
             >
               {chip.label}
-            </button>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                {count}
+              </span>
+            </motion.button>
           )
         })}
       </div>
@@ -523,15 +555,19 @@ export default function Reconciliation() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {visibleItems.map((item) => {
+        <motion.div layout className="space-y-3">
+          <AnimatePresence initial={false} mode="popLayout">
+            {visibleItems.map((item) => {
             const txn = item.txn
             const disabled = savingId === txn.id
             return (
               <motion.div
+                layout
                 key={txn.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8, scale: 0.99 }}
+                whileHover={{ y: -1 }}
                 transition={{ duration: 0.2 }}
                 className="card p-4"
               >
@@ -594,8 +630,9 @@ export default function Reconciliation() {
                 </div>
               </motion.div>
             )
-          })}
-        </div>
+            })}
+          </AnimatePresence>
+        </motion.div>
       )}
 
       <AnimateToast message={toast} />
@@ -613,18 +650,22 @@ function Metric({ label, value, tone = 'text-ink' }) {
 }
 
 function AnimateToast({ message }) {
-  if (!message) return null
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 16 }}
-      className="fixed bottom-[calc(88px+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-50"
-    >
-      <div className="rounded-full bg-ink text-white text-sm px-4 py-2 shadow-lg">
-        {message}
-      </div>
-    </motion.div>
+    <AnimatePresence>
+      {message && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 16 }}
+          transition={{ duration: 0.18 }}
+          className="fixed bottom-[calc(88px+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-50"
+        >
+          <div className="rounded-full bg-ink text-white text-sm px-4 py-2 shadow-lg">
+            {message}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -638,7 +679,12 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
                      : 'border-l-ink-3'
 
   return (
-    <div className={`rounded-card border border-kosha-border border-l-4 ${borderColor} bg-kosha-surface p-3`}>
+    <motion.div
+      layout
+      whileHover={{ y: -1 }}
+      transition={{ duration: 0.14 }}
+      className={`rounded-card border border-kosha-border border-l-4 ${borderColor} bg-kosha-surface p-3`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-ink-2 truncate">{entry.description || entry.line}</p>
@@ -709,6 +755,6 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

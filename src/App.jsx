@@ -144,7 +144,7 @@ function BottomNav() {
               key={item.path}
               className="nav-float-item"
               onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
-              whileTap={{ scale: 0.78 }}
+              whileTap={{ scale: 0.92 }}
               transition={{ type: 'spring', stiffness: 600, damping: 28 }}
             >
               <div className="nav-icon-wrap">

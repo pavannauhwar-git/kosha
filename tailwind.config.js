@@ -5,19 +5,19 @@ export default {
     extend: {
       colors: {
         // ── App backgrounds ───────────────────────────────────────────────
-        'kosha-bg':            '#FDFCFF',
-        'kosha-bg-2':          '#F5F3FF',
+        'kosha-bg':            '#FAFBFF',
+        'kosha-bg-2':          '#F2F5FF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F5F3FF',
-        'kosha-border':        '#D4CEFF',
-        'kosha-border-strong': '#8B83E6',
+        'kosha-surface-2':     '#F2F5FF',
+        'kosha-border':        '#D8DEFF',
+        'kosha-border-strong': '#8C98FF',
 
         // ── Brand — Periwinkle + Electric Lime ───────────────────────────
-        'brand':           '#3730A3',   // deep indigo — buttons, FAB, active
+        'brand':           '#2F3BCE',   // deep indigo — buttons, FAB, active
         'brand-dark':      '#1E1B4B',   // near-black indigo
-        'brand-mid':       '#5B51E0',   // mid periwinkle — hero gradient
-        'brand-container': '#EDE9FF',   // lavender tint — nav pill, tonal bg
-        'brand-on':        '#3730A3',   // text on brand-container
+        'brand-mid':       '#5C6CFF',   // mid cobalt — hero gradient
+        'brand-container': '#E9EDFF',   // cool tint — nav pill, tonal bg
+        'brand-on':        '#2F3BCE',   // text on brand-container
         'brand-accent':    '#E2FF5A',   // electric lime — hero chip, savings
 
         // ── Income ────────────────────────────────────────────────────────
@@ -53,8 +53,8 @@ export default {
         // ── Ink — indigo-tinted neutrals ──────────────────────────────────
         'ink':   '#1E1B4B',
         'ink-2': '#312E81',
-        'ink-3': '#9590B8',
-        'ink-4': '#C4C0E0',
+        'ink-3': '#6E7699',
+        'ink-4': '#A3ABC8',
 
         // ── Utility ───────────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',
@@ -86,12 +86,12 @@ export default {
       },
 
       boxShadow: {
-        'card':       '0 2px 8px rgba(55,48,163,0.06), 0 0 0 0.5px rgba(55,48,163,0.07)',
-        'card-md':    '0 4px 16px rgba(30,27,75,0.10), 0 0 0 0.5px rgba(30,27,75,0.07)',
-        'card-lg':    '0 8px 28px rgba(30,27,75,0.13), 0 0 0 0.5px rgba(30,27,75,0.07)',
+        'card':       '0 2px 7px rgba(18,28,74,0.06), 0 0 0 0.5px rgba(18,28,74,0.08)',
+        'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
+        'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
-        'fab':        '0 4px 16px rgba(55,48,163,0.40)',
-        'focus':      '0 0 0 3.5px rgba(91,81,224,0.28)',
+        'fab':        '0 4px 14px rgba(47,59,206,0.36)',
+        'focus':      '0 0 0 3px rgba(92,108,255,0.30)',
         'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
         'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
       },
@@ -117,11 +117,11 @@ export default {
         },
       },
       animation: {
-        'sheet-in':  'sheet-in 0.40s cubic-bezier(0.32,0.72,0,1) forwards',
+        'sheet-in':  'sheet-in 0.30s cubic-bezier(0.32,0.72,0,1) forwards',
         'fade-in':   'fade-in 0.2s ease forwards',
-        'slide-up':  'slide-up 0.28s ease forwards',
+        'slide-up':  'slide-up 0.22s ease forwards',
         'swipe-out': 'swipe-out 0.22s ease forwards',
-        'scale-in':  'scale-in 0.22s ease forwards',
+        'scale-in':  'scale-in 0.18s ease forwards',
       },
     },
   },

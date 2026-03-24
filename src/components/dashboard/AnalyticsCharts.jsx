@@ -82,7 +82,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 
   return (
     <div
-      className="rounded-card overflow-hidden shadow-card-lg"
+      className="rounded-card overflow-hidden shadow-card-lg transition-transform duration-150 hover:-translate-y-0.5"
       style={{ background: CASH_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
     >
       <div className="px-5 pt-5 pb-2 flex items-start justify-between">
@@ -153,7 +153,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
 
   return (
     <div
-      className="rounded-card overflow-hidden shadow-card-lg"
+      className="rounded-card overflow-hidden shadow-card-lg transition-transform duration-150 hover:-translate-y-0.5"
       style={{ background: NET_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
     >
       <div className="px-5 pt-5 pb-2 flex items-start justify-between">
@@ -248,7 +248,7 @@ export const ConfidenceTrendChart = memo(function ConfidenceTrendChart({ trendDa
 
   return (
     <div
-      className="rounded-card overflow-hidden shadow-card-lg"
+      className="rounded-card overflow-hidden shadow-card-lg transition-transform duration-150 hover:-translate-y-0.5"
       style={{ background: TREND_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
     >
       <div className="px-5 pt-5 pb-2 flex items-start justify-between">
