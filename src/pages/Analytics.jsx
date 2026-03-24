@@ -196,16 +196,6 @@ export default function Analytics() {
           className="space-y-6"
         >
 
-          <div className="card p-4 bg-gradient-to-r from-brand-container/55 to-kosha-surface border border-brand-border">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-caption text-ink-3 tracking-wide uppercase">Analytics narrative</p>
-                <p className="text-body font-semibold text-ink mt-0.5">Year {year} financial behavior and quality signals</p>
-              </div>
-              <span className="chip chip-active">Live</span>
-            </div>
-          </div>
-
           <YearlyInsightsCard data={data} catEntries={catEntries} />
 
           {/* ── 1. Annual Summary card ───────────────────────────────── */}

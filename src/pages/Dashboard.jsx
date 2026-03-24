@@ -246,11 +246,6 @@ export default function Dashboard() {
           </h1>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="card p-4 bg-gradient-to-r from-brand-container/55 to-kosha-surface border border-brand-border">
-          <p className="text-caption text-ink-3 tracking-wide uppercase">Today focus</p>
-          <p className="text-body font-semibold text-ink mt-0.5">Capture essentials, clear due bills, and keep pace in range.</p>
-        </motion.div>
-
         {/* ── Hero card — sub-component, renders independently ─────── */}
         <motion.div variants={fadeUp}>
           <DashboardHeroCard
@@ -287,14 +282,14 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Quick-action strip ────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="card py-4 px-3 bg-gradient-to-b from-kosha-surface to-kosha-surface-2/35">
-          <div className="flex justify-between gap-2">
+        <motion.div variants={fadeUp} className="card py-4 px-3">
+          <div className="flex justify-between gap-1.5">
             {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
               <button key={label}
                 onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
-                className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[66px]"
+                className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[62px]"
               >
-                <div className={`w-12 h-12 rounded-2xl border border-kosha-border/45 flex items-center justify-center ${bg}`}
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
                   style={{ color }}>
                   <Icon size={20} strokeWidth={strokeWidth} />
                 </div>

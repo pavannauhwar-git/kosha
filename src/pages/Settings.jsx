@@ -25,7 +25,7 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
       onClick={onClick}
       disabled={disabled}
       className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
-                  transition-colors hover:bg-kosha-surface-2 active:bg-kosha-surface-2
+                  transition-colors active:bg-kosha-surface-2
                   disabled:opacity-50
                   ${destructive ? 'text-expense-text' : 'text-ink'}`}
     >
@@ -193,12 +193,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-dvh bg-kosha-bg relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -left-20 h-72 w-72 rounded-full bg-brand/10 blur-3xl" />
-        <div className="absolute top-20 -right-20 h-72 w-72 rounded-full bg-income/10 blur-3xl" />
-      </div>
-
+    <div className="min-h-dvh bg-kosha-bg">
       {/* ── Header ────────────────────────────────────────────────── */}
       <div
         className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md
@@ -215,15 +210,8 @@ export default function Settings() {
         <h1 className="text-[17px] font-bold text-ink tracking-tight">Account Settings</h1>
       </div>
 
-      <div className="px-4 pt-6 pb-24 max-w-[760px] mx-auto relative z-10">
+      <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-
-          <motion.div variants={fadeUp} className="card p-4 border border-brand-border/70 bg-brand-container/45 shadow-card-md">
-            <p className="text-[14px] font-semibold text-ink">Account and preference controls</p>
-            <p className="text-[12px] text-ink-3 mt-1">
-              Keep your identity, reminders, and shared wallet access tidy from one place.
-            </p>
-          </motion.div>
 
           {/* ── Avatar ───────────────────────────────────────────────── */}
           <motion.div variants={fadeUp} className="flex flex-col items-center gap-3 py-4">
@@ -268,7 +256,7 @@ export default function Settings() {
             <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
               Profile
             </p>
-            <div className="card overflow-hidden p-0 border border-brand-border/60 shadow-card-md">
+            <div className="card overflow-hidden p-0">
               <SettingRow
                 icon={<Pencil size={16} className="text-brand" />}
                 label="Display Name"
@@ -303,7 +291,7 @@ export default function Settings() {
             <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
               Reminders
             </p>
-            <div className="card overflow-hidden p-0 border border-brand-border/60 shadow-card-md">
+            <div className="card overflow-hidden p-0">
               <SettingRow
                 icon={<BellRing size={16} className="text-brand" />}
                 label="Enable reminders"
@@ -348,7 +336,7 @@ export default function Settings() {
             <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
               Shared Wallet
             </p>
-            <div className="card overflow-hidden p-0 border border-brand-border/60 shadow-card-md">
+            <div className="card overflow-hidden p-0">
               <SettingRow
                 icon={<Users size={16} className="text-brand" />}
                 label={creatingInvite ? 'Creating invite…' : inviteCapReached ? 'Invite limit reached' : 'Create invite link'}
@@ -368,7 +356,7 @@ export default function Settings() {
                   walletInvites.map((invite) => {
                     const status = inviteStatusLabel(invite)
                     return (
-                      <div key={invite.id} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2 shadow-sm">
+                      <div key={invite.id} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] text-ink-3">{fmtDate(invite.created_at)}</p>
                           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>

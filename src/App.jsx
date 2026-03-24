@@ -50,7 +50,7 @@ const REALTIME_INVALIDATION_POLICIES = [
   { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
 ]
 
-const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
+const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings']
 
 // ── Desktop sidebar ───────────────────────────────────────────────────────
 function DesktopSidebar() {
@@ -72,15 +72,15 @@ function DesktopSidebar() {
       style={{
         position: 'fixed',
         top: 0, left: 0, bottom: 0,
-        width: 236,
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,248,255,0.94) 100%)',
-        backdropFilter: 'blur(18px)',
-        WebkitBackdropFilter: 'blur(18px)',
-        borderRight: `1px solid rgba(148,163,184,0.22)`,
+        width: 220,
+        background: 'rgba(255,255,255,0.94)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRight: `1px solid ${C.brandBorder}`,
         zIndex: 30,
-        padding: '0 14px',
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 18px)',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 18px)',
+        padding: '0 12px',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
       }}
     >
       <div className="flex items-center gap-2.5 px-2 pb-6 pt-2">
@@ -91,15 +91,15 @@ function DesktopSidebar() {
         </div>
       </div>
 
-      <nav className="flex flex-col gap-1.5 flex-1">
+      <nav className="flex flex-col gap-1 flex-1">
         {NAV.map((item, i) => {
           const isActive = i === active
           return (
             <button
               key={item.path}
               onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
-              className="flex items-center gap-3 px-3.5 py-3 rounded-pill transition-colors duration-100 w-full text-left"
-              style={{ background: isActive ? 'rgba(11,87,208,0.14)' : 'transparent' }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-100 w-full text-left"
+              style={{ background: isActive ? C.brandContainer : 'transparent' }}
             >
               <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.brand : C.inkMuted} />
               <span className="text-[14px]" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
@@ -110,7 +110,7 @@ function DesktopSidebar() {
         })}
       </nav>
 
-      <div className="px-2 pt-4" style={{ borderTop: '1px solid rgba(148,163,184,0.22)' }}>
+      <div className="px-2 pt-4" style={{ borderTop: `1px solid ${C.brandBorder}` }}>
         <div className="flex items-center gap-2.5">
           <ProfileMenu dropUp />
           <div className="flex-1 min-w-0">
@@ -144,7 +144,7 @@ function BottomNav() {
               key={item.path}
               className="nav-float-item"
               onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
-              whileTap={{ scale: 0.94 }}
+              whileTap={{ scale: 0.92 }}
               transition={{ type: 'spring', stiffness: 600, damping: 28 }}
             >
               <div className="nav-icon-wrap">
@@ -160,7 +160,7 @@ function BottomNav() {
                 </motion.span>
               </div>
               <motion.span className="nav-label"
-                animate={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500, opacity: isActive ? 1 : 0.84 }}
+                animate={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}
                 transition={{ duration: 0.15 }}>
                 {item.label}
               </motion.span>
@@ -260,7 +260,7 @@ function ContentWrapper({ children }) {
   const location = useLocation()
   const hasSidebar = !NAV_HIDE_ON.some(p => location.pathname.startsWith(p))
   return (
-    <div className={hasSidebar ? 'md:ml-[236px]' : ''}>
+    <div className={hasSidebar ? 'md:ml-[220px]' : ''}>
       {children}
     </div>
   )

@@ -19,12 +19,12 @@ const EXPENSE_CATS = CATEGORIES
 // ── Step indicator — green pills ──────────────────────────────────────────
 function StepDots({ current, total }) {
   return (
-    <div className="flex items-center justify-center gap-2 mb-6 mt-5">
+    <div className="flex items-center justify-center gap-2 mb-8 mt-6">
       {Array.from({ length: total }).map((_, i) => (
         <motion.div
           key={i}
           animate={{
-            width:      i === current ? 22 : 7,
+            width:      i === current ? 20 : 6,
             background: i === current ? C.brand : C.brandBorder,
           }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
@@ -47,7 +47,7 @@ function StepName({ onNext }) {
       key="step-name"
       variants={stepStagger}
       initial="hidden" animate="show"
-      className="card p-5 sm:p-6 flex flex-col border border-brand-border/70"
+      className="flex flex-col"
     >
       <motion.p variants={fadeUp} className="text-caption text-ink-3 font-medium mb-2">
         Step 1 of 3
@@ -93,7 +93,7 @@ function StepIncome({ name, onNext, onBack }) {
       key="step-income"
       variants={stepStagger}
       initial="hidden" animate="show"
-      className="card p-5 sm:p-6 flex flex-col border border-brand-border/70"
+      className="flex flex-col"
     >
       <motion.p variants={fadeUp} className="text-caption text-ink-3 font-medium mb-2">
         Step 2 of 3
@@ -171,7 +171,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       key="step-txn"
       variants={stepStagger}
       initial="hidden" animate="show"
-      className="card p-5 sm:p-6 flex flex-col border border-brand-border/70"
+      className="flex flex-col"
     >
       <motion.p variants={fadeUp} className="text-caption text-ink-3 font-medium mb-2">
         Step 3 of 3
@@ -297,43 +297,34 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-12 pb-10 relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-20 -left-16 h-64 w-64 rounded-full bg-brand/10 blur-3xl" />
-        <div className="absolute top-20 -right-14 h-64 w-64 rounded-full bg-invest-text/10 blur-3xl" />
-      </div>
-
+    <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-12 pb-10">
       <div className="w-full max-w-sm mx-auto flex flex-col flex-1">
 
         {/* Logo mark — replaces the old KOSHA text badge */}
-        <div className="relative z-10">
-          <KoshaLogo size={44} />
-        </div>
+        <KoshaLogo size={44} />
 
         <StepDots current={step} total={3} />
 
-        <div className="relative z-10">
-          <AnimatePresence mode="wait">
-            {step === 0 && (
-              <StepName key="name" onNext={handleNameNext} />
-            )}
-            {step === 1 && (
-              <StepIncome
-                key="income"
-                name={name}
-                onNext={handleIncomeNext}
-                onBack={() => setStep(0)}
-              />
-            )}
-            {step === 2 && (
-              <StepFirstTransaction
-                key="txn"
-                onFinish={finish}
-                onSkip={finish}
-              />
-            )}
-          </AnimatePresence>
-        </div>
+        <AnimatePresence mode="wait">
+          {step === 0 && (
+            <StepName key="name" onNext={handleNameNext} />
+          )}
+          {step === 1 && (
+            <StepIncome
+              key="income"
+              name={name}
+              onNext={handleIncomeNext}
+              onBack={() => setStep(0)}
+            />
+          )}
+          {step === 2 && (
+            <StepFirstTransaction
+              key="txn"
+              onFinish={finish}
+              onSkip={finish}
+            />
+          )}
+        </AnimatePresence>
 
       </div>
 

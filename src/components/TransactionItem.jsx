@@ -146,14 +146,14 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         transition={{ scale: { duration: 0.08 } }}
       >
         <div
-          className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border border-kosha-border/60"
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
           style={{ background: cat.bg }}
         >
           <CategoryIcon categoryId={txn.category} size={20} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[15px] font-medium text-ink truncate leading-snug">
+          <p className="text-[15px] font-semibold text-ink truncate leading-snug">
             {txn.description}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -162,7 +162,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
               : <span className="text-[12px] text-ink-3">{cat.label}</span>
             }
             {mode && (
-              <span className="text-[11px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-pill border border-kosha-border/45">
+              <span className="text-[11px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
                 {mode}
               </span>
             )}
@@ -184,7 +184,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           </div>
         </div>
 
-        <span className={`text-[15px] shrink-0 tabular-nums font-bold ${amtCls}`}>
+        <span className={`text-[15px] shrink-0 tabular-nums font-semibold ${amtCls}`}>
           {prefix}{fmt(txn.amount)}
         </span>
       </motion.div>

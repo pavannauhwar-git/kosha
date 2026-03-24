@@ -277,16 +277,10 @@ export default function Reconciliation() {
   }, [resettingAliases, reviewTableUnavailable, refetchReviews])
 
   return (
-    <div className="page relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -left-20 h-72 w-72 rounded-full bg-brand/10 blur-3xl" />
-        <div className="absolute top-24 -right-20 h-72 w-72 rounded-full bg-income/10 blur-3xl" />
-      </div>
-
-      <div className="relative z-10">
+    <div className="page">
       <PageHeader title="Reconciliation" />
 
-      <div className="card p-4 mb-4 border border-brand-border/70 shadow-card-md">
+      <div className="card p-4 mb-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-ink">Data quality workspace</p>
@@ -307,7 +301,7 @@ export default function Reconciliation() {
         </div>
       </div>
 
-      <div className="card p-4 mb-4 border border-brand-border/60 shadow-card-md">
+      <div className="card p-4 mb-4">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <p className="text-sm font-semibold text-ink">Statement-style matching</p>
@@ -575,7 +569,7 @@ export default function Reconciliation() {
                 exit={{ opacity: 0, y: -8, scale: 0.99 }}
                 whileHover={{ y: -1 }}
                 transition={{ duration: 0.2 }}
-                className="card p-4 border border-kosha-border/80 shadow-card"
+                className="card p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -642,14 +636,13 @@ export default function Reconciliation() {
       )}
 
       <AnimateToast message={toast} />
-      </div>
     </div>
   )
 }
 
 function Metric({ label, value, tone = 'text-ink' }) {
   return (
-    <div className="rounded-card border border-kosha-border/80 bg-kosha-surface p-2.5 shadow-sm">
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
       <p className="text-caption text-ink-3">{label}</p>
       <p className={`text-lg font-bold tabular-nums ${tone}`}>{value}</p>
     </div>
