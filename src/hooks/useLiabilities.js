@@ -17,8 +17,10 @@ const LIABILITY_FRESH_WINDOW_MS = 15 * 1000
 
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  // Fuzzy match all sub-keys for liabilities
-  await queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'active' })
+  // Use 'all' so both the Dashboard due-bills strip and the Bills page
+  // refresh immediately after a mutation. There are only two liability
+  // queries ('pending' and 'paid'), so 'all' never causes over-fetching.
+  await queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'all' })
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {

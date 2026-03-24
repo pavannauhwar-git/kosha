@@ -1,6 +1,6 @@
 export const CHANGELOG = [
   {
-    version: '1.6',
+    version: '1.1.7',
     date: 'March 2026',
     items: [
       'Reduced initial app bundle by route-splitting Dashboard, Onboarding, and NotFound pages',
@@ -8,12 +8,13 @@ export const CHANGELOG = [
       'Extracted shared navigator and skeleton components to reduce duplication',
       'Optimized Dashboard render paths by consolidating bill-derived calculations',
       'Tuned transaction and liability query freshness windows to reduce redundant remount/focus refetches',
+      'Fixed transaction and bills lists not appearing immediately across pages after closing add/edit dialogs',
       'Added optional dev-only query timing traces via localStorage flag kosha:trace-queries=1',
       'Fixed liabilities realtime E2E test flake by cleaning up attempt timers to prevent false post-pass failures',
     ],
   },
   {
-    version: '1.5',
+    version: '1.1.6',
     date: 'March 2026',
     items: [
       'Fixed stale transaction and bills lists — now refresh immediately after add, edit, delete, and mark-paid actions',
@@ -25,7 +26,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '1.4',
+    version: '1.1.5',
     date: 'March 2026',
     items: [
       'Fixed "Not signed in" error when adding transactions or bills on first app open',
@@ -42,7 +43,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '1.3',
+    version: '1.1.4',
     date: 'March 2026',
     items: [
       'Profile menu now clickable in desktop sidebar',
@@ -54,7 +55,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '1.2',
+    version: '1.1.3',
     date: 'March 2026',
     items: [
       'Desktop sidebar with logo and navigation',
@@ -64,7 +65,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '1.1',
+    version: '1.1.2',
     date: 'March 2026',
     items: [
       'Redesigned profile menu with grouped sections',
@@ -75,7 +76,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '1.0',
+    version: '1.1.1',
     date: 'March 2026',
     items: [
       'Income, expense & investment tracking',

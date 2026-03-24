@@ -37,12 +37,21 @@ export async function invalidateCache() {
   // Suppress the realtime double-fetch that would otherwise fire
   // ~300-500ms later for the same mutation.
   suppress('transactions')
-  // Fuzzy match all sub-keys for each family
-  await Promise.all(
-    TRANSACTION_INVALIDATION_KEYS.map(queryKey =>
-      queryClient.invalidateQueries({ queryKey, refetchType: 'active' })
-    )
-  )
+  await Promise.all([
+    // Use 'all' for the raw transaction list so BOTH the Dashboard (recent 8)
+    // and the Transactions page (paginated list) are refreshed immediately after
+    // a mutation — even if one of them is not currently mounted. With 'active'
+    // only the currently-visible page would refetch; the other page would show
+    // stale cached data until its query mounted and re-fetched on its own.
+    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'all'    }),
+    // Aggregates are only relevant when the user can see them, so 'active' is
+    // fine — the next mount will trigger a stale refetch automatically.
+    queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
+  ])
 }
 
 // ── Debounce hook ─────────────────────────────────────────────────────────
@@ -88,6 +97,10 @@ export function useTransactions({ type, category, search, limit, withCount = fal
     // Keep list fresh enough for rapid edits while avoiding redundant
     // remount/focus refetches during short navigation hops.
     staleTime: TXN_FRESH_WINDOW_MS,
+    // Short gc window keeps old filter-variant queries (e.g. type:'expense',
+    // search:'coffee') from piling up in cache. refetchType:'all' above would
+    // otherwise re-request every combination the user tried this session.
+    gcTime: 5 * 60 * 1000,
   })
 
   const { data: countData } = useQuery({
