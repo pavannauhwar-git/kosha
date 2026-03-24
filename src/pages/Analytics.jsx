@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
+import { AlertCircle } from 'lucide-react'
 import { CashFlowChart, NetSavingsChart } from '../components/dashboard/AnalyticsCharts'
 import { useYearSummary } from '../hooks/useTransactions'
 import CategorySpendingChart from '../components/CategorySpendingChart'
@@ -14,6 +15,7 @@ import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
 import YearlyInsightsCard from '../components/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
+import { detectConfidenceDrift } from '../lib/reconciliationMetrics'
 
 const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2023 + i)
 
@@ -87,6 +89,8 @@ export default function Analytics() {
       ? Math.round((recentLinked / (recentLinked + recentRejected)) * 100)
       : null
 
+    const drift = detectConfidenceDrift(rows)
+
     return {
       linked,
       rejected,
@@ -94,6 +98,7 @@ export default function Analytics() {
       recentLinked,
       recentRejected,
       netConfidence,
+      drift,
     }
   }, [reconciliationRows])
 
@@ -161,7 +166,7 @@ export default function Analytics() {
               <p className="section-label">Reconciliation confidence</p>
               <span className="text-caption text-ink-4">Last 7 days signal</span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
               <StatMini label="Linked" value={reconciliationStats.linked} tone="text-income-text" />
               <StatMini label="Mismatch reports" value={reconciliationStats.rejected} tone="text-expense-text" />
               <StatMini label="Recent linked" value={reconciliationStats.recentLinked} tone="text-brand" />
@@ -171,6 +176,22 @@ export default function Analytics() {
                 tone={reconciliationStats.netConfidence != null && reconciliationStats.netConfidence >= 70 ? 'text-income-text' : 'text-warning-text'}
               />
             </div>
+
+            {reconciliationStats.drift?.drifting && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-card border border-warning-border bg-warning-bg p-2.5 flex items-start gap-2"
+              >
+                <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-warning-text">Confidence below baseline</p>
+                  <p className="text-[10px] text-ink-3 mt-0.5">
+                    7d: {reconciliationStats.drift.recent.confidence}% vs 30d: {reconciliationStats.drift.baseline.confidence}%
+                  </p>
+                </div>
+              </motion.div>
+            )}
           </div>
 
           <TopExpensesPodium top5={top5} year={year} />
