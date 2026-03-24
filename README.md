@@ -50,12 +50,13 @@ Kosha is designed as a mobile-first finance app with:
    - Remaining: deeper production monitoring polish
 
 2. Phase 2 (2 to 3 weeks): Recurring transaction engine + reminders + undo
-   - Status: in progress
-   - Completed: recurring transaction engine (schema, generation RPC, UI wiring, export visibility)
-   - Remaining: reminders and undo flows
+   - Status: complete
+   - Completed: recurring transaction engine (schema, generation RPC, UI wiring, export visibility), reminders, and undo flows
 
 3. Phase 3 (2 weeks): Reconciliation + advanced budget model
-   - Status: planned
+   - Status: in progress
+   - Completed: reconciliation workspace with review queue, quick category fixes, and monthly entry point
+   - Remaining: statement-style matching workflow and expanded budget variance intelligence
 
 4. Phase 4 (ongoing): Shared wallets, localization, deep analytics
    - Status: planned

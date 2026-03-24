@@ -28,6 +28,7 @@ const Analytics = lazy(() => import('./pages/Analytics'))
 const Bills = lazy(() => import('./pages/Bills'))
 const About = lazy(() => import('./pages/About'))
 const Guide = lazy(() => import('./pages/Guide'))
+const Reconciliation = lazy(() => import('./pages/Reconciliation'))
 const ReportBug = lazy(() => import('./pages/ReportBug'))
 const Settings = lazy(() => import('./pages/Settings'))
 
@@ -281,6 +282,7 @@ function AppShell() {
           <Route path="/monthly" element={<Suspense fallback={<PageFallback />}><AuthGuard><Monthly /></AuthGuard></Suspense>} />
           <Route path="/analytics" element={<Suspense fallback={<PageFallback />}><AuthGuard><Analytics /></AuthGuard></Suspense>} />
           <Route path="/bills" element={<Suspense fallback={<PageFallback />}><AuthGuard><Bills /></AuthGuard></Suspense>} />
+          <Route path="/reconciliation" element={<Suspense fallback={<PageFallback />}><AuthGuard><Reconciliation /></AuthGuard></Suspense>} />
           <Route path="/guide" element={<Suspense fallback={<PageFallback />}><AuthGuard><Guide /></AuthGuard></Suspense>} />
           <Route path="/settings" element={<Suspense fallback={<PageFallback />}><AuthGuard><Settings /></AuthGuard></Suspense>} />
           <Route path="/about" element={<Suspense fallback={<PageFallback />}><About /></Suspense>} />

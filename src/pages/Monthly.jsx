@@ -1,25 +1,38 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowRightLeft } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useMonthSummary } from '../hooks/useTransactions'
+import { useTransactions } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
+import { CATEGORIES } from '../lib/categories'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import BudgetSheet from '../components/monthly/BudgetSheet'
 import MonthHeroCard from '../components/monthly/MonthHeroCard'
 import BreakdownCard from '../components/monthly/BreakdownCard'
+import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
 
 export default function Monthly() {
+  const navigate = useNavigate()
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const monthRef = useRef(null)
 
   const { data, loading } = useMonthSummary(year, month)
+  const { data: txnRows = [] } = useTransactions({ limit: 250 })
   const { budgets, setBudget, removeBudget } = useBudgets()
+
+  const reviewedIds = useMemo(() => getReviewedReconciliationIds(), [])
+  const reconcileQueueCount = useMemo(() => {
+    const insights = buildReconciliationInsights(txnRows, reviewedIds)
+    return insights.counts.queue
+  }, [txnRows, reviewedIds])
 
   const [budgetCat, setBudgetCat] = useState(null)
 
@@ -62,6 +75,69 @@ export default function Monthly() {
     [catEntries, budgets]
   )
 
+  const budgetVariance = useMemo(() => {
+    const rows = catEntries
+      .map(([id, spent]) => ({
+        id,
+        spent: Number(spent || 0),
+        budget: Number(budgets[id] || 0),
+      }))
+      .filter((row) => row.budget > 0)
+
+    if (!rows.length) {
+      return {
+        hasBudgets: false,
+        totalBudget: 0,
+        totalSpent: 0,
+        projectedSpend: 0,
+        projectedDelta: 0,
+        overCount: 0,
+        nearLimitCount: 0,
+        onTrackCount: 0,
+        rows: [],
+      }
+    }
+
+    const today = new Date()
+    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
+    const daysInMonth = new Date(year, month, 0).getDate()
+    const daysElapsed = isCurrentMonth ? Math.min(today.getDate(), daysInMonth) : daysInMonth
+
+    const totalBudget = rows.reduce((sum, row) => sum + row.budget, 0)
+    const totalSpent = rows.reduce((sum, row) => sum + row.spent, 0)
+    const projectedSpend = daysElapsed > 0
+      ? (isCurrentMonth ? (totalSpent / daysElapsed) * daysInMonth : totalSpent)
+      : totalSpent
+
+    const enrichedRows = rows
+      .map((row) => {
+        const ratio = row.budget > 0 ? row.spent / row.budget : 0
+        const cat = CATEGORIES.find((item) => item.id === row.id)
+        return {
+          ...row,
+          label: cat?.label || row.id,
+          ratio,
+          delta: row.budget - row.spent,
+        }
+      })
+      .sort((a, b) => a.delta - b.delta)
+
+    const overCount = enrichedRows.filter((row) => row.ratio > 1).length
+    const nearLimitCount = enrichedRows.filter((row) => row.ratio <= 1 && row.ratio >= 0.9).length
+
+    return {
+      hasBudgets: true,
+      totalBudget,
+      totalSpent,
+      projectedSpend,
+      projectedDelta: totalBudget - projectedSpend,
+      overCount,
+      nearLimitCount,
+      onTrackCount: Math.max(0, enrichedRows.length - overCount - nearLimitCount),
+      rows: enrichedRows,
+    }
+  }, [catEntries, budgets, year, month])
+
   const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
 
   return (
@@ -88,6 +164,26 @@ export default function Monthly() {
         <MonthHeroCard month={month} year={year} data={data} />
       </div>
 
+      <button
+        type="button"
+        onClick={() => navigate('/reconciliation')}
+        className="card p-4 mb-6 w-full text-left"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink">Reconciliation workspace</p>
+            <p className="text-caption text-ink-3 mt-0.5">
+              {reconcileQueueCount > 0
+                ? `${reconcileQueueCount} item${reconcileQueueCount > 1 ? 's' : ''} ready for quality review`
+                : 'No pending review items right now'}
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-brand-container text-brand flex items-center justify-center shrink-0">
+            <ArrowRightLeft size={18} />
+          </div>
+        </div>
+      </button>
+
       {loading ? (
         <SkeletonLayout
           sections={[
@@ -105,6 +201,50 @@ export default function Monthly() {
           className="space-y-6"
         >
           <BreakdownCard earned={earned} spent={spent} invested={invested} />
+
+          {budgetVariance.hasBudgets && (
+            <div className="card p-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <p className="section-label">Budget variance</p>
+                  <p className="text-caption text-ink-3 mt-0.5">
+                    {budgetVariance.projectedDelta >= 0
+                      ? `${fmt(Math.abs(budgetVariance.projectedDelta))} projected buffer`
+                      : `${fmt(Math.abs(budgetVariance.projectedDelta))} projected overshoot`}
+                  </p>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${budgetVariance.projectedDelta >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}>
+                  {budgetVariance.projectedDelta >= 0 ? 'On trajectory' : 'Needs correction'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                  <p className="text-caption text-ink-3">Over budget</p>
+                  <p className="text-lg font-bold text-expense-text tabular-nums">{budgetVariance.overCount}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                  <p className="text-caption text-ink-3">Near limit</p>
+                  <p className="text-lg font-bold text-warning-text tabular-nums">{budgetVariance.nearLimitCount}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                  <p className="text-caption text-ink-3">On track</p>
+                  <p className="text-lg font-bold text-income-text tabular-nums">{budgetVariance.onTrackCount}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {budgetVariance.rows.slice(0, 4).map((row) => (
+                  <div key={row.id} className="flex items-center justify-between rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                    <p className="text-sm text-ink-2 truncate pr-3">{row.label}</p>
+                    <p className={`text-sm font-semibold tabular-nums ${row.delta >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                      {row.delta >= 0 ? `${fmt(row.delta)} left` : `${fmt(Math.abs(row.delta))} over`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {catEntries.length > 0 && (
             <CategorySpendingChart
