@@ -16,6 +16,7 @@ import BudgetSheet from '../components/monthly/BudgetSheet'
 import MonthHeroCard from '../components/monthly/MonthHeroCard'
 import BreakdownCard from '../components/monthly/BreakdownCard'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
+import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
 
 export default function Monthly() {
   const navigate = useNavigate()
@@ -27,8 +28,12 @@ export default function Monthly() {
   const { data, loading } = useMonthSummary(year, month)
   const { data: txnRows = [] } = useTransactions({ limit: 250 })
   const { budgets, setBudget, removeBudget } = useBudgets()
+  const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews()
 
-  const reviewedIds = useMemo(() => getReviewedReconciliationIds(), [])
+  const reviewedIds = useMemo(
+    () => (reviewTableUnavailable ? getReviewedReconciliationIds() : serverReviewedIds),
+    [reviewTableUnavailable, serverReviewedIds]
+  )
   const reconcileQueueCount = useMemo(() => {
     const insights = buildReconciliationInsights(txnRows, reviewedIds)
     return insights.counts.queue

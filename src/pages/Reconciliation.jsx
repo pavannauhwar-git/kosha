@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import { useTransactions, updateTransaction } from '../hooks/useTransactions'
+import { useReconciliationReviews, upsertReconciliationReview } from '../hooks/useReconciliationReviews'
 import { CATEGORIES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
 import { matchStatementEntries, parseStatementLines } from '../lib/statementMatching'
@@ -24,20 +25,33 @@ const FILTERS = [
 export default function Reconciliation() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
-  const [reviewedIds, setReviewedIds] = useState(() => getReviewedReconciliationIds())
+  const [localReviewedIds, setLocalReviewedIds] = useState(() => getReviewedReconciliationIds())
   const [savingId, setSavingId] = useState(null)
   const [toast, setToast] = useState(null)
   const [statementInput, setStatementInput] = useState('')
 
   const { data, loading } = useTransactions({ limit: 250 })
+  const {
+    reviewedIdSet: serverReviewedIds,
+    linkedIdSet,
+    unavailable: reviewTableUnavailable,
+    loading: reviewsLoading,
+    refetch: refetchReviews,
+  } = useReconciliationReviews()
+
+  const effectiveReviewedIds = useMemo(
+    () => (reviewTableUnavailable ? localReviewedIds : serverReviewedIds),
+    [reviewTableUnavailable, localReviewedIds, serverReviewedIds]
+  )
 
   useEffect(() => {
-    setReviewedReconciliationIds(reviewedIds)
-  }, [reviewedIds])
+    if (!reviewTableUnavailable) return
+    setReviewedReconciliationIds(localReviewedIds)
+  }, [reviewTableUnavailable, localReviewedIds])
 
   const insights = useMemo(
-    () => buildReconciliationInsights(data, reviewedIds),
-    [data, reviewedIds]
+    () => buildReconciliationInsights(data, effectiveReviewedIds),
+    [data, effectiveReviewedIds]
   )
 
   const statementEntries = useMemo(
@@ -68,21 +82,60 @@ export default function Reconciliation() {
     return base
   }, [insights.queue, filter])
 
-  const markReviewed = useCallback((id) => {
+  const markReviewedLocal = useCallback((id) => {
     if (!id) return
-    setReviewedIds((prev) => {
+    setLocalReviewedIds((prev) => {
       const next = new Set(prev)
       next.add(id)
       return next
     })
   }, [])
 
+  const persistReview = useCallback(async (id, status = 'reviewed', statementLine = null) => {
+    if (!id) return false
+    const result = await upsertReconciliationReview({
+      transactionId: id,
+      status,
+      statementLine,
+    })
+
+    if (result?.unavailable) {
+      markReviewedLocal(id)
+      return false
+    }
+
+    await refetchReviews()
+    return true
+  }, [markReviewedLocal, refetchReviews])
+
+  const markReviewed = useCallback(async (id) => {
+    try {
+      await persistReview(id, 'reviewed')
+      setToast('Marked as reviewed.')
+      setTimeout(() => setToast(null), 2200)
+    } catch (error) {
+      setToast(error?.message || 'Could not save reviewed state.')
+      setTimeout(() => setToast(null), 3200)
+    }
+  }, [persistReview])
+
+  const markLinked = useCallback(async (id, statementLine) => {
+    try {
+      await persistReview(id, 'linked', statementLine || null)
+      setToast('Linked to statement line.')
+      setTimeout(() => setToast(null), 2200)
+    } catch (error) {
+      setToast(error?.message || 'Could not save linked state.')
+      setTimeout(() => setToast(null), 3200)
+    }
+  }, [persistReview])
+
   const setCategory = useCallback(async (id, category) => {
-    if (!id || !category || savingId) return
+    if (!id || !category || savingId || reviewsLoading) return
     setSavingId(id)
     try {
       await updateTransaction(id, { category })
-      markReviewed(id)
+      await persistReview(id, 'reviewed')
       setToast('Category updated and item reconciled.')
       setTimeout(() => setToast(null), 2600)
     } catch (error) {
@@ -91,7 +144,7 @@ export default function Reconciliation() {
     } finally {
       setSavingId(null)
     }
-  }, [savingId, markReviewed])
+  }, [savingId, reviewsLoading, persistReview])
 
   return (
     <div className="page">
@@ -158,7 +211,8 @@ export default function Reconciliation() {
                 key={row.entry.id}
                 row={row}
                 onOpen={(id) => navigate(`/transactions?focus=${id}`)}
-                onReview={(id) => markReviewed(id)}
+                linkedIdSet={linkedIdSet}
+                onLink={(id, line) => markLinked(id, line)}
               />
             ))}
           </div>
@@ -258,9 +312,9 @@ export default function Reconciliation() {
 
                   <button
                     type="button"
-                    onClick={() => markReviewed(txn.id)}
                     className="btn-ghost h-9 px-3"
                     disabled={disabled}
+                    onClick={() => { void markReviewed(txn.id) }}
                   >
                     Mark reviewed
                   </button>
@@ -301,9 +355,10 @@ function AnimateToast({ message }) {
   )
 }
 
-function StatementMatchRow({ row, onOpen, onReview }) {
+function StatementMatchRow({ row, onOpen, onLink, linkedIdSet }) {
   const best = row.best
   const entry = row.entry
+  const isLinked = !!(best?.txn?.id && linkedIdSet?.has(best.txn.id))
 
   return (
     <div className="rounded-card border border-kosha-border bg-kosha-surface p-3">
@@ -338,8 +393,12 @@ function StatementMatchRow({ row, onOpen, onReview }) {
             <button type="button" onClick={() => onOpen(best.txn.id)} className="chip">
               Open <ArrowRight size={13} />
             </button>
-            <button type="button" onClick={() => onReview(best.txn.id)} className="btn-ghost h-8 px-3">
-              Mark linked
+            <button
+              type="button"
+              onClick={() => { if (best?.txn?.id) void onLink(best.txn.id, entry.line) }}
+              className="btn-ghost h-8 px-3"
+            >
+              {isLinked ? 'Linked' : 'Mark linked'}
             </button>
           </div>
         </div>

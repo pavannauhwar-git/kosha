@@ -55,8 +55,8 @@ Kosha is designed as a mobile-first finance app with:
 
 3. Phase 3 (2 weeks): Reconciliation + advanced budget model
    - Status: in progress
-   - Completed: reconciliation workspace with review queue, quick category fixes, and monthly entry point
-   - Remaining: statement-style matching workflow and expanded budget variance intelligence
+   - Completed: reconciliation workspace with review queue, quick category fixes, statement-style matching, monthly entry point, budget variance intelligence, and server-backed review persistence
+   - Remaining: matching confidence tuning and reconciliation-focused automated tests
 
 4. Phase 4 (ongoing): Shared wallets, localization, deep analytics
    - Status: planned

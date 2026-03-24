@@ -1021,3 +1021,44 @@ create table if not exists public.budgets (
 create index if not exists idx_budgets_user on public.budgets(user_id);
 
 alter table public.budgets enable row level security;
+
+-- ── Migration 004: reconciliation review state ─────────────────────────────
+create table if not exists public.reconciliation_reviews (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null references auth.users(id) on delete cascade,
+  transaction_id uuid not null references public.transactions(id) on delete cascade,
+  status         text not null check (status in ('reviewed', 'linked')),
+  statement_line text,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  unique (user_id, transaction_id)
+);
+
+create index if not exists idx_recon_reviews_user_status
+  on public.reconciliation_reviews(user_id, status);
+
+create index if not exists idx_recon_reviews_txn
+  on public.reconciliation_reviews(transaction_id);
+
+alter table public.reconciliation_reviews enable row level security;
+
+drop policy if exists "reconciliation_reviews: select own" on public.reconciliation_reviews;
+create policy "reconciliation_reviews: select own" on public.reconciliation_reviews
+  for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "reconciliation_reviews: insert own" on public.reconciliation_reviews;
+create policy "reconciliation_reviews: insert own" on public.reconciliation_reviews
+  for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "reconciliation_reviews: update own" on public.reconciliation_reviews;
+create policy "reconciliation_reviews: update own" on public.reconciliation_reviews
+  for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "reconciliation_reviews: delete own" on public.reconciliation_reviews;
+create policy "reconciliation_reviews: delete own" on public.reconciliation_reviews
+  for delete
+  using (auth.uid() = user_id);
