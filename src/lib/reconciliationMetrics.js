@@ -181,3 +181,54 @@ export function calculateAliasQuality(rows, transactions, timeWindowDays = 30) {
   // Sort by quality score descending
   return aliasQualities.sort((a, b) => b.qualityScore - a.qualityScore)
 }
+
+/**
+ * Identify which demoted merchants are still in their cooldown window
+ * Returns Set of merchants that cannot be re-learned yet
+ */
+export function identifyMerchantsInCooldown(rows, cooldownDays = 14) {
+  if (!rows || rows.length === 0) {
+    return new Set()
+  }
+
+  const now = new Date()
+  const demoted = new Map() // merchant -> earliest_demotion_time
+
+  // Find the earliest demotion time for each merchant (when it first reached 2 rejections)
+  const rejectionCounts = new Map()
+  const timelines = new Map() // merchant -> array of rejection timestamps
+
+  for (const row of rows) {
+    if (!isRejected(row) || !row?.statement_line) continue
+    const line = String(row.statement_line || '')
+    const cleanLine = line.startsWith('REJECTED:') ? line.slice(9).trim() : line
+    const merchant = cleanLine.split(/[,|]/)[0]?.trim() || cleanLine
+    const rejectedAt = new Date(row.updated_at || 0).getTime()
+
+    if (!timelines.has(merchant)) {
+      timelines.set(merchant, [])
+    }
+    timelines.get(merchant).push(rejectedAt)
+  }
+
+  // For each merchant, find when it first hit 2 rejections
+  for (const [merchant, times] of timelines.entries()) {
+    times.sort((a, b) => a - b)
+    if (times.length >= 2) {
+      demoted.set(merchant, times[1]) // the timestamp of the 2nd rejection (when demotion happened)
+    }
+  }
+
+  // Identify merchants still in cooldown (demoted within last cooldown period)
+  const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000
+  const inCooldown = new Set()
+
+  for (const [merchant, demotionTime] of demoted.entries()) {
+    const elapsedMs = now.getTime() - demotionTime
+    if (elapsedMs < cooldownMs) {
+      inCooldown.add(merchant)
+    }
+  }
+
+  return inCooldown
+}

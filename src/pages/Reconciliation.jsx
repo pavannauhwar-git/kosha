@@ -23,7 +23,7 @@ import {
   getReviewedReconciliationIds,
   setReviewedReconciliationIds,
 } from '../lib/reconciliation'
-import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases, calculateAliasQuality } from '../lib/reconciliationMetrics'
+import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases, calculateAliasQuality, identifyMerchantsInCooldown } from '../lib/reconciliationMetrics'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -74,6 +74,11 @@ export default function Reconciliation() {
   const demotedMerchants = useMemo(
     () => identifyDemotedAliases(reviewRows, data, 2, 30),
     [reviewRows, data]
+  )
+
+  const merchantsInCooldown = useMemo(
+    () => identifyMerchantsInCooldown(reviewRows, 14),
+    [reviewRows]
   )
 
   const aliasQualities = useMemo(
@@ -418,12 +423,21 @@ export default function Reconciliation() {
               <div>
                 <p className="text-[11px] text-ink-3 mb-1.5">Currently auto-demoted (≥2 rejections)</p>
                 <div className="space-y-1">
-                  {Array.from(demotedMerchants).slice(0, 3).map((merchant) => (
-                    <div key={merchant} className="rounded-card border border-kosha-border bg-expense-bg/10 px-2.5 py-1.5">
-                      <p className="text-[11px] text-expense-text truncate">{merchant}</p>
-                      <p className="text-[10px] text-ink-4 mt-0.5">Excluded from alias hints until re-linked</p>
-                    </div>
-                  ))}
+                  {Array.from(demotedMerchants).slice(0, 3).map((merchant) => {
+                    const inCooldown = merchantsInCooldown.has(merchant)
+                    return (
+                      <div key={merchant} className={`rounded-card border px-2.5 py-1.5 ${
+                        inCooldown ? 'border-warning-border bg-warning-bg/10' : 'border-kosha-border bg-expense-bg/10'
+                      }`}>
+                        <p className={`text-[11px] truncate ${inCooldown ? 'text-warning-text' : 'text-expense-text'}`}>{merchant}</p>
+                        <p className="text-[10px] text-ink-4 mt-0.5">
+                          {inCooldown 
+                            ? 'In cooldown — cannot re-learn for 14 days after demotion'
+                            : 'Cooldown expired — can be re-linked to start learning again'}
+                        </p>
+                      </div>
+                    )
+                  })}
                 </div>
                 {demotedMerchants.size > 3 && (
                   <p className="text-[10px] text-ink-4 mt-1.5">+{demotedMerchants.size - 3} more demoted merchants</p>
