@@ -1,6 +1,6 @@
 export const CHANGELOG = [
   {
-    version: '1.1.9',
+    version: '1.1.10',
     date: 'March 2026',
     items: [
       'Completed Phase 4 roadmap by shipping shared-wallet invite management in Settings with one-tap link creation/copy and live join status',
@@ -17,12 +17,19 @@ export const CHANGELOG = [
       'Alias quality scores displayed as success percentages with color-coded health status (green ≥90%, blue ≥70%, orange <70%)',
       'Enhanced statement match row visual design with color-coded left border (green for high confidence, yellow for medium, gray for low)',
       'Added linked status badge on statement matches that are already reconciled for at-a-glance confirmation',
+    ],
+  },
+  {
+    version: '1.1.9',
+    date: 'March 2026',
+    items: [
       'Improved parsing error guidance with collapsible formatting tips for failed statement lines',
       'Hide "Report mismatch" button on already-linked statement matches to streamline UI',
       'Added deterministic edge-case tests for drift detection and alias demotion math in release-candidate verification',
       'Reduced dashboard latest transaction section to a compact snapshot (top 3) to cut cognitive load',
       'Added contextual dismissible guide hints on Transactions and Bills for in-flow feature education',
-      'Added local reminder infrastructure with settings controls, notification permission flow, and throttled dashboard alerts',
+      'Added local reminder infrastructure with settings controls',
+      'Added notification permission flow and throttled dashboard alerts',
       'Added undo flows for transaction and bill deletions using a short delayed-delete window with one-tap restore',
       'Added Phase 3 reconciliation workspace with queue metrics, quick category correction, and one-tap reviewed state',
       'Added statement-style matching panel in Reconciliation to parse pasted statement lines and suggest likely transaction links',
@@ -30,6 +37,12 @@ export const CHANGELOG = [
       'Added adaptive alias learning from previously linked statement lines so recurring merchant variants match more reliably over time',
       'Added one-tap reset control for learned statement aliases in Reconciliation when matching guidance needs a clean slate',
       'Added reconciliation telemetry counters for linked suggestions and conversion so match quality can be tuned quickly',
+    ],
+  },
+  {
+    version: '1.1.8',
+    date: 'March 2026',
+    items: [
       'Added recent matching decisions panel to inspect the latest linked statement-to-transaction outcomes',
       'Added one-tap "Report mismatch" action on statement matches to capture correction signals for confidence tuning',
       'Added reconciliation confidence trend cards in Analytics based on linked vs mismatch-reported outcomes',
@@ -44,13 +57,13 @@ export const CHANGELOG = [
       'Added GitHub Actions CI to enforce build checks on PRs and run runtime verification when Supabase secrets are configured',
       'Added recurring transactions engine with schedule generation, form controls, and list/export visibility',
       'Added optional dev-only query timing traces via localStorage flag kosha:trace-queries=1',
-      'Fixed liabilities realtime E2E test flake by cleaning up attempt timers to prevent false post-pass failures',
     ],
   },
   {
-    version: '1.1.8',
+    version: '1.1.7',
     date: 'March 2026',
     items: [
+      'Fixed liabilities realtime E2E test flake by cleaning up attempt timers to prevent false post-pass failures',
       'Added immutable financial audit-event logging for transaction and bill mutations (add, edit, delete, mark-paid)',
       'Added Dashboard Recent Activity feed powered by financial_events for a transparent mutation timeline',
       'Made Recent Activity entries actionable with deep links that open and highlight the related transaction or bill',
@@ -64,13 +77,13 @@ export const CHANGELOG = [
       'Added one-command release candidate verification script with final PASS/FAIL summary output',
       'Documented formal phase-status tracking and adoption-quality release roadmap (1.2.0 to 1.4.0) in README',
       'Added in-app Guide page with start checklist, feature map, playbooks, and FAQ/privacy guidance',
-      'Added dashboard entry point and dismissible first-use hint for faster feature discovery',
     ],
   },
   {
-    version: '1.1.7',
+    version: '1.1.6',
     date: 'March 2026',
     items: [
+      'Added dashboard entry point and dismissible first-use hint for faster feature discovery',
       'Reduced initial app bundle by route-splitting Dashboard, Onboarding, and NotFound pages',
       'Unified mixed icon usage per file and cleaned redundant icon imports',
       'Extracted shared navigator and skeleton components to reduce duplication',
@@ -81,24 +94,18 @@ export const CHANGELOG = [
       'Improved transaction and bills sheet UX on mobile with stable chip layouts and sticky primary action bars',
       'Added mutation stress runtime test coverage to validate rapid transaction and liability mutation consistency',
       'Added CSV export for both Transactions and Bills with robust encoding for spreadsheet compatibility',
-    ],
-  },
-  {
-    version: '1.1.6',
-    date: 'March 2026',
-    items: [
       'Fixed stale transaction and bills lists — now refresh immediately after add, edit, delete, and mark-paid actions',
       'Moved mutation invalidation into shared transaction/liability hooks for consistent server-truth updates across pages',
       'Fixed transaction row delete spinner getting stuck in edge cases',
-      'Added Forgot Password flow with reset email support from Login',
-      'Added Set New Password flow after reset-link redirect',
-      'Added post-reset success confirmation with automatic redirect back to Sign in',
     ],
   },
   {
     version: '1.1.5',
     date: 'March 2026',
     items: [
+      'Added Forgot Password flow with reset email support from Login',
+      'Added Set New Password flow after reset-link redirect',
+      'Added post-reset success confirmation with automatic redirect back to Sign in',
       'Fixed "Not signed in" error when adding transactions or bills on first app open',
       'Dialogs now close instantly after saving — no more 1–3 second freeze',
       'Transaction list, balance, and monthly summary update immediately after any change',
@@ -112,4 +119,4 @@ export const CHANGELOG = [
       'Reduced unnecessary re-renders across Dashboard, Monthly, Analytics, and Transactions',
     ],
   },
-]
+];
