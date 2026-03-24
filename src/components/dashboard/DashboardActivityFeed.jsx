@@ -1,6 +1,5 @@
 import { memo, useMemo } from 'react'
 import { History, ArrowRightLeft, Trash2, CheckCircle2, PlusCircle, FileEdit } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 
 function actionMeta(action) {
   switch (action) {
@@ -39,20 +38,7 @@ function formatEventTime(iso) {
 }
 
 const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
-  const navigate = useNavigate()
-  const visibleEvents = useMemo(() => (events || []).slice(0, 6), [events])
-
-  function openEvent(evt) {
-    if (!evt?.entity_id) return
-
-    if (evt.entity_type === 'transaction') {
-      navigate(`/transactions?focus=${evt.entity_id}`)
-      return
-    }
-
-    const tab = evt.action === 'liability_marked_paid' ? 'paid' : 'pending'
-    navigate(`/bills?focus=${evt.entity_id}&tab=${tab}`)
-  }
+  const visibleEvents = useMemo(() => (events || []).slice(0, 5), [events])
 
   return (
     <div>
@@ -73,10 +59,9 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
             const Icon = meta.Icon
             const isLast = idx === visibleEvents.length - 1
             return (
-              <button
+              <div
                 key={evt.id}
-                onClick={() => openEvent(evt)}
-                className={`w-full text-left px-4 py-3.5 active:bg-kosha-surface-2 transition-colors ${isLast ? '' : 'border-b border-brand-border'}`}
+                className={`w-full text-left px-4 py-3.5 ${isLast ? '' : 'border-b border-brand-border'}`}
               >
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
@@ -92,7 +77,7 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
 
                   <p className="text-[11px] text-ink-4 whitespace-nowrap mt-0.5">{formatEventTime(evt.created_at)}</p>
                 </div>
-              </button>
+              </div>
             )
           })
         )}

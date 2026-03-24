@@ -11,6 +11,8 @@ export const CHANGELOG = [
       'Added statement-style matching panel in Reconciliation to parse pasted statement lines and suggest likely transaction links',
       'Added Monthly entry card that surfaces pending reconciliation count and deep-links into the review workspace',
       'Added advanced Monthly budget variance panel with projected month-end delta and category risk buckets',
+      'Reduced Dashboard guide prompt intensity to a lighter helper card to avoid first-screen pressure',
+      'Changed Dashboard recent activity feed to read-only mode and tightened visible history window to the latest 5 items',
       'Added GitHub Actions CI to enforce build checks on PRs and run runtime verification when Supabase secrets are configured',
       'Added recurring transactions engine with schedule generation, form controls, and list/export visibility',
       'Added optional dev-only query timing traces via localStorage flag kosha:trace-queries=1',
