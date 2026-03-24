@@ -250,23 +250,25 @@ export default function Login() {
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-caption font-semibold text-ink-3 mb-1.5">
-                    {mode === 'reset' ? 'New password' : 'Password'}
-                    {(mode === 'signup' || mode === 'reset') && (
-                      <span className="font-normal text-ink-4 ml-1">· min 8 characters</span>
-                    )}
-                  </label>
-                  <input
-                    className="input"
-                    type="password"
-                    placeholder={mode === 'signin' ? '••••••••' : 'At least 8 characters'}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                    disabled={loading || isRedirectingAfterReset}
-                  />
-                </div>
+                {mode !== 'forgot' && (
+                  <div>
+                    <label className="block text-caption font-semibold text-ink-3 mb-1.5">
+                      {mode === 'reset' ? 'New password' : 'Password'}
+                      {(mode === 'signup' || mode === 'reset') && (
+                        <span className="font-normal text-ink-4 ml-1">· min 8 characters</span>
+                      )}
+                    </label>
+                    <input
+                      className="input"
+                      type="password"
+                      placeholder={mode === 'signin' ? '••••••••' : 'At least 8 characters'}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                      disabled={loading || isRedirectingAfterReset}
+                    />
+                  </div>
+                )}
 
                 {mode === 'reset' && (
                   <div>
