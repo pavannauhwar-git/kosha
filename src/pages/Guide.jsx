@@ -386,15 +386,13 @@ export default function Guide() {
               className="fixed inset-0 z-40 bg-ink/35"
             />
 
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 24 }}
-              transition={{ duration: 0.2 }}
-              className="fixed z-50 left-1/2 -translate-x-1/2 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] w-[min(92vw,560px)]"
-            >
+            <div className="fixed z-50 inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] px-4 flex justify-center">
               <motion.div
                 key={selectedFeature.id}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 24 }}
+                transition={{ duration: 0.2 }}
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.08}
@@ -402,7 +400,7 @@ export default function Guide() {
                   if (info.offset.x < -70) moveFeature(1)
                   if (info.offset.x > 70) moveFeature(-1)
                 }}
-                className="card p-4 md:p-5 max-h-[78vh] overflow-y-auto"
+                className="card p-4 md:p-5 max-h-[78vh] overflow-y-auto w-full max-w-[560px]"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
@@ -495,7 +493,7 @@ export default function Guide() {
                   Open {selectedFeature.title} <ArrowRight size={15} />
                 </button>
               </motion.div>
-            </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
