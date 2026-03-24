@@ -1,11 +1,15 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, CheckCircle2, Link2, ShieldCheck } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import { useTransactions, updateTransaction } from '../hooks/useTransactions'
-import { useReconciliationReviews, upsertReconciliationReview } from '../hooks/useReconciliationReviews'
+import {
+  clearLearnedReconciliationAliases,
+  useReconciliationReviews,
+  upsertReconciliationReview,
+} from '../hooks/useReconciliationReviews'
 import { CATEGORIES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
 import {
@@ -31,6 +35,7 @@ export default function Reconciliation() {
   const [filter, setFilter] = useState('all')
   const [localReviewedIds, setLocalReviewedIds] = useState(() => getReviewedReconciliationIds())
   const [savingId, setSavingId] = useState(null)
+  const [resettingAliases, setResettingAliases] = useState(false)
   const [toast, setToast] = useState(null)
   const [statementInput, setStatementInput] = useState('')
 
@@ -68,6 +73,8 @@ export default function Reconciliation() {
     () => buildLearnedStatementAliases(reviewRows, data),
     [reviewRows, data]
   )
+
+  const learnedAliasCount = learnedAliases.length
 
   const statementMatches = useMemo(
     () => matchStatementEntries(statementEntries, data, { aliases: learnedAliases }),
@@ -156,6 +163,22 @@ export default function Reconciliation() {
     }
   }, [savingId, reviewsLoading, persistReview])
 
+  const resetLearnedAliases = useCallback(async () => {
+    if (resettingAliases || reviewTableUnavailable) return
+    setResettingAliases(true)
+    try {
+      await clearLearnedReconciliationAliases()
+      await refetchReviews()
+      setToast('Learned aliases were reset.')
+      setTimeout(() => setToast(null), 2200)
+    } catch (error) {
+      setToast(error?.message || 'Could not reset learned aliases.')
+      setTimeout(() => setToast(null), 3200)
+    } finally {
+      setResettingAliases(false)
+    }
+  }, [resettingAliases, reviewTableUnavailable, refetchReviews])
+
   return (
     <div className="page">
       <PageHeader title="Reconciliation" />
@@ -188,9 +211,23 @@ export default function Reconciliation() {
             <p className="text-caption text-ink-3 mt-1">
               Paste lines in Date, Description, Amount format. Kosha will propose likely transaction links.
             </p>
+            <p className="text-[11px] text-ink-4 mt-1">
+              Learned aliases: {learnedAliasCount}
+            </p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-brand-container text-brand flex items-center justify-center shrink-0">
-            <Link2 size={16} />
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => { void resetLearnedAliases() }}
+              disabled={learnedAliasCount === 0 || resettingAliases || reviewTableUnavailable}
+              className="btn-ghost h-9 px-3 text-[12px]"
+            >
+              <RotateCcw size={13} />
+              {resettingAliases ? 'Resetting' : 'Reset aliases'}
+            </button>
+            <div className="w-9 h-9 rounded-full bg-brand-container text-brand flex items-center justify-center">
+              <Link2 size={16} />
+            </div>
           </div>
         </div>
 

@@ -86,3 +86,21 @@ export async function upsertReconciliationReview({ transactionId, status = 'revi
 
   return { unavailable: false, row: data }
 }
+
+export async function clearLearnedReconciliationAliases() {
+  const userId = getAuthUserId()
+
+  const { error } = await supabase
+    .from('reconciliation_reviews')
+    .update({ statement_line: null, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('status', 'linked')
+    .not('statement_line', 'is', null)
+
+  if (error) {
+    if (isMissingTableError(error)) return { unavailable: true }
+    throw error
+  }
+
+  return { unavailable: false }
+}
