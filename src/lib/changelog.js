@@ -12,6 +12,8 @@ export const CHANGELOG = [
       'Improved statement matching confidence with merchant-noise cleanup, transaction-direction inference, and stronger tie-break scoring',
       'Added adaptive alias learning from previously linked statement lines so recurring merchant variants match more reliably over time',
       'Added one-tap reset control for learned statement aliases in Reconciliation when matching guidance needs a clean slate',
+      'Added reconciliation telemetry counters for linked suggestions and conversion so match quality can be tuned quickly',
+      'Added recent matching decisions panel to inspect the latest linked statement-to-transaction outcomes',
       'Persisted reconciliation reviewed/linked state to Supabase with secure per-user access policies and local fallback when migration is not yet applied',
       'Extended deploy-readiness verification to explicitly check reconciliation_reviews table availability',
       'Added deterministic statement-matching test and wired it into the release-candidate verification pipeline',

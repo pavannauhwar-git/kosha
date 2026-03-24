@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, CheckCircle2, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
+import { ArrowRight, CheckCircle2, History, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
@@ -86,8 +86,29 @@ export default function Reconciliation() {
     const valid = statementMatches.filter((row) => row.entry.isValid).length
     const matched = statementMatches.filter((row) => !!row.best).length
     const highConfidence = statementMatches.filter((row) => row.confidence === 'high').length
-    return { total, valid, matched, highConfidence }
-  }, [statementMatches])
+    const linkedSuggestions = statementMatches.filter((row) => row.best?.txn?.id && linkedIdSet.has(row.best.txn.id)).length
+    const conversion = matched > 0 ? Math.round((linkedSuggestions / matched) * 100) : 0
+    return { total, valid, matched, highConfidence, linkedSuggestions, conversion }
+  }, [statementMatches, linkedIdSet])
+
+  const recentLinkDecisions = useMemo(() => {
+    const linkedRows = (reviewRows || [])
+      .filter((row) => row?.status === 'linked' && row?.transaction_id)
+      .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))
+      .slice(0, 5)
+
+    return linkedRows.map((row) => {
+      const txn = (data || []).find((item) => item.id === row.transaction_id)
+      const parsed = parseStatementLines(row.statement_line || '')
+      return {
+        transactionId: row.transaction_id,
+        statementPreview: parsed?.[0]?.description || row.statement_line || 'No statement line',
+        transactionLabel: txn?.description || 'Transaction',
+        amount: txn?.amount || null,
+        date: txn?.date || null,
+      }
+    })
+  }, [reviewRows, data])
 
   const visibleItems = useMemo(() => {
     const base = insights.queue
@@ -252,6 +273,14 @@ export default function Reconciliation() {
         )}
 
         {!!statementSummary.total && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1 mb-3">
+            <Metric label="Linked suggestions" value={statementSummary.linkedSuggestions} tone="text-brand" />
+            <Metric label="Conversion" value={`${statementSummary.conversion}%`} tone="text-income-text" />
+            <Metric label="Learned aliases" value={learnedAliasCount} tone="text-ink" />
+          </div>
+        )}
+
+        {!!statementSummary.total && (
           <div className="space-y-2">
             {statementMatches.slice(0, 6).map((row) => (
               <StatementMatchRow
@@ -262,6 +291,34 @@ export default function Reconciliation() {
                 onLink={(id, line) => markLinked(id, line)}
               />
             ))}
+          </div>
+        )}
+
+        {recentLinkDecisions.length > 0 && (
+          <div className="mt-4 border-t border-kosha-border pt-3">
+            <div className="flex items-center gap-2 mb-2">
+              <History size={14} className="text-ink-4" />
+              <p className="text-[12px] font-semibold text-ink-2">Recent matching decisions</p>
+            </div>
+            <div className="space-y-2">
+              {recentLinkDecisions.map((row) => (
+                <div key={row.transactionId} className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
+                  <p className="text-[12px] text-ink-2 truncate">{row.statementPreview}</p>
+                  <p className="text-[11px] text-ink-4 mt-0.5 truncate">
+                    Linked to: {row.transactionLabel}
+                    {row.amount != null ? ` · ${fmt(Number(row.amount || 0))}` : ''}
+                    {row.date ? ` · ${fmtDate(row.date)}` : ''}
+                  </p>
+                  <button
+                    type="button"
+                    className="text-[11px] font-semibold text-brand mt-1 inline-flex items-center gap-1"
+                    onClick={() => navigate(`/transactions?focus=${row.transactionId}`)}
+                  >
+                    Open <ArrowRight size={11} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
