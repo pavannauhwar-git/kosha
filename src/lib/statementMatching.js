@@ -2,20 +2,49 @@ function normalizeText(value) {
   return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
+const NOISE_TOKENS = new Set([
+  'upi', 'imps', 'neft', 'rtgs', 'txn', 'ref', 'utr', 'vpa', 'bank',
+  'debit', 'credit', 'dr', 'cr', 'purchase', 'payment', 'card', 'pos',
+  'merchant', 'to', 'from', 'transfer', 'x', 'xx', 'xxx', 'xxxx',
+])
+
+function cleanMerchantText(value) {
+  const normalized = normalizeText(value)
+    .replace(/[\[\]()]/g, ' ')
+    .replace(/\b(?:upi|imps|neft|rtgs)\/[^\s]+/g, ' ')
+    .replace(/\b[a-z]*\d+[a-z\d]*\b/g, ' ')
+    .replace(/[|,:;]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return normalized
+}
+
 function tokenize(value) {
-  return normalizeText(value)
+  return cleanMerchantText(value)
     .split(/[^a-z0-9]+/i)
     .map((token) => token.trim())
-    .filter((token) => token.length >= 3)
+    .filter((token) => token.length >= 3 && !NOISE_TOKENS.has(token))
 }
 
 function parseAmount(text) {
   if (!text) return null
   const cleaned = String(text).replace(/,/g, '')
+  const hasBrackets = /^\s*\(.+\)\s*$/.test(cleaned)
   const match = cleaned.match(/[-+]?\d+(?:\.\d{1,2})?/)
   if (!match) return null
-  const amount = Number(match[0])
+  let amount = Number(match[0])
+  if (hasBrackets) amount = -Math.abs(amount)
+  if (/\bdr\b/i.test(cleaned)) amount = -Math.abs(amount)
+  if (/\bcr\b/i.test(cleaned)) amount = Math.abs(amount)
   return Number.isFinite(amount) ? Math.abs(amount) : null
+}
+
+function inferDirection(text) {
+  const normalized = normalizeText(text)
+  if (/\b(?:salary|credit|refund|interest|cashback|received|cr)\b/.test(normalized)) return 'credit'
+  if (/\b(?:debit|purchase|spent|paid|bill|dr|atm|withdrawal)\b/.test(normalized)) return 'debit'
+  return 'unknown'
 }
 
 function parseDate(text) {
@@ -84,6 +113,7 @@ export function parseStatementLines(rawText) {
       line,
       date,
       amount,
+      direction: inferDirection(line),
       description: description.trim(),
       tokens: new Set(tokenize(description)),
       isValid: !!date && Number.isFinite(amount),
@@ -96,19 +126,34 @@ function buildTransactionIndex(transactions) {
     txn,
     tokens: new Set(tokenize(txn?.description || '')),
     amount: Number(txn?.amount || 0),
+    type: String(txn?.type || 'expense'),
   }))
+}
+
+function typeCompatibility(entryDirection, txnType) {
+  if (entryDirection === 'unknown') return 0.6
+  if (entryDirection === 'credit') return txnType === 'income' ? 1 : 0.2
+  if (entryDirection === 'debit') return txnType === 'expense' || txnType === 'investment' ? 1 : 0.2
+  return 0.6
 }
 
 function scoreCandidate(entry, candidate) {
   const amountDiff = Math.abs((entry.amount || 0) - Math.abs(candidate.amount || 0))
-  if (amountDiff > 0.01) return null
+  if (amountDiff > 2) return null
 
   const days = dateDistanceDays(entry.date, candidate.txn?.date)
-  if (days > 5) return null
+  if (days > 7) return null
 
   const descriptionScore = overlapScore(entry.tokens, candidate.tokens)
-  const dateScore = Math.max(0, 1 - days / 5)
-  const finalScore = Number((0.65 * dateScore + 0.35 * descriptionScore).toFixed(3))
+  const dateScore = Math.max(0, 1 - days / 7)
+  const amountScore = Math.max(0, 1 - amountDiff / 2)
+  const txnTypeScore = typeCompatibility(entry.direction, candidate.type)
+  const finalScore = Number((
+    0.45 * dateScore +
+    0.3 * descriptionScore +
+    0.2 * amountScore +
+    0.05 * txnTypeScore
+  ).toFixed(3))
 
   return {
     txn: candidate.txn,
@@ -134,13 +179,18 @@ export function matchStatementEntries(statementEntries, transactions) {
     const scored = txnIndex
       .map((candidate) => scoreCandidate(entry, candidate))
       .filter(Boolean)
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score
+        if (a.days !== b.days) return a.days - b.days
+        if (a.amountDiff !== b.amountDiff) return a.amountDiff - b.amountDiff
+        return String(b.txn?.date || '').localeCompare(String(a.txn?.date || ''))
+      })
       .slice(0, 3)
 
     const best = scored[0] || null
     let confidence = 'low'
-    if (best && best.score >= 0.8) confidence = 'high'
-    else if (best && best.score >= 0.5) confidence = 'medium'
+    if (best && best.score >= 0.78) confidence = 'high'
+    else if (best && best.score >= 0.55) confidence = 'medium'
 
     return {
       entry,
