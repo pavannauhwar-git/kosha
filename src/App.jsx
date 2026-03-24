@@ -50,7 +50,8 @@ const REALTIME_INVALIDATION_POLICIES = [
   { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
 ]
 
-const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings']
+const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
+const BOTTOM_NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/report-bug', '/settings', '/guide']
 
 // ── Desktop sidebar ───────────────────────────────────────────────────────
 function DesktopSidebar() {
@@ -128,7 +129,7 @@ function BottomNav() {
   const navigate = useNavigate()
   const scrolledDown = useScrollDirection()
 
-  if (NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
+  if (BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
 
   const active = NAV.findIndex(n =>
     n.path === '/' ? location.pathname === '/' : location.pathname.startsWith(n.path)
@@ -144,7 +145,7 @@ function BottomNav() {
               key={item.path}
               className="nav-float-item"
               onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
-              whileTap={{ scale: 0.92 }}
+              whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 600, damping: 28 }}
             >
               <div className="nav-icon-wrap">
@@ -160,7 +161,7 @@ function BottomNav() {
                 </motion.span>
               </div>
               <motion.span className="nav-label"
-                animate={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}
+                animate={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500, opacity: isActive ? 1 : 0.86 }}
                 transition={{ duration: 0.15 }}>
                 {item.label}
               </motion.span>
