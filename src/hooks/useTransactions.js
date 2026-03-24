@@ -5,6 +5,7 @@ import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
+import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 
 // ── Query key factories ───────────────────────────────────────────────────
 const txnListKey  = (filters) => ['transactions', filters]
@@ -20,17 +21,34 @@ export const TRANSACTION_INVALIDATION_KEYS = [
 ]
 
 const TRANSACTION_LIST_COLUMNS =
-  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes'
+  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
 
 const TRANSACTION_MUTATION_COLUMNS =
-  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes'
+  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
 
 const TXN_FRESH_WINDOW_MS = 15 * 1000
+const RECURRING_SYNC_COOLDOWN_MS = 60 * 1000
+let lastRecurringSyncAt = 0
 
 function runInBackground(promise, scope) {
   void promise.catch((error) => {
     console.warn(`[Kosha] ${scope} background refresh failed`, error)
   })
+}
+
+async function maybeGenerateRecurringTransactions(userId) {
+  const now = Date.now()
+  if (now - lastRecurringSyncAt < RECURRING_SYNC_COOLDOWN_MS) return
+  lastRecurringSyncAt = now
+
+  try {
+    await supabase.rpc('generate_recurring_transactions', { p_user_id: userId })
+  } catch (error) {
+    const message = String(error?.message || '')
+    // Safe no-op when migration has not yet been applied on an environment.
+    if (message.includes('generate_recurring_transactions')) return
+    console.warn('[Kosha] recurring transaction generation failed', error)
+  }
 }
 
 async function cancelTransactionFamilyQueries() {
@@ -224,6 +242,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
     queryFn: () => traceQuery('transactions:list', async () => {
       try {
         const userId = getAuthUserId()
+        await maybeGenerateRecurringTransactions(userId)
         let q = supabase
           .from('transactions')
           .select(TRANSACTION_LIST_COLUMNS)
@@ -475,6 +494,22 @@ export async function addTransaction(payload, options = {}) {
   // Paint the new row immediately in mounted/cached transaction lists.
   primeTransactionCaches(data)
 
+  runInBackground(
+    logFinancialEvent({
+      userId,
+      action: FINANCIAL_EVENT_ACTIONS.TXN_ADD,
+      entityType: 'transaction',
+      entityId: data.id,
+      metadata: {
+        amount: data.amount,
+        type: data.type,
+        date: data.date,
+        category: data.category,
+      },
+    }),
+    'transactions add audit'
+  )
+
   if (invalidate) {
     // Refresh summaries and any non-primed queries in the background.
     runInBackground(invalidateCache(), 'transactions add')
@@ -502,6 +537,20 @@ export async function updateTransaction(id, payload, options = {}) {
 
   reconcileTransactionCaches(previousTxn, data)
 
+  runInBackground(
+    logFinancialEvent({
+      userId,
+      action: FINANCIAL_EVENT_ACTIONS.TXN_UPDATE,
+      entityType: 'transaction',
+      entityId: data.id,
+      metadata: {
+        before: previousTxn || null,
+        after: data,
+      },
+    }),
+    'transactions update audit'
+  )
+
   if (invalidate) {
     runInBackground(invalidateCache(), 'transactions update')
   }
@@ -525,6 +574,19 @@ export async function deleteTransaction(id, options = {}) {
   await cancelTransactionFamilyQueries()
 
   reconcileTransactionCaches(previousTxn, null)
+
+  runInBackground(
+    logFinancialEvent({
+      userId,
+      action: FINANCIAL_EVENT_ACTIONS.TXN_DELETE,
+      entityType: 'transaction',
+      entityId: id,
+      metadata: {
+        before: previousTxn || null,
+      },
+    }),
+    'transactions delete audit'
+  )
 
   if (invalidate) {
     runInBackground(invalidateCache(), 'transactions delete')

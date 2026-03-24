@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test:deploy-readiness": "node scripts/check_deploy_readiness.mjs",
     "test:join-flow": "node scripts/test_join_flow.mjs",
     "test:liabilities-realtime": "node scripts/test_liabilities_realtime.mjs",
     "test:mutation-stress": "node scripts/test_mutation_stress.mjs"

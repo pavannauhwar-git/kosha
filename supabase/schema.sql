@@ -29,6 +29,11 @@ create table if not exists transactions (
                        check (payment_mode in ('upi', 'credit_card', 'debit_card',
                                                'cash', 'net_banking', 'other')),
   notes              text,
+  is_recurring       boolean not null default false,
+  recurrence         text check (recurrence in ('monthly', 'quarterly', 'yearly')),
+  next_run_date      date,
+  source_transaction_id uuid references transactions(id) on delete set null,
+  is_auto_generated  boolean not null default false,
   created_at         timestamptz not null default now(),
   user_id            uuid
 );
@@ -59,6 +64,16 @@ create table if not exists invites (
 
 -- Phase 1 to Phase 2 compatibility: add user_id if tables already exist
 alter table transactions add column if not exists user_id uuid;
+alter table transactions add column if not exists is_recurring boolean not null default false;
+alter table transactions add column if not exists recurrence text;
+alter table transactions add column if not exists next_run_date date;
+alter table transactions add column if not exists source_transaction_id uuid references transactions(id) on delete set null;
+alter table transactions add column if not exists is_auto_generated boolean not null default false;
+
+alter table transactions drop constraint if exists transactions_recurrence_check;
+alter table transactions
+  add constraint transactions_recurrence_check
+  check (recurrence in ('monthly', 'quarterly', 'yearly') or recurrence is null);
 alter table liabilities add column if not exists user_id uuid;
 
 -- Enable Supabase Realtime for transactions table so cross-device sync works instantly
@@ -165,6 +180,8 @@ create index if not exists idx_txn_date     on transactions(date desc);
 create index if not exists idx_txn_type     on transactions(type);
 create index if not exists idx_txn_category on transactions(category);
 create index if not exists idx_txn_user     on transactions(user_id);
+create index if not exists idx_txn_recurring_due on transactions(user_id, next_run_date)
+  where is_recurring = true;
 
 create index if not exists idx_liab_due     on liabilities(due_date);
 create index if not exists idx_liab_paid    on liabilities(paid);
@@ -614,10 +631,154 @@ as $$
 $$;
 
 
+-- ── 1b. generate_recurring_transactions ────────────────────────────────────
+-- Materializes due recurring transactions and advances next_run_date.
+
+create or replace function public.generate_recurring_transactions(
+  p_user_id uuid,
+  p_today   date default current_date
+)
+returns integer
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_inserted integer := 0;
+  v_run_date date;
+  rec record;
+begin
+  if v_uid is null then
+    raise exception 'Authentication required.';
+  end if;
+
+  if v_uid <> p_user_id then
+    raise exception 'Cannot generate recurring transactions for another user.';
+  end if;
+
+  for rec in
+    select *
+    from public.transactions
+    where user_id = p_user_id
+      and is_recurring = true
+      and recurrence is not null
+      and coalesce(next_run_date, date) <= p_today
+    order by coalesce(next_run_date, date) asc
+  loop
+    v_run_date := coalesce(rec.next_run_date, rec.date);
+
+    while v_run_date <= p_today loop
+      insert into public.transactions (
+        date,
+        type,
+        description,
+        amount,
+        category,
+        investment_vehicle,
+        is_repayment,
+        payment_mode,
+        notes,
+        is_recurring,
+        recurrence,
+        next_run_date,
+        source_transaction_id,
+        is_auto_generated,
+        user_id
+      )
+      values (
+        v_run_date,
+        rec.type,
+        rec.description,
+        rec.amount,
+        rec.category,
+        rec.investment_vehicle,
+        rec.is_repayment,
+        rec.payment_mode,
+        rec.notes,
+        false,
+        null,
+        null,
+        rec.id,
+        true,
+        rec.user_id
+      );
+
+      v_inserted := v_inserted + 1;
+
+      v_run_date := case rec.recurrence
+        when 'monthly'   then (v_run_date + interval '1 month')::date
+        when 'quarterly' then (v_run_date + interval '3 months')::date
+        when 'yearly'    then (v_run_date + interval '1 year')::date
+        else null
+      end;
+
+      if v_run_date is null then
+        exit;
+      end if;
+    end loop;
+
+    update public.transactions
+    set
+      next_run_date = v_run_date
+    where id = rec.id
+      and user_id = p_user_id;
+  end loop;
+
+  return v_inserted;
+end;
+$$;
+
+
 -- ── 2. get_month_summary ─────────────────────────────────────────────────────
 -- Previously: fetched every raw transaction row for the month (~50–300 rows),
 --             then ran a JavaScript for-loop to sum by type/category/vehicle.
 -- Now: GROUP BY on the server, returns ~5–30 pre-aggregated rows.
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Migration 003: Financial audit event log
+-- Immutable event records for transaction/liability mutations.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create table if not exists public.financial_events (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  action      text not null,
+  entity_type text not null check (entity_type in ('transaction', 'liability')),
+  entity_id   uuid not null,
+  metadata    jsonb,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists idx_financial_events_user_created
+  on public.financial_events(user_id, created_at desc);
+
+create index if not exists idx_financial_events_entity
+  on public.financial_events(entity_type, entity_id, created_at desc);
+
+alter table public.financial_events enable row level security;
+
+drop policy if exists "financial_events: select own" on public.financial_events;
+create policy "financial_events: select own" on public.financial_events
+for select to public
+using (auth.uid() = user_id);
+
+drop policy if exists "financial_events: insert own" on public.financial_events;
+create policy "financial_events: insert own" on public.financial_events
+for insert to public
+with check (auth.uid() = user_id);
+
+drop policy if exists "financial_events: update none" on public.financial_events;
+create policy "financial_events: update none" on public.financial_events
+for update to public
+using (false)
+with check (false);
+
+drop policy if exists "financial_events: delete none" on public.financial_events;
+create policy "financial_events: delete none" on public.financial_events
+for delete to public
+using (false);
 --
 -- Returns one row per (type, is_repayment, category, investment_vehicle) group.
 -- The JS hook aggregates these ~5–30 rows instead of ~50–300 raw rows.
@@ -860,19 +1021,3 @@ create table if not exists public.budgets (
 create index if not exists idx_budgets_user on public.budgets(user_id);
 
 alter table public.budgets enable row level security;
-
-drop policy if exists "budgets: select own" on public.budgets;
-create policy "budgets: select own" on public.budgets
-  for select to public using (auth.uid() = user_id);
-
-drop policy if exists "budgets: insert own" on public.budgets;
-create policy "budgets: insert own" on public.budgets
-  for insert to public with check (auth.uid() = user_id);
-
-drop policy if exists "budgets: update own" on public.budgets;
-create policy "budgets: update own" on public.budgets
-  for update to public using (auth.uid() = user_id);
-
-drop policy if exists "budgets: delete own" on public.budgets;
-create policy "budgets: delete own" on public.budgets
-  for delete to public using (auth.uid() = user_id);

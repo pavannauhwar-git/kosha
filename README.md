@@ -166,6 +166,7 @@ From project root:
 npm run dev
 npm run build
 npm run preview
+npm run test:deploy-readiness
 npm run test:join-flow
 npm run test:liabilities-realtime
 npm run test:mutation-stress
@@ -176,6 +177,7 @@ What each test does:
 - `test:join-flow`: validates invite token creation and consumption across accounts
 - `test:liabilities-realtime`: validates realtime INSERT delivery across sessions
 - `test:mutation-stress`: validates rapid transaction and liability mutation consistency and cleanup
+- `test:deploy-readiness`: validates env configuration, required tables/columns, and critical Supabase RPC availability
 
 ## End-to-end verification
 
@@ -183,6 +185,7 @@ Run the full verification sequence:
 
 ```bash
 npm run build
+npm run test:deploy-readiness
 npm run test:join-flow
 npm run test:liabilities-realtime
 npm run test:mutation-stress
@@ -222,6 +225,7 @@ git checkout -b feat/your-change-name
 
 ```bash
 npm run build
+npm run test:deploy-readiness
 npm run test:join-flow
 npm run test:liabilities-realtime
 npm run test:mutation-stress
@@ -232,6 +236,7 @@ npm run test:mutation-stress
    - clear problem statement
    - implementation summary
    - test evidence (commands + outcome)
+   - completed checklist from `.github/pull_request_template.md`
 
 Recommended commit style:
 
@@ -240,6 +245,30 @@ Recommended commit style:
 - `refactor: ...`
 - `docs: ...`
 - `test: ...`
+
+## CI policy and branch protection
+
+CI workflow:
+
+- `build`: always runs and must pass
+- `deploy-readiness`: runs when readiness secrets exist and validates schema/RPC/env viability
+- `runtime-verification`: runs after build and deploy-readiness when full E2E secrets exist
+
+Recommended protected-branch settings (GitHub):
+
+1. Require pull request before merge.
+2. Require status checks to pass before merge.
+3. Mark these checks as required:
+   - `build`
+   - `deploy-readiness`
+   - `runtime-verification`
+4. Require branches to be up to date before merging.
+5. Restrict force pushes to protected branches.
+
+Notes:
+
+- If secrets are missing, guarded CI steps are skipped by design.
+- For production readiness, configure all required secrets so all three checks execute on every PR.
 
 ## Release process
 
@@ -257,6 +286,7 @@ npm install
 
 ```bash
 npm run build
+npm run test:deploy-readiness
 npm run test:join-flow
 npm run test:liabilities-realtime
 npm run test:mutation-stress

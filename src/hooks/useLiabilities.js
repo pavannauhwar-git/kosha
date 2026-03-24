@@ -5,6 +5,7 @@ import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { invalidateCache as invalidateTxnCache } from './useTransactions'
 import { traceQuery } from '../lib/queryTrace'
+import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities']]
 
@@ -147,6 +148,22 @@ export async function addLiability(payload, options = {}) {
   // Render newly added bill in the list immediately.
   primeLiabilityCaches(data)
 
+  runInBackground(
+    logFinancialEvent({
+      userId,
+      action: FINANCIAL_EVENT_ACTIONS.BILL_ADD,
+      entityType: 'liability',
+      entityId: data.id,
+      metadata: {
+        amount: data.amount,
+        due_date: data.due_date,
+        is_recurring: data.is_recurring,
+        recurrence: data.recurrence,
+      },
+    }),
+    'liabilities add audit'
+  )
+
   if (invalidate) {
     // Keep server-truth sync, but don't block the form close on refetch.
     runInBackground(invalidateLiabilityCache(), 'liabilities add')
@@ -179,6 +196,21 @@ export async function markPaid(liability, options = {}) {
   }
   reconcileLiabilityCaches(previousLiability, nextLiability)
 
+  runInBackground(
+    logFinancialEvent({
+      userId,
+      action: FINANCIAL_EVENT_ACTIONS.BILL_MARK_PAID,
+      entityType: 'liability',
+      entityId: liability.id,
+      metadata: {
+        before: previousLiability || null,
+        after: nextLiability,
+        rpc_result: result || null,
+      },
+    }),
+    'liabilities markPaid audit'
+  )
+
   if (invalidate) {
     runInBackground(invalidateLiabilityCache(), 'liabilities markPaid')
     runInBackground(invalidateTxnCache(), 'transactions from markPaid')
@@ -203,6 +235,19 @@ export async function deleteLiability(id, options = {}) {
   await cancelLiabilityFamilyQueries()
 
   reconcileLiabilityCaches(previousLiability, null)
+
+  runInBackground(
+    logFinancialEvent({
+      userId,
+      action: FINANCIAL_EVENT_ACTIONS.BILL_DELETE,
+      entityType: 'liability',
+      entityId: id,
+      metadata: {
+        before: previousLiability || null,
+      },
+    }),
+    'liabilities delete audit'
+  )
 
   if (invalidate) {
     runInBackground(invalidateLiabilityCache(), 'liabilities delete')

@@ -23,7 +23,9 @@ import DashboardHeroCard          from '../components/dashboard/DashboardHeroCar
 import DashboardPulseStrip        from '../components/dashboard/DashboardPulseStrip'
 import DashboardPaceCard          from '../components/dashboard/DashboardPaceCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
+import DashboardActivityFeed      from '../components/dashboard/DashboardActivityFeed'
 import PageHeader                 from '../components/PageHeader'
+import { useFinancialEvents } from '../hooks/useFinancialEvents'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
@@ -96,6 +98,7 @@ export default function Dashboard() {
   )
   const { balance: runningBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
   const { pending: bills }          = useLiabilities({ includePaid: false })
+  const { data: financialEvents }   = useFinancialEvents(8)
 
   // ── Derived values ─────────────────────────────────────────────────────
   const earned   = summary?.earned     || 0
@@ -324,6 +327,11 @@ export default function Dashboard() {
             onTap={handleTap}
             onDuplicate={handleDuplicate}
           />
+        </motion.div>
+
+        {/* ── Financial activity feed ─────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <DashboardActivityFeed events={financialEvents} />
         </motion.div>
 
       </motion.div>

@@ -1,12 +1,16 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Check, Repeat, Loader2 } from 'lucide-react'
+import { Plus, X, Check, Repeat, Loader2, Download } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import {
   useLiabilities,
   addLiability,
   markPaid,
   deleteLiability,
 } from '../hooks/useLiabilities'
+import { supabase } from '../lib/supabase'
+import { getAuthUserId } from '../lib/authStore'
+import { downloadCsv, toCsv } from '../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
@@ -19,6 +23,8 @@ export default function Bills() {
   const [showAdd, setShowAdd] = useState(false)
   const [payingId, setPayingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+  const [highlightedBillId, setHighlightedBillId] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [form, setForm] = useState({
     description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly',
@@ -33,6 +39,85 @@ export default function Bills() {
     .reduce((s, b) => s + +b.amount, 0), [pending])
   const dueSoonCount = useMemo(() => pending.filter(b => daysUntil(b.due_date) <= 7).length, [pending])
   const barPct = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
+  const totalBills = pending.length + paid.length
+  const focusBillId = searchParams.get('focus')
+  const tabFromQuery = searchParams.get('tab')
+
+  useEffect(() => {
+    if (tabFromQuery === 'pending' || tabFromQuery === 'paid') {
+      setTab(tabFromQuery)
+      const next = new URLSearchParams(searchParams)
+      next.delete('tab')
+      setSearchParams(next, { replace: true })
+    }
+  }, [tabFromQuery, searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (!focusBillId) return
+
+    const sourceRows = tab === 'paid' ? paid : pending
+    const found = sourceRows.find(b => b.id === focusBillId)
+    if (!found) return
+
+    setHighlightedBillId(focusBillId)
+    setTimeout(() => {
+      const el = document.getElementById(`bill-${focusBillId}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 40)
+
+    const timeoutId = setTimeout(() => setHighlightedBillId(null), 2400)
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('focus')
+    setSearchParams(next, { replace: true })
+
+    return () => clearTimeout(timeoutId)
+  }, [focusBillId, tab, pending, paid, searchParams, setSearchParams])
+
+  async function handleExportCsv() {
+    try {
+      const userId = getAuthUserId()
+      const paidFilter = tab === 'paid'
+      const { data: rows, error } = await supabase
+        .from('liabilities')
+        .select('description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id')
+        .eq('user_id', userId)
+        .eq('paid', paidFilter)
+        .order('due_date', { ascending: true })
+
+      if (error) throw error
+      if (!rows?.length) {
+        setErrToast(`No ${tab} bills to export.`)
+        return
+      }
+
+      const headers = [
+        'Description',
+        'Amount',
+        'Due Date',
+        'Status',
+        'Recurring',
+        'Recurrence',
+        'Linked Transaction ID',
+      ]
+
+      const csvRows = rows.map((row) => [
+        row.description || '',
+        row.amount,
+        row.due_date || '',
+        row.paid ? 'paid' : 'pending',
+        row.is_recurring ? 'yes' : 'no',
+        row.recurrence || '',
+        row.linked_transaction_id || '',
+      ])
+
+      const csv = toCsv(headers, csvRows)
+      const date = new Date().toISOString().slice(0, 10)
+      downloadCsv(`kosha-${tab}-bills-${date}.csv`, csv)
+    } catch (e) {
+      setErrToast(e.message || 'Could not export bills CSV.')
+    }
+  }
 
   async function handleAdd() {
     if (!form.description.trim()) { setFormErr('Enter a description'); return }
@@ -91,11 +176,26 @@ export default function Bills() {
       <PageHeader title="Bills & Dues" />
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="mb-4">
-        {pending.length > 0 && (
-          <p className="text-caption text-ink-3 mt-0.5">
-            Next due in {Math.min(...pending.map(b => Math.max(0, daysUntil(b.due_date))))} days
-          </p>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          {pending.length > 0 ? (
+            <p className="text-caption text-ink-3 mt-0.5">
+              Next due in {Math.min(...pending.map(b => Math.max(0, daysUntil(b.due_date))))} days
+            </p>
+          ) : (
+            <p className="text-caption text-ink-3 mt-0.5">{totalBills} bill{totalBills !== 1 ? 's' : ''}</p>
+          )}
+        </div>
+        {totalBills > 0 && (
+          <button
+            onClick={handleExportCsv}
+            title={`Export ${tab} bills CSV`}
+            className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                       flex items-center justify-center active:bg-kosha-surface-2
+                       transition-colors shrink-0"
+          >
+            <Download size={16} className="text-ink-2" />
+          </button>
         )}
       </div>
 
@@ -202,7 +302,11 @@ export default function Bills() {
             const shadow = tab === 'pending' ? dueShadow(days) : 'card'
             const chipCls = dueChipClass(days)
             return (
-              <div key={bill.id} className={`${shadow} p-4`}>
+              <div
+                key={bill.id}
+                id={`bill-${bill.id}`}
+                className={`${shadow} p-4 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

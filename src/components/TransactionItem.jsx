@@ -17,7 +17,7 @@ const MODE_LABEL = {
   other:       '',
 }
 
-function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, isLast = false }) {
+function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, isLast = false, isHighlighted = false }) {
   const x = useMotionValue(0)
 
   const actionOpacity = useTransform(x, [0, -30, -PEEK_X], [0, 0.5, 1])
@@ -102,7 +102,10 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
   }, [onTap, snapToRest, txn, x])
 
   return (
-    <div className="relative overflow-hidden bg-kosha-surface">
+    <div
+      id={`txn-${txn.id}`}
+      className={`relative overflow-hidden bg-kosha-surface ${isHighlighted ? 'txn-focus-highlight' : ''}`}
+    >
 
       {/* Action zone */}
       <motion.div
@@ -166,6 +169,16 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
             {txn.is_repayment && (
               <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
                 Repayment
+              </span>
+            )}
+            {txn.is_recurring && (
+              <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand-on font-medium capitalize">
+                {txn.recurrence || 'Recurring'}
+              </span>
+            )}
+            {txn.is_auto_generated && (
+              <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
+                Auto
               </span>
             )}
           </div>

@@ -59,7 +59,7 @@ async function main() {
 
   await ensureWebSocket()
 
-  const MAX_ATTEMPTS = 3
+  const MAX_ATTEMPTS = 5
   const EVENT_TIMEOUT_MS = 30000
 
   const url = requireEnv('VITE_SUPABASE_URL')
@@ -84,6 +84,7 @@ async function main() {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       let attemptChannel = null
       let attemptLiabilityId = null
+      let expectedDescription = null
       let clearAttemptTimer = () => {}
 
       try {
@@ -99,8 +100,8 @@ async function main() {
               'postgres_changes',
               { event: 'INSERT', schema: 'public', table: 'liabilities' },
               (payload) => {
-                const payloadId = payload?.new?.id
-                if (!attemptLiabilityId || payloadId !== attemptLiabilityId) return
+                const payloadDescription = payload?.new?.description
+                if (!expectedDescription || payloadDescription !== expectedDescription) return
                 clearTimeout(timer)
                 resolve(payload)
               }
@@ -111,7 +112,11 @@ async function main() {
         await waitForSubscribed(attemptChannel)
 
         const description = `E2E realtime liability ${Date.now()}-${attempt}`
+        expectedDescription = description
         const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+        // Give listeners a brief settle window after SUBSCRIBED.
+        await new Promise((resolve) => setTimeout(resolve, 250))
 
         console.log('Inserting liability from actor session...')
         const { data: liability, error: insertError } = await actorClient
@@ -151,6 +156,7 @@ async function main() {
         }
 
         console.log(`Attempt ${attempt} failed: ${error.message}. Retrying...`)
+        await new Promise((resolve) => setTimeout(resolve, 600))
       }
     }
 

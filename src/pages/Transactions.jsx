@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal, Plus, Download } from 'lucide-react'
 import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTransactions'
@@ -7,8 +7,10 @@ import AddTransactionSheet from '../components/AddTransactionSheet'
 import { CATEGORIES } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
+import { downloadCsv, toCsv } from '../lib/csv'
 import PageHeader from '../components/PageHeader'
 import { getAuthUserId } from '../lib/authStore'
+import { useSearchParams } from 'react-router-dom'
 
 const TYPES = [
   { id: 'all',        label: 'All'      },
@@ -40,6 +42,8 @@ export default function Transactions() {
   const [displayCount,  setDisplayCount]  = useState(50)
   const [toast,         setToast]         = useState(null)
   const [duplicateTxn,  setDuplicateTxn]  = useState(null)
+  const [highlightedTxnId, setHighlightedTxnId] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const debouncedSearch = useDebounce(search, 300)
 
@@ -76,6 +80,31 @@ export default function Transactions() {
 
   const groups = useMemo(() => groupByDate(data), [data])
   const hasMore = useMemo(() => total > data.length, [total, data.length])
+  const focusTxnId = searchParams.get('focus')
+
+  useEffect(() => {
+    if (!focusTxnId) return
+
+    const found = data.find(t => t.id === focusTxnId)
+    if (!found) {
+      if (hasMore) setDisplayCount(n => n + 100)
+      return
+    }
+
+    setHighlightedTxnId(focusTxnId)
+    setTimeout(() => {
+      const el = document.getElementById(`txn-${focusTxnId}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 40)
+
+    const timeoutId = setTimeout(() => setHighlightedTxnId(null), 2400)
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('focus')
+    setSearchParams(next, { replace: true })
+
+    return () => clearTimeout(timeoutId)
+  }, [focusTxnId, data, hasMore, searchParams, setSearchParams])
 
   const handleDelete = useCallback(async (id) => {
     if (!id) return
@@ -107,7 +136,7 @@ export default function Transactions() {
       const userId = getAuthUserId()
       let q = supabase
         .from('transactions')
-        .select('date, type, description, amount, category, investment_vehicle, payment_mode, notes')
+        .select('date, type, description, amount, category, investment_vehicle, payment_mode, notes, is_recurring, recurrence, is_auto_generated, source_transaction_id')
         .eq('user_id', userId)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -118,34 +147,52 @@ export default function Transactions() {
 
       const { data: exportRows, error } = await q
       if (error) throw error
-      if (!exportRows?.length) return
+      if (!exportRows?.length) {
+        setToast('No transactions to export for current filters.')
+        setTimeout(() => setToast(null), 3000)
+        return
+      }
 
       const CATEGORY_LABELS = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]))
-      const headers = ['Date', 'Type', 'Description', 'Amount', 'Category',
-        'Investment Vehicle', 'Payment Mode', 'Notes']
+      const headers = [
+        'Date',
+        'Type',
+        'Description',
+        'Amount',
+        'Category',
+        'Investment Vehicle',
+        'Payment Mode',
+        'Notes',
+        'Is Recurring',
+        'Recurrence',
+        'Auto Generated',
+        'Source Transaction ID',
+      ]
       const rows = exportRows.map(t => [
-        t.date, t.type,
-        `"${(t.description || '').replace(/"/g, '""')}"`,
+        t.date,
+        t.type,
+        t.description || '',
         t.amount,
         CATEGORY_LABELS[t.category] || t.category || '',
         t.investment_vehicle || '',
         t.payment_mode || '',
-        `"${(t.notes || '').replace(/"/g, '""')}"`,
+        t.notes || '',
+        t.is_recurring ? 'yes' : 'no',
+        t.recurrence || '',
+        t.is_auto_generated ? 'yes' : 'no',
+        t.source_transaction_id || '',
       ])
 
-      const csv  = [headers, ...rows].map(r => r.join(',')).join('\n')
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
+      const csv = toCsv(headers, rows)
       const filters = [
         typeFilter !== 'all' ? typeFilter : '',
         catFilter  ? (CATEGORY_LABELS[catFilter] || catFilter) : '',
       ].filter(Boolean).join('-')
 
-      a.href     = url
-      a.download = `kosha-${filters || 'transactions'}-${new Date().toISOString().slice(0, 10)}.csv`
-      a.click()
-      URL.revokeObjectURL(url)
+      downloadCsv(
+        `kosha-${filters || 'transactions'}-${new Date().toISOString().slice(0, 10)}.csv`,
+        csv
+      )
     } catch (e) {
       setToast(e.message || 'Could not export transactions.')
       setTimeout(() => setToast(null), 4000)
@@ -273,6 +320,7 @@ export default function Transactions() {
                   onTap={handleTap}
                   isLast={i === txns.length - 1}
                   onDuplicate={handleDuplicate}
+                  isHighlighted={highlightedTxnId === t.id}
                 />
               ))}
             </div>

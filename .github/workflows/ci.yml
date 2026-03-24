@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  deploy-readiness:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      E2E_SESSION_EMAIL: ${{ secrets.E2E_SESSION_EMAIL }}
+      E2E_SESSION_PASSWORD: ${{ secrets.E2E_SESSION_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check readiness secret availability
+        id: readiness-secrets
+        run: |
+          missing=0
+          [[ -z "$VITE_SUPABASE_URL" ]] && missing=1
+          [[ -z "$VITE_SUPABASE_ANON_KEY" ]] && missing=1
+          [[ -z "$E2E_SESSION_EMAIL" ]] && missing=1
+          [[ -z "$E2E_SESSION_PASSWORD" ]] && missing=1
+
+          if [[ "$missing" -eq 1 ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Deploy readiness checks skipped because required secrets are not configured."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 'Runtime test: deploy readiness'
+        if: ${{ steps.readiness-secrets.outputs.skip != 'true' }}
+        run: npm run test:deploy-readiness
+
+  runtime-verification:
+    runs-on: ubuntu-latest
+    needs: [build, deploy-readiness]
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      APP_BASE_URL: http://localhost:5173
+      E2E_CREATOR_EMAIL: ${{ secrets.E2E_CREATOR_EMAIL }}
+      E2E_CREATOR_PASSWORD: ${{ secrets.E2E_CREATOR_PASSWORD }}
+      E2E_JOINER_EMAIL: ${{ secrets.E2E_JOINER_EMAIL }}
+      E2E_JOINER_PASSWORD: ${{ secrets.E2E_JOINER_PASSWORD }}
+      E2E_SESSION_EMAIL: ${{ secrets.E2E_SESSION_EMAIL }}
+      E2E_SESSION_PASSWORD: ${{ secrets.E2E_SESSION_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check runtime secret availability
+        id: runtime-secrets
+        run: |
+          missing=0
+          [[ -z "$VITE_SUPABASE_URL" ]] && missing=1
+          [[ -z "$VITE_SUPABASE_ANON_KEY" ]] && missing=1
+          [[ -z "$E2E_CREATOR_EMAIL" ]] && missing=1
+          [[ -z "$E2E_CREATOR_PASSWORD" ]] && missing=1
+          [[ -z "$E2E_JOINER_EMAIL" ]] && missing=1
+          [[ -z "$E2E_JOINER_PASSWORD" ]] && missing=1
+          [[ -z "$E2E_SESSION_EMAIL" ]] && missing=1
+          [[ -z "$E2E_SESSION_PASSWORD" ]] && missing=1
+
+          if [[ "$missing" -eq 1 ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Runtime verification skipped because required secrets are not configured."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 'Runtime test: join flow'
+        if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
+        run: npm run test:join-flow
+
+      - name: 'Runtime test: liabilities realtime'
+        if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
+        run: npm run test:liabilities-realtime
+
+      - name: 'Runtime test: mutation stress'
+        if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
+        run: npm run test:mutation-stress

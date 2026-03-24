@@ -42,6 +42,20 @@ const TYPES = [
   { id: 'investment', label: 'Investment', color: 'text-invest-text',  bg: 'bg-invest-bg'  },
 ]
 
+const RECURRENCE_OPTIONS = ['monthly', 'quarterly', 'yearly']
+
+function nextRecurringDate(dateStr, recurrence) {
+  if (!dateStr || !recurrence) return null
+  const d = new Date(`${dateStr}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return null
+
+  if (recurrence === 'monthly') d.setMonth(d.getMonth() + 1)
+  if (recurrence === 'quarterly') d.setMonth(d.getMonth() + 3)
+  if (recurrence === 'yearly') d.setFullYear(d.getFullYear() + 1)
+
+  return d.toISOString().slice(0, 10)
+}
+
 // ── Form state via useReducer ─────────────────────────────────────────────
 function buildInitialState(editTxn, duplicateTxn, initialType) {
   if (editTxn) {
@@ -53,6 +67,8 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       vehicle:    editTxn.investment_vehicle || 'Other',
       mode:       editTxn.payment_mode || 'upi',
       date:       editTxn.date        || todayStr(),
+      isRecurring: !!editTxn.is_recurring,
+      recurrence: editTxn.recurrence || 'monthly',
       notes:      editTxn.notes       || '',
       showNotes:  !!(editTxn.notes),
       smartMode:  false,
@@ -70,6 +86,8 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       vehicle:    duplicateTxn.investment_vehicle || 'Other',
       mode:       duplicateTxn.payment_mode || 'upi',
       date:       todayStr(),
+      isRecurring: !!duplicateTxn.is_recurring,
+      recurrence: duplicateTxn.recurrence || 'monthly',
       notes:      duplicateTxn.notes       || '',
       showNotes:  !!(duplicateTxn.notes),
       smartMode:  false,
@@ -86,6 +104,8 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
     vehicle:   'Other',
     mode:      'upi',
     date:      todayStr(),
+    isRecurring: false,
+    recurrence: 'monthly',
     notes:     '',
     showNotes: false,
     smartMode: false,
@@ -258,7 +278,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   const {
     type, amount, desc, category, vehicle, mode, date,
-    notes, showNotes, smartMode, smartText, isSaving, error,
+    isRecurring, recurrence, notes, showNotes, smartMode, smartText, isSaving, error,
   } = state
 
   const set = (key, value) => dispatch({ type: 'SET', key, value })
@@ -302,6 +322,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       date,
       payment_mode: mode,
       is_repayment: false,
+      is_recurring: isRecurring,
+      recurrence: isRecurring ? recurrence : null,
+      next_run_date: isRecurring ? nextRecurringDate(date, recurrence) : null,
       notes:        notes.trim() || null,
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
     }
@@ -522,6 +545,49 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 <CaretRight size={14} className="text-ink-4" />
               </div>
             </button>
+
+            {/* Recurring */}
+            <div className="px-4 py-3 border-t border-kosha-border">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[14px] font-medium text-ink">Recurring transaction</p>
+                  <p className="text-[12px] text-ink-3">Auto-generates based on selected frequency.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => set('isRecurring', !isRecurring)}
+                  disabled={isSaving}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                    ${isRecurring ? 'bg-brand' : 'bg-kosha-border'}
+                    ${isSaving ? 'opacity-50' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform
+                      ${isRecurring ? 'translate-x-5' : 'translate-x-1'}`}
+                  />
+                </button>
+              </div>
+
+              {isRecurring && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {RECURRENCE_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => set('recurrence', option)}
+                      disabled={isSaving}
+                      className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
+                        ${recurrence === option
+                          ? 'bg-brand-container text-brand-on border-brand-container'
+                          : 'bg-kosha-surface text-ink-2 border-kosha-border'}
+                        ${isSaving ? 'opacity-50' : ''}`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Notes */}
             <button
