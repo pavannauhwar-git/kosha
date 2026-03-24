@@ -8,6 +8,7 @@ export const CHANGELOG = [
       'Added local reminder infrastructure with settings controls, notification permission flow, and throttled dashboard alerts',
       'Added undo flows for transaction and bill deletions using a short delayed-delete window with one-tap restore',
       'Added Phase 3 reconciliation workspace with queue metrics, quick category correction, and one-tap reviewed state',
+      'Added statement-style matching panel in Reconciliation to parse pasted statement lines and suggest likely transaction links',
       'Added Monthly entry card that surfaces pending reconciliation count and deep-links into the review workspace',
       'Added advanced Monthly budget variance panel with projected month-end delta and category risk buckets',
       'Added GitHub Actions CI to enforce build checks on PRs and run runtime verification when Supabase secrets are configured',

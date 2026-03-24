@@ -1,12 +1,13 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Link2, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import { useTransactions, updateTransaction } from '../hooks/useTransactions'
 import { CATEGORIES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
+import { matchStatementEntries, parseStatementLines } from '../lib/statementMatching'
 import {
   buildReconciliationInsights,
   getReviewedReconciliationIds,
@@ -26,6 +27,7 @@ export default function Reconciliation() {
   const [reviewedIds, setReviewedIds] = useState(() => getReviewedReconciliationIds())
   const [savingId, setSavingId] = useState(null)
   const [toast, setToast] = useState(null)
+  const [statementInput, setStatementInput] = useState('')
 
   const { data, loading } = useTransactions({ limit: 250 })
 
@@ -37,6 +39,24 @@ export default function Reconciliation() {
     () => buildReconciliationInsights(data, reviewedIds),
     [data, reviewedIds]
   )
+
+  const statementEntries = useMemo(
+    () => parseStatementLines(statementInput),
+    [statementInput]
+  )
+
+  const statementMatches = useMemo(
+    () => matchStatementEntries(statementEntries, data),
+    [statementEntries, data]
+  )
+
+  const statementSummary = useMemo(() => {
+    const total = statementMatches.length
+    const valid = statementMatches.filter((row) => row.entry.isValid).length
+    const matched = statementMatches.filter((row) => !!row.best).length
+    const highConfidence = statementMatches.filter((row) => row.confidence === 'high').length
+    return { total, valid, matched, highConfidence }
+  }, [statementMatches])
 
   const visibleItems = useMemo(() => {
     const base = insights.queue
@@ -96,6 +116,53 @@ export default function Reconciliation() {
           <Metric label="Missing category" value={insights.counts.missingCategory} tone="text-warning-text" />
           <Metric label="Duplicates" value={insights.counts.potentialDuplicate} tone="text-expense-text" />
         </div>
+      </div>
+
+      <div className="card p-4 mb-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <p className="text-sm font-semibold text-ink">Statement-style matching</p>
+            <p className="text-caption text-ink-3 mt-1">
+              Paste lines in Date, Description, Amount format. Kosha will propose likely transaction links.
+            </p>
+          </div>
+          <div className="w-9 h-9 rounded-full bg-brand-container text-brand flex items-center justify-center shrink-0">
+            <Link2 size={16} />
+          </div>
+        </div>
+
+        <textarea
+          value={statementInput}
+          onChange={(e) => setStatementInput(e.target.value)}
+          className="input min-h-[110px] text-sm"
+          placeholder={[
+            '24/03/2026, Swiggy, 542.00',
+            '2026-03-22 | Uber | 318',
+            '21-03-2026\tSalary\t50000',
+          ].join('\n')}
+        />
+
+        {!!statementSummary.total && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 mb-3">
+            <Metric label="Lines" value={statementSummary.total} />
+            <Metric label="Parseable" value={statementSummary.valid} tone="text-brand" />
+            <Metric label="Matched" value={statementSummary.matched} tone="text-income-text" />
+            <Metric label="High confidence" value={statementSummary.highConfidence} tone="text-income-text" />
+          </div>
+        )}
+
+        {!!statementSummary.total && (
+          <div className="space-y-2">
+            {statementMatches.slice(0, 6).map((row) => (
+              <StatementMatchRow
+                key={row.entry.id}
+                row={row}
+                onOpen={(id) => navigate(`/transactions?focus=${id}`)}
+                onReview={(id) => markReviewed(id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
@@ -231,5 +298,52 @@ function AnimateToast({ message }) {
         {message}
       </div>
     </motion.div>
+  )
+}
+
+function StatementMatchRow({ row, onOpen, onReview }) {
+  const best = row.best
+  const entry = row.entry
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm text-ink-2 truncate">{entry.description || entry.line}</p>
+          <p className="text-caption text-ink-3 mt-0.5">
+            {entry.date || 'No date'} · {entry.amount != null ? fmt(entry.amount) : 'No amount'}
+          </p>
+        </div>
+        <span className={`text-[11px] px-2 py-1 rounded-full font-semibold whitespace-nowrap ${
+          row.confidence === 'high'
+            ? 'bg-income-bg text-income-text'
+            : row.confidence === 'medium'
+              ? 'bg-warning-bg text-warning-text'
+              : 'bg-kosha-surface-2 text-ink-3'
+        }`}>
+          {row.confidence}
+        </span>
+      </div>
+
+      {!entry.isValid ? (
+        <p className="text-caption text-expense-text mt-2">Could not parse this line. Use a date and numeric amount.</p>
+      ) : !best ? (
+        <p className="text-caption text-ink-3 mt-2">No candidate found in current transactions.</p>
+      ) : (
+        <div className="mt-2 rounded-card border border-kosha-border bg-white p-2.5">
+          <p className="text-caption text-ink-3">
+            Best: {best.txn.description || 'No description'} · {fmt(best.txn.amount)} · {fmtDate(best.txn.date)}
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <button type="button" onClick={() => onOpen(best.txn.id)} className="chip">
+              Open <ArrowRight size={13} />
+            </button>
+            <button type="button" onClick={() => onReview(best.txn.id)} className="btn-ghost h-8 px-3">
+              Mark linked
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
