@@ -23,7 +23,7 @@ import {
   getReviewedReconciliationIds,
   setReviewedReconciliationIds,
 } from '../lib/reconciliation'
-import { detectConfidenceDrift, getDriftMessage } from '../lib/reconciliationMetrics'
+import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases } from '../lib/reconciliationMetrics'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -71,9 +71,14 @@ export default function Reconciliation() {
     [statementInput]
   )
 
-  const learnedAliases = useMemo(
-    () => buildLearnedStatementAliases(reviewRows, data),
+  const demotedMerchants = useMemo(
+    () => identifyDemotedAliases(reviewRows, data, 2, 30),
     [reviewRows, data]
+  )
+
+  const learnedAliases = useMemo(
+    () => buildLearnedStatementAliases(reviewRows, data, demotedMerchants),
+    [reviewRows, data, demotedMerchants]
   )
 
   const learnedAliasCount = learnedAliases.length

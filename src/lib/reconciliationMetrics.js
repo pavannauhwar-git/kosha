@@ -68,3 +68,53 @@ export function getDriftMessage(drift) {
     severity: driftValue > 25 ? 'warning' : 'info',
   }
 }
+
+/**
+ * Identify aliases that appear in rejected matches and should be demoted
+ * Returns a Set of alias statement strings to exclude from future matching
+ */
+export function identifyDemotedAliases(rows, transactions, threshold = 2, timeWindowDays = 30) {
+  if (!rows || rows.length === 0) {
+    return new Set()
+  }
+
+  const now = new Date()
+  const windowMs = timeWindowDays * 24 * 60 * 60 * 1000
+  const cutoffTime = new Date(now.getTime() - windowMs).toISOString()
+
+  // Get rejected rows in the time window
+  const rejectedInWindow = rows.filter((row) => {
+    const isRejectedRow = isRejected(row)
+    const updatedAt = String(row.updated_at || '')
+    return isRejectedRow && updatedAt >= cutoffTime
+  })
+
+  if (rejectedInWindow.length === 0) {
+    return new Set()
+  }
+
+  // Extract statement lines from rejected rows
+  const rejectedStatementLines = rejectedInWindow
+    .map((row) => {
+      const line = String(row?.statement_line || '')
+      return line.startsWith('REJECTED:') ? line.slice(9).trim() : line
+    })
+    .filter(Boolean)
+
+  // Count occurrences by merchant (first part of statement line)
+  const rejectionCounts = new Map()
+  for (const line of rejectedStatementLines) {
+    const merchant = line.split(/[,|]/)[0]?.trim() || line
+    rejectionCounts.set(merchant, (rejectionCounts.get(merchant) || 0) + 1)
+  }
+
+  // Return merchants that exceed rejection threshold
+  const demoted = new Set()
+  for (const [merchant, count] of rejectionCounts.entries()) {
+    if (count >= threshold) {
+      demoted.add(merchant)
+    }
+  }
+
+  return demoted
+}

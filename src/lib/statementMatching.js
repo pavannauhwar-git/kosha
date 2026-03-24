@@ -139,7 +139,7 @@ function buildAliasHintsMap(aliases) {
   return hints
 }
 
-export function buildLearnedStatementAliases(reviewRows, transactions) {
+export function buildLearnedStatementAliases(reviewRows, transactions, demotedMerchants = new Set()) {
   const txById = new Map((Array.isArray(transactions) ? transactions : []).map((txn) => [txn?.id, txn]))
   const aliases = []
 
@@ -151,6 +151,11 @@ export function buildLearnedStatementAliases(reviewRows, transactions) {
 
     const parsed = parseStatementLines(row.statement_line)
     const statementDescription = parsed?.[0]?.description || row.statement_line
+    
+    // Skip demoted aliases — they failed repeatedly in recent period
+    const merchant = statementDescription.split(/[,|]/)[0]?.trim() || statementDescription
+    if (demotedMerchants.has(merchant)) continue
+
     aliases.push({
       statement: statementDescription,
       canonical: txn.description,
