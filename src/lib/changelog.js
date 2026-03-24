@@ -3,6 +3,8 @@ export const CHANGELOG = [
     version: '1.1.9',
     date: 'March 2026',
     items: [
+      'Added confidence drift detection to flag when 7-day matching quality drops >15% below 30-day baseline',
+      'Confidence drift alerts appear in Reconciliation with actionable advice (reset aliases or monitor decisions)',
       'Reduced dashboard latest transaction section to a compact snapshot (top 3) to cut cognitive load',
       'Added contextual dismissible guide hints on Transactions and Bills for in-flow feature education',
       'Added local reminder infrastructure with settings controls, notification permission flow, and throttled dashboard alerts',

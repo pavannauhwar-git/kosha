@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, CheckCircle2, History, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
+import { AlertCircle, ArrowRight, CheckCircle2, History, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
@@ -23,6 +23,7 @@ import {
   getReviewedReconciliationIds,
   setReviewedReconciliationIds,
 } from '../lib/reconciliation'
+import { detectConfidenceDrift, getDriftMessage } from '../lib/reconciliationMetrics'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -76,6 +77,16 @@ export default function Reconciliation() {
   )
 
   const learnedAliasCount = learnedAliases.length
+
+  const confidenceDrift = useMemo(
+    () => detectConfidenceDrift(reviewRows),
+    [reviewRows]
+  )
+
+  const driftMessage = useMemo(
+    () => getDriftMessage(confidenceDrift),
+    [confidenceDrift]
+  )
 
   const statementMatches = useMemo(
     () => matchStatementEntries(statementEntries, data, { aliases: learnedAliases }),
@@ -267,6 +278,33 @@ export default function Reconciliation() {
             </div>
           </div>
         </div>
+
+        {driftMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-card border mb-3 px-3 py-2.5 flex items-start gap-2 ${
+              driftMessage.severity === 'warning'
+                ? 'border-warning-border bg-warning-bg'
+                : 'border-brand-border bg-brand-bg'
+            }`}
+          >
+            <AlertCircle
+              size={14}
+              className={`shrink-0 mt-0.5 ${
+                driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-brand'
+              }`}
+            />
+            <div>
+              <p className={`text-[12px] font-semibold ${
+                driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-brand'
+              }`}>
+                {driftMessage.title}
+              </p>
+              <p className="text-[11px] text-ink-3 mt-0.5">{driftMessage.message}</p>
+            </div>
+          </motion.div>
+        )}
 
         <textarea
           value={statementInput}
