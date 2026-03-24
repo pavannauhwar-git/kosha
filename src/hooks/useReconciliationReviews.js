@@ -104,3 +104,27 @@ export async function clearLearnedReconciliationAliases() {
 
   return { unavailable: false }
 }
+
+export async function reportReconciliationFalsePositive({ transactionId, statementLine = null }) {
+  const userId = getAuthUserId()
+  const payload = {
+    user_id: userId,
+    transaction_id: transactionId,
+    status: 'reviewed',
+    statement_line: statementLine ? `REJECTED:${statementLine}` : 'REJECTED:unknown',
+    updated_at: new Date().toISOString(),
+  }
+
+  const { data, error } = await supabase
+    .from('reconciliation_reviews')
+    .upsert(payload, { onConflict: 'user_id,transaction_id' })
+    .select(REVIEW_COLUMNS)
+    .single()
+
+  if (error) {
+    if (isMissingTableError(error)) return { unavailable: true }
+    throw error
+  }
+
+  return { unavailable: false, row: data }
+}

@@ -7,6 +7,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import { useTransactions, updateTransaction } from '../hooks/useTransactions'
 import {
   clearLearnedReconciliationAliases,
+  reportReconciliationFalsePositive,
   useReconciliationReviews,
   upsertReconciliationReview,
 } from '../hooks/useReconciliationReviews'
@@ -168,6 +169,21 @@ export default function Reconciliation() {
     }
   }, [persistReview])
 
+  const reportFalsePositive = useCallback(async (id, statementLine) => {
+    try {
+      const result = await reportReconciliationFalsePositive({
+        transactionId: id,
+        statementLine: statementLine || null,
+      })
+      if (!result?.unavailable) await refetchReviews()
+      setToast('Marked as mismatch for future tuning.')
+      setTimeout(() => setToast(null), 2600)
+    } catch (error) {
+      setToast(error?.message || 'Could not report mismatch.')
+      setTimeout(() => setToast(null), 3200)
+    }
+  }, [refetchReviews])
+
   const setCategory = useCallback(async (id, category) => {
     if (!id || !category || savingId || reviewsLoading) return
     setSavingId(id)
@@ -289,6 +305,7 @@ export default function Reconciliation() {
                 onOpen={(id) => navigate(`/transactions?focus=${id}`)}
                 linkedIdSet={linkedIdSet}
                 onLink={(id, line) => markLinked(id, line)}
+                onReject={(id, line) => reportFalsePositive(id, line)}
               />
             ))}
           </div>
@@ -459,7 +476,7 @@ function AnimateToast({ message }) {
   )
 }
 
-function StatementMatchRow({ row, onOpen, onLink, linkedIdSet }) {
+function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
   const best = row.best
   const entry = row.entry
   const isLinked = !!(best?.txn?.id && linkedIdSet?.has(best.txn.id))
@@ -503,6 +520,13 @@ function StatementMatchRow({ row, onOpen, onLink, linkedIdSet }) {
               className="btn-ghost h-8 px-3"
             >
               {isLinked ? 'Linked' : 'Mark linked'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { if (best?.txn?.id) void onReject(best.txn.id, entry.line) }}
+              className="btn-ghost h-8 px-3"
+            >
+              Report mismatch
             </button>
           </div>
         </div>

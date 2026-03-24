@@ -13,6 +13,7 @@ import YoYCards from '../components/analytics/YoYCards'
 import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
 import YearlyInsightsCard from '../components/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
+import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
 
 const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2023 + i)
 
@@ -25,6 +26,7 @@ export default function Analytics() {
 
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1)
+  const { rows: reconciliationRows } = useReconciliationReviews()
 
   const top5 = data?.top5 || []
 
@@ -66,6 +68,34 @@ export default function Analytics() {
       ? { current: lastTwo[1].expense, previous: lastTwo[0].expense }
       : null
   }, [data?.monthly])
+
+  const reconciliationStats = useMemo(() => {
+    const rows = reconciliationRows || []
+    const linked = rows.filter((row) => row.status === 'linked').length
+    const rejected = rows.filter((row) => String(row.statement_line || '').startsWith('REJECTED:')).length
+    const reviewed = rows.filter((row) => row.status === 'reviewed').length
+
+    const now = Date.now()
+    const recentWindowMs = 7 * 24 * 60 * 60 * 1000
+    const recentRows = rows.filter((row) => {
+      const ts = new Date(row.updated_at || 0).getTime()
+      return Number.isFinite(ts) && now - ts <= recentWindowMs
+    })
+    const recentLinked = recentRows.filter((row) => row.status === 'linked').length
+    const recentRejected = recentRows.filter((row) => String(row.statement_line || '').startsWith('REJECTED:')).length
+    const netConfidence = recentLinked + recentRejected > 0
+      ? Math.round((recentLinked / (recentLinked + recentRejected)) * 100)
+      : null
+
+    return {
+      linked,
+      rejected,
+      reviewed,
+      recentLinked,
+      recentRejected,
+      netConfidence,
+    }
+  }, [reconciliationRows])
 
   return (
     <div className="page">
@@ -126,6 +156,23 @@ export default function Analytics() {
           {/* ── 4. Year-over-year stacked cards ─────────────────────── */}
           <YoYCards years={yoyYears} currentYear={year} />
 
+          <div className="card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="section-label">Reconciliation confidence</p>
+              <span className="text-caption text-ink-4">Last 7 days signal</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <StatMini label="Linked" value={reconciliationStats.linked} tone="text-income-text" />
+              <StatMini label="Mismatch reports" value={reconciliationStats.rejected} tone="text-expense-text" />
+              <StatMini label="Recent linked" value={reconciliationStats.recentLinked} tone="text-brand" />
+              <StatMini
+                label="Confidence"
+                value={reconciliationStats.netConfidence == null ? '—' : `${reconciliationStats.netConfidence}%`}
+                tone={reconciliationStats.netConfidence != null && reconciliationStats.netConfidence >= 70 ? 'text-income-text' : 'text-warning-text'}
+              />
+            </div>
+          </div>
+
           <TopExpensesPodium top5={top5} year={year} />
 
           {/* ── 6. Portfolio allocation ──────────────────────────────── */}
@@ -149,6 +196,15 @@ export default function Analytics() {
 
         </motion.div>
       )}
+    </div>
+  )
+}
+
+function StatMini({ label, value, tone = 'text-ink' }) {
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+      <p className="text-caption text-ink-3">{label}</p>
+      <p className={`text-lg font-bold tabular-nums ${tone}`}>{value}</p>
     </div>
   )
 }
