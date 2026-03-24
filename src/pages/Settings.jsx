@@ -1,12 +1,18 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Camera, Trash2, Pencil, Check } from 'lucide-react'
+import { ArrowLeft, Camera, Trash2, Pencil, Check, BellRing, ShieldAlert } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/EditProfileNameDialog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
+import {
+  getReminderPrefs,
+  setReminderPrefs,
+  getNotificationPermission,
+  requestNotificationPermission,
+} from '../lib/reminders'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -49,6 +55,13 @@ export default function Settings() {
   const [uploading, setUploading] = useState(false)
   const [photoError, setPhotoError] = useState('')
   const [showEditName, setShowEditName] = useState(false)
+  const [reminderPrefs, setReminderPrefsState] = useState(() => getReminderPrefs())
+  const [notificationPermission, setNotificationPermission] = useState(() => getNotificationPermission())
+  const [reminderMsg, setReminderMsg] = useState('')
+
+  useEffect(() => {
+    setReminderPrefs(reminderPrefs)
+  }, [reminderPrefs])
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
@@ -94,6 +107,25 @@ export default function Settings() {
       setPhotoError(e.message || 'Could not remove photo. Try again.')
     } finally {
       setUploading(false)
+    }
+  }
+
+  function toggleReminderField(field) {
+    setReminderPrefsState(prev => ({ ...prev, [field]: !prev[field] }))
+  }
+
+  async function enableNotifications() {
+    const permission = await requestNotificationPermission()
+    setNotificationPermission(permission)
+    if (permission === 'granted') {
+      setReminderMsg('Notifications enabled for reminder alerts.')
+      setTimeout(() => setReminderMsg(''), 2500)
+      return
+    }
+
+    if (permission === 'denied') {
+      setReminderMsg('Notifications blocked. Enable them from browser settings.')
+      setTimeout(() => setReminderMsg(''), 3200)
     }
   }
 
@@ -189,6 +221,51 @@ export default function Settings() {
                 </>
               )}
             </div>
+          </motion.div>
+
+          {/* ── Reminders section ───────────────────────────────────── */}
+          <motion.div variants={fadeUp}>
+            <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
+              Reminders
+            </p>
+            <div className="card overflow-hidden p-0">
+              <SettingRow
+                icon={<BellRing size={16} className="text-brand" />}
+                label="Enable reminders"
+                sublabel="Turn reminder notifications on or off"
+                onClick={() => toggleReminderField('enabled')}
+                rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.enabled ? 'ON' : 'OFF'}</span>}
+              />
+              <Divider />
+              <SettingRow
+                icon={<BellRing size={16} className="text-brand" />}
+                label="Bills due alerts"
+                sublabel="Daily reminder when bills are near due"
+                onClick={() => toggleReminderField('bill_due')}
+                disabled={!reminderPrefs.enabled}
+                rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.bill_due ? 'ON' : 'OFF'}</span>}
+              />
+              <Divider />
+              <SettingRow
+                icon={<ShieldAlert size={16} className="text-brand" />}
+                label="Spending pace alerts"
+                sublabel="Warn when spending runs above month pace"
+                onClick={() => toggleReminderField('spending_pace')}
+                disabled={!reminderPrefs.enabled}
+                rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.spending_pace ? 'ON' : 'OFF'}</span>}
+              />
+              <Divider />
+              <SettingRow
+                icon={<BellRing size={16} className="text-brand" />}
+                label="Notification permission"
+                sublabel={`Current: ${notificationPermission}`}
+                onClick={enableNotifications}
+                rightElement={<span className="text-[11px] font-semibold">Request</span>}
+              />
+            </div>
+            {reminderMsg && (
+              <p className="text-[12px] text-ink-3 mt-2 px-1">{reminderMsg}</p>
+            )}
           </motion.div>
 
         </motion.div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat } from 'lucide-react'
+import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat, BookOpen, X } from 'lucide-react'
 import {
   useTransactions,
   useMonthSummary,
@@ -26,6 +26,7 @@ import DashboardRecentTransactions from '../components/dashboard/DashboardRecent
 import DashboardActivityFeed      from '../components/dashboard/DashboardActivityFeed'
 import PageHeader                 from '../components/PageHeader'
 import { useFinancialEvents } from '../hooks/useFinancialEvents'
+import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
@@ -36,6 +37,8 @@ const QUICK_ACTIONS = [
   { label: 'Invest', Icon: Plus, bg: 'bg-invest-bg', color: '#0369A1', type: 'investment', strokeWidth: 2.6 },
   { label: 'Bills', Icon: Repeat, bg: 'bg-repay-bg', color: '#CA8A04', type: 'bills', strokeWidth: 2.4 },
 ]
+
+const GUIDE_HINT_KEY = 'kosha:dismiss-guide-hint-v1'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -87,9 +90,19 @@ export default function Dashboard() {
   const [duplicateTxn, setDuplicateTxn] = useState(null)
   const [heroMode,     setHeroMode]     = useState('balance')
   const [toast,        setToast]        = useState(null)
+  const [showGuideHint, setShowGuideHint] = useState(true)
+
+  useEffect(() => {
+    try {
+      const hidden = localStorage.getItem(GUIDE_HINT_KEY) === '1'
+      if (hidden) setShowGuideHint(false)
+    } catch {
+      // no-op for environments where localStorage is unavailable
+    }
+  }, [])
 
   // ── Data fetching ─────────────────────────────────────────────────────
-  const { data: recent }            = useTransactions({ limit: 8 })
+  const { data: recent }            = useTransactions({ limit: 3 })
   const { todaySpend }              = useTodayExpenses()
   const { data: summary }           = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary }       = useMonthSummary(
@@ -169,6 +182,33 @@ export default function Dashboard() {
   // actually change in value — not on every array reference change from a refetch.
   }, [earned, spent, dayOfMonth, daysInMonth, rate, dueSoonCount, investDiff])
 
+  useEffect(() => {
+    const prefs = getReminderPrefs()
+    if (!prefs.enabled) return
+
+    if (prefs.bill_due && dueSoonCount > 0) {
+      maybeNotify({
+        id: 'bill-due',
+        title: 'Kosha reminder: bills due soon',
+        body: `${dueSoonCount} bill${dueSoonCount > 1 ? 's' : ''} need attention.`,
+        cooldownMs: 12 * 60 * 60 * 1000,
+      })
+    }
+
+    if (prefs.spending_pace && earned > 0) {
+      const spendPct = spent / earned
+      const dayPct = dayOfMonth / daysInMonth
+      if (spendPct > dayPct + 0.15) {
+        maybeNotify({
+          id: 'spending-pace',
+          title: 'Kosha reminder: spending pace is high',
+          body: 'Current spending is running above this month\'s pace.',
+          cooldownMs: 12 * 60 * 60 * 1000,
+        })
+      }
+    }
+  }, [dueSoonCount, earned, spent, dayOfMonth, daysInMonth])
+
   // ── Stable callbacks — useCallback deps are all stable primitives ──────
   const openQuickAdd = useCallback((type) => {
     setAddType(type)
@@ -204,6 +244,15 @@ export default function Dashboard() {
     setHeroMode(m => m === 'balance' ? 'safe' : 'balance')
   }, [])
 
+  const dismissGuideHint = useCallback(() => {
+    setShowGuideHint(false)
+    try {
+      localStorage.setItem(GUIDE_HINT_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }, [])
+
   return (
     <div className="page">
       <PageHeader title="Dashboard" />
@@ -217,6 +266,47 @@ export default function Dashboard() {
           <h1 className="text-display font-bold text-ink tracking-tight">
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
+        </motion.div>
+
+        {showGuideHint && (
+          <motion.div variants={fadeUp} className="card p-4 border border-brand-border bg-brand-container/40">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+                <BookOpen size={16} className="text-brand" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-body font-semibold text-ink">New here? Start with the guide</p>
+                <p className="text-label text-ink-3 mt-0.5">Get setup steps, feature map, and practical playbooks in one place.</p>
+                <button
+                  onClick={() => navigate('/guide')}
+                  className="text-label font-semibold text-brand mt-2 inline-flex items-center gap-1"
+                >
+                  Open guide <ArrowRight size={13} />
+                </button>
+              </div>
+              <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss guide hint">
+                <X size={14} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        <motion.div variants={fadeUp}>
+          <button
+            onClick={() => navigate('/guide')}
+            className="card w-full flex items-center justify-between px-4 py-3.5 text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
+                <BookOpen size={16} className="text-brand" />
+              </div>
+              <div>
+                <p className="text-body font-semibold text-ink">Guide and features</p>
+                <p className="text-label text-ink-3">Learn workflows, recurring setup, and monthly routines</p>
+              </div>
+            </div>
+            <ArrowRight size={15} className="text-ink-4 shrink-0" />
+          </button>
         </motion.div>
 
         {/* ── Hero card — sub-component, renders independently ─────── */}

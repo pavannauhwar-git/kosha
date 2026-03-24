@@ -1,0 +1,72 @@
+name: Release blocker
+description: Critical issue that blocks safe phase deployment.
+title: "[Release Blocker]: "
+labels:
+  - release-blocker
+  - urgent
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this only for issues that block deployment or require immediate rollback triage.
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Sev-1 (data loss/security/outage)
+        - Sev-2 (critical broken flow)
+        - Sev-3 (serious but workaround exists)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domain
+      options:
+        - Data integrity
+        - Authentication
+        - Payments / liabilities flows
+        - Transactions and balances
+        - Realtime sync
+        - CI / deployment gate
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocker
+    attributes:
+      label: Blocking reason
+      description: Why this must block release.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Current mitigation / rollback
+      description: Existing workaround or rollback path.
+
+  - type: textarea
+    id: owner
+    attributes:
+      label: Proposed owner and ETA
+      placeholder: @owner, ETA for fix or decision
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Error logs, links to failing checks, screenshots, or SQL evidence.

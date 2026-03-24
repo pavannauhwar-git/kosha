@@ -6,6 +6,7 @@ Kosha is a personal finance Progressive Web App (PWA) for tracking transactions,
 
 - Overview
 - Features
+- Phase planning and release roadmap
 - Tech stack
 - Project structure
 - Prerequisites
@@ -38,6 +39,85 @@ Kosha is designed as a mobile-first finance app with:
 - Invite and join flow
 - In-app bug reporting flow
 - Installable PWA for Android and iOS
+
+## Phase planning and release roadmap
+
+### Original phase plan status
+
+1. Phase 1 (2 weeks): Security + monitoring + CI gate + exports
+   - Status: mostly complete
+   - Completed: CI gate hardening, deploy-readiness checks, release candidate command, CSV exports, ownership/governance templates
+   - Remaining: deeper production monitoring polish
+
+2. Phase 2 (2 to 3 weeks): Recurring transaction engine + reminders + undo
+   - Status: in progress
+   - Completed: recurring transaction engine (schema, generation RPC, UI wiring, export visibility)
+   - Remaining: reminders and undo flows
+
+3. Phase 3 (2 weeks): Reconciliation + advanced budget model
+   - Status: planned
+
+4. Phase 4 (ongoing): Shared wallets, localization, deep analytics
+   - Status: planned
+
+### Adoption-quality release track
+
+Release 1.2.0: Adoption and Guidance
+
+- New in-app Guide / Features hub
+- "Getting Started in 3 minutes" walkthrough
+- Feature map: Dashboard, Transactions, Bills, Analytics, Exports, Recurring
+- "How to use" recipes (monthly budget setup, bill routine, recurring setup)
+- Contextual first-use hints (dismissible)
+
+Release 1.3.0: Focused Dashboard UX
+
+- Rework dashboard information hierarchy
+- Reduce first-glance cognitive load
+- Keep action-oriented cards (cashflow, bills due, pace, quick add)
+- Optional dashboard personalization (show/hide modules)
+
+Release 1.4.0: Retention and Confidence
+
+- Smart reminders (bill due, unusual spend pace)
+- Monthly close summary
+- "What changed this week" digest
+- Better trust/trace tooling (event timeline + quick jump)
+
+### Dashboard direction on "Latest transactions"
+
+Do not remove the section completely yet. It is a trust anchor for immediate save confirmation.
+
+Preferred progression:
+
+1. Replace full list with a compact snapshot (top 3 + "View all")
+2. Offer collapsible behavior (default collapsed)
+3. Add user setting to show/hide
+
+### Guide/Features page blueprint
+
+1. Start Here
+   - What Kosha helps with
+   - 5-minute setup checklist
+
+2. Core Features
+   - Transactions
+   - Bills and recurring
+   - Analytics
+   - Export and portability
+   - Activity timeline / audit trust layer
+
+3. How-to Playbooks
+   - Set up monthly routine
+   - Track fixed bills
+   - Use recurring correctly
+   - Clean categories for better analytics
+
+4. FAQ and Privacy
+   - Data storage model
+   - Realtime sync behavior
+   - Offline behavior
+   - Export and backup guidance
 
 ## Tech stack
 
@@ -166,6 +246,7 @@ From project root:
 npm run dev
 npm run build
 npm run preview
+npm run release:candidate-check
 npm run test:deploy-readiness
 npm run test:join-flow
 npm run test:liabilities-realtime
@@ -178,6 +259,7 @@ What each test does:
 - `test:liabilities-realtime`: validates realtime INSERT delivery across sessions
 - `test:mutation-stress`: validates rapid transaction and liability mutation consistency and cleanup
 - `test:deploy-readiness`: validates env configuration, required tables/columns, and critical Supabase RPC availability
+- `release:candidate-check`: runs the full release verification suite and prints a final PASS/FAIL summary
 
 ## End-to-end verification
 
@@ -269,6 +351,8 @@ Notes:
 
 - If secrets are missing, guarded CI steps are skipped by design.
 - For production readiness, configure all required secrets so all three checks execute on every PR.
+- CODEOWNERS is configured for critical paths in `.github/CODEOWNERS`.
+- Issue intake is standardized via `.github/ISSUE_TEMPLATE/` (bug report and release blocker forms).
 
 ## Release process
 
@@ -285,11 +369,7 @@ npm install
 3. Run full verification:
 
 ```bash
-npm run build
-npm run test:deploy-readiness
-npm run test:join-flow
-npm run test:liabilities-realtime
-npm run test:mutation-stress
+npm run release:candidate-check
 ```
 
 4. Update changelog entry in `src/lib/changelog.js`.

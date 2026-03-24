@@ -1,0 +1,9 @@
+# Default owner for all files
+* @pavannauhwar
+
+# Critical delivery and data-safety surfaces
+/.github/workflows/ @pavannauhwar
+/scripts/ @pavannauhwar
+/supabase/ @pavannauhwar
+/src/hooks/ @pavannauhwar
+/src/lib/ @pavannauhwar

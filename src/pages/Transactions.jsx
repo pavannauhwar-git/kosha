@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X, SlidersHorizontal, Plus, Download } from 'lucide-react'
+import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight } from 'lucide-react'
 import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
@@ -10,7 +10,9 @@ import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
 import PageHeader from '../components/PageHeader'
 import { getAuthUserId } from '../lib/authStore'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+
+const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 
 const TYPES = [
   { id: 'all',        label: 'All'      },
@@ -32,6 +34,7 @@ function groupNet(txns) {
 }
 
 export default function Transactions() {
+  const navigate = useNavigate()
   const [typeFilter,    setTypeFilter]    = useState('all')
   const [catFilter,     setCatFilter]     = useState('')
   const [search,        setSearch]        = useState('')
@@ -43,7 +46,11 @@ export default function Transactions() {
   const [toast,         setToast]         = useState(null)
   const [duplicateTxn,  setDuplicateTxn]  = useState(null)
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
+  const [showGuideHint, setShowGuideHint] = useState(true)
+  const [pendingDeleteIds, setPendingDeleteIds] = useState([])
+  const [undoToast, setUndoToast] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
+  const deleteTimersRef = useRef(new Map())
 
   const debouncedSearch = useDebounce(search, 300)
 
@@ -78,9 +85,24 @@ export default function Transactions() {
     withCount: true,
   })
 
-  const groups = useMemo(() => groupByDate(data), [data])
-  const hasMore = useMemo(() => total > data.length, [total, data.length])
+  const pendingDeleteSet = useMemo(() => new Set(pendingDeleteIds), [pendingDeleteIds])
+  const visibleData = useMemo(
+    () => data.filter((t) => !pendingDeleteSet.has(t.id)),
+    [data, pendingDeleteSet]
+  )
+
+  const groups = useMemo(() => groupByDate(visibleData), [visibleData])
+  const hasMore = useMemo(() => total > visibleData.length, [total, visibleData.length])
   const focusTxnId = searchParams.get('focus')
+
+  useEffect(() => {
+    try {
+      const hidden = localStorage.getItem(TXN_GUIDE_HINT_KEY) === '1'
+      if (hidden) setShowGuideHint(false)
+    } catch {
+      // no-op
+    }
+  }, [])
 
   useEffect(() => {
     if (!focusTxnId) return
@@ -108,13 +130,46 @@ export default function Transactions() {
 
   const handleDelete = useCallback(async (id) => {
     if (!id) return
-    try {
-      setToast(null)
-      await deleteTransaction(id)
-    } catch (e) {
-      setToast(e.message || 'Could not delete transaction.')
-      setTimeout(() => setToast(null), 4000)
-      throw e
+    if (deleteTimersRef.current.has(id)) return
+
+    const txn = data.find((t) => t.id === id)
+    const description = txn?.description || 'Transaction'
+
+    setPendingDeleteIds((prev) => [...prev, id])
+    setUndoToast({ id, description })
+
+    const timerId = setTimeout(async () => {
+      try {
+        await deleteTransaction(id)
+      } catch (e) {
+        setToast(e.message || 'Could not delete transaction.')
+        setTimeout(() => setToast(null), 4000)
+      } finally {
+        deleteTimersRef.current.delete(id)
+        setPendingDeleteIds((prev) => prev.filter((item) => item !== id))
+        setUndoToast((prev) => (prev?.id === id ? null : prev))
+      }
+    }, 5000)
+
+    deleteTimersRef.current.set(id, timerId)
+  }, [data])
+
+  const undoDelete = useCallback(() => {
+    if (!undoToast?.id) return
+    const id = undoToast.id
+    const timerId = deleteTimersRef.current.get(id)
+    if (timerId) clearTimeout(timerId)
+    deleteTimersRef.current.delete(id)
+    setPendingDeleteIds((prev) => prev.filter((item) => item !== id))
+    setUndoToast(null)
+  }, [undoToast])
+
+  useEffect(() => {
+    return () => {
+      for (const timerId of deleteTimersRef.current.values()) {
+        clearTimeout(timerId)
+      }
+      deleteTimersRef.current.clear()
     }
   }, [])
 
@@ -199,6 +254,15 @@ export default function Transactions() {
     }
   }, [typeFilter, catFilter, debouncedSearch])
 
+  const dismissGuideHint = useCallback(() => {
+    setShowGuideHint(false)
+    try {
+      localStorage.setItem(TXN_GUIDE_HINT_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }, [])
+
   return (
     <div className="page">
       <PageHeader title="Transactions" />
@@ -206,7 +270,7 @@ export default function Transactions() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-caption text-ink-3">
-            {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
+            {total > 0 ? `${Math.max(0, total - pendingDeleteIds.length)} transaction${Math.max(0, total - pendingDeleteIds.length) !== 1 ? 's' : ''}` : 'No results'}
             {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
           </p>
         </div>
@@ -219,6 +283,29 @@ export default function Transactions() {
           </button>
         )}
       </div>
+
+      {showGuideHint && (
+        <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+              <BookOpen size={16} className="text-brand" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-semibold text-ink">Transactions tips</p>
+              <p className="text-label text-ink-3 mt-0.5">Use consistent categories and recurring labels for cleaner analytics.</p>
+              <button
+                onClick={() => navigate('/guide')}
+                className="text-label font-semibold text-brand mt-2 inline-flex items-center gap-1"
+              >
+                Open guide <ArrowRight size={13} />
+              </button>
+            </div>
+            <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss transactions hint">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative mb-3">
@@ -339,6 +426,24 @@ export default function Transactions() {
       )}
 
       <AnimatePresence>
+        {undoToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-32 left-4 right-4 md:left-[236px] md:bottom-8 z-50
+                       flex items-center gap-3 bg-brand text-white px-4 py-3 rounded-card shadow-card-lg"
+          >
+            <span className="text-[13px] font-medium flex-1 truncate">
+              {undoToast.description} removed
+            </span>
+            <button onClick={undoDelete} className="text-white text-xs font-semibold underline underline-offset-2">
+              Undo
+            </button>
+          </motion.div>
+        )}
+
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

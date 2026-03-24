@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Check, Repeat, Loader2, Download } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useLiabilities,
   addLiability,
@@ -16,15 +16,20 @@ import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
+const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
 
 export default function Bills() {
+  const navigate = useNavigate()
   const { pending, paid, loading } = useLiabilities()
   const [tab, setTab] = useState('pending')
   const [showAdd, setShowAdd] = useState(false)
   const [payingId, setPayingId] = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
   const [highlightedBillId, setHighlightedBillId] = useState(null)
+  const [showGuideHint, setShowGuideHint] = useState(true)
+  const [pendingDeleteIds, setPendingDeleteIds] = useState([])
+  const [undoToast, setUndoToast] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
+  const deleteTimersRef = useRef(new Map())
 
   const [form, setForm] = useState({
     description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly',
@@ -33,15 +38,28 @@ export default function Bills() {
   const [errToast, setErrToast] = useState(null)
   const [addSaving, setAddSaving] = useState(false)
 
-  const totalPending = useMemo(() => pending.reduce((s, b) => s + +b.amount, 0), [pending])
-  const dueSoonAmount = useMemo(() => pending
+  const pendingDeleteSet = useMemo(() => new Set(pendingDeleteIds), [pendingDeleteIds])
+  const visiblePending = useMemo(() => pending.filter((b) => !pendingDeleteSet.has(b.id)), [pending, pendingDeleteSet])
+  const visiblePaid = useMemo(() => paid.filter((b) => !pendingDeleteSet.has(b.id)), [paid, pendingDeleteSet])
+
+  const totalPending = useMemo(() => visiblePending.reduce((s, b) => s + +b.amount, 0), [visiblePending])
+  const dueSoonAmount = useMemo(() => visiblePending
     .filter(b => daysUntil(b.due_date) <= 7)
-    .reduce((s, b) => s + +b.amount, 0), [pending])
-  const dueSoonCount = useMemo(() => pending.filter(b => daysUntil(b.due_date) <= 7).length, [pending])
+    .reduce((s, b) => s + +b.amount, 0), [visiblePending])
+  const dueSoonCount = useMemo(() => visiblePending.filter(b => daysUntil(b.due_date) <= 7).length, [visiblePending])
   const barPct = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
-  const totalBills = pending.length + paid.length
+  const totalBills = visiblePending.length + visiblePaid.length
   const focusBillId = searchParams.get('focus')
   const tabFromQuery = searchParams.get('tab')
+
+  useEffect(() => {
+    try {
+      const hidden = localStorage.getItem(BILLS_GUIDE_HINT_KEY) === '1'
+      if (hidden) setShowGuideHint(false)
+    } catch {
+      // no-op
+    }
+  }, [])
 
   useEffect(() => {
     if (tabFromQuery === 'pending' || tabFromQuery === 'paid') {
@@ -148,7 +166,7 @@ export default function Bills() {
   }
 
   async function handleMarkPaid(bill) {
-    if (!bill?.id || payingId || deletingId) return
+    if (!bill?.id || payingId) return
     setPayingId(bill.id)
     try {
       await markPaid(bill)
@@ -160,16 +178,57 @@ export default function Bills() {
   }
 
   async function handleDelete(id) {
-    if (!id || payingId || deletingId) return
-    setDeletingId(id)
+    if (!id || payingId) return
+    if (deleteTimersRef.current.has(id)) return
+
+    const bill = [...pending, ...paid].find((item) => item.id === id)
+    const description = bill?.description || 'Bill'
+
+    setPendingDeleteIds((prev) => [...prev, id])
+    setUndoToast({ id, description })
+
+    const timerId = setTimeout(async () => {
+      try {
+        await deleteLiability(id)
+      } catch (e) {
+        setErrToast(e.message || 'Could not delete bill. Check your connection.')
+      } finally {
+        deleteTimersRef.current.delete(id)
+        setPendingDeleteIds((prev) => prev.filter((item) => item !== id))
+        setUndoToast((prev) => (prev?.id === id ? null : prev))
+      }
+    }, 5000)
+
+    deleteTimersRef.current.set(id, timerId)
+  }
+
+  function undoDelete() {
+    if (!undoToast?.id) return
+    const id = undoToast.id
+    const timerId = deleteTimersRef.current.get(id)
+    if (timerId) clearTimeout(timerId)
+    deleteTimersRef.current.delete(id)
+    setPendingDeleteIds((prev) => prev.filter((item) => item !== id))
+    setUndoToast(null)
+  }
+
+  function dismissGuideHint() {
+    setShowGuideHint(false)
     try {
-      await deleteLiability(id)
-      setDeletingId(null)
-    } catch (e) {
-      setDeletingId(null)
-      setErrToast(e.message || 'Could not delete bill. Check your connection.')
+      localStorage.setItem(BILLS_GUIDE_HINT_KEY, '1')
+    } catch {
+      // no-op
     }
   }
+
+  useEffect(() => {
+    return () => {
+      for (const timerId of deleteTimersRef.current.values()) {
+        clearTimeout(timerId)
+      }
+      deleteTimersRef.current.clear()
+    }
+  }, [])
 
   return (
     <div className="page">
@@ -178,9 +237,9 @@ export default function Bills() {
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          {pending.length > 0 ? (
+          {visiblePending.length > 0 ? (
             <p className="text-caption text-ink-3 mt-0.5">
-              Next due in {Math.min(...pending.map(b => Math.max(0, daysUntil(b.due_date))))} days
+              Next due in {Math.min(...visiblePending.map(b => Math.max(0, daysUntil(b.due_date))))} days
             </p>
           ) : (
             <p className="text-caption text-ink-3 mt-0.5">{totalBills} bill{totalBills !== 1 ? 's' : ''}</p>
@@ -199,14 +258,37 @@ export default function Bills() {
         )}
       </div>
 
+      {showGuideHint && (
+        <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+              <BookOpen size={16} className="text-brand" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-semibold text-ink">Bills setup tip</p>
+              <p className="text-label text-ink-3 mt-0.5">Mark recurring bills properly to keep due alerts and auto-generation accurate.</p>
+              <button
+                onClick={() => navigate('/guide')}
+                className="text-label font-semibold text-brand mt-2 inline-flex items-center gap-1"
+              >
+                Open guide <ArrowRight size={13} />
+              </button>
+            </div>
+            <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss bills hint">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Structured summary card ───────────────────────────────────── */}
-      {pending.length > 0 && (
+      {visiblePending.length > 0 && (
         <div className="card mb-4 p-4">
           <div className="flex items-center justify-between mb-1">
             <span className="text-caption text-ink-3">Total pending</span>
             <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2
                              px-2 py-0.5 rounded-pill">
-              {pending.length} bill{pending.length !== 1 ? 's' : ''}
+              {visiblePending.length} bill{visiblePending.length !== 1 ? 's' : ''}
             </span>
           </div>
           <p className="text-[28px] font-bold text-ink tracking-tight tabular-nums mb-3">
@@ -237,8 +319,8 @@ export default function Bills() {
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
       <div className="flex gap-2 mb-4">
         {[
-          { id: 'pending', label: `Pending (${pending.length})` },
-          { id: 'paid', label: `Paid (${paid.length})` },
+          { id: 'pending', label: `Pending (${visiblePending.length})` },
+          { id: 'paid', label: `Paid (${visiblePaid.length})` },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex-1 py-2.5 rounded-card text-sm font-semibold border transition-all
@@ -265,7 +347,7 @@ export default function Bills() {
         <div className="space-y-3">
 
           {/* ── Pending empty state ── */}
-          {tab === 'pending' && pending.length === 0 && (
+          {tab === 'pending' && visiblePending.length === 0 && (
             <div className="card py-10 px-6 flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-full bg-income-bg flex items-center
                               justify-center mb-4">
@@ -290,14 +372,14 @@ export default function Bills() {
             </div>
           )}
 
-          {tab === 'paid' && paid.length === 0 && (
+          {tab === 'paid' && visiblePaid.length === 0 && (
             <div className="card p-6 text-center">
               <p className="text-ink-2 text-sm">No paid bills yet.</p>
             </div>
           )}
 
           {/* ── Bill cards ── */}
-          {(tab === 'pending' ? pending : paid).map(bill => {
+          {(tab === 'pending' ? visiblePending : visiblePaid).map(bill => {
             const days = daysUntil(bill.due_date)
             const shadow = tab === 'pending' ? dueShadow(days) : 'card'
             const chipCls = dueChipClass(days)
@@ -338,7 +420,7 @@ export default function Bills() {
                     {tab === 'pending' && (
                       <button
                         onClick={() => handleMarkPaid(bill)}
-                        disabled={!!payingId || !!deletingId}
+                        disabled={!!payingId}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-card
                                    bg-income-bg text-income-text text-xs font-semibold
                                    border border-income-border active:scale-95 transition-all
@@ -350,13 +432,13 @@ export default function Bills() {
                     )}
                     <button
                       onClick={() => handleDelete(bill.id)}
-                      disabled={!!payingId || !!deletingId}
+                      disabled={!!payingId}
                       className="flex items-center justify-center px-3 py-2 rounded-card
                                  bg-expense-bg text-expense-text text-xs font-semibold
                                  border border-expense-border active:scale-95 transition-all
                                  disabled:opacity-60"
                     >
-                      {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                      <X size={13} />
                     </button>
                   </div>
                 </div>
@@ -474,6 +556,25 @@ export default function Bills() {
 
       {/* Error toast — shown when addLiability fails after the sheet has closed */}
       <AnimatePresence>
+        {undoToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-44 left-4 right-4 md:left-[236px] md:bottom-20 z-50
+                   flex items-center gap-3 bg-brand text-white px-4 py-3 rounded-card shadow-card-lg"
+          >
+            <span className="text-[13px] font-medium flex-1 truncate">{undoToast.description} removed</span>
+            <button
+              onClick={undoDelete}
+              className="text-white text-xs font-semibold underline underline-offset-2"
+            >
+              Undo
+            </button>
+          </motion.div>
+        )}
+
         {errToast && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
