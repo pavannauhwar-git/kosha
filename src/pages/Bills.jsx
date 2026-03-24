@@ -276,7 +276,7 @@ export default function Bills() {
               exit={{ y: '100%', transition: { duration: 0.22 } }}
             >
               <div className="sheet-handle" />
-              <div className="px-5">
+              <div className="px-5 overflow-x-hidden">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="font-display text-display text-ink">Add Bill</h2>
                   <button onClick={() => setShowAdd(false)} className="close-btn">
@@ -295,7 +295,7 @@ export default function Bills() {
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 />
 
-                <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3
+                <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3 overflow-hidden
                                 flex items-center gap-2 border border-transparent
                                 focus-within:border-warning-border
                                 focus-within:ring-2 focus-within:ring-warning-border/50

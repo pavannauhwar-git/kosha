@@ -345,7 +345,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         onAnimationComplete={() => amountRef.current?.focus()}
       >
         <div className="sheet-handle" />
-        <div className="px-4">
+        <div className="px-4 overflow-x-hidden">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
@@ -417,7 +417,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           </div>
 
           {/* Amount */}
-          <div className="bg-kosha-surface-2 rounded-card px-4 py-3 mb-4 flex items-center gap-2">
+          <div className="bg-kosha-surface-2 rounded-card px-4 py-3 mb-4 flex items-center gap-2 overflow-hidden">
             <span className={`font-display text-2xl font-bold ${activeType?.color}`}>₹</span>
             <input
               ref={amountRef}
@@ -425,7 +425,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               value={amount}
               onChange={e => set('amount', e.target.value)}
               disabled={isSaving}
-              className="flex-1 bg-transparent font-display text-3xl font-bold text-ink
+              className="min-w-0 flex-1 bg-transparent font-display text-3xl font-bold text-ink
                          outline-none tabular-nums placeholder-ink-4 disabled:opacity-50"
             />
           </div>

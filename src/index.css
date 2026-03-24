@@ -19,12 +19,24 @@
 
   html {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   body {
     @apply bg-kosha-bg text-ink font-sans;
+    width: 100%;
+    max-width: 100%;
     min-height: 100dvh;
     overscroll-behavior: none;
+    overflow-x: clip;
+  }
+
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   :root {
@@ -317,6 +329,7 @@
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
     @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-transparent focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-150;
+    min-width: 0;
     will-change: transform;
     transform: translateZ(0);
   }
@@ -336,6 +349,7 @@
     @apply fixed bottom-0 bg-kosha-surface z-50;
     left: 0;
     right: 0;
+    width: min(100%, 560px);
     margin-left: auto;
     margin-right: auto;
     max-width: 560px;
@@ -345,6 +359,7 @@
     max-height: 100dvh;
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
 
   .sheet-handle {
