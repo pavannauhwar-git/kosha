@@ -44,6 +44,36 @@ export default function Bills() {
     .filter(b => daysUntil(b.due_date) <= 7)
     .reduce((s, b) => s + +b.amount, 0), [visiblePending])
   const dueSoonCount = useMemo(() => visiblePending.filter(b => daysUntil(b.due_date) <= 7).length, [visiblePending])
+  const dueThisMonth = useMemo(() => {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = now.getMonth()
+    const rows = visiblePending.filter((bill) => {
+      const parsed = new Date(`${bill.due_date}T00:00:00`)
+      if (Number.isNaN(parsed.getTime())) return false
+      return parsed.getFullYear() === y && parsed.getMonth() === m
+    })
+    return {
+      count: rows.length,
+      amount: rows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+    }
+  }, [visiblePending])
+
+  const pendingWithBucket = useMemo(() => {
+    const bucketRank = { overdue: 0, dueSoon: 1, later: 2 }
+    return visiblePending
+      .map((bill) => {
+        const days = daysUntil(bill.due_date)
+        const bucket = days < 0 ? 'overdue' : days <= 7 ? 'dueSoon' : 'later'
+        return { ...bill, _days: days, _bucket: bucket }
+      })
+      .sort((a, b) => {
+        const rankDiff = bucketRank[a._bucket] - bucketRank[b._bucket]
+        if (rankDiff !== 0) return rankDiff
+        return String(a.due_date || '').localeCompare(String(b.due_date || ''))
+      })
+  }, [visiblePending])
+
   const barPct = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
   const totalBills = visiblePending.length + visiblePaid.length
   const focusBillId = searchParams.get('focus')
@@ -279,6 +309,24 @@ export default function Bills() {
         </div>
       )}
 
+      {visiblePending.length > 0 && (
+        <div className="card mb-5 p-4">
+          <p className="section-label mb-2">Cash impact preview</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+              <p className="text-caption text-ink-3">Due in 7 days</p>
+              <p className="text-lg font-bold text-warning-text tabular-nums">{fmt(dueSoonAmount)}</p>
+              <p className="text-[11px] text-ink-3 mt-0.5">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+              <p className="text-caption text-ink-3">Due this month</p>
+              <p className="text-lg font-bold text-ink tabular-nums">{fmt(dueThisMonth.amount)}</p>
+              <p className="text-[11px] text-ink-3 mt-0.5">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
       <div className="flex gap-2 mb-6">
         {[
@@ -342,67 +390,74 @@ export default function Bills() {
           )}
 
           {/* ── Bill cards ── */}
-          {(tab === 'pending' ? visiblePending : visiblePaid).map(bill => {
+          {(tab === 'pending' ? pendingWithBucket : visiblePaid).map((bill, index, rows) => {
             const days = daysUntil(bill.due_date)
             const shadow = tab === 'pending' ? dueShadow(days) : 'card'
             const chipCls = dueChipClass(days)
+            const showBucketHeader = tab === 'pending' && (index === 0 || rows[index - 1]._bucket !== bill._bucket)
             return (
-              <div
-                key={bill.id}
-                id={`bill-${bill.id}`}
-                className={`${shadow} p-4 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {bill.is_recurring && (
-                        <Repeat size={12} className="text-brand shrink-0" />
-                      )}
-                      <p className="text-sm font-semibold text-ink truncate">
-                        {bill.description}
-                      </p>
+              <div key={bill.id}>
+                {showBucketHeader && (
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-3 px-1 mb-1 mt-2">
+                    {bill._bucket === 'overdue' ? 'Overdue' : bill._bucket === 'dueSoon' ? 'Due this week' : 'Later'}
+                  </p>
+                )}
+                <div
+                  id={`bill-${bill.id}`}
+                  className={`${shadow} p-4 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {bill.is_recurring && (
+                          <Repeat size={12} className="text-brand shrink-0" />
+                        )}
+                        <p className="text-sm font-semibold text-ink truncate">
+                          {bill.description}
+                        </p>
+                      </div>
+                      <p className="text-xl font-bold amt-expense mb-2">{fmt(+bill.amount)}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {tab === 'pending' ? (
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
+                            {dueLabel(days)}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-income-bg text-income-text">
+                            Paid {fmtDate(bill.due_date)}
+                          </span>
+                        )}
+                        {bill.is_recurring && (
+                          <span className="text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xl font-bold amt-expense mb-2">{fmt(+bill.amount)}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {tab === 'pending' ? (
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
-                          {dueLabel(days)}
-                        </span>
-                      ) : (
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-income-bg text-income-text">
-                          Paid {fmtDate(bill.due_date)}
-                        </span>
-                      )}
-                      {bill.is_recurring && (
-                        <span className="text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col gap-2 shrink-0">
-                    {tab === 'pending' && (
+                    <div className="flex flex-col gap-2 shrink-0">
+                      {tab === 'pending' && (
+                        <button
+                          onClick={() => handleMarkPaid(bill)}
+                          disabled={!!payingId || !!deletingId}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-card
+                                     bg-income-bg text-income-text text-xs font-semibold
+                                     border border-income-border active:scale-[0.98] transition-all duration-100
+                                     disabled:opacity-60"
+                        >
+                          {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                          {payingId === bill.id ? 'Paying…' : 'Paid'}
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleMarkPaid(bill)}
+                        onClick={() => handleDelete(bill.id)}
                         disabled={!!payingId || !!deletingId}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-card
-                                   bg-income-bg text-income-text text-xs font-semibold
-                                   border border-income-border active:scale-[0.98] transition-all duration-100
+                        className="flex items-center justify-center px-3 py-2 rounded-card
+                                   bg-expense-bg text-expense-text text-xs font-semibold
+                                   border border-expense-border active:scale-[0.98] transition-all duration-100
                                    disabled:opacity-60"
                       >
-                        {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                        {payingId === bill.id ? 'Paying…' : 'Paid'}
+                        {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleDelete(bill.id)}
-                      disabled={!!payingId || !!deletingId}
-                      className="flex items-center justify-center px-3 py-2 rounded-card
-                                 bg-expense-bg text-expense-text text-xs font-semibold
-                                 border border-expense-border active:scale-[0.98] transition-all duration-100
-                                 disabled:opacity-60"
-                    >
-                      {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
-                    </button>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -181,6 +181,23 @@ export default function Reconciliation() {
     duplicates: insights.candidates.filter((item) => item.flags.potentialDuplicate).length,
   }), [insights.candidates])
 
+  const reviewProgress = useMemo(() => {
+    const total = insights.candidates.length
+    if (!total) {
+      return { total: 0, resolved: 0, queue: 0, pct: 100 }
+    }
+
+    const resolved = insights.candidates.filter((item) => {
+      const id = item?.txn?.id
+      return linkedIdSet.has(id) || effectiveReviewedIds.has(id)
+    }).length
+
+    const queue = Math.max(0, total - resolved)
+    const pct = Math.round((resolved / total) * 100)
+
+    return { total, resolved, queue, pct }
+  }, [insights.candidates, linkedIdSet, effectiveReviewedIds])
+
   const markReviewedLocal = useCallback((id) => {
     if (!id) return
     setLocalReviewedIds((prev) => {
@@ -298,6 +315,26 @@ export default function Reconciliation() {
           <Metric label="Reviewed" value={insights.counts.reviewed} tone="text-income-text" />
           <Metric label="Missing category" value={insights.counts.missingCategory} tone="text-warning-text" />
           <Metric label="Duplicates" value={insights.counts.potentialDuplicate} tone="text-expense-text" />
+        </div>
+
+        <div className="mt-4">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <p className="text-[11px] font-semibold text-ink-3">Queue progress</p>
+            <p className="text-[11px] text-ink-3">{reviewProgress.resolved}/{reviewProgress.total || 0} resolved</p>
+          </div>
+          <div className="h-2 rounded-pill bg-kosha-border overflow-hidden">
+            <motion.div
+              className="h-full rounded-pill bg-brand"
+              initial={{ width: 0 }}
+              animate={{ width: `${reviewProgress.pct}%` }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+            />
+          </div>
+          <p className="text-[11px] text-ink-3 mt-1">
+            {reviewProgress.queue > 0
+              ? `${reviewProgress.queue} item${reviewProgress.queue > 1 ? 's' : ''} still in queue.`
+              : 'Queue clear. Reconciliation quality looks healthy.'}
+          </p>
         </div>
       </div>
 
@@ -482,52 +519,58 @@ export default function Reconciliation() {
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-5 md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
-        {REVIEW_STATE_FILTERS.map((chip) => {
-          const active = chip.id === reviewStateFilter
-          const count = reviewCounts[chip.id] || 0
-          return (
-            <motion.button
-              key={chip.id}
-              type="button"
-              onClick={() => setReviewStateFilter(chip.id)}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ duration: 0.12 }}
-              aria-pressed={active}
-              className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center justify-center gap-1.5 min-w-0 w-full text-[11px] px-2.5 py-2`}
-            >
-              {chip.label}
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                {count}
-              </span>
-            </motion.button>
-          )
-        })}
-      </div>
+      <div className="sticky top-[calc(env(safe-area-inset-top,0px)+62px)] z-10 mb-5 -mx-1 px-1 py-2 bg-kosha-bg/95 backdrop-blur-sm border-y border-kosha-border">
+        <p className="text-[11px] text-ink-3 px-1 mb-2">
+          View: {REVIEW_STATE_FILTERS.find((item) => item.id === reviewStateFilter)?.label || 'In queue'} · {FILTERS.find((item) => item.id === filter)?.label || 'All'}
+        </p>
 
-      <div className="grid grid-cols-2 gap-2 mb-5 md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
-        {FILTERS.map((chip) => {
-          const active = chip.id === filter
-          const count = qualityCounts[chip.id] || 0
-          return (
-            <motion.button
-              key={chip.id}
-              type="button"
-              onClick={() => setFilter(chip.id)}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ duration: 0.12 }}
-              aria-pressed={active}
-              className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center justify-center gap-1.5 min-w-0 w-full text-[11px] px-2.5 py-2`}
-            >
-              {chip.label}
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                {count}
-              </span>
-            </motion.button>
-          )
-        })}
+        <div className="grid grid-cols-3 gap-2 mb-2 md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
+          {REVIEW_STATE_FILTERS.map((chip) => {
+            const active = chip.id === reviewStateFilter
+            const count = reviewCounts[chip.id] || 0
+            return (
+              <motion.button
+                key={chip.id}
+                type="button"
+                onClick={() => setReviewStateFilter(chip.id)}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.12 }}
+                aria-pressed={active}
+                className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center justify-center gap-1.5 min-w-0 w-full text-[11px] px-2.5 py-2`}
+              >
+                {chip.label}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                  {count}
+                </span>
+              </motion.button>
+            )
+          })}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
+          {FILTERS.map((chip) => {
+            const active = chip.id === filter
+            const count = qualityCounts[chip.id] || 0
+            return (
+              <motion.button
+                key={chip.id}
+                type="button"
+                onClick={() => setFilter(chip.id)}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.12 }}
+                aria-pressed={active}
+                className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center justify-center gap-1.5 min-w-0 w-full text-[11px] px-2.5 py-2`}
+              >
+                {chip.label}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                  {count}
+                </span>
+              </motion.button>
+            )
+          })}
+        </div>
       </div>
 
       {loading ? (

@@ -234,6 +234,54 @@ export default function Dashboard() {
   // actually change in value — not on every array reference change from a refetch.
   }, [earned, spent, dayOfMonth, daysInMonth, rate, dueSoonCount, investDiff])
 
+  const todayFocus = useMemo(() => {
+    if (dueSoonCount > 0) {
+      return {
+        title: 'Bills need attention today',
+        detail: `${dueSoonCount} due soon. Clear dues first so monthly pace stays reliable.`,
+        primaryLabel: 'Review bills',
+        primaryRoute: '/bills',
+        secondaryLabel: 'Open monthly',
+        secondaryRoute: '/monthly',
+        tone: 'warning',
+      }
+    }
+
+    if (weeklyDigest.hasSignals && weeklyDigest.spendDelta > 0) {
+      return {
+        title: 'Spending is up vs last week',
+        detail: `Weekly spend increased by ${fmt(Math.abs(weeklyDigest.spendDelta))}. Review recent transactions and trim leakage.`,
+        primaryLabel: 'Review activity',
+        primaryRoute: '/transactions',
+        secondaryLabel: 'Open analytics',
+        secondaryRoute: '/analytics',
+        tone: 'risk',
+      }
+    }
+
+    if (earned > 0 && rate < 15) {
+      return {
+        title: 'Savings pace can improve',
+        detail: `Current savings rate is ${rate}%. A small spend reduction today can lift month-end confidence.`,
+        primaryLabel: 'Open monthly',
+        primaryRoute: '/monthly',
+        secondaryLabel: 'Log expense',
+        secondaryRoute: '/transactions',
+        tone: 'neutral',
+      }
+    }
+
+    return {
+      title: 'You are on track today',
+      detail: 'Keep entries clean and reconcile once this week to preserve dashboard trust.',
+      primaryLabel: 'Run reconciliation',
+      primaryRoute: '/reconciliation',
+      secondaryLabel: 'Open activity',
+      secondaryRoute: '/transactions',
+      tone: 'good',
+    }
+  }, [dueSoonCount, weeklyDigest, earned, rate])
+
   useEffect(() => {
     const prefs = getReminderPrefs()
     if (!prefs.enabled) return
@@ -309,6 +357,41 @@ export default function Dashboard() {
           <h1 className="text-display font-bold text-ink tracking-tight">
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-4">
+            <div className="flex items-center justify-between gap-3 mb-1.5">
+              <p className="section-label">Today focus</p>
+              <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${
+                todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
+                  ? 'bg-warning-bg text-warning-text'
+                  : todayFocus.tone === 'good'
+                    ? 'bg-income-bg text-income-text'
+                    : 'bg-brand-container text-brand-on'
+              }`}>
+                Priority
+              </span>
+            </div>
+            <p className="text-[15px] font-semibold text-ink">{todayFocus.title}</p>
+            <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => navigate(todayFocus.primaryRoute)}
+                className="btn-primary h-9 px-3 text-[12px] justify-center"
+              >
+                {todayFocus.primaryLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(todayFocus.secondaryRoute)}
+                className="btn-ghost h-9 px-3 text-[12px] justify-center"
+              >
+                {todayFocus.secondaryLabel}
+              </button>
+            </div>
+          </div>
         </motion.div>
 
         {/* ── Hero card — sub-component, renders independently ─────── */}
