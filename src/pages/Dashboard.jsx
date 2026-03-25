@@ -179,7 +179,9 @@ export default function Dashboard() {
     now.getMonth() === 0 ? 12 : now.getMonth(),
     { enabled: heavyReady }
   )
-  const balanceHorizonDate = now
+  // Total balance should reflect all scheduled/future-dated transactions.
+  // Month-level detail remains available via monthly summaries elsewhere.
+  const balanceHorizonDate = useMemo(() => new Date(2099, 11, 31), [])
 
   const {
     balance: runningBalance,

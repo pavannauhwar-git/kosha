@@ -418,16 +418,16 @@ export default function Monthly() {
             <div className="card p-3.5">
               <div className="flex items-center justify-between mb-2.5">
                 <p className="section-label">Investments</p>
-                <span className="text-[11px] font-semibold text-invest-text tabular-nums">
+                <span className="text-[11px] font-semibold text-invest-text tabular-nums pr-0.5 text-right">
                   {fmt(vehicleEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0))}
                 </span>
               </div>
 
               <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
                 {vehicleEntries.map(([vehicle, amt]) => (
-                  <div key={vehicle} className="card p-3 shrink-0 min-w-[112px] max-w-[132px]">
+                  <div key={vehicle} className="card p-3.5 shrink-0 min-w-[150px] sm:min-w-[170px]">
                     <p className="text-[11px] text-ink-3 font-medium mb-0.5 truncate">{vehicle}</p>
-                    <p className="text-[20px] leading-none font-bold text-invest-text tabular-nums">{fmt(amt)}</p>
+                    <p className="text-[18px] sm:text-[20px] leading-tight font-bold text-invest-text tabular-nums whitespace-nowrap pr-0.5">{fmt(amt)}</p>
                   </div>
                 ))}
               </div>

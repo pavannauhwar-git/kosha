@@ -36,7 +36,6 @@ export default function Analytics() {
   }, [])
 
   const { data, loading } = useYearSummary(year)
-  const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
   const { rows: reconciliationRows } = useReconciliationReviews({ enabled: heavyReady })
 
   const top5 = data?.top5 || []
@@ -71,14 +70,6 @@ export default function Analytics() {
     () => Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1]),
     [data?.byVehicle]
   )
-
-  const spendTrend = useMemo(() => {
-    const recentMonths = (data?.monthly || []).filter(m => m.expense > 0)
-    const lastTwo = recentMonths.slice(-2)
-    return lastTwo.length === 2
-      ? { current: lastTwo[1].expense, previous: lastTwo[0].expense }
-      : null
-  }, [data?.monthly])
 
   const reconciliationStats = useMemo(() => {
     const rows = reconciliationRows || []
@@ -182,8 +173,6 @@ export default function Analytics() {
           {/* ── 1. Hero summary ──────────────────────────────────────── */}
           <AnnualSummaryCard
             data={data}
-            prevData={prevData}
-            spendTrend={spendTrend}
             year={year}
           />
 
