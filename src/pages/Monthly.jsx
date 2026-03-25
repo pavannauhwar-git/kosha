@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMonthSummary } from '../hooks/useTransactions'
 import { useTransactions } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
+import { useLiabilities } from '../hooks/useLiabilities'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
@@ -28,6 +29,7 @@ export default function Monthly() {
   const { data, loading } = useMonthSummary(year, month)
   const { data: txnRows = [] } = useTransactions({ limit: 250 })
   const { budgets, setBudget, removeBudget } = useBudgets()
+  const { pending: pendingBills, paid: paidBills } = useLiabilities()
   const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews()
 
   const reviewedIds = useMemo(
@@ -79,6 +81,60 @@ export default function Monthly() {
     () => catEntries.filter(([id]) => budgets[id]).length,
     [catEntries, budgets]
   )
+
+  const monthlyBillStatus = useMemo(() => {
+    const inMonth = (row) => {
+      const parsed = new Date(`${row.due_date}T00:00:00`)
+      if (Number.isNaN(parsed.getTime())) return false
+      return parsed.getFullYear() === year && parsed.getMonth() + 1 === month
+    }
+
+    const pendingInMonth = pendingBills.filter(inMonth)
+    const paidInMonth = paidBills.filter(inMonth)
+    const total = pendingInMonth.length + paidInMonth.length
+    const paidPct = total > 0 ? Math.round((paidInMonth.length / total) * 100) : 100
+
+    return {
+      total,
+      pending: pendingInMonth.length,
+      paid: paidInMonth.length,
+      paidPct,
+    }
+  }, [pendingBills, paidBills, year, month])
+
+  const monthlyChecklist = useMemo(() => {
+    const budgetCoverageTarget = catEntries.length
+    const budgetCoveragePct = budgetCoverageTarget > 0
+      ? Math.round((budgetCount / budgetCoverageTarget) * 100)
+      : 100
+
+    return {
+      reconciliation: {
+        done: reconcileQueueCount === 0,
+        label: reconcileQueueCount === 0
+          ? 'Reconciliation queue is clear'
+          : `${reconcileQueueCount} reconciliation item${reconcileQueueCount > 1 ? 's' : ''} pending`,
+        cta: 'Open reconciliation',
+        route: '/reconciliation',
+      },
+      bills: {
+        done: monthlyBillStatus.pending === 0,
+        label: monthlyBillStatus.total === 0
+          ? 'No bills scheduled in this month'
+          : `${monthlyBillStatus.paid}/${monthlyBillStatus.total} bills marked paid (${monthlyBillStatus.paidPct}%)`,
+        cta: 'Open bills',
+        route: '/bills',
+      },
+      budgets: {
+        done: budgetCoveragePct >= 80,
+        label: budgetCoverageTarget === 0
+          ? 'No expense categories to budget yet'
+          : `${budgetCount}/${budgetCoverageTarget} spending categories have budgets (${budgetCoveragePct}%)`,
+        cta: 'Set budgets',
+        route: '/monthly',
+      },
+    }
+  }, [reconcileQueueCount, monthlyBillStatus, catEntries.length, budgetCount])
 
   const budgetVariance = useMemo(() => {
     const rows = catEntries
@@ -262,6 +318,40 @@ export default function Monthly() {
           </div>
         </div>
       </button>
+
+      <div className="card p-4 mb-6">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <p className="section-label">Month-close checklist</p>
+            <p className="text-caption text-ink-3 mt-0.5">Resolve these to trust month-end outcomes.</p>
+          </div>
+          <span className="text-xs px-2 py-1 rounded-full font-semibold bg-brand-container text-brand-on">
+            Action plan
+          </span>
+        </div>
+
+        <div className="space-y-2.5">
+          {[monthlyChecklist.reconciliation, monthlyChecklist.bills, monthlyChecklist.budgets].map((item) => (
+            <div key={item.cta} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className={`text-[12px] font-semibold ${item.done ? 'text-income-text' : 'text-warning-text'}`}>
+                    {item.done ? 'Complete' : 'Attention needed'}
+                  </p>
+                  <p className="text-[12px] text-ink-2 mt-0.5">{item.label}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate(item.route)}
+                  className="btn-ghost h-8 px-3 text-[11px] shrink-0"
+                >
+                  {item.cta}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {loading ? (
         <SkeletonLayout

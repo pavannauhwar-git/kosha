@@ -86,6 +86,8 @@ function matchesTransactionFilters(txn, filters = {}) {
   if (!txn) return false
   if (filters.type && txn.type !== filters.type) return false
   if (filters.category && txn.category !== filters.category) return false
+  if (filters.startDate && String(txn.date || '') < String(filters.startDate)) return false
+  if (filters.endDate && String(txn.date || '') > String(filters.endDate)) return false
   if (filters.search) {
     const q = String(filters.search).toLowerCase()
     const desc = String(txn.description || '').toLowerCase()
@@ -235,8 +237,8 @@ export function useDebounce(value, ms = 300) {
 
 // ── Query hooks ───────────────────────────────────────────────────────────
 
-export function useTransactions({ type, category, search, limit, withCount = false } = {}) {
-  const filters = { type, category, search, limit }
+export function useTransactions({ type, category, search, limit, startDate, endDate, withCount = false } = {}) {
+  const filters = { type, category, search, limit, startDate, endDate }
   const { data: rows, isLoading, error, refetch } = useQuery({
     queryKey: txnListKey(filters),
     queryFn: () => traceQuery('transactions:list', async () => {
@@ -252,6 +254,8 @@ export function useTransactions({ type, category, search, limit, withCount = fal
 
         if (type)     q = q.eq('type', type)
         if (category) q = q.eq('category', category)
+        if (startDate) q = q.gte('date', startDate)
+        if (endDate)   q = q.lte('date', endDate)
         if (search)   q = q.ilike('description', `%${search}%`)
         if (limit)    q = q.limit(limit)
 
@@ -273,7 +277,7 @@ export function useTransactions({ type, category, search, limit, withCount = fal
   })
 
   const { data: countData } = useQuery({
-    queryKey: txnCountKey({ type, category }),
+    queryKey: txnCountKey({ type, category, startDate, endDate }),
     enabled:  withCount,
     staleTime: 60 * 1000,
     queryFn: () => traceQuery('transactions:count', async () => {
@@ -286,6 +290,8 @@ export function useTransactions({ type, category, search, limit, withCount = fal
 
         if (type)     q = q.eq('type', type)
         if (category) q = q.eq('category', category)
+        if (startDate) q = q.gte('date', startDate)
+        if (endDate)   q = q.lte('date', endDate)
 
         const { count, error: err } = await q
         if (err) throw err

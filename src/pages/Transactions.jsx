@@ -21,6 +21,13 @@ const TYPES = [
   { id: 'investment', label: 'Invest'   },
 ]
 
+const DATE_PRESETS = [
+  { id: 'all', label: 'All time' },
+  { id: '7d', label: 'Last 7d' },
+  { id: 'month', label: 'This month' },
+  { id: 'prev-month', label: 'Last month' },
+]
+
 const TYPE_CHIP = {
   all:        'bg-brand-container text-brand-on border-brand-container',
   expense:    'bg-expense-bg text-expense-text border-expense-border',
@@ -42,6 +49,7 @@ export default function Transactions() {
   const [editTxn,       setEditTxn]       = useState(null)
   const [showCats,      setShowCats]      = useState(false)
   const [addType,       setAddType]       = useState('expense')
+  const [datePreset,    setDatePreset]    = useState('all')
   const [displayCount,  setDisplayCount]  = useState(50)
   const [toast,         setToast]         = useState(null)
   const [duplicateTxn,  setDuplicateTxn]  = useState(null)
@@ -50,6 +58,30 @@ export default function Transactions() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const debouncedSearch = useDebounce(search, 300)
+  const { startDate, endDate } = useMemo(() => {
+    const now = new Date()
+    const toISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+    if (datePreset === '7d') {
+      const start = new Date(now)
+      start.setDate(now.getDate() - 6)
+      return { startDate: toISO(start), endDate: toISO(now) }
+    }
+
+    if (datePreset === 'month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1)
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      return { startDate: toISO(start), endDate: toISO(end) }
+    }
+
+    if (datePreset === 'prev-month') {
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const end = new Date(now.getFullYear(), now.getMonth(), 0)
+      return { startDate: toISO(start), endDate: toISO(end) }
+    }
+
+    return { startDate: undefined, endDate: undefined }
+  }, [datePreset])
   const filterCategories = useMemo(
     () => getCategoriesForType(typeFilter === 'all' ? undefined : typeFilter),
     [typeFilter]
@@ -85,6 +117,8 @@ export default function Transactions() {
     type:      typeFilter === 'all' ? undefined : typeFilter,
     category:  catFilter || undefined,
     search:    debouncedSearch || undefined,
+    startDate,
+    endDate,
     limit:     displayCount,
     withCount: true,
   })
@@ -234,7 +268,7 @@ export default function Transactions() {
         <div>
           <p className="text-caption text-ink-3">
             {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
-            {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
+            {(typeFilter !== 'all' || catFilter || datePreset !== 'all') ? ' (filtered)' : ''}
           </p>
         </div>
         {total > 0 && (
@@ -315,6 +349,26 @@ export default function Transactions() {
             </span>
           )}
         </button>
+      </div>
+
+      <div className="flex items-center gap-2 mb-5 overflow-x-auto scrollbar-none pb-0.5">
+        {DATE_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            onClick={() => {
+              setDatePreset(preset.id)
+              setDisplayCount(50)
+            }}
+            className={`shrink-0 px-3 py-1.5 rounded-pill text-[11px] font-semibold border transition-colors ${
+              datePreset === preset.id
+                ? 'bg-brand-container text-brand-on border-brand-container'
+                : 'bg-kosha-surface text-ink-3 border-kosha-border'
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
       </div>
 
       {/* Category picker */}

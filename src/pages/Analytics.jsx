@@ -107,6 +107,36 @@ export default function Analytics() {
     [reconciliationRows]
   )
 
+  const strategicRecommendations = useMemo(() => {
+    const items = []
+    const totalIncome = Number(data?.totalIncome || 0)
+    const totalExpense = Number(data?.totalExpense || 0)
+    const totalInvestment = Number(data?.totalInvestment || 0)
+
+    if (totalIncome > 0) {
+      const savingsPct = Math.round(((totalIncome - totalExpense - totalInvestment) / totalIncome) * 100)
+      if (savingsPct < 15) {
+        items.push(`Savings rate is ${savingsPct}%. Reduce discretionary spend by 5-10% next month to improve buffer.`)
+      } else {
+        items.push(`Savings rate is ${savingsPct}%. Maintain this pace and route surplus into planned investments.`)
+      }
+    }
+
+    if (catEntries.length > 0) {
+      const [topCat, topValue] = catEntries[0]
+      const concentrationPct = Math.round((Number(topValue || 0) / categoryTotal) * 100)
+      if (concentrationPct >= 35) {
+        items.push(`${topCat} contributes ${concentrationPct}% of expense concentration. Add a monthly cap and monitor variance.`)
+      }
+    }
+
+    if (reconciliationStats.netConfidence != null && reconciliationStats.netConfidence < 70) {
+      items.push(`Reconciliation confidence is ${reconciliationStats.netConfidence}%. Run a cleanup pass to improve dashboard trust.`)
+    }
+
+    return items.slice(0, 3)
+  }, [data, catEntries, categoryTotal, reconciliationStats.netConfidence])
+
   return (
     <div className="page">
       <PageHeader title="Analytics" />
@@ -205,6 +235,22 @@ export default function Analytics() {
           </motion.div>
 
           <ConfidenceTrendChart trendData={confidenceTrend} />
+
+          {strategicRecommendations.length > 0 && (
+            <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="section-label">So what now?</p>
+                <span className="text-caption text-ink-4">Actionable next steps</span>
+              </div>
+              <div className="space-y-2">
+                {strategicRecommendations.map((line) => (
+                  <p key={line} className="text-[12px] text-ink-2 leading-relaxed">
+                    - {line}
+                  </p>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           <TopExpensesPodium top5={top5} year={year} />
 
