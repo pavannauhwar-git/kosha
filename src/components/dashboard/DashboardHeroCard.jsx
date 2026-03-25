@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { fmt, monthStr } from '../../lib/utils'
+import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 
 /**
@@ -31,7 +31,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       <div className="flex items-center justify-between mb-4">
         <p className="text-caption font-bold tracking-widest uppercase"
           style={{ color: C.heroAccent }}>
-          {monthStr(now).toUpperCase()}
+          Balance overview
         </p>
         <p className="text-caption font-bold tracking-widest"
           style={{ color: C.heroDimmer }}>KOSHA</p>
@@ -43,7 +43,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       >
         <div className="flex items-center gap-2 mb-1">
           <p className="text-caption font-medium" style={{ color: C.heroLabel }}>
-            {heroMode === 'balance' ? 'Projected balance' : 'Safe to spend'}
+            {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
           </p>
           <div className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white/70 uppercase tracking-wider">
             Tap
