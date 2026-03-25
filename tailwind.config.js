@@ -34,7 +34,7 @@ export default {
         'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#A3386C',
+        'invest':        '#FF1DCE',
         'invest-bg':     '#FBEFF5',
         'invest-text':   '#7F2A52',
         'invest-border': '#E9BFD2',
