@@ -54,14 +54,17 @@ function YoYTooltip({ active, payload, label }) {
   )
 }
 
-export default function YoYCards({ years, currentYear }) {
+export default function YoYCards({ years, currentYear, enabled = true }) {
   const yearQueries = useQueries({
     queries: years.map((year) => ({
       queryKey: ['year', year],
       queryFn: () => fetchYearSummary(year),
+      enabled,
       staleTime: 5 * 60 * 1000,
     })),
   })
+
+  const isLoading = yearQueries.some((q) => q.isLoading || q.isFetching)
 
   const points = useMemo(() => {
     return years
@@ -92,7 +95,29 @@ export default function YoYCards({ years, currentYear }) {
     return idx > 0 ? points[idx - 1] : null
   }, [points, currentPoint])
 
-  if (points.length < 2) return null
+  if (isLoading) {
+    return (
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="section-label">Year over year trends</p>
+          <span className="text-caption text-ink-3">Loading</span>
+        </div>
+        <p className="text-[12px] text-ink-3">Loading yearly comparison...</p>
+      </div>
+    )
+  }
+
+  if (points.length < 2) {
+    return (
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="section-label">Year over year trends</p>
+          <span className="text-caption text-ink-3">Need more history</span>
+        </div>
+        <p className="text-[12px] text-ink-3">At least two years with activity are required for comparison.</p>
+      </div>
+    )
+  }
 
   const deltas = [
     {
