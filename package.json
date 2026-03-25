@@ -15,7 +15,12 @@
     "test:reconciliation-metrics": "node scripts/test_reconciliation_metrics.mjs",
     "test:join-flow": "node scripts/test_join_flow.mjs",
     "test:liabilities-realtime": "node scripts/test_liabilities_realtime.mjs",
-    "test:mutation-stress": "node scripts/test_mutation_stress.mjs"
+    "test:mutation-stress": "node scripts/test_mutation_stress.mjs",
+    "test:mutation-paths": "node scripts/test_mutation_paths.mjs",
+    "test:mutation-integration": "node scripts/test_mutation_integration_paths.mjs",
+    "test:mutation-rollback": "node scripts/test_mutation_rollback_contract.mjs",
+    "test:production-assets": "node scripts/test_production_asset_integrity.mjs",
+    "test:reconciliation-schema-live": "node scripts/test_reconciliation_schema_live.mjs"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.10",

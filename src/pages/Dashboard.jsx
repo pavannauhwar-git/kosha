@@ -7,8 +7,7 @@ import {
   useMonthSummary,
   useRunningBalance,
   useTodayExpenses,
-  deleteTransaction,
-  invalidateCache,
+  removeTransactionMutation,
 } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../context/AuthContext'
@@ -401,12 +400,7 @@ export default function Dashboard() {
   const handleDelete = useCallback(async (id) => {
     if (!id) return
     try {
-      await deleteTransaction(id)
-      setTimeout(() => {
-        void invalidateCache().catch((err) => {
-          console.warn('[Kosha] deferred dashboard invalidate failed', err)
-        })
-      }, 300)
+      await removeTransactionMutation(id)
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)

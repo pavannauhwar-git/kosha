@@ -1,79 +1,186 @@
 import { useMemo } from 'react'
-import { queryClient } from '../../lib/queryClient'
+import { useQueries } from '@tanstack/react-query'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from 'recharts'
+import { supabase } from '../../lib/supabase'
+import { getAuthUserId } from '../../lib/authStore'
 import { fmt } from '../../lib/utils'
 
-export default function YoYCards({ years, currentYear }) {
-  const yearsWithData = useMemo(() => {
-    return years.filter(y => {
-      const cached = queryClient.getQueryData(['year', y])
-      return cached && (cached.totalIncome > 0 || cached.totalExpense > 0)
-    })
-  }, [years])
+async function fetchYearSummary(year) {
+  const userId = getAuthUserId()
 
-  if (yearsWithData.length < 2) return null
+  const { data: result, error } = await supabase
+    .rpc('get_year_summary', { p_user_id: userId, p_year: year })
+    .single()
+
+  if (error) throw error
+  if (!result) return null
+
+  const totals = result.totals || {}
+
+  return {
+    totalIncome: Number(totals.income || 0),
+    totalExpense: Number(totals.expense || 0),
+    totalInvestment: Number(totals.investment || 0),
+  }
+}
+
+function metricDelta(current, previous) {
+  if (!previous || previous === 0) return null
+  return Math.round(((current - previous) / previous) * 100)
+}
+
+function YoYTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <p className="section-label">Year over Year</p>
-      </div>
-      <div className="overflow-x-auto no-scrollbar -mx-4 px-4 mt-3">
-        <div className="flex gap-3 pb-1 pr-4" style={{ minWidth: 'max-content' }}>
-          {yearsWithData.map((y, idx) => {
-            const d = queryClient.getQueryData(['year', y])
-            const prev = queryClient.getQueryData(['year', yearsWithData[idx - 1]])
-            const isCurrent = y === currentYear
-
-            if (!d) return null
-
-            function delta(curr, prv) {
-              if (!prv || prv === 0) return null
-              return Math.round(((curr - prv) / prv) * 100)
-            }
-
-            const income = d.totalIncome || 0
-            const spent = d.totalExpense || 0
-            const invest = d.totalInvestment || 0
-            const rate = income > 0 ? Math.round(((income - spent) / income) * 100) : 0
-
-            return (
-              <div key={y} className={`card p-4 w-[155px] shrink-0 ${isCurrent ? 'border-brand' : ''}`} style={isCurrent ? { borderWidth: '1.5px' } : {}}>
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`text-label font-bold ${isCurrent ? 'text-ink' : 'text-ink-3'}`}>{y}</span>
-                  {isCurrent && (
-                    <span className="text-[9px] font-bold bg-brand-container text-brand-on px-1.5 py-0.5 rounded-full">Now</span>
-                  )}
-                </div>
-
-                <div className="space-y-2.5">
-                  {[
-                    { label: 'Earned', val: income, prevVal: prev?.totalIncome, cls: isCurrent ? 'text-income-text' : 'text-ink-2' },
-                    { label: 'Spent', val: spent, prevVal: prev?.totalExpense, cls: isCurrent ? 'text-expense-text' : 'text-ink-2' },
-                    { label: 'Invested', val: invest, prevVal: prev?.totalInvestment, cls: isCurrent ? 'text-invest-text' : 'text-ink-2' },
-                    { label: 'Leftover', val: rate, prevVal: null, cls: isCurrent ? 'text-repay-text' : 'text-ink-2', suffix: '%' },
-                  ].map(row => {
-                    const d2 = row.prevVal != null ? delta(row.val, row.prevVal) : null
-                    return (
-                      <div key={row.label}>
-                        <p className="text-[10px] text-ink-3 mb-0.5">{row.label}</p>
-                        <div className="flex items-baseline gap-1">
-                          <p className={`text-[12px] font-bold tabular-nums ${row.cls}`}>
-                            {row.suffix ? `${row.val}%` : fmt(row.val, true)}
-                          </p>
-                          {d2 !== null && Math.abs(d2) >= 3 && (
-                            <span className={`text-[9px] font-bold ${d2 > 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                              {d2 > 0 ? '↑' : '↓'}{Math.abs(d2)}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      {payload.map((row) => (
+        <div key={row.dataKey} className="flex items-center justify-between gap-3 text-[11px]">
+          <span style={{ color: row.color }}>{row.name}</span>
+          <span className="font-semibold text-ink tabular-nums">{fmt(Number(row.value || 0), true)}</span>
         </div>
+      ))}
+    </div>
+  )
+}
+
+export default function YoYCards({ years, currentYear }) {
+  const yearQueries = useQueries({
+    queries: years.map((year) => ({
+      queryKey: ['year', year],
+      queryFn: () => fetchYearSummary(year),
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+
+  const points = useMemo(() => {
+    return years
+      .map((year, idx) => {
+        const data = yearQueries[idx]?.data
+        if (!data) return null
+        const earned = Number(data.totalIncome || 0)
+        const spent = Number(data.totalExpense || 0)
+        const invested = Number(data.totalInvestment || 0)
+        if (earned <= 0 && spent <= 0 && invested <= 0) return null
+        return {
+          year,
+          earned,
+          spent,
+          invested,
+        }
+      })
+      .filter(Boolean)
+  }, [years, yearQueries])
+
+  const currentPoint = useMemo(
+    () => points.find((p) => p.year === currentYear) || points[points.length - 1],
+    [points, currentYear]
+  )
+  const previousPoint = useMemo(() => {
+    if (!currentPoint) return null
+    const idx = points.findIndex((p) => p.year === currentPoint.year)
+    return idx > 0 ? points[idx - 1] : null
+  }, [points, currentPoint])
+
+  if (points.length < 2) return null
+
+  const deltas = [
+    {
+      label: 'Earned',
+      delta: metricDelta(currentPoint.earned, previousPoint?.earned),
+      tone: 'text-income-text',
+    },
+    {
+      label: 'Spent',
+      delta: metricDelta(currentPoint.spent, previousPoint?.spent),
+      tone: 'text-expense-text',
+    },
+    {
+      label: 'Invested',
+      delta: metricDelta(currentPoint.invested, previousPoint?.invested),
+      tone: 'text-invest-text',
+    },
+  ]
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="section-label">Year over year trends</p>
+        <span className="text-caption text-ink-3">Multi-line comparison</span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-2.5">
+        {deltas.map((row) => (
+          <div key={row.label} className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+            <p className="text-[10px] text-ink-3">{row.label}</p>
+            <p className={`text-[12px] font-bold tabular-nums ${row.tone}`}>
+              {row.delta === null
+                ? '—'
+                : `${row.delta > 0 ? '+' : ''}${row.delta}%`}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="h-[230px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={points} margin={{ top: 8, right: 8, left: -4, bottom: 2 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(88, 94, 114, 0.18)" />
+            <XAxis
+              dataKey="year"
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
+            />
+            <YAxis
+              tickFormatter={(v) => `${Math.round(v / 1000)}k`}
+              tickLine={false}
+              axisLine={false}
+              width={38}
+              tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
+            />
+            <Tooltip content={<YoYTooltip />} />
+            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: 6 }} />
+
+            <Line
+              type="monotone"
+              dataKey="earned"
+              name="Earned"
+              stroke="var(--c-income)"
+              strokeWidth={2.6}
+              dot={{ r: 3, strokeWidth: 0, fill: 'var(--c-income)' }}
+              activeDot={{ r: 5 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="spent"
+              name="Spent"
+              stroke="var(--c-expense-bright)"
+              strokeWidth={2.4}
+              dot={{ r: 3, strokeWidth: 0, fill: 'var(--c-expense-bright)' }}
+              activeDot={{ r: 5 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="invested"
+              name="Invested"
+              stroke="var(--c-invest-text)"
+              strokeWidth={2.4}
+              dot={{ r: 3, strokeWidth: 0, fill: 'var(--c-invest-text)' }}
+              activeDot={{ r: 5 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   )

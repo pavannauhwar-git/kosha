@@ -5,6 +5,7 @@ import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
+import { invalidateCache as invalidateTransactionCache } from './useTransactions'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities']]
 
@@ -151,4 +152,128 @@ export async function deleteLiability(id) {
   )
 
   return true;
+}
+
+function sortLiabilitiesByDueDateAsc(rows) {
+  return [...rows].sort((a, b) => String(a?.due_date || '').localeCompare(String(b?.due_date || '')))
+}
+
+function cloneCacheData(data) {
+  if (typeof globalThis.structuredClone === 'function') {
+    return globalThis.structuredClone(data)
+  }
+  return JSON.parse(JSON.stringify(data))
+}
+
+function snapshotLiabilityCaches() {
+  return [
+    [LIABILITY_PENDING_QUERY_KEY, cloneCacheData(queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY) || [])],
+    [LIABILITY_PAID_QUERY_KEY, cloneCacheData(queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY) || [])],
+  ]
+}
+
+function restoreLiabilitySnapshot(snapshot) {
+  for (const [key, data] of snapshot) {
+    queryClient.setQueryData(key, data)
+  }
+}
+
+export function optimisticallyInsertPendingLiability(liability) {
+  if (!liability?.id) return
+
+  queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (prev = []) => {
+    const deduped = prev.filter((row) => row?.id !== liability.id)
+    return sortLiabilitiesByDueDateAsc([...deduped, { ...liability, paid: false }])
+  })
+}
+
+export function optimisticallyMarkLiabilityPaid(liability) {
+  if (!liability?.id) return
+
+  queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (prev = []) =>
+    prev.filter((row) => row?.id !== liability.id)
+  )
+
+  queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (prev = []) => {
+    const paidRow = { ...liability, paid: true, __optimistic: true }
+    const deduped = prev.filter((row) => row?.id !== liability.id)
+    return sortLiabilitiesByDueDateAsc([...deduped, paidRow])
+  })
+}
+
+export function optimisticallyDeleteLiabilityFromCache(id) {
+  if (!id) return
+
+  queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (prev = []) =>
+    prev.filter((row) => row?.id !== id)
+  )
+  queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (prev = []) =>
+    prev.filter((row) => row?.id !== id)
+  )
+}
+
+export async function addLiabilityMutation(payload, __testOverrides = null) {
+  const snapshot = snapshotLiabilityCaches()
+  const optimisticId = `optimistic-liability-${Date.now()}`
+  const nowIso = new Date().toISOString()
+
+  optimisticallyInsertPendingLiability({
+    ...payload,
+    id: optimisticId,
+    paid: false,
+    created_at: nowIso,
+    __optimistic: true,
+  })
+
+  try {
+    const addFn = __testOverrides?.addLiability || addLiability
+    const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
+
+    const created = await addFn(payload)
+    optimisticallyDeleteLiabilityFromCache(optimisticId)
+    optimisticallyInsertPendingLiability(created)
+    await invalidateLiabilityFn()
+    return created
+  } catch (error) {
+    restoreLiabilitySnapshot(snapshot)
+    throw error
+  }
+}
+
+export async function markLiabilityPaidMutation(liability, __testOverrides = null) {
+  const snapshot = snapshotLiabilityCaches()
+  optimisticallyMarkLiabilityPaid(liability)
+
+  try {
+    const markPaidFn = __testOverrides?.markPaid || markPaid
+    const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
+    const invalidateTransactionFn = __testOverrides?.invalidateTransactionCache || invalidateTransactionCache
+
+    const result = await markPaidFn(liability)
+    await Promise.all([
+      invalidateLiabilityFn(),
+      invalidateTransactionFn(),
+    ])
+    return result
+  } catch (error) {
+    restoreLiabilitySnapshot(snapshot)
+    throw error
+  }
+}
+
+export async function deleteLiabilityMutation(id, __testOverrides = null) {
+  const snapshot = snapshotLiabilityCaches()
+  optimisticallyDeleteLiabilityFromCache(id)
+
+  try {
+    const deleteFn = __testOverrides?.deleteLiability || deleteLiability
+    const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
+
+    await deleteFn(id)
+    await invalidateLiabilityFn()
+    return true
+  } catch (error) {
+    restoreLiabilitySnapshot(snapshot)
+    throw error
+  }
 }

@@ -35,6 +35,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
   const amtCls = amountClass(txn.type, txn.is_repayment)
   const prefix = amountPrefix(txn.type)
   const mode   = MODE_LABEL[txn.payment_mode] || ''
+  const isOptimistic = Boolean(txn?.__optimistic || String(txn?.id || '').startsWith('optimistic-'))
   const rowLabel = txn.type === 'investment'
     ? (investmentVehicle?.label || txn.investment_vehicle || 'Other')
     : cat.label
@@ -122,36 +123,38 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     >
 
       {/* Action zone */}
-      <motion.div
-        className="absolute inset-y-0 right-0 flex items-stretch"
-        style={{ opacity: actionOpacity, scale: actionScale }}
-      >
-        <button
-          onClick={handleDuplicateTap}
-          className="flex flex-col items-center justify-center gap-1 px-5
+      {!isOptimistic && (
+        <motion.div
+          className="absolute inset-y-0 right-0 flex items-stretch"
+          style={{ opacity: actionOpacity, scale: actionScale }}
+        >
+          <button
+            onClick={handleDuplicateTap}
+            className="flex flex-col items-center justify-center gap-1 px-5
                      bg-brand-container active:opacity-80 transition-opacity duration-100"
-        >
-          <CopySimple size={18} weight="bold" color="var(--c-brand)" />
-          <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
-            Repeat
-          </span>
-        </button>
+          >
+            <CopySimple size={18} weight="bold" color="var(--c-brand)" />
+            <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
+              Repeat
+            </span>
+          </button>
 
-        <button
-          onClick={handleDeleteTap}
-          className="flex flex-col items-center justify-center gap-1 px-5
+          <button
+            onClick={handleDeleteTap}
+            className="flex flex-col items-center justify-center gap-1 px-5
                      bg-expense active:opacity-80 transition-opacity duration-100"
-        >
-          <Trash size={18} weight="bold" color="white" />
-          <span className="text-[10px] font-semibold text-white">Delete</span>
-        </button>
-      </motion.div>
+          >
+            <Trash size={18} weight="bold" color="white" />
+            <span className="text-[10px] font-semibold text-white">Delete</span>
+          </button>
+        </motion.div>
+      )}
 
       {/* Draggable row */}
       <motion.div
         className="list-row active:bg-kosha-surface-2"
         style={{ x }}
-        drag="x"
+        drag={isOptimistic ? false : 'x'}
         dragConstraints={{ left: -PEEK_X * 1.5, right: 0 }}
         dragElastic={{ left: 0.12, right: 0.02 }}
         onDragEnd={handleDragEnd}
@@ -202,6 +205,11 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
             {txn.is_auto_generated && (
               <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
                 Auto
+              </span>
+            )}
+            {isOptimistic && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-warning-bg text-warning-text font-medium">
+                Syncing...
               </span>
             )}
           </div>

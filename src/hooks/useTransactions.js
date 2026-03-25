@@ -399,7 +399,7 @@ export function useRunningBalance(year, month) {
   return { balance: data, loading: isLoading, fetching: isFetching, error }
 }
 
-// ── Mutations — DB write only (UI orchestrates deferred refetch) ─────────
+// ── Mutations — centralized pipeline ──────────────────────────────────────
 
 export async function addTransaction(payload) {
   const userId = getAuthUserId()
@@ -461,6 +461,117 @@ export async function updateTransaction(id, payload) {
   return data;
 }
 
+function compareTxnDesc(a, b) {
+  const dateCmp = String(b?.date || '').localeCompare(String(a?.date || ''))
+  if (dateCmp !== 0) return dateCmp
+  return String(b?.created_at || '').localeCompare(String(a?.created_at || ''))
+}
+
+function matchesTransactionFilters(txn, filters = {}) {
+  if (!txn) return false
+
+  if (filters.type && txn.type !== filters.type) return false
+  if (filters.category && txn.category !== filters.category) return false
+  if (filters.startDate && String(txn.date || '') < String(filters.startDate)) return false
+  if (filters.endDate && String(txn.date || '') > String(filters.endDate)) return false
+
+  if (filters.search) {
+    const needle = String(filters.search).toLowerCase().trim()
+    const hay = String(txn.description || '').toLowerCase()
+    if (needle && !hay.includes(needle)) return false
+  }
+
+  return true
+}
+
+function applyTxnLimit(rows, limit) {
+  const safeLimit = Number(limit)
+  if (!Number.isFinite(safeLimit) || safeLimit <= 0) return rows
+  return rows.slice(0, safeLimit)
+}
+
+function upsertRecentTransactionCaches(txn) {
+  const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
+  for (const [key, rows] of recentEntries) {
+    if (!Array.isArray(rows)) continue
+    const limit = Number(key?.[1]) || 5
+    const next = applyTxnLimit(
+      [...rows.filter((row) => row?.id !== txn.id), txn].sort(compareTxnDesc),
+      limit
+    )
+    queryClient.setQueryData(key, next)
+  }
+}
+
+function cloneCacheData(data) {
+  if (typeof globalThis.structuredClone === 'function') {
+    return globalThis.structuredClone(data)
+  }
+  return JSON.parse(JSON.stringify(data))
+}
+
+function snapshotCacheFamilies(queryKeys) {
+  const snapshot = []
+  for (const queryKey of queryKeys) {
+    const entries = queryClient.getQueriesData({ queryKey })
+    for (const [key, data] of entries) {
+      snapshot.push([key, cloneCacheData(data)])
+    }
+  }
+  return snapshot
+}
+
+function restoreCacheSnapshot(snapshot) {
+  for (const [key, data] of snapshot) {
+    queryClient.setQueryData(key, data)
+  }
+}
+
+function getTransactionFromCacheById(id) {
+  const entries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  for (const [, rows] of entries) {
+    if (!Array.isArray(rows)) continue
+    const found = rows.find((row) => row?.id === id)
+    if (found) return found
+  }
+  return null
+}
+
+export function optimisticallyUpsertTransactionInCache(txn) {
+  if (!txn?.id) return
+
+  const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  for (const [key, rows] of listEntries) {
+    if (!Array.isArray(rows)) continue
+    const filters = key?.[1] || {}
+
+    const base = rows.filter((row) => row?.id !== txn.id)
+    const next = matchesTransactionFilters(txn, filters)
+      ? applyTxnLimit([...base, txn].sort(compareTxnDesc), filters.limit)
+      : base
+
+    queryClient.setQueryData(key, next)
+  }
+
+  upsertRecentTransactionCaches(txn)
+}
+
+export function optimisticallyDeleteTransactionFromCache(id) {
+  if (!id) return
+
+  const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  for (const [key, rows] of listEntries) {
+    if (!Array.isArray(rows)) continue
+    queryClient.setQueryData(key, rows.filter((row) => row?.id !== id))
+  }
+
+  const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
+  for (const [key, rows] of recentEntries) {
+    if (!Array.isArray(rows)) continue
+    queryClient.setQueryData(key, rows.filter((row) => row?.id !== id))
+  }
+}
+
 export async function deleteTransaction(id) {
   const userId = getAuthUserId()
 
@@ -486,4 +597,75 @@ export async function deleteTransaction(id) {
   )
 
   return true;
+}
+
+export async function saveTransactionMutation({ id, payload, __testOverrides = null }) {
+  const snapshot = snapshotCacheFamilies([
+    ['transactions'],
+    ['transactionsRecent'],
+  ])
+
+  const nowIso = new Date().toISOString()
+  const optimisticId = id || `optimistic-txn-${Date.now()}`
+
+  if (id) {
+    const existing = getTransactionFromCacheById(id)
+    if (existing) {
+      optimisticallyUpsertTransactionInCache({
+        ...existing,
+        ...payload,
+        id,
+        __optimistic: true,
+      })
+    }
+  } else {
+    optimisticallyUpsertTransactionInCache({
+      ...payload,
+      id: optimisticId,
+      created_at: nowIso,
+      date: payload?.date || nowIso.slice(0, 10),
+      __optimistic: true,
+    })
+  }
+
+  try {
+    const updateFn = __testOverrides?.updateTransaction || updateTransaction
+    const addFn = __testOverrides?.addTransaction || addTransaction
+    const invalidateFn = __testOverrides?.invalidateCache || invalidateCache
+
+    const savedTxn = id
+      ? await updateFn(id, payload)
+      : await addFn(payload)
+
+    if (!id) {
+      optimisticallyDeleteTransactionFromCache(optimisticId)
+    }
+    optimisticallyUpsertTransactionInCache(savedTxn)
+    await invalidateFn()
+    return savedTxn
+  } catch (error) {
+    restoreCacheSnapshot(snapshot)
+    throw error
+  }
+}
+
+export async function removeTransactionMutation(id, __testOverrides = null) {
+  const snapshot = snapshotCacheFamilies([
+    ['transactions'],
+    ['transactionsRecent'],
+  ])
+
+  optimisticallyDeleteTransactionFromCache(id)
+
+  try {
+    const deleteFn = __testOverrides?.deleteTransaction || deleteTransaction
+    const invalidateFn = __testOverrides?.invalidateCache || invalidateCache
+
+    await deleteFn(id)
+    await invalidateFn()
+    return true
+  } catch (error) {
+    restoreCacheSnapshot(snapshot)
+    throw error
+  }
 }

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { C } from '../lib/colors'
-import { addTransaction } from '../hooks/useTransactions'
+import { saveTransactionMutation } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
 import { consumeInviteToken, getInviteToken } from '../lib/invites'
 import { EXPENSE_CATEGORIES } from '../lib/categories'
@@ -150,14 +150,16 @@ function StepFirstTransaction({ onFinish, onSkip }) {
     setSaving(true)
     setError(null)
     try {
-      await addTransaction({
-        date:         new Date().toISOString().slice(0, 10),
-        type:         'expense',
-        description:  desc.trim(),
-        amount:       parseFloat(amount),
-        category,
-        is_repayment: false,
-        payment_mode: 'upi',
+      await saveTransactionMutation({
+        payload: {
+          date:         new Date().toISOString().slice(0, 10),
+          type:         'expense',
+          description:  desc.trim(),
+          amount:       parseFloat(amount),
+          category,
+          is_repayment: false,
+          payment_mode: 'upi',
+        },
       })
       onFinish()
     } catch (e) {

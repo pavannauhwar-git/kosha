@@ -1,7 +1,11 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2 } from 'lucide-react'
-import { useTransactions, deleteTransaction, invalidateCache, useDebounce } from '../hooks/useTransactions'
+import {
+  useTransactions,
+  removeTransactionMutation,
+  useDebounce,
+} from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import EmptyState from '../components/common/EmptyState'
@@ -167,12 +171,7 @@ export default function Transactions() {
   const handleDelete = useCallback(async (id) => {
     if (!id) return
     try {
-      await deleteTransaction(id)
-      setTimeout(() => {
-        void invalidateCache().catch((err) => {
-          console.warn('[Kosha] deferred transactions invalidate failed', err)
-        })
-      }, 300)
+      await removeTransactionMutation(id)
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)

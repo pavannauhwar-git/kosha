@@ -8,7 +8,9 @@
 import { useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, NotePencil, CaretRight, Sparkle } from '@phosphor-icons/react'
-import { addTransaction, updateTransaction, invalidateCache } from '../hooks/useTransactions'
+import {
+  saveTransactionMutation,
+} from '../hooks/useTransactions'
 import CategoryIcon, { ICON_MAP } from './CategoryIcon'
 import {
   CATEGORIES,
@@ -329,18 +331,12 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     dispatch({ type: 'SAVING_START' })
 
     try {
-      if (editTxn) {
-        await updateTransaction(editTxn.id, payload)
-      } else {
-        await addTransaction(payload)
-      }
+      await saveTransactionMutation({
+        id: editTxn?.id,
+        payload,
+      })
 
       onClose()
-      setTimeout(() => {
-        void invalidateCache().catch((err) => {
-          console.warn('[Kosha] deferred transaction invalidate failed', err)
-        })
-      }, 300)
     } catch (e) {
       dispatch({
         type: 'SAVING_ERROR',

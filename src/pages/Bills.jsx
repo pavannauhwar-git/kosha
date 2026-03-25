@@ -4,12 +4,10 @@ import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight } from 
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useLiabilities,
-  addLiability,
-  markPaid,
-  deleteLiability,
-  invalidateLiabilityCache,
+  addLiabilityMutation,
+  markLiabilityPaidMutation,
+  deleteLiabilityMutation,
 } from '../hooks/useLiabilities'
-import { invalidateCache as invalidateTransactionCache } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 import { downloadCsv, toCsv } from '../lib/csv'
@@ -187,15 +185,12 @@ export default function Bills() {
     setAddSaving(true)
 
     try {
-      await addLiability(billData)
+      await addLiabilityMutation(billData)
+
+      setTab('pending')
       setShowAdd(false)
       setAddSaving(false)
       setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
-      setTimeout(() => {
-        void invalidateLiabilityCache().catch((err) => {
-          console.warn('[Kosha] deferred liabilities invalidate failed', err)
-        })
-      }, 300)
     } catch (e) {
       setAddSaving(false)
       setErrToast(e.message || 'Could not add bill. Check your connection.')
@@ -206,16 +201,8 @@ export default function Bills() {
     if (!bill?.id || payingId) return
     setPayingId(bill.id)
     try {
-      await markPaid(bill)
+      await markLiabilityPaidMutation(bill)
       setPayingId(null)
-      setTimeout(() => {
-        void Promise.all([
-          invalidateLiabilityCache(),
-          invalidateTransactionCache(),
-        ]).catch((err) => {
-          console.warn('[Kosha] deferred markPaid invalidate failed', err)
-        })
-      }, 300)
     } catch (e) {
       setPayingId(null)
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
@@ -231,12 +218,7 @@ export default function Bills() {
       return next
     })
     try {
-      await deleteLiability(id)
-      setTimeout(() => {
-        void invalidateLiabilityCache().catch((err) => {
-          console.warn('[Kosha] deferred delete invalidate failed', err)
-        })
-      }, 300)
+      await deleteLiabilityMutation(id)
     } catch (e) {
       setHiddenBillIds((prev) => {
         const next = new Set(prev)
@@ -471,6 +453,11 @@ export default function Bills() {
                         {bill.is_recurring && (
                           <span className="text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
                         )}
+                        {(bill.__optimistic || String(bill.id || '').startsWith('optimistic-')) && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
+                            Syncing...
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -478,7 +465,7 @@ export default function Bills() {
                       {tab === 'pending' && (
                         <button
                           onClick={() => handleMarkPaid(bill)}
-                          disabled={!!payingId || !!deletingId}
+                          disabled={!!payingId || !!deletingId || !!bill.__optimistic}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-card
                                      bg-income-bg text-income-text text-xs font-semibold
                                      border border-income-border min-h-12 active:scale-[0.97] transition-all duration-100
@@ -490,7 +477,7 @@ export default function Bills() {
                       )}
                       <button
                         onClick={() => handleDelete(bill.id)}
-                        disabled={!!payingId || !!deletingId}
+                        disabled={!!payingId || !!deletingId || !!bill.__optimistic}
                         className="flex items-center justify-center px-3 py-2 rounded-card
                                    bg-expense-bg text-expense-text text-xs font-semibold
                                    border border-expense-border min-h-12 active:scale-[0.97] transition-all duration-100
