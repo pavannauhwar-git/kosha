@@ -9,8 +9,6 @@ export default {
         'kosha-bg-2':          '#FAFBFF',
         'kosha-surface':       '#FFFFFF',
         'kosha-surface-2':     '#F8FAFF',
-        'kosha-surface-variant': '#F1F4FF',
-        'kosha-surface-container': '#EEF2FF',
         'kosha-border':        '#C4CFFF',
         'kosha-border-strong': '#6C83FF',
 
@@ -81,10 +79,10 @@ export default {
       },
 
       borderRadius: {
-        'card':    '24px',
-        'card-lg': '28px',
+        'card':    '16px',
+        'card-lg': '20px',
         'hero':    '24px',
-        'chip':    '9999px',
+        'chip':    '8px',
         'pill':    '9999px',
       },
 

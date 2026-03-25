@@ -40,11 +40,7 @@
   }
 
   body {
-    @apply text-ink font-sans;
-    background:
-      radial-gradient(1200px 680px at 110% -20%, rgba(82, 109, 254, 0.08), transparent 58%),
-      radial-gradient(900px 540px at -12% 115%, rgba(36, 59, 175, 0.07), transparent 55%),
-      linear-gradient(180deg, #F9FBFF 0%, #F5F7FF 100%);
+    @apply bg-kosha-bg text-ink font-sans;
     width: 100%;
     max-width: 100%;
     min-height: 100dvh;
@@ -77,12 +73,6 @@
     /* used in rgba() calls */
     --c-brand-mid-rgb: 61, 90, 254;
     /* used in rgba() calls */
-
-    --c-surface-variant: #F1F4FF;
-    --c-surface-container: #EEF2FF;
-    --c-ui-outline: rgba(36, 59, 175, 0.08);
-    --c-ui-surface: color-mix(in srgb, var(--c-surface-variant) 84%, #FFFFFF 16%);
-    --c-ui-surface-strong: color-mix(in srgb, var(--c-surface-variant) 80%, #FFFFFF 20%);
 
     /* Accent — Lime Yellow (on dark bg only) */
     --c-accent: #F4FF00;
@@ -123,8 +113,6 @@
   button,
   [role="button"] {
     -webkit-tap-highlight-color: transparent;
-    min-height: 40px;
-    min-width: 40px;
   }
 }
 
@@ -141,9 +129,8 @@
 
   /* -- Cards ───────────────────────────────────────────────────────── */
   .card {
-    @apply rounded-card shadow-card;
-    background: var(--c-ui-surface);
-    border: 1px solid var(--c-ui-outline);
+    @apply bg-kosha-surface rounded-card shadow-card;
+    border: 0.5px solid rgba(18, 28, 74, 0.06);
   }
 
   .page-stack {
@@ -157,24 +144,19 @@
   }
 
   .card-md {
-    @apply rounded-card shadow-card-md;
-    background: var(--c-ui-surface-strong);
-    border: 1px solid var(--c-ui-outline);
+    @apply bg-kosha-surface rounded-card shadow-card-md;
   }
 
   .card-inset {
-    @apply rounded-card;
-    background: var(--c-surface-container);
+    @apply bg-kosha-surface-2 rounded-card;
   }
 
   .card-urgent {
-    @apply rounded-card shadow-urgent;
-    background: color-mix(in srgb, var(--c-surface-variant) 72%, #FFFFFF 28%);
+    @apply bg-kosha-surface rounded-card shadow-urgent;
   }
 
   .card-warn {
-    @apply rounded-card shadow-warn;
-    background: color-mix(in srgb, var(--c-surface-variant) 72%, #FFFFFF 28%);
+    @apply bg-kosha-surface rounded-card shadow-warn;
   }
 
   /* -- Skeleton loader ──────────────────────────────────────────────── */
@@ -185,19 +167,11 @@
 
   /* -- List card ───────────────────────────────────────────────────── */
   .list-card {
-    @apply rounded-card shadow-card overflow-hidden;
-    background: var(--c-ui-surface);
-    border: 1px solid var(--c-ui-outline);
+    @apply bg-kosha-surface rounded-card shadow-card overflow-hidden;
   }
 
   .list-row {
-    @apply flex items-center gap-3 px-4 py-3.5 transition-colors duration-150 cursor-pointer;
-    min-height: 56px;
-    background: color-mix(in srgb, var(--c-surface-variant) 78%, #FFFFFF 22%);
-  }
-
-  .list-row:hover {
-    background: color-mix(in srgb, var(--c-surface-container) 72%, #FFFFFF 28%);
+    @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface transition-colors duration-150 cursor-pointer hover:bg-kosha-surface-2/60;
   }
 
   .list-row+.list-row {
@@ -235,9 +209,7 @@
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-2.5 rounded-pill text-[10px] font-semibold border transition-all duration-100 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
-    min-height: 36px;
-    min-width: 0;
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3 rounded-pill text-[11px] font-semibold border transition-all duration-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
   }
 
   .chip-control-muted {
@@ -249,8 +221,7 @@
   }
 
   .chip-control-sm {
-    @apply h-8 px-2 text-[9.5px] gap-1;
-    min-height: 34px;
+    @apply h-8 px-2.5 text-[10.5px] gap-1;
   }
 
   /* -- Amount colours ──────────────────────────────────────────────── */
@@ -272,8 +243,7 @@
 
   /* -- Buttons ─────────────────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all duration-100 active:scale-[0.97] select-none cursor-pointer;
-    min-height: 42px;
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all duration-100 active:scale-[0.99] select-none cursor-pointer;
   }
 
   .btn-primary {
@@ -302,7 +272,7 @@
 
   /* -- FAB ─────────────────────────────────────────────────────────── */
   .fab {
-    @apply fixed w-14 h-14 bg-brand text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-[0.97] transition-transform duration-75 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 bg-brand text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
@@ -311,7 +281,7 @@
 
   /* Bills page FAB — amber/warning to match bills colour theme */
   .fab-bills {
-    @apply fixed w-14 h-14 bg-warning text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-[0.97] transition-transform duration-75 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 bg-warning text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
@@ -411,7 +381,7 @@
   .nav-label {
     font-size: 10px;
     line-height: 1;
-    font-family: inherit;
+    font-family: 'Roboto', system-ui, sans-serif;
     /* color + fontWeight animated by Framer */
     white-space: nowrap;
     user-select: none;
@@ -420,9 +390,7 @@
 
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
-    @apply w-full max-w-full rounded-card px-4 py-3 text-ink placeholder-ink-4 text-base border focus:outline-none focus:shadow-focus transition-all duration-150;
-    background: var(--c-ui-surface);
-    border-color: var(--c-ui-outline);
+    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-transparent focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-150;
     min-width: 0;
     will-change: transform;
     transform: translateZ(0);
@@ -440,8 +408,7 @@
   }
 
   .sheet-panel {
-    @apply fixed bottom-0 z-50;
-    background: color-mix(in srgb, var(--c-surface-variant) 82%, #FFFFFF 18%);
+    @apply fixed bottom-0 bg-kosha-surface z-50;
     left: 0;
     right: 0;
     width: min(100%, 560px);
@@ -450,7 +417,7 @@
     max-width: 560px;
     box-shadow: 0 -4px 28px rgba(18, 28, 74, 0.14);
     border-top: 0.5px solid rgba(18, 28, 74, 0.08);
-    border-radius: 28px 28px 0 0;
+    border-radius: 20px 20px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     max-height: calc(100dvh - var(--safe-top) - 0.5rem);
     overflow-y: auto;
@@ -526,15 +493,13 @@
 
   /* -- Close button ────────────────────────────────────────────────── */
   .close-btn {
-    @apply w-10 h-10 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border transition-all duration-100 cursor-pointer;
+    @apply w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border transition-all duration-100 cursor-pointer;
     will-change: transform;
     transform: translateZ(0);
-    min-height: 40px;
-    min-width: 40px;
   }
 
   .close-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.96);
   }
 }
 
@@ -599,11 +564,10 @@
   }
 
   .chip-control {
-    height: 2rem;
-    min-height: 2rem;
+    height: 2.1rem;
     padding-left: 0.65rem;
     padding-right: 0.65rem;
-    font-size: 9.5px;
+    font-size: 10.5px;
     gap: 0.25rem;
   }
 
