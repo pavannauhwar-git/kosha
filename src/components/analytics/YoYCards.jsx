@@ -34,8 +34,15 @@ async function fetchYearSummary(year) {
 }
 
 function metricDelta(current, previous) {
-  if (!previous || previous === 0) return null
-  return Math.round(((current - previous) / previous) * 100)
+  const c = Number(current || 0)
+  const p = Number(previous || 0)
+
+  if (p === 0) {
+    if (c === 0) return 0
+    return 100
+  }
+
+  return Math.round(((c - p) / p) * 100)
 }
 
 function YoYTooltip({ active, payload, label }) {
@@ -74,7 +81,6 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
         const earned = Number(data.totalIncome || 0)
         const spent = Number(data.totalExpense || 0)
         const invested = Number(data.totalInvestment || 0)
-        if (earned <= 0 && spent <= 0 && invested <= 0) return null
         return {
           year,
           earned,
@@ -86,9 +92,10 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
   }, [years, yearQueries])
 
   const currentPoint = useMemo(
-    () => points.find((p) => p.year === currentYear) || points[points.length - 1],
+    () => points.find((p) => p.year === currentYear) || points[points.length - 1] || null,
     [points, currentYear]
   )
+
   const previousPoint = useMemo(() => {
     if (!currentPoint) return null
     const idx = points.findIndex((p) => p.year === currentPoint.year)

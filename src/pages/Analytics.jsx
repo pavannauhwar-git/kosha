@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { CashFlowChart, NetSavingsChart } from '../components/dashboard/AnalyticsCharts'
-import { useTransactionYearBounds, useYearSummary } from '../hooks/useTransactions'
+import { useYearSummary } from '../hooks/useTransactions'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt } from '../lib/utils'
 import PageHeader from '../components/PageHeader'
@@ -16,6 +16,9 @@ import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
 import YearlyInsightsCard from '../components/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
 
+const MIN_NAV_YEAR = 1900
+const MAX_NAV_YEAR = 2100
+
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
   const now = new Date()
@@ -29,33 +32,6 @@ export default function Analytics() {
     return () => clearTimeout(timer)
   }, [])
 
-  const { data: yearBounds } = useTransactionYearBounds()
-
-  const minYear = useMemo(() => {
-    const fromData = Number(yearBounds?.minYear)
-    if (Number.isFinite(fromData) && fromData > 0) return fromData
-    return Math.max(2020, currentYear - 3)
-  }, [yearBounds?.minYear, currentYear])
-
-  const maxYear = useMemo(() => {
-    const fromData = Number(yearBounds?.maxYear)
-    if (Number.isFinite(fromData) && fromData > 0) return Math.max(currentYear, fromData)
-    return currentYear
-  }, [yearBounds?.maxYear, currentYear])
-
-  const availableYears = useMemo(() => {
-    if (maxYear < minYear) return [currentYear]
-    return Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i)
-  }, [minYear, maxYear, currentYear])
-
-  useEffect(() => {
-    setYear((y) => {
-      if (y < minYear) return minYear
-      if (y > maxYear) return maxYear
-      return y
-    })
-  }, [minYear, maxYear])
-
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
 
@@ -66,15 +42,13 @@ export default function Analytics() {
       name: MONTH_SHORT[i],
       Income: Math.round(m.income),
       Spent: Math.round(m.expense),
-    }))
-    .filter(m => m.Income > 0 || m.Spent > 0), [data?.monthly])
+    })), [data?.monthly])
 
   const netData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
       name: MONTH_SHORT[i],
       Net: Math.round(m.income - m.expense - m.investment),
-    }))
-    .filter(m => m.Net !== 0), [data?.monthly])
+    })), [data?.monthly])
 
   const netAxisMax = useMemo(() => {
     const maxAbs = netData.reduce((m, row) => Math.max(m, Math.abs(row.Net)), 0)
@@ -83,16 +57,10 @@ export default function Analytics() {
 
   const yoyYears = useMemo(() => {
     // Keep YoY responsive by limiting concurrent yearly queries.
-    // Use a rolling 6-year window up to the selected year.
-    return availableYears.filter((y) => y <= year).slice(-6)
-  }, [availableYears, year])
-
-  const hasYearActivity = useMemo(() => {
-    return Number(data?.count || 0) > 0
-      || Number(data?.totalIncome || 0) > 0
-      || Number(data?.totalExpense || 0) > 0
-      || Number(data?.totalInvestment || 0) > 0
-  }, [data])
+    // Use a rolling 6-year window ending at the selected year.
+    return Array.from({ length: 6 }, (_, i) => year - 5 + i)
+      .filter((y) => y >= MIN_NAV_YEAR && y <= MAX_NAV_YEAR)
+  }, [year])
 
   const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
     .sort((a, b) => b[1] - a[1]).slice(0, 8), [data?.byCategory])
@@ -141,15 +109,15 @@ export default function Analytics() {
       <PickerNavigator
         className="mb-4"
         label={year}
-        onPrev={() => setYear((y) => Math.max(minYear, y - 1))}
-        onNext={() => setYear((y) => Math.min(maxYear, y + 1))}
+        onPrev={() => setYear((y) => Math.max(MIN_NAV_YEAR, y - 1))}
+        onNext={() => setYear((y) => Math.min(MAX_NAV_YEAR, y + 1))}
         pickerRef={yearRef}
         inputType="month"
         inputValue={`${year}-01`}
         onInputChange={e => {
           const y = parseInt(e.target.value?.split('-')[0], 10)
           if (!y) return
-          setYear(Math.min(maxYear, Math.max(minYear, y)))
+          setYear(Math.min(MAX_NAV_YEAR, Math.max(MIN_NAV_YEAR, y)))
         }}
       />
 
@@ -192,89 +160,69 @@ export default function Analytics() {
             </motion.div>
           )}
 
-          {hasYearActivity ? (
-            <YearlyInsightsCard data={data} catEntries={catEntries} />
-          ) : (
-            <div className="card p-4">
-              <p className="section-label">Yearly Insights</p>
-              <p className="text-[12px] text-ink-3 mt-1">Insights will appear once this year has enough activity.</p>
-            </div>
-          )}
+          <>
+            {data ? <YearlyInsightsCard data={data} catEntries={catEntries} /> : null}
 
-          {/* ── 2. Performance trends ───────────────────────────────── */}
-          <div className="grid grid-cols-1 gap-4">
-            {chartData.length > 0 ? (
+            {/* ── 2. Performance trends ───────────────────────────────── */}
+            <div className="grid grid-cols-1 gap-4">
               <CashFlowChart
                 chartData={chartData}
                 totalIncome={data?.totalIncome}
               />
-            ) : (
-              <div className="card p-4">
-                <p className="section-label">Cash Flow</p>
-                <p className="text-[12px] text-ink-3 mt-1">No income or spending activity for this year yet.</p>
-              </div>
-            )}
 
-            {netData.length > 0 ? (
               <NetSavingsChart
                 netData={netData}
                 netAxisMax={netAxisMax}
               />
-            ) : (
-              <div className="card p-4">
-                <p className="section-label">Net Savings</p>
-                <p className="text-[12px] text-ink-3 mt-1">Net savings will appear once monthly activity is available.</p>
-              </div>
-            )}
-          </div>
+            </div>
 
-          {/* ── 3. Spending intelligence ────────────────────────────── */}
-          <div className="grid grid-cols-1 gap-4">
-            {catEntries.length > 0 ? (
-              <CategorySpendingChart
-                entries={catEntries}
-                total={categoryTotal}
-              />
-            ) : (
-              <div className="card p-4">
-                <p className="section-label">Spent by Category</p>
-                <p className="text-[12px] text-ink-3 mt-1">No spending categories yet for this year.</p>
-              </div>
-            )}
-            {top5.length > 0 ? (
-              <TopExpensesPodium top5={top5} year={year} />
-            ) : (
-              <div className="card p-4">
-                <p className="section-label">Top Expenses {year}</p>
-                <p className="text-[12px] text-ink-3 mt-1">No high-spend transactions found for this year yet.</p>
-              </div>
-            )}
-          </div>
-
-          {/* ── 4. Allocation and year comparison ───────────────────── */}
-          <div className="grid grid-cols-1 gap-4">
-            {vehicleData.length > 0 && vehicleTotal > 0 ? (
-              <PortfolioAllocation vehicleData={vehicleData} />
-            ) : (
-              <div className="card p-4">
-                <p className="section-label">Portfolio allocation</p>
-                <p className="text-[12px] text-ink-3 mt-1">Add investments to unlock allocation breakdown.</p>
-              </div>
-            )}
-            {heavyReady ? (
-              <YoYCards years={yoyYears} currentYear={year} enabled />
-            ) : (
-              <div className="card p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="section-label">Year over year trends</p>
-                  <span className="text-caption text-ink-3">Preparing</span>
+            {/* ── 3. Spending intelligence ────────────────────────────── */}
+            <div className="grid grid-cols-1 gap-4">
+              {catEntries.length > 0 ? (
+                <CategorySpendingChart
+                  entries={catEntries}
+                  total={categoryTotal}
+                />
+              ) : (
+                <div className="card p-4">
+                  <p className="section-label">Spent by Category</p>
+                  <p className="text-[12px] text-ink-3 mt-1">No spending categories yet for this year.</p>
                 </div>
-                <p className="text-[12px] text-ink-3">Preparing comparison data...</p>
-              </div>
-            )}
-          </div>
+              )}
+              {top5.length > 0 ? (
+                <TopExpensesPodium top5={top5} year={year} />
+              ) : (
+                <div className="card p-4">
+                  <p className="section-label">Top Expenses {year}</p>
+                  <p className="text-[12px] text-ink-3 mt-1">No high-spend transactions found for this year yet.</p>
+                </div>
+              )}
+            </div>
 
-          {!data?.totalIncome && !data?.totalExpense && (
+            {/* ── 4. Allocation and year comparison ───────────────────── */}
+            <div className="grid grid-cols-1 gap-4">
+              {vehicleData.length > 0 && vehicleTotal > 0 ? (
+                <PortfolioAllocation vehicleData={vehicleData} />
+              ) : (
+                <div className="card p-4">
+                  <p className="section-label">Portfolio allocation</p>
+                  <p className="text-[12px] text-ink-3 mt-1">Add investments to unlock allocation breakdown.</p>
+                </div>
+              )}
+              {heavyReady ? (
+                <YoYCards years={yoyYears} currentYear={year} enabled />
+              ) : (
+                <div className="card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="section-label">Year over year trends</p>
+                    <span className="text-caption text-ink-3">Preparing</span>
+                  </div>
+                  <p className="text-[12px] text-ink-3">Preparing comparison data...</p>
+                </div>
+              )}
+            </div>
+
+            {!data?.totalIncome && !data?.totalExpense && !data?.totalInvestment && (
             <EmptyState
               title={`No data for ${year}`}
               description="Pick a different year or add transactions to unlock yearly analytics and trends."
@@ -284,7 +232,8 @@ export default function Analytics() {
                 setYear(now.getFullYear())
               }}
             />
-          )}
+            )}
+          </>
 
         </motion.div>
       )}
