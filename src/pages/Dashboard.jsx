@@ -396,7 +396,7 @@ export default function Dashboard() {
 
         <motion.div variants={fadeUp}>
           <div className="card p-3.5">
-            <div className="flex items-center justify-between gap-3 mb-1">
+            <div className="flex items-center justify-between gap-3 mb-0.5">
               <p className="section-label">Today focus</p>
               <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${
                 todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
@@ -500,7 +500,7 @@ export default function Dashboard() {
         {weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
             <div className="card p-4">
-              <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-start justify-between gap-3 mb-2.5">
                 <div>
                   <p className="section-label">What changed this week</p>
                   <p className="text-caption text-ink-3 mt-0.5">7-day vs previous 7-day digest</p>

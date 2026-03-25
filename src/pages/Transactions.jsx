@@ -328,7 +328,7 @@ export default function Transactions() {
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
-            className={`chip-control ${typeFilter === t.id
+            className={`chip-control chip-control-sm ${typeFilter === t.id
               ? TYPE_CHIP[t.id]
               : 'chip-control-muted'}`}
           >
@@ -338,7 +338,7 @@ export default function Transactions() {
 
         <button
           onClick={() => setShowCats(v => !v)}
-          className={`chip-control
+          className={`chip-control chip-control-sm
                       ${catFilter
             ? 'bg-brand-container text-brand-on border-brand-container'
             : 'chip-control-muted'}`}
@@ -366,7 +366,7 @@ export default function Transactions() {
               setDatePreset(preset.id)
               setDisplayCount(50)
             }}
-            className={`chip-control ${
+            className={`chip-control chip-control-sm ${
               datePreset === preset.id
                 ? 'bg-brand-container text-brand-on border-brand-container'
                 : 'chip-control-muted'
@@ -390,7 +390,7 @@ export default function Transactions() {
             {filterCategories.map(c => (
               <button key={c.id}
                 onClick={() => { handleCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
-                className={`chip-control px-2.5
+                className={`chip-control chip-control-sm px-2.5
                             ${catFilter === c.id
                   ? 'bg-brand-container text-brand-on border-brand-container'
                               : 'chip-control-muted'}`}

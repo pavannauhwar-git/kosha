@@ -204,7 +204,7 @@ export default function Analytics() {
             className="card p-4"
           >
             <SectionHeader
-              className="mb-2.5"
+              className="mb-2"
               title="Reconciliation confidence"
               rightText="Last 7 days signal"
             />
@@ -242,7 +242,7 @@ export default function Analytics() {
           {strategicRecommendations.length > 0 && (
             <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
               <SectionHeader
-                className="mb-1.5"
+                className="mb-1"
                 title="So what now?"
                 rightText="Actionable next steps"
               />

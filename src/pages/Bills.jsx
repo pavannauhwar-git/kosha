@@ -233,7 +233,7 @@ export default function Bills() {
       <PageHeader title="Bills & Dues" />
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="mb-6 flex items-center justify-between gap-3">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           {visiblePending.length > 0 ? (
             <p className="text-caption text-ink-3 mt-0.5">
@@ -313,7 +313,7 @@ export default function Bills() {
 
       {visiblePending.length > 0 && (
         <div className="card mb-5 p-4">
-          <p className="section-label mb-1.5">Cash impact preview</p>
+          <p className="section-label mb-1">Cash impact preview</p>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-caption text-ink-3">Due in 7 days</p>

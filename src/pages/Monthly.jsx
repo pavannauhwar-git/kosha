@@ -323,7 +323,7 @@ export default function Monthly() {
 
       <div className="card p-4 mb-5 md:mb-6">
         <SectionHeader
-          className="mb-2.5"
+          className="mb-2"
           title="Month-close checklist"
           subtitle="Resolve these to trust month-end outcomes."
           badge={{ label: 'Action plan', className: 'bg-brand-container text-brand-on' }}
@@ -372,7 +372,7 @@ export default function Monthly() {
 
           <div className="card p-4">
             <SectionHeader
-              className="mb-2.5"
+              className="mb-2"
               title="Month close summary"
               subtitle="Outcome projection and runway"
               badge={{
@@ -404,7 +404,7 @@ export default function Monthly() {
           {budgetVariance.hasBudgets && (
             <div className="card p-4">
               <SectionHeader
-                className="mb-2.5"
+                className="mb-2"
                 title="Budget variance"
                 subtitle={
                   budgetVariance.projectedDelta >= 0
@@ -463,7 +463,7 @@ export default function Monthly() {
 
           {vehicleEntries.length > 0 && (
             <div>
-              <p className="section-label mb-2">Investments</p>
+              <p className="section-label mb-1.5">Investments</p>
               <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
                 {vehicleEntries.map(([vehicle, amt]) => (
                   <div key={vehicle} className="card p-4 shrink-0 min-w-[120px]">
