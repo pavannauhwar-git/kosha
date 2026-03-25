@@ -52,14 +52,14 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
     : null
 
   return (
-    <>
-      <div className="flex items-center justify-between -mb-3">
+    <div className="card p-3.5">
+      <div className="flex items-center justify-between gap-3 mb-2.5">
         <p className="section-label">{title}</p>
-        {subtitle && <span className="text-caption text-ink-3">{subtitle}</span>}
+        {subtitle && <span className="text-[10px] text-ink-3 text-right">{subtitle}</span>}
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        {entries.map(([catId, amt], i) => {
+      <div className="space-y-2">
+        {entries.map(([catId, amt]) => {
           const cat       = CATEGORIES.find(c => c.id === catId)
           const budget    = budgets[catId] || 0
           const hasBudget = budget > 0
@@ -74,29 +74,28 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
             <RowTag
               key={catId}
               onClick={onCategoryClick ? () => onCategoryClick(cat) : undefined}
-              className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
-                          ${onCategoryClick ? 'active:bg-kosha-surface-2 transition-colors' : ''}
-                          ${i < entries.length - 1 ? 'border-b border-kosha-border' : ''}`}
+              className={`w-full rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5 text-left
+                          ${onCategoryClick ? 'active:bg-kosha-surface transition-colors' : ''}`}
             >
-              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
                 style={{ background: cat?.bg || '#E9EEF6' }}>
-                <CategoryIcon categoryId={catId} size={20} />
+                <CategoryIcon categoryId={catId} size={18} />
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-label font-medium text-ink truncate">
+                  <span className="text-[12px] font-semibold text-ink truncate">
                     {cat?.label || catId}
                   </span>
                   {hasBudget ? (
-                    <span className={`text-caption ml-2 shrink-0 font-semibold
+                    <span className={`text-[10px] ml-2 shrink-0 font-semibold
                       ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
                       {overBudget
                         ? `+${fmt(Math.abs(remaining))} over`
                         : `${fmt(remaining)} left`}
                     </span>
                   ) : (
-                    <span className="text-caption text-ink-4 ml-2 shrink-0">
+                    <span className="text-[10px] text-ink-4 ml-2 shrink-0">
                       {Math.round((amt / total) * 100)}%
                     </span>
                   )}
@@ -109,7 +108,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
                 />
 
                 {hasBudget && (
-                  <p className={`text-caption mt-1 tabular-nums
+                  <p className={`text-[10px] mt-1 tabular-nums
                     ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
                     {fmt(amt)} of {fmt(budget)}
                   </p>
@@ -117,20 +116,20 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
 
                 {/* Pace indicator — only shown when budget is set and month is current */}
                 {hasBudget && pacePct !== null && barPct > pacePct && !overBudget && (
-                  <p className="text-[10px] text-warning-text mt-1 font-medium text-right tracking-tight">
+                  <p className="text-[9px] text-warning-text mt-1 font-medium text-right tracking-tight">
                     Tracking {barPct - pacePct}% ahead of pace
                   </p>
                 )}
               </div>
 
-              <span className="text-label font-semibold tabular-nums ml-2 shrink-0 text-expense-text">
+              <span className="text-[13px] font-semibold tabular-nums ml-2 shrink-0 text-expense-text">
                 {fmt(amt)}
               </span>
             </RowTag>
           )
         })}
       </div>
-    </>
+    </div>
   )
 })
 

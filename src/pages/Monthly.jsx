@@ -462,15 +462,37 @@ export default function Monthly() {
           )}
 
           {vehicleEntries.length > 0 && (
-            <div>
-              <p className="section-label mb-1.5">Investments</p>
-              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                {vehicleEntries.map(([vehicle, amt]) => (
-                  <div key={vehicle} className="card p-4 shrink-0 min-w-[120px]">
-                    <p className="text-caption text-ink-3 font-medium mb-1 truncate">{vehicle}</p>
-                    <p className="text-value font-bold text-invest-text tabular-nums">{fmt(amt)}</p>
-                  </div>
-                ))}
+            <div className="card p-3.5">
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="section-label">Investments</p>
+                <span className="text-[11px] font-semibold text-invest-text tabular-nums">
+                  {fmt(vehicleEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0))}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {vehicleEntries.slice(0, 5).map(([vehicle, amt], idx) => {
+                  const totalVehicleInvest = vehicleEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0) || 1
+                  const pct = Math.max(0, Math.min(100, Math.round((Number(amt || 0) / totalVehicleInvest) * 100)))
+                  return (
+                    <div key={vehicle} className="rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5">
+                      <div className="flex items-center justify-between gap-3 mb-1">
+                        <p className="text-[12px] font-semibold text-ink truncate">
+                          {idx + 1}. {vehicle}
+                        </p>
+                        <p className="text-[12px] font-semibold text-invest-text tabular-nums shrink-0">
+                          {fmt(amt)}
+                        </p>
+                      </div>
+                      <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                        <div
+                          className="h-full rounded-pill"
+                          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, var(--c-invest-text) 0%, var(--c-brand-mid) 100%)' }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}

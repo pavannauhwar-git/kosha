@@ -275,12 +275,14 @@ export default function Transactions() {
             {(typeFilter !== 'all' || catFilter || datePreset !== 'all') ? ' (filtered)' : ''}
           </p>
         </div>
-        {total > 0 && (
-          <button onClick={exportCSV} title="Export CSV"
-            className="close-btn border border-kosha-border shrink-0">
-            <Download size={16} className="text-ink-2" />
-          </button>
-        )}
+        <div className="w-9 h-9 shrink-0">
+          {total > 0 ? (
+            <button onClick={exportCSV} title="Export CSV"
+              className="close-btn border border-kosha-border shrink-0">
+              <Download size={16} className="text-ink-2" />
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {showGuideHint && (

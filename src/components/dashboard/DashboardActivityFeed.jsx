@@ -49,8 +49,8 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
         <div className="list-card">
           <div className="px-4 py-6 text-center">
             <History size={18} className="mx-auto text-ink-4 mb-2" />
-            <p className="text-[14px] text-ink-3">No activity logged yet.</p>
-            <p className="text-[12px] text-ink-4 mt-1">Your edits, deletes, and bill updates will appear here.</p>
+            <p className="text-[13px] text-ink-3">No activity logged yet.</p>
+            <p className="text-[11px] text-ink-4 mt-1">Your edits, deletes, and bill updates will appear here.</p>
           </div>
         </div>
       </div>
@@ -69,19 +69,19 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
           const Icon = meta.Icon
           const isLast = idx === visibleEvents.length - 1
           return (
-            <div key={evt.id} className={`flex items-center gap-3 px-4 py-3.5 bg-kosha-surface ${isLast ? '' : 'border-b border-brand-border'}`}>
-              <div className="w-10 h-10 rounded-full bg-kosha-surface-2 flex items-center justify-center shrink-0">
-                <Icon size={17} className={meta.tone} />
+            <div key={evt.id} className={`flex items-center gap-3 px-4 py-3 bg-kosha-surface ${isLast ? '' : 'border-b border-brand-border'}`}>
+              <div className="w-9 h-9 rounded-full bg-kosha-surface-2 flex items-center justify-center shrink-0">
+                <Icon size={15} className={meta.tone} />
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className={`text-[15px] font-semibold ${meta.tone}`}>{meta.label}</p>
-                <p className="text-[12px] text-ink-3 truncate">
+                <p className={`text-[14px] font-semibold ${meta.tone}`}>{meta.label}</p>
+                <p className="text-[11px] text-ink-3 truncate">
                   {entityLabel(evt.entity_type)} ID: {String(evt.entity_id || '').slice(0, 8)}
                 </p>
               </div>
 
-              <p className="text-[12px] text-ink-4 whitespace-nowrap">{formatEventTime(evt.created_at)}</p>
+              <p className="text-[11px] text-ink-4 whitespace-nowrap">{formatEventTime(evt.created_at)}</p>
             </div>
           )
         })}

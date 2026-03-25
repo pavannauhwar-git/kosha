@@ -154,54 +154,54 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         transition={{ scale: { duration: 0.08 } }}
       >
         <div
-          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
           style={{ background: investmentVehicle?.bg || cat.bg }}
         >
           {txn.type === 'investment' && investmentVehicle ? (
             (() => {
               const Icon = ICON_MAP[investmentVehicle.icon]
               return Icon
-                ? <Icon size={20} weight="duotone" color={investmentVehicle.color} />
-                : <CategoryIcon categoryId={txn.category} size={20} />
+                ? <Icon size={18} weight="duotone" color={investmentVehicle.color} />
+                : <CategoryIcon categoryId={txn.category} size={18} />
             })()
           ) : (
-            <CategoryIcon categoryId={txn.category} size={20} />
+            <CategoryIcon categoryId={txn.category} size={18} />
           )}
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[15px] font-semibold text-ink truncate leading-snug">
+          <p className="text-[14px] font-semibold text-ink truncate leading-snug">
             {txn.description}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             {showDate
-              ? <span className="text-[12px] text-ink-3">{fmtDate(txn.date)}</span>
-              : <span className="text-[12px] text-ink-3">{rowLabel}</span>
+              ? <span className="text-[11px] text-ink-3">{fmtDate(txn.date)}</span>
+              : <span className="text-[11px] text-ink-3">{rowLabel}</span>
             }
             {mode && (
-              <span className="text-[11px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
+              <span className="text-[10px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
                 {mode}
               </span>
             )}
             {txn.is_repayment && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
                 Repayment
               </span>
             )}
             {txn.is_recurring && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand-on font-medium capitalize">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand-on font-medium capitalize">
                 {txn.recurrence || 'Recurring'}
               </span>
             )}
             {txn.is_auto_generated && (
-              <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
                 Auto
               </span>
             )}
           </div>
         </div>
 
-        <span className={`text-[15px] shrink-0 tabular-nums font-semibold ${amtCls}`}>
+        <span className={`text-[14px] shrink-0 tabular-nums font-semibold ${amtCls}`}>
           {prefix}{fmt(txn.amount)}
         </span>
       </motion.div>
