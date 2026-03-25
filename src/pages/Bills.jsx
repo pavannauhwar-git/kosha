@@ -337,7 +337,7 @@ export default function Bills() {
           { id: 'paid', label: `Paid (${visiblePaid.length})` },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`chip-control h-10 px-4 min-w-[140px] sm:flex-1 text-[12px]
+            className={`chip-control h-9 px-4 min-w-[140px] sm:flex-1 text-[12px]
               ${tab === t.id
                 ? 'bg-brand-container text-brand-on border-brand-container'
                 : 'chip-control-muted text-ink-2'}`}

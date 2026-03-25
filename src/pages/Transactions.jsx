@@ -390,7 +390,7 @@ export default function Transactions() {
             {filterCategories.map(c => (
               <button key={c.id}
                 onClick={() => { handleCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
-                className={`chip-control h-8 px-2.5
+                className={`chip-control px-2.5
                             ${catFilter === c.id
                   ? 'bg-brand-container text-brand-on border-brand-container'
                               : 'chip-control-muted'}`}
@@ -433,7 +433,7 @@ export default function Transactions() {
             const net = groupNet(txns)
             return (
               <div key={dateKey} className="list-card overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2.5
+                <div className="flex items-center justify-between px-4 py-3
                                 border-b border-kosha-border bg-kosha-surface-2">
                   <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
                     {dateLabel(dateKey)}
