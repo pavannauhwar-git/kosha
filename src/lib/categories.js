@@ -1,5 +1,7 @@
 // Each category: Phosphor icon name, unique vivid colour, tinted background
-export const CATEGORIES = [
+const OTHER_CATEGORY = { id:'other', label:'Other', icon:'Package', color:'#9CA3AF', bg:'#F9FAFB' }
+
+export const EXPENSE_CATEGORIES = [
   { id:'food',          label:'Food & Dining',    icon:'ForkKnife',       color:'#FF6B35', bg:'#FFF0EB' },
   { id:'groceries',     label:'Groceries',         icon:'ShoppingCart',    color:'#00C896', bg:'#E8FBF6' },
   { id:'vehicle',       label:'Vehicle',           icon:'Car',             color:'#0EA5E9', bg:'#E0F2FE' },
@@ -31,10 +33,49 @@ export const CATEGORIES = [
   { id:'laundry',       label:'Laundry',           icon:'TShirt',          color:'#6366F1', bg:'#EEF2FF' },
   { id:'parking',       label:'Parking & Tolls',   icon:'MapPin',          color:'#0284C7', bg:'#E0F2FE' },
   { id:'emi',           label:'EMI',               icon:'CalendarCheck',   color:'#7C3AED', bg:'#F5F3FF' },
-  { id:'other',         label:'Other',             icon:'Package',         color:'#9CA3AF', bg:'#F9FAFB' },
+  OTHER_CATEGORY,
+]
+
+export const INCOME_CATEGORIES = [
+  { id:'salary',          label:'Salary',           icon:'Briefcase',      color:'#10B981', bg:'#ECFDF5' },
+  { id:'rent_income',     label:'Rent',             icon:'House',          color:'#92400E', bg:'#FEF3C7' },
+  { id:'dividend',        label:'Dividend',         icon:'Scroll',         color:'#0EA5E9', bg:'#E0F2FE' },
+  { id:'share_market',    label:'Share Market',     icon:'TrendUp',        color:'#3B82F6', bg:'#EFF6FF' },
+  { id:'business_profit', label:'Business Profit',  icon:'ChartLineUp',    color:'#14B8A6', bg:'#F0FDFA' },
+  { id:'interest',        label:'Interest',         icon:'Coin',           color:'#D97706', bg:'#FFFBEB' },
+  { id:'freelance',       label:'Freelance',        icon:'IdentificationBadge', color:'#7C3AED', bg:'#F5F3FF' },
+  { id:'bonus',           label:'Bonus',            icon:'Gift',           color:'#EC4899', bg:'#FDF2F8' },
+  { id:'refund',          label:'Refund',           icon:'ArrowsLeftRight',color:'#64748B', bg:'#F8FAFC' },
+  OTHER_CATEGORY,
+]
+
+export const CATEGORIES = [
+  ...EXPENSE_CATEGORIES,
+  ...INCOME_CATEGORIES.filter((cat) => cat.id !== 'other'),
 ]
 
 export const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]))
+
+const EXPENSE_CATEGORY_IDS = new Set(EXPENSE_CATEGORIES.map(c => c.id))
+const INCOME_CATEGORY_IDS = new Set(INCOME_CATEGORIES.map(c => c.id))
+
+export function getCategoriesForType(type) {
+  if (type === 'income') return INCOME_CATEGORIES
+  if (type === 'expense') return EXPENSE_CATEGORIES
+  return CATEGORIES
+}
+
+export function isCategoryAllowedForType(type, categoryId) {
+  if (!categoryId) return false
+  if (type === 'income') return INCOME_CATEGORY_IDS.has(categoryId)
+  if (type === 'expense') return EXPENSE_CATEGORY_IDS.has(categoryId)
+  return true
+}
+
+export function normalizeCategoryForType(type, categoryId) {
+  if (!categoryId) return 'other'
+  return isCategoryAllowedForType(type, categoryId) ? categoryId : 'other'
+}
 
 export function getCategory(id) {
   return CATEGORY_MAP[id] || CATEGORY_MAP['other']

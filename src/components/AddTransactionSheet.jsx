@@ -29,7 +29,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, NotePencil, CaretRight, Sparkle } from '@phosphor-icons/react'
 import { addTransaction, updateTransaction } from '../hooks/useTransactions'
 import CategoryIcon, { ICON_MAP } from './CategoryIcon'
-import { CATEGORIES, PAYMENT_MODES, INVESTMENT_VEHICLES } from '../lib/categories'
+import {
+  CATEGORIES,
+  PAYMENT_MODES,
+  INVESTMENT_VEHICLES,
+  getCategoriesForType,
+  normalizeCategoryForType,
+} from '../lib/categories'
 import { parseTransactionSmart } from '../lib/nlp'
 
 function todayStr() {
@@ -100,7 +106,7 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
     type:      initialType || 'expense',
     amount:    '',
     desc:      '',
-    category:  'other',
+    category:  initialType === 'income' ? 'salary' : 'other',
     vehicle:   'Other',
     mode:      'upi',
     date:      todayStr(),
@@ -129,7 +135,7 @@ function formReducer(state, action) {
 
 // ── Sub-pickers ───────────────────────────────────────────────────────────
 
-function CategoryPicker({ selected, onSelect, onClose }) {
+function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Category' }) {
   return (
     <>
       <motion.div className="sheet-backdrop"
@@ -144,13 +150,13 @@ function CategoryPicker({ selected, onSelect, onClose }) {
         <div className="sheet-handle" />
         <div className="px-4 pb-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[18px] font-bold text-ink">Category</h3>
+            <h3 className="text-[18px] font-bold text-ink">{title}</h3>
             <button onClick={onClose} className="close-btn">
               <X size={16} className="text-ink-3" />
             </button>
           </div>
           <div className="list-card">
-            {CATEGORIES.map(cat => (
+            {categories.map(cat => (
               <button key={cat.id}
                 className={`list-row w-full ${selected === cat.id ? 'bg-brand-container' : ''}`}
                 onClick={() => { onSelect(cat.id); onClose() }}
@@ -282,8 +288,17 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   } = state
 
   const set = (key, value) => dispatch({ type: 'SET', key, value })
+  const categoryOptions = getCategoriesForType(type)
 
   const amountRef = useRef(null)
+  function setType(nextType) {
+    set('type', nextType)
+    if (nextType !== 'investment') {
+      const normalized = normalizeCategoryForType(nextType, category)
+      set('category', normalized === 'other' && nextType === 'income' ? 'salary' : normalized)
+    }
+  }
+
 
   const [showCatPicker,  setShowCatPicker]  = useReducer(v => !v, false)
   const [showModePicker, setShowModePicker] = useReducer(v => !v, false)
@@ -318,7 +333,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       type,
       description:  desc.trim(),
       amount:       +amount,
-      category:     type === 'investment' ? 'other' : category,
+      category:     type === 'investment' ? 'other' : normalizeCategoryForType(type, category),
       date,
       payment_mode: mode,
       is_repayment: false,
@@ -350,7 +365,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   }
 
   const activeType   = TYPES.find(t => t.id === type)
-  const selectedCat  = CATEGORIES.find(c => c.id === category)
+  const selectedCat  = categoryOptions.find(c => c.id === category)
+                    || CATEGORIES.find(c => c.id === category)
   const selectedMode = PAYMENT_MODES.find(m => m.id === mode)
 
   return (
@@ -426,7 +442,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           <div className="grid grid-cols-3 gap-2 mb-5 min-w-0">
             {TYPES.map(t => (
               <button key={t.id}
-                onClick={() => set('type', t.id)}
+                onClick={() => setType(t.id)}
                 disabled={isSaving}
                 className={`flex-1 py-2 rounded-card text-[13px] font-semibold border transition-all
                   min-w-0 truncate disabled:opacity-50
@@ -677,7 +693,15 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       </motion.div>
 
       <AnimatePresence>
-        {showCatPicker  && <CategoryPicker  selected={category} onSelect={v => set('category', v)} onClose={() => setShowCatPicker()}  />}
+        {showCatPicker  && (
+          <CategoryPicker
+            selected={category}
+            onSelect={v => set('category', v)}
+            onClose={() => setShowCatPicker()}
+            categories={categoryOptions}
+            title={type === 'income' ? 'Income Source' : 'Expense Category'}
+          />
+        )}
         {showModePicker && <ModePicker      selected={mode}     onSelect={v => set('mode', v)}     onClose={() => setShowModePicker()} />}
         {showVehPicker  && <VehiclePicker   selected={vehicle}  onSelect={v => set('vehicle', v)}  onClose={() => setShowVehPicker()}  />}
       </AnimatePresence>

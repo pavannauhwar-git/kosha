@@ -6,7 +6,7 @@ import { C } from '../lib/colors'
 import { addTransaction } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
 import { consumeInviteToken, getInviteToken } from '../lib/invites'
-import { CATEGORIES } from '../lib/categories'
+import { EXPENSE_CATEGORIES } from '../lib/categories'
 import CategoryIcon from '../components/CategoryIcon'
 import KoshaLogo from '../components/KoshaLogo'
 import { createFadeUp, createStagger } from '../lib/animations'
@@ -14,7 +14,7 @@ import { createFadeUp, createStagger } from '../lib/animations'
 const fadeUp = createFadeUp(8, 0.2)
 const stepStagger = createStagger(0.07, 0)
 
-const EXPENSE_CATS = CATEGORIES
+const EXPENSE_CATS = EXPENSE_CATEGORIES
 
 // ── Step indicator — green pills ──────────────────────────────────────────
 function StepDots({ current, total }) {

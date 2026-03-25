@@ -11,7 +11,7 @@ import {
   useReconciliationReviews,
   upsertReconciliationReview,
 } from '../hooks/useReconciliationReviews'
-import { CATEGORIES } from '../lib/categories'
+import { EXPENSE_CATEGORIES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
 import {
   buildLearnedStatementAliases,
@@ -613,7 +613,7 @@ export default function Reconciliation() {
                       disabled={disabled}
                     >
                       <option value="">Set category…</option>
-                      {CATEGORIES.map((cat) => (
+                      {EXPENSE_CATEGORIES.map((cat) => (
                         <option key={cat.id} value={cat.id}>{cat.label}</option>
                       ))}
                     </select>

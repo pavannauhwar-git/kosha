@@ -15,11 +15,13 @@ export function parseTransactionSmart(input) {
   // E.g., looking at src/lib/categories.js IDs
   const catMap = {
     'food': 'food', 'lunch': 'food', 'dinner': 'food', 'breakfast': 'food', 'coffee': 'food', 'grocery': 'groceries', 'groceries': 'groceries',
-    'uber': 'transport', 'cab': 'transport', 'taxi': 'transport', 'petrol': 'transport', 'fuel': 'transport', 'bus': 'transport', 'flight': 'transport', 'train': 'transport',
+    'uber': 'vehicle', 'cab': 'vehicle', 'taxi': 'vehicle', 'petrol': 'fuel', 'fuel': 'fuel', 'bus': 'travel', 'flight': 'travel', 'train': 'travel',
     'movie': 'entertainment', 'movies': 'entertainment', 'game': 'entertainment', 'netflix': 'entertainment', 'show': 'entertainment',
-    'doctor': 'health', 'medicine': 'health', 'pill': 'health', 'pharmacy': 'health',
-    'rent': 'housing', 'electricity': 'housing', 'utility': 'housing', 'wifi': 'housing',
-    'clothes': 'shopping', 'shirt': 'shopping', 'shoes': 'shopping', 'amazon': 'shopping', 'flipkart': 'shopping'
+    'doctor': 'medical', 'medicine': 'medical', 'pill': 'medical', 'pharmacy': 'medical',
+    'rent': 'rent', 'electricity': 'utilities', 'utility': 'utilities', 'wifi': 'internet',
+    'clothes': 'shopping', 'shirt': 'shopping', 'shoes': 'shopping', 'amazon': 'shopping', 'flipkart': 'shopping',
+    'salary': 'salary', 'bonus': 'bonus', 'dividend': 'dividend', 'interest': 'interest', 'freelance': 'freelance',
+    'profit': 'business_profit', 'business': 'business_profit', 'share': 'share_market', 'trading': 'share_market', 'refund': 'refund'
   };
 
   const words = input.toLowerCase().split(/[ \.,]+/); // split by spaces or punctuation

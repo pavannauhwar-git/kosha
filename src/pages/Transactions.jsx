@@ -4,7 +4,7 @@ import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight } fr
 import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
-import { CATEGORIES } from '../lib/categories'
+import { CATEGORIES, getCategoriesForType } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
@@ -53,6 +53,10 @@ export default function Transactions() {
   const deleteTimersRef = useRef(new Map())
 
   const debouncedSearch = useDebounce(search, 300)
+  const filterCategories = useMemo(
+    () => getCategoriesForType(typeFilter === 'all' ? undefined : typeFilter),
+    [typeFilter]
+  )
 
   // FIX (defect 5.2): Replaced the useEffect that called setDisplayCount(50)
   // when debouncedSearch/typeFilter/catFilter changed. That caused a triple
@@ -69,6 +73,9 @@ export default function Transactions() {
 
   function handleTypeFilter(id) {
     setTypeFilter(id)
+    const nextCategories = getCategoriesForType(id === 'all' ? undefined : id)
+    const isCurrentCategoryAllowed = !catFilter || nextCategories.some((cat) => cat.id === catFilter)
+    if (!isCurrentCategoryAllowed) setCatFilter('')
     setDisplayCount(50)   // reset in same event — single re-render
   }
 
@@ -364,7 +371,7 @@ export default function Transactions() {
             transition={{ duration: 0.15 }}
             className="card mb-5 p-3 grid grid-cols-3 gap-2"
           >
-            {CATEGORIES.map(c => (
+            {filterCategories.map(c => (
               <button key={c.id}
                 onClick={() => { handleCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
                 className={`px-2 py-1.5 rounded-chip text-[11px] font-semibold text-center
