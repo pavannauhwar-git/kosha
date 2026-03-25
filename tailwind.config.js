@@ -34,10 +34,10 @@ export default {
         'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#0284C7',   // sky-600
-        'invest-bg':     '#F0F9FF',   // sky-50
-        'invest-text':   '#0369A1',   // sky-700
-        'invest-border': '#BAE6FD',   // sky-200
+        'invest':        '#A3386C',
+        'invest-bg':     '#FBEFF5',
+        'invest-text':   '#7F2A52',
+        'invest-border': '#E9BFD2',
 
         // ── Repayment / Bills ─────────────────────────────────────────────
         'repay':        '#CA8A04',

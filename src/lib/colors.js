@@ -36,8 +36,8 @@ export const C = {
   expenseBright:   '#E11D48',   // same — no separate "bright" needed
 
   // ── Investment — Sky Blue H=200° (MD3 Secondary) ───────────────────
-  invest:          '#0284C7',   // sky-600
-  investText:      '#0369A1',   // sky-700
+  invest:          '#A3386C',   // custom investment plum
+  investText:      '#7F2A52',   // darker text tone on light invest backgrounds
 
   saved:           '#243BAF',   // brand indigo — residual money in Kosha
 
