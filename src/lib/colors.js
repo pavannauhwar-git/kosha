@@ -14,18 +14,18 @@
 export const C = {
 
   // ── Brand — Periwinkle Violet ────────────────────────────────────
-  brand:           '#4D59E8',
-  brandMid:        '#7782FF',
-  brandLight:      '#9AA5FF',
-  brandContainer:  '#EEF0FF',
-  brandBorder:     '#DDE2FF',
+  brand:           '#3D5AFE',
+  brandMid:        '#6C83FF',
+  brandLight:      '#9AAAFF',
+  brandContainer:  '#EDF0FF',
+  brandBorder:     '#D3DCFF',
 
   // ── Accent — Lime Yellow ─────────────────────────────────────────
   // Used ONLY against dark periwinkle backgrounds (hero card, logo).
   // Never use on white — fails contrast.
-  accent:          '#E4FF5E',
-  accentBg:        'rgba(228,255,94,0.22)',
-  accentFill:      'rgba(228,255,94,0.78)',
+  accent:          '#F4FF00',
+  accentBg:        'rgba(244,255,0,0.22)',
+  accentFill:      'rgba(244,255,0,0.78)',
 
   // ── Income — Emerald H=174° ───────────────────────────────────────
   income:          '#059669',
@@ -39,7 +39,7 @@ export const C = {
   invest:          '#0284C7',   // sky-600
   investText:      '#0369A1',   // sky-700
 
-  saved:           '#4D59E8',   // brand periwinkle — residual money in Kosha
+  saved:           '#3D5AFE',   // brand indigo — residual money in Kosha
 
   // ── Bills — Amber H=84° ───────────────────────────────────────────
   bills:           '#CA8A04',
@@ -49,9 +49,9 @@ export const C = {
   inkMuted:        '#6E75A8',
 
   // ── Hero card overlays (lime/white on deep periwinkle) ────────────
-  heroAccent:      'rgba(228,255,94,0.78)',
-  heroAccentBg:    'rgba(228,255,94,0.22)',
-  heroAccentSolid: '#E4FF5E',
+  heroAccent:      'rgba(244,255,0,0.78)',
+  heroAccentBg:    'rgba(244,255,0,0.22)',
+  heroAccentSolid: '#F4FF00',
   heroLabel:       'rgba(255,255,255,0.55)', // "Total balance" label
   heroDimmer:      'rgba(255,255,255,0.35)', // "KOSHA" watermark
   heroDivider:     'rgba(255,255,255,0.12)', // horizontal rule
@@ -61,21 +61,21 @@ export const C = {
   // Brighter variants of semantic colours so they glow on dark substrate
   chartIncome:     '#34D399',   // bright emerald glow on dark
   chartExpense:    '#FB7185',   // bright rose glow on dark
-  chartDark:       '#252B78',   // dark chart card background = brand-dark
+  chartDark:       '#243BAF',   // dark chart card background = brand-dark
   chartGrid:       'rgba(255,255,255,0.06)', // grid lines on dark card
   chartCursor:     'rgba(255,255,255,0.06)', // tooltip cursor on dark card
 
   // ── Portfolio donut — periwinkle family, darkest → lightest ──────
   portfolio: [
     '#1F255F',
-    '#4D59E8',
-    '#7782FF',
-    '#9AA5FF',
-    '#EEF0FF',
-    '#DDE2FF',
+    '#3D5AFE',
+    '#6C83FF',
+    '#9AAAFF',
+    '#EDF0FF',
+    '#D3DCFF',
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#4D59E8',
-  logoHighlight: '#E4FF5E',
+  logoBg:        '#3D5AFE',
+  logoHighlight: '#F4FF00',
 }

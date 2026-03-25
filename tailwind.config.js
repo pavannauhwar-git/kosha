@@ -5,21 +5,21 @@ export default {
     extend: {
       colors: {
         // ── App backgrounds ───────────────────────────────────────────────
-        'kosha-bg':            '#FCFCFF',
-        'kosha-bg-2':          '#F6F7FF',
+        'kosha-bg':            '#FEFEFF',
+        'kosha-bg-2':          '#FAFBFF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F4F6FF',
-        'kosha-border':        '#DDE2FF',
-        'kosha-border-strong': '#9AA5FF',
+        'kosha-surface-2':     '#F8FAFF',
+        'kosha-border':        '#D3DCFF',
+        'kosha-border-strong': '#9AAAFF',
 
         // ── Brand — Periwinkle Violet + Lime Yellow ─────────────────────
-        'brand':           '#4D59E8',
-        'brand-dark':      '#252B78',
-        'brand-mid':       '#7782FF',
-        'brand-bg':        '#F5F6FF',
-        'brand-container': '#EEF0FF',
-        'brand-on':        '#3844C9',
-        'brand-accent':    '#E4FF5E',
+        'brand':           '#3D5AFE',
+        'brand-dark':      '#243BAF',
+        'brand-mid':       '#6C83FF',
+        'brand-bg':        '#F3F6FF',
+        'brand-container': '#EDF0FF',
+        'brand-on':        '#2E46D6',
+        'brand-accent':    '#F4FF00',
 
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#059669',
@@ -92,7 +92,7 @@ export default {
         'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
         'fab':        '0 4px 14px rgba(47,59,206,0.36)',
-        'focus':      '0 0 0 3px rgba(92,108,255,0.30)',
+        'focus':      '0 0 0 3px rgba(61,90,254,0.30)',
         'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
         'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
       },
