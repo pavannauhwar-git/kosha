@@ -268,7 +268,7 @@ export default function Transactions() {
     <div className="page">
       <PageHeader title="Transactions" />
 
-      <div className="mb-3.5 md:mb-5 flex items-center justify-between gap-3">
+      <div className="mb-2.5 md:mb-3.5 flex items-center justify-between gap-3">
         <div>
           <p className="text-caption text-ink-3">
             {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
@@ -307,7 +307,7 @@ export default function Transactions() {
       )}
 
       {/* Search */}
-      <div className="relative mb-3 md:mb-4">
+      <div className="relative mb-2.5 md:mb-3">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
         <input
           className="input pl-9 pr-9 py-2.5 md:py-3"
@@ -324,7 +324,7 @@ export default function Transactions() {
       </div>
 
       {/* Filter chips */}
-      <FilterRow className="mb-2.5 md:mb-4">
+      <FilterRow className="mb-2 md:mb-2.5">
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
@@ -357,7 +357,7 @@ export default function Transactions() {
         </button>
       </FilterRow>
 
-      <FilterRow className="mb-2.5 md:mb-4">
+      <FilterRow className="mb-2 md:mb-2.5">
         {DATE_PRESETS.map((preset) => (
           <button
             key={preset.id}
@@ -385,7 +385,7 @@ export default function Transactions() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="card mb-5 p-3 flex flex-wrap gap-2"
+            className="card mb-4 p-3 flex flex-wrap gap-2"
           >
             {filterCategories.map(c => (
               <button key={c.id}
@@ -428,7 +428,7 @@ export default function Transactions() {
               }}
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           {groups.map(([dateKey, txns]) => {
             const net = groupNet(txns)
             return (
