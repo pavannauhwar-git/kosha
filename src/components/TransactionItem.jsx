@@ -98,8 +98,6 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     setDeleting(false)
   }, [onDelete, txn.id, x])
 
-  if (hidden) return null
-
   const handleDuplicateTap = useCallback(() => {
     snapToRest()
     if (navigator.vibrate) navigator.vibrate([6, 10, 6])
@@ -114,6 +112,8 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     if (navigator.vibrate) navigator.vibrate(8)
     onTap && onTap(txn)
   }, [onTap, snapToRest, txn, x])
+
+  if (hidden) return null
 
   return (
     <div

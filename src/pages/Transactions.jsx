@@ -273,18 +273,18 @@ export default function Transactions() {
     <div className="page">
       <PageHeader title="Transactions" />
 
-      <div className="mb-3 md:mb-4 flex items-center justify-between gap-3">
+      <div className="mb-3 md:mb-4 flex items-center justify-between gap-3 pr-0.5 md:pr-0">
         <div>
           <p className="text-caption text-ink-3">
             {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
             {(typeFilter !== 'all' || catFilter || datePreset !== 'all') ? ' (filtered)' : ''}
           </p>
         </div>
-        <div className="w-8 h-8 shrink-0">
+        <div className="w-10 h-10 shrink-0 flex items-center justify-end">
           {total > 0 ? (
             <button onClick={exportCSV} title="Export CSV"
-              className="h-7 w-7 min-h-0 min-w-0 rounded-full border border-kosha-border bg-kosha-surface-2 shrink-0 flex items-center justify-center active:scale-[0.97] transition-transform">
-              <Download size={13} className="text-ink-2" />
+              className="close-btn border border-kosha-border shrink-0">
+              <Download size={16} className="text-ink-2" />
             </button>
           ) : null}
         </div>
@@ -317,7 +317,7 @@ export default function Transactions() {
               setDatePreset(preset.id)
               setDisplayCount(50)
             }}
-            className={`chip-control chip-control-sm ${
+            className={`chip-control ${
               datePreset === preset.id
                 ? 'bg-brand-container text-brand-on border-brand-container'
                 : 'chip-control-muted'
@@ -333,7 +333,7 @@ export default function Transactions() {
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
-            className={`chip-control chip-control-sm ${typeFilter === t.id
+            className={`chip-control ${typeFilter === t.id
               ? TYPE_CHIP[t.id]
               : 'chip-control-muted'}`}
           >
@@ -343,7 +343,7 @@ export default function Transactions() {
 
         <button
           onClick={() => setShowCats(v => !v)}
-          className={`chip-control chip-control-sm
+            className={`chip-control
                       ${catFilter
             ? 'bg-brand-container text-brand-on border-brand-container'
             : 'chip-control-muted'}`}
@@ -375,7 +375,7 @@ export default function Transactions() {
             {filterCategories.map(c => (
               <button key={c.id}
                 onClick={() => { handleCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
-                className={`chip-control chip-control-sm px-2.5
+                className={`chip-control px-2.5
                             ${catFilter === c.id
                   ? 'bg-brand-container text-brand-on border-brand-container'
                               : 'chip-control-muted'}`}
