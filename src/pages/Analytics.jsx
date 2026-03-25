@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { AlertCircle } from 'lucide-react'
 import { CashFlowChart, NetSavingsChart, ConfidenceTrendChart } from '../components/dashboard/AnalyticsCharts'
@@ -28,10 +28,16 @@ export default function Analytics() {
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
   const yearRef = useRef(null)
+  const [heavyReady, setHeavyReady] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setHeavyReady(true), 260)
+    return () => clearTimeout(timer)
+  }, [])
 
   const { data, loading } = useYearSummary(year)
-  const { data: prevData } = useYearSummary(year - 1)
-  const { rows: reconciliationRows } = useReconciliationReviews()
+  const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
+  const { rows: reconciliationRows } = useReconciliationReviews({ enabled: heavyReady })
 
   const top5 = data?.top5 || []
 

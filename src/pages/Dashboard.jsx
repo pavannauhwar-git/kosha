@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat } from 'lucide-react'
 import {
-  useTransactions,
+  useRecentTransactions,
+  useTransactionDigest,
   useMonthSummary,
   useRunningBalance,
   useTodayExpenses,
@@ -89,33 +90,31 @@ export default function Dashboard() {
   const [duplicateTxn, setDuplicateTxn] = useState(null)
   const [heroMode,     setHeroMode]     = useState('balance')
   const [toast,        setToast]        = useState(null)
+  const [heavyReady,   setHeavyReady]   = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setHeavyReady(true), 280)
+    return () => clearTimeout(timer)
+  }, [])
 
   // ── Data fetching ─────────────────────────────────────────────────────
-  const { data: recent }            = useTransactions({ limit: 5 })
-  const { data: latestTxnRows = [] } = useTransactions({ limit: 1 })
-  const { data: digestTxnRows = [] } = useTransactions({ limit: 500 })
-  const { todaySpend }              = useTodayExpenses()
+  const { data: recent = [] }       = useRecentTransactions(5)
+  const { data: digestTxnRows = [] } = useTransactionDigest(14, 200, { enabled: heavyReady })
+  const { todaySpend }              = useTodayExpenses({ enabled: heavyReady })
   const { data: summary }           = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary }       = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
-    now.getMonth() === 0 ? 12 : now.getMonth()
+    now.getMonth() === 0 ? 12 : now.getMonth(),
+    { enabled: heavyReady }
   )
-  const balanceHorizonDate = useMemo(() => {
-    const latestDate = latestTxnRows[0]?.date
-    if (!latestDate) return now
-
-    const parsed = new Date(`${latestDate}T00:00:00`)
-    if (Number.isNaN(parsed.getTime())) return now
-
-    return parsed > now ? parsed : now
-  }, [latestTxnRows, now])
+  const balanceHorizonDate = now
 
   const { balance: runningBalance } = useRunningBalance(
     balanceHorizonDate.getFullYear(),
     balanceHorizonDate.getMonth() + 1
   )
-  const { pending: bills }          = useLiabilities({ includePaid: false })
-  const { data: financialEvents }   = useFinancialEvents(3)
+  const { pending: bills = [] }     = useLiabilities({ includePaid: false, enabled: heavyReady })
+  const { data: financialEvents = [] } = useFinancialEvents(3, { enabled: heavyReady })
 
   // ── Derived values ─────────────────────────────────────────────────────
   const earned   = summary?.earned     || 0
@@ -461,7 +460,7 @@ export default function Dashboard() {
           />
         </motion.div>
 
-        {weeklyDigest.hasSignals && (
+        {heavyReady && weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
             <div className="card p-3.5">
               <div className="flex items-start justify-between gap-3 mb-2">
@@ -491,7 +490,7 @@ export default function Dashboard() {
         )}
 
         {/* ── Investments ───────────────────────────────────────────── */}
-        {invested > 0 && (
+        {heavyReady && invested > 0 && (
           <motion.div variants={fadeUp}>
             <div className="card p-3.5">
               <div className="flex items-center justify-between mb-1">
@@ -517,13 +516,15 @@ export default function Dashboard() {
         )}
 
         {/* ── Pulse strip — sub-component ───────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          <DashboardPulseStrip
-            todaySpend={todaySpend}
-            totalBillsAmt={totalBillsAmt}
-            insight={insight}
-          />
-        </motion.div>
+        {heavyReady && (
+          <motion.div variants={fadeUp}>
+            <DashboardPulseStrip
+              todaySpend={todaySpend}
+              totalBillsAmt={totalBillsAmt}
+              insight={insight}
+            />
+          </motion.div>
+        )}
 
         {/* ── Recent transactions — sub-component ──────────────────── */}
         <motion.div variants={fadeUp}>
@@ -536,9 +537,11 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Financial activity feed ─────────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          <DashboardActivityFeed events={financialEvents} />
-        </motion.div>
+        {heavyReady && (
+          <motion.div variants={fadeUp}>
+            <DashboardActivityFeed events={financialEvents} />
+          </motion.div>
+        )}
 
       </motion.div>
 

@@ -24,9 +24,11 @@ async function invalidateBudgetCache() {
   await invalidateQueryFamilies(BUDGET_INVALIDATION_KEYS)
 }
 
-export function useBudgets() {
+export function useBudgets(options = {}) {
+  const { enabled = true } = options
   const { data: budgets, isLoading } = useQuery({
     queryKey: ['budgets'],
+    enabled,
     queryFn: async () => {
       try {
         const userId = getAuthUserId()

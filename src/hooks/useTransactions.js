@@ -13,6 +13,8 @@ const txnCountKey = (filters) => ['txnCount', filters]
 
 export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactions'],
+  ['transactionsRecent'],
+  ['transactionsDigest'],
   ['txnCount'],
   ['month'],
   ['year'],
@@ -201,6 +203,47 @@ function logQueryError(scope, error) {
   console.error(`[Kosha] ${scope} query failed`, error)
 }
 
+async function prefetchDashboardSlices(userId) {
+  if (!userId) return
+
+  const now = new Date()
+  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: ['transactionsRecent', 5],
+      queryFn: async () => {
+        const { data: rows, error: qError } = await supabase
+          .from('transactions')
+          .select(RECENT_TXN_COLUMNS)
+          .eq('user_id', userId)
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(5)
+
+        if (qError) throw qError
+        return rows || []
+      },
+      staleTime: TXN_FRESH_WINDOW_MS,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ['todayExpenses', todayISO],
+      queryFn: async () => {
+        const { data: rows, error: qError } = await supabase
+          .from('transactions')
+          .select('amount')
+          .eq('user_id', userId)
+          .eq('type', 'expense')
+          .eq('date', todayISO)
+
+        if (qError) throw qError
+        return (rows || []).reduce((sum, row) => sum + Number(row.amount || 0), 0)
+      },
+      staleTime: 30 * 1000,
+    }),
+  ])
+}
+
 // ── Cache invalidation (exported for cross-hook use) ──────────────────────
 
 export async function invalidateCache() {
@@ -208,12 +251,11 @@ export async function invalidateCache() {
   // ~300-500ms later for the same mutation.
   suppress('transactions')
   await Promise.all([
-    // Use 'all' for the raw transaction list so BOTH the Dashboard (recent 8)
-    // and the Transactions page (paginated list) are refreshed immediately after
-    // a mutation — even if one of them is not currently mounted. With 'active'
-    // only the currently-visible page would refetch; the other page would show
-    // stale cached data until its query mounted and re-fetched on its own.
-    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'all'    }),
+    // Keep mutation UX snappy: refresh only mounted consumers immediately.
+    // Inactive routes will refetch on next mount if stale.
+    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
     // Aggregates are only relevant when the user can see them, so 'active' is
     // fine — the next mount will trigger a stale refetch automatically.
     queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
@@ -237,14 +279,20 @@ export function useDebounce(value, ms = 300) {
 
 // ── Query hooks ───────────────────────────────────────────────────────────
 
-export function useTransactions({ type, category, search, limit, startDate, endDate, withCount = false } = {}) {
+export function useTransactions({ type, category, search, limit, startDate, endDate, withCount = false, enabled = true } = {}) {
   const filters = { type, category, search, limit, startDate, endDate }
   const { data: rows, isLoading, error, refetch } = useQuery({
     queryKey: txnListKey(filters),
+    enabled,
     queryFn: () => traceQuery('transactions:list', async () => {
       try {
         const userId = getAuthUserId()
-        await maybeGenerateRecurringTransactions(userId)
+        // Run recurring materialization only for broad list reads.
+        // Filtered/short lists (dashboard widgets, search, category tabs)
+        // should stay read-only for latency.
+        if (!type && !category && !search && !startDate && !endDate) {
+          await maybeGenerateRecurringTransactions(userId)
+        }
         let q = supabase
           .from('transactions')
           .select(TRANSACTION_LIST_COLUMNS)
@@ -278,7 +326,7 @@ export function useTransactions({ type, category, search, limit, startDate, endD
 
   const { data: countData } = useQuery({
     queryKey: txnCountKey({ type, category, startDate, endDate }),
-    enabled:  withCount,
+    enabled:  enabled && withCount,
     staleTime: 60 * 1000,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
@@ -309,12 +357,73 @@ export function useTransactions({ type, category, search, limit, startDate, endD
   return { data: safeRows, total, loading: isLoading, error, refetch }
 }
 
-export function useTodayExpenses() {
+const RECENT_TXN_COLUMNS = 'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode'
+const DIGEST_TXN_COLUMNS = 'id, date, created_at, type, amount, category, is_repayment'
+
+export function useRecentTransactions(limit = 5) {
+  const safeLimit = Math.max(1, Number(limit) || 5)
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['transactionsRecent', safeLimit],
+    queryFn: () => traceQuery('transactions:recent', async () => {
+      const userId = getAuthUserId()
+      const { data: rows, error: qError } = await supabase
+        .from('transactions')
+        .select(RECENT_TXN_COLUMNS)
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(safeLimit)
+
+      if (qError) throw qError
+      return rows || []
+    }),
+    staleTime: TXN_FRESH_WINDOW_MS,
+    gcTime: 5 * 60 * 1000,
+  })
+
+  return { data: data || [], loading: isLoading, error }
+}
+
+export function useTransactionDigest(days = 14, limit = 200, options = {}) {
+  const { enabled = true } = options
+  const safeDays = Math.max(1, Number(days) || 14)
+  const safeLimit = Math.max(1, Number(limit) || 200)
+  const start = new Date()
+  start.setDate(start.getDate() - (safeDays - 1))
+  const startISO = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['transactionsDigest', safeDays, safeLimit],
+    enabled,
+    queryFn: () => traceQuery('transactions:digest', async () => {
+      const userId = getAuthUserId()
+      const { data: rows, error: qError } = await supabase
+        .from('transactions')
+        .select(DIGEST_TXN_COLUMNS)
+        .eq('user_id', userId)
+        .gte('date', startISO)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(safeLimit)
+
+      if (qError) throw qError
+      return rows || []
+    }),
+    staleTime: TXN_FRESH_WINDOW_MS,
+    gcTime: 5 * 60 * 1000,
+  })
+
+  return { data: data || [], loading: isLoading, error }
+}
+
+export function useTodayExpenses(options = {}) {
+  const { enabled = true } = options
   const today    = new Date()
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['todayExpenses', todayISO],
+    enabled,
     queryFn: () => traceQuery('transactions:today-expenses', async () => {
       try {
         const userId = getAuthUserId()
@@ -337,9 +446,11 @@ export function useTodayExpenses() {
   return { todaySpend: data ?? 0, loading: isLoading, error }
 }
 
-export function useMonthSummary(year, month) {
+export function useMonthSummary(year, month, options = {}) {
+  const { enabled = true } = options
   const { data, isLoading, error } = useQuery({
     queryKey: ['month', year, month],
+    enabled,
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
@@ -392,9 +503,11 @@ export function useMonthSummary(year, month) {
   return { data, loading: isLoading, error }
 }
 
-export function useYearSummary(year) {
+export function useYearSummary(year, options = {}) {
+  const { enabled = true } = options
   const { data, isLoading, error } = useQuery({
     queryKey: ['year', year],
+    enabled,
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
@@ -521,6 +634,8 @@ export async function addTransaction(payload, options = {}) {
     runInBackground(invalidateCache(), 'transactions add')
   }
 
+  runInBackground(prefetchDashboardSlices(userId), 'transactions add dashboard prefetch')
+
   return data;
 }
 
@@ -561,6 +676,8 @@ export async function updateTransaction(id, payload, options = {}) {
     runInBackground(invalidateCache(), 'transactions update')
   }
 
+  runInBackground(prefetchDashboardSlices(userId), 'transactions update dashboard prefetch')
+
   return data;
 }
 
@@ -597,6 +714,8 @@ export async function deleteTransaction(id, options = {}) {
   if (invalidate) {
     runInBackground(invalidateCache(), 'transactions delete')
   }
+
+  runInBackground(prefetchDashboardSlices(userId), 'transactions delete dashboard prefetch')
 
   return true;
 }

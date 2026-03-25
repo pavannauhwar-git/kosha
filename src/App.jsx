@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -15,6 +15,13 @@ import { useScrollDirection } from './hooks/useScrollDirection'
 import KoshaLogo from './components/KoshaLogo'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
+
+const DASHBOARD_RECENT_COLUMNS =
+  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode'
+const TXN_LIST_PREFETCH_COLUMNS =
+  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
+const LIABILITY_PREFETCH_COLUMNS =
+  'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
 // ── Eager ────────────────────────────────────────────────────────────────
 import Login from './pages/Login'
@@ -32,6 +39,15 @@ const Guide = lazy(() => import('./pages/Guide'))
 const Reconciliation = lazy(() => import('./pages/Reconciliation'))
 const ReportBug = lazy(() => import('./pages/ReportBug'))
 const Settings = lazy(() => import('./pages/Settings'))
+
+const ROUTE_PRELOADERS = {
+  '/': () => import('./pages/Dashboard'),
+  '/transactions': () => import('./pages/Transactions'),
+  '/monthly': () => import('./pages/Monthly'),
+  '/analytics': () => import('./pages/Analytics'),
+  '/bills': () => import('./pages/Bills'),
+  '/reconciliation': () => import('./pages/Reconciliation'),
+}
 
 function PageFallback() {
   return <div className="min-h-dvh bg-kosha-bg" />
@@ -53,11 +69,210 @@ const REALTIME_INVALIDATION_POLICIES = [
 const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
 const BOTTOM_NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/report-bug', '/settings', '/guide']
 
+function useRouteIntentPrefetch() {
+  const { user } = useAuth()
+  const chunkPrefetched = useRef(new Set())
+  const dataPrefetched = useRef(new Set())
+
+  return useCallback((path) => {
+    if (!path) return
+
+    if (!chunkPrefetched.current.has(path)) {
+      chunkPrefetched.current.add(path)
+      const preload = ROUTE_PRELOADERS[path]
+      if (preload) void preload().catch(() => {})
+    }
+
+    if (!user?.id) return
+    if (dataPrefetched.current.has(path)) return
+
+    dataPrefetched.current.add(path)
+
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+
+    if (path === '/transactions') {
+      const txnFilters = {
+        type: undefined,
+        category: undefined,
+        search: undefined,
+        limit: 50,
+        startDate: undefined,
+        endDate: undefined,
+      }
+      const countFilters = {
+        type: undefined,
+        category: undefined,
+        startDate: undefined,
+        endDate: undefined,
+      }
+
+      void Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['transactions', txnFilters],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('transactions')
+              .select(TXN_LIST_PREFETCH_COLUMNS)
+              .eq('user_id', user.id)
+              .order('date', { ascending: false })
+              .order('created_at', { ascending: false })
+              .limit(50)
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 20 * 1000,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['txnCount', countFilters],
+          queryFn: async () => {
+            const { count, error } = await supabase
+              .from('transactions')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', user.id)
+            if (error) throw error
+            return count || 0
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => {})
+      return
+    }
+
+    if (path === '/monthly') {
+      void queryClient.prefetchQuery({
+        queryKey: ['month', year, month],
+        queryFn: async () => {
+          const { data: rows, error } = await supabase.rpc('get_month_summary', {
+            p_user_id: user.id,
+            p_year: year,
+            p_month: month,
+          })
+          if (error) throw error
+
+          const safeRows = rows || []
+          const byCategory = {}
+          const byVehicle = {}
+          let earned = 0, repayments = 0, expense = 0, investment = 0
+
+          for (const row of safeRows) {
+            const amount = Number(row.total || 0)
+            if (row.type === 'income') {
+              if (row.is_repayment) repayments += amount
+              else earned += amount
+            }
+            if (row.type === 'expense') {
+              expense += amount
+              if (row.category) byCategory[row.category] = (byCategory[row.category] || 0) + amount
+            }
+            if (row.type === 'investment') {
+              investment += amount
+              const vehicle = row.investment_vehicle || 'Other'
+              byVehicle[vehicle] = (byVehicle[vehicle] || 0) + amount
+            }
+          }
+
+          return {
+            earned,
+            repayments,
+            expense,
+            investment,
+            byCategory,
+            byVehicle,
+            balance: earned + repayments - expense - investment,
+            count: safeRows.length,
+          }
+        },
+        staleTime: 30 * 1000,
+      }).catch(() => {})
+      return
+    }
+
+    if (path === '/analytics') {
+      void queryClient.prefetchQuery({
+        queryKey: ['year', year],
+        queryFn: async () => {
+          const { data: result, error } = await supabase
+            .rpc('get_year_summary', { p_user_id: user.id, p_year: year })
+            .single()
+          if (error) throw error
+          if (!result) return null
+
+          const monthlyRaw = result.monthly_data || []
+          const totals = result.totals || {}
+          const byCategory = result.category_data || {}
+          const byVehicle = result.vehicle_data || {}
+          const top5 = result.top5_expenses || []
+
+          const monthMap = Object.fromEntries((monthlyRaw || []).map(m => [m.month_num, m]))
+          const monthly = Array.from({ length: 12 }, (_, i) => {
+            const m = monthMap[i + 1] || {}
+            return {
+              month: i + 1,
+              income: Number(m.income || 0),
+              expense: Number(m.expense || 0),
+              investment: Number(m.investment || 0),
+            }
+          })
+
+          const totalIncome = Number(totals.income || 0)
+          const totalRepayments = Number(totals.repayments || 0)
+          const totalExpense = Number(totals.expense || 0)
+          const totalInvestment = Number(totals.investment || 0)
+
+          const monthsWithIncome = monthly.filter(m => m.income > 0)
+          const avgSavings = monthsWithIncome.length
+            ? Math.round(
+                monthsWithIncome.reduce(
+                  (sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0
+                ) / monthsWithIncome.length
+              )
+            : 0
+
+          return {
+            monthly,
+            totalIncome,
+            totalRepayments,
+            totalExpense,
+            totalInvestment,
+            avgSavings,
+            byCategory,
+            byVehicle,
+            top5,
+            count: Number(totals.count || 0),
+          }
+        },
+        staleTime: 45 * 1000,
+      }).catch(() => {})
+      return
+    }
+
+    if (path === '/bills') {
+      void queryClient.prefetchQuery({
+        queryKey: ['liabilities', 'pending'],
+        queryFn: async () => {
+          const { data, error } = await supabase
+            .from('liabilities')
+            .select(LIABILITY_PREFETCH_COLUMNS)
+            .eq('user_id', user.id)
+            .eq('paid', false)
+            .order('due_date', { ascending: true })
+          if (error) throw error
+          return data || []
+        },
+        staleTime: 45 * 1000,
+      }).catch(() => {})
+    }
+  }, [user?.id])
+}
+
 // ── Desktop sidebar ───────────────────────────────────────────────────────
 function DesktopSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { profile, user } = useAuth()
+  const prefetchRoute = useRouteIntentPrefetch()
 
   if (NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
 
@@ -99,6 +314,9 @@ function DesktopSidebar() {
             <button
               key={item.path}
               onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
+              onMouseEnter={() => prefetchRoute(item.path)}
+              onFocus={() => prefetchRoute(item.path)}
+              onTouchStart={() => prefetchRoute(item.path)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-100 w-full text-left"
               style={{ background: isActive ? C.brandContainer : 'transparent' }}
             >
@@ -128,6 +346,7 @@ function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
   const scrolledDown = useScrollDirection()
+  const prefetchRoute = useRouteIntentPrefetch()
 
   if (BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
 
@@ -145,6 +364,9 @@ function BottomNav() {
               key={item.path}
               className="nav-float-item"
               onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
+              onMouseEnter={() => prefetchRoute(item.path)}
+              onFocus={() => prefetchRoute(item.path)}
+              onTouchStart={() => prefetchRoute(item.path)}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 600, damping: 28 }}
             >
@@ -278,6 +500,133 @@ function RuntimeRouteTracker() {
   return null
 }
 
+function DashboardWarmPrefetch() {
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (!user?.id) return
+
+    let cancelled = false
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    const todayISO = `${year}-${String(month).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+    const runPrefetch = async () => {
+      try {
+        await Promise.all([
+          queryClient.prefetchQuery({
+            queryKey: ['transactionsRecent', 5],
+            queryFn: async () => {
+              const { data, error } = await supabase
+                .from('transactions')
+                .select(DASHBOARD_RECENT_COLUMNS)
+                .eq('user_id', user.id)
+                .order('date', { ascending: false })
+                .order('created_at', { ascending: false })
+                .limit(5)
+
+              if (error) throw error
+              return data || []
+            },
+            staleTime: 15 * 1000,
+          }),
+          queryClient.prefetchQuery({
+            queryKey: ['todayExpenses', todayISO],
+            queryFn: async () => {
+              const { data, error } = await supabase
+                .from('transactions')
+                .select('amount')
+                .eq('user_id', user.id)
+                .eq('type', 'expense')
+                .eq('date', todayISO)
+
+              if (error) throw error
+              return (data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0)
+            },
+            staleTime: 30 * 1000,
+          }),
+          queryClient.prefetchQuery({
+            queryKey: ['month', year, month],
+            queryFn: async () => {
+              const { data: rows, error } = await supabase.rpc('get_month_summary', {
+                p_user_id: user.id,
+                p_year: year,
+                p_month: month,
+              })
+
+              if (error) throw error
+
+              const safeRows = rows || []
+              const byCategory = {}
+              const byVehicle = {}
+              let earned = 0, repayments = 0, expense = 0, investment = 0
+
+              for (const row of safeRows) {
+                const amount = Number(row.total || 0)
+                if (row.type === 'income') {
+                  if (row.is_repayment) repayments += amount
+                  else earned += amount
+                }
+                if (row.type === 'expense') {
+                  expense += amount
+                  if (row.category) byCategory[row.category] = (byCategory[row.category] || 0) + amount
+                }
+                if (row.type === 'investment') {
+                  investment += amount
+                  const vehicle = row.investment_vehicle || 'Other'
+                  byVehicle[vehicle] = (byVehicle[vehicle] || 0) + amount
+                }
+              }
+
+              return {
+                earned,
+                repayments,
+                expense,
+                investment,
+                byCategory,
+                byVehicle,
+                balance: earned + repayments - expense - investment,
+                count: safeRows.length,
+              }
+            },
+            staleTime: 30 * 1000,
+          }),
+          queryClient.prefetchQuery({
+            queryKey: ['balance', year, month],
+            queryFn: async () => {
+              const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
+              const { data: balance, error } = await supabase.rpc('get_running_balance', {
+                p_user_id: user.id,
+                p_end_date: endDate,
+              })
+              if (error) throw error
+              return Number(balance || 0)
+            },
+            staleTime: 30 * 1000,
+          }),
+        ])
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('[Kosha] dashboard warm prefetch failed', error)
+        }
+      }
+    }
+
+    // Yield one frame so initial route shell paints first.
+    const timer = setTimeout(() => {
+      if (!cancelled) void runPrefetch()
+    }, 32)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [user?.id])
+
+  return null
+}
+
 // ── App shell ─────────────────────────────────────────────────────────────
 function AppShell() {
   return (
@@ -315,6 +664,7 @@ export default function App() {
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <GlobalRealtimeSync />
+          <DashboardWarmPrefetch />
           <AppShell />
         </QueryClientProvider>
       </AuthProvider>

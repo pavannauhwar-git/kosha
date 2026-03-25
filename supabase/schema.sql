@@ -4,6 +4,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create extension if not exists pgcrypto;
+create extension if not exists pg_trgm;
 
 -- Profiles table
 create table if not exists profiles (
@@ -180,6 +181,16 @@ create index if not exists idx_txn_date     on transactions(date desc);
 create index if not exists idx_txn_type     on transactions(type);
 create index if not exists idx_txn_category on transactions(category);
 create index if not exists idx_txn_user     on transactions(user_id);
+create index if not exists idx_txn_user_date_created
+  on transactions(user_id, date desc, created_at desc);
+create index if not exists idx_txn_user_type_date_created
+  on transactions(user_id, type, date desc, created_at desc);
+create index if not exists idx_txn_user_category_date_created
+  on transactions(user_id, category, date desc, created_at desc);
+create index if not exists idx_txn_user_date
+  on transactions(user_id, date);
+create index if not exists idx_txn_desc_trgm
+  on transactions using gin (description gin_trgm_ops);
 create index if not exists idx_txn_recurring_due on transactions(user_id, next_run_date)
   where is_recurring = true;
 

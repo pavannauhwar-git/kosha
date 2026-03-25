@@ -4,16 +4,18 @@ import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 
 const REVIEW_COLUMNS = 'transaction_id, status, statement_line, updated_at'
-const RECON_REVIEW_FRESH_MS = 15 * 1000
+const RECON_REVIEW_FRESH_MS = 60 * 1000
 
 function isMissingTableError(error) {
   const message = String(error?.message || '')
   return message.includes('reconciliation_reviews')
 }
 
-export function useReconciliationReviews() {
+export function useReconciliationReviews(options = {}) {
+  const { enabled = true } = options
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['reconciliationReviews'],
+    enabled,
     queryFn: async () => {
       const userId = getAuthUserId()
       const { data: rows, error: queryError } = await supabase

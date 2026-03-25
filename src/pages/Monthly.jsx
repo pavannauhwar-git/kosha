@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRightLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -26,13 +26,19 @@ export default function Monthly() {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
+  const [heavyReady, setHeavyReady] = useState(false)
   const monthRef = useRef(null)
 
+  useEffect(() => {
+    const timer = setTimeout(() => setHeavyReady(true), 260)
+    return () => clearTimeout(timer)
+  }, [])
+
   const { data, loading } = useMonthSummary(year, month)
-  const { data: txnRows = [] } = useTransactions({ limit: 250 })
-  const { budgets, setBudget, removeBudget } = useBudgets()
-  const { pending: pendingBills, paid: paidBills } = useLiabilities()
-  const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews()
+  const { data: txnRows = [] } = useTransactions({ limit: 250, enabled: heavyReady })
+  const { budgets, setBudget, removeBudget } = useBudgets({ enabled: heavyReady })
+  const { pending: pendingBills, paid: paidBills } = useLiabilities({ enabled: heavyReady })
+  const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews({ enabled: heavyReady })
 
   const reviewedIds = useMemo(
     () => (reviewTableUnavailable ? getReviewedReconciliationIds() : serverReviewedIds),
@@ -348,7 +354,7 @@ export default function Monthly() {
             <p className="text-[11px] text-ink-3">{monthCloseSummary.message}</p>
           </div>
 
-          {budgetVariance.hasBudgets && (
+          {heavyReady && budgetVariance.hasBudgets && (
             <div className="card p-4">
               <SectionHeader
                 className="mb-2"
@@ -392,7 +398,7 @@ export default function Monthly() {
             </div>
           )}
 
-          {catEntries.length > 0 && (
+          {heavyReady && catEntries.length > 0 && (
             <CategorySpendingChart
               entries={catEntries}
               total={categoryTotal}
@@ -408,7 +414,7 @@ export default function Monthly() {
             />
           )}
 
-          {vehicleEntries.length > 0 && (
+          {heavyReady && vehicleEntries.length > 0 && (
             <div className="card p-3.5">
               <div className="flex items-center justify-between mb-2.5">
                 <p className="section-label">Investments</p>
@@ -430,6 +436,7 @@ export default function Monthly() {
 
           <BreakdownCard earned={earned} spent={spent} invested={invested} />
 
+          {heavyReady && (
           <div className="card p-4">
             <SectionHeader
               className="mb-2"
@@ -460,7 +467,9 @@ export default function Monthly() {
               ))}
             </div>
           </div>
+          )}
 
+          {heavyReady && (
           <button
             type="button"
             onClick={() => navigate('/reconciliation')}
@@ -480,6 +489,7 @@ export default function Monthly() {
               </div>
             </div>
           </button>
+          )}
 
           {earned === 0 && spent === 0 && invested === 0 && (
             <EmptyState

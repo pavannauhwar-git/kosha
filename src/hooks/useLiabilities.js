@@ -14,7 +14,7 @@ const LIABILITY_PAID_QUERY_KEY    = ['liabilities', 'paid']
 const LIABILITY_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
-const LIABILITY_FRESH_WINDOW_MS = 15 * 1000
+const LIABILITY_FRESH_WINDOW_MS = 45 * 1000
 
 function runInBackground(promise, scope) {
   void promise.catch((error) => {
@@ -82,6 +82,21 @@ function reconcileLiabilityCaches(previousLiability, nextLiability) {
   })
 }
 
+async function prefetchLiabilitySlices() {
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: LIABILITY_PENDING_QUERY_KEY,
+      queryFn: () => fetchLiabilitiesByPaid(false),
+      staleTime: LIABILITY_FRESH_WINDOW_MS,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: LIABILITY_PAID_QUERY_KEY,
+      queryFn: () => fetchLiabilitiesByPaid(true),
+      staleTime: LIABILITY_FRESH_WINDOW_MS,
+    }),
+  ])
+}
+
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
   // Use 'all' so both the Dashboard due-bills strip and the Bills page
@@ -105,18 +120,19 @@ async function fetchLiabilitiesByPaid(paidValue) {
   })
 }
 
-export function useLiabilities({ includePaid = true } = {}) {
+export function useLiabilities({ includePaid = true, enabled = true } = {}) {
   const [pendingQuery, paidQuery] = useQueries({
     queries: [
       {
         queryKey: LIABILITY_PENDING_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(false),
+        enabled,
         staleTime: LIABILITY_FRESH_WINDOW_MS,
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(true),
-        enabled:  includePaid,
+        enabled:  enabled && includePaid,
         staleTime: LIABILITY_FRESH_WINDOW_MS,
       },
     ],
@@ -169,6 +185,8 @@ export async function addLiability(payload, options = {}) {
     runInBackground(invalidateLiabilityCache(), 'liabilities add')
   }
 
+  runInBackground(prefetchLiabilitySlices(), 'liabilities add prefetch')
+
   return data
 }
 
@@ -216,6 +234,8 @@ export async function markPaid(liability, options = {}) {
     runInBackground(invalidateTxnCache(), 'transactions from markPaid')
   }
 
+  runInBackground(prefetchLiabilitySlices(), 'liabilities markPaid prefetch')
+
   return result;
 }
 
@@ -252,6 +272,8 @@ export async function deleteLiability(id, options = {}) {
   if (invalidate) {
     runInBackground(invalidateLiabilityCache(), 'liabilities delete')
   }
+
+  runInBackground(prefetchLiabilitySlices(), 'liabilities delete prefetch')
 
   return true;
 }
