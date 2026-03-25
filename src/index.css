@@ -250,7 +250,7 @@
   }
 
   .btn-secondary {
-    @apply btn bg-kosha-surface text-ink-2 border border-kosha-border px-4 py-2 hover:bg-kosha-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/20;
+    @apply btn bg-kosha-surface text-ink-2 border border-kosha-border px-4 py-2 hover:bg-kosha-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
   }
 
   .btn-secondary-sm {
