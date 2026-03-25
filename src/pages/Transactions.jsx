@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight } from 'lucide-react'
 import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTransactions'
@@ -47,10 +47,7 @@ export default function Transactions() {
   const [duplicateTxn,  setDuplicateTxn]  = useState(null)
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
-  const [pendingDeleteIds, setPendingDeleteIds] = useState([])
-  const [undoToast, setUndoToast] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
-  const deleteTimersRef = useRef(new Map())
 
   const debouncedSearch = useDebounce(search, 300)
   const filterCategories = useMemo(
@@ -92,14 +89,8 @@ export default function Transactions() {
     withCount: true,
   })
 
-  const pendingDeleteSet = useMemo(() => new Set(pendingDeleteIds), [pendingDeleteIds])
-  const visibleData = useMemo(
-    () => data.filter((t) => !pendingDeleteSet.has(t.id)),
-    [data, pendingDeleteSet]
-  )
-
-  const groups = useMemo(() => groupByDate(visibleData), [visibleData])
-  const hasMore = useMemo(() => total > visibleData.length, [total, visibleData.length])
+  const groups = useMemo(() => groupByDate(data), [data])
+  const hasMore = useMemo(() => total > data.length, [total, data.length])
   const focusTxnId = searchParams.get('focus')
 
   useEffect(() => {
@@ -137,46 +128,11 @@ export default function Transactions() {
 
   const handleDelete = useCallback(async (id) => {
     if (!id) return
-    if (deleteTimersRef.current.has(id)) return
-
-    const txn = data.find((t) => t.id === id)
-    const description = txn?.description || 'Transaction'
-
-    setPendingDeleteIds((prev) => [...prev, id])
-    setUndoToast({ id, description })
-
-    const timerId = setTimeout(async () => {
-      try {
-        await deleteTransaction(id)
-      } catch (e) {
-        setToast(e.message || 'Could not delete transaction.')
-        setTimeout(() => setToast(null), 4000)
-      } finally {
-        deleteTimersRef.current.delete(id)
-        setPendingDeleteIds((prev) => prev.filter((item) => item !== id))
-        setUndoToast((prev) => (prev?.id === id ? null : prev))
-      }
-    }, 5000)
-
-    deleteTimersRef.current.set(id, timerId)
-  }, [data])
-
-  const undoDelete = useCallback(() => {
-    if (!undoToast?.id) return
-    const id = undoToast.id
-    const timerId = deleteTimersRef.current.get(id)
-    if (timerId) clearTimeout(timerId)
-    deleteTimersRef.current.delete(id)
-    setPendingDeleteIds((prev) => prev.filter((item) => item !== id))
-    setUndoToast(null)
-  }, [undoToast])
-
-  useEffect(() => {
-    return () => {
-      for (const timerId of deleteTimersRef.current.values()) {
-        clearTimeout(timerId)
-      }
-      deleteTimersRef.current.clear()
+    try {
+      await deleteTransaction(id)
+    } catch (e) {
+      setToast(e.message || 'Could not delete transaction.')
+      setTimeout(() => setToast(null), 4000)
     }
   }, [])
 
@@ -277,7 +233,7 @@ export default function Transactions() {
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <p className="text-caption text-ink-3">
-            {total > 0 ? `${Math.max(0, total - pendingDeleteIds.length)} transaction${Math.max(0, total - pendingDeleteIds.length) !== 1 ? 's' : ''}` : 'No results'}
+            {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
             {(typeFilter !== 'all' || catFilter) ? ' (filtered)' : ''}
           </p>
         </div>
@@ -429,24 +385,6 @@ export default function Transactions() {
       )}
 
       <AnimatePresence>
-        {undoToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-32 left-4 right-4 md:left-[236px] md:bottom-8 z-50
-                       flex items-center gap-3 bg-brand text-white px-4 py-3 rounded-card shadow-card-lg"
-          >
-            <span className="text-[13px] font-medium flex-1 truncate">
-              {undoToast.description} removed
-            </span>
-            <button onClick={undoDelete} className="text-white text-xs font-semibold underline underline-offset-2">
-              Undo
-            </button>
-          </motion.div>
-        )}
-
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

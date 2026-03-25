@@ -104,8 +104,8 @@ function primeTransactionCaches(newTxn) {
     if (!matchesTransactionFilters(newTxn, filters)) continue
 
     queryClient.setQueryData(key, (old) => {
-      if (!Array.isArray(old)) return old
-      return mergeTxnRows([newTxn, ...old], filters?.limit)
+      const base = Array.isArray(old) ? old : []
+      return mergeTxnRows([newTxn, ...base], filters?.limit)
     })
   }
 
@@ -152,8 +152,8 @@ function reconcileTransactionCaches(previousTxn, nextTxn) {
     const key = query.queryKey
     const filters = getTxnFiltersFromKey(key)
     queryClient.setQueryData(key, (old) => {
-      if (!Array.isArray(old)) return old
-      const withoutTarget = old.filter(row => row.id !== targetId)
+      const base = Array.isArray(old) ? old : []
+      const withoutTarget = base.filter(row => row.id !== targetId)
       const shouldIncludeNext = !!nextTxn && matchesTransactionFilters(nextTxn, filters)
       if (!shouldIncludeNext) return withoutTarget
       return mergeTxnRows([nextTxn, ...withoutTarget], filters?.limit)

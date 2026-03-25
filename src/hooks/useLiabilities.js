@@ -37,15 +37,15 @@ function primeLiabilityCaches(newLiability) {
   if (!newLiability?.id) return
   if (newLiability.paid) {
     queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (old) => {
-      if (!Array.isArray(old)) return old
-      return [newLiability, ...old.filter(row => row.id !== newLiability.id)].sort(sortLiabilityDueAsc)
+      const base = Array.isArray(old) ? old : []
+      return [newLiability, ...base.filter(row => row.id !== newLiability.id)].sort(sortLiabilityDueAsc)
     })
     return
   }
 
   queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (old) => {
-    if (!Array.isArray(old)) return old
-    return [newLiability, ...old.filter(row => row.id !== newLiability.id)].sort(sortLiabilityDueAsc)
+    const base = Array.isArray(old) ? old : []
+    return [newLiability, ...base.filter(row => row.id !== newLiability.id)].sort(sortLiabilityDueAsc)
   })
 }
 
@@ -68,15 +68,15 @@ function reconcileLiabilityCaches(previousLiability, nextLiability) {
   if (!targetId) return
 
   queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (old) => {
-    if (!Array.isArray(old)) return old
-    const withoutTarget = old.filter(row => row.id !== targetId)
+    const base = Array.isArray(old) ? old : []
+    const withoutTarget = base.filter(row => row.id !== targetId)
     if (!nextLiability || nextLiability.paid) return withoutTarget
     return [nextLiability, ...withoutTarget].sort(sortLiabilityDueAsc)
   })
 
   queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (old) => {
-    if (!Array.isArray(old)) return old
-    const withoutTarget = old.filter(row => row.id !== targetId)
+    const base = Array.isArray(old) ? old : []
+    const withoutTarget = base.filter(row => row.id !== targetId)
     if (!nextLiability || !nextLiability.paid) return withoutTarget
     return [nextLiability, ...withoutTarget].sort(sortLiabilityDueAsc)
   })
@@ -224,16 +224,13 @@ export async function deleteLiability(id, options = {}) {
   const userId = getAuthUserId()
   const previousLiability = findCachedLiabilityById(id)
   
-  const { data: deletedRows, error } = await supabase
+  const { error } = await supabase
     .from('liabilities')
     .delete()
     .eq('id', id)
-    .select('id')
+    .eq('user_id', userId)
 
   if (error) throw error
-  if (!Array.isArray(deletedRows) || deletedRows.length === 0) {
-    throw new Error('Bill could not be deleted. Please refresh and try again.')
-  }
 
   await cancelLiabilityFamilyQueries()
 
