@@ -285,32 +285,24 @@ export default function Monthly() {
 
   return (
     <div className="page">
-      <PageHeader
-        variant="oneui-hero"
-        title="Monthly"
-        eyebrow="Planning window"
-        subtitle="Review close projection, budgets, and category control in one place."
-        className="mb-2"
-      />
+      <PageHeader title="Monthly" className="mb-2" />
 
-      <section className="oneui-glass oneui-squircle p-3.5 md:p-4 mb-4">
-        <PickerNavigator
-          className="mb-0"
-          label={`${MONTH_NAMES[month - 1]} ${year}`}
-          onPrev={prev}
-          onNext={next}
-          pickerRef={monthRef}
-          inputType="month"
-          inputValue={`${year}-${String(month).padStart(2, '0')}`}
-          onInputChange={e => {
-            const [y, m] = e.target.value.split('-').map(Number)
-            if (y && m) {
-              setYear(y)
-              setMonth(m)
-            }
-          }}
-        />
-      </section>
+      <PickerNavigator
+        className="mb-4"
+        label={`${MONTH_NAMES[month - 1]} ${year}`}
+        onPrev={prev}
+        onNext={next}
+        pickerRef={monthRef}
+        inputType="month"
+        inputValue={`${year}-${String(month).padStart(2, '0')}`}
+        onInputChange={e => {
+          const [y, m] = e.target.value.split('-').map(Number)
+          if (y && m) {
+            setYear(y)
+            setMonth(m)
+          }
+        }}
+      />
 
       <div className="mb-4 md:mb-5">
         <MonthHeroCard month={month} year={year} data={data} />

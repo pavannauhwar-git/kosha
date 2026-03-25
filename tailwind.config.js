@@ -4,42 +4,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ── One UI pure contrast base ─────────────────────────────────────
-        'oneui-white': '#FFFFFF',
-        'oneui-black': '#000000',
-        'oneui-ink': '#05070B',
-        'oneui-surface': '#FFFFFF',
-        'oneui-surface-2': '#F6F8FC',
-        'oneui-glass-light': '#FFFFFFCC',
-        'oneui-glass-dark': '#000000CC',
-        'oneui-border': '#D7DFEE',
-        'oneui-border-strong': '#A9B9D8',
-
-        // ── App backgrounds (mapped to One UI values) ────────────────────
-        'kosha-bg':            '#FFFFFF',
-        'kosha-bg-2':          '#F6F8FC',
+        // ── App backgrounds ───────────────────────────────────────────────
+        'kosha-bg':            '#FEFEFF',
+        'kosha-bg-2':          '#FAFBFF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F6F8FC',
-        'kosha-surface-variant': '#F0F4FC',
-        'kosha-surface-container': '#E9EFFA',
-        'kosha-border':        '#D7DFEE',
-        'kosha-border-strong': '#A9B9D8',
+        'kosha-surface-2':     '#F8FAFF',
+        'kosha-surface-variant': '#F1F4FF',
+        'kosha-surface-container': '#EEF2FF',
+        'kosha-border':        '#C4CFFF',
+        'kosha-border-strong': '#6C83FF',
 
-        // ── Brand — Samsung-like vivid blue system ───────────────────────
-        'brand':           '#1A73FF',
-        'brand-dark':      '#0956D6',
-        'brand-mid':       '#4E93FF',
-        'brand-bg':        '#E8F0FF',
-        'brand-container': '#DCE9FF',
-        'brand-on':        '#0A2A66',
-        'brand-accent':    '#17D6FF',
-
-        // ── One UI accent ramp ────────────────────────────────────────────
-        'oneui-blue': '#1A73FF',
-        'oneui-cyan': '#17D6FF',
-        'oneui-green': '#00C77F',
-        'oneui-amber': '#FFB020',
-        'oneui-pink': '#FF3FA4',
+        // ── Brand — Periwinkle Violet + Lime Yellow ─────────────────────
+        'brand':           '#243BAF',
+        'brand-dark':      '#1B2D85',
+        'brand-mid':       '#3D5AFE',
+        'brand-bg':        '#EEF2FF',
+        'brand-container': '#E8EDFF',
+        'brand-on':        '#243BAF',
+        'brand-accent':    '#F4FF00',
 
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#059669',
@@ -85,8 +67,8 @@ export default {
       },
 
       fontFamily: {
-        display: ['SamsungOne', 'Samsung Sharp Sans', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        sans:    ['SamsungOne', 'Samsung Sharp Sans', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans:    ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
 
       fontSize: {
@@ -99,8 +81,6 @@ export default {
       },
 
       borderRadius: {
-        'squircle': '24px',
-        'sheet': '32px',
         'card':    '24px',
         'card-lg': '28px',
         'hero':    '24px',
@@ -109,8 +89,6 @@ export default {
       },
 
       boxShadow: {
-        'glass':      '0 18px 44px rgba(3,12,30,0.20), 0 1px 0 rgba(255,255,255,0.65) inset, 0 0 0 1px rgba(200,214,238,0.50)',
-        'glass-dark': '0 20px 46px rgba(0,0,0,0.42), 0 0 0 1px rgba(255,255,255,0.10) inset',
         'card':       '0 2px 7px rgba(18,28,74,0.06), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
@@ -119,11 +97,6 @@ export default {
         'focus':      '0 0 0 3px rgba(36,59,175,0.30)',
         'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
         'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
-      },
-
-      backdropBlur: {
-        'oneui': '22px',
-        'oneui-strong': '30px',
       },
 
       keyframes: {

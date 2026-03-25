@@ -95,30 +95,22 @@ export default function Analytics() {
 
   return (
     <div className="page">
-      <PageHeader
-        variant="oneui-hero"
-        title="Analytics"
-        eyebrow="Signals"
-        subtitle="Track yearly performance, concentration risks, and trend momentum."
-        className="mb-2"
-      />
+      <PageHeader title="Analytics" className="mb-2" />
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
-      <section className="oneui-glass oneui-squircle p-3.5 md:p-4 mb-4">
-        <PickerNavigator
-          className="mb-0"
-          label={year}
-          onPrev={() => setYear(y => y - 1)}
-          onNext={() => setYear(y => y + 1)}
-          pickerRef={yearRef}
-          inputType="month"
-          inputValue={`${year}-01`}
-          onInputChange={e => {
-            const y = parseInt(e.target.value?.split('-')[0], 10)
-            if (y) setYear(y)
-          }}
-        />
-      </section>
+      <PickerNavigator
+        className="mb-4"
+        label={year}
+        onPrev={() => setYear(y => y - 1)}
+        onNext={() => setYear(y => y + 1)}
+        pickerRef={yearRef}
+        inputType="month"
+        inputValue={`${year}-01`}
+        onInputChange={e => {
+          const y = parseInt(e.target.value?.split('-')[0], 10)
+          if (y) setYear(y)
+        }}
+      />
 
       {loading ? (
         <SkeletonLayout

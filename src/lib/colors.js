@@ -1,65 +1,81 @@
+/**
+ * Kosha palette — JS constants
+ *
+ * Single source of truth for every colour used in inline styles,
+ * Framer Motion animate props, recharts fill/stroke props,
+ * SVG attributes, and Phosphor Icon color props.
+ *
+ * To change the palette:
+ *   1. Edit values here
+ *   2. Update matching CSS variables in src/index.css  (:root block)
+ *   3. Update matching tokens in tailwind.config.js
+ */
+
 export const C = {
 
-  // ── Brand — One UI vivid blue ────────────────────────────────────
-  brand:           '#1A73FF',
-  brandMid:        '#4E93FF',
-  brandLight:      '#78ADFF',
-  brandContainer:  '#DCE9FF',
-  brandBorder:     '#D7DFEE',
+  // ── Brand — Periwinkle Violet ────────────────────────────────────
+  brand:           '#243BAF',
+  brandMid:        '#3D5AFE',
+  brandLight:      '#6C83FF',
+  brandContainer:  '#E8EDFF',
+  brandBorder:     '#C4CFFF',
 
-  // ── Accent — One UI cyan ─────────────────────────────────────────
-  accent:          '#17D6FF',
-  accentBg:        'rgba(23,214,255,0.24)',
-  accentFill:      'rgba(23,214,255,0.82)',
+  // ── Accent — Lime Yellow ─────────────────────────────────────────
+  // Used ONLY against dark periwinkle backgrounds (hero card, logo).
+  // Never use on white — fails contrast.
+  accent:          '#F4FF00',
+  accentBg:        'rgba(244,255,0,0.22)',
+  accentFill:      'rgba(244,255,0,0.78)',
 
-  // ── Income — vivid green ──────────────────────────────────────────
-  income:          '#00C77F',
-  incomeText:      '#009968',
+  // ── Income — Emerald H=174° ───────────────────────────────────────
+  income:          '#059669',
+  incomeText:      '#047857',
 
-  // ── Expense — vibrant pink/red ────────────────────────────────────
-  expense:         '#FF3F64',
-  expenseBright:   '#FF3F64',
+  // ── Expense — Rose H=354° ─────────────────────────────────────────
+  expense:         '#E11D48',
+  expenseBright:   '#E11D48',   // same — no separate "bright" needed
 
-  // ── Investment — magenta accent ───────────────────────────────────
-  invest:          '#FF3FA4',
-  investText:      '#8D2A63',
+  // ── Investment — Sky Blue H=200° (MD3 Secondary) ───────────────────
+  invest:          '#FF1DCE',   // custom investment accent
+  investText:      '#7F2A52',   // darker text tone on light invest backgrounds
 
-  saved:           '#1A73FF',
+  saved:           '#243BAF',   // brand indigo — residual money in Kosha
 
-  // ── Bills — warm amber ────────────────────────────────────────────
-  bills:           '#FFB020',
+  // ── Bills — Amber H=84° ───────────────────────────────────────────
+  bills:           '#CA8A04',
 
-  // ── Ink — high contrast neutrals ──────────────────────────────────
-  ink:             '#05070B',
-  inkMuted:        '#6B7894',
+  // ── Ink — indigo-tinted neutrals ─────────────────────────────────
+  ink:             '#1F255F',
+  inkMuted:        '#6E75A8',
 
-  // ── Hero card overlays (cyan/white on deep blue) ─────────────────
-  heroAccent:      'rgba(23,214,255,0.80)',
-  heroAccentBg:    'rgba(23,214,255,0.24)',
-  heroAccentSolid: '#17D6FF',
+  // ── Hero card overlays (lime/white on deep periwinkle) ────────────
+  heroAccent:      'rgba(244,255,0,0.78)',
+  heroAccentBg:    'rgba(244,255,0,0.22)',
+  heroAccentSolid: '#F4FF00',
   heroLabel:       'rgba(255,255,255,0.55)', // "Total balance" label
   heroDimmer:      'rgba(255,255,255,0.35)', // "KOSHA" watermark
   heroDivider:     'rgba(255,255,255,0.12)', // horizontal rule
   heroStatBg:      'rgba(255,255,255,0.10)', // Earned/Spent/Invested chips
 
-  // ── Chart glow colours — on dark blue card background ─────────────
-  chartIncome:     '#2EE6A1',
-  chartExpense:    '#FF7A95',
-  chartDark:       '#0956D6',
+  // ── Chart glow colours — on dark periwinkle card background ──────
+  // Brighter variants of semantic colours so they glow on dark substrate
+  chartIncome:     '#34D399',   // bright emerald glow on dark
+  chartExpense:    '#FB7185',   // bright rose glow on dark
+  chartDark:       '#1B2D85',   // dark chart card background = brand-dark
   chartGrid:       'rgba(255,255,255,0.06)', // grid lines on dark card
   chartCursor:     'rgba(255,255,255,0.06)', // tooltip cursor on dark card
 
-  // ── Portfolio donut — blue family, darkest -> lightest ────────────
+  // ── Portfolio donut — periwinkle family, darkest → lightest ──────
   portfolio: [
-    '#0A2A66',
-    '#0956D6',
-    '#1A73FF',
-    '#4E93FF',
-    '#DCE9FF',
-    '#D7DFEE',
+    '#1F255F',
+    '#243BAF',
+    '#3D5AFE',
+    '#6C83FF',
+    '#E8EDFF',
+    '#C4CFFF',
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#1A73FF',
-  logoHighlight: '#17D6FF',
+  logoBg:        '#243BAF',
+  logoHighlight: '#F4FF00',
 }

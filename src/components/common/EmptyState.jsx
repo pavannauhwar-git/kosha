@@ -9,9 +9,9 @@ export default function EmptyState({
   className = '',
 }) {
   return (
-    <div className={`oneui-glass oneui-squircle empty-state py-10 px-6 flex flex-col items-center text-center ${className}`.trim()}>
+    <div className={`card empty-state py-10 px-6 flex flex-col items-center text-center ${className}`.trim()}>
       {icon ? (
-        <div className="w-16 h-16 rounded-[20px] bg-kosha-surface-2 border border-kosha-border flex items-center justify-center mb-4">
+        <div className="w-16 h-16 rounded-full bg-kosha-surface-2 flex items-center justify-center mb-4">
           {icon}
         </div>
       ) : null}
@@ -25,7 +25,7 @@ export default function EmptyState({
             <button
               type="button"
               onClick={onAction}
-              className="px-6 py-2.5 rounded-pill bg-brand text-white text-label font-semibold active:scale-[0.97] transition-transform duration-75 shadow-glass"
+              className="px-6 py-2.5 rounded-pill bg-brand text-white text-label font-semibold active:scale-[0.97] transition-transform duration-75"
             >
               {actionLabel}
             </button>

@@ -46,11 +46,11 @@ export default function KoshaErrorPage({
       <div className="pointer-events-none absolute inset-0">
         <div
           className="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(26,115,255,0.26) 0%, rgba(26,115,255,0) 68%)' }}
+          style={{ background: 'radial-gradient(circle, rgba(91,81,224,0.24) 0%, rgba(91,81,224,0) 68%)' }}
         />
         <div
           className="absolute -bottom-20 -left-12 h-72 w-72 rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(23,214,255,0.22) 0%, rgba(23,214,255,0) 72%)' }}
+          style={{ background: 'radial-gradient(circle, rgba(226,255,90,0.24) 0%, rgba(226,255,90,0) 72%)' }}
         />
       </div>
 
@@ -58,8 +58,8 @@ export default function KoshaErrorPage({
         <motion.section
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-          className="w-full max-w-[470px] max-h-full overflow-y-auto oneui-glass oneui-sheet-radius border border-white/60 p-6 shadow-glass"
+          transition={{ duration: 0.24, ease: 'easeOut' }}
+          className="w-full max-w-[470px] max-h-full overflow-y-auto rounded-[28px] border border-kosha-border bg-white p-6 shadow-apple-card"
         >
           <div className="mb-5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -76,7 +76,7 @@ export default function KoshaErrorPage({
 
           <div
             className="rounded-[20px] border border-kosha-border p-4"
-            style={{ background: 'linear-gradient(145deg, rgba(220,233,255,0.9) 0%, rgba(255,255,255,1) 85%)' }}
+            style={{ background: 'linear-gradient(145deg, rgba(237,233,255,0.9) 0%, rgba(255,255,255,1) 85%)' }}
           >
             <div className="flex items-start gap-3">
               <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border ${toneClass}`}>

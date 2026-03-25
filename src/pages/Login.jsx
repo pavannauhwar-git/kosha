@@ -160,20 +160,10 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-dvh bg-kosha-bg px-4 overflow-y-auto"
+      className="h-dvh bg-kosha-bg px-4 overflow-y-auto"
       style={{paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="min-h-full flex flex-col py-8">
-        <div className="relative min-h-[34vh] md:min-h-[38vh] flex flex-col justify-end mb-4">
-          <div className="absolute inset-x-0 top-0 h-[70%] bg-gradient-to-b from-brand/12 via-brand-accent/6 to-transparent pointer-events-none" />
-          <div className="relative z-[1] max-w-[420px] mx-auto w-full">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-3 mb-3">Secure access</p>
-            <h1 className="oneui-title text-ink m-0">Kosha</h1>
-            <p className="text-label text-ink-3 mt-1.5">Sign in and continue from your thumb zone below.</p>
-          </div>
-        </div>
-
-        <div className="w-full max-w-[420px] mx-auto oneui-glass oneui-squircle p-2">
+      <div className="min-h-full flex flex-col items-center justify-center py-8">
         <div className="w-full max-w-[380px]">
           <motion.div
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
@@ -438,7 +428,6 @@ export default function Login() {
               <AboutKoshaLink className="text-center pt-1" />
             </motion.div>
           </motion.div>
-        </div>
         </div>
       </div>
     </div>

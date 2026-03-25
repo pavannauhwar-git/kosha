@@ -27,10 +27,10 @@ export default function BreakdownCard({ earned, spent, invested }) {
   if (earned === 0) return null
 
   return (
-    <div className="oneui-glass oneui-squircle p-5">
+    <div className="card p-5">
       <p className="section-label mb-3">Budget Breakdown</p>
       <div className="flex gap-4 items-center">
-        <div className="relative shrink-0 rounded-[20px] border border-kosha-border/80 bg-white/55 p-1" style={{ width: SIZE, height: SIZE }}>
+        <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
             <circle cx={CX} cy={CY} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
             {segs.map((seg, i) => {

@@ -14,8 +14,8 @@ export default function PickerNavigator({
     <div className={`flex items-center justify-between ${className}`}>
       <button
         onClick={onPrev}
-        className="w-10 h-10 rounded-[20px] oneui-glass border border-kosha-border
-                   flex items-center justify-center active:scale-[0.97] transition-transform duration-75"
+        className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                   flex items-center justify-center active:bg-kosha-surface-2"
       >
         <ChevronLeft size={18} className="text-ink-2" />
       </button>
@@ -25,7 +25,7 @@ export default function PickerNavigator({
         className="relative cursor-pointer"
         onClick={() => pickerRef?.current?.showPicker?.()}
       >
-        <h1 className="text-[30px] leading-[1.05] font-black text-ink tracking-tight">{label}</h1>
+        <h1 className="text-display font-bold text-ink tracking-tight">{label}</h1>
         <input
           ref={pickerRef}
           type={inputType}
@@ -37,8 +37,8 @@ export default function PickerNavigator({
 
       <button
         onClick={onNext}
-        className="w-10 h-10 rounded-[20px] oneui-glass border border-kosha-border
-                   flex items-center justify-center active:scale-[0.97] transition-transform duration-75"
+        className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+                   flex items-center justify-center active:bg-kosha-surface-2"
       >
         <ChevronRight size={18} className="text-ink-2" />
       </button>

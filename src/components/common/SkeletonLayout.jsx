@@ -13,14 +13,14 @@ export default function SkeletonLayout({ sections = [], className = 'space-y-4' 
               style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
             >
               {Array.from({ length: count }).map((_, i) => (
-                <div key={`${index}-${i}`} className={`skeleton shimmer oneui-squircle ${height}`} />
+                <div key={`${index}-${i}`} className={`skeleton shimmer ${height}`} />
               ))}
             </div>
           )
         }
 
         return (
-          <div key={index} className={`skeleton shimmer oneui-squircle ${section.height || 'h-[100px]'}`} />
+          <div key={index} className={`skeleton shimmer ${section.height || 'h-[100px]'}`} />
         )
       })}
     </div>

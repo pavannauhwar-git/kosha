@@ -427,18 +427,7 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <PageHeader
-        variant="oneui-hero"
-        title="Dashboard"
-        eyebrow={now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
-        subtitle={`${greeting}${firstName ? `, ${firstName}` : ''}`}
-        className="mb-2"
-      />
-
-      {isBackgroundFetching && (
-        <p className="text-[11px] text-ink-3 mb-3 px-1">Syncing latest data...</p>
-      )}
-
+      <PageHeader title="Dashboard" className="mb-2" />
       <AnimatePresence mode="wait" initial={false}>
         {isInitialLoading ? (
           <motion.div
@@ -446,8 +435,17 @@ export default function Dashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1, transition: dashboardFade }}
             exit={{ opacity: 0, transition: dashboardFade }}
-            className="page-stack"
+            className="page-stack pt-0"
           >
+            <div>
+              <p className="text-caption text-ink-3">
+                {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+              <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
+                {greeting}{firstName ? `, ${firstName}` : ''} 👋
+              </h1>
+            </div>
+
             <DashboardHeroSkeleton />
 
             <div className="card py-4 px-3">
@@ -470,8 +468,22 @@ export default function Dashboard() {
             initial="hidden"
             animate="show"
             exit={{ opacity: 0, transition: dashboardFade }}
-            className="page-stack"
+            className="page-stack pt-0"
           >
+
+        {/* ── Greeting ──────────────────────────────────────────────── */}
+            <motion.div variants={fadeUp}>
+          <p className="text-caption text-ink-3">
+            {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+          <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
+            {greeting}{firstName ? `, ${firstName}` : ''} 👋
+          </h1>
+          {isBackgroundFetching && (
+            <p className="text-[11px] text-ink-3 mt-1">Syncing latest data...</p>
+          )}
+        </motion.div>
+
         {/* ── Hero card — sub-component, renders independently ─────── */}
         <motion.div variants={fadeUp}>
           <DashboardHeroCard

@@ -41,7 +41,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   ]
 
   return (
-    <div className="card-hero oneui-sheet-radius p-5 md:p-6 relative overflow-hidden shadow-glass">
+    <div className="card-hero p-5 md:p-6 relative overflow-hidden">
       <div className="flex items-center justify-between gap-3 mb-3.5">
         <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
           Year snapshot
@@ -73,7 +73,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
 
       <div className="mb-3.5 space-y-2">
         {cards.map((card) => (
-          <div key={card.label} className="px-3 py-2.5 rounded-[20px] border border-white/15" style={{ background: C.heroStatBg }}>
+          <div key={card.label} className="px-3 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
             <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>{card.label}</p>
             <div className="flex items-center justify-between gap-2">
               <p className="text-[12px] font-bold text-white tabular-nums">{fmt(card.value)}</p>

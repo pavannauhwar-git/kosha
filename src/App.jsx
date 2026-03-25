@@ -16,8 +16,6 @@ import KoshaLogo from './components/KoshaLogo'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
 
-const ONE_UI_SPRING = { type: 'spring', stiffness: 500, damping: 35 }
-
 const DASHBOARD_RECENT_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode'
 const TXN_LIST_PREFETCH_COLUMNS =
@@ -291,10 +289,10 @@ function DesktopSidebar() {
         position: 'fixed',
         top: 0, left: 0, bottom: 0,
         width: 220,
-        background: 'rgba(255,255,255,0.80)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        borderRight: '1px solid rgba(215, 223, 238, 0.85)',
+        background: 'rgba(255,255,255,0.94)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRight: `1px solid ${C.brandBorder}`,
         zIndex: 30,
         padding: '0 12px',
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
@@ -319,8 +317,8 @@ function DesktopSidebar() {
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-[24px] transition-colors duration-100 w-full text-left"
-              style={{ background: isActive ? 'rgba(220,233,255,0.9)' : 'transparent' }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-100 w-full text-left"
+              style={{ background: isActive ? C.brandContainer : 'transparent' }}
             >
               <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.brand : C.inkMuted} />
               <span className="text-[14px]" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
@@ -369,13 +367,13 @@ function BottomNav() {
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
-              whileTap={{ scale: 0.96 }}
-              transition={ONE_UI_SPRING}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 600, damping: 28 }}
             >
               <div className="nav-icon-wrap">
                 {isActive && (
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
-                    transition={ONE_UI_SPRING} />
+                    transition={{ type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }} />
                 )}
                 <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.15 }}>
                   <item.Icon size={22} weight="fill" color={C.brand} />

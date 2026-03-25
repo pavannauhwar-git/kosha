@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 
-const ONE_UI_SPRING = { type: 'spring', stiffness: 500, damping: 35 }
-
 export default function EditProfileNameDialog({ open, onClose }) {
   const { profile, updateDisplayName } = useAuth()
   const [name, setName] = useState('')
@@ -46,20 +44,20 @@ export default function EditProfileNameDialog({ open, onClose }) {
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-50 bg-black/55"
-            style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+            className="fixed inset-0 z-50 bg-ink/30"
+            style={{ backdropFilter: 'blur(2px)' }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={saving ? undefined : onClose}
           />
           <motion.div
-            className="fixed left-4 right-4 bottom-6 z-50 oneui-glass rounded-[32px] p-6 shadow-glass border border-white/60"
+            className="fixed left-4 right-4 bottom-6 z-50 bg-kosha-surface rounded-hero p-6 shadow-card-lg"
             style={{
               maxWidth: 480,
               margin: '0 auto',
               bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
             }}
             initial={{ y: 60, opacity: 0 }}
-            animate={{ y: 0, opacity: 1, transition: ONE_UI_SPRING }}
+            animate={{ y: 0, opacity: 1, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
             exit={{ y: 60, opacity: 0, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between mb-5">

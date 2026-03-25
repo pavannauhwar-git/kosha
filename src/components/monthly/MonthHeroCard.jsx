@@ -11,7 +11,7 @@ export default function MonthHeroCard({ month, year, data }) {
   const rate = savingsRate(earned, spent)
 
   return (
-    <div className="card-hero oneui-sheet-radius p-6 relative overflow-hidden shadow-glass">
+    <div className="card-hero p-6 relative overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
           {MONTH_NAMES[month - 1].slice(0, 3)} {year}
@@ -42,7 +42,7 @@ export default function MonthHeroCard({ month, year, data }) {
           { label: 'Spent', val: spent },
           { label: 'Invested', val: invested },
         ].map(s => (
-          <div key={s.label} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-[20px] border border-white/15" style={{ background: C.heroStatBg }}>
+          <div key={s.label} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
             <p className="text-[11px] sm:text-caption mb-0.5 truncate" style={{ color: C.heroLabel }}>
               {s.label}
             </p>
@@ -61,7 +61,7 @@ export default function MonthHeroCard({ month, year, data }) {
             className="bar-dark-fill"
             initial={{ width: 0 }}
             animate={{ width: `${rate}%` }}
-            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
           />
         </div>
       </div>
