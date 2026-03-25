@@ -360,9 +360,42 @@ export default function Dashboard() {
           </h1>
         </motion.div>
 
+        {/* ── Hero card — sub-component, renders independently ─────── */}
         <motion.div variants={fadeUp}>
-          <div className="card p-4">
-            <div className="flex items-center justify-between gap-3 mb-1.5">
+          <DashboardHeroCard
+            now={balanceHorizonDate}
+            runningBalance={runningBalance}
+            rate={rate}
+            earned={earned}
+            spent={spent}
+            invested={invested}
+            bills={bills}
+            heroMode={heroMode}
+            onHeroModeToggle={handleHeroModeToggle}
+          />
+        </motion.div>
+
+        {/* ── Quick-action strip ────────────────────────────────────── */}
+        <motion.div variants={fadeUp} className="card py-4 px-3">
+          <div className="flex justify-between gap-1.5">
+            {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
+              <button key={label}
+                onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
+                className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[62px]"
+              >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
+                  style={{ color }}>
+                  <Icon size={20} strokeWidth={strokeWidth} />
+                </div>
+                <span className="text-[11px] font-semibold text-ink-3">{label}</span>
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-3.5">
+            <div className="flex items-center justify-between gap-3 mb-1">
               <p className="section-label">Today focus</p>
               <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${
                 todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
@@ -374,9 +407,9 @@ export default function Dashboard() {
                 Priority
               </span>
             </div>
-            <p className="text-[15px] font-semibold text-ink">{todayFocus.title}</p>
+            <p className="text-[14px] font-semibold text-ink">{todayFocus.title}</p>
             <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>
-            <div className="grid grid-cols-2 gap-2 mt-3">
+            <div className="grid grid-cols-2 gap-2 mt-2.5">
               <button
                 type="button"
                 onClick={() => navigate(todayFocus.primaryRoute)}
@@ -393,21 +426,6 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-        </motion.div>
-
-        {/* ── Hero card — sub-component, renders independently ─────── */}
-        <motion.div variants={fadeUp}>
-          <DashboardHeroCard
-            now={balanceHorizonDate}
-            runningBalance={runningBalance}
-            rate={rate}
-            earned={earned}
-            spent={spent}
-            invested={invested}
-            bills={bills}
-            heroMode={heroMode}
-            onHeroModeToggle={handleHeroModeToggle}
-          />
         </motion.div>
 
         {/* ── Pulse strip — sub-component ───────────────────────────── */}
@@ -430,23 +448,6 @@ export default function Dashboard() {
           />
         </motion.div>
 
-        {/* ── Quick-action strip ────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="card py-4 px-3">
-          <div className="flex justify-between gap-1.5">
-            {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
-              <button key={label}
-                onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
-                className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[62px]"
-              >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
-                  style={{ color }}>
-                  <Icon size={20} strokeWidth={strokeWidth} />
-                </div>
-                <span className="text-[11px] font-semibold text-ink-3">{label}</span>
-              </button>
-            ))}
-          </div>
-        </motion.div>
 
         {/* ── Bill alert ────────────────────────────────────────────── */}
         {dueSoonCount > 0 && (

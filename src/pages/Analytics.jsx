@@ -172,9 +172,6 @@ export default function Analytics() {
           transition={{ duration: 0.25 }}
           className="page-stack"
         >
-
-          <YearlyInsightsCard data={data} catEntries={catEntries} />
-
           {/* ── 1. Annual Summary card ───────────────────────────────── */}
           <AnnualSummaryCard
             data={data}
@@ -188,6 +185,8 @@ export default function Analytics() {
             chartData={chartData}
             totalIncome={data?.totalIncome}
           />
+
+          <YearlyInsightsCard data={data} catEntries={catEntries} />
 
           {/* ── 3. Net Savings ──────────────────────────────────────── */}
           <NetSavingsChart

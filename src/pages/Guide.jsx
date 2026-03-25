@@ -309,9 +309,9 @@ export default function Guide() {
                 <motion.button
                   key={card.id}
                   type="button"
-                  whileHover={{ y: -2 }}
+                  whileHover={{ y: -1 }}
                   whileTap={{ scale: 0.985 }}
-                  transition={{ duration: 0.14 }}
+                  transition={{ duration: 0.1 }}
                   onClick={() => openFeature(card.id)}
                   className="card p-4 text-left"
                 >
@@ -405,13 +405,6 @@ export default function Guide() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 24 }}
                 transition={{ duration: 0.2 }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.08}
-                onDragEnd={(_, info) => {
-                  if (info.offset.x < -70) moveFeature(1)
-                  if (info.offset.x > 70) moveFeature(-1)
-                }}
                 className="card p-4 md:p-5 max-h-[78vh] overflow-y-auto w-full max-w-[560px]"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">

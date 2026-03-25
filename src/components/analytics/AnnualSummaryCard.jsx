@@ -55,11 +55,11 @@ export default function AnnualSummaryCard({ data, prevData, spendTrend, year }) 
   }
 
   return (
-    <div className="card overflow-hidden">
-      <div className="px-5 pt-5 pb-4 border-b border-kosha-border">
-        <p className="text-caption text-ink-3 font-medium mb-1.5">Total Earned</p>
+    <div className="card overflow-hidden border border-kosha-border/80 shadow-card-md">
+      <div className="px-5 pt-5 pb-4 border-b border-kosha-border bg-gradient-to-br from-kosha-surface to-kosha-surface-2">
+        <p className="text-caption text-ink-3 font-medium mb-1">Total earned</p>
         <div className="flex items-center justify-between gap-3">
-          <p className="font-bold tabular-nums text-income-text" style={{ fontSize: 28, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+          <p className="font-bold tabular-nums text-income-text" style={{ fontSize: 30, lineHeight: 1.08, letterSpacing: '-0.02em' }}>
             {fmt(totalIncome)}
           </p>
           {incomePct !== null && Math.abs(incomePct) >= 2 && (
@@ -91,7 +91,7 @@ export default function AnnualSummaryCard({ data, prevData, spendTrend, year }) 
         </div>
       </div>
 
-      <div className="flex items-center gap-4 px-5 py-4">
+      <div className="flex items-center gap-4 px-5 py-4 bg-white/60">
         <div className="relative shrink-0" style={{ width: ARC, height: ARC }}>
           <svg width={ARC} height={ARC} viewBox={`0 0 ${ARC} ${ARC}`}>
             <circle cx={ARC / 2} cy={ARC / 2} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
