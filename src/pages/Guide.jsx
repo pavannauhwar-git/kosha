@@ -436,19 +436,21 @@ export default function Guide() {
                   <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto">
                     <button
                       type="button"
-                      className="chip justify-center"
+                      className="h-9 px-3 rounded-pill border border-kosha-border bg-kosha-surface text-[12px] font-semibold text-ink-2 inline-flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                       onClick={() => moveFeature(-1)}
                       disabled={selectedIndex <= 0}
                     >
-                      <ArrowLeft size={13} /> Prev
+                      <ArrowLeft size={13} />
+                      <span className="truncate">Prev</span>
                     </button>
                     <button
                       type="button"
-                      className="chip justify-center"
+                      className="h-9 px-3 rounded-pill border border-kosha-border bg-kosha-surface text-[12px] font-semibold text-ink-2 inline-flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                       onClick={() => moveFeature(1)}
                       disabled={selectedIndex >= navigationPool.length - 1}
                     >
-                      Next <ArrowRight size={13} />
+                      <span className="truncate">Next</span>
+                      <ArrowRight size={13} />
                     </button>
                   </div>
                 </div>

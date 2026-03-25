@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { AlertCircle } from 'lucide-react'
 import { CashFlowChart, NetSavingsChart, ConfidenceTrendChart } from '../components/dashboard/AnalyticsCharts'
-import { useTransactions, useYearSummary } from '../hooks/useTransactions'
+import { useYearSummary } from '../hooks/useTransactions'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt } from '../lib/utils'
 import PageHeader from '../components/PageHeader'
@@ -27,7 +27,6 @@ export default function Analytics() {
   const yearRef = useRef(null)
 
   const { data, loading } = useYearSummary(year)
-  const { data: txns = [] } = useTransactions({ limit: 500 })
   const { data: prevData } = useYearSummary(year - 1)
   const { rows: reconciliationRows } = useReconciliationReviews()
 
@@ -107,60 +106,6 @@ export default function Analytics() {
     () => calculateConfidenceTrend(reconciliationRows, 30),
     [reconciliationRows]
   )
-
-  const weeklyDigest = useMemo(() => {
-    const now = new Date()
-    const dayMs = 24 * 60 * 60 * 1000
-
-    const last7Start = now.getTime() - (7 * dayMs)
-    const prev7Start = now.getTime() - (14 * dayMs)
-
-    const inLast7 = txns.filter((row) => {
-      const ts = new Date(row?.date || row?.created_at || 0).getTime()
-      return Number.isFinite(ts) && ts >= last7Start && ts <= now.getTime()
-    })
-    const inPrev7 = txns.filter((row) => {
-      const ts = new Date(row?.date || row?.created_at || 0).getTime()
-      return Number.isFinite(ts) && ts >= prev7Start && ts < last7Start
-    })
-
-    const spendLast7 = inLast7
-      .filter((row) => row?.type === 'expense')
-      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-    const spendPrev7 = inPrev7
-      .filter((row) => row?.type === 'expense')
-      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-
-    const incomeLast7 = inLast7
-      .filter((row) => row?.type === 'income' && !row?.is_repayment)
-      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-    const incomePrev7 = inPrev7
-      .filter((row) => row?.type === 'income' && !row?.is_repayment)
-      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-
-    const categoryTotals = new Map()
-    for (const row of inLast7) {
-      if (row?.type !== 'expense') continue
-      const key = String(row?.category || 'other')
-      categoryTotals.set(key, (categoryTotals.get(key) || 0) + Number(row?.amount || 0))
-    }
-
-    const topCategory = [...categoryTotals.entries()].sort((a, b) => b[1] - a[1])[0] || null
-
-    const spendDelta = spendLast7 - spendPrev7
-    const incomeDelta = incomeLast7 - incomePrev7
-
-    return {
-      spendLast7,
-      spendPrev7,
-      incomeLast7,
-      incomePrev7,
-      spendDelta,
-      incomeDelta,
-      topCategory,
-      hasSignals: inLast7.length > 0 || inPrev7.length > 0,
-    }
-  }, [txns])
 
   return (
     <div className="page">
@@ -260,37 +205,6 @@ export default function Analytics() {
           </motion.div>
 
           <ConfidenceTrendChart trendData={confidenceTrend} />
-
-          {weeklyDigest.hasSignals && (
-            <motion.div
-              whileHover={{ y: -1 }}
-              transition={{ duration: 0.14 }}
-              className="card p-4"
-            >
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div>
-                  <p className="section-label">What changed this week</p>
-                  <p className="text-caption text-ink-3 mt-0.5">7-day vs previous 7-day digest</p>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${weeklyDigest.spendDelta <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-                  {weeklyDigest.spendDelta <= 0 ? 'Spending cooled' : 'Spending up'}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-                <StatMini label="Spend (7d)" value={fmt(weeklyDigest.spendLast7)} tone="text-expense-text" />
-                <StatMini label="Spend delta" value={`${weeklyDigest.spendDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.spendDelta))}`} tone={weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'} />
-                <StatMini label="Income (7d)" value={fmt(weeklyDigest.incomeLast7)} tone="text-income-text" />
-                <StatMini label="Income delta" value={`${weeklyDigest.incomeDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.incomeDelta))}`} tone={weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'} />
-              </div>
-
-              {weeklyDigest.topCategory && (
-                <p className="text-[11px] text-ink-3 mt-1">
-                  Top spend category this week: <span className="font-semibold text-ink-2">{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
-                </p>
-              )}
-            </motion.div>
-          )}
 
           <TopExpensesPodium top5={top5} year={year} />
 

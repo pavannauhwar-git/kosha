@@ -482,7 +482,7 @@ export default function Reconciliation() {
         )}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-5">
+      <div className="grid grid-cols-3 gap-2 mb-5 md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
         {REVIEW_STATE_FILTERS.map((chip) => {
           const active = chip.id === reviewStateFilter
           const count = reviewCounts[chip.id] || 0
@@ -495,7 +495,7 @@ export default function Reconciliation() {
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.12 }}
               aria-pressed={active}
-              className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center gap-1.5`}
+              className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center justify-center gap-1.5 min-w-0 w-full text-[11px] px-2.5 py-2`}
             >
               {chip.label}
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
@@ -506,7 +506,7 @@ export default function Reconciliation() {
         })}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-5">
+      <div className="grid grid-cols-2 gap-2 mb-5 md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
         {FILTERS.map((chip) => {
           const active = chip.id === filter
           const count = qualityCounts[chip.id] || 0
@@ -519,7 +519,7 @@ export default function Reconciliation() {
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.12 }}
               aria-pressed={active}
-              className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center gap-1.5`}
+              className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center justify-center gap-1.5 min-w-0 w-full text-[11px] px-2.5 py-2`}
             >
               {chip.label}
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
