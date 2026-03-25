@@ -14,6 +14,9 @@ import { downloadCsv, toCsv } from '../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
+import EmptyState from '../components/common/EmptyState'
+import FilterRow from '../components/common/FilterRow'
+import AppToast from '../components/common/AppToast'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
@@ -328,21 +331,21 @@ export default function Bills() {
       )}
 
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="flex gap-2 mb-6">
+      <FilterRow className="mb-6">
         {[
           { id: 'pending', label: `Pending (${visiblePending.length})` },
           { id: 'paid', label: `Paid (${visiblePaid.length})` },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 py-3 rounded-card text-sm font-semibold border transition-all
+            className={`chip-control h-10 px-4 min-w-[140px] sm:flex-1 text-[12px]
               ${tab === t.id
                 ? 'bg-brand-container text-brand-on border-brand-container'
-                : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
+                : 'chip-control-muted text-ink-2'}`}
           >
             {t.label}
           </button>
         ))}
-      </div>
+      </FilterRow>
 
       {loading ? (
         <SkeletonLayout
@@ -355,7 +358,7 @@ export default function Bills() {
           ]}
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
 
           {/* ── Pending empty state ── */}
           {tab === 'pending' && visiblePending.length === 0 && (
@@ -384,9 +387,13 @@ export default function Bills() {
           )}
 
           {tab === 'paid' && visiblePaid.length === 0 && (
-            <div className="card p-6 text-center">
-              <p className="text-ink-2 text-sm">No paid bills yet.</p>
-            </div>
+            <EmptyState
+              className="py-8"
+              title="No paid bills yet"
+              description="Bills you mark as paid will show up here for history and tracking."
+              actionLabel="View pending"
+              onAction={() => setTab('pending')}
+            />
           )}
 
           {/* ── Bill cards ── */}
@@ -404,7 +411,7 @@ export default function Bills() {
                 )}
                 <div
                   id={`bill-${bill.id}`}
-                  className={`${shadow} p-4 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
+                  className={`${shadow} p-3.5 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -416,7 +423,7 @@ export default function Bills() {
                           {bill.description}
                         </p>
                       </div>
-                      <p className="text-xl font-bold amt-expense mb-2">{fmt(+bill.amount)}</p>
+                      <p className="text-lg font-bold amt-expense mb-2">{fmt(+bill.amount)}</p>
                       <div className="flex items-center gap-2 flex-wrap">
                         {tab === 'pending' ? (
                           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
@@ -568,28 +575,7 @@ export default function Bills() {
         <Plus size={28} weight="bold" color="white" />
       </button>
 
-      {/* Error toast — shown when addLiability fails after the sheet has closed */}
-      <AnimatePresence>
-        {errToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-32 left-4 right-4 md:left-[236px] md:bottom-8 z-50
-                   flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
-          >
-            <span className="text-[13px] font-medium flex-1">{errToast}</span>
-            <button
-              onClick={() => setErrToast(null)}
-              className="text-white opacity-60 text-xs font-semibold shrink-0 px-2 py-1
-                     rounded-pill border border-white/20 active:opacity-100"
-            >
-              Dismiss
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AppToast message={errToast} onDismiss={() => setErrToast(null)} />
 
     </div>
   )

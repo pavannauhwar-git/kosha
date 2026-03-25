@@ -286,7 +286,7 @@ export default function Guide() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`chip whitespace-nowrap ${active ? 'chip-active shadow-card' : ''}`}
+                  className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
                 >
                   {tab.label}
                 </button>

@@ -1,9 +1,12 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight } from 'lucide-react'
+import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
+import EmptyState from '../components/common/EmptyState'
+import FilterRow from '../components/common/FilterRow'
+import AppToast from '../components/common/AppToast'
 import { CATEGORIES, getCategoriesForType } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
@@ -126,6 +129,7 @@ export default function Transactions() {
   const groups = useMemo(() => groupByDate(data), [data])
   const hasMore = useMemo(() => total > data.length, [total, data.length])
   const focusTxnId = searchParams.get('focus')
+  const hasActiveFilters = typeFilter !== 'all' || !!catFilter || datePreset !== 'all' || !!debouncedSearch
 
   useEffect(() => {
     try {
@@ -320,14 +324,13 @@ export default function Transactions() {
       </div>
 
       {/* Filter chips */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-none pb-0.5">
+      <FilterRow className="mb-6">
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
-            className={`shrink-0 px-3.5 py-2 rounded-pill text-label font-semibold border
-                        transition-colors ${typeFilter === t.id
+            className={`chip-control ${typeFilter === t.id
               ? TYPE_CHIP[t.id]
-              : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+              : 'chip-control-muted'}`}
           >
             {t.label}
           </button>
@@ -335,23 +338,26 @@ export default function Transactions() {
 
         <button
           onClick={() => setShowCats(v => !v)}
-          className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-pill
-                      text-label font-semibold border transition-colors
+          className={`chip-control
                       ${catFilter
             ? 'bg-brand-container text-brand-on border-brand-container'
-            : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+            : 'chip-control-muted'}`}
         >
           <SlidersHorizontal size={12} />
           {catFilter ? CATEGORIES.find(c => c.id === catFilter)?.label || 'Category' : 'Category'}
           {catFilter && (
-            <span onClick={e => { e.stopPropagation(); handleCatFilter('') }}>
+            <button
+              type="button"
+              aria-label="Clear category filter"
+              onClick={e => { e.stopPropagation(); handleCatFilter('') }}
+            >
               <X size={11} />
-            </span>
+            </button>
           )}
         </button>
-      </div>
+      </FilterRow>
 
-      <div className="flex items-center gap-2 mb-5 overflow-x-auto scrollbar-none pb-0.5">
+      <FilterRow className="mb-5">
         {DATE_PRESETS.map((preset) => (
           <button
             key={preset.id}
@@ -360,16 +366,16 @@ export default function Transactions() {
               setDatePreset(preset.id)
               setDisplayCount(50)
             }}
-            className={`shrink-0 px-3 py-1.5 rounded-pill text-[11px] font-semibold border transition-colors ${
+            className={`chip-control ${
               datePreset === preset.id
                 ? 'bg-brand-container text-brand-on border-brand-container'
-                : 'bg-kosha-surface text-ink-3 border-kosha-border'
+                : 'chip-control-muted'
             }`}
           >
             {preset.label}
           </button>
         ))}
-      </div>
+      </FilterRow>
 
       {/* Category picker */}
       <AnimatePresence>
@@ -379,16 +385,15 @@ export default function Transactions() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="card mb-5 p-3 grid grid-cols-3 gap-2"
+            className="card mb-5 p-3 flex flex-wrap gap-2"
           >
             {filterCategories.map(c => (
               <button key={c.id}
                 onClick={() => { handleCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
-                className={`px-2 py-1.5 rounded-chip text-[11px] font-semibold text-center
-                            border transition-colors
+                className={`chip-control h-8 px-2.5
                             ${catFilter === c.id
                   ? 'bg-brand-container text-brand-on border-brand-container'
-                  : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+                              : 'chip-control-muted'}`}
               >
                 {c.label}
               </button>
@@ -398,35 +403,61 @@ export default function Transactions() {
       </AnimatePresence>
 
       {/* Transaction groups */}
-      <div className="space-y-5">
-        {groups.map(([dateKey, txns]) => {
-          const net = groupNet(txns)
-          return (
-            <div key={dateKey} className="list-card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5
-                              border-b border-kosha-border bg-kosha-surface-2">
-                <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
-                  {dateLabel(dateKey)}
-                </span>
-                <span className={`text-caption font-semibold
-                  ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                  {net >= 0 ? '+' : ''}{fmt(net)}
-                </span>
+      {groups.length === 0 ? (
+        <EmptyState
+          icon={<CheckCircle2 size={24} className="text-brand" />}
+          title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
+          description={
+            hasActiveFilters
+              ? 'Try broadening your filters or clearing search to see more results.'
+              : 'Start by adding your first transaction to build your timeline and insights.'
+          }
+          actionLabel={hasActiveFilters ? 'Clear filters' : 'Add transaction'}
+          onAction={hasActiveFilters
+            ? () => {
+                setTypeFilter('all')
+                setCatFilter('')
+                setDatePreset('all')
+                setSearch('')
+                setDisplayCount(50)
+              }
+            : () => {
+                setEditTxn(null)
+                setAddType('expense')
+                setShowAdd(true)
+              }}
+        />
+      ) : (
+        <div className="space-y-4">
+          {groups.map(([dateKey, txns]) => {
+            const net = groupNet(txns)
+            return (
+              <div key={dateKey} className="list-card overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5
+                                border-b border-kosha-border bg-kosha-surface-2">
+                  <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
+                    {dateLabel(dateKey)}
+                  </span>
+                  <span className={`text-caption font-semibold
+                    ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                    {net >= 0 ? '+' : ''}{fmt(net)}
+                  </span>
+                </div>
+                {txns.map((t, i) => (
+                  <TransactionItem
+                    key={t.id} txn={t}
+                    onDelete={handleDelete}
+                    onTap={handleTap}
+                    isLast={i === txns.length - 1}
+                    onDuplicate={handleDuplicate}
+                    isHighlighted={highlightedTxnId === t.id}
+                  />
+                ))}
               </div>
-              {txns.map((t, i) => (
-                <TransactionItem
-                  key={t.id} txn={t}
-                  onDelete={handleDelete}
-                  onTap={handleTap}
-                  isLast={i === txns.length - 1}
-                  onDuplicate={handleDuplicate}
-                  isHighlighted={highlightedTxnId === t.id}
-                />
-              ))}
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       {hasMore && (
         <button
@@ -438,22 +469,7 @@ export default function Transactions() {
         </button>
       )}
 
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-32 left-4 right-4 md:left-[236px] md:bottom-8 z-50
-                       flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
-          >
-            <span className="text-[13px] font-medium flex-1">{toast}</span>
-            <button onClick={() => setToast(null)}
-              className="text-white opacity-60 text-xs font-semibold">Dismiss</button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AppToast message={toast} onDismiss={() => setToast(null)} />
 
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={24} className="text-white" />

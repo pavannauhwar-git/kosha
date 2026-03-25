@@ -9,6 +9,8 @@ import PageHeader from '../components/PageHeader'
 import { MONTH_SHORT } from '../lib/constants'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
+import EmptyState from '../components/common/EmptyState'
+import SectionHeader from '../components/common/SectionHeader'
 import AnnualSummaryCard from '../components/analytics/AnnualSummaryCard'
 import YoYCards from '../components/analytics/YoYCards'
 import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
@@ -201,10 +203,11 @@ export default function Analytics() {
             transition={{ duration: 0.14 }}
             className="card p-4"
           >
-            <div className="flex items-center justify-between mb-3">
-              <p className="section-label">Reconciliation confidence</p>
-              <span className="text-caption text-ink-4">Last 7 days signal</span>
-            </div>
+            <SectionHeader
+              className="mb-3"
+              title="Reconciliation confidence"
+              rightText="Last 7 days signal"
+            />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
               <StatMini label="Linked" value={reconciliationStats.linked} tone="text-income-text" />
               <StatMini label="Mismatch reports" value={reconciliationStats.rejected} tone="text-expense-text" />
@@ -238,10 +241,11 @@ export default function Analytics() {
 
           {strategicRecommendations.length > 0 && (
             <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="section-label">So what now?</p>
-                <span className="text-caption text-ink-4">Actionable next steps</span>
-              </div>
+              <SectionHeader
+                className="mb-2"
+                title="So what now?"
+                rightText="Actionable next steps"
+              />
               <div className="space-y-2">
                 {strategicRecommendations.map((line) => (
                   <p key={line} className="text-[12px] text-ink-2 leading-relaxed">
@@ -268,9 +272,15 @@ export default function Analytics() {
           )}
 
           {!data?.totalIncome && !data?.totalExpense && (
-            <div className="card p-8 text-center">
-              <p className="text-body text-ink-3">No data for {year}.</p>
-            </div>
+            <EmptyState
+              title={`No data for ${year}`}
+              description="Pick a different year or add transactions to unlock yearly analytics and trends."
+              actionLabel="Go to current year"
+              onAction={() => {
+                const now = new Date()
+                setYear(now.getFullYear())
+              }}
+            />
           )}
 
         </motion.div>

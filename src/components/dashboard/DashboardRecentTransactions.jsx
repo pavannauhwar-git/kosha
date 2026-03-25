@@ -1,7 +1,8 @@
 import { memo, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import TransactionItem from '../TransactionItem'
+import EmptyState from '../common/EmptyState'
 
 /**
  * DashboardRecentTransactions
@@ -30,10 +31,14 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
         <div className="flex items-center justify-between mb-3">
           <p className="section-label">Latest</p>
         </div>
-        <div className="card p-8 text-center">
-          <p className="text-body text-ink-3">No transactions yet.</p>
-          <p className="text-label text-ink-4 mt-1">Tap + to add your first one.</p>
-        </div>
+        <EmptyState
+          className="py-8"
+          icon={<CheckCircle2 size={24} className="text-brand" />}
+          title="No transactions yet"
+          description="Your latest activity will appear here after you add your first transaction."
+          actionLabel="Go to transactions"
+          onAction={() => navigate('/transactions')}
+        />
       </div>
     )
   }

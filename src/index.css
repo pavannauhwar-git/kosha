@@ -58,6 +58,7 @@
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --nav-height: calc(88px + env(safe-area-inset-bottom, 0px));
+    --sticky-top-offset: calc(var(--safe-top) + 64px);
 
     /* ── Palette CSS variables ──────────────────────────────────────
        Keep in sync with src/lib/colors.js and tailwind.config.js
@@ -135,6 +136,12 @@
     @apply space-y-6 md:space-y-7;
   }
 
+  .sticky-toolbar {
+    @apply sticky z-10 -mx-1 px-1 py-2 bg-kosha-bg/95 backdrop-blur-sm border-y border-kosha-border;
+    top: var(--sticky-top-offset);
+    margin-bottom: 1.5rem;
+  }
+
   .card-md {
     @apply bg-kosha-surface rounded-card shadow-card-md;
   }
@@ -163,7 +170,7 @@
   }
 
   .list-row {
-    @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface transition-colors duration-100 cursor-pointer;
+    @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface transition-colors duration-150 cursor-pointer hover:bg-kosha-surface-2/60;
   }
 
   .list-row+.list-row {
@@ -194,6 +201,18 @@
 
   .chip-neutral {
     @apply bg-brand-container text-brand-on text-xs font-semibold px-2.5 py-1 rounded-pill;
+  }
+
+  .chip-control {
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3 rounded-pill text-[11px] font-semibold border transition-all duration-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
+  }
+
+  .chip-control-muted {
+    @apply chip-control bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2;
+  }
+
+  .chip-control-active {
+    @apply chip-control bg-brand-container text-brand-on border-brand-container;
   }
 
   /* -- Amount colours ──────────────────────────────────────────────── */
@@ -227,7 +246,15 @@
   }
 
   .btn-ghost {
-    @apply btn text-brand px-4 py-2;
+    @apply btn text-brand px-4 py-2 hover:bg-brand-container/40;
+  }
+
+  .btn-secondary {
+    @apply btn bg-kosha-surface text-ink-2 border border-kosha-border px-4 py-2 hover:bg-kosha-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/20;
+  }
+
+  .btn-secondary-sm {
+    @apply btn-secondary h-8 px-3 text-[11px] font-semibold;
   }
 
   .btn-danger {

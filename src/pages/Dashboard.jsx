@@ -24,6 +24,7 @@ import DashboardPaceCard          from '../components/dashboard/DashboardPaceCar
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
 import DashboardActivityFeed      from '../components/dashboard/DashboardActivityFeed'
 import PageHeader                 from '../components/PageHeader'
+import AppToast from '../components/common/AppToast'
 import { useFinancialEvents } from '../hooks/useFinancialEvents'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 
@@ -347,7 +348,7 @@ export default function Dashboard() {
   return (
     <div className="page">
       <PageHeader title="Dashboard" />
-      <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack pt-0.5 md:pt-0">
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
@@ -386,7 +387,7 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => navigate(todayFocus.secondaryRoute)}
-                className="btn-ghost h-9 px-3 text-[12px] justify-center"
+                className="btn-secondary h-9 px-3 text-[12px] justify-center"
               >
                 {todayFocus.secondaryLabel}
               </button>
@@ -540,23 +541,7 @@ export default function Dashboard() {
 
       </motion.div>
 
-      {/* ── Error toast ───────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-32 left-4 right-4 md:left-[236px] md:bottom-8 z-50
-                       flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
-          >
-            <span className="text-[13px] font-medium flex-1">{toast}</span>
-            <button onClick={() => setToast(null)}
-              className="text-white opacity-60 text-xs font-semibold">Dismiss</button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AppToast message={toast} onDismiss={() => setToast(null)} />
 
       {/* FAB */}
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>

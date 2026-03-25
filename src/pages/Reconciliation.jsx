@@ -4,6 +4,9 @@ import { AlertCircle, ArrowRight, CheckCircle2, History, Link2, RotateCcw, Shiel
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
+import EmptyState from '../components/common/EmptyState'
+import FilterRow from '../components/common/FilterRow'
+import AppToast from '../components/common/AppToast'
 import { useTransactions, updateTransaction } from '../hooks/useTransactions'
 import {
   clearLearnedReconciliationAliases,
@@ -297,12 +300,12 @@ export default function Reconciliation() {
     <div className="page">
       <PageHeader title="Reconciliation" />
 
-      <div className="card p-4 mb-5">
+      <div className="card p-4 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-ink">Data quality workspace</p>
+            <p className="text-sm font-semibold text-ink">Review and reconcile</p>
             <p className="text-caption text-ink-3 mt-1">
-              Review high-signal entries before month close to improve dashboard trust and budget accuracy.
+              Resolve high-signal issues before month close so reports, budgets, and trends stay trustworthy.
             </p>
           </div>
           <div className="w-10 h-10 rounded-full bg-brand-container text-brand flex items-center justify-center shrink-0">
@@ -338,12 +341,12 @@ export default function Reconciliation() {
         </div>
       </div>
 
-      <div className="card p-4 mb-5">
+      <div className="card p-4 mb-6">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
-            <p className="text-sm font-semibold text-ink">Statement-style matching</p>
+            <p className="text-sm font-semibold text-ink">Match bank statements</p>
             <p className="text-caption text-ink-3 mt-1">
-              Paste lines in Date, Description, Amount format. Kosha will propose likely transaction links.
+              Paste rows in date, description, amount format. Kosha will suggest likely transaction matches.
             </p>
             <p className="text-[11px] text-ink-4 mt-1">
               Learned aliases: {learnedAliasCount}
@@ -354,7 +357,7 @@ export default function Reconciliation() {
               type="button"
               onClick={() => { void resetLearnedAliases() }}
               disabled={learnedAliasCount === 0 || resettingAliases || reviewTableUnavailable}
-              className="btn-ghost h-9 px-3 text-[12px]"
+              className="btn-secondary h-9 px-3 text-[12px]"
             >
               <RotateCcw size={13} />
               {resettingAliases ? 'Resetting' : 'Reset aliases'}
@@ -465,11 +468,11 @@ export default function Reconciliation() {
 
         {(aliasQualities.length > 0 || demotedMerchants.size > 0) && (
           <div className="mt-4 border-t border-kosha-border pt-3">
-            <p className="text-[12px] font-semibold text-ink-2 mb-2">Alias quality & health</p>
+            <p className="text-[12px] font-semibold text-ink-2 mb-2">Merchant recognition</p>
             
             {aliasQualities.length > 0 && (
               <div className="mb-3">
-                <p className="text-[11px] text-ink-3 mb-1.5">Top performers (30-day)</p>
+                <p className="text-[11px] text-ink-3 mb-1.5">Top merchant matches (30-day)</p>
                 <div className="space-y-1">
                   {aliasQualities.slice(0, 3).map((alias) => (
                     <div key={alias.merchant} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-1.5">
@@ -492,7 +495,7 @@ export default function Reconciliation() {
 
             {demotedMerchants.size > 0 && (
               <div>
-                <p className="text-[11px] text-ink-3 mb-1.5">Currently auto-demoted (≥2 rejections)</p>
+                <p className="text-[11px] text-ink-3 mb-1.5">Temporarily skipped merchants (2+ mismatches)</p>
                 <div className="space-y-1">
                   {Array.from(demotedMerchants).slice(0, 3).map((merchant) => {
                     const inCooldown = merchantsInCooldown.has(merchant)
@@ -503,8 +506,8 @@ export default function Reconciliation() {
                         <p className={`text-[11px] truncate ${inCooldown ? 'text-warning-text' : 'text-expense-text'}`}>{merchant}</p>
                         <p className="text-[10px] text-ink-4 mt-0.5">
                           {inCooldown 
-                            ? 'In cooldown — cannot re-learn for 14 days after demotion'
-                            : 'Cooldown expired — can be re-linked to start learning again'}
+                            ? 'Cooldown active. Matching is paused for 14 days after repeated mismatches.'
+                            : 'Cooldown completed. This merchant can be learned again from new matches.'}
                         </p>
                       </div>
                     )
@@ -519,12 +522,12 @@ export default function Reconciliation() {
         )}
       </div>
 
-      <div className="sticky top-[calc(env(safe-area-inset-top,0px)+62px)] z-10 mb-5 -mx-1 px-1 py-2 bg-kosha-bg/95 backdrop-blur-sm border-y border-kosha-border">
+      <div className="sticky-toolbar">
         <p className="text-[11px] text-ink-3 px-1 mb-2">
           View: {REVIEW_STATE_FILTERS.find((item) => item.id === reviewStateFilter)?.label || 'In queue'} · {FILTERS.find((item) => item.id === filter)?.label || 'All'}
         </p>
 
-        <div className="grid grid-cols-3 gap-2 mb-2 md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
+        <FilterRow className="mb-2">
           {REVIEW_STATE_FILTERS.map((chip) => {
             const active = chip.id === reviewStateFilter
             const count = reviewCounts[chip.id] || 0
@@ -537,7 +540,7 @@ export default function Reconciliation() {
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.12 }}
                 aria-pressed={active}
-                className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center justify-center gap-1.5 min-w-0 w-full text-[11px] px-2.5 py-2`}
+                className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
               >
                 {chip.label}
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
@@ -546,9 +549,9 @@ export default function Reconciliation() {
               </motion.button>
             )
           })}
-        </div>
+        </FilterRow>
 
-        <div className="grid grid-cols-2 gap-2 md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
+        <FilterRow>
           {FILTERS.map((chip) => {
             const active = chip.id === filter
             const count = qualityCounts[chip.id] || 0
@@ -561,7 +564,7 @@ export default function Reconciliation() {
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.12 }}
                 aria-pressed={active}
-                className={`chip ${active ? 'chip-active shadow-card' : ''} inline-flex items-center justify-center gap-1.5 min-w-0 w-full text-[11px] px-2.5 py-2`}
+                className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
               >
                 {chip.label}
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
@@ -570,7 +573,7 @@ export default function Reconciliation() {
               </motion.button>
             )
           })}
-        </div>
+        </FilterRow>
       </div>
 
       {loading ? (
@@ -582,23 +585,17 @@ export default function Reconciliation() {
           ]}
         />
       ) : visibleItems.length === 0 ? (
-        <div className="card p-8 text-center">
-          <CheckCircle2 size={22} className="mx-auto text-income-text mb-2" />
-          <p className="text-body text-ink-2">
-            {reviewStateFilter === 'queue'
-              ? 'No pending reconciliation items.'
-              : reviewStateFilter === 'linked'
-                ? 'No linked reconciliation items found.'
-                : 'No reviewed reconciliation items found.'}
-          </p>
-          <p className="text-caption text-ink-3 mt-1">
-            {reviewStateFilter === 'queue'
-              ? 'Everything in your review queue is clean.'
-              : 'Try switching filters or categories to inspect more items.'}
-          </p>
-        </div>
+        <EmptyState
+          icon={<CheckCircle2 size={24} className="text-income-text" />}
+          title={reviewStateFilter === 'queue' ? 'Queue is clear' : 'Nothing in this view'}
+          description={
+            reviewStateFilter === 'queue'
+              ? 'No pending items right now. Your recent data quality checks look good.'
+              : 'Try switching view or quality filters to inspect more items.'
+          }
+        />
       ) : (
-        <motion.div layout className="space-y-3">
+        <motion.div layout className="space-y-2.5">
           <AnimatePresence initial={false} mode="popLayout">
             {visibleItems.map((item) => {
             const txn = item.txn
@@ -612,7 +609,7 @@ export default function Reconciliation() {
                 exit={{ opacity: 0, y: -8, scale: 0.99 }}
                 whileHover={{ y: -1 }}
                 transition={{ duration: 0.2 }}
-                className="card p-4"
+                className="card p-3.5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -641,10 +638,13 @@ export default function Reconciliation() {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 mt-3">
-                  {item.flags.missingCategory && txn.type === 'expense' && (
+                {item.flags.missingCategory && txn.type === 'expense' && (
+                  <div className="mt-3 pt-3 border-t border-kosha-border">
+                    <label className="text-[11px] font-semibold text-ink-3 block mb-1.5">
+                      Set category
+                    </label>
                     <select
-                      className="input h-9 text-sm max-w-[220px]"
+                      className="input h-9 text-sm w-full md:max-w-[240px]"
                       defaultValue=""
                       onChange={(e) => {
                         const value = e.target.value
@@ -655,16 +655,18 @@ export default function Reconciliation() {
                       }}
                       disabled={disabled}
                     >
-                      <option value="">Set category…</option>
+                      <option value="">Choose category…</option>
                       {EXPENSE_CATEGORIES.map((cat) => (
                         <option key={cat.id} value={cat.id}>{cat.label}</option>
                       ))}
                     </select>
-                  )}
+                  </div>
+                )}
 
+                <div className="flex flex-wrap items-center justify-end gap-2 mt-3">
                   <button
                     type="button"
-                    className="btn-ghost h-9 px-3"
+                    className="btn-secondary h-9 px-3"
                     disabled={disabled}
                     onClick={() => { void markReviewed(txn.id) }}
                   >
@@ -678,7 +680,7 @@ export default function Reconciliation() {
         </motion.div>
       )}
 
-      <AnimateToast message={toast} />
+      <AppToast message={toast} onDismiss={() => setToast(null)} />
     </div>
   )
 }
@@ -689,26 +691,6 @@ function Metric({ label, value, tone = 'text-ink' }) {
       <p className="text-caption text-ink-3">{label}</p>
       <p className={`text-lg font-bold tabular-nums ${tone}`}>{value}</p>
     </div>
-  )
-}
-
-function AnimateToast({ message }) {
-  return (
-    <AnimatePresence>
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 16 }}
-          transition={{ duration: 0.18 }}
-          className="fixed bottom-[calc(88px+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-50"
-        >
-          <div className="rounded-full bg-ink text-white text-sm px-4 py-2 shadow-lg">
-            {message}
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
   )
 }
 
@@ -782,7 +764,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
             <button
               type="button"
               onClick={() => { if (best?.txn?.id) void onLink(best.txn.id, entry.line) }}
-              className="btn-ghost h-8 px-3"
+              className="btn-secondary-sm"
             >
               {isLinked ? 'Linked' : 'Mark linked'}
             </button>
@@ -790,7 +772,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
               <button
                 type="button"
                 onClick={() => { if (best?.txn?.id) void onReject(best.txn.id, entry.line) }}
-                className="btn-ghost h-8 px-3"
+                className="btn-secondary-sm text-expense-text"
               >
                 Report mismatch
               </button>

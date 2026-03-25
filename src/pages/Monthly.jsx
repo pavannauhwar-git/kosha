@@ -13,6 +13,8 @@ import { CATEGORIES } from '../lib/categories'
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
+import EmptyState from '../components/common/EmptyState'
+import SectionHeader from '../components/common/SectionHeader'
 import BudgetSheet from '../components/monthly/BudgetSheet'
 import MonthHeroCard from '../components/monthly/MonthHeroCard'
 import BreakdownCard from '../components/monthly/BreakdownCard'
@@ -295,14 +297,14 @@ export default function Monthly() {
         }}
       />
 
-      <div className="mb-6">
+      <div className="mb-5 md:mb-6">
         <MonthHeroCard month={month} year={year} data={data} />
       </div>
 
       <button
         type="button"
         onClick={() => navigate('/reconciliation')}
-        className="card p-4 mb-6 w-full text-left"
+        className="card p-4 mb-5 md:mb-6 w-full text-left"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -319,16 +321,13 @@ export default function Monthly() {
         </div>
       </button>
 
-      <div className="card p-4 mb-6">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div>
-            <p className="section-label">Month-close checklist</p>
-            <p className="text-caption text-ink-3 mt-0.5">Resolve these to trust month-end outcomes.</p>
-          </div>
-          <span className="text-xs px-2 py-1 rounded-full font-semibold bg-brand-container text-brand-on">
-            Action plan
-          </span>
-        </div>
+      <div className="card p-4 mb-5 md:mb-6">
+        <SectionHeader
+          className="mb-3"
+          title="Month-close checklist"
+          subtitle="Resolve these to trust month-end outcomes."
+          badge={{ label: 'Action plan', className: 'bg-brand-container text-brand-on' }}
+        />
 
         <div className="space-y-2.5">
           {[monthlyChecklist.reconciliation, monthlyChecklist.bills, monthlyChecklist.budgets].map((item) => (
@@ -343,7 +342,7 @@ export default function Monthly() {
                 <button
                   type="button"
                   onClick={() => navigate(item.route)}
-                  className="btn-ghost h-8 px-3 text-[11px] shrink-0"
+                  className="btn-secondary-sm shrink-0"
                 >
                   {item.cta}
                 </button>
@@ -372,15 +371,15 @@ export default function Monthly() {
           <BreakdownCard earned={earned} spent={spent} invested={invested} />
 
           <div className="card p-4">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
-              <div>
-                <p className="section-label">Month close summary</p>
-                <p className="text-caption text-ink-3 mt-0.5">Outcome projection and runway</p>
-              </div>
-              <span className={`text-xs px-2 py-1 rounded-full font-semibold self-start ${monthCloseSummary.health === 'healthy' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-                {monthCloseSummary.statusLabel}
-              </span>
-            </div>
+            <SectionHeader
+              className="mb-3"
+              title="Month close summary"
+              subtitle="Outcome projection and runway"
+              badge={{
+                label: monthCloseSummary.statusLabel,
+                className: monthCloseSummary.health === 'healthy' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text',
+              }}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
               <div className="rounded-card bg-kosha-surface p-3 border border-kosha-border">
@@ -404,19 +403,19 @@ export default function Monthly() {
 
           {budgetVariance.hasBudgets && (
             <div className="card p-4">
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <div>
-                  <p className="section-label">Budget variance</p>
-                  <p className="text-caption text-ink-3 mt-0.5">
-                    {budgetVariance.projectedDelta >= 0
-                      ? `${fmt(Math.abs(budgetVariance.projectedDelta))} projected buffer`
-                      : `${fmt(Math.abs(budgetVariance.projectedDelta))} projected overshoot`}
-                  </p>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${budgetVariance.projectedDelta >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}>
-                  {budgetVariance.projectedDelta >= 0 ? 'On trajectory' : 'Needs correction'}
-                </span>
-              </div>
+              <SectionHeader
+                className="mb-3"
+                title="Budget variance"
+                subtitle={
+                  budgetVariance.projectedDelta >= 0
+                    ? `${fmt(Math.abs(budgetVariance.projectedDelta))} projected buffer`
+                    : `${fmt(Math.abs(budgetVariance.projectedDelta))} projected overshoot`
+                }
+                badge={{
+                  label: budgetVariance.projectedDelta >= 0 ? 'On trajectory' : 'Needs correction',
+                  className: budgetVariance.projectedDelta >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text',
+                }}
+              />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
                 <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
@@ -477,10 +476,16 @@ export default function Monthly() {
           )}
 
           {earned === 0 && spent === 0 && invested === 0 && (
-            <div className="card p-8 text-center">
-              <p className="text-body text-ink-2">No data for this month.</p>
-              <p className="text-label text-ink-3 mt-1">Navigate to a month with transactions.</p>
-            </div>
+            <EmptyState
+              title="No data for this month"
+              description="Try another month or add transactions to start seeing month-close insights and budget tracking."
+              actionLabel="Go to current month"
+              onAction={() => {
+                const current = new Date()
+                setYear(current.getFullYear())
+                setMonth(current.getMonth() + 1)
+              }}
+            />
           )}
         </motion.div>
       )}
