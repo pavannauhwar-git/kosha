@@ -1,33 +1,14 @@
 /**
- * AddTransactionSheet.jsx — Strict Server-Truth UI Contract
+ * AddTransactionSheet.jsx — Deferred Refetch UI Contract
  *
- * UI BLOCKING CONTRACT:
- *
- * The sheet must NOT call onClose() until the full mutation + refetch
- * Promise chain resolves. This is enforced by:
- *
- *   1. isSaving state disables all inputs and the submit button
- *      the moment the user taps "Save".
- *
- *   2. The save handler awaits addTransaction() / updateTransaction(),
- *      which themselves await the full invalidateCache() cycle before
- *      resolving (see useTransactions.js).
- *
- *   3. onClose() is called ONLY inside the try block AFTER the await
- *      resolves — never in a finally block, never before the server confirms.
- *
- *   4. On error, isSaving is reset to false so the user can retry.
- *
- * This means the user sees a spinner for 200-500ms after tapping save.
- * That is the correct and intentional UX for a financial application.
- * The dashboard, monthly summary, and running balance will all be accurate
- * the moment the sheet closes because the refetch has already completed.
+ * The sheet closes immediately after a confirmed DB write, then triggers
+ * query invalidation 300ms later in the background to avoid blocking motion.
  */
 
 import { useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, NotePencil, CaretRight, Sparkle } from '@phosphor-icons/react'
-import { addTransaction, updateTransaction } from '../hooks/useTransactions'
+import { addTransaction, updateTransaction, invalidateCache } from '../hooks/useTransactions'
 import CategoryIcon, { ICON_MAP } from './CategoryIcon'
 import {
   CATEGORIES,
@@ -354,8 +335,12 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         await addTransaction(payload)
       }
 
-      // Mutation includes cache invalidation; close only after fresh data is available.
       onClose()
+      setTimeout(() => {
+        void invalidateCache().catch((err) => {
+          console.warn('[Kosha] deferred transaction invalidate failed', err)
+        })
+      }, 300)
     } catch (e) {
       dispatch({
         type: 'SAVING_ERROR',
@@ -379,7 +364,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       <motion.div
         className="sheet-panel"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 380, damping: 32 } }}
+        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
         exit={{ y: '100%', transition: { duration: 0.22 } }}
         onAnimationComplete={() => amountRef.current?.focus()}
       >

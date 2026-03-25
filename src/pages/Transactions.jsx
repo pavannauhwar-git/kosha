@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2 } from 'lucide-react'
-import { useTransactions, deleteTransaction, useDebounce } from '../hooks/useTransactions'
+import { useTransactions, deleteTransaction, invalidateCache, useDebounce } from '../hooks/useTransactions'
 import TransactionItem from '../components/TransactionItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import EmptyState from '../components/common/EmptyState'
@@ -168,6 +168,11 @@ export default function Transactions() {
     if (!id) return
     try {
       await deleteTransaction(id)
+      setTimeout(() => {
+        void invalidateCache().catch((err) => {
+          console.warn('[Kosha] deferred transactions invalidate failed', err)
+        })
+      }, 300)
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)
@@ -437,7 +442,7 @@ export default function Transactions() {
             return (
               <div key={dateKey} className="list-card overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3
-                                border-b border-kosha-border bg-kosha-surface-2">
+                                border-b border-kosha-border bg-kosha-surface-container">
                   <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
                     {dateLabel(dateKey)}
                   </span>
@@ -466,7 +471,7 @@ export default function Transactions() {
         <button
           onClick={() => setDisplayCount(n => n + 50)}
           className="w-full py-3.5 text-label font-semibold text-brand text-center
-                     bg-kosha-surface border border-kosha-border rounded-card mt-4"
+                     bg-kosha-surface-variant border border-kosha-border rounded-card mt-4 active:scale-[0.97] transition-transform"
         >
           Show more ({total - data.length} remaining)
         </button>

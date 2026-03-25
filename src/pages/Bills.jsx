@@ -7,7 +7,9 @@ import {
   addLiability,
   markPaid,
   deleteLiability,
+  invalidateLiabilityCache,
 } from '../hooks/useLiabilities'
+import { invalidateCache as invalidateTransactionCache } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 import { downloadCsv, toCsv } from '../lib/csv'
@@ -37,9 +39,10 @@ export default function Bills() {
   const [formErr, setFormErr] = useState('')
   const [errToast, setErrToast] = useState(null)
   const [addSaving, setAddSaving] = useState(false)
+  const [hiddenBillIds, setHiddenBillIds] = useState(() => new Set())
 
-  const visiblePending = pending
-  const visiblePaid = paid
+  const visiblePending = useMemo(() => pending.filter((bill) => !hiddenBillIds.has(bill.id)), [pending, hiddenBillIds])
+  const visiblePaid = useMemo(() => paid.filter((bill) => !hiddenBillIds.has(bill.id)), [paid, hiddenBillIds])
 
   const totalPending = useMemo(() => visiblePending.reduce((s, b) => s + +b.amount, 0), [visiblePending])
   const dueSoonAmount = useMemo(() => visiblePending
@@ -188,6 +191,11 @@ export default function Bills() {
       setShowAdd(false)
       setAddSaving(false)
       setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
+      setTimeout(() => {
+        void invalidateLiabilityCache().catch((err) => {
+          console.warn('[Kosha] deferred liabilities invalidate failed', err)
+        })
+      }, 300)
     } catch (e) {
       setAddSaving(false)
       setErrToast(e.message || 'Could not add bill. Check your connection.')
@@ -200,6 +208,14 @@ export default function Bills() {
     try {
       await markPaid(bill)
       setPayingId(null)
+      setTimeout(() => {
+        void Promise.all([
+          invalidateLiabilityCache(),
+          invalidateTransactionCache(),
+        ]).catch((err) => {
+          console.warn('[Kosha] deferred markPaid invalidate failed', err)
+        })
+      }, 300)
     } catch (e) {
       setPayingId(null)
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
@@ -209,9 +225,24 @@ export default function Bills() {
   async function handleDelete(id) {
     if (!id || payingId || deletingId) return
     setDeletingId(id)
+    setHiddenBillIds((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
     try {
       await deleteLiability(id)
+      setTimeout(() => {
+        void invalidateLiabilityCache().catch((err) => {
+          console.warn('[Kosha] deferred delete invalidate failed', err)
+        })
+      }, 300)
     } catch (e) {
+      setHiddenBillIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
       setErrToast(e.message || 'Could not delete bill. Check your connection.')
     } finally {
       setDeletingId(null)
@@ -257,7 +288,7 @@ export default function Bills() {
       <div className="mb-5 grid grid-cols-2 gap-2">
         <button
           onClick={() => setTab('pending')}
-          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+          className={`h-12 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
             ${tab === 'pending'
               ? 'bg-warning text-white shadow-card'
               : 'bg-warning/15 text-warning-text border border-warning/20'}`}
@@ -266,7 +297,7 @@ export default function Bills() {
         </button>
         <button
           onClick={() => setTab('paid')}
-          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+          className={`h-12 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
             ${tab === 'paid'
               ? 'bg-income-text text-white shadow-card'
               : 'bg-income-bg text-income-text border border-income-border'}`}
@@ -382,7 +413,7 @@ export default function Bills() {
               <button
                 onClick={() => setShowAdd(true)}
                 className="px-6 py-2.5 rounded-pill bg-warning text-white text-label font-semibold
-                           active:scale-95 transition-transform duration-75"
+                           active:scale-[0.97] transition-transform duration-75"
               >
                 Add a bill
               </button>
@@ -450,7 +481,7 @@ export default function Bills() {
                           disabled={!!payingId || !!deletingId}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-card
                                      bg-income-bg text-income-text text-xs font-semibold
-                                     border border-income-border active:scale-[0.98] transition-all duration-100
+                                     border border-income-border min-h-12 active:scale-[0.97] transition-all duration-100
                                      disabled:opacity-60"
                         >
                           {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
@@ -462,7 +493,7 @@ export default function Bills() {
                         disabled={!!payingId || !!deletingId}
                         className="flex items-center justify-center px-3 py-2 rounded-card
                                    bg-expense-bg text-expense-text text-xs font-semibold
-                                   border border-expense-border active:scale-[0.98] transition-all duration-100
+                                   border border-expense-border min-h-12 active:scale-[0.97] transition-all duration-100
                                    disabled:opacity-60"
                       >
                         {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
@@ -535,7 +566,7 @@ export default function Bills() {
                   <button
                     onClick={() => setForm(f => ({ ...f, is_recurring: !f.is_recurring }))}
                     className={`flex items-center gap-2 px-3 py-2 rounded-card text-sm font-medium
-                                border transition-all
+                                border min-h-12 transition-all
                       ${form.is_recurring
                         ? 'bg-warning-bg text-warning-text border-warning-border'
                         : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
@@ -547,7 +578,7 @@ export default function Bills() {
                       {RECURRENCE.map(r => (
                         <button key={r}
                           onClick={() => setForm(f => ({ ...f, recurrence: r }))}
-                          className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
+                          className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize min-h-12 transition-all
                             ${form.recurrence === r
                               ? 'bg-warning-bg text-warning-text border-warning-border'
                               : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
@@ -563,7 +594,7 @@ export default function Bills() {
                   <button onClick={handleAdd}
                     disabled={addSaving}
                     className={`w-full py-4 rounded-card font-semibold transition-all
-                               ${addSaving ? 'bg-warning/70 text-white/90 scale-[0.99]' : 'bg-warning text-white active:scale-[0.99]'}`}>
+                               ${addSaving ? 'bg-warning/70 text-white/90 scale-[0.99]' : 'bg-warning text-white active:scale-[0.97]'}`}>
                     {addSaving ? 'Adding…' : 'Add Bill'}
                   </button>
                 </div>

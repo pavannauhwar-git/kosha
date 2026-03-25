@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 import { traceQuery } from '../lib/queryTrace'
 
-const EVENT_FRESH_WINDOW_MS = 60 * 1000
 const EVENT_COLUMNS = 'id, action, entity_type, entity_id, metadata, created_at'
 
 export function useFinancialEvents(limit = 10, options = {}) {
@@ -31,7 +30,6 @@ export function useFinancialEvents(limit = 10, options = {}) {
 
       return rows || []
     }),
-    staleTime: EVENT_FRESH_WINDOW_MS,
   })
 
   return {

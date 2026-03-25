@@ -25,7 +25,7 @@ export default function EmptyState({
             <button
               type="button"
               onClick={onAction}
-              className="px-6 py-2.5 rounded-pill bg-brand text-white text-label font-semibold active:scale-95 transition-transform duration-75"
+              className="px-6 py-2.5 rounded-pill bg-brand text-white text-label font-semibold active:scale-[0.97] transition-transform duration-75"
             >
               {actionLabel}
             </button>
@@ -35,7 +35,7 @@ export default function EmptyState({
             <button
               type="button"
               onClick={onSecondaryAction}
-              className="px-4 py-2.5 rounded-pill bg-kosha-surface border border-kosha-border text-label font-semibold text-ink-2 active:scale-95 transition-transform duration-75"
+              className="px-4 py-2.5 rounded-pill bg-kosha-surface border border-kosha-border text-label font-semibold text-ink-2 active:scale-[0.97] transition-transform duration-75"
             >
               {secondaryLabel}
             </button>

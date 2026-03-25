@@ -7,7 +7,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
-import { useTransactions, updateTransaction } from '../hooks/useTransactions'
+import { useTransactions, updateTransaction, invalidateCache } from '../hooks/useTransactions'
 import {
   clearLearnedReconciliationAliases,
   reportReconciliationFalsePositive,
@@ -270,6 +270,11 @@ export default function Reconciliation() {
     try {
       await updateTransaction(id, { category })
       await persistReview(id, 'reviewed')
+      setTimeout(() => {
+        void invalidateCache().catch((err) => {
+          console.warn('[Kosha] deferred reconciliation invalidate failed', err)
+        })
+      }, 300)
       setToast('Category updated and item reconciled.')
       setTimeout(() => setToast(null), 2600)
     } catch (error) {

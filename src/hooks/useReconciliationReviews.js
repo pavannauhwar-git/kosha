@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 
 const REVIEW_COLUMNS = 'transaction_id, status, statement_line, updated_at'
-const RECON_REVIEW_FRESH_MS = 60 * 1000
 
 function isMissingTableError(error) {
   const message = String(error?.message || '')
@@ -32,7 +31,6 @@ export function useReconciliationReviews(options = {}) {
 
       return { rows: rows || [], unavailable: false }
     },
-    staleTime: RECON_REVIEW_FRESH_MS,
   })
 
   const rows = data?.rows || []

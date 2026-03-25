@@ -24,6 +24,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
   const actionScale   = useTransform(x, [-PEEK_X * 0.4, -PEEK_X], [0.92, 1])
 
   const [deleting, setDeleting] = useState(false)
+  const [hidden, setHidden] = useState(false)
 
   const cat    = getCategory(txn.category)
   const investmentVehicle = txn.type === 'investment'
@@ -75,11 +76,13 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
 
   const handleDeleteTap = useCallback(async () => {
     setDeleting(true)
+    setHidden(true)
     animate(x, 0, { duration: 0.2 })
     if (navigator.vibrate) navigator.vibrate(10)
 
     if (!onDelete) {
       setDeleting(false)
+      setHidden(false)
       return
     }
 
@@ -88,11 +91,14 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     } catch {
       // Keep UI responsive even if delete fails.
       setDeleting(false)
+      setHidden(false)
       return
     }
 
     setDeleting(false)
   }, [onDelete, txn.id, x])
+
+  if (hidden) return null
 
   const handleDuplicateTap = useCallback(() => {
     snapToRest()

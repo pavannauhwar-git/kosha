@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
-import { invalidateCache as invalidateTxnCache } from './useTransactions'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 
@@ -14,87 +13,10 @@ const LIABILITY_PAID_QUERY_KEY    = ['liabilities', 'paid']
 const LIABILITY_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
-const LIABILITY_FRESH_WINDOW_MS = 45 * 1000
-
 function runInBackground(promise, scope) {
   void promise.catch((error) => {
     console.warn(`[Kosha] ${scope} background refresh failed`, error)
   })
-}
-
-async function cancelLiabilityFamilyQueries() {
-  await Promise.all([
-    queryClient.cancelQueries({ queryKey: LIABILITY_PENDING_QUERY_KEY }),
-    queryClient.cancelQueries({ queryKey: LIABILITY_PAID_QUERY_KEY }),
-  ])
-}
-
-function sortLiabilityDueAsc(a, b) {
-  return String(a?.due_date || '').localeCompare(String(b?.due_date || ''))
-}
-
-function primeLiabilityCaches(newLiability) {
-  if (!newLiability?.id) return
-  if (newLiability.paid) {
-    queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (old) => {
-      const base = Array.isArray(old) ? old : []
-      return [newLiability, ...base.filter(row => row.id !== newLiability.id)].sort(sortLiabilityDueAsc)
-    })
-    return
-  }
-
-  queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (old) => {
-    const base = Array.isArray(old) ? old : []
-    return [newLiability, ...base.filter(row => row.id !== newLiability.id)].sort(sortLiabilityDueAsc)
-  })
-}
-
-function findCachedLiabilityById(id) {
-  const pending = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
-  if (Array.isArray(pending)) {
-    const hit = pending.find(row => row?.id === id)
-    if (hit) return hit
-  }
-  const paid = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY)
-  if (Array.isArray(paid)) {
-    const hit = paid.find(row => row?.id === id)
-    if (hit) return hit
-  }
-  return null
-}
-
-function reconcileLiabilityCaches(previousLiability, nextLiability) {
-  const targetId = nextLiability?.id || previousLiability?.id
-  if (!targetId) return
-
-  queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (old) => {
-    const base = Array.isArray(old) ? old : []
-    const withoutTarget = base.filter(row => row.id !== targetId)
-    if (!nextLiability || nextLiability.paid) return withoutTarget
-    return [nextLiability, ...withoutTarget].sort(sortLiabilityDueAsc)
-  })
-
-  queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (old) => {
-    const base = Array.isArray(old) ? old : []
-    const withoutTarget = base.filter(row => row.id !== targetId)
-    if (!nextLiability || !nextLiability.paid) return withoutTarget
-    return [nextLiability, ...withoutTarget].sort(sortLiabilityDueAsc)
-  })
-}
-
-async function prefetchLiabilitySlices() {
-  await Promise.all([
-    queryClient.prefetchQuery({
-      queryKey: LIABILITY_PENDING_QUERY_KEY,
-      queryFn: () => fetchLiabilitiesByPaid(false),
-      staleTime: LIABILITY_FRESH_WINDOW_MS,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: LIABILITY_PAID_QUERY_KEY,
-      queryFn: () => fetchLiabilitiesByPaid(true),
-      staleTime: LIABILITY_FRESH_WINDOW_MS,
-    }),
-  ])
 }
 
 export async function invalidateLiabilityCache() {
@@ -127,13 +49,11 @@ export function useLiabilities({ includePaid = true, enabled = true } = {}) {
         queryKey: LIABILITY_PENDING_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(false),
         enabled,
-        staleTime: LIABILITY_FRESH_WINDOW_MS,
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(true),
         enabled:  enabled && includePaid,
-        staleTime: LIABILITY_FRESH_WINDOW_MS,
       },
     ],
   })
@@ -146,8 +66,7 @@ export function useLiabilities({ includePaid = true, enabled = true } = {}) {
   }
 }
 
-export async function addLiability(payload, options = {}) {
-  const { invalidate = true } = options
+export async function addLiability(payload) {
   const userId = getAuthUserId()
   
   // 1. Strict Server Write
@@ -158,11 +77,6 @@ export async function addLiability(payload, options = {}) {
     .single()
 
   if (error) throw error
-
-  await cancelLiabilityFamilyQueries()
-
-  // Render newly added bill in the list immediately.
-  primeLiabilityCaches(data)
 
   runInBackground(
     logFinancialEvent({
@@ -180,20 +94,11 @@ export async function addLiability(payload, options = {}) {
     'liabilities add audit'
   )
 
-  if (invalidate) {
-    // Keep server-truth sync, but don't block the form close on refetch.
-    runInBackground(invalidateLiabilityCache(), 'liabilities add')
-  }
-
-  runInBackground(prefetchLiabilitySlices(), 'liabilities add prefetch')
-
   return data
 }
 
-export async function markPaid(liability, options = {}) {
-  const { invalidate = true } = options
+export async function markPaid(liability) {
   const userId = getAuthUserId()
-  const previousLiability = findCachedLiabilityById(liability.id) || liability
 
   const { data: result, error: rpcError } = await supabase
     .rpc('mark_liability_paid', {
@@ -203,17 +108,6 @@ export async function markPaid(liability, options = {}) {
 
   if (rpcError) throw rpcError
 
-  await cancelLiabilityFamilyQueries()
-
-  const nextLiability = {
-    ...previousLiability,
-    paid: true,
-    // Keep original due date for the paid row. The recurring next bill is a new row.
-    due_date: previousLiability?.due_date,
-    linked_transaction_id: result?.transaction_id || previousLiability?.linked_transaction_id || null,
-  }
-  reconcileLiabilityCaches(previousLiability, nextLiability)
-
   runInBackground(
     logFinancialEvent({
       userId,
@@ -221,28 +115,19 @@ export async function markPaid(liability, options = {}) {
       entityType: 'liability',
       entityId: liability.id,
       metadata: {
-        before: previousLiability || null,
-        after: nextLiability,
+        before: null,
+        after: null,
         rpc_result: result || null,
       },
     }),
     'liabilities markPaid audit'
   )
 
-  if (invalidate) {
-    runInBackground(invalidateLiabilityCache(), 'liabilities markPaid')
-    runInBackground(invalidateTxnCache(), 'transactions from markPaid')
-  }
-
-  runInBackground(prefetchLiabilitySlices(), 'liabilities markPaid prefetch')
-
   return result;
 }
 
-export async function deleteLiability(id, options = {}) {
-  const { invalidate = true } = options
+export async function deleteLiability(id) {
   const userId = getAuthUserId()
-  const previousLiability = findCachedLiabilityById(id)
   
   const { error } = await supabase
     .from('liabilities')
@@ -252,10 +137,6 @@ export async function deleteLiability(id, options = {}) {
 
   if (error) throw error
 
-  await cancelLiabilityFamilyQueries()
-
-  reconcileLiabilityCaches(previousLiability, null)
-
   runInBackground(
     logFinancialEvent({
       userId,
@@ -263,17 +144,11 @@ export async function deleteLiability(id, options = {}) {
       entityType: 'liability',
       entityId: id,
       metadata: {
-        before: previousLiability || null,
+        before: null,
       },
     }),
     'liabilities delete audit'
   )
-
-  if (invalidate) {
-    runInBackground(invalidateLiabilityCache(), 'liabilities delete')
-  }
-
-  runInBackground(prefetchLiabilitySlices(), 'liabilities delete prefetch')
 
   return true;
 }

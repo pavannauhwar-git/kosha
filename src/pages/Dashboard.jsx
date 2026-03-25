@@ -8,6 +8,7 @@ import {
   useRunningBalance,
   useTodayExpenses,
   deleteTransaction,
+  invalidateCache,
 } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../context/AuthContext'
@@ -39,6 +40,69 @@ const QUICK_ACTIONS = [
   { label: 'Invest', Icon: Plus, bg: 'bg-invest-bg', color: 'var(--c-invest-text)', type: 'investment', strokeWidth: 2.6 },
   { label: 'Bills', Icon: Repeat, bg: 'bg-repay-bg', color: 'var(--c-warning)', type: 'bills', strokeWidth: 2.4 },
 ]
+
+const dashboardFade = { duration: 0.2, ease: 'easeOut' }
+
+function DashboardHeroSkeleton() {
+  return (
+    <div className="card-hero p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between mb-4">
+        <div className="h-3 w-28 rounded-full shimmer opacity-80" />
+        <div className="h-3 w-14 rounded-full shimmer opacity-70" />
+      </div>
+
+      <div className="mb-1 h-3 w-24 rounded-full shimmer opacity-70" />
+      <div className="h-11 w-44 rounded-2xl shimmer opacity-85" />
+
+      <div className="mt-3 mb-5 h-6 w-32 rounded-full shimmer opacity-75" />
+
+      <div className="border-t mb-4 border-white/15" />
+
+      <div className="flex justify-between gap-1.5 sm:gap-2">
+        {[1, 2, 3].map((slot) => (
+          <div key={slot} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl bg-white/10">
+            <div className="h-2.5 w-12 rounded-full shimmer opacity-70" />
+            <div className="mt-1 h-3.5 w-16 rounded-full shimmer opacity-85" />
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4">
+        <div className="flex justify-between mb-2">
+          <div className="h-2.5 w-20 rounded-full shimmer opacity-70" />
+          <div className="h-2.5 w-8 rounded-full shimmer opacity-80" />
+        </div>
+        <div className="h-2.5 rounded-full bg-white/15 overflow-hidden">
+          <div className="h-full w-[56%] shimmer opacity-80" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DashboardRecentSkeleton() {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <p className="section-label">Latest</p>
+        <div className="h-3 w-14 rounded-full shimmer opacity-75" />
+      </div>
+
+      <div className="list-card">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={`recent-skeleton-${i}`} className="px-4 py-3.5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl shimmer opacity-80 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="h-3.5 w-2/5 rounded-full shimmer opacity-85" />
+              <div className="mt-2 h-2.5 w-1/4 rounded-full shimmer opacity-70" />
+            </div>
+            <div className="h-3.5 w-16 rounded-full shimmer opacity-80" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -98,10 +162,18 @@ export default function Dashboard() {
   }, [])
 
   // ── Data fetching ─────────────────────────────────────────────────────
-  const { data: recent = [] }       = useRecentTransactions(5)
+  const {
+    data: recent = [],
+    loading: recentLoading,
+    fetching: recentFetching,
+  } = useRecentTransactions(5)
   const { data: digestTxnRows = [] } = useTransactionDigest(14, 200, { enabled: heavyReady })
   const { todaySpend }              = useTodayExpenses({ enabled: heavyReady })
-  const { data: summary }           = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
+  const {
+    data: summary,
+    loading: summaryLoading,
+    fetching: summaryFetching,
+  } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary }       = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
     now.getMonth() === 0 ? 12 : now.getMonth(),
@@ -109,12 +181,19 @@ export default function Dashboard() {
   )
   const balanceHorizonDate = now
 
-  const { balance: runningBalance } = useRunningBalance(
+  const {
+    balance: runningBalance,
+    loading: runningBalanceLoading,
+    fetching: runningBalanceFetching,
+  } = useRunningBalance(
     balanceHorizonDate.getFullYear(),
     balanceHorizonDate.getMonth() + 1
   )
   const { pending: bills = [] }     = useLiabilities({ includePaid: false, enabled: heavyReady })
   const { data: financialEvents = [] } = useFinancialEvents(3, { enabled: heavyReady })
+
+  const isInitialLoading = !heavyReady || recentLoading || summaryLoading || runningBalanceLoading
+  const isBackgroundFetching = !isInitialLoading && (recentFetching || summaryFetching || runningBalanceFetching)
 
   // ── Derived values ─────────────────────────────────────────────────────
   const earned   = summary?.earned     || 0
@@ -321,6 +400,11 @@ export default function Dashboard() {
     if (!id) return
     try {
       await deleteTransaction(id)
+      setTimeout(() => {
+        void invalidateCache().catch((err) => {
+          console.warn('[Kosha] deferred dashboard invalidate failed', err)
+        })
+      }, 300)
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)
@@ -348,16 +432,60 @@ export default function Dashboard() {
   return (
     <div className="page">
       <PageHeader title="Dashboard" />
-      <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack pt-0.5 md:pt-0">
+      <AnimatePresence mode="wait" initial={false}>
+        {isInitialLoading ? (
+          <motion.div
+            key="dashboard-loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: dashboardFade }}
+            exit={{ opacity: 0, transition: dashboardFade }}
+            className="page-stack pt-0.5 md:pt-0"
+          >
+            <div>
+              <p className="text-caption text-ink-3">
+                {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+              <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
+                {greeting}{firstName ? `, ${firstName}` : ''} 👋
+              </h1>
+            </div>
+
+            <DashboardHeroSkeleton />
+
+            <div className="card py-4 px-3">
+              <div className="flex justify-between gap-1.5">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={`quick-action-skeleton-${idx}`} className="flex flex-col items-center gap-1.5 min-w-[62px]">
+                    <div className="w-12 h-12 rounded-full shimmer opacity-80" />
+                    <div className="h-2.5 w-11 rounded-full shimmer opacity-70" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <DashboardRecentSkeleton />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="dashboard-content"
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+            exit={{ opacity: 0, transition: dashboardFade }}
+            className="page-stack pt-0.5 md:pt-0"
+          >
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
-        <motion.div variants={fadeUp}>
+            <motion.div variants={fadeUp}>
           <p className="text-caption text-ink-3">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
+          {isBackgroundFetching && (
+            <p className="text-[11px] text-ink-3 mt-1">Syncing latest data...</p>
+          )}
         </motion.div>
 
         {/* ── Hero card — sub-component, renders independently ─────── */}
@@ -395,14 +523,14 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => navigate(todayFocus.primaryRoute)}
-                className="btn-primary h-9 px-3 text-[12px] justify-center"
+                className="btn-primary h-12 px-4 text-[12px] justify-center"
               >
                 {todayFocus.primaryLabel}
               </button>
               <button
                 type="button"
                 onClick={() => navigate(todayFocus.secondaryRoute)}
-                className="btn-secondary h-9 px-3 text-[12px] justify-center"
+                className="btn-secondary h-12 px-4 text-[12px] justify-center"
               >
                 {todayFocus.secondaryLabel}
               </button>
@@ -416,7 +544,7 @@ export default function Dashboard() {
             {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
               <button key={label}
                 onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
-                className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[62px]"
+                className="flex flex-col items-center gap-1.5 active:scale-[0.97] transition-transform duration-100 min-w-[62px]"
               >
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
                   style={{ color }}>
@@ -543,7 +671,9 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-      </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
 

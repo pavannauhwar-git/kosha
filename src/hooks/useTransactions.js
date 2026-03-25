@@ -28,7 +28,6 @@ const TRANSACTION_LIST_COLUMNS =
 const TRANSACTION_MUTATION_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
 
-const TXN_FRESH_WINDOW_MS = 15 * 1000
 const RECURRING_SYNC_COOLDOWN_MS = 60 * 1000
 let lastRecurringSyncAt = 0
 
@@ -53,196 +52,10 @@ async function maybeGenerateRecurringTransactions(userId) {
   }
 }
 
-async function cancelTransactionFamilyQueries() {
-  await Promise.all([
-    queryClient.cancelQueries({ queryKey: ['transactions'] }),
-    queryClient.cancelQueries({ queryKey: ['txnCount'] }),
-    queryClient.cancelQueries({ queryKey: ['todayExpenses'] }),
-  ])
-}
-
-function txnSortDesc(a, b) {
-  const byDate = String(b?.date || '').localeCompare(String(a?.date || ''))
-  if (byDate !== 0) return byDate
-  return String(b?.created_at || '').localeCompare(String(a?.created_at || ''))
-}
-
-function getTxnFiltersFromKey(queryKey) {
-  return (Array.isArray(queryKey) && queryKey[1]) || {}
-}
-
-function mergeTxnRows(rows, limit) {
-  const deduped = []
-  const seen = new Set()
-  for (const row of rows || []) {
-    if (!row?.id || seen.has(row.id)) continue
-    seen.add(row.id)
-    deduped.push(row)
-  }
-  deduped.sort(txnSortDesc)
-  const lim = Number(limit || 0)
-  return lim > 0 ? deduped.slice(0, lim) : deduped
-}
-
-function matchesTransactionFilters(txn, filters = {}) {
-  if (!txn) return false
-  if (filters.type && txn.type !== filters.type) return false
-  if (filters.category && txn.category !== filters.category) return false
-  if (filters.startDate && String(txn.date || '') < String(filters.startDate)) return false
-  if (filters.endDate && String(txn.date || '') > String(filters.endDate)) return false
-  if (filters.search) {
-    const q = String(filters.search).toLowerCase()
-    const desc = String(txn.description || '').toLowerCase()
-    if (!desc.includes(q)) return false
-  }
-  return true
-}
-
-function primeTransactionCaches(newTxn) {
-  if (!newTxn?.id) return
-
-  const queries = queryClient.getQueryCache().findAll({ queryKey: ['transactions'] })
-  for (const query of queries) {
-    const key = query.queryKey
-    const filters = (Array.isArray(key) && key[1]) || {}
-    if (!matchesTransactionFilters(newTxn, filters)) continue
-
-    queryClient.setQueryData(key, (old) => {
-      const base = Array.isArray(old) ? old : []
-      return mergeTxnRows([newTxn, ...base], filters?.limit)
-    })
-  }
-
-  const countQueries = queryClient.getQueryCache().findAll({ queryKey: ['txnCount'] })
-  for (const query of countQueries) {
-    const key = query.queryKey
-    const filters = (Array.isArray(key) && key[1]) || {}
-    if (!matchesTransactionFilters(newTxn, filters)) continue
-    queryClient.setQueryData(key, (old) => {
-      const prev = Number(old || 0)
-      return Number.isFinite(prev) ? prev + 1 : 1
-    })
-  }
-
-  if (newTxn.type === 'expense') {
-    const todayISO = new Date().toISOString().slice(0, 10)
-    if (newTxn.date === todayISO) {
-      queryClient.setQueriesData({ queryKey: ['todayExpenses'] }, (old) => {
-        const prev = Number(old || 0)
-        return Number.isFinite(prev) ? prev + Number(newTxn.amount || 0) : Number(newTxn.amount || 0)
-      })
-    }
-  }
-}
-
-function findCachedTransactionById(id) {
-  const queries = queryClient.getQueryCache().findAll({ queryKey: ['transactions'] })
-  for (const query of queries) {
-    const rows = query.state?.data
-    if (!Array.isArray(rows)) continue
-    const hit = rows.find(row => row?.id === id)
-    if (hit) return hit
-  }
-  return null
-}
-
-function reconcileTransactionCaches(previousTxn, nextTxn) {
-  if (!previousTxn && !nextTxn) return
-  const targetId = nextTxn?.id || previousTxn?.id
-  if (!targetId) return
-
-  const listQueries = queryClient.getQueryCache().findAll({ queryKey: ['transactions'] })
-  for (const query of listQueries) {
-    const key = query.queryKey
-    const filters = getTxnFiltersFromKey(key)
-    queryClient.setQueryData(key, (old) => {
-      const base = Array.isArray(old) ? old : []
-      const withoutTarget = base.filter(row => row.id !== targetId)
-      const shouldIncludeNext = !!nextTxn && matchesTransactionFilters(nextTxn, filters)
-      if (!shouldIncludeNext) return withoutTarget
-      return mergeTxnRows([nextTxn, ...withoutTarget], filters?.limit)
-    })
-  }
-
-  const countQueries = queryClient.getQueryCache().findAll({ queryKey: ['txnCount'] })
-  for (const query of countQueries) {
-    const key = query.queryKey
-    const filters = getTxnFiltersFromKey(key)
-    const prevMatches = !!previousTxn && matchesTransactionFilters(previousTxn, filters)
-    const nextMatches = !!nextTxn && matchesTransactionFilters(nextTxn, filters)
-    const delta = (nextMatches ? 1 : 0) - (prevMatches ? 1 : 0)
-    if (!delta) continue
-
-    queryClient.setQueryData(key, (old) => {
-      const prev = Number(old || 0)
-      const safePrev = Number.isFinite(prev) ? prev : 0
-      return Math.max(0, safePrev + delta)
-    })
-  }
-
-  const todayISO = new Date().toISOString().slice(0, 10)
-  const prevTodayExpense =
-    previousTxn?.type === 'expense' && previousTxn?.date === todayISO
-      ? Number(previousTxn.amount || 0)
-      : 0
-  const nextTodayExpense =
-    nextTxn?.type === 'expense' && nextTxn?.date === todayISO
-      ? Number(nextTxn.amount || 0)
-      : 0
-  const deltaToday = nextTodayExpense - prevTodayExpense
-  if (deltaToday) {
-    queryClient.setQueriesData({ queryKey: ['todayExpenses'] }, (old) => {
-      const prev = Number(old || 0)
-      const safePrev = Number.isFinite(prev) ? prev : 0
-      return Math.max(0, safePrev + deltaToday)
-    })
-  }
-}
-
 function logQueryError(scope, error) {
   console.error(`[Kosha] ${scope} query failed`, error)
 }
 
-async function prefetchDashboardSlices(userId) {
-  if (!userId) return
-
-  const now = new Date()
-  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-
-  await Promise.all([
-    queryClient.prefetchQuery({
-      queryKey: ['transactionsRecent', 5],
-      queryFn: async () => {
-        const { data: rows, error: qError } = await supabase
-          .from('transactions')
-          .select(RECENT_TXN_COLUMNS)
-          .eq('user_id', userId)
-          .order('date', { ascending: false })
-          .order('created_at', { ascending: false })
-          .limit(5)
-
-        if (qError) throw qError
-        return rows || []
-      },
-      staleTime: TXN_FRESH_WINDOW_MS,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ['todayExpenses', todayISO],
-      queryFn: async () => {
-        const { data: rows, error: qError } = await supabase
-          .from('transactions')
-          .select('amount')
-          .eq('user_id', userId)
-          .eq('type', 'expense')
-          .eq('date', todayISO)
-
-        if (qError) throw qError
-        return (rows || []).reduce((sum, row) => sum + Number(row.amount || 0), 0)
-      },
-      staleTime: 30 * 1000,
-    }),
-  ])
-}
 
 // ── Cache invalidation (exported for cross-hook use) ──────────────────────
 
@@ -315,9 +128,6 @@ export function useTransactions({ type, category, search, limit, startDate, endD
         throw err
       }
     }),
-    // Keep list fresh enough for rapid edits while avoiding redundant
-    // remount/focus refetches during short navigation hops.
-    staleTime: TXN_FRESH_WINDOW_MS,
     // Short gc window keeps old filter-variant queries (e.g. type:'expense',
     // search:'coffee') from piling up in cache. refetchType:'all' above would
     // otherwise re-request every combination the user tried this session.
@@ -327,7 +137,6 @@ export function useTransactions({ type, category, search, limit, startDate, endD
   const { data: countData } = useQuery({
     queryKey: txnCountKey({ type, category, startDate, endDate }),
     enabled:  enabled && withCount,
-    staleTime: 60 * 1000,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
         const userId = getAuthUserId()
@@ -362,7 +171,7 @@ const DIGEST_TXN_COLUMNS = 'id, date, created_at, type, amount, category, is_rep
 
 export function useRecentTransactions(limit = 5) {
   const safeLimit = Math.max(1, Number(limit) || 5)
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['transactionsRecent', safeLimit],
     queryFn: () => traceQuery('transactions:recent', async () => {
       const userId = getAuthUserId()
@@ -377,11 +186,10 @@ export function useRecentTransactions(limit = 5) {
       if (qError) throw qError
       return rows || []
     }),
-    staleTime: TXN_FRESH_WINDOW_MS,
     gcTime: 5 * 60 * 1000,
   })
 
-  return { data: data || [], loading: isLoading, error }
+  return { data: data || [], loading: isLoading, fetching: isFetching, error }
 }
 
 export function useTransactionDigest(days = 14, limit = 200, options = {}) {
@@ -409,7 +217,6 @@ export function useTransactionDigest(days = 14, limit = 200, options = {}) {
       if (qError) throw qError
       return rows || []
     }),
-    staleTime: TXN_FRESH_WINDOW_MS,
     gcTime: 5 * 60 * 1000,
   })
 
@@ -448,7 +255,7 @@ export function useTodayExpenses(options = {}) {
 
 export function useMonthSummary(year, month, options = {}) {
   const { enabled = true } = options
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['month', year, month],
     enabled,
     queryFn: async () => {
@@ -500,7 +307,7 @@ export function useMonthSummary(year, month, options = {}) {
     },
   })
 
-  return { data, loading: isLoading, error }
+  return { data, loading: isLoading, fetching: isFetching, error }
 }
 
 export function useYearSummary(year, options = {}) {
@@ -566,7 +373,7 @@ export function useYearSummary(year, options = {}) {
 }
 
 export function useRunningBalance(year, month) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['balance', year, month],
     queryFn: async () => {
       try {
@@ -587,17 +394,12 @@ export function useRunningBalance(year, month) {
     },
   })
 
-  return { balance: data, loading: isLoading, error }
+  return { balance: data, loading: isLoading, fetching: isFetching, error }
 }
 
-// ── Mutations — Fast Local Paint + Background Reconciliation ─────────────
-//
-// For add flows, we optimistically prime transaction caches using the server
-// response row, then reconcile in the background via invalidateCache().
-// This removes the modal-close lag while preserving server-truth convergence.
+// ── Mutations — DB write only (UI orchestrates deferred refetch) ─────────
 
-export async function addTransaction(payload, options = {}) {
-  const { invalidate = true } = options
+export async function addTransaction(payload) {
   const userId = getAuthUserId()
 
   const { data, error } = await supabase
@@ -607,11 +409,6 @@ export async function addTransaction(payload, options = {}) {
     .single()
 
   if (error) throw error
-
-  await cancelTransactionFamilyQueries()
-
-  // Paint the new row immediately in mounted/cached transaction lists.
-  primeTransactionCaches(data)
 
   runInBackground(
     logFinancialEvent({
@@ -629,20 +426,11 @@ export async function addTransaction(payload, options = {}) {
     'transactions add audit'
   )
 
-  if (invalidate) {
-    // Refresh summaries and any non-primed queries in the background.
-    runInBackground(invalidateCache(), 'transactions add')
-  }
-
-  runInBackground(prefetchDashboardSlices(userId), 'transactions add dashboard prefetch')
-
   return data;
 }
 
-export async function updateTransaction(id, payload, options = {}) {
-  const { invalidate = true } = options
+export async function updateTransaction(id, payload) {
   const userId = getAuthUserId()
-  const previousTxn = findCachedTransactionById(id)
 
   const { data, error } = await supabase
     .from('transactions')
@@ -654,10 +442,6 @@ export async function updateTransaction(id, payload, options = {}) {
 
   if (error) throw error
 
-  await cancelTransactionFamilyQueries()
-
-  reconcileTransactionCaches(previousTxn, data)
-
   runInBackground(
     logFinancialEvent({
       userId,
@@ -665,26 +449,18 @@ export async function updateTransaction(id, payload, options = {}) {
       entityType: 'transaction',
       entityId: data.id,
       metadata: {
-        before: previousTxn || null,
+        before: null,
         after: data,
       },
     }),
     'transactions update audit'
   )
 
-  if (invalidate) {
-    runInBackground(invalidateCache(), 'transactions update')
-  }
-
-  runInBackground(prefetchDashboardSlices(userId), 'transactions update dashboard prefetch')
-
   return data;
 }
 
-export async function deleteTransaction(id, options = {}) {
-  const { invalidate = true } = options
+export async function deleteTransaction(id) {
   const userId = getAuthUserId()
-  const previousTxn = findCachedTransactionById(id)
 
   const { error } = await supabase
     .from('transactions')
@@ -694,10 +470,6 @@ export async function deleteTransaction(id, options = {}) {
 
   if (error) throw error
 
-  await cancelTransactionFamilyQueries()
-
-  reconcileTransactionCaches(previousTxn, null)
-
   runInBackground(
     logFinancialEvent({
       userId,
@@ -705,17 +477,11 @@ export async function deleteTransaction(id, options = {}) {
       entityType: 'transaction',
       entityId: id,
       metadata: {
-        before: previousTxn || null,
+        before: null,
       },
     }),
     'transactions delete audit'
   )
-
-  if (invalidate) {
-    runInBackground(invalidateCache(), 'transactions delete')
-  }
-
-  runInBackground(prefetchDashboardSlices(userId), 'transactions delete dashboard prefetch')
 
   return true;
 }
