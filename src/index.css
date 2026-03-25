@@ -64,19 +64,19 @@
        Keep in sync with src/lib/colors.js and tailwind.config.js
     ───────────────────────────────────────────────────────────────── */
 
-    /* Brand — Cobalt Indigo */
-    --c-brand: #2F3BCE;
-    --c-brand-mid: #5C6CFF;
-    --c-brand-container: #E9EDFF;
-    --c-brand-border: #D8DEFF;
-    --c-brand-rgb: 47, 59, 206;
+    /* Brand — Periwinkle Violet */
+    --c-brand: #4D59E8;
+    --c-brand-mid: #7782FF;
+    --c-brand-container: #EEF0FF;
+    --c-brand-border: #DDE2FF;
+    --c-brand-rgb: 77, 89, 232;
     /* used in rgba() calls */
-    --c-brand-mid-rgb: 92, 108, 255;
+    --c-brand-mid-rgb: 119, 130, 255;
     /* used in rgba() calls */
 
-    /* Accent — Electric Lime (on dark bg only) */
-    --c-accent: #E2FF5A;
-    --c-accent-rgb: 226, 255, 90;
+    /* Accent — Lime Yellow (on dark bg only) */
+    --c-accent: #E4FF5E;
+    --c-accent-rgb: 228, 255, 94;
     /* used in rgba() calls */
 
     /* Semantics */
@@ -88,20 +88,20 @@
     --c-warning: #CA8A04;
 
     /* Ink */
-    --c-ink-muted: #6E7699;
+    --c-ink-muted: #6E75A8;
 
     /* Hero card overlays */
-    --c-hero-accent: rgba(226, 255, 90, 0.75);
-    --c-hero-accent-bg: rgba(226, 255, 90, 0.20);
-    --c-hero-accent-fill: rgba(226, 255, 90, 0.75);
+    --c-hero-accent: rgba(228, 255, 94, 0.78);
+    --c-hero-accent-bg: rgba(228, 255, 94, 0.22);
+    --c-hero-accent-fill: rgba(228, 255, 94, 0.78);
     --c-hero-label: rgba(255, 255, 255, 0.55);
     --c-hero-dimmer: rgba(255, 255, 255, 0.35);
     --c-hero-divider: rgba(255, 255, 255, 0.12);
     --c-hero-stat-bg: rgba(255, 255, 255, 0.10);
 
     /* Shimmer animation colors */
-    --c-shimmer-1: #EEF1FF;
-    --c-shimmer-2: #DFE5FF;
+    --c-shimmer-1: #F3F4FF;
+    --c-shimmer-2: #E7EAFF;
 
     /* Motion timing scale */
     --motion-fast: 90ms;

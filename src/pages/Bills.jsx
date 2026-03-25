@@ -253,28 +253,27 @@ export default function Bills() {
         )}
       </div>
 
-      {showGuideHint && (
-        <div className="card mb-5 p-4 border border-brand-border bg-brand-container/40">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
-              <BookOpen size={16} className="text-brand" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-body font-semibold text-ink">Bills setup tip</p>
-              <p className="text-label text-ink-3 mt-0.5">Mark recurring bills properly to keep due alerts and auto-generation accurate.</p>
-              <button
-                onClick={() => navigate('/guide')}
-                className="text-label font-semibold text-brand mt-2 inline-flex items-center gap-1"
-              >
-                Open guide <ArrowRight size={13} />
-              </button>
-            </div>
-            <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss bills hint">
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ── Tabs ─────────────────────────────────────────────────────── */}
+      <div className="mb-5 grid grid-cols-2 gap-2">
+        <button
+          onClick={() => setTab('pending')}
+          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+            ${tab === 'pending'
+              ? 'bg-warning text-white shadow-card'
+              : 'bg-warning/15 text-warning-text border border-warning/20'}`}
+        >
+          Pending ({visiblePending.length})
+        </button>
+        <button
+          onClick={() => setTab('paid')}
+          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+            ${tab === 'paid'
+              ? 'bg-income-text text-white shadow-card'
+              : 'bg-income-bg text-income-text border border-income-border'}`}
+        >
+          Paid ({visiblePaid.length})
+        </button>
+      </div>
 
       {/* ── Structured summary card ───────────────────────────────────── */}
       {visiblePending.length > 0 && (
@@ -328,27 +327,28 @@ export default function Bills() {
         </div>
       )}
 
-      {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="mb-6 grid grid-cols-2 gap-2">
-        <button
-          onClick={() => setTab('pending')}
-          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
-            ${tab === 'pending'
-              ? 'bg-warning text-white shadow-card'
-              : 'bg-warning/15 text-warning-text border border-warning/20'}`}
-        >
-          Pending ({visiblePending.length})
-        </button>
-        <button
-          onClick={() => setTab('paid')}
-          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
-            ${tab === 'paid'
-              ? 'bg-income-text text-white shadow-card'
-              : 'bg-income-bg text-income-text border border-income-border'}`}
-        >
-          Paid ({visiblePaid.length})
-        </button>
-      </div>
+      {showGuideHint && (
+        <div className="card mb-6 p-4 border border-brand-border bg-brand-container/40">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+              <BookOpen size={16} className="text-brand" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-semibold text-ink">Bills setup tip</p>
+              <p className="text-label text-ink-3 mt-0.5">Mark recurring bills properly to keep due alerts and auto-generation accurate.</p>
+              <button
+                onClick={() => navigate('/guide')}
+                className="text-label font-semibold text-brand mt-2 inline-flex items-center gap-1"
+              >
+                Open guide <ArrowRight size={13} />
+              </button>
+            </div>
+            <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss bills hint">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <SkeletonLayout

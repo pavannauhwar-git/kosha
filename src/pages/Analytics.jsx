@@ -173,71 +173,13 @@ export default function Analytics() {
           transition={{ duration: 0.25 }}
           className="page-stack"
         >
-          {/* ── 1. Annual Summary card ───────────────────────────────── */}
+          {/* ── 1. Hero summary ──────────────────────────────────────── */}
           <AnnualSummaryCard
             data={data}
             prevData={prevData}
             spendTrend={spendTrend}
             year={year}
           />
-
-          {/* ── 2. Cash Flow chart ──────────────────────────────────── */}
-          <CashFlowChart
-            chartData={chartData}
-            totalIncome={data?.totalIncome}
-          />
-
-          <YearlyInsightsCard data={data} catEntries={catEntries} />
-
-          {/* ── 3. Net Savings ──────────────────────────────────────── */}
-          <NetSavingsChart
-            netData={netData}
-            netAxisMax={netAxisMax}
-          />
-
-          {/* ── 4. Year-over-year stacked cards ─────────────────────── */}
-          <YoYCards years={yoyYears} currentYear={year} />
-
-          <motion.div
-            whileHover={{ y: -1 }}
-            transition={{ duration: 0.14 }}
-            className="card p-4"
-          >
-            <SectionHeader
-              className="mb-2"
-              title="Reconciliation confidence"
-              rightText="Last 7 days signal"
-            />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-              <StatMini label="Linked" value={reconciliationStats.linked} tone="text-income-text" />
-              <StatMini label="Mismatch reports" value={reconciliationStats.rejected} tone="text-expense-text" />
-              <StatMini label="Recent linked" value={reconciliationStats.recentLinked} tone="text-brand" />
-              <StatMini
-                label="Confidence"
-                value={reconciliationStats.netConfidence == null ? '—' : `${reconciliationStats.netConfidence}%`}
-                tone={reconciliationStats.netConfidence != null && reconciliationStats.netConfidence >= 70 ? 'text-income-text' : 'text-warning-text'}
-              />
-            </div>
-
-            {reconciliationStats.drift?.drifting && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -1 }}
-                className="rounded-card border border-warning-border bg-warning-bg p-2.5 flex items-start gap-2"
-              >
-                <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-warning-text">Confidence below baseline</p>
-                  <p className="text-[10px] text-ink-3 mt-0.5">
-                    7d: {reconciliationStats.drift.recent.confidence}% vs 30d: {reconciliationStats.drift.baseline.confidence}%
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
-
-          <ConfidenceTrendChart trendData={confidenceTrend} />
 
           {strategicRecommendations.length > 0 && (
             <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
@@ -256,20 +198,93 @@ export default function Analytics() {
             </motion.div>
           )}
 
-          <TopExpensesPodium top5={top5} year={year} />
+          <YearlyInsightsCard data={data} catEntries={catEntries} />
 
-          {/* ── 6. Portfolio allocation ──────────────────────────────── */}
-          {vehicleData.length > 0 && (
-            <PortfolioAllocation vehicleData={vehicleData} />
-          )}
-
-          {/* ── 7. Spending by Category ──────────────────────────────── */}
-          {catEntries.length > 0 && (
-            <CategorySpendingChart
-              entries={catEntries}
-              total={categoryTotal}
+          {/* ── 2. Performance trends ───────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <CashFlowChart
+              chartData={chartData}
+              totalIncome={data?.totalIncome}
             />
-          )}
+
+            <NetSavingsChart
+              netData={netData}
+              netAxisMax={netAxisMax}
+            />
+          </div>
+
+          {/* ── 3. Spending intelligence ────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {catEntries.length > 0 ? (
+              <CategorySpendingChart
+                entries={catEntries}
+                total={categoryTotal}
+              />
+            ) : (
+              <div className="card p-4">
+                <p className="section-label">Spent by Category</p>
+                <p className="text-[12px] text-ink-3 mt-1">No spending categories yet for this year.</p>
+              </div>
+            )}
+            <TopExpensesPodium top5={top5} year={year} />
+          </div>
+
+          {/* ── 4. Allocation and year comparison ───────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {vehicleData.length > 0 ? (
+              <PortfolioAllocation vehicleData={vehicleData} />
+            ) : (
+              <div className="card p-4">
+                <p className="section-label">Portfolio allocation</p>
+                <p className="text-[12px] text-ink-3 mt-1">Add investments to unlock allocation breakdown.</p>
+              </div>
+            )}
+            <YoYCards years={yoyYears} currentYear={year} />
+          </div>
+
+          {/* ── 5. Data trust ───────────────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <motion.div
+              whileHover={{ y: -1 }}
+              transition={{ duration: 0.14 }}
+              className="card p-4"
+            >
+              <SectionHeader
+                className="mb-2"
+                title="Reconciliation confidence"
+                rightText="Last 7 days signal"
+              />
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-2 gap-2 mb-3">
+                <StatMini label="Linked" value={reconciliationStats.linked} tone="text-income-text" />
+                <StatMini label="Mismatch reports" value={reconciliationStats.rejected} tone="text-expense-text" />
+                <StatMini label="Recent linked" value={reconciliationStats.recentLinked} tone="text-brand" />
+                <StatMini
+                  label="Confidence"
+                  value={reconciliationStats.netConfidence == null ? '—' : `${reconciliationStats.netConfidence}%`}
+                  tone={reconciliationStats.netConfidence != null && reconciliationStats.netConfidence >= 70 ? 'text-income-text' : 'text-warning-text'}
+                />
+              </div>
+
+              {reconciliationStats.drift?.drifting && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ y: -1 }}
+                  className="rounded-card border border-warning-border bg-warning-bg p-2.5 flex items-start gap-2"
+                >
+                  <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-warning-text">Confidence below baseline</p>
+                    <p className="text-[10px] text-ink-3 mt-0.5">
+                      7d: {reconciliationStats.drift.recent.confidence}% vs 30d: {reconciliationStats.drift.baseline.confidence}%
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+
+            <ConfidenceTrendChart trendData={confidenceTrend} />
+          </div>
 
           {!data?.totalIncome && !data?.totalExpense && (
             <EmptyState

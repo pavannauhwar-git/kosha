@@ -301,57 +301,6 @@ export default function Monthly() {
         <MonthHeroCard month={month} year={year} data={data} />
       </div>
 
-      <button
-        type="button"
-        onClick={() => navigate('/reconciliation')}
-        className="card p-4 mb-5 md:mb-6 w-full text-left"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink">Reconciliation workspace</p>
-            <p className="text-caption text-ink-3 mt-0.5">
-              {reconcileQueueCount > 0
-                ? `${reconcileQueueCount} item${reconcileQueueCount > 1 ? 's' : ''} ready for quality review`
-                : 'No pending review items right now'}
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-brand-container text-brand flex items-center justify-center shrink-0">
-            <ArrowRightLeft size={18} />
-          </div>
-        </div>
-      </button>
-
-      <div className="card p-4 mb-5 md:mb-6">
-        <SectionHeader
-          className="mb-2"
-          title="Month-close checklist"
-          subtitle="Resolve these to trust month-end outcomes."
-          badge={{ label: 'Action plan', className: 'bg-brand-container text-brand-on' }}
-        />
-
-        <div className="space-y-2.5">
-          {[monthlyChecklist.reconciliation, monthlyChecklist.bills, monthlyChecklist.budgets].map((item) => (
-            <div key={item.cta} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className={`text-[12px] font-semibold ${item.done ? 'text-income-text' : 'text-warning-text'}`}>
-                    {item.done ? 'Complete' : 'Attention needed'}
-                  </p>
-                  <p className="text-[12px] text-ink-2 mt-0.5">{item.label}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => navigate(item.route)}
-                  className="btn-secondary-sm shrink-0"
-                >
-                  {item.cta}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {loading ? (
         <SkeletonLayout
           sections={[
@@ -368,8 +317,6 @@ export default function Monthly() {
           transition={{ duration: 0.25 }}
           className="page-stack"
         >
-          <BreakdownCard earned={earned} spent={spent} invested={invested} />
-
           <div className="card p-4">
             <SectionHeader
               className="mb-2"
@@ -480,6 +427,59 @@ export default function Monthly() {
               </div>
             </div>
           )}
+
+          <BreakdownCard earned={earned} spent={spent} invested={invested} />
+
+          <div className="card p-4">
+            <SectionHeader
+              className="mb-2"
+              title="Month-close checklist"
+              subtitle="Resolve these to trust month-end outcomes."
+              badge={{ label: 'Action plan', className: 'bg-brand-container text-brand-on' }}
+            />
+
+            <div className="space-y-2.5">
+              {[monthlyChecklist.reconciliation, monthlyChecklist.bills, monthlyChecklist.budgets].map((item) => (
+                <div key={item.cta} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className={`text-[12px] font-semibold ${item.done ? 'text-income-text' : 'text-warning-text'}`}>
+                        {item.done ? 'Complete' : 'Attention needed'}
+                      </p>
+                      <p className="text-[12px] text-ink-2 mt-0.5">{item.label}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(item.route)}
+                      className="btn-secondary-sm shrink-0"
+                    >
+                      {item.cta}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate('/reconciliation')}
+            className="card p-4 w-full text-left"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink">Reconciliation workspace</p>
+                <p className="text-caption text-ink-3 mt-0.5">
+                  {reconcileQueueCount > 0
+                    ? `${reconcileQueueCount} item${reconcileQueueCount > 1 ? 's' : ''} ready for quality review`
+                    : 'No pending review items right now'}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-brand-container text-brand flex items-center justify-center shrink-0">
+                <ArrowRightLeft size={18} />
+              </div>
+            </div>
+          </button>
 
           {earned === 0 && spent === 0 && invested === 0 && (
             <EmptyState

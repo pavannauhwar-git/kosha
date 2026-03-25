@@ -376,24 +376,6 @@ export default function Dashboard() {
           />
         </motion.div>
 
-        {/* ── Quick-action strip ────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="card py-4 px-3">
-          <div className="flex justify-between gap-1.5">
-            {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
-              <button key={label}
-                onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
-                className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[62px]"
-              >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
-                  style={{ color }}>
-                  <Icon size={20} strokeWidth={strokeWidth} />
-                </div>
-                <span className="text-[11px] font-semibold text-ink-3">{label}</span>
-              </button>
-            ))}
-          </div>
-        </motion.div>
-
         <motion.div variants={fadeUp}>
           <div className="card p-3.5">
             <div className="flex items-center justify-between gap-3 mb-0.5">
@@ -429,26 +411,23 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* ── Pulse strip — sub-component ───────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          <DashboardPulseStrip
-            todaySpend={todaySpend}
-            totalBillsAmt={totalBillsAmt}
-            insight={insight}
-          />
+        {/* ── Quick-action strip ────────────────────────────────────── */}
+        <motion.div variants={fadeUp} className="card py-4 px-3">
+          <div className="flex justify-between gap-1.5">
+            {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
+              <button key={label}
+                onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
+                className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[62px]"
+              >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
+                  style={{ color }}>
+                  <Icon size={20} strokeWidth={strokeWidth} />
+                </div>
+                <span className="text-[11px] font-semibold text-ink-3">{label}</span>
+              </button>
+            ))}
+          </div>
         </motion.div>
-
-        {/* ── Pace card — sub-component ────────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          <DashboardPaceCard
-            dayOfMonth={dayOfMonth}
-            daysInMonth={daysInMonth}
-            earned={earned}
-            spent={spent}
-            paceOk={paceOk}
-          />
-        </motion.div>
-
 
         {/* ── Bill alert ────────────────────────────────────────────── */}
         {dueSoonCount > 0 && (
@@ -471,31 +450,16 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* ── Investments ───────────────────────────────────────────── */}
-        {invested > 0 && (
-          <motion.div variants={fadeUp}>
-            <div className="card p-3.5">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-caption text-ink-3 font-medium">Invested this month</p>
-                <div className="flex items-center gap-1.5">
-                  {investDiff === 0
-                    ? <Minus size={12} className="text-ink-3" />
-                    : investUp
-                      ? <TrendingUp   size={12} className="text-income-text" />
-                      : <TrendingDown size={12} className="text-expense-text" />}
-                  <span className={`text-caption font-semibold ${
-                    investDiff === 0 ? 'text-ink-3'
-                    : investUp ? 'text-income-text' : 'text-expense-text'
-                  }`}>
-                    {investDiff === 0 ? 'Same as last month'
-                      : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
-                  </span>
-                </div>
-              </div>
-              <p className="text-[32px] md:text-[36px] font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
-            </div>
-          </motion.div>
-        )}
+        {/* ── Pace card — sub-component ────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <DashboardPaceCard
+            dayOfMonth={dayOfMonth}
+            daysInMonth={daysInMonth}
+            earned={earned}
+            spent={spent}
+            paceOk={paceOk}
+          />
+        </motion.div>
 
         {weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
@@ -525,6 +489,41 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+
+        {/* ── Investments ───────────────────────────────────────────── */}
+        {invested > 0 && (
+          <motion.div variants={fadeUp}>
+            <div className="card p-3.5">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-caption text-ink-3 font-medium">Invested this month</p>
+                <div className="flex items-center gap-1.5">
+                  {investDiff === 0
+                    ? <Minus size={12} className="text-ink-3" />
+                    : investUp
+                      ? <TrendingUp   size={12} className="text-income-text" />
+                      : <TrendingDown size={12} className="text-expense-text" />}
+                  <span className={`text-caption font-semibold ${
+                    investDiff === 0 ? 'text-ink-3'
+                    : investUp ? 'text-income-text' : 'text-expense-text'
+                  }`}>
+                    {investDiff === 0 ? 'Same as last month'
+                      : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
+                  </span>
+                </div>
+              </div>
+              <p className="text-[22px] md:text-[24px] font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Pulse strip — sub-component ───────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <DashboardPulseStrip
+            todaySpend={todaySpend}
+            totalBillsAmt={totalBillsAmt}
+            insight={insight}
+          />
+        </motion.div>
 
         {/* ── Recent transactions — sub-component ──────────────────── */}
         <motion.div variants={fadeUp}>

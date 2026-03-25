@@ -5,20 +5,21 @@ export default {
     extend: {
       colors: {
         // ── App backgrounds ───────────────────────────────────────────────
-        'kosha-bg':            '#FAFBFF',
-        'kosha-bg-2':          '#F2F5FF',
+        'kosha-bg':            '#FCFCFF',
+        'kosha-bg-2':          '#F6F7FF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F2F5FF',
-        'kosha-border':        '#D8DEFF',
-        'kosha-border-strong': '#8C98FF',
+        'kosha-surface-2':     '#F4F6FF',
+        'kosha-border':        '#DDE2FF',
+        'kosha-border-strong': '#9AA5FF',
 
-        // ── Brand — Periwinkle + Electric Lime ───────────────────────────
-        'brand':           '#2F3BCE',   // deep indigo — buttons, FAB, active
-        'brand-dark':      '#1E1B4B',   // near-black indigo
-        'brand-mid':       '#5C6CFF',   // mid cobalt — hero gradient
-        'brand-container': '#E9EDFF',   // cool tint — nav pill, tonal bg
-        'brand-on':        '#2F3BCE',   // text on brand-container
-        'brand-accent':    '#E2FF5A',   // electric lime — hero chip, savings
+        // ── Brand — Periwinkle Violet + Lime Yellow ─────────────────────
+        'brand':           '#4D59E8',
+        'brand-dark':      '#252B78',
+        'brand-mid':       '#7782FF',
+        'brand-bg':        '#F5F6FF',
+        'brand-container': '#EEF0FF',
+        'brand-on':        '#3844C9',
+        'brand-accent':    '#E4FF5E',
 
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#059669',
@@ -51,10 +52,10 @@ export default {
         'warning-text':   '#B45309',
 
         // ── Ink — indigo-tinted neutrals ──────────────────────────────────
-        'ink':   '#1E1B4B',
-        'ink-2': '#312E81',
-        'ink-3': '#6E7699',
-        'ink-4': '#A3ABC8',
+        'ink':   '#1F255F',
+        'ink-2': '#313A86',
+        'ink-3': '#6E75A8',
+        'ink-4': '#A0A7CD',
 
         // ── Utility ───────────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',

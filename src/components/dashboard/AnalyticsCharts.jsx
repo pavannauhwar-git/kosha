@@ -10,10 +10,10 @@ import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 
 const CASH_CHART_BG =
-  'radial-gradient(circle at 82% 12%, rgba(34,197,94,0.14) 0%, rgba(34,197,94,0) 58%), linear-gradient(180deg, #2B2F3A 0%, #1F232D 100%)'
+  'radial-gradient(circle at 82% 12%, rgba(92,108,255,0.24) 0%, rgba(92,108,255,0) 58%), linear-gradient(180deg, #2B3478 0%, #1E2558 100%)'
 
 const NET_CHART_BG =
-  'radial-gradient(circle at 18% 18%, rgba(59,130,246,0.16) 0%, rgba(59,130,246,0) 52%), linear-gradient(180deg, #2A313D 0%, #1D242E 100%)'
+  'radial-gradient(circle at 18% 18%, rgba(108,181,255,0.20) 0%, rgba(108,181,255,0) 52%), linear-gradient(180deg, #36438D 0%, #252F6A 100%)'
 
 // ── Tooltips ──────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ const DarkTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: 'rgba(31,31,31,0.96)',
+      background: 'rgba(34,43,109,0.96)',
       borderRadius: 12,
       padding: '10px 14px',
       boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
@@ -52,7 +52,7 @@ const NetTooltip = ({ active, payload, label }) => {
   const valueColor = val >= 0 ? C.chartIncome : C.chartExpense
   return (
     <div style={{
-      background: 'rgba(31,31,31,0.96)',
+      background: 'rgba(34,43,109,0.96)',
       borderRadius: 12,
       padding: '10px 14px',
       boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
@@ -204,14 +204,14 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
 })
 
 const TREND_CHART_BG =
-  'radial-gradient(circle at 85% 20%, rgba(16,185,129,0.16) 0%, rgba(16,185,129,0) 58%), linear-gradient(180deg, #2D333F 0%, #1F252F 100%)'
+  'radial-gradient(circle at 85% 20%, rgba(52,211,153,0.16) 0%, rgba(52,211,153,0) 58%), linear-gradient(180deg, #303A68 0%, #222B4D 100%)'
 
 const ConfidenceTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload
   return (
     <div style={{
-      background: 'rgba(31,31,31,0.96)',
+      background: 'rgba(34,43,109,0.96)',
       borderRadius: 12,
       padding: '10px 14px',
       boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',

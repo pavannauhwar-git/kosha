@@ -341,6 +341,60 @@ export default function Reconciliation() {
         </div>
       </div>
 
+      <div className="sticky-toolbar">
+        <p className="text-[11px] text-ink-3 px-1 mb-2">
+          View: {REVIEW_STATE_FILTERS.find((item) => item.id === reviewStateFilter)?.label || 'In queue'} · {FILTERS.find((item) => item.id === filter)?.label || 'All'}
+        </p>
+
+        <FilterRow className="mb-2">
+          {REVIEW_STATE_FILTERS.map((chip) => {
+            const active = chip.id === reviewStateFilter
+            const count = reviewCounts[chip.id] || 0
+            return (
+              <motion.button
+                key={chip.id}
+                type="button"
+                onClick={() => setReviewStateFilter(chip.id)}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.12 }}
+                aria-pressed={active}
+                className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
+              >
+                {chip.label}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                  {count}
+                </span>
+              </motion.button>
+            )
+          })}
+        </FilterRow>
+
+        <FilterRow>
+          {FILTERS.map((chip) => {
+            const active = chip.id === filter
+            const count = qualityCounts[chip.id] || 0
+            return (
+              <motion.button
+                key={chip.id}
+                type="button"
+                onClick={() => setFilter(chip.id)}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.12 }}
+                aria-pressed={active}
+                className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
+              >
+                {chip.label}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                  {count}
+                </span>
+              </motion.button>
+            )
+          })}
+        </FilterRow>
+      </div>
+
       <div className="card p-4 mb-6">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
@@ -522,60 +576,6 @@ export default function Reconciliation() {
         )}
       </div>
 
-      <div className="sticky-toolbar">
-        <p className="text-[11px] text-ink-3 px-1 mb-2">
-          View: {REVIEW_STATE_FILTERS.find((item) => item.id === reviewStateFilter)?.label || 'In queue'} · {FILTERS.find((item) => item.id === filter)?.label || 'All'}
-        </p>
-
-        <FilterRow className="mb-2">
-          {REVIEW_STATE_FILTERS.map((chip) => {
-            const active = chip.id === reviewStateFilter
-            const count = reviewCounts[chip.id] || 0
-            return (
-              <motion.button
-                key={chip.id}
-                type="button"
-                onClick={() => setReviewStateFilter(chip.id)}
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.12 }}
-                aria-pressed={active}
-                className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
-              >
-                {chip.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                  {count}
-                </span>
-              </motion.button>
-            )
-          })}
-        </FilterRow>
-
-        <FilterRow>
-          {FILTERS.map((chip) => {
-            const active = chip.id === filter
-            const count = qualityCounts[chip.id] || 0
-            return (
-              <motion.button
-                key={chip.id}
-                type="button"
-                onClick={() => setFilter(chip.id)}
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.12 }}
-                aria-pressed={active}
-                className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
-              >
-                {chip.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                  {count}
-                </span>
-              </motion.button>
-            )
-          })}
-        </FilterRow>
-      </div>
-
       {loading ? (
         <SkeletonLayout
           sections={[
@@ -752,7 +752,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
         <p className="text-caption text-ink-3 mt-2">No candidate found in current transactions.</p>
       ) : (
         <div className={`mt-2 rounded-card border p-2.5 ${
-          isLinked ? 'border-income-text/30 bg-income-bg/5' : 'border-kosha-border bg-white'
+          isLinked ? 'border-income-text/30 bg-income-bg/5' : 'border-kosha-border bg-kosha-surface'
         }`}>
           <p className="text-caption text-ink-3">
             Best: {best.txn.description || 'No description'} · {fmt(best.txn.amount)} · {fmtDate(best.txn.date)}

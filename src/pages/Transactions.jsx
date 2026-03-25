@@ -285,29 +285,6 @@ export default function Transactions() {
         </div>
       </div>
 
-      {showGuideHint && (
-        <div className="card mb-5 p-4 border border-brand-border bg-brand-container/40">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
-              <BookOpen size={16} className="text-brand" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-body font-semibold text-ink">Transactions tips</p>
-              <p className="text-label text-ink-3 mt-0.5">Use consistent categories and recurring labels for cleaner analytics.</p>
-              <button
-                onClick={() => navigate('/guide')}
-                className="text-label font-semibold text-brand mt-2 inline-flex items-center gap-1"
-              >
-                Open guide <ArrowRight size={13} />
-              </button>
-            </div>
-            <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss transactions hint">
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Search */}
       <div className="relative mb-3 md:mb-3.5">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
@@ -325,8 +302,29 @@ export default function Transactions() {
         )}
       </div>
 
-      {/* Filter chips */}
+      {/* Date filter chips */}
       <FilterRow className="mb-2.5 md:mb-3">
+        {DATE_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            onClick={() => {
+              setDatePreset(preset.id)
+              setDisplayCount(50)
+            }}
+            className={`chip-control chip-control-sm ${
+              datePreset === preset.id
+                ? 'bg-brand-container text-brand-on border-brand-container'
+                : 'chip-control-muted'
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </FilterRow>
+
+      {/* Type and category filter chips */}
+      <FilterRow className="mb-3 md:mb-3.5">
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
@@ -359,26 +357,6 @@ export default function Transactions() {
         </button>
       </FilterRow>
 
-      <FilterRow className="mb-3 md:mb-3.5">
-        {DATE_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            onClick={() => {
-              setDatePreset(preset.id)
-              setDisplayCount(50)
-            }}
-            className={`chip-control chip-control-sm ${
-              datePreset === preset.id
-                ? 'bg-brand-container text-brand-on border-brand-container'
-                : 'chip-control-muted'
-            }`}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </FilterRow>
-
       {/* Category picker */}
       <AnimatePresence>
         {showCats && (
@@ -403,6 +381,29 @@ export default function Transactions() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {showGuideHint && (
+        <div className="card mb-5 p-4 border border-brand-border bg-brand-container/40">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+              <BookOpen size={16} className="text-brand" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-semibold text-ink">Transactions tips</p>
+              <p className="text-label text-ink-3 mt-0.5">Use consistent categories and recurring labels for cleaner analytics.</p>
+              <button
+                onClick={() => navigate('/guide')}
+                className="text-label font-semibold text-brand mt-2 inline-flex items-center gap-1"
+              >
+                Open guide <ArrowRight size={13} />
+              </button>
+            </div>
+            <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss transactions hint">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Transaction groups */}
       {groups.length === 0 ? (
