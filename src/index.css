@@ -547,6 +547,10 @@
     padding-bottom: calc(var(--nav-height) + 0.9rem);
   }
 
+  .page-stack {
+    row-gap: 0.9rem;
+  }
+
   .section-label {
     font-size: 10.5px;
   }
@@ -573,6 +577,44 @@
     padding-top: 0.68rem;
     padding-bottom: 0.68rem;
     gap: 0.6rem;
+  }
+
+  .card.p-4 {
+    padding: 0.82rem;
+  }
+
+  .card.p-5 {
+    padding: 1rem;
+  }
+
+  .card.mb-5 {
+    margin-bottom: 1rem;
+  }
+
+  .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1rem;
+  }
+
+  .nav-float {
+    padding: 8px 10px;
+  }
+
+  .nav-float-item {
+    width: 60px;
+  }
+
+  .fab,
+  .fab-bills {
+    width: 3.2rem;
+    height: 3.2rem;
+    bottom: calc(var(--nav-height) + 0.75rem);
+  }
+
+  .empty-state {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 

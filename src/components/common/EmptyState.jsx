@@ -9,7 +9,7 @@ export default function EmptyState({
   className = '',
 }) {
   return (
-    <div className={`card py-10 px-6 flex flex-col items-center text-center ${className}`.trim()}>
+    <div className={`card empty-state py-10 px-6 flex flex-col items-center text-center ${className}`.trim()}>
       {icon ? (
         <div className="w-16 h-16 rounded-full bg-kosha-surface-2 flex items-center justify-center mb-4">
           {icon}
