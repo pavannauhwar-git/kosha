@@ -55,10 +55,10 @@ export default function BreakdownCard({ earned, spent, invested }) {
             })}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span style={{ fontSize: 15, fontWeight: 700, color: LEFTOVER_COLOR, fontFamily: 'Roboto, system-ui', lineHeight: 1.1 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: LEFTOVER_COLOR, lineHeight: 1.1 }}>
               {savedPct}%
             </span>
-            <span style={{ fontSize: 9, color: C.inkMuted, fontFamily: 'Roboto, system-ui' }}>
+            <span style={{ fontSize: 9, color: C.inkMuted }}>
               leftover
             </span>
           </div>

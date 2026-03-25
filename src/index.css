@@ -80,6 +80,9 @@
 
     --c-surface-variant: #F1F4FF;
     --c-surface-container: #EEF2FF;
+    --c-ui-outline: rgba(36, 59, 175, 0.08);
+    --c-ui-surface: color-mix(in srgb, var(--c-surface-variant) 84%, #FFFFFF 16%);
+    --c-ui-surface-strong: color-mix(in srgb, var(--c-surface-variant) 80%, #FFFFFF 20%);
 
     /* Accent — Lime Yellow (on dark bg only) */
     --c-accent: #F4FF00;
@@ -120,8 +123,8 @@
   button,
   [role="button"] {
     -webkit-tap-highlight-color: transparent;
-    min-height: 48px;
-    min-width: 48px;
+    min-height: 40px;
+    min-width: 40px;
   }
 }
 
@@ -139,8 +142,8 @@
   /* -- Cards ───────────────────────────────────────────────────────── */
   .card {
     @apply rounded-card shadow-card;
-    background: color-mix(in srgb, var(--c-surface-variant) 84%, #FFFFFF 16%);
-    border: 1px solid rgba(36, 59, 175, 0.06);
+    background: var(--c-ui-surface);
+    border: 1px solid var(--c-ui-outline);
   }
 
   .page-stack {
@@ -155,7 +158,8 @@
 
   .card-md {
     @apply rounded-card shadow-card-md;
-    background: color-mix(in srgb, var(--c-surface-variant) 78%, #FFFFFF 22%);
+    background: var(--c-ui-surface-strong);
+    border: 1px solid var(--c-ui-outline);
   }
 
   .card-inset {
@@ -182,7 +186,8 @@
   /* -- List card ───────────────────────────────────────────────────── */
   .list-card {
     @apply rounded-card shadow-card overflow-hidden;
-    background: color-mix(in srgb, var(--c-surface-variant) 82%, #FFFFFF 18%);
+    background: var(--c-ui-surface);
+    border: 1px solid var(--c-ui-outline);
   }
 
   .list-row {
@@ -230,7 +235,9 @@
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-12 px-4 rounded-pill text-[11px] font-semibold border transition-all duration-100 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-2.5 rounded-pill text-[10px] font-semibold border transition-all duration-100 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
+    min-height: 36px;
+    min-width: 0;
   }
 
   .chip-control-muted {
@@ -242,7 +249,8 @@
   }
 
   .chip-control-sm {
-    @apply h-11 px-3 text-[10.5px] gap-1;
+    @apply h-8 px-2 text-[9.5px] gap-1;
+    min-height: 34px;
   }
 
   /* -- Amount colours ──────────────────────────────────────────────── */
@@ -265,7 +273,7 @@
   /* -- Buttons ─────────────────────────────────────────────────────── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all duration-100 active:scale-[0.97] select-none cursor-pointer;
-    min-height: 48px;
+    min-height: 42px;
   }
 
   .btn-primary {
@@ -403,7 +411,7 @@
   .nav-label {
     font-size: 10px;
     line-height: 1;
-    font-family: 'Roboto', system-ui, sans-serif;
+    font-family: inherit;
     /* color + fontWeight animated by Framer */
     white-space: nowrap;
     user-select: none;
@@ -412,7 +420,9 @@
 
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
-    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-transparent focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-150;
+    @apply w-full max-w-full rounded-card px-4 py-3 text-ink placeholder-ink-4 text-base border focus:outline-none focus:shadow-focus transition-all duration-150;
+    background: var(--c-ui-surface);
+    border-color: var(--c-ui-outline);
     min-width: 0;
     will-change: transform;
     transform: translateZ(0);
@@ -516,9 +526,11 @@
 
   /* -- Close button ────────────────────────────────────────────────── */
   .close-btn {
-    @apply w-12 h-12 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border transition-all duration-100 cursor-pointer;
+    @apply w-10 h-10 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border transition-all duration-100 cursor-pointer;
     will-change: transform;
     transform: translateZ(0);
+    min-height: 40px;
+    min-width: 40px;
   }
 
   .close-btn:active {
@@ -587,10 +599,11 @@
   }
 
   .chip-control {
-    height: 2.6rem;
+    height: 2rem;
+    min-height: 2rem;
     padding-left: 0.65rem;
     padding-right: 0.65rem;
-    font-size: 10.5px;
+    font-size: 9.5px;
     gap: 0.25rem;
   }
 

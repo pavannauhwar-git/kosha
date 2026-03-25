@@ -260,10 +260,10 @@ export default function Bills() {
 
   return (
     <div className="page">
-      <PageHeader title="Bills & Dues" />
+      <PageHeader title="Bills & Dues" className="mb-2" />
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           {visiblePending.length > 0 ? (
             <p className="text-caption text-ink-3 mt-0.5">
@@ -285,7 +285,7 @@ export default function Bills() {
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="mb-5 grid grid-cols-2 gap-2">
+      <div className="mb-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => setTab('pending')}
           className={`h-12 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
@@ -308,7 +308,7 @@ export default function Bills() {
 
       {/* ── Structured summary card ───────────────────────────────────── */}
       {visiblePending.length > 0 && (
-        <div className="card mb-5 p-4">
+        <div className="card mb-4 p-4">
           <div className="flex items-center justify-between mb-1">
             <span className="text-caption text-ink-3">Total pending</span>
             <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2

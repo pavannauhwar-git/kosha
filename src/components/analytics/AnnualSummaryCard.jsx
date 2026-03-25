@@ -1,11 +1,44 @@
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
-export default function AnnualSummaryCard({ data, year }) {
+
+function getDelta(current, previous) {
+  const prev = Number(previous || 0)
+  if (prev <= 0) {
+    return { pct: null, width: 0, label: 'No baseline' }
+  }
+
+  const pct = Math.round(((Number(current || 0) - prev) / prev) * 100)
+  return {
+    pct,
+    width: Math.min(100, Math.max(8, Math.abs(pct))),
+    label: `${pct >= 0 ? '+' : ''}${pct}% vs last year`,
+  }
+}
+
+export default function AnnualSummaryCard({ data, prevData, year }) {
   const totalIncome = data?.totalIncome || 0
   const totalExpense = data?.totalExpense || 0
   const totalInvestment = data?.totalInvestment || 0
   const avgSavings = data?.avgSavings || 0
   const annualBalance = totalIncome - totalExpense - totalInvestment
+
+  const cards = [
+    {
+      label: 'Earned',
+      value: totalIncome,
+      delta: getDelta(totalIncome, prevData?.totalIncome),
+    },
+    {
+      label: 'Spent',
+      value: totalExpense,
+      delta: getDelta(totalExpense, prevData?.totalExpense),
+    },
+    {
+      label: 'Invested',
+      value: totalInvestment,
+      delta: getDelta(totalInvestment, prevData?.totalInvestment),
+    },
+  ]
 
   return (
     <div className="card-hero p-5 md:p-6 relative overflow-hidden">
@@ -38,21 +71,28 @@ export default function AnnualSummaryCard({ data, year }) {
 
       <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
 
-      <div className="mb-3.5 overflow-x-auto no-scrollbar">
-        <div className="flex gap-2 min-w-max">
-          <div className="min-w-[146px] px-2.5 py-2 rounded-2xl" style={{ background: C.heroStatBg }}>
-          <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>Earned</p>
-          <p className="text-[12px] font-bold text-white tabular-nums truncate">{fmt(totalIncome)}</p>
+      <div className="mb-3.5 space-y-2">
+        {cards.map((card) => (
+          <div key={card.label} className="px-3 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
+            <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>{card.label}</p>
+            <p className="text-[12px] font-bold text-white tabular-nums">{fmt(card.value)}</p>
+
+            <div className="mt-2 h-1.5 rounded-full bg-white/20 overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${card.delta.width}%`,
+                  background: C.heroAccentSolid,
+                  transition: 'width 280ms ease-out',
+                }}
+              />
+            </div>
+
+            <p className="text-[10px] mt-1" style={{ color: C.heroLabel }}>
+              {card.delta.label}
+            </p>
           </div>
-          <div className="min-w-[146px] px-2.5 py-2 rounded-2xl" style={{ background: C.heroStatBg }}>
-          <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>Spent</p>
-          <p className="text-[12px] font-bold text-white tabular-nums truncate">{fmt(totalExpense)}</p>
-          </div>
-          <div className="min-w-[146px] px-2.5 py-2 rounded-2xl" style={{ background: C.heroStatBg }}>
-          <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>Invested</p>
-          <p className="text-[12px] font-bold text-white tabular-nums truncate">{fmt(totalInvestment)}</p>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   )

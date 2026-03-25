@@ -1,7 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { AlertCircle } from 'lucide-react'
-import { CashFlowChart, NetSavingsChart, ConfidenceTrendChart } from '../components/dashboard/AnalyticsCharts'
+import { CashFlowChart, NetSavingsChart } from '../components/dashboard/AnalyticsCharts'
 import { useYearSummary } from '../hooks/useTransactions'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt } from '../lib/utils'
@@ -11,14 +10,11 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
-import StatMini from '../components/common/StatMini'
 import AnnualSummaryCard from '../components/analytics/AnnualSummaryCard'
 import YoYCards from '../components/analytics/YoYCards'
 import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
 import YearlyInsightsCard from '../components/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
-import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
-import { detectConfidenceDrift, calculateConfidenceTrend } from '../lib/reconciliationMetrics'
 
 const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2023 + i)
 
@@ -36,7 +32,7 @@ export default function Analytics() {
   }, [])
 
   const { data, loading } = useYearSummary(year)
-  const { rows: reconciliationRows } = useReconciliationReviews({ enabled: heavyReady })
+  const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
 
   const top5 = data?.top5 || []
 
@@ -71,42 +67,6 @@ export default function Analytics() {
     [data?.byVehicle]
   )
 
-  const reconciliationStats = useMemo(() => {
-    const rows = reconciliationRows || []
-    const linked = rows.filter((row) => row.status === 'linked').length
-    const rejected = rows.filter((row) => String(row.statement_line || '').startsWith('REJECTED:')).length
-    const reviewed = rows.filter((row) => row.status === 'reviewed').length
-
-    const now = Date.now()
-    const recentWindowMs = 7 * 24 * 60 * 60 * 1000
-    const recentRows = rows.filter((row) => {
-      const ts = new Date(row.updated_at || 0).getTime()
-      return Number.isFinite(ts) && now - ts <= recentWindowMs
-    })
-    const recentLinked = recentRows.filter((row) => row.status === 'linked').length
-    const recentRejected = recentRows.filter((row) => String(row.statement_line || '').startsWith('REJECTED:')).length
-    const netConfidence = recentLinked + recentRejected > 0
-      ? Math.round((recentLinked / (recentLinked + recentRejected)) * 100)
-      : null
-
-    const drift = detectConfidenceDrift(rows)
-
-    return {
-      linked,
-      rejected,
-      reviewed,
-      recentLinked,
-      recentRejected,
-      netConfidence,
-      drift,
-    }
-  }, [reconciliationRows])
-
-  const confidenceTrend = useMemo(
-    () => calculateConfidenceTrend(reconciliationRows, 30),
-    [reconciliationRows]
-  )
-
   const strategicRecommendations = useMemo(() => {
     const items = []
     const totalIncome = Number(data?.totalIncome || 0)
@@ -130,19 +90,16 @@ export default function Analytics() {
       }
     }
 
-    if (reconciliationStats.netConfidence != null && reconciliationStats.netConfidence < 70) {
-      items.push(`Reconciliation confidence is ${reconciliationStats.netConfidence}%. Run a cleanup pass to improve dashboard trust.`)
-    }
-
     return items.slice(0, 3)
-  }, [data, catEntries, categoryTotal, reconciliationStats.netConfidence])
+  }, [data, catEntries, categoryTotal])
 
   return (
     <div className="page">
-      <PageHeader title="Analytics" />
+      <PageHeader title="Analytics" className="mb-2" />
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
       <PickerNavigator
+        className="mb-4"
         label={year}
         onPrev={() => setYear(y => y - 1)}
         onNext={() => setYear(y => y + 1)}
@@ -173,6 +130,7 @@ export default function Analytics() {
           {/* ── 1. Hero summary ──────────────────────────────────────── */}
           <AnnualSummaryCard
             data={data}
+            prevData={prevData}
             year={year}
           />
 
@@ -196,7 +154,7 @@ export default function Analytics() {
           <YearlyInsightsCard data={data} catEntries={catEntries} />
 
           {/* ── 2. Performance trends ───────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <CashFlowChart
               chartData={chartData}
               totalIncome={data?.totalIncome}
@@ -209,7 +167,7 @@ export default function Analytics() {
           </div>
 
           {/* ── 3. Spending intelligence ────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {catEntries.length > 0 ? (
               <CategorySpendingChart
                 entries={catEntries}
@@ -225,7 +183,7 @@ export default function Analytics() {
           </div>
 
           {/* ── 4. Allocation and year comparison ───────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {vehicleData.length > 0 ? (
               <PortfolioAllocation vehicleData={vehicleData} />
             ) : (
@@ -235,50 +193,6 @@ export default function Analytics() {
               </div>
             )}
             <YoYCards years={yoyYears} currentYear={year} />
-          </div>
-
-          {/* ── 5. Data trust ───────────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <motion.div
-              whileHover={{ y: -1 }}
-              transition={{ duration: 0.14 }}
-              className="card p-4"
-            >
-              <SectionHeader
-                className="mb-2"
-                title="Reconciliation confidence"
-                rightText="Last 7 days signal"
-              />
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-2 gap-2 mb-3">
-                <StatMini label="Linked" value={reconciliationStats.linked} tone="text-income-text" />
-                <StatMini label="Mismatch reports" value={reconciliationStats.rejected} tone="text-expense-text" />
-                <StatMini label="Recent linked" value={reconciliationStats.recentLinked} tone="text-brand" />
-                <StatMini
-                  label="Confidence"
-                  value={reconciliationStats.netConfidence == null ? '—' : `${reconciliationStats.netConfidence}%`}
-                  tone={reconciliationStats.netConfidence != null && reconciliationStats.netConfidence >= 70 ? 'text-income-text' : 'text-warning-text'}
-                />
-              </div>
-
-              {reconciliationStats.drift?.drifting && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ y: -1 }}
-                  className="rounded-card border border-warning-border bg-warning-bg p-2.5 flex items-start gap-2"
-                >
-                  <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-warning-text">Confidence below baseline</p>
-                    <p className="text-[10px] text-ink-3 mt-0.5">
-                      7d: {reconciliationStats.drift.recent.confidence}% vs 30d: {reconciliationStats.drift.baseline.confidence}%
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
-
-            <ConfidenceTrendChart trendData={confidenceTrend} />
           </div>
 
           {!data?.totalIncome && !data?.totalExpense && (

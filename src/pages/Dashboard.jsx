@@ -194,7 +194,7 @@ export default function Dashboard() {
   const { pending: bills = [] }     = useLiabilities({ includePaid: false, enabled: heavyReady })
   const { data: financialEvents = [] } = useFinancialEvents(3, { enabled: heavyReady })
 
-  const isInitialLoading = !heavyReady || recentLoading || summaryLoading || runningBalanceLoading
+  const isInitialLoading = recentLoading || summaryLoading || runningBalanceLoading
   const isBackgroundFetching = !isInitialLoading && (recentFetching || summaryFetching || runningBalanceFetching)
 
   // ── Derived values ─────────────────────────────────────────────────────
@@ -433,7 +433,7 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <PageHeader title="Dashboard" />
+      <PageHeader title="Dashboard" className="mb-2" />
       <AnimatePresence mode="wait" initial={false}>
         {isInitialLoading ? (
           <motion.div
@@ -441,7 +441,7 @@ export default function Dashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1, transition: dashboardFade }}
             exit={{ opacity: 0, transition: dashboardFade }}
-            className="page-stack pt-0.5 md:pt-0"
+            className="page-stack pt-0"
           >
             <div>
               <p className="text-caption text-ink-3">
@@ -474,7 +474,7 @@ export default function Dashboard() {
             initial="hidden"
             animate="show"
             exit={{ opacity: 0, transition: dashboardFade }}
-            className="page-stack pt-0.5 md:pt-0"
+            className="page-stack pt-0"
           >
 
         {/* ── Greeting ──────────────────────────────────────────────── */}

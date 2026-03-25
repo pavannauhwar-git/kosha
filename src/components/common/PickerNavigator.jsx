@@ -8,9 +8,10 @@ export default function PickerNavigator({
   inputType = 'month',
   inputValue,
   onInputChange,
+  className = 'mb-6',
 }) {
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className={`flex items-center justify-between ${className}`}>
       <button
         onClick={onPrev}
         className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border

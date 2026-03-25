@@ -273,7 +273,7 @@ export default function Transactions() {
     <div className="page">
       <PageHeader title="Transactions" />
 
-      <div className="mb-2.5 md:mb-3.5 flex items-center justify-between gap-3">
+      <div className="mb-3 md:mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-caption text-ink-3">
             {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
@@ -283,15 +283,15 @@ export default function Transactions() {
         <div className="w-8 h-8 shrink-0">
           {total > 0 ? (
             <button onClick={exportCSV} title="Export CSV"
-              className="close-btn w-8 h-8 border border-kosha-border shrink-0">
-              <Download size={14} className="text-ink-2" />
+              className="h-7 w-7 min-h-0 min-w-0 rounded-full border border-kosha-border bg-kosha-surface-2 shrink-0 flex items-center justify-center active:scale-[0.97] transition-transform">
+              <Download size={13} className="text-ink-2" />
             </button>
           ) : null}
         </div>
       </div>
 
       {/* Search */}
-      <div className="relative mb-3 md:mb-3.5">
+      <div className="relative mb-2.5 md:mb-3">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
         <input
           className="input pl-9 pr-9 py-2.5 md:py-3"
@@ -308,7 +308,7 @@ export default function Transactions() {
       </div>
 
       {/* Date filter chips */}
-      <FilterRow className="mb-2.5 md:mb-3">
+      <FilterRow className="mb-2 md:mb-2.5">
         {DATE_PRESETS.map((preset) => (
           <button
             key={preset.id}
@@ -329,7 +329,7 @@ export default function Transactions() {
       </FilterRow>
 
       {/* Type and category filter chips */}
-      <FilterRow className="mb-3 md:mb-3.5">
+      <FilterRow className="mb-2.5 md:mb-3">
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
@@ -370,7 +370,7 @@ export default function Transactions() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="card mb-4.5 p-3 flex flex-wrap gap-2"
+            className="card mb-3.5 p-3 flex flex-wrap gap-2"
           >
             {filterCategories.map(c => (
               <button key={c.id}
@@ -388,7 +388,7 @@ export default function Transactions() {
       </AnimatePresence>
 
       {showGuideHint && (
-        <div className="card mb-5 p-4 border border-brand-border bg-brand-container/40">
+        <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
               <BookOpen size={16} className="text-brand" />
@@ -436,12 +436,12 @@ export default function Transactions() {
               }}
         />
       ) : (
-        <div className="space-y-3.5">
+        <div className="space-y-3">
           {groups.map(([dateKey, txns]) => {
             const net = groupNet(txns)
             return (
               <div key={dateKey} className="list-card overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3
+                <div className="flex items-center justify-between px-4 py-2.5
                                 border-b border-kosha-border bg-kosha-surface-container">
                   <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
                     {dateLabel(dateKey)}
@@ -471,7 +471,7 @@ export default function Transactions() {
         <button
           onClick={() => setDisplayCount(n => n + 50)}
           className="w-full py-3.5 text-label font-semibold text-brand text-center
-                     bg-kosha-surface-variant border border-kosha-border rounded-card mt-4 active:scale-[0.97] transition-transform"
+                     bg-kosha-surface-variant border border-kosha-border rounded-card mt-3 active:scale-[0.97] transition-transform"
         >
           Show more ({total - data.length} remaining)
         </button>
