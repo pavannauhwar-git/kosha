@@ -541,6 +541,41 @@
   animation: shimmer 1.6s ease-in-out infinite;
 }
 
+@media (max-width: 390px) {
+  .page {
+    padding-top: 0.5rem;
+    padding-bottom: calc(var(--nav-height) + 0.9rem);
+  }
+
+  .section-label {
+    font-size: 10.5px;
+  }
+
+  .card-title {
+    font-size: 12px;
+  }
+
+  .chip-control {
+    height: 2.1rem;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+    font-size: 10.5px;
+    gap: 0.25rem;
+  }
+
+  .input {
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+    font-size: 15px;
+  }
+
+  .list-row {
+    padding-top: 0.68rem;
+    padding-bottom: 0.68rem;
+    gap: 0.6rem;
+  }
+}
+
 /* Add these three blocks at the end of index.css */
 
 @media (min-width: 768px) {
