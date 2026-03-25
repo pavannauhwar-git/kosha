@@ -90,13 +90,27 @@ export default function Dashboard() {
 
   // ── Data fetching ─────────────────────────────────────────────────────
   const { data: recent }            = useTransactions({ limit: 8 })
+  const { data: latestTxnRows = [] } = useTransactions({ limit: 1 })
   const { todaySpend }              = useTodayExpenses()
   const { data: summary }           = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: lastSummary }       = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
     now.getMonth() === 0 ? 12 : now.getMonth()
   )
-  const { balance: runningBalance } = useRunningBalance(now.getFullYear(), now.getMonth() + 1)
+  const balanceHorizonDate = useMemo(() => {
+    const latestDate = latestTxnRows[0]?.date
+    if (!latestDate) return now
+
+    const parsed = new Date(`${latestDate}T00:00:00`)
+    if (Number.isNaN(parsed.getTime())) return now
+
+    return parsed > now ? parsed : now
+  }, [latestTxnRows, now])
+
+  const { balance: runningBalance } = useRunningBalance(
+    balanceHorizonDate.getFullYear(),
+    balanceHorizonDate.getMonth() + 1
+  )
   const { pending: bills }          = useLiabilities({ includePaid: false })
   const { data: financialEvents }   = useFinancialEvents(5)
 
@@ -249,7 +263,7 @@ export default function Dashboard() {
         {/* ── Hero card — sub-component, renders independently ─────── */}
         <motion.div variants={fadeUp}>
           <DashboardHeroCard
-            now={now}
+            now={balanceHorizonDate}
             runningBalance={runningBalance}
             rate={rate}
             earned={earned}

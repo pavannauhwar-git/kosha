@@ -280,7 +280,7 @@ export default function Reconciliation() {
     <div className="page">
       <PageHeader title="Reconciliation" />
 
-      <div className="card p-4 mb-4">
+      <div className="card p-4 mb-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-ink">Data quality workspace</p>
@@ -301,7 +301,7 @@ export default function Reconciliation() {
         </div>
       </div>
 
-      <div className="card p-4 mb-4">
+      <div className="card p-4 mb-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <p className="text-sm font-semibold text-ink">Statement-style matching</p>
@@ -482,7 +482,7 @@ export default function Reconciliation() {
         )}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-5">
         {REVIEW_STATE_FILTERS.map((chip) => {
           const active = chip.id === reviewStateFilter
           const count = reviewCounts[chip.id] || 0
@@ -506,7 +506,7 @@ export default function Reconciliation() {
         })}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-5">
         {FILTERS.map((chip) => {
           const active = chip.id === filter
           const count = qualityCounts[chip.id] || 0

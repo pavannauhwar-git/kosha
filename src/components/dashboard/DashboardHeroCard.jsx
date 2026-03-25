@@ -43,7 +43,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       >
         <div className="flex items-center gap-2 mb-1">
           <p className="text-caption font-medium" style={{ color: C.heroLabel }}>
-            {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
+            {heroMode === 'balance' ? 'Projected balance' : 'Safe to spend'}
           </p>
           <div className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white/70 uppercase tracking-wider">
             Tap

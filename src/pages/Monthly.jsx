@@ -236,28 +236,28 @@ export default function Monthly() {
           <BreakdownCard earned={earned} spent={spent} invested={invested} />
 
           <div className="card p-4">
-            <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
               <div>
                 <p className="section-label">Month close summary</p>
                 <p className="text-caption text-ink-3 mt-0.5">Outcome projection and runway</p>
               </div>
-              <span className={`text-xs px-2 py-1 rounded-full font-semibold ${monthCloseSummary.health === 'healthy' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+              <span className={`text-xs px-2 py-1 rounded-full font-semibold self-start ${monthCloseSummary.health === 'healthy' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
                 {monthCloseSummary.health === 'healthy' ? 'On track' : 'Needs correction'}
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mb-2">
-              <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
+              <div className="rounded-card bg-kosha-surface p-3 border border-kosha-border">
                 <p className="text-caption text-ink-3">Net close</p>
                 <p className={`text-sm font-bold tabular-nums ${monthCloseSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                   {monthCloseSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(monthCloseSummary.net))}
                 </p>
               </div>
-              <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+              <div className="rounded-card bg-kosha-surface p-3 border border-kosha-border">
                 <p className="text-caption text-ink-3">Outflow</p>
                 <p className="text-sm font-bold tabular-nums text-ink-2">{fmt(monthCloseSummary.totalOutflow)}</p>
               </div>
-              <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+              <div className="rounded-card bg-kosha-surface p-3 border border-kosha-border">
                 <p className="text-caption text-ink-3">Days left</p>
                 <p className="text-sm font-bold tabular-nums text-ink-2">{monthCloseSummary.daysLeft}</p>
               </div>
@@ -282,7 +282,7 @@ export default function Monthly() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
                 <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
                   <p className="text-caption text-ink-3">Over budget</p>
                   <p className="text-lg font-bold text-expense-text tabular-nums">{budgetVariance.overCount}</p>
