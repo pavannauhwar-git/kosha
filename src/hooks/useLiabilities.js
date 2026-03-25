@@ -187,11 +187,11 @@ export async function markPaid(liability, options = {}) {
 
   await cancelLiabilityFamilyQueries()
 
-  const paidDueDate = result?.next_due_date || previousLiability?.due_date
   const nextLiability = {
     ...previousLiability,
     paid: true,
-    due_date: paidDueDate,
+    // Keep original due date for the paid row. The recurring next bill is a new row.
+    due_date: previousLiability?.due_date,
     linked_transaction_id: result?.transaction_id || previousLiability?.linked_transaction_id || null,
   }
   reconcileLiabilityCaches(previousLiability, nextLiability)
@@ -224,13 +224,16 @@ export async function deleteLiability(id, options = {}) {
   const userId = getAuthUserId()
   const previousLiability = findCachedLiabilityById(id)
   
-  const { error } = await supabase
+  const { data: deletedRows, error } = await supabase
     .from('liabilities')
     .delete()
     .eq('id', id)
-    .eq('user_id', userId)
+    .select('id')
 
   if (error) throw error
+  if (!Array.isArray(deletedRows) || deletedRows.length === 0) {
+    throw new Error('Bill could not be deleted. Please refresh and try again.')
+  }
 
   await cancelLiabilityFamilyQueries()
 
