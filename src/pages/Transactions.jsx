@@ -275,11 +275,11 @@ export default function Transactions() {
             {(typeFilter !== 'all' || catFilter || datePreset !== 'all') ? ' (filtered)' : ''}
           </p>
         </div>
-        <div className="w-9 h-9 shrink-0">
+        <div className="w-8 h-8 shrink-0">
           {total > 0 ? (
             <button onClick={exportCSV} title="Export CSV"
-              className="close-btn border border-kosha-border shrink-0">
-              <Download size={16} className="text-ink-2" />
+              className="close-btn w-8 h-8 border border-kosha-border shrink-0">
+              <Download size={14} className="text-ink-2" />
             </button>
           ) : null}
         </div>
@@ -309,7 +309,7 @@ export default function Transactions() {
       )}
 
       {/* Search */}
-      <div className="relative mb-2.5 md:mb-3">
+      <div className="relative mb-3 md:mb-3.5">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
         <input
           className="input pl-9 pr-9 py-2.5 md:py-3"
@@ -326,7 +326,7 @@ export default function Transactions() {
       </div>
 
       {/* Filter chips */}
-      <FilterRow className="mb-2 md:mb-2.5">
+      <FilterRow className="mb-2.5 md:mb-3">
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
@@ -359,7 +359,7 @@ export default function Transactions() {
         </button>
       </FilterRow>
 
-      <FilterRow className="mb-2 md:mb-2.5">
+      <FilterRow className="mb-3 md:mb-3.5">
         {DATE_PRESETS.map((preset) => (
           <button
             key={preset.id}
@@ -387,7 +387,7 @@ export default function Transactions() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="card mb-4 p-3 flex flex-wrap gap-2"
+            className="card mb-4.5 p-3 flex flex-wrap gap-2"
           >
             {filterCategories.map(c => (
               <button key={c.id}

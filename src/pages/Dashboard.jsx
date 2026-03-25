@@ -474,7 +474,7 @@ export default function Dashboard() {
         {/* ── Investments ───────────────────────────────────────────── */}
         {invested > 0 && (
           <motion.div variants={fadeUp}>
-            <div className="card p-4">
+            <div className="card p-3.5">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-caption text-ink-3 font-medium">Invested this month</p>
                 <div className="flex items-center gap-1.5">
@@ -492,15 +492,15 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
-              <p className="text-value font-bold text-invest-text tabular-nums">{fmt(invested)}</p>
+              <p className="text-[44px] md:text-value font-bold text-invest-text tabular-nums leading-[0.95]">{fmt(invested)}</p>
             </div>
           </motion.div>
         )}
 
         {weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
-            <div className="card p-4">
-              <div className="flex items-start justify-between gap-3 mb-2.5">
+            <div className="card p-3.5">
+              <div className="flex items-start justify-between gap-3 mb-2">
                 <div>
                   <p className="section-label">What changed this week</p>
                   <p className="text-caption text-ink-3 mt-0.5">7-day vs previous 7-day digest</p>
@@ -510,7 +510,7 @@ export default function Dashboard() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-1">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-1">
                 <StatMini label="Spend (7d)" value={fmt(weeklyDigest.spendLast7)} tone="text-expense-text" />
                 <StatMini label="Spend delta" value={`${weeklyDigest.spendDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.spendDelta))}`} tone={weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'} />
                 <StatMini label="Income (7d)" value={fmt(weeklyDigest.incomeLast7)} tone="text-income-text" />

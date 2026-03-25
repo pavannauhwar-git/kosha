@@ -55,16 +55,20 @@ export default function AnnualSummaryCard({ data, prevData, spendTrend, year }) 
   }
 
   return (
-    <div className="card overflow-hidden border border-kosha-border/80 shadow-card-md">
-      <div className="px-5 pt-5 pb-4 border-b border-kosha-border bg-gradient-to-br from-kosha-surface to-kosha-surface-2">
+    <div className="card overflow-hidden border border-kosha-border/80 shadow-card-md bg-gradient-to-br from-kosha-surface via-kosha-surface to-kosha-surface-2">
+      <div className="px-4 pt-4 pb-3 border-b border-kosha-border/80">
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <p className="section-label">Year snapshot</p>
+          <span className="text-[10px] text-ink-4">{year}</span>
+        </div>
         <p className="text-caption text-ink-3 font-medium mb-1">Total earned</p>
         <div className="flex items-center justify-between gap-3">
-          <p className="font-bold tabular-nums text-income-text" style={{ fontSize: 30, lineHeight: 1.08, letterSpacing: '-0.02em' }}>
+          <p className="font-bold tabular-nums text-income-text" style={{ fontSize: 26, lineHeight: 1.06, letterSpacing: '-0.02em' }}>
             {fmt(totalIncome)}
           </p>
           {incomePct !== null && Math.abs(incomePct) >= 2 && (
             <div
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold shrink-0
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0
               ${incomePct >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}
             >
               {incomePct >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
@@ -74,24 +78,24 @@ export default function AnnualSummaryCard({ data, prevData, spendTrend, year }) 
         </div>
       </div>
 
-      <div className="grid grid-cols-2 border-b border-kosha-border">
-        <div className="px-5 py-4 border-r border-kosha-border">
-          <p className="text-caption text-ink-3 mb-1.5">Spent</p>
-          <p className="text-value font-bold text-expense-text tabular-nums">{fmt(totalExpense)}</p>
-          <div className="mt-1.5">
+      <div className="grid grid-cols-2 border-b border-kosha-border/80">
+        <div className="px-4 py-3 border-r border-kosha-border/80">
+          <p className="text-[11px] text-ink-3 mb-1">Spent</p>
+          <p className="text-[24px] font-bold text-expense-text tabular-nums leading-none">{fmt(totalExpense)}</p>
+          <div className="mt-1">
             <YoyBadge pct={expensePct} invertGood={true} />
           </div>
         </div>
-        <div className="px-5 py-4">
-          <p className="text-caption text-ink-3 mb-1.5">Invested</p>
-          <p className="text-value font-bold text-invest-text tabular-nums">{fmt(totalInvestment)}</p>
-          <div className="mt-1.5">
+        <div className="px-4 py-3">
+          <p className="text-[11px] text-ink-3 mb-1">Invested</p>
+          <p className="text-[24px] font-bold text-invest-text tabular-nums leading-none">{fmt(totalInvestment)}</p>
+          <div className="mt-1">
             <YoyBadge pct={investPct} invertGood={false} />
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 px-5 py-4 bg-white/60">
+      <div className="flex items-center gap-3 px-4 py-3 bg-white/40">
         <div className="relative shrink-0" style={{ width: ARC, height: ARC }}>
           <svg width={ARC} height={ARC} viewBox={`0 0 ${ARC} ${ARC}`}>
             <circle cx={ARC / 2} cy={ARC / 2} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
@@ -115,7 +119,7 @@ export default function AnnualSummaryCard({ data, prevData, spendTrend, year }) 
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-label font-semibold text-ink mb-1">Avg Savings Rate</p>
+          <p className="text-[12px] font-semibold text-ink mb-1">Avg Savings Rate</p>
           {spendTrend && <TrendPill current={spendTrend.current} previous={spendTrend.previous} label="spend" />}
         </div>
       </div>

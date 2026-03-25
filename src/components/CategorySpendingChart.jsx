@@ -58,8 +58,8 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         {subtitle && <span className="text-[10px] text-ink-3 text-right">{subtitle}</span>}
       </div>
 
-      <div className="space-y-2">
-        {entries.map(([catId, amt]) => {
+      <div className="rounded-card border border-kosha-border overflow-hidden">
+        {entries.map(([catId, amt], i) => {
           const cat       = CATEGORIES.find(c => c.id === catId)
           const budget    = budgets[catId] || 0
           const hasBudget = budget > 0
@@ -74,31 +74,23 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
             <RowTag
               key={catId}
               onClick={onCategoryClick ? () => onCategoryClick(cat) : undefined}
-              className={`w-full rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5 text-left
-                          ${onCategoryClick ? 'active:bg-kosha-surface transition-colors' : ''}`}
+              className={`w-full flex items-center gap-2.5 bg-kosha-surface px-3 py-2.5 text-left
+                          ${onCategoryClick ? 'active:bg-kosha-surface-2 transition-colors' : ''}
+                          ${i < entries.length - 1 ? 'border-b border-kosha-border' : ''}`}
             >
-              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                 style={{ background: cat?.bg || '#E9EEF6' }}>
-                <CategoryIcon categoryId={catId} size={18} />
+                <CategoryIcon categoryId={catId} size={16} />
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-[12px] font-semibold text-ink truncate">
                     {cat?.label || catId}
                   </span>
-                  {hasBudget ? (
-                    <span className={`text-[10px] ml-2 shrink-0 font-semibold
-                      ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
-                      {overBudget
-                        ? `+${fmt(Math.abs(remaining))} over`
-                        : `${fmt(remaining)} left`}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-ink-4 ml-2 shrink-0">
-                      {Math.round((amt / total) * 100)}%
-                    </span>
-                  )}
+                  <span className="text-[12px] font-semibold tabular-nums shrink-0 text-expense-text">
+                    {fmt(amt)}
+                  </span>
                 </div>
 
                 <CategoryLine
@@ -107,24 +99,30 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
                   overBudget={overBudget}
                 />
 
-                {hasBudget && (
-                  <p className={`text-[10px] mt-1 tabular-nums
-                    ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
-                    {fmt(amt)} of {fmt(budget)}
-                  </p>
-                )}
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  {hasBudget ? (
+                    <p className={`text-[10px] tabular-nums ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
+                      {fmt(amt)} / {fmt(budget)}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-ink-4">{Math.round((amt / total) * 100)}% of total</p>
+                  )}
 
-                {/* Pace indicator — only shown when budget is set and month is current */}
+                  {hasBudget ? (
+                    <span className={`text-[10px] font-semibold shrink-0 ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
+                      {overBudget
+                        ? `+${fmt(Math.abs(remaining))} over`
+                        : `${fmt(remaining)} left`}
+                    </span>
+                  ) : null}
+                </div>
+
                 {hasBudget && pacePct !== null && barPct > pacePct && !overBudget && (
-                  <p className="text-[9px] text-warning-text mt-1 font-medium text-right tracking-tight">
-                    Tracking {barPct - pacePct}% ahead of pace
+                  <p className="text-[9px] text-warning-text mt-0.5 font-medium text-right tracking-tight">
+                    {barPct - pacePct}% ahead of pace
                   </p>
                 )}
               </div>
-
-              <span className="text-[13px] font-semibold tabular-nums ml-2 shrink-0 text-expense-text">
-                {fmt(amt)}
-              </span>
             </RowTag>
           )
         })}

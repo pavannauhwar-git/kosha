@@ -417,18 +417,18 @@ export default function Monthly() {
                 }}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
+              <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
                   <p className="text-caption text-ink-3">Over budget</p>
-                  <p className="text-lg font-bold text-expense-text tabular-nums">{budgetVariance.overCount}</p>
+                  <p className="text-base font-bold text-expense-text tabular-nums">{budgetVariance.overCount}</p>
                 </div>
                 <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
                   <p className="text-caption text-ink-3">Near limit</p>
-                  <p className="text-lg font-bold text-warning-text tabular-nums">{budgetVariance.nearLimitCount}</p>
+                  <p className="text-base font-bold text-warning-text tabular-nums">{budgetVariance.nearLimitCount}</p>
                 </div>
-                <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border col-span-2 flex items-center justify-between gap-3">
                   <p className="text-caption text-ink-3">On track</p>
-                  <p className="text-lg font-bold text-income-text tabular-nums">{budgetVariance.onTrackCount}</p>
+                  <p className="text-base font-bold text-income-text tabular-nums">{budgetVariance.onTrackCount}</p>
                 </div>
               </div>
 
@@ -470,29 +470,13 @@ export default function Monthly() {
                 </span>
               </div>
 
-              <div className="space-y-2">
-                {vehicleEntries.slice(0, 5).map(([vehicle, amt], idx) => {
-                  const totalVehicleInvest = vehicleEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0) || 1
-                  const pct = Math.max(0, Math.min(100, Math.round((Number(amt || 0) / totalVehicleInvest) * 100)))
-                  return (
-                    <div key={vehicle} className="rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5">
-                      <div className="flex items-center justify-between gap-3 mb-1">
-                        <p className="text-[12px] font-semibold text-ink truncate">
-                          {idx + 1}. {vehicle}
-                        </p>
-                        <p className="text-[12px] font-semibold text-invest-text tabular-nums shrink-0">
-                          {fmt(amt)}
-                        </p>
-                      </div>
-                      <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                        <div
-                          className="h-full rounded-pill"
-                          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, var(--c-invest-text) 0%, var(--c-brand-mid) 100%)' }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+                {vehicleEntries.map(([vehicle, amt]) => (
+                  <div key={vehicle} className="card p-3 shrink-0 min-w-[112px] max-w-[132px]">
+                    <p className="text-[11px] text-ink-3 font-medium mb-0.5 truncate">{vehicle}</p>
+                    <p className="text-[20px] leading-none font-bold text-invest-text tabular-nums">{fmt(amt)}</p>
+                  </div>
+                ))}
               </div>
             </div>
           )}
