@@ -58,7 +58,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         {subtitle && <span className="text-[10px] text-ink-3 text-right">{subtitle}</span>}
       </div>
 
-      <div className="rounded-card border border-kosha-border overflow-hidden">
+      <div className="rounded-card overflow-hidden">
         {entries.map(([catId, amt], i) => {
           const cat       = CATEGORIES.find(c => c.id === catId)
           const budget    = budgets[catId] || 0

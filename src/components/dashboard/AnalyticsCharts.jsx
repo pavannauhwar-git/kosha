@@ -10,10 +10,10 @@ import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 
 const CASH_CHART_BG =
-  'radial-gradient(circle at 82% 12%, rgba(91,81,224,0.22) 0%, rgba(91,81,224,0) 58%), linear-gradient(180deg, #272163 0%, #1E1B4B 100%)'
+  'radial-gradient(circle at 82% 12%, rgba(34,197,94,0.14) 0%, rgba(34,197,94,0) 58%), linear-gradient(180deg, #2B2F3A 0%, #1F232D 100%)'
 
 const NET_CHART_BG =
-  'radial-gradient(circle at 18% 18%, rgba(52,211,153,0.14) 0%, rgba(52,211,153,0) 52%), linear-gradient(180deg, #241F5D 0%, #1A1746 100%)'
+  'radial-gradient(circle at 18% 18%, rgba(59,130,246,0.16) 0%, rgba(59,130,246,0) 52%), linear-gradient(180deg, #2A313D 0%, #1D242E 100%)'
 
 // ── Tooltips ──────────────────────────────────────────────────────────────
 
@@ -204,7 +204,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
 })
 
 const TREND_CHART_BG =
-  'radial-gradient(circle at 85% 20%, rgba(52,211,153,0.14) 0%, rgba(52,211,153,0) 58%), linear-gradient(180deg, #202551 0%, #151A3D 100%)'
+  'radial-gradient(circle at 85% 20%, rgba(16,185,129,0.16) 0%, rgba(16,185,129,0) 58%), linear-gradient(180deg, #2D333F 0%, #1F252F 100%)'
 
 const ConfidenceTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null

@@ -15,7 +15,6 @@ import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../l
 import PageHeader from '../components/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
-import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
@@ -330,21 +329,26 @@ export default function Bills() {
       )}
 
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <FilterRow className="mb-6">
-        {[
-          { id: 'pending', label: `Pending (${visiblePending.length})` },
-          { id: 'paid', label: `Paid (${visiblePaid.length})` },
-        ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`chip-control h-9 px-4 min-w-[140px] sm:flex-1 text-[12px]
-              ${tab === t.id
-                ? 'bg-brand-container text-brand-on border-brand-container'
-                : 'chip-control-muted text-ink-2'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </FilterRow>
+      <div className="mb-6 grid grid-cols-2 gap-2">
+        <button
+          onClick={() => setTab('pending')}
+          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+            ${tab === 'pending'
+              ? 'bg-warning text-white shadow-card'
+              : 'bg-warning/15 text-warning-text border border-warning/20'}`}
+        >
+          Pending ({visiblePending.length})
+        </button>
+        <button
+          onClick={() => setTab('paid')}
+          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+            ${tab === 'paid'
+              ? 'bg-income-text text-white shadow-card'
+              : 'bg-income-bg text-income-text border border-income-border'}`}
+        >
+          Paid ({visiblePaid.length})
+        </button>
+      </div>
 
       {loading ? (
         <SkeletonLayout

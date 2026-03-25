@@ -22,6 +22,7 @@ export default function AnnualSummaryCard({ data, prevData, spendTrend, year }) 
   const totalExpense = data?.totalExpense || 0
   const totalInvestment = data?.totalInvestment || 0
   const avgSavings = data?.avgSavings || 0
+  const annualBalance = totalIncome - totalExpense - totalInvestment
 
   const incomePct = prevData?.totalIncome > 0
     ? Math.round(((totalIncome - prevData.totalIncome) / prevData.totalIncome) * 100)
@@ -34,12 +35,6 @@ export default function AnnualSummaryCard({ data, prevData, spendTrend, year }) 
   const investPct = prevData?.totalInvestment > 0
     ? Math.round(((totalInvestment - prevData.totalInvestment) / prevData.totalInvestment) * 100)
     : null
-
-  const ARC = 52
-  const SW = 5
-  const R = ARC / 2 - SW
-  const CIRC = 2 * Math.PI * R
-  const arcFill = Math.max(0, Math.min(avgSavings, 100)) / 100 * CIRC
 
   function YoyBadge({ pct, invertGood = false }) {
     if (pct === null || Math.abs(pct) < 2) return null
@@ -55,71 +50,66 @@ export default function AnnualSummaryCard({ data, prevData, spendTrend, year }) 
   }
 
   return (
-    <div className="card overflow-hidden border border-kosha-border/80 shadow-card-md bg-gradient-to-br from-kosha-surface via-kosha-surface to-kosha-surface-2">
-      <div className="px-4 pt-4 pb-3 border-b border-kosha-border/80">
-        <div className="flex items-center justify-between gap-3 mb-1">
-          <p className="section-label">Year snapshot</p>
-          <span className="text-[10px] text-ink-4">{year}</span>
-        </div>
-        <p className="text-caption text-ink-3 font-medium mb-1">Total earned</p>
-        <div className="flex items-center justify-between gap-3">
-          <p className="font-bold tabular-nums text-income-text" style={{ fontSize: 26, lineHeight: 1.06, letterSpacing: '-0.02em' }}>
-            {fmt(totalIncome)}
-          </p>
-          {incomePct !== null && Math.abs(incomePct) >= 2 && (
-            <div
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0
-              ${incomePct >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}
-            >
-              {incomePct >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-              {Math.abs(incomePct)}% vs {year - 1}
-            </div>
-          )}
+    <div className="card-hero p-5 md:p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between gap-3 mb-3.5">
+        <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
+          Year snapshot
+        </p>
+        <p className="text-caption font-bold tracking-widest" style={{ color: C.heroDimmer }}>
+          {year}
+        </p>
+      </div>
+
+      <p className="text-caption font-medium mb-1" style={{ color: C.heroLabel }}>
+        Annual balance
+      </p>
+      <p
+        className={`font-bold tabular-nums leading-[0.95] tracking-tight ${annualBalance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}
+        style={{ fontSize: 38 }}
+      >
+        {fmt(annualBalance)}
+      </p>
+
+      <div className="mt-2 mb-4 flex flex-wrap items-center gap-2">
+        {incomePct !== null && Math.abs(incomePct) >= 2 && (
+          <div
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-pill text-[10px] font-semibold
+            ${incomePct >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}
+          >
+            {incomePct >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {Math.abs(incomePct)}% earned vs {year - 1}
+          </div>
+        )}
+        <div className="inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
+          <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
+            {avgSavings}% avg savings rate
+          </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 border-b border-kosha-border/80">
-        <div className="px-4 py-3 border-r border-kosha-border/80">
-          <p className="text-[11px] text-ink-3 mb-1">Spent</p>
-          <p className="text-[24px] font-bold text-expense-text tabular-nums leading-none">{fmt(totalExpense)}</p>
-          <div className="mt-1">
-            <YoyBadge pct={expensePct} invertGood={true} />
-          </div>
+      <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
+
+      <div className="grid grid-cols-3 gap-2 mb-3.5">
+        <div className="px-2.5 py-2 rounded-2xl" style={{ background: C.heroStatBg }}>
+          <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>Earned</p>
+          <p className="text-[12px] font-bold text-white tabular-nums truncate">{fmt(totalIncome)}</p>
         </div>
-        <div className="px-4 py-3">
-          <p className="text-[11px] text-ink-3 mb-1">Invested</p>
-          <p className="text-[24px] font-bold text-invest-text tabular-nums leading-none">{fmt(totalInvestment)}</p>
-          <div className="mt-1">
-            <YoyBadge pct={investPct} invertGood={false} />
-          </div>
+        <div className="px-2.5 py-2 rounded-2xl" style={{ background: C.heroStatBg }}>
+          <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>Spent</p>
+          <p className="text-[12px] font-bold text-white tabular-nums truncate">{fmt(totalExpense)}</p>
+        </div>
+        <div className="px-2.5 py-2 rounded-2xl" style={{ background: C.heroStatBg }}>
+          <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>Invested</p>
+          <p className="text-[12px] font-bold text-white tabular-nums truncate">{fmt(totalInvestment)}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 px-4 py-3 bg-white/40">
-        <div className="relative shrink-0" style={{ width: ARC, height: ARC }}>
-          <svg width={ARC} height={ARC} viewBox={`0 0 ${ARC} ${ARC}`}>
-            <circle cx={ARC / 2} cy={ARC / 2} r={R} fill="none" stroke={C.brandBorder} strokeWidth={SW} />
-            {avgSavings > 0 && (
-              <circle
-                cx={ARC / 2}
-                cy={ARC / 2}
-                r={R}
-                fill="none"
-                stroke={C.brand}
-                strokeWidth={SW}
-                strokeLinecap="round"
-                strokeDasharray={`${arcFill} ${CIRC}`}
-                strokeDashoffset={0}
-                transform={`rotate(-90 ${ARC / 2} ${ARC / 2})`}
-              />
-            )}
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="font-bold text-brand" style={{ fontSize: 11 }}>{avgSavings}%</span>
-          </div>
+      <div className="flex items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2">
+          <YoyBadge pct={expensePct} invertGood={true} />
+          <YoyBadge pct={investPct} invertGood={false} />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-semibold text-ink mb-1">Avg Savings Rate</p>
+        <div className="min-w-0">
           {spendTrend && <TrendPill current={spendTrend.current} previous={spendTrend.previous} label="spend" />}
         </div>
       </div>

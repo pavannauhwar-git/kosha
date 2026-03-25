@@ -492,7 +492,7 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
-              <p className="text-[44px] md:text-value font-bold text-invest-text tabular-nums leading-[0.95]">{fmt(invested)}</p>
+              <p className="text-[32px] md:text-[36px] font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
             </div>
           </motion.div>
         )}
