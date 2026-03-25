@@ -471,11 +471,10 @@ export function useRunningBalance(year, month) {
   return { balance: data, loading: isLoading, error }
 }
 
-// ── Mutations — Fast Local Paint + Background Reconciliation ─────────────
+// ── Mutations — Strict Server-Truth Cache Convergence ────────────────────
 //
-// For add flows, we optimistically prime transaction caches using the server
-// response row, then reconcile in the background via invalidateCache().
-// This removes the modal-close lag while preserving server-truth convergence.
+// Mutations await invalidateCache() before resolving so UI surfaces do not
+// bounce between optimistic and refetched states.
 
 export async function addTransaction(payload, options = {}) {
   const { invalidate = true } = options
@@ -511,8 +510,8 @@ export async function addTransaction(payload, options = {}) {
   )
 
   if (invalidate) {
-    // Refresh summaries and any non-primed queries in the background.
-    runInBackground(invalidateCache(), 'transactions add')
+    // Wait for refetch convergence to avoid visible flicker in list UIs.
+    await invalidateCache()
   }
 
   return data;
@@ -552,7 +551,7 @@ export async function updateTransaction(id, payload, options = {}) {
   )
 
   if (invalidate) {
-    runInBackground(invalidateCache(), 'transactions update')
+    await invalidateCache()
   }
 
   return data;
@@ -589,7 +588,7 @@ export async function deleteTransaction(id, options = {}) {
   )
 
   if (invalidate) {
-    runInBackground(invalidateCache(), 'transactions delete')
+    await invalidateCache()
   }
 
   return true;

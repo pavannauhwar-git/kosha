@@ -21,7 +21,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
   onDuplicate,
 }) {
   const navigate = useNavigate()
-  const visibleRecent = useMemo(() => (recent || []).slice(0, 8), [recent])
+  const visibleRecent = useMemo(() => (recent || []).slice(0, 3), [recent])
   const lastIndex = visibleRecent.length - 1
 
   if (visibleRecent.length === 0) {

@@ -38,7 +38,7 @@ function formatEventTime(iso) {
 }
 
 const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
-  const visibleEvents = useMemo(() => (events || []).slice(0, 5), [events])
+  const visibleEvents = useMemo(() => (events || []).slice(0, 3), [events])
 
   return (
     <div>

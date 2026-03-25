@@ -89,7 +89,7 @@ export default function Dashboard() {
   const [toast,        setToast]        = useState(null)
 
   // ── Data fetching ─────────────────────────────────────────────────────
-  const { data: recent }            = useTransactions({ limit: 8 })
+  const { data: recent }            = useTransactions({ limit: 3 })
   const { data: latestTxnRows = [] } = useTransactions({ limit: 1 })
   const { todaySpend }              = useTodayExpenses()
   const { data: summary }           = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
@@ -112,7 +112,7 @@ export default function Dashboard() {
     balanceHorizonDate.getMonth() + 1
   )
   const { pending: bills }          = useLiabilities({ includePaid: false })
-  const { data: financialEvents }   = useFinancialEvents(5)
+  const { data: financialEvents }   = useFinancialEvents(3)
 
   // ── Derived values ─────────────────────────────────────────────────────
   const earned   = summary?.earned     || 0
