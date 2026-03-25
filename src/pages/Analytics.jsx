@@ -11,6 +11,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
+import StatMini from '../components/common/StatMini'
 import AnnualSummaryCard from '../components/analytics/AnnualSummaryCard'
 import YoYCards from '../components/analytics/YoYCards'
 import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
@@ -288,11 +289,3 @@ export default function Analytics() {
   )
 }
 
-function StatMini({ label, value, tone = 'text-ink' }) {
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-      <p className="text-caption text-ink-3">{label}</p>
-      <p className={`text-lg font-bold tabular-nums ${tone}`}>{value}</p>
-    </div>
-  )
-}

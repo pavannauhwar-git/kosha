@@ -134,6 +134,14 @@ Preferred progression:
 .
 ├── src/
 │   ├── components/
+│   │   ├── analytics/
+│   │   ├── common/
+│   │   │   ├── AppToast.jsx
+│   │   │   ├── EmptyState.jsx
+│   │   │   ├── FilterRow.jsx
+│   │   │   ├── SectionHeader.jsx
+│   │   │   └── StatMini.jsx
+│   │   └── dashboard/
 │   ├── context/
 │   ├── hooks/
 │   ├── lib/

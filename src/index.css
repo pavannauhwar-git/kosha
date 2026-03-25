@@ -85,6 +85,7 @@
     /* text on invest-bg */
     --c-expense: #E11D48;
     --c-expense-bright: #E11D48;
+    --c-warning: #CA8A04;
 
     /* Ink */
     --c-ink-muted: #6E7699;
@@ -179,7 +180,11 @@
 
   /* -- Section label ───────────────────────────────────────────────── */
   .section-label {
-    @apply text-label font-semibold text-ink-3 tracking-tight;
+    @apply text-[12px] font-semibold text-ink-3 tracking-tight;
+  }
+
+  .card-title {
+    @apply text-[14px] font-semibold text-ink;
   }
 
   /* -- Type chips ──────────────────────────────────────────────────── */

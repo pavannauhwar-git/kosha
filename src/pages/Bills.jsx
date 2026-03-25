@@ -293,8 +293,7 @@ export default function Bills() {
           {/* Progress bar — due-this-week proportion of total */}
           <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-2">
             <motion.div
-              className="h-full rounded-pill"
-              style={{ background: dueSoonCount > 0 ? '#B35A00' : '#38A169' }}
+              className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-income-text'}`}
               initial={{ width: 0 }} animate={{ width: `${barPct || 100}%` }}
               transition={{ duration: 0.6, ease: 'easeOut' }}
             />
@@ -367,7 +366,7 @@ export default function Bills() {
                               justify-center mb-4">
                 <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                   <path d="M9 16.5l5 5 9-9"
-                    stroke="#276749" strokeWidth="2.5"
+                    className="text-income-text" stroke="currentColor" strokeWidth="2.5"
                     strokeLinecap="round" strokeLinejoin="round"
                   />
                 </svg>

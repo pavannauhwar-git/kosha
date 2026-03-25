@@ -48,10 +48,10 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
 
       <div className="list-card">
         {visibleEvents.length === 0 ? (
-          <div className="p-6 text-center">
-            <History size={18} className="mx-auto text-ink-4 mb-2" />
-            <p className="text-body text-ink-3">No activity logged yet.</p>
-            <p className="text-label text-ink-4 mt-1">Your edits, deletes, and bill updates will appear here.</p>
+          <div className="p-5 text-center">
+            <History size={16} className="mx-auto text-ink-4 mb-1.5" />
+            <p className="text-[14px] text-ink-3">No activity logged yet.</p>
+            <p className="text-[12px] text-ink-4 mt-1">Your edits, deletes, and bill updates will appear here.</p>
           </div>
         ) : (
           visibleEvents.map((evt, idx) => {
@@ -61,16 +61,16 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
             return (
               <div
                 key={evt.id}
-                className={`w-full text-left px-4 py-3.5 ${isLast ? '' : 'border-b border-brand-border'}`}
+                className={`w-full text-left px-4 py-3 ${isLast ? '' : 'border-b border-brand-border'}`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
-                    <Icon size={15} className={meta.tone} />
+                  <div className="w-7 h-7 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+                    <Icon size={14} className={meta.tone} />
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className={`text-body font-semibold ${meta.tone}`}>{meta.label}</p>
-                    <p className="text-label text-ink-3 truncate">
+                    <p className={`text-[13px] font-semibold ${meta.tone}`}>{meta.label}</p>
+                    <p className="text-[11px] text-ink-3 truncate">
                       {entityLabel(evt.entity_type)} ID: {String(evt.entity_id || '').slice(0, 8)}
                     </p>
                   </div>

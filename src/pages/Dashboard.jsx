@@ -25,6 +25,7 @@ import DashboardRecentTransactions from '../components/dashboard/DashboardRecent
 import DashboardActivityFeed      from '../components/dashboard/DashboardActivityFeed'
 import PageHeader                 from '../components/PageHeader'
 import AppToast from '../components/common/AppToast'
+import StatMini from '../components/common/StatMini'
 import { useFinancialEvents } from '../hooks/useFinancialEvents'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 
@@ -32,10 +33,10 @@ const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
 
 const QUICK_ACTIONS = [
-  { label: 'Income', Icon: TrendingUp, bg: 'bg-income-bg', color: '#047857', type: 'income', strokeWidth: 2.4 },
-  { label: 'Expense', Icon: TrendingDown, bg: 'bg-expense-bg', color: '#E11D48', type: 'expense', strokeWidth: 2.4 },
-  { label: 'Invest', Icon: Plus, bg: 'bg-invest-bg', color: '#0369A1', type: 'investment', strokeWidth: 2.6 },
-  { label: 'Bills', Icon: Repeat, bg: 'bg-repay-bg', color: '#CA8A04', type: 'bills', strokeWidth: 2.4 },
+  { label: 'Income', Icon: TrendingUp, bg: 'bg-income-bg', color: 'var(--c-income)', type: 'income', strokeWidth: 2.4 },
+  { label: 'Expense', Icon: TrendingDown, bg: 'bg-expense-bg', color: 'var(--c-expense-bright)', type: 'expense', strokeWidth: 2.4 },
+  { label: 'Invest', Icon: Plus, bg: 'bg-invest-bg', color: 'var(--c-invest-text)', type: 'investment', strokeWidth: 2.6 },
+  { label: 'Bills', Icon: Repeat, bg: 'bg-repay-bg', color: 'var(--c-warning)', type: 'bills', strokeWidth: 2.4 },
 ]
 
 export default function Dashboard() {
@@ -355,7 +356,7 @@ export default function Dashboard() {
           <p className="text-caption text-ink-3">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="text-display font-bold text-ink tracking-tight">
+          <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
         </motion.div>
@@ -407,7 +408,7 @@ export default function Dashboard() {
                 Priority
               </span>
             </div>
-            <p className="text-[14px] font-semibold text-ink">{todayFocus.title}</p>
+            <p className="card-title">{todayFocus.title}</p>
             <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>
             <div className="grid grid-cols-2 gap-2 mt-2.5">
               <button
@@ -560,11 +561,3 @@ export default function Dashboard() {
   )
 }
 
-function StatMini({ label, value, tone = 'text-ink' }) {
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-      <p className="text-caption text-ink-3">{label}</p>
-      <p className={`text-lg font-bold tabular-nums ${tone}`}>{value}</p>
-    </div>
-  )
-}
