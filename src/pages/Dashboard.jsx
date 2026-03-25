@@ -89,7 +89,7 @@ export default function Dashboard() {
   const [toast,        setToast]        = useState(null)
 
   // ── Data fetching ─────────────────────────────────────────────────────
-  const { data: recent }            = useTransactions({ limit: 3 })
+  const { data: recent }            = useTransactions({ limit: 5 })
   const { data: latestTxnRows = [] } = useTransactions({ limit: 1 })
   const { todaySpend }              = useTodayExpenses()
   const { data: summary }           = useMonthSummary(now.getFullYear(), now.getMonth() + 1)

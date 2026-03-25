@@ -165,8 +165,8 @@ export async function addLiability(payload, options = {}) {
   )
 
   if (invalidate) {
-    // Wait for refetch convergence to avoid visible flicker in list UIs.
-    await invalidateLiabilityCache()
+    // Keep server-truth sync, but don't block the form close on refetch.
+    runInBackground(invalidateLiabilityCache(), 'liabilities add')
   }
 
   return data
@@ -212,10 +212,8 @@ export async function markPaid(liability, options = {}) {
   )
 
   if (invalidate) {
-    await Promise.all([
-      invalidateLiabilityCache(),
-      invalidateTxnCache(),
-    ])
+    runInBackground(invalidateLiabilityCache(), 'liabilities markPaid')
+    runInBackground(invalidateTxnCache(), 'transactions from markPaid')
   }
 
   return result;
@@ -252,7 +250,7 @@ export async function deleteLiability(id, options = {}) {
   )
 
   if (invalidate) {
-    await invalidateLiabilityCache()
+    runInBackground(invalidateLiabilityCache(), 'liabilities delete')
   }
 
   return true;
