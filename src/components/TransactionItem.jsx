@@ -1,9 +1,9 @@
 import { memo, useState, useCallback } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
-import CategoryIcon from './CategoryIcon'
+import CategoryIcon, { ICON_MAP } from './CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../lib/utils'
-import { getCategory } from '../lib/categories'
+import { getCategory, INVESTMENT_VEHICLES } from '../lib/categories'
 
 const PEEK_X = 140
 
@@ -26,9 +26,17 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
   const [deleting, setDeleting] = useState(false)
 
   const cat    = getCategory(txn.category)
+  const investmentVehicle = txn.type === 'investment'
+    ? INVESTMENT_VEHICLES.find((vehicle) => (
+      vehicle.label === txn.investment_vehicle || vehicle.id === txn.investment_vehicle
+    ))
+    : null
   const amtCls = amountClass(txn.type, txn.is_repayment)
   const prefix = amountPrefix(txn.type)
   const mode   = MODE_LABEL[txn.payment_mode] || ''
+  const rowLabel = txn.type === 'investment'
+    ? (investmentVehicle?.label || txn.investment_vehicle || 'Other')
+    : cat.label
 
   // FIX (defect 5.5): All 6 handlers are now wrapped in useCallback.
   // Previously they were plain functions recreated on every render.
@@ -147,9 +155,18 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
       >
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: cat.bg }}
+          style={{ background: investmentVehicle?.bg || cat.bg }}
         >
-          <CategoryIcon categoryId={txn.category} size={20} />
+          {txn.type === 'investment' && investmentVehicle ? (
+            (() => {
+              const Icon = ICON_MAP[investmentVehicle.icon]
+              return Icon
+                ? <Icon size={20} weight="duotone" color={investmentVehicle.color} />
+                : <CategoryIcon categoryId={txn.category} size={20} />
+            })()
+          ) : (
+            <CategoryIcon categoryId={txn.category} size={20} />
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -159,7 +176,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             {showDate
               ? <span className="text-[12px] text-ink-3">{fmtDate(txn.date)}</span>
-              : <span className="text-[12px] text-ink-3">{cat.label}</span>
+              : <span className="text-[12px] text-ink-3">{rowLabel}</span>
             }
             {mode && (
               <span className="text-[11px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
