@@ -193,24 +193,23 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-dvh bg-kosha-bg">
-      {/* ── Header ────────────────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md
-                   px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                     flex items-center justify-center active:bg-kosha-surface-2"
-        >
-          <ArrowLeft size={16} className="text-ink-2" />
-        </button>
-        <h1 className="text-[17px] font-bold text-ink tracking-tight">Account Settings</h1>
-      </div>
+    <div className="page">
+      <header className="relative min-h-[34vh] md:min-h-[38vh] -mx-4 px-4 pt-4 pb-7 flex flex-col justify-end mb-2"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1.4rem)' }}>
+        <div className="absolute inset-x-0 top-0 h-[70%] bg-gradient-to-b from-brand/12 via-brand-accent/6 to-transparent pointer-events-none" />
+        <div className="relative z-[1]">
+          <button
+            onClick={() => navigate(-1)}
+            className="oneui-glass oneui-squircle w-10 h-10 flex items-center justify-center mb-6"
+          >
+            <ArrowLeft size={16} className="text-ink-2" />
+          </button>
+          <h1 className="oneui-title text-ink m-0">Account Settings</h1>
+          <p className="text-label text-ink-3 mt-1.5">Profile, reminders, and shared wallet controls.</p>
+        </div>
+      </header>
 
-      <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
+      <div className="pb-24 max-w-[560px] mx-auto">
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
 
           {/* ── Avatar ───────────────────────────────────────────────── */}

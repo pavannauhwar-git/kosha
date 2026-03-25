@@ -19,6 +19,7 @@ import AppToast from '../components/common/AppToast'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
+const ONE_UI_SPRING = { type: 'spring', stiffness: 500, damping: 35 }
 
 export default function Bills() {
   const navigate = useNavigate()
@@ -242,7 +243,15 @@ export default function Bills() {
 
   return (
     <div className="page">
-      <PageHeader title="Bills & Dues" className="mb-2" />
+      <PageHeader
+        variant="oneui-hero"
+        title="Bills & Dues"
+        eyebrow="Commitments"
+        subtitle="Keep due items in reach and settle from the lower interaction zone."
+        className="mb-2"
+      />
+
+      <section className="oneui-glass oneui-squircle p-3.5 md:p-4 mb-4">
 
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -270,7 +279,7 @@ export default function Bills() {
       <div className="mb-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => setTab('pending')}
-          className={`h-12 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
+          className={`h-12 w-full rounded-[24px] text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
             ${tab === 'pending'
               ? 'bg-warning text-white shadow-card'
               : 'bg-warning/15 text-warning-text border border-warning/20'}`}
@@ -279,7 +288,7 @@ export default function Bills() {
         </button>
         <button
           onClick={() => setTab('paid')}
-          className={`h-12 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
+          className={`h-12 w-full rounded-[24px] text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
             ${tab === 'paid'
               ? 'bg-income-text text-white shadow-card'
               : 'bg-income-bg text-income-text border border-income-border'}`}
@@ -339,6 +348,7 @@ export default function Bills() {
           </div>
         </div>
       )}
+      </section>
 
       {showGuideHint && (
         <div className="card mb-6 p-4 border border-brand-border bg-brand-container/40">
@@ -504,7 +514,7 @@ export default function Bills() {
             />
             <motion.div className="sheet-panel"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+              animate={{ y: 0, transition: ONE_UI_SPRING }}
               exit={{ y: '100%', transition: { duration: 0.22 } }}
             >
               <div className="sheet-handle" />

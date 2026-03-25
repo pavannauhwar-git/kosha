@@ -299,34 +299,45 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-12 pb-10">
+    <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-6 pb-10">
       <div className="w-full max-w-sm mx-auto flex flex-col flex-1">
+
+        <header className="relative min-h-[34vh] flex flex-col justify-end mb-3">
+          <div className="absolute inset-x-0 top-0 h-[72%] bg-gradient-to-b from-brand/12 via-brand-accent/6 to-transparent pointer-events-none" />
+          <div className="relative z-[1]">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-3 mb-3">Setup</p>
+            <h1 className="oneui-title text-ink m-0">Welcome</h1>
+            <p className="text-label text-ink-3 mt-1.5">Set your baseline in a few quick steps.</p>
+          </div>
+        </header>
 
         {/* Logo mark — replaces the old KOSHA text badge */}
         <KoshaLogo size={44} />
 
-        <StepDots current={step} total={3} />
+        <div className="oneui-glass oneui-squircle p-4 mt-3">
+          <StepDots current={step} total={3} />
 
-        <AnimatePresence mode="wait">
-          {step === 0 && (
-            <StepName key="name" onNext={handleNameNext} />
-          )}
-          {step === 1 && (
-            <StepIncome
-              key="income"
-              name={name}
-              onNext={handleIncomeNext}
-              onBack={() => setStep(0)}
-            />
-          )}
-          {step === 2 && (
-            <StepFirstTransaction
-              key="txn"
-              onFinish={finish}
-              onSkip={finish}
-            />
-          )}
-        </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {step === 0 && (
+              <StepName key="name" onNext={handleNameNext} />
+            )}
+            {step === 1 && (
+              <StepIncome
+                key="income"
+                name={name}
+                onNext={handleIncomeNext}
+                onBack={() => setStep(0)}
+              />
+            )}
+            {step === 2 && (
+              <StepFirstTransaction
+                key="txn"
+                onFinish={finish}
+                onSkip={finish}
+              />
+            )}
+          </AnimatePresence>
+        </div>
 
       </div>
 

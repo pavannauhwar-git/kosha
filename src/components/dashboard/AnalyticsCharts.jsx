@@ -10,10 +10,10 @@ import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 
 const CASH_CHART_BG =
-  'radial-gradient(circle at 82% 12%, rgba(61,90,254,0.26) 0%, rgba(61,90,254,0) 58%), linear-gradient(180deg, #1A2E8F 0%, #101A52 100%)'
+  'radial-gradient(circle at 82% 12%, rgba(26,115,255,0.16) 0%, rgba(26,115,255,0) 60%), linear-gradient(145deg, rgba(220,233,255,0.72) 0%, rgba(255,255,255,0.96) 82%)'
 
 const NET_CHART_BG =
-  'radial-gradient(circle at 18% 18%, rgba(61,90,254,0.22) 0%, rgba(61,90,254,0) 52%), linear-gradient(180deg, #1D318F 0%, #0F184A 100%)'
+  'radial-gradient(circle at 18% 18%, rgba(23,214,255,0.14) 0%, rgba(23,214,255,0) 58%), linear-gradient(145deg, rgba(220,233,255,0.68) 0%, rgba(255,255,255,0.96) 82%)'
 
 // ── Tooltips ──────────────────────────────────────────────────────────────
 
@@ -82,15 +82,15 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 
   return (
     <div
-      className="rounded-card overflow-hidden shadow-card-lg transition-transform duration-150 hover:-translate-y-0.5"
-      style={{ background: CASH_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
+      className="oneui-glass oneui-squircle overflow-hidden shadow-glass transition-transform duration-150 hover:-translate-y-0.5"
+      style={{ background: CASH_CHART_BG, border: '1px solid rgba(215,223,238,0.85)' }}
     >
       <div className="px-5 pt-5 pb-2 flex items-start justify-between">
         <div>
-          <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
+          <p className="text-label font-semibold" style={{ color: 'rgba(5,7,11,0.90)' }}>
             Cash Flow
           </p>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: 'rgba(5,7,11,0.52)', marginTop: 2 }}>
             Income vs spending by month
           </p>
         </div>
@@ -99,7 +99,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             style={{ fontSize: 15, color: C.chartIncome, letterSpacing: '-0.01em' }}>
             {fmt(totalIncome || 0, true)}
           </p>
-          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>earned</p>
+          <p style={{ fontSize: 10, color: 'rgba(5,7,11,0.48)', marginTop: 1 }}>earned</p>
         </div>
       </div>
 
@@ -116,11 +116,11 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             </linearGradient>
           </defs>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.40)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'rgba(5,7,11,0.55)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide />
-          <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
+          <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(5,7,11,0.08)', strokeWidth: 1 }} />
           <Area dataKey="Income" type="monotone"
             stroke={C.chartIncome} strokeWidth={3} fill="url(#gIncome)" dot={false}
             activeDot={{ r: 5, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
@@ -136,7 +136,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
         {[['Income', C.chartIncome], ['Spent', C.chartExpense]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: c }} />
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', fontWeight: 500 }}>{l}</span>
+            <span style={{ fontSize: 11, color: 'rgba(5,7,11,0.56)', fontWeight: 500 }}>{l}</span>
           </div>
         ))}
       </div>
@@ -153,15 +153,15 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
 
   return (
     <div
-      className="rounded-card overflow-hidden shadow-card-lg transition-transform duration-150 hover:-translate-y-0.5"
-      style={{ background: NET_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
+      className="oneui-glass oneui-squircle overflow-hidden shadow-glass transition-transform duration-150 hover:-translate-y-0.5"
+      style={{ background: NET_CHART_BG, border: '1px solid rgba(215,223,238,0.85)' }}
     >
       <div className="px-5 pt-5 pb-2 flex items-start justify-between">
         <div>
-          <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
+          <p className="text-label font-semibold" style={{ color: 'rgba(5,7,11,0.90)' }}>
             Net Savings
           </p>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: 'rgba(5,7,11,0.52)', marginTop: 2 }}>
             After expenses &amp; investments
           </p>
         </div>
@@ -173,7 +173,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           }}>
             {fmt(Math.abs(totalNet), true)}
           </p>
-          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>
+          <p style={{ fontSize: 10, color: 'rgba(5,7,11,0.48)', marginTop: 1 }}>
             {totalNet >= 0 ? 'net saved' : 'net deficit'}
           </p>
         </div>
@@ -182,12 +182,12 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
       <ResponsiveContainer width="100%" height={130}>
         <BarChart data={netData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.50)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'rgba(5,7,11,0.55)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide domain={[-netAxisMax, netAxisMax]} />
-          <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-          <ReferenceLine y={0} stroke="rgba(255,255,255,0.16)" strokeWidth={1} />
+          <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(5,7,11,0.05)' }} />
+          <ReferenceLine y={0} stroke="rgba(5,7,11,0.16)" strokeWidth={1} />
           <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={32} minPointSize={4}>
             {netData.map((entry, i) => (
               <Cell key={i}

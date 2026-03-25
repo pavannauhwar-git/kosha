@@ -32,6 +32,7 @@ const TYPES = [
 ]
 
 const RECURRENCE_OPTIONS = ['monthly', 'quarterly', 'yearly']
+const ONE_UI_SPRING = { type: 'spring', stiffness: 500, damping: 35 }
 
 function nextRecurringDate(dateStr, recurrence) {
   if (!dateStr || !recurrence) return null
@@ -127,7 +128,7 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
       />
       <motion.div className="sheet-panel"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: ONE_UI_SPRING }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
       >
         <div className="sheet-handle" />
@@ -170,7 +171,7 @@ function ModePicker({ selected, onSelect, onClose }) {
       />
       <motion.div className="sheet-panel"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: ONE_UI_SPRING }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
       >
         <div className="sheet-handle" />
@@ -218,7 +219,7 @@ function VehiclePicker({ selected, onSelect, onClose }) {
       />
       <motion.div className="sheet-panel"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: ONE_UI_SPRING }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
       >
         <div className="sheet-handle" />
@@ -358,9 +359,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         onClick={isSaving ? undefined : onClose}
       />
       <motion.div
-        className="sheet-panel"
+        className="sheet-panel oneui-sheet-radius"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: ONE_UI_SPRING }}
         exit={{ y: '100%', transition: { duration: 0.22 } }}
         onAnimationComplete={() => amountRef.current?.focus()}
       >

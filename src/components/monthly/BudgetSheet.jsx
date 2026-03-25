@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import CategoryIcon from '../CategoryIcon'
 
+const ONE_UI_SPRING = { type: 'spring', stiffness: 500, damping: 35 }
+
 export default function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
   const [value, setValue] = useState(current ? String(current) : '')
   const [saving, setSaving] = useState(false)
@@ -43,9 +45,9 @@ export default function BudgetSheet({ cat, current, onSave, onRemove, onClose })
         onClick={saving ? undefined : onClose}
       />
       <motion.div
-        className="sheet-panel"
+        className="sheet-panel oneui-sheet-radius"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: ONE_UI_SPRING }}
         exit={{ y: '100%', transition: { duration: 0.22 } }}
       >
         <div className="sheet-handle" />

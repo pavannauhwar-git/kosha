@@ -298,9 +298,15 @@ export default function Reconciliation() {
 
   return (
     <div className="page">
-      <PageHeader title="Reconciliation" />
+      <PageHeader
+        variant="oneui-hero"
+        title="Reconciliation"
+        eyebrow="Quality control"
+        subtitle="Keep statement links and transaction quality trustworthy before close."
+        className="mb-2"
+      />
 
-      <div className="card p-4 mb-6">
+      <div className="oneui-glass oneui-squircle p-4 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-ink">Review and reconcile</p>

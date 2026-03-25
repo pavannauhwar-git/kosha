@@ -36,11 +36,11 @@ export default function YearlyInsightsCard({ data, catEntries }) {
   })()
 
   return (
-    <div className="card p-4 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #EDE9FF 0%, #F5F3FF 100%)' }}>
+    <div className="oneui-glass oneui-squircle p-4 overflow-hidden relative">
       <div
         className="absolute top-0 right-0 w-28 h-28 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle at 70% 30%, rgba(55,48,163,0.10) 0%, transparent 70%)',
+          background: 'radial-gradient(circle at 70% 30%, rgba(26,115,255,0.14) 0%, transparent 70%)',
           borderRadius: '50%',
           transform: 'translate(20%, -20%)',
         }}

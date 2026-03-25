@@ -224,40 +224,39 @@ export default function ReportBug() {
   }
 
   return (
-    <div
-      className="min-h-dvh bg-kosha-bg"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}
-    >
-      {/* ── Sticky header — full width ─────────────────────────────── */}
-      <div
-        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md border-b border-kosha-border px-4 flex items-center justify-between"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
-      >
-        <button type="button" onClick={handleBack} className="close-btn">
-          <ArrowLeft size={16} className="text-ink-3" />
-        </button>
-
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-chip bg-brand-container flex items-center justify-center">
-            <Bug size={14} className="text-brand" />
+    <div className="page" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}>
+      <header className="relative min-h-[34vh] md:min-h-[38vh] -mx-4 px-4 pt-4 pb-7 flex flex-col justify-end mb-2"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1.4rem)' }}>
+        <div className="absolute inset-x-0 top-0 h-[70%] bg-gradient-to-b from-brand/12 via-brand-accent/6 to-transparent pointer-events-none" />
+        <div className="relative z-[1]">
+          <div className="flex items-center justify-between mb-6">
+            <button type="button" onClick={handleBack} className="oneui-glass oneui-squircle w-10 h-10 flex items-center justify-center">
+              <ArrowLeft size={16} className="text-ink-3" />
+            </button>
+            <button
+              type="button"
+              onClick={goDashboard}
+              className="oneui-glass oneui-squircle w-10 h-10 flex items-center justify-center"
+              aria-label="Go to dashboard"
+            >
+              <Home size={16} className="text-ink-3" />
+            </button>
           </div>
-          <h1 className="text-[17px] font-bold text-ink tracking-tight">Report Bug</h1>
-        </div>
 
-        <button
-          type="button"
-          onClick={goDashboard}
-          className="w-9 h-9 rounded-pill flex items-center justify-center
-                     bg-kosha-surface-2 active:bg-kosha-border"
-          aria-label="Go to dashboard"
-        >
-          <Home size={16} className="text-ink-3" />
-        </button>
-      </div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-[14px] bg-brand-container flex items-center justify-center">
+              <Bug size={16} className="text-brand" />
+            </div>
+            <div>
+              <h1 className="oneui-title text-ink m-0">Report Bug</h1>
+              <p className="text-label text-ink-3 mt-1">Capture the issue and route context for faster fixes.</p>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* ── Content — constrained ──────────────────────────────────── */}
-      <div className="mx-auto max-w-[560px]">
-        <div className="px-4 pt-4 pb-36 space-y-4">
+      <div className="mx-auto max-w-[560px] pb-36 space-y-4">
           {submitted ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -447,7 +446,6 @@ export default function ReportBug() {
             </>
           )}
         </div>
-      </div>
 
       {/* ── Bottom action bar ──────────────────────────────────────── */}
       {!submitted && (

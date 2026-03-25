@@ -2,6 +2,8 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Trash } from '@phosphor-icons/react'
 
+const ONE_UI_SPRING = { type: 'spring', stiffness: 500, damping: 35 }
+
 export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this transaction' }) {
   return (
     <Dialog.Root open={open} onOpenChange={v => !v && onCancel()}>
@@ -10,21 +12,21 @@ export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this 
           <Dialog.Portal forceMount>
             <Dialog.Overlay asChild>
               <motion.div
-                className="fixed inset-0 bg-ink/30 z-50"
-                style={{ backdropFilter: 'blur(2px)' }}
+                className="fixed inset-0 bg-black/55 z-50"
+                style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               />
             </Dialog.Overlay>
             <Dialog.Content asChild>
               <motion.div
-                className="fixed left-4 right-4 bottom-6 z-50 bg-kosha-surface rounded-hero p-6 shadow-card-lg"
+                className="fixed left-4 right-4 bottom-6 z-50 oneui-glass rounded-[32px] p-6 shadow-glass border border-white/60"
                 style={{
                   maxWidth: 480,
                   margin: '0 auto',
                   bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
                 }}
                 initial={{ y: 60, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+                animate={{ y: 0, opacity: 1, transition: ONE_UI_SPRING }}
                 exit={{ y: 60, opacity: 0, transition: { duration: 0.2 } }}
               >
                 <div className="flex items-center gap-3 mb-3">
