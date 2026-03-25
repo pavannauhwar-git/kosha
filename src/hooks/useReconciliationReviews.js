@@ -6,8 +6,22 @@ import { getAuthUserId } from '../lib/authStore'
 const REVIEW_COLUMNS = 'transaction_id, status, statement_line, updated_at'
 
 function isMissingTableError(error) {
-  const message = String(error?.message || '')
-  return message.includes('reconciliation_reviews')
+  const message = String(error?.message || '').toLowerCase()
+  const details = String(error?.details || '').toLowerCase()
+  const hint = String(error?.hint || '').toLowerCase()
+  const code = String(error?.code || '').toUpperCase()
+  const status = Number(error?.status || 0)
+
+  return (
+    message.includes('reconciliation_reviews') ||
+    details.includes('reconciliation_reviews') ||
+    hint.includes('reconciliation_reviews') ||
+    message.includes('relation') && message.includes('does not exist') ||
+    details.includes('relation') && details.includes('does not exist') ||
+    code === '42P01' || // PostgreSQL undefined_table
+    code === 'PGRST205' || // PostgREST relation not found
+    status === 404
+  )
 }
 
 export function useReconciliationReviews(options = {}) {

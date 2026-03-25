@@ -64,10 +64,12 @@ export async function invalidateCache() {
   // ~300-500ms later for the same mutation.
   suppress('transactions')
   await Promise.all([
-    // Keep mutation UX snappy: refresh only mounted consumers immediately.
-    // Inactive routes will refetch on next mount if stale.
-    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+    // Keep list surfaces strongly consistent across routes. Dashboard's
+    // "Latest" feed depends on transactionsRecent; if mutations happen on
+    // Transactions page, pre-refresh this family as well so Dashboard stays
+    // correct immediately on navigation.
+    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'all' }),
+    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
     // Aggregates are only relevant when the user can see them, so 'active' is
     // fine — the next mount will trigger a stale refetch automatically.

@@ -5,7 +5,10 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000,
       gcTime: 24 * 60 * 60 * 1000,
-      refetchOnMount: false,
+      // After mutation invalidation, inactive pages must refresh when revisited.
+      // `true` refetches only stale queries on mount (not always), preserving
+      // most of the SWR/perceived-performance behavior while fixing stale lists.
+      refetchOnMount: true,
       refetchOnWindowFocus: false,
       retry: 1,
     },

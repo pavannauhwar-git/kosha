@@ -271,23 +271,21 @@ export default function Transactions() {
 
   return (
     <div className="page">
-      <PageHeader title="Transactions" />
+      <PageHeader title="Transactions" className="mb-2" />
 
-      <div className="mb-3 md:mb-4 flex items-center justify-between gap-3 pr-0.5 md:pr-0">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-caption text-ink-3">
+          <p className="text-caption text-ink-3 mt-0.5">
             {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
             {(typeFilter !== 'all' || catFilter || datePreset !== 'all') ? ' (filtered)' : ''}
           </p>
         </div>
-        <div className="w-10 h-10 shrink-0 flex items-center justify-end">
-          {total > 0 ? (
-            <button onClick={exportCSV} title="Export CSV"
-              className="close-btn border border-kosha-border shrink-0">
-              <Download size={16} className="text-ink-2" />
-            </button>
-          ) : null}
-        </div>
+        {total > 0 ? (
+          <button onClick={exportCSV} title="Export CSV"
+            className="close-btn border border-kosha-border shrink-0">
+            <Download size={16} className="text-ink-2" />
+          </button>
+        ) : null}
       </div>
 
       {/* Search */}
