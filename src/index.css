@@ -65,13 +65,13 @@
     ───────────────────────────────────────────────────────────────── */
 
     /* Brand — Periwinkle Violet */
-    --c-brand: #3D5AFE;
-    --c-brand-mid: #6C83FF;
-    --c-brand-container: #EDF0FF;
-    --c-brand-border: #D3DCFF;
-    --c-brand-rgb: 61, 90, 254;
+    --c-brand: #243BAF;
+    --c-brand-mid: #3D5AFE;
+    --c-brand-container: #E8EDFF;
+    --c-brand-border: #C4CFFF;
+    --c-brand-rgb: 36, 59, 175;
     /* used in rgba() calls */
-    --c-brand-mid-rgb: 108, 131, 255;
+    --c-brand-mid-rgb: 61, 90, 254;
     /* used in rgba() calls */
 
     /* Accent — Lime Yellow (on dark bg only) */

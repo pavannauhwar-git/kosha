@@ -201,7 +201,7 @@ export default function Analytics() {
           <YearlyInsightsCard data={data} catEntries={catEntries} />
 
           {/* ── 2. Performance trends ───────────────────────────────── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CashFlowChart
               chartData={chartData}
               totalIncome={data?.totalIncome}
@@ -214,7 +214,7 @@ export default function Analytics() {
           </div>
 
           {/* ── 3. Spending intelligence ────────────────────────────── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {catEntries.length > 0 ? (
               <CategorySpendingChart
                 entries={catEntries}
@@ -230,7 +230,7 @@ export default function Analytics() {
           </div>
 
           {/* ── 4. Allocation and year comparison ───────────────────── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {vehicleData.length > 0 ? (
               <PortfolioAllocation vehicleData={vehicleData} />
             ) : (
@@ -243,7 +243,7 @@ export default function Analytics() {
           </div>
 
           {/* ── 5. Data trust ───────────────────────────────────────── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div
               whileHover={{ y: -1 }}
               transition={{ duration: 0.14 }}

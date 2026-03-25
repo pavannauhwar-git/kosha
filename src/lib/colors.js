@@ -14,11 +14,11 @@
 export const C = {
 
   // ── Brand — Periwinkle Violet ────────────────────────────────────
-  brand:           '#3D5AFE',
-  brandMid:        '#6C83FF',
-  brandLight:      '#9AAAFF',
-  brandContainer:  '#EDF0FF',
-  brandBorder:     '#D3DCFF',
+  brand:           '#243BAF',
+  brandMid:        '#3D5AFE',
+  brandLight:      '#6C83FF',
+  brandContainer:  '#E8EDFF',
+  brandBorder:     '#C4CFFF',
 
   // ── Accent — Lime Yellow ─────────────────────────────────────────
   // Used ONLY against dark periwinkle backgrounds (hero card, logo).
@@ -39,7 +39,7 @@ export const C = {
   invest:          '#0284C7',   // sky-600
   investText:      '#0369A1',   // sky-700
 
-  saved:           '#3D5AFE',   // brand indigo — residual money in Kosha
+  saved:           '#243BAF',   // brand indigo — residual money in Kosha
 
   // ── Bills — Amber H=84° ───────────────────────────────────────────
   bills:           '#CA8A04',
@@ -61,21 +61,21 @@ export const C = {
   // Brighter variants of semantic colours so they glow on dark substrate
   chartIncome:     '#34D399',   // bright emerald glow on dark
   chartExpense:    '#FB7185',   // bright rose glow on dark
-  chartDark:       '#243BAF',   // dark chart card background = brand-dark
+  chartDark:       '#1B2D85',   // dark chart card background = brand-dark
   chartGrid:       'rgba(255,255,255,0.06)', // grid lines on dark card
   chartCursor:     'rgba(255,255,255,0.06)', // tooltip cursor on dark card
 
   // ── Portfolio donut — periwinkle family, darkest → lightest ──────
   portfolio: [
     '#1F255F',
+    '#243BAF',
     '#3D5AFE',
     '#6C83FF',
-    '#9AAAFF',
-    '#EDF0FF',
-    '#D3DCFF',
+    '#E8EDFF',
+    '#C4CFFF',
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#3D5AFE',
+  logoBg:        '#243BAF',
   logoHighlight: '#F4FF00',
 }
