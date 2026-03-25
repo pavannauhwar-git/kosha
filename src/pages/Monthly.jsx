@@ -153,20 +153,66 @@ export default function Monthly() {
     today.setHours(0, 0, 0, 0)
 
     const daysLeft = Math.max(0, Math.ceil((periodEnd.getTime() - today.getTime()) / (24 * 60 * 60 * 1000)))
-    const isPastOrCurrentMonth = year < today.getFullYear() || (year === today.getFullYear() && month <= (today.getMonth() + 1))
+    const isPastMonth = year < today.getFullYear() || (year === today.getFullYear() && month < (today.getMonth() + 1))
+    const isCurrentMonth = year === today.getFullYear() && month === (today.getMonth() + 1)
+    const isFutureMonth = !isPastMonth && !isCurrentMonth
 
-    const health = net >= 0 ? 'healthy' : 'at-risk'
-    const message = isPastOrCurrentMonth
-      ? (net >= 0
-          ? 'You are closing this month with a positive net position.'
-          : 'Current pace indicates a negative month-close unless outflow slows.')
-      : 'This is a future month snapshot; projections will improve as real transactions land.'
+    const daysInMonth = new Date(year, month, 0).getDate()
+    const daysElapsed = isCurrentMonth ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth
+    const projectedOutflow = isCurrentMonth
+      ? (daysElapsed > 0 ? (totalOutflow / daysElapsed) * daysInMonth : totalOutflow)
+      : totalOutflow
+    const projectedNet = earned - projectedOutflow
+
+    const health = isCurrentMonth ? (projectedNet >= 0 ? 'healthy' : 'at-risk') : (net >= 0 ? 'healthy' : 'at-risk')
+
+    let statusLabel = health === 'healthy' ? 'On track' : 'Needs correction'
+    let timelineLabel = 'Days left'
+    let timelineValue = String(daysLeft)
+    let message = 'Outcome projection and runway.'
+
+    if (isPastMonth) {
+      timelineLabel = 'Status'
+      timelineValue = 'Closed'
+      if (net > 0) {
+        statusLabel = 'Closed positive'
+        message = `Closed the month with positive cash flow of +${fmt(Math.abs(net))}. Income was ${fmt(earned)} against outflow of ${fmt(totalOutflow)}.`
+      } else if (net < 0) {
+        statusLabel = 'Closed negative'
+        message = `Closed the month with negative cash flow of -${fmt(Math.abs(net))}. Outflow exceeded income by ${fmt(Math.abs(net))}.`
+      } else {
+        statusLabel = 'Closed breakeven'
+        message = `Closed the month at breakeven. Income and outflow both settled at ${fmt(earned)}.`
+      }
+    } else if (isCurrentMonth) {
+      const daysRemaining = Math.max(0, daysInMonth - daysElapsed)
+      const overrunAmount = Math.max(0, -projectedNet)
+      const requiredDailyCorrection = daysRemaining > 0 ? overrunAmount / daysRemaining : overrunAmount
+
+      if (projectedNet >= 0) {
+        statusLabel = 'On track'
+        message = `At current pace you are likely to close with +${fmt(Math.abs(projectedNet))} cash flow. Keep monitoring outflow over the next ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`
+      } else {
+        statusLabel = 'Needs correction'
+        message = `Current pace points to a -${fmt(Math.abs(projectedNet))} close. To recover, trim average daily outflow by about ${fmt(requiredDailyCorrection)} for the remaining ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`
+      }
+    } else if (isFutureMonth) {
+      timelineLabel = 'Preview'
+      timelineValue = 'Future'
+      statusLabel = net >= 0 ? 'Planned positive' : 'Planned deficit'
+      message = net >= 0
+        ? `Future month preview shows +${fmt(Math.abs(net))} based on planned entries.`
+        : `Future month preview currently shows -${fmt(Math.abs(net))}. Add expected income or reduce planned outflow.`
+    }
 
     return {
       totalOutflow,
       net,
       daysLeft,
       health,
+      statusLabel,
+      timelineLabel,
+      timelineValue,
       message,
     }
   }, [earned, spent, invested, year, month])
@@ -242,7 +288,7 @@ export default function Monthly() {
                 <p className="text-caption text-ink-3 mt-0.5">Outcome projection and runway</p>
               </div>
               <span className={`text-xs px-2 py-1 rounded-full font-semibold self-start ${monthCloseSummary.health === 'healthy' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-                {monthCloseSummary.health === 'healthy' ? 'On track' : 'Needs correction'}
+                {monthCloseSummary.statusLabel}
               </span>
             </div>
 
@@ -258,8 +304,8 @@ export default function Monthly() {
                 <p className="text-sm font-bold tabular-nums text-ink-2">{fmt(monthCloseSummary.totalOutflow)}</p>
               </div>
               <div className="rounded-card bg-kosha-surface p-3 border border-kosha-border">
-                <p className="text-caption text-ink-3">Days left</p>
-                <p className="text-sm font-bold tabular-nums text-ink-2">{monthCloseSummary.daysLeft}</p>
+                <p className="text-caption text-ink-3">{monthCloseSummary.timelineLabel}</p>
+                <p className="text-sm font-bold tabular-nums text-ink-2">{monthCloseSummary.timelineValue}</p>
               </div>
             </div>
 
