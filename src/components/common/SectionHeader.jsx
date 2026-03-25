@@ -6,10 +6,10 @@ export default function SectionHeader({
   className = '',
 }) {
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 ${className}`.trim()}>
+    <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-0.5 ${className}`.trim()}>
       <div className="min-w-0">
         <p className="section-label">{title}</p>
-        {subtitle ? <p className="text-[11px] text-ink-3 mt-0">{subtitle}</p> : null}
+        {subtitle ? <p className="text-[11px] text-ink-3 leading-tight mt-px">{subtitle}</p> : null}
       </div>
 
       {badge ? (

@@ -266,7 +266,7 @@ export default function Guide() {
         </motion.div>
 
         <motion.section variants={fadeUp} className="w-full">
-          <p className="section-label mb-2">Start here</p>
+          <p className="section-label mb-1.5">Start here</p>
           <div className="list-card">
             {START_HERE.map((step, i) => (
               <div key={step} className={`px-4 py-3.5 ${i === START_HERE.length - 1 ? '' : 'border-b border-kosha-border'}`}>
@@ -277,7 +277,7 @@ export default function Guide() {
         </motion.section>
 
         <motion.section variants={fadeUp} className="w-full">
-          <p className="section-label mb-2">Feature explorer</p>
+          <p className="section-label mb-1.5">Feature explorer</p>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3">
             {GUIDE_TABS.map((tab) => {
               const active = tab.id === activeTab
@@ -340,7 +340,7 @@ export default function Guide() {
         </motion.section>
 
         <motion.section variants={fadeUp} className="w-full">
-          <p className="section-label mb-2">Playbook cadence</p>
+          <p className="section-label mb-1.5">Playbook cadence</p>
           <div className="card p-4 space-y-2.5">
             <p className="text-[13px] text-ink-2"><span className="font-semibold">Daily:</span> Dashboard pulse + quick capture</p>
             <p className="text-[13px] text-ink-2"><span className="font-semibold">Weekly:</span> Bills check + Reconciliation cleanup</p>
@@ -349,7 +349,7 @@ export default function Guide() {
         </motion.section>
 
         <motion.section variants={fadeUp} className="w-full">
-          <p className="section-label mb-2">Trust and privacy</p>
+          <p className="section-label mb-1.5">Trust and privacy</p>
           <div className="card p-4 space-y-2">
             <div className="flex items-start gap-2">
               <ShieldCheck size={16} className="text-brand mt-0.5" />

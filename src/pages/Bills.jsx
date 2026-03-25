@@ -313,7 +313,7 @@ export default function Bills() {
 
       {visiblePending.length > 0 && (
         <div className="card mb-5 p-4">
-          <p className="section-label mb-2">Cash impact preview</p>
+          <p className="section-label mb-1.5">Cash impact preview</p>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-caption text-ink-3">Due in 7 days</p>

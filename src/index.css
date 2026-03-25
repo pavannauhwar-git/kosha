@@ -180,7 +180,7 @@
 
   /* -- Section label ───────────────────────────────────────────────── */
   .section-label {
-    @apply text-[11px] font-semibold text-ink-3 tracking-tight;
+    @apply text-[11px] font-semibold text-ink-3 tracking-tight leading-none;
   }
 
   .card-title {

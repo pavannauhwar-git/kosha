@@ -28,7 +28,7 @@ export default function BreakdownCard({ earned, spent, invested }) {
 
   return (
     <div className="card p-5">
-      <p className="section-label mb-4">Budget Breakdown</p>
+      <p className="section-label mb-3">Budget Breakdown</p>
       <div className="flex gap-4 items-center">
         <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
