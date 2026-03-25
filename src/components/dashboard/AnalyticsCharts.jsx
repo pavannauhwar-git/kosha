@@ -9,12 +9,6 @@ import {
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 
-const CASH_CHART_BG =
-  'radial-gradient(circle at 82% 12%, rgba(61,90,254,0.10) 0%, rgba(61,90,254,0) 58%), linear-gradient(180deg, #FFFFFF 0%, #F7F9FF 100%)'
-
-const NET_CHART_BG =
-  'radial-gradient(circle at 18% 18%, rgba(61,90,254,0.10) 0%, rgba(61,90,254,0) 52%), linear-gradient(180deg, #FFFFFF 0%, #F7F9FF 100%)'
-
 // ── Tooltips ──────────────────────────────────────────────────────────────
 
 const DarkTooltip = ({ active, payload, label }) => {
@@ -82,10 +76,9 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 
   return (
     <div
-      className="rounded-card overflow-hidden shadow-card-lg transition-transform duration-150 hover:-translate-y-0.5"
-      style={{ background: CASH_CHART_BG, border: '1px solid rgba(196,207,255,0.75)' }}
+      className="card p-4 transition-transform duration-150 hover:-translate-y-0.5"
     >
-      <div className="px-5 pt-5 pb-2 flex items-start justify-between">
+      <div className="mb-2 flex items-start justify-between">
         <div>
           <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
             Cash Flow
@@ -153,10 +146,9 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
 
   return (
     <div
-      className="rounded-card overflow-hidden shadow-card-lg transition-transform duration-150 hover:-translate-y-0.5"
-      style={{ background: NET_CHART_BG, border: '1px solid rgba(196,207,255,0.75)' }}
+      className="card p-4 transition-transform duration-150 hover:-translate-y-0.5"
     >
-      <div className="px-5 pt-5 pb-2 flex items-start justify-between">
+      <div className="mb-2 flex items-start justify-between">
         <div>
           <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
             Net Savings

@@ -81,7 +81,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         onClick={() => setOpen(v => !v)}
         className="w-9 h-9 rounded-full bg-brand-container border border-brand-border/70
                    shadow-card flex items-center justify-center overflow-hidden
-                   active:scale-[0.97] transition-transform duration-75"
+                   active:scale-95 transition-transform duration-75"
       >
         {avatarUrl ? (
           <img

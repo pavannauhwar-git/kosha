@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { CashFlowChart, NetSavingsChart } from '../components/dashboard/AnalyticsCharts'
-import { useYearSummary } from '../hooks/useTransactions'
+import { useTransactionYearBounds, useYearSummary } from '../hooks/useTransactions'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt } from '../lib/utils'
 import PageHeader from '../components/PageHeader'
@@ -16,8 +16,6 @@ import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
 import YearlyInsightsCard from '../components/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
 
-const YEARS = Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2023 + i)
-
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
   const now = new Date()
@@ -30,6 +28,33 @@ export default function Analytics() {
     const timer = setTimeout(() => setHeavyReady(true), 260)
     return () => clearTimeout(timer)
   }, [])
+
+  const { data: yearBounds } = useTransactionYearBounds()
+
+  const minYear = useMemo(() => {
+    const fromData = Number(yearBounds?.minYear)
+    if (Number.isFinite(fromData) && fromData > 0) return fromData
+    return Math.max(2020, currentYear - 3)
+  }, [yearBounds?.minYear, currentYear])
+
+  const maxYear = useMemo(() => {
+    const fromData = Number(yearBounds?.maxYear)
+    if (Number.isFinite(fromData) && fromData > 0) return Math.max(currentYear, fromData)
+    return currentYear
+  }, [yearBounds?.maxYear, currentYear])
+
+  const availableYears = useMemo(() => {
+    if (maxYear < minYear) return [currentYear]
+    return Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i)
+  }, [minYear, maxYear, currentYear])
+
+  useEffect(() => {
+    setYear((y) => {
+      if (y < minYear) return minYear
+      if (y > maxYear) return maxYear
+      return y
+    })
+  }, [minYear, maxYear])
 
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
@@ -56,7 +81,7 @@ export default function Analytics() {
     return Math.max(1000, Math.ceil(maxAbs * 1.15))
   }, [netData])
 
-  const yoyYears = useMemo(() => YEARS.filter(y => y <= currentYear), [currentYear])
+  const yoyYears = useMemo(() => availableYears.filter((y) => y <= currentYear), [availableYears, currentYear])
 
   const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
     .sort((a, b) => b[1] - a[1]).slice(0, 8), [data?.byCategory])
@@ -101,14 +126,15 @@ export default function Analytics() {
       <PickerNavigator
         className="mb-4"
         label={year}
-        onPrev={() => setYear(y => y - 1)}
-        onNext={() => setYear(y => y + 1)}
+        onPrev={() => setYear((y) => Math.max(minYear, y - 1))}
+        onNext={() => setYear((y) => Math.min(maxYear, y + 1))}
         pickerRef={yearRef}
         inputType="month"
         inputValue={`${year}-01`}
         onInputChange={e => {
           const y = parseInt(e.target.value?.split('-')[0], 10)
-          if (y) setYear(y)
+          if (!y) return
+          setYear(Math.min(maxYear, Math.max(minYear, y)))
         }}
       />
 

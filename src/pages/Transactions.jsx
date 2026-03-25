@@ -433,13 +433,13 @@ export default function Transactions() {
               }}
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {groups.map(([dateKey, txns]) => {
             const net = groupNet(txns)
             return (
               <div key={dateKey} className="list-card overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2.5
-                                border-b border-kosha-border bg-kosha-surface-container">
+                <div className="flex items-center justify-between px-4 py-3
+                                border-b border-kosha-border bg-kosha-surface-2">
                   <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
                     {dateLabel(dateKey)}
                   </span>
@@ -468,7 +468,7 @@ export default function Transactions() {
         <button
           onClick={() => setDisplayCount(n => n + 50)}
           className="w-full py-3.5 text-label font-semibold text-brand text-center
-                     bg-kosha-surface-variant border border-kosha-border rounded-card mt-3 active:scale-[0.97] transition-transform"
+                     bg-kosha-surface border border-kosha-border rounded-card mt-4"
         >
           Show more ({total - data.length} remaining)
         </button>

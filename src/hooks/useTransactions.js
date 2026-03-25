@@ -374,6 +374,57 @@ export function useYearSummary(year, options = {}) {
   return { data, loading: isLoading, error }
 }
 
+export function useTransactionYearBounds(options = {}) {
+  const { enabled = true } = options
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['transactionYearBounds'],
+    enabled,
+    queryFn: async () => {
+      const userId = getAuthUserId()
+
+      const [{ data: oldestRows, error: oldestError }, { data: newestRows, error: newestError }] = await Promise.all([
+        supabase
+          .from('transactions')
+          .select('date')
+          .eq('user_id', userId)
+          .order('date', { ascending: true })
+          .limit(1),
+        supabase
+          .from('transactions')
+          .select('date')
+          .eq('user_id', userId)
+          .order('date', { ascending: false })
+          .limit(1),
+      ])
+
+      if (oldestError) throw oldestError
+      if (newestError) throw newestError
+
+      const oldestDate = oldestRows?.[0]?.date
+      const newestDate = newestRows?.[0]?.date
+
+      if (!oldestDate || !newestDate) {
+        return {
+          minYear: null,
+          maxYear: null,
+        }
+      }
+
+      return {
+        minYear: Number(String(oldestDate).slice(0, 4)) || null,
+        maxYear: Number(String(newestDate).slice(0, 4)) || null,
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+
+  return {
+    data,
+    loading: isLoading,
+    error,
+  }
+}
+
 export function useRunningBalance(year, month) {
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['balance', year, month],
