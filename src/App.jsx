@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { lazy, Suspense, useEffect, useCallback, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
@@ -15,6 +15,7 @@ import { useScrollDirection } from './hooks/useScrollDirection'
 import KoshaLogo from './components/KoshaLogo'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
+import { createMorphInteraction, MOTION_SCHEMES } from './lib/animations'
 
 const DASHBOARD_RECENT_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode'
@@ -66,6 +67,22 @@ const REALTIME_INVALIDATION_POLICIES = [
 
 const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
 const BOTTOM_NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/report-bug', '/settings', '/guide']
+const sidebarNavMorph = createMorphInteraction({
+  scheme: 'standard',
+  hoverY: -1,
+  hoverScale: 1.008,
+  hoverRadius: 16,
+  tapScale: 0.986,
+  tapRadius: 12,
+})
+const mobileNavMorph = createMorphInteraction({
+  scheme: 'expressive',
+  hoverY: -1,
+  hoverScale: 1.02,
+  hoverRadius: 18,
+  tapScale: 0.95,
+  tapRadius: 14,
+})
 
 function useRouteIntentPrefetch() {
   const { user } = useAuth()
@@ -412,12 +429,15 @@ function DesktopSidebar() {
         {NAV.map((item, i) => {
           const isActive = i === active
           return (
-            <button
+            <motion.button
               key={item.path}
               onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
+              whileHover={sidebarNavMorph.whileHover}
+              whileTap={sidebarNavMorph.whileTap}
+              transition={sidebarNavMorph.transition}
               className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-100 w-full text-left"
               style={{ background: isActive ? C.brandContainer : 'transparent' }}
             >
@@ -425,7 +445,7 @@ function DesktopSidebar() {
               <span className="text-[14px]" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
                 {item.label}
               </span>
-            </button>
+            </motion.button>
           )
         })}
       </nav>
@@ -468,8 +488,9 @@ function BottomNav() {
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 600, damping: 28 }}
+              whileHover={mobileNavMorph.whileHover}
+              whileTap={mobileNavMorph.whileTap}
+              transition={mobileNavMorph.transition}
             >
               <div className="nav-icon-wrap">
                 {isActive && (
@@ -730,29 +751,42 @@ function DashboardWarmPrefetch() {
 
 // ── App shell ─────────────────────────────────────────────────────────────
 function AppShell() {
+  const location = useLocation()
+
   return (
     <div className="min-h-dvh bg-kosha-bg">
       <RuntimeRouteTracker />
       <DesktopSidebar />
       <ContentWrapper>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/join/:token" element={<Login />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/not-found" element={<Suspense fallback={<PageFallback />}><NotFound /></Suspense>} />
-          <Route path="/onboarding" element={<Suspense fallback={<PageFallback />}><AuthGuard><Onboarding /></AuthGuard></Suspense>} />
-          <Route path="/" element={<Suspense fallback={<PageFallback />}><AuthGuard><Dashboard /></AuthGuard></Suspense>} />
-          <Route path="/transactions" element={<Suspense fallback={<PageFallback />}><AuthGuard><Transactions /></AuthGuard></Suspense>} />
-          <Route path="/monthly" element={<Suspense fallback={<PageFallback />}><AuthGuard><Monthly /></AuthGuard></Suspense>} />
-          <Route path="/analytics" element={<Suspense fallback={<PageFallback />}><AuthGuard><Analytics /></AuthGuard></Suspense>} />
-          <Route path="/bills" element={<Suspense fallback={<PageFallback />}><AuthGuard><Bills /></AuthGuard></Suspense>} />
-          <Route path="/reconciliation" element={<Suspense fallback={<PageFallback />}><AuthGuard><Reconciliation /></AuthGuard></Suspense>} />
-          <Route path="/guide" element={<Suspense fallback={<PageFallback />}><AuthGuard><Guide /></AuthGuard></Suspense>} />
-          <Route path="/settings" element={<Suspense fallback={<PageFallback />}><AuthGuard><Settings /></AuthGuard></Suspense>} />
-          <Route path="/about" element={<Suspense fallback={<PageFallback />}><About /></Suspense>} />
-          <Route path="/report-bug" element={<Suspense fallback={<PageFallback />}><ReportBug /></Suspense>} />
-          <Route path="*" element={<Navigate to="/not-found" replace />} />
-        </Routes>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.main
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8, scale: 0.996 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.996 }}
+            transition={MOTION_SCHEMES.standard.spatial}
+            className="route-morph-shell"
+          >
+            <Routes location={location}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/join/:token" element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/not-found" element={<Suspense fallback={<PageFallback />}><NotFound /></Suspense>} />
+              <Route path="/onboarding" element={<Suspense fallback={<PageFallback />}><AuthGuard><Onboarding /></AuthGuard></Suspense>} />
+              <Route path="/" element={<Suspense fallback={<PageFallback />}><AuthGuard><Dashboard /></AuthGuard></Suspense>} />
+              <Route path="/transactions" element={<Suspense fallback={<PageFallback />}><AuthGuard><Transactions /></AuthGuard></Suspense>} />
+              <Route path="/monthly" element={<Suspense fallback={<PageFallback />}><AuthGuard><Monthly /></AuthGuard></Suspense>} />
+              <Route path="/analytics" element={<Suspense fallback={<PageFallback />}><AuthGuard><Analytics /></AuthGuard></Suspense>} />
+              <Route path="/bills" element={<Suspense fallback={<PageFallback />}><AuthGuard><Bills /></AuthGuard></Suspense>} />
+              <Route path="/reconciliation" element={<Suspense fallback={<PageFallback />}><AuthGuard><Reconciliation /></AuthGuard></Suspense>} />
+              <Route path="/guide" element={<Suspense fallback={<PageFallback />}><AuthGuard><Guide /></AuthGuard></Suspense>} />
+              <Route path="/settings" element={<Suspense fallback={<PageFallback />}><AuthGuard><Settings /></AuthGuard></Suspense>} />
+              <Route path="/about" element={<Suspense fallback={<PageFallback />}><About /></Suspense>} />
+              <Route path="/report-bug" element={<Suspense fallback={<PageFallback />}><ReportBug /></Suspense>} />
+              <Route path="*" element={<Navigate to="/not-found" replace />} />
+            </Routes>
+          </motion.main>
+        </AnimatePresence>
       </ContentWrapper>
       <BottomNav />
     </div>

@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRightLeft } from 'lucide-react'
+import { ArrowRightLeft, CheckCircle2, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
@@ -19,6 +19,7 @@ import MonthHeroCard from '../components/monthly/MonthHeroCard'
 import BreakdownCard from '../components/monthly/BreakdownCard'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
+import { MOTION_SCHEMES } from '../lib/animations'
 
 export default function Monthly() {
   const navigate = useNavigate()
@@ -26,6 +27,7 @@ export default function Monthly() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [heavyReady, setHeavyReady] = useState(false)
+  const [showCloseCelebrate, setShowCloseCelebrate] = useState(false)
   const monthRef = useRef(null)
 
   useEffect(() => {
@@ -294,6 +296,40 @@ export default function Monthly() {
 
   const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
 
+  const closeChecklistComplete = useMemo(() => {
+    return (
+      hasMonthData &&
+      monthCloseSummary.health === 'healthy' &&
+      monthlyChecklist.reconciliation.done &&
+      monthlyChecklist.bills.done &&
+      monthlyChecklist.budgets.done
+    )
+  }, [
+    hasMonthData,
+    monthCloseSummary.health,
+    monthlyChecklist.reconciliation.done,
+    monthlyChecklist.bills.done,
+    monthlyChecklist.budgets.done,
+  ])
+
+  useEffect(() => {
+    if (!closeChecklistComplete) return
+
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`
+    const celebrateKey = `kosha:month-close-celebrated:${monthKey}`
+
+    try {
+      if (localStorage.getItem(celebrateKey) === '1') return
+      localStorage.setItem(celebrateKey, '1')
+    } catch {
+      // no-op
+    }
+
+    setShowCloseCelebrate(true)
+    const timer = setTimeout(() => setShowCloseCelebrate(false), 4200)
+    return () => clearTimeout(timer)
+  }, [closeChecklistComplete, year, month])
+
   return (
     <div className="page">
       <PageHeader title="Monthly" className="mb-2" />
@@ -318,6 +354,30 @@ export default function Monthly() {
       <div className="mb-4 md:mb-5">
         <MonthHeroCard month={month} year={year} data={data} />
       </div>
+
+      <AnimatePresence>
+        {showCloseCelebrate && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={MOTION_SCHEMES.expressive.effects}
+            className="card p-3.5 mb-4 border border-income-border bg-income-bg/50"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[12px] font-semibold text-income-text inline-flex items-center gap-1">
+                  <CheckCircle2 size={14} /> Month close complete
+                </p>
+                <p className="text-[11px] text-ink-3 mt-0.5">All major checks are green. You unlocked a clean-close milestone.</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-white/80 border border-income-border flex items-center justify-center shrink-0">
+                <Sparkles size={14} className="text-income-text" />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {loading ? (
         <SkeletonLayout
@@ -364,8 +424,8 @@ export default function Monthly() {
               }
             />
           ) : (
-          <>
-          <div className="card p-4">
+          <motion.div layout className="adaptive-pane-grid">
+          <div className="card p-4 pane-span-2">
             <SectionHeader
               className="mb-2"
               title="Month close summary"
@@ -441,19 +501,21 @@ export default function Monthly() {
           )}
 
           {heavyReady && catEntries.length > 0 && (
-            <CategorySpendingChart
-              entries={catEntries}
-              total={categoryTotal}
-              budgets={budgets}
-              month={month}
-              year={year}
-              subtitle={
-                budgetCount > 0
-                  ? `${budgetCount} budget${budgetCount > 1 ? 's' : ''} set · tap to edit`
-                  : 'tap a row to set budget'
-              }
-              onCategoryClick={openBudgetSheet}
-            />
+            <div>
+              <CategorySpendingChart
+                entries={catEntries}
+                total={categoryTotal}
+                budgets={budgets}
+                month={month}
+                year={year}
+                subtitle={
+                  budgetCount > 0
+                    ? `${budgetCount} budget${budgetCount > 1 ? 's' : ''} set · tap to edit`
+                    : 'tap a row to set budget'
+                }
+                onCategoryClick={openBudgetSheet}
+              />
+            </div>
           )}
 
           {heavyReady && vehicleEntries.length > 0 && (
@@ -476,7 +538,9 @@ export default function Monthly() {
             </div>
           )}
 
-          <BreakdownCard earned={earned} spent={spent} invested={invested} />
+          <div>
+            <BreakdownCard earned={earned} spent={spent} invested={invested} />
+          </div>
 
           {heavyReady && (
           <div className="card p-4">
@@ -515,7 +579,7 @@ export default function Monthly() {
           <button
             type="button"
             onClick={() => navigate('/reconciliation')}
-            className="card p-4 w-full text-left"
+            className="card p-4 w-full text-left pane-span-2"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -532,7 +596,7 @@ export default function Monthly() {
             </div>
           </button>
           )}
-          </>
+          </motion.div>
           )}
         </motion.div>
       )}

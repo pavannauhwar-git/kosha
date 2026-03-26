@@ -16,9 +16,18 @@ import YoYCards from '../components/analytics/YoYCards'
 import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
 import YearlyInsightsCard from '../components/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
+import { createMorphInteraction } from '../lib/animations'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
+const rangeChipMorph = createMorphInteraction({
+  scheme: 'standard',
+  hoverY: -1,
+  hoverScale: 1.01,
+  hoverRadius: 999,
+  tapScale: 0.986,
+  tapRadius: 999,
+})
 
 function toFiniteNumber(value) {
   const n = Number(value)
@@ -192,19 +201,23 @@ export default function Analytics() {
                 </motion.div>
               )}
 
-            <div className="space-y-4">
-              {data ? <YearlyInsightsCard data={data} catEntries={catEntries} /> : null}
+            <motion.div layout className="adaptive-pane-grid">
+              {data ? <div className="pane-span-2"><YearlyInsightsCard data={data} catEntries={catEntries} /></div> : null}
 
               {/* ── 2. Performance trends ─────────────────────────────── */}
-              <CashFlowChart
-                chartData={chartData}
-                totalIncome={data?.totalIncome}
-              />
+              <div className="pane-span-2">
+                <CashFlowChart
+                  chartData={chartData}
+                  totalIncome={data?.totalIncome}
+                />
+              </div>
 
-              <NetSavingsChart
-                netData={netData}
-                netAxisMax={netAxisMax}
-              />
+              <div className="pane-span-2">
+                <NetSavingsChart
+                  netData={netData}
+                  netAxisMax={netAxisMax}
+                />
+              </div>
 
               {/* ── 3. Spending intelligence ─────────────────────────── */}
               {catEntries.length > 0 ? (
@@ -247,10 +260,13 @@ export default function Analytics() {
                     {[2, 5, 10].map((value) => {
                       const active = value === yoyRange
                       return (
-                        <button
+                        <motion.button
                           key={value}
                           type="button"
                           onClick={() => setYoyRange(value)}
+                          whileHover={rangeChipMorph.whileHover}
+                          whileTap={rangeChipMorph.whileTap}
+                          transition={rangeChipMorph.transition}
                           className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors ${
                             active
                               ? 'bg-brand text-white'
@@ -258,7 +274,7 @@ export default function Analytics() {
                           }`}
                         >
                           {value}Y
-                        </button>
+                        </motion.button>
                       )
                     })}
                   </div>
@@ -266,9 +282,11 @@ export default function Analytics() {
               </div>
 
               {heavyReady ? (
-                <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} />
+                <div className="pane-span-2">
+                  <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} />
+                </div>
               ) : (
-                <div className="card p-4">
+                <div className="card p-4 pane-span-2">
                   <div className="flex items-center justify-between mb-2">
                     <p className="section-label">Year over year trends</p>
                     <span className="text-caption text-ink-3">Preparing</span>
@@ -276,7 +294,7 @@ export default function Analytics() {
                   <p className="text-[12px] text-ink-3">Preparing comparison data...</p>
                 </div>
               )}
-            </div>
+            </motion.div>
             </>
           ) : (
             <EmptyState

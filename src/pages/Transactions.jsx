@@ -18,6 +18,7 @@ import { downloadCsv, toCsv } from '../lib/csv'
 import PageHeader from '../components/PageHeader'
 import { getAuthUserId } from '../lib/authStore'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { createMorphInteraction } from '../lib/animations'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 
@@ -41,6 +42,15 @@ const TYPE_CHIP = {
   income:     'bg-income-bg text-income-text border-income-border',
   investment: 'bg-invest-bg text-invest-text border-invest-border',
 }
+
+const filterChipMorph = createMorphInteraction({
+  scheme: 'standard',
+  hoverY: -1,
+  hoverScale: 1.008,
+  hoverRadius: 999,
+  tapScale: 0.985,
+  tapRadius: 999,
+})
 
 function groupNet(txns) {
   return txns.reduce((s, t) =>
@@ -307,13 +317,16 @@ export default function Transactions() {
       {/* Date filter chips */}
       <FilterRow className="mb-2 md:mb-2.5">
         {DATE_PRESETS.map((preset) => (
-          <button
+          <motion.button
             key={preset.id}
             type="button"
             onClick={() => {
               setDatePreset(preset.id)
               setDisplayCount(50)
             }}
+            whileHover={filterChipMorph.whileHover}
+            whileTap={filterChipMorph.whileTap}
+            transition={filterChipMorph.transition}
             className={`chip-control ${
               datePreset === preset.id
                 ? 'bg-brand-container text-brand-on border-brand-container'
@@ -321,25 +334,31 @@ export default function Transactions() {
             }`}
           >
             {preset.label}
-          </button>
+          </motion.button>
         ))}
       </FilterRow>
 
       {/* Type and category filter chips */}
       <FilterRow className="mb-2.5 md:mb-3">
         {TYPES.map(t => (
-          <button key={t.id}
+          <motion.button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
+            whileHover={filterChipMorph.whileHover}
+            whileTap={filterChipMorph.whileTap}
+            transition={filterChipMorph.transition}
             className={`chip-control ${typeFilter === t.id
               ? TYPE_CHIP[t.id]
               : 'chip-control-muted'}`}
           >
             {t.label}
-          </button>
+          </motion.button>
         ))}
 
-        <button
+        <motion.button
           onClick={() => setShowCats(v => !v)}
+          whileHover={filterChipMorph.whileHover}
+          whileTap={filterChipMorph.whileTap}
+          transition={filterChipMorph.transition}
             className={`chip-control
                       ${catFilter
             ? 'bg-brand-container text-brand-on border-brand-container'
@@ -356,7 +375,7 @@ export default function Transactions() {
               <X size={11} />
             </button>
           )}
-        </button>
+        </motion.button>
       </FilterRow>
 
       {/* Category picker */}
@@ -370,15 +389,19 @@ export default function Transactions() {
             className="card mb-3.5 p-3 flex flex-wrap gap-2"
           >
             {filterCategories.map(c => (
-              <button key={c.id}
+              <motion.button
+                key={c.id}
                 onClick={() => { handleCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
+                whileHover={filterChipMorph.whileHover}
+                whileTap={filterChipMorph.whileTap}
+                transition={filterChipMorph.transition}
                 className={`chip-control px-2.5
                             ${catFilter === c.id
                   ? 'bg-brand-container text-brand-on border-brand-container'
                               : 'chip-control-muted'}`}
               >
                 {c.label}
-              </button>
+              </motion.button>
             ))}
           </motion.div>
         )}

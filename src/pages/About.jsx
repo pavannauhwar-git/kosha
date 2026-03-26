@@ -10,10 +10,26 @@ import { C } from '../lib/colors'
 import KoshaLogo from '../components/KoshaLogo'
 import { CHANGELOG } from '../lib/changelog'
 import Divider from '../components/common/Divider'
-import { createFadeUp, createStagger } from '../lib/animations'
+import { createFadeUp, createMorphInteraction, createStagger } from '../lib/animations'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.06, 0.04)
+const rowMorph = createMorphInteraction({
+  scheme: 'standard',
+  hoverY: -1,
+  hoverScale: 1.004,
+  hoverRadius: 16,
+  tapScale: 0.988,
+  tapRadius: 12,
+})
+const ctaMorph = createMorphInteraction({
+  scheme: 'expressive',
+  hoverY: -1,
+  hoverScale: 1.01,
+  hoverRadius: 999,
+  tapScale: 0.982,
+  tapRadius: 999,
+})
 
 const UPI_ID = 'kumar.pavan.pk96@okicici'
 const REPO_URL = 'https://github.com/pavannauhwar-git/kosha'
@@ -46,16 +62,30 @@ function CardRow({ icon, label, sublabel, right, onClick, href }) {
 
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+      <motion.a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        whileHover={rowMorph.whileHover}
+        whileTap={rowMorph.whileTap}
+        transition={rowMorph.transition}
+        className={cls}
+      >
         {inner}
-      </a>
+      </motion.a>
     )
   }
 
   return (
-    <button onClick={onClick} className={cls}>
+    <motion.button
+      onClick={onClick}
+      whileHover={rowMorph.whileHover}
+      whileTap={rowMorph.whileTap}
+      transition={rowMorph.transition}
+      className={cls}
+    >
       {inner}
-    </button>
+    </motion.button>
   )
 }
 
@@ -129,21 +159,27 @@ export default function About() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                <button
+                <motion.button
                   type="button"
                   onClick={() => navigate('/guide')}
+                  whileHover={ctaMorph.whileHover}
+                  whileTap={ctaMorph.whileTap}
+                  transition={ctaMorph.transition}
                   className="h-10 px-4 rounded-pill bg-white text-brand text-[12px] font-semibold whitespace-nowrap"
                 >
                   Open product guide
-                </button>
-                <a
+                </motion.button>
+                <motion.a
                   href={REPO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
+                  whileHover={ctaMorph.whileHover}
+                  whileTap={ctaMorph.whileTap}
+                  transition={ctaMorph.transition}
                   className="h-10 px-4 rounded-pill border border-white/35 text-white text-[12px] font-semibold inline-flex items-center justify-center whitespace-nowrap"
                 >
                   View GitHub
-                </a>
+                </motion.a>
               </div>
             </div>
           </motion.div>
