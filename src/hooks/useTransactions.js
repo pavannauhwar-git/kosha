@@ -795,7 +795,9 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
     await deleteFn(id)
     await queryClient.cancelQueries({ queryKey: ['transactions'] })
     await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
-    
+
+    optimisticallyDeleteTransactionFromCache(id)
+
     runInBackground(invalidateFn(),'transactions delete mutation cache invalidation')
     return true
   } catch (error) {

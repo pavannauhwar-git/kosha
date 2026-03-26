@@ -227,35 +227,56 @@ function restoreLiabilitySnapshot(snapshot) {
 export function optimisticallyInsertPendingLiability(liability) {
   if (!liability?.id) return
 
-  queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (prev = []) => {
-    const deduped = prev.filter((row) => row?.id !== liability.id)
-    return sortLiabilitiesByDueDateAsc([...deduped, { ...liability, paid: false }])
-  })
+  const prev = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  if (!Array.isArray(prev)) return
+  
+  const deduped = prev.filter((row) => row?.id !== liability.id)
+  queryClient.setQueryData(
+    LIABILITY_PENDING_QUERY_KEY,
+    sortLiabilitiesByDueDateAsc([...deduped, { ...liability, paid: false }])
+  )
 }
 
 export function optimisticallyMarkLiabilityPaid(liability) {
   if (!liability?.id) return
 
-  queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (prev = []) =>
-    prev.filter((row) => row?.id !== liability.id)
-  )
+  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  if (!Array.isArray(pendingData)) {
+    queryClient.setQueryData(
+      LIABILITY_PENDING_QUERY_KEY,
+      pendingData.filter((row) => row?.id !== liability.id)
+    )
+  }
 
-  queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (prev = []) => {
+  const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY)
+  if (Array.isArray(paidData)) {
     const paidRow = { ...liability, paid: true, __optimistic: true }
-    const deduped = prev.filter((row) => row?.id !== liability.id)
-    return sortLiabilitiesByDueDateAsc([...deduped, paidRow])
-  })
+    const deduped = paidData.filter((row) => row?.id !== liability.id)
+    queryClient.setQueryData(
+      LIABILITY_PAID_QUERY_KEY,
+      sortLiabilitiesByDueDateAsc([...deduped, paidRow])
+    )
+  }
 }
 
 export function optimisticallyDeleteLiabilityFromCache(id) {
   if (!id) return
 
-  queryClient.setQueryData(LIABILITY_PENDING_QUERY_KEY, (prev = []) =>
-    prev.filter((row) => row?.id !== id)
-  )
-  queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, (prev = []) =>
-    prev.filter((row) => row?.id !== id)
-  )
+  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  if (Array.isArray(pendingData)) {
+    queryClient.setQueryData(
+      LIABILITY_PENDING_QUERY_KEY,
+      pendingData.filter((row) => row?.id !== id)
+    )
+  }
+
+  const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY)
+  if (Array.isArray(paidData)) {
+    queryClient.setQueryData(
+      LIABILITY_PAID_QUERY_KEY,
+      paidData.filter((row) => row?.id !== id)
+    )
+  }
 }
 
 export async function addLiabilityMutation(payload, __testOverrides = null) {
@@ -305,6 +326,8 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     await queryClient.cancelQueries({ queryKey: ['transactions'] })
     await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
+    optimisticallyMarkLiabilityPaid(liability) // Re-apply to ensure cache is correct after cancellations
+
     runInBackground(
       Promise.all([
         invalidateLiabilityFn(),
@@ -330,6 +353,9 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
 
     await deleteFn(id)
     await queryClient.cancelQueries({ queryKey: ['liabilities'] })
+
+    optimisticallyDeleteLiabilityFromCache(id) // Re-apply to ensure cache is correct after cancellations
+
     runInBackground(invalidateLiabilityFn(), 'liability delete cache invalidation')
     return true
   } catch (error) {
