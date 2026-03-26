@@ -2,6 +2,7 @@ import { memo } from 'react'
 import {
   AreaChart, Area,
   BarChart, Bar,
+  ComposedChart,
   LineChart, Line,
   XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, Cell,
@@ -13,6 +14,9 @@ import { C } from '../../lib/colors'
 
 const DarkTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
+  const uniquePayload = payload.filter(
+    (entry, idx, arr) => arr.findIndex((item) => item.name === entry.name) === idx
+  )
   return (
     <div style={{
       background: 'rgba(34,43,109,0.96)',
@@ -28,7 +32,7 @@ const DarkTooltip = ({ active, payload, label }) => {
       }}>
         {label}
       </p>
-      {payload.map(p => (
+      {uniquePayload.map(p => (
         <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
           <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>{p.name}</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: p.stroke || p.fill || p.color }}>
@@ -42,7 +46,8 @@ const DarkTooltip = ({ active, payload, label }) => {
 
 const NetTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
-  const val        = Number(payload[0]?.value || 0)
+  const netPayload = payload.find((point) => point?.dataKey === 'Net') || payload[0]
+  const val        = Number(netPayload?.value || 0)
   const valueColor = val >= 0 ? C.chartIncome : C.chartExpense
   return (
     <div style={{
@@ -72,19 +77,24 @@ const NetTooltip = ({ active, payload, label }) => {
 export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncome }) {
   if (!chartData.length) return null
 
-  const chartH = chartData.length <= 4 ? 140 : 180
+  const chartH = chartData.length <= 4 ? 180 : 220
+  const totalSpent = chartData.reduce((sum, point) => sum + Number(point.Spent || 0), 0)
+  const totalNet = chartData.reduce((sum, point) => sum + (Number(point.Income || 0) - Number(point.Spent || 0)), 0)
+  const bestMonth = chartData.reduce((best, point) => {
+    const gap = Number(point.Income || 0) - Number(point.Spent || 0)
+    if (!best || gap > best.gap) return { name: point.name, gap }
+    return best
+  }, null)
 
   return (
-    <div
-      className="card p-4 transition-transform duration-150 hover:-translate-y-0.5"
-    >
-      <div className="mb-2 flex items-start justify-between">
+    <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
-            Cash Flow
+            Cash Flow Pulse
           </p>
           <p style={{ fontSize: 11, color: 'rgba(49,58,134,0.55)', marginTop: 2 }}>
-            Income vs spending by month
+            Income trend vs monthly outflow
           </p>
         </div>
         <div className="text-right">
@@ -96,36 +106,69 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
         </div>
       </div>
 
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Spent</p>
+          <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(totalSpent, true)}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Net</p>
+          <p className={`text-[12px] font-bold tabular-nums ${totalNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+            {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
+          </p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Best month</p>
+          <p className="text-[12px] font-bold tabular-nums text-ink">
+            {bestMonth?.name || '—'}
+          </p>
+        </div>
+      </div>
+
       <ResponsiveContainer width="100%" height={chartH}>
-        <AreaChart data={chartData} margin={{ top: 8, right: 16, left: 16, bottom: 0 }}>
+        <ComposedChart data={chartData} margin={{ top: 8, right: 16, left: 12, bottom: 0 }}>
           <defs>
             <linearGradient id="gIncome" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={C.chartIncome}  stopOpacity={0.25} />
+              <stop offset="5%"  stopColor={C.chartIncome}  stopOpacity={0.20} />
               <stop offset="95%" stopColor={C.chartIncome}  stopOpacity={0.02} />
             </linearGradient>
             <linearGradient id="gExpense" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={C.chartExpense} stopOpacity={0.20} />
+              <stop offset="5%"  stopColor={C.chartExpense} stopOpacity={0.35} />
               <stop offset="95%" stopColor={C.chartExpense} stopOpacity={0.02} />
             </linearGradient>
           </defs>
+          <ReferenceLine y={0} stroke="rgba(31,37,95,0.14)" strokeWidth={1} />
           <XAxis dataKey="name"
             tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide />
           <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(31,37,95,0.10)', strokeWidth: 1 }} />
+          <Bar
+            dataKey="Spent"
+            fill="url(#gExpense)"
+            radius={[10, 10, 6, 6]}
+            maxBarSize={24}
+            name="Spent"
+          />
           <Area dataKey="Income" type="monotone"
             stroke={C.chartIncome} strokeWidth={3} fill="url(#gIncome)" dot={false}
             activeDot={{ r: 5, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
+            name="Income"
           />
-          <Area dataKey="Spent" type="monotone"
-            stroke={C.chartExpense} strokeWidth={3} fill="url(#gExpense)" dot={false}
-            activeDot={{ r: 5, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
+          <Line
+            type="monotone"
+            dataKey="Spent"
+            stroke={C.chartExpense}
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
+            name="Spent"
           />
-        </AreaChart>
+        </ComposedChart>
       </ResponsiveContainer>
 
-      <div className="flex justify-center gap-6 pb-4 pt-1">
+      <div className="flex justify-center gap-6 pb-1 pt-2">
         {[['Income', C.chartIncome], ['Spent', C.chartExpense]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: c }} />
@@ -143,18 +186,36 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
   if (!netData.length) return null
 
   const totalNet = netData.reduce((s, m) => s + m.Net, 0)
+  const positiveMonths = netData.filter((m) => Number(m.Net || 0) >= 0).length
+  const bestMonth = netData.reduce((best, point) => {
+    const val = Number(point.Net || 0)
+    if (!best || val > best.value) return { name: point.name, value: val }
+    return best
+  }, null)
+  const worstMonth = netData.reduce((worst, point) => {
+    const val = Number(point.Net || 0)
+    if (!worst || val < worst.value) return { name: point.name, value: val }
+    return worst
+  }, null)
+
+  let runningTotal = 0
+  const netWithTrend = netData.map((point) => {
+    runningTotal += Number(point.Net || 0)
+    return {
+      ...point,
+      Running: runningTotal,
+    }
+  })
 
   return (
-    <div
-      className="card p-4 transition-transform duration-150 hover:-translate-y-0.5"
-    >
-      <div className="mb-2 flex items-start justify-between">
+    <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
             Net Savings
           </p>
           <p style={{ fontSize: 11, color: 'rgba(49,58,134,0.55)', marginTop: 2 }}>
-            After expenses &amp; investments
+            Monthly net with cumulative direction
           </p>
         </div>
         <div className="text-right">
@@ -171,26 +232,51 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={130}>
-        <BarChart data={netData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Positive months</p>
+          <p className="text-[12px] font-bold tabular-nums text-ink">{positiveMonths}/{netData.length}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Best month</p>
+          <p className="text-[12px] font-bold tabular-nums text-income-text">{bestMonth?.name || '—'}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Weak month</p>
+          <p className="text-[12px] font-bold tabular-nums text-expense-text">{worstMonth?.name || '—'}</p>
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={180}>
+        <ComposedChart data={netWithTrend} margin={{ top: 4, right: 12, left: 12, bottom: 0 }}>
           <XAxis dataKey="name"
             tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
-          <YAxis hide domain={[-netAxisMax, netAxisMax]} />
+          <YAxis yAxisId="net" hide domain={[-netAxisMax, netAxisMax]} />
+          <YAxis yAxisId="running" hide />
           <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(31,37,95,0.06)' }} />
           <ReferenceLine y={0} stroke="rgba(31,37,95,0.22)" strokeWidth={1} />
-          <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={32} minPointSize={4}>
-            {netData.map((entry, i) => (
+          <Bar yAxisId="net" dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={26} minPointSize={4}>
+            {netWithTrend.map((entry, i) => (
               <Cell key={i}
                 fill={entry.Net >= 0 ? C.chartIncome : C.chartExpense}
                 fillOpacity={0.90}
               />
             ))}
           </Bar>
-        </BarChart>
+          <Line
+            yAxisId="running"
+            type="monotone"
+            dataKey="Running"
+            stroke="rgba(31,37,95,0.72)"
+            strokeWidth={2}
+            dot={false}
+            name="Cumulative"
+          />
+        </ComposedChart>
       </ResponsiveContainer>
-      <div className="h-4" />
+      <div className="pt-2 text-[11px] text-ink-3">Bars = monthly net, line = cumulative savings path.</div>
     </div>
   )
 })

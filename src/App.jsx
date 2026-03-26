@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
 import { supabase } from './lib/supabase'
-import { TRANSACTION_INVALIDATION_KEYS } from './hooks/useTransactions'
+import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS } from './hooks/useTransactions'
 import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
 import AuthGuard from './components/AuthGuard'
 import ProfileMenu from './components/ProfileMenu'
@@ -18,8 +18,6 @@ import { recordRuntimeRoute } from './lib/runtimeMonitor'
 
 const DASHBOARD_RECENT_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode'
-const TXN_LIST_PREFETCH_COLUMNS =
-  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
 const LIABILITY_PREFETCH_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
@@ -100,6 +98,7 @@ function useRouteIntentPrefetch() {
         limit: 50,
         startDate: undefined,
         endDate: undefined,
+        columns: TRANSACTION_LIST_COLUMNS,
       }
       const countFilters = {
         type: undefined,
@@ -114,7 +113,7 @@ function useRouteIntentPrefetch() {
           queryFn: async () => {
             const { data, error } = await supabase
               .from('transactions')
-              .select(TXN_LIST_PREFETCH_COLUMNS)
+              .select(TRANSACTION_LIST_COLUMNS)
               .eq('user_id', user.id)
               .order('date', { ascending: false })
               .order('created_at', { ascending: false })
@@ -141,7 +140,11 @@ function useRouteIntentPrefetch() {
     }
 
     if (path === '/monthly') {
-      void queryClient.prefetchQuery({
+      const monthStart = `${year}-${String(month).padStart(2, '0')}-01`
+      const monthEnd = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
+
+      void Promise.all([
+        queryClient.prefetchQuery({
         queryKey: ['month', year, month],
         queryFn: async () => {
           const { data: rows, error } = await supabase.rpc('get_month_summary', {
@@ -185,7 +188,24 @@ function useRouteIntentPrefetch() {
           }
         },
         staleTime: 30 * 1000,
-      }).catch(() => {})
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['liabilitiesMonth', year, month],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('liabilities')
+              .select('id, amount, due_date, paid')
+              .eq('user_id', user.id)
+              .gte('due_date', monthStart)
+              .lte('due_date', monthEnd)
+              .order('due_date', { ascending: true })
+
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => {})
       return
     }
 
@@ -195,9 +215,27 @@ function useRouteIntentPrefetch() {
         queryFn: async () => {
           const { data: result, error } = await supabase
             .rpc('get_year_summary', { p_user_id: user.id, p_year: year })
-            .single()
+            .maybeSingle()
           if (error) throw error
-          if (!result) return null
+          if (!result) {
+            return {
+              monthly: Array.from({ length: 12 }, (_, i) => ({
+                month: i + 1,
+                income: 0,
+                expense: 0,
+                investment: 0,
+              })),
+              totalIncome: 0,
+              totalRepayments: 0,
+              totalExpense: 0,
+              totalInvestment: 0,
+              avgSavings: 0,
+              byCategory: {},
+              byVehicle: {},
+              top5: [],
+              count: 0,
+            }
+          }
 
           const monthlyRaw = result.monthly_data || []
           const totals = result.totals || {}
@@ -263,6 +301,69 @@ function useRouteIntentPrefetch() {
         },
         staleTime: 45 * 1000,
       }).catch(() => {})
+      return
+    }
+
+    if (path === '/reconciliation') {
+      const reconcileTxnFilters = {
+        type: undefined,
+        category: undefined,
+        search: undefined,
+        limit: 250,
+        startDate: undefined,
+        endDate: undefined,
+        columns: TRANSACTION_INSIGHTS_COLUMNS,
+      }
+
+      void Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['transactions', reconcileTxnFilters],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('transactions')
+              .select(TRANSACTION_INSIGHTS_COLUMNS)
+              .eq('user_id', user.id)
+              .order('date', { ascending: false })
+              .order('created_at', { ascending: false })
+              .limit(250)
+
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['reconciliationReviews'],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('reconciliation_reviews')
+              .select('transaction_id, status, statement_line, updated_at')
+              .eq('user_id', user.id)
+
+            if (error) {
+              const message = String(error?.message || '').toLowerCase()
+              const details = String(error?.details || '').toLowerCase()
+              const code = String(error?.code || '').toUpperCase()
+              const status = Number(error?.status || 0)
+              const missingTable = (
+                message.includes('reconciliation_reviews') ||
+                details.includes('reconciliation_reviews') ||
+                (message.includes('relation') && message.includes('does not exist')) ||
+                (details.includes('relation') && details.includes('does not exist')) ||
+                code === '42P01' ||
+                code === 'PGRST205' ||
+                status === 404
+              )
+
+              if (missingTable) return { rows: [], unavailable: true }
+              throw error
+            }
+
+            return { rows: data || [], unavailable: false }
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => {})
     }
   }, [user?.id])
 }

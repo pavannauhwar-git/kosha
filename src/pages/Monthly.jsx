@@ -2,10 +2,9 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRightLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useMonthSummary } from '../hooks/useTransactions'
-import { useTransactions } from '../hooks/useTransactions'
+import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
-import { useLiabilities } from '../hooks/useLiabilities'
+import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
 import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
@@ -35,9 +34,13 @@ export default function Monthly() {
   }, [])
 
   const { data, loading } = useMonthSummary(year, month)
-  const { data: txnRows = [] } = useTransactions({ limit: 250, enabled: heavyReady })
+  const { data: txnRows = [] } = useTransactions({
+    limit: 250,
+    enabled: heavyReady,
+    columns: TRANSACTION_INSIGHTS_COLUMNS,
+  })
   const { budgets, setBudget, removeBudget } = useBudgets({ enabled: heavyReady })
-  const { pending: pendingBills, paid: paidBills } = useLiabilities({ enabled: heavyReady })
+  const { pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
   const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews({ enabled: heavyReady })
 
   const reviewedIds = useMemo(
@@ -91,24 +94,16 @@ export default function Monthly() {
   )
 
   const monthlyBillStatus = useMemo(() => {
-    const inMonth = (row) => {
-      const parsed = new Date(`${row.due_date}T00:00:00`)
-      if (Number.isNaN(parsed.getTime())) return false
-      return parsed.getFullYear() === year && parsed.getMonth() + 1 === month
-    }
-
-    const pendingInMonth = pendingBills.filter(inMonth)
-    const paidInMonth = paidBills.filter(inMonth)
-    const total = pendingInMonth.length + paidInMonth.length
-    const paidPct = total > 0 ? Math.round((paidInMonth.length / total) * 100) : 100
+    const total = pendingBills.length + paidBills.length
+    const paidPct = total > 0 ? Math.round((paidBills.length / total) * 100) : 100
 
     return {
       total,
-      pending: pendingInMonth.length,
-      paid: paidInMonth.length,
+      pending: pendingBills.length,
+      paid: paidBills.length,
       paidPct,
     }
-  }, [pendingBills, paidBills, year, month])
+  }, [pendingBills, paidBills])
 
   const monthlyChecklist = useMemo(() => {
     const budgetCoverageTarget = catEntries.length

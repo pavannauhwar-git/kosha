@@ -7,7 +7,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
-import { useTransactions, saveTransactionMutation } from '../hooks/useTransactions'
+import { useTransactions, saveTransactionMutation, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import {
   clearLearnedReconciliationAliases,
   reportReconciliationFalsePositive,
@@ -51,7 +51,10 @@ export default function Reconciliation() {
   const [toast, setToast] = useState(null)
   const [statementInput, setStatementInput] = useState('')
 
-  const { data, loading } = useTransactions({ limit: 250 })
+  const { data, loading } = useTransactions({
+    limit: 250,
+    columns: TRANSACTION_INSIGHTS_COLUMNS,
+  })
   const {
     rows: reviewRows,
     reviewedIdSet: serverReviewedIds,

@@ -19,10 +19,16 @@ async function fetchYearSummary(year) {
 
   const { data: result, error } = await supabase
     .rpc('get_year_summary', { p_user_id: userId, p_year: year })
-    .single()
+    .maybeSingle()
 
   if (error) throw error
-  if (!result) return null
+  if (!result) {
+    return {
+      totalIncome: 0,
+      totalExpense: 0,
+      totalInvestment: 0,
+    }
+  }
 
   const totals = result.totals || {}
 
@@ -61,7 +67,7 @@ function YoYTooltip({ active, payload, label }) {
   )
 }
 
-export default function YoYCards({ years, currentYear, enabled = true }) {
+export default function YoYCards({ years, currentYear, enabled = true, rangeYears = 5 }) {
   const yearQueries = useQueries({
     queries: years.map((year) => ({
       queryKey: ['year', year],
@@ -77,7 +83,12 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
     return years
       .map((year, idx) => {
         const data = yearQueries[idx]?.data
-        if (!data) return null
+        if (!data) return {
+          year,
+          earned: 0,
+          spent: 0,
+          invested: 0,
+        }
         const earned = Number(data.totalIncome || 0)
         const spent = Number(data.totalExpense || 0)
         const invested = Number(data.totalInvestment || 0)
@@ -87,8 +98,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
           spent,
           invested,
         }
-      })
-      .filter(Boolean)
+        })
   }, [years, yearQueries])
 
   const currentPoint = useMemo(
@@ -114,14 +124,14 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
     )
   }
 
-  if (points.length < 2) {
+  if (points.length === 0) {
     return (
       <div className="card p-4">
         <div className="flex items-center justify-between mb-2">
           <p className="section-label">Year over year trends</p>
-          <span className="text-caption text-ink-3">Need more history</span>
+          <span className="text-caption text-ink-3">No history</span>
         </div>
-        <p className="text-[12px] text-ink-3">At least two years with activity are required for comparison.</p>
+        <p className="text-[12px] text-ink-3">No yearly data available yet for this range.</p>
       </div>
     )
   }
@@ -129,17 +139,17 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
   const deltas = [
     {
       label: 'Earned',
-      delta: metricDelta(currentPoint.earned, previousPoint?.earned),
+      delta: previousPoint ? metricDelta(currentPoint.earned, previousPoint?.earned) : null,
       tone: 'text-income-text',
     },
     {
       label: 'Spent',
-      delta: metricDelta(currentPoint.spent, previousPoint?.spent),
+      delta: previousPoint ? metricDelta(currentPoint.spent, previousPoint?.spent) : null,
       tone: 'text-expense-text',
     },
     {
       label: 'Invested',
-      delta: metricDelta(currentPoint.invested, previousPoint?.invested),
+      delta: previousPoint ? metricDelta(currentPoint.invested, previousPoint?.invested) : null,
       tone: 'text-invest-text',
     },
   ]
@@ -148,7 +158,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
     <div className="card p-4">
       <div className="flex items-center justify-between mb-2">
         <p className="section-label">Year over year trends</p>
-        <span className="text-caption text-ink-3">Multi-line comparison</span>
+        <span className="text-caption text-ink-3">Last {rangeYears} year{rangeYears > 1 ? 's' : ''}</span>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">

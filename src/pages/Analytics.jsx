@@ -24,6 +24,7 @@ export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
+  const [yoyRange, setYoyRange] = useState(5)
   const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
 
@@ -56,11 +57,9 @@ export default function Analytics() {
   }, [netData])
 
   const yoyYears = useMemo(() => {
-    // Keep YoY responsive by limiting concurrent yearly queries.
-    // Use a rolling 6-year window ending at the selected year.
-    return Array.from({ length: 6 }, (_, i) => year - 5 + i)
+    return Array.from({ length: yoyRange }, (_, i) => year - (yoyRange - 1) + i)
       .filter((y) => y >= MIN_NAV_YEAR && y <= MAX_NAV_YEAR)
-  }, [year])
+  }, [year, yoyRange])
 
   const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
     .sort((a, b) => b[1] - a[1]).slice(0, 8), [data?.byCategory])
@@ -209,8 +208,37 @@ export default function Analytics() {
                   <p className="text-[12px] text-ink-3 mt-1">Add investments to unlock allocation breakdown.</p>
                 </div>
               )}
+
+              <div className="card p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="section-label">YoY range</p>
+                    <p className="text-[11px] text-ink-3 mt-0.5">Choose comparison depth</p>
+                  </div>
+                  <div className="inline-flex rounded-full border border-kosha-border bg-kosha-surface p-1">
+                    {[1, 2, 5].map((value) => {
+                      const active = value === yoyRange
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setYoyRange(value)}
+                          className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors ${
+                            active
+                              ? 'bg-brand text-white'
+                              : 'text-ink-2 hover:bg-kosha-surface-2'
+                          }`}
+                        >
+                          {value}Y
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
               {heavyReady ? (
-                <YoYCards years={yoyYears} currentYear={year} enabled />
+                <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} />
               ) : (
                 <div className="card p-4">
                   <div className="flex items-center justify-between mb-2">

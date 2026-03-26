@@ -22,14 +22,19 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['todayExpenses'],
 ]
 
-const TRANSACTION_LIST_COLUMNS =
+export const TRANSACTION_LIST_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
+
+export const TRANSACTION_INSIGHTS_COLUMNS =
+  'id, date, created_at, type, amount, description, category, payment_mode, is_repayment'
 
 const TRANSACTION_MUTATION_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
 
 const RECURRING_SYNC_COOLDOWN_MS = 60 * 1000
+const RECURRING_SYNC_WAIT_MS = 220
 let lastRecurringSyncAt = 0
+let recurringSyncPromise = null
 
 function runInBackground(promise, scope) {
   void promise.catch((error) => {
@@ -39,17 +44,61 @@ function runInBackground(promise, scope) {
 
 async function maybeGenerateRecurringTransactions(userId) {
   const now = Date.now()
-  if (now - lastRecurringSyncAt < RECURRING_SYNC_COOLDOWN_MS) return
+  if (now - lastRecurringSyncAt < RECURRING_SYNC_COOLDOWN_MS) return false
   lastRecurringSyncAt = now
 
   try {
     await supabase.rpc('generate_recurring_transactions', { p_user_id: userId })
+    return true
   } catch (error) {
     const message = String(error?.message || '')
     // Safe no-op when migration has not yet been applied on an environment.
-    if (message.includes('generate_recurring_transactions')) return
+    if (message.includes('generate_recurring_transactions')) return false
     console.warn('[Kosha] recurring transaction generation failed', error)
+    return false
   }
+}
+
+function getRecurringSyncPromise(userId) {
+  if (recurringSyncPromise) return recurringSyncPromise
+
+  recurringSyncPromise = (async () => {
+    const didRun = await maybeGenerateRecurringTransactions(userId)
+    if (!didRun) return false
+
+    // If recurring entries were generated after the initial list query started,
+    // refresh only active financial surfaces in the background.
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['month'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['year'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['balance'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['todayExpenses'], refetchType: 'active' }),
+    ])
+
+    return true
+  })()
+    .catch((error) => {
+      console.warn('[Kosha] recurring sync orchestration failed', error)
+      return false
+    })
+    .finally(() => {
+      recurringSyncPromise = null
+    })
+
+  return recurringSyncPromise
+}
+
+async function ensureRecurringTransactionsReady(userId) {
+  const syncPromise = getRecurringSyncPromise(userId)
+
+  // Keep page loads responsive: wait briefly for sync, then continue fetching.
+  await Promise.race([
+    syncPromise,
+    new Promise((resolve) => setTimeout(resolve, RECURRING_SYNC_WAIT_MS)),
+  ])
 }
 
 function logQueryError(scope, error) {
@@ -94,8 +143,9 @@ export function useDebounce(value, ms = 300) {
 
 // ── Query hooks ───────────────────────────────────────────────────────────
 
-export function useTransactions({ type, category, search, limit, startDate, endDate, withCount = false, enabled = true } = {}) {
-  const filters = { type, category, search, limit, startDate, endDate }
+export function useTransactions({ type, category, search, limit, startDate, endDate, withCount = false, enabled = true, columns } = {}) {
+  const selectedColumns = columns || TRANSACTION_LIST_COLUMNS
+  const filters = { type, category, search, limit, startDate, endDate, columns: selectedColumns }
   const { data: rows, isLoading, error, refetch } = useQuery({
     queryKey: txnListKey(filters),
     enabled,
@@ -106,11 +156,11 @@ export function useTransactions({ type, category, search, limit, startDate, endD
         // Filtered/short lists (dashboard widgets, search, category tabs)
         // should stay read-only for latency.
         if (!type && !category && !search && !startDate && !endDate) {
-          await maybeGenerateRecurringTransactions(userId)
+          await ensureRecurringTransactionsReady(userId)
         }
         let q = supabase
           .from('transactions')
-          .select(TRANSACTION_LIST_COLUMNS)
+          .select(selectedColumns)
           .eq('user_id', userId)
           .order('date',       { ascending: false })
           .order('created_at', { ascending: false })
@@ -134,11 +184,17 @@ export function useTransactions({ type, category, search, limit, startDate, endD
     // search:'coffee') from piling up in cache. refetchType:'all' above would
     // otherwise re-request every combination the user tried this session.
     gcTime: 5 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   })
+
+  const safeRows = rows || []
+  const numericLimit = Number(limit)
+  const hasLimit = Number.isFinite(numericLimit) && numericLimit > 0
+  const shouldFetchCount = enabled && withCount && (!hasLimit || safeRows.length >= numericLimit)
 
   const { data: countData } = useQuery({
     queryKey: txnCountKey({ type, category, startDate, endDate }),
-    enabled:  enabled && withCount,
+    enabled:  shouldFetchCount,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
         const userId = getAuthUserId()
@@ -162,8 +218,9 @@ export function useTransactions({ type, category, search, limit, startDate, endD
     }),
   })
 
-  const safeRows = rows || []
-  const total    = withCount ? (countData ?? safeRows.length) : safeRows.length
+  const total = withCount
+    ? (shouldFetchCount ? (countData ?? safeRows.length) : safeRows.length)
+    : safeRows.length
 
   return { data: safeRows, total, loading: isLoading, error, refetch }
 }
@@ -307,6 +364,7 @@ export function useMonthSummary(year, month, options = {}) {
         throw err
       }
     },
+    placeholderData: (previousData) => previousData,
   })
 
   return { data, loading: isLoading, fetching: isFetching, error }
@@ -323,10 +381,28 @@ export function useYearSummary(year, options = {}) {
 
         const { data: result, error: rpcError } = await supabase
           .rpc('get_year_summary', { p_user_id: userId, p_year: year })
-          .single()
+          .maybeSingle()
 
         if (rpcError) throw rpcError
-        if (!result)  return null
+        if (!result) {
+          return {
+            monthly: Array.from({ length: 12 }, (_, i) => ({
+              month: i + 1,
+              income: 0,
+              expense: 0,
+              investment: 0,
+            })),
+            totalIncome: 0,
+            totalRepayments: 0,
+            totalExpense: 0,
+            totalInvestment: 0,
+            avgSavings: 0,
+            byCategory: {},
+            byVehicle: {},
+            top5: [],
+            count: 0,
+          }
+        }
 
         const monthlyRaw = result.monthly_data  || []
         const totals     = result.totals         || {}
@@ -369,6 +445,7 @@ export function useYearSummary(year, options = {}) {
         throw err
       }
     },
+    placeholderData: (previousData) => previousData,
   })
 
   return { data, loading: isLoading, error }
@@ -445,6 +522,7 @@ export function useRunningBalance(year, month) {
         throw err
       }
     },
+    placeholderData: (previousData) => previousData,
   })
 
   return { balance: data, loading: isLoading, fetching: isFetching, error }

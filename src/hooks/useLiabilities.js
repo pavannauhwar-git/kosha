@@ -1,4 +1,4 @@
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
@@ -7,12 +7,13 @@ import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 import { invalidateCache as invalidateTransactionCache } from './useTransactions'
 
-export const LIABILITY_INVALIDATION_KEYS = [['liabilities']]
+export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth']]
 
 const LIABILITY_PENDING_QUERY_KEY = ['liabilities', 'pending']
 const LIABILITY_PAID_QUERY_KEY    = ['liabilities', 'paid']
 const LIABILITY_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
+const MONTH_LIABILITY_COLUMNS = 'id, amount, due_date, paid'
 
 function runInBackground(promise, scope) {
   void promise.catch((error) => {
@@ -22,10 +23,13 @@ function runInBackground(promise, scope) {
 
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  // Use 'all' so both the Dashboard due-bills strip and the Bills page
-  // refresh immediately after a mutation. There are only two liability
-  // queries ('pending' and 'paid'), so 'all' never causes over-fetching.
-  await queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'all' })
+  await Promise.all([
+    // Use 'all' so both the Dashboard due-bills strip and the Bills page
+    // refresh immediately after a mutation.
+    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'all' }),
+    // Monthly page uses month-scoped liabilities; keep it consistent after mutations.
+    queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
+  ])
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {
@@ -50,11 +54,13 @@ export function useLiabilities({ includePaid = true, enabled = true } = {}) {
         queryKey: LIABILITY_PENDING_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(false),
         enabled,
+        placeholderData: (previousData) => previousData,
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY,
         queryFn:  () => fetchLiabilitiesByPaid(true),
         enabled:  enabled && includePaid,
+        placeholderData: (previousData) => previousData,
       },
     ],
   })
@@ -63,7 +69,53 @@ export function useLiabilities({ includePaid = true, enabled = true } = {}) {
     pending: pendingQuery.data  || [],
     paid:    includePaid ? (paidQuery.data || []) : [],
     loading: pendingQuery.isLoading || (includePaid && paidQuery.isLoading),
+    pendingLoading: pendingQuery.isLoading,
+    paidLoading: includePaid ? paidQuery.isLoading : false,
     error:   pendingQuery.error  || (includePaid && paidQuery.error) || null,
+  }
+}
+
+function monthDateRange(year, month) {
+  const safeYear = Number(year)
+  const safeMonth = Number(month)
+  if (!Number.isFinite(safeYear) || !Number.isFinite(safeMonth)) {
+    return { startDate: null, endDate: null }
+  }
+
+  const startDate = `${safeYear}-${String(safeMonth).padStart(2, '0')}-01`
+  const endDate = `${safeYear}-${String(safeMonth).padStart(2, '0')}-${new Date(safeYear, safeMonth, 0).getDate()}`
+  return { startDate, endDate }
+}
+
+export function useLiabilitiesByMonth(year, month, options = {}) {
+  const { enabled = true } = options
+  const { startDate, endDate } = monthDateRange(year, month)
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['liabilitiesMonth', year, month],
+    enabled: enabled && !!startDate && !!endDate,
+    queryFn: async () => traceQuery('liabilities:month', async () => {
+      const userId = getAuthUserId()
+      const { data: rows, error: queryError } = await supabase
+        .from('liabilities')
+        .select(MONTH_LIABILITY_COLUMNS)
+        .eq('user_id', userId)
+        .gte('due_date', startDate)
+        .lte('due_date', endDate)
+        .order('due_date', { ascending: true })
+
+      if (queryError) throw queryError
+      return rows || []
+    }),
+  })
+
+  const rows = data || []
+  return {
+    rows,
+    pending: rows.filter((row) => !row?.paid),
+    paid: rows.filter((row) => !!row?.paid),
+    loading: isLoading,
+    error,
   }
 }
 

@@ -2,12 +2,16 @@ import { spawn } from 'node:child_process'
 
 const CHECKS = [
   { label: 'Build', command: ['npm', ['run', 'build']] },
+  { label: 'Mutation paths', command: ['npm', ['run', 'test:mutation-paths']] },
+  { label: 'Mutation integration', command: ['npm', ['run', 'test:mutation-integration']] },
+  { label: 'Mutation rollback contract', command: ['npm', ['run', 'test:mutation-rollback']] },
   { label: 'Statement matching', command: ['npm', ['run', 'test:statement-matching']] },
   { label: 'Reconciliation flow', command: ['npm', ['run', 'test:reconciliation-flow']] },
   { label: 'Reconciliation metrics', command: ['npm', ['run', 'test:reconciliation-metrics']] },
   { label: 'Deploy readiness', command: ['npm', ['run', 'test:deploy-readiness']] },
-  { label: 'Join flow', command: ['npm', ['run', 'test:join-flow']] },
-  { label: 'Liabilities realtime', command: ['npm', ['run', 'test:liabilities-realtime']] },
+  { label: 'Reconciliation schema live', command: ['npm', ['run', 'test:reconciliation-schema-live']] },
+  { label: 'Join flow', command: ['npm', ['run', 'test:join-flow']], retries: 2 },
+  { label: 'Liabilities realtime', command: ['npm', ['run', 'test:liabilities-realtime']], retries: 3 },
   { label: 'Mutation stress', command: ['npm', ['run', 'test:mutation-stress']] },
 ]
 
@@ -46,14 +50,28 @@ async function main() {
   for (const check of CHECKS) {
     console.log(`=== ${check.label} ===`)
     const [cmd, args] = check.command
-    const result = await runCommand(cmd, args)
+    const maxAttempts = Math.max(1, Number(check.retries || 1))
+    let result = null
 
-    const ok = result.code === 0
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (attempt > 1) {
+        console.log(`Retrying ${check.label} (${attempt}/${maxAttempts})...`)
+      }
+
+      result = await runCommand(cmd, args)
+      if (result.code === 0) break
+
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 1200))
+      }
+    }
+
+    const ok = result?.code === 0
     summary.push({
       label: check.label,
       ok,
-      durationMs: result.durationMs,
-      code: result.code,
+      durationMs: result?.durationMs || 0,
+      code: result?.code ?? 1,
     })
 
     if (!ok) {

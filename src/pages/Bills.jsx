@@ -22,14 +22,14 @@ const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
 
 export default function Bills() {
   const navigate = useNavigate()
-  const { pending, paid, loading } = useLiabilities()
-  const [tab, setTab] = useState('pending')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [tab, setTab] = useState(() => (searchParams.get('tab') === 'paid' ? 'paid' : 'pending'))
+  const { pending, paid, loading, pendingLoading, paidLoading } = useLiabilities({ includePaid: tab === 'paid' })
   const [showAdd, setShowAdd] = useState(false)
   const [payingId, setPayingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [highlightedBillId, setHighlightedBillId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
-  const [searchParams, setSearchParams] = useSearchParams()
 
   const [form, setForm] = useState({
     description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly',
@@ -363,7 +363,7 @@ export default function Bills() {
         </div>
       )}
 
-      {loading ? (
+      {loading && pendingLoading && visiblePending.length === 0 ? (
         <SkeletonLayout
           className="space-y-3"
           sections={[
@@ -402,7 +402,14 @@ export default function Bills() {
             </div>
           )}
 
-          {tab === 'paid' && visiblePaid.length === 0 && (
+          {tab === 'paid' && paidLoading && visiblePaid.length === 0 && (
+            <div className="card p-4">
+              <p className="section-label">Paid bills</p>
+              <p className="text-[12px] text-ink-3 mt-1">Loading paid history...</p>
+            </div>
+          )}
+
+          {tab === 'paid' && !paidLoading && visiblePaid.length === 0 && (
             <EmptyState
               className="py-8"
               title="No paid bills yet"
