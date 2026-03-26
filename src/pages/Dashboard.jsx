@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
 import { useNavigate } from 'react-router-dom'
-import { createFadeUp, createMorphInteraction, createStagger } from '../lib/animations'
+import { createFadeUp, createStagger } from '../lib/animations'
 
 // FIX (defect 4.3): Extracted sub-components. Each renders independently —
 // a transaction list refetch no longer re-renders the hero card or pace card,
@@ -32,14 +32,6 @@ import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
-const quickActionMorph = createMorphInteraction({
-  scheme: 'expressive',
-  hoverY: -1.5,
-  hoverScale: 1.02,
-  hoverRadius: 18,
-  tapScale: 0.975,
-  tapRadius: 12,
-})
 
 const QUICK_ACTIONS = [
   { label: 'Income', Icon: TrendingUp, bg: 'bg-income-bg', color: 'var(--c-income)', type: 'income', strokeWidth: 2.4 },
@@ -546,12 +538,8 @@ export default function Dashboard() {
         <motion.div variants={fadeUp} className="card py-4 px-3">
           <div className="flex justify-between gap-1.5">
             {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
-              <motion.button
-                key={label}
+              <button key={label}
                 onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
-                whileHover={quickActionMorph.whileHover}
-                whileTap={quickActionMorph.whileTap}
-                transition={quickActionMorph.transition}
                 className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[62px]"
               >
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
@@ -559,7 +547,7 @@ export default function Dashboard() {
                   <Icon size={20} strokeWidth={strokeWidth} />
                 </div>
                 <span className="text-[11px] font-semibold text-ink-3">{label}</span>
-              </motion.button>
+              </button>
             ))}
           </div>
         </motion.div>

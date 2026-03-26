@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -16,34 +16,10 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { createFadeUp, createMorphInteraction, createStagger, MOTION_SCHEMES } from '../lib/animations'
+import { createFadeUp, createStagger } from '../lib/animations'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.05, 0.04)
-const featureCardMorph = createMorphInteraction({
-  scheme: 'expressive',
-  hoverY: -2,
-  hoverScale: 1.012,
-  hoverRadius: 20,
-  tapScale: 0.982,
-  tapRadius: 14,
-})
-const ctaMorph = createMorphInteraction({
-  scheme: 'standard',
-  hoverY: -1,
-  hoverScale: 1.008,
-  hoverRadius: 999,
-  tapScale: 0.985,
-  tapRadius: 999,
-})
-const tabMorph = createMorphInteraction({
-  scheme: 'standard',
-  hoverY: -1,
-  hoverScale: 1.01,
-  hoverRadius: 999,
-  tapScale: 0.986,
-  tapRadius: 999,
-})
 
 const START_HERE = [
   'Add 5-10 recent transactions so your Dashboard and Analytics have enough signal.',
@@ -210,9 +186,6 @@ export default function Guide() {
   const [activeTab, setActiveTab] = useState('all')
   const [viewed, setViewed] = useState(() => getInitialViewed())
   const [selectedId, setSelectedId] = useState(null)
-  const [eggTapCount, setEggTapCount] = useState(0)
-  const [showMilestoneEgg, setShowMilestoneEgg] = useState(false)
-  const eggResetTimerRef = useRef(null)
   const filteredCards = useMemo(() => {
     if (activeTab === 'all') return FEATURE_CARDS
     return FEATURE_CARDS.filter((item) => item.category === activeTab)
@@ -239,24 +212,6 @@ export default function Guide() {
     () => FEATURE_CARDS.find((item) => !viewed.has(item.id)) || FEATURE_CARDS[0],
     [viewed]
   )
-  const allViewed = viewedCount >= FEATURE_CARDS.length
-
-  function handleProgressMorphTap() {
-    if (!allViewed) return
-
-    const nextCount = eggTapCount + 1
-    setEggTapCount(nextCount)
-
-    if (eggResetTimerRef.current) clearTimeout(eggResetTimerRef.current)
-    eggResetTimerRef.current = setTimeout(() => setEggTapCount(0), 1600)
-
-    if (nextCount >= 3) {
-      setShowMilestoneEgg(true)
-      setEggTapCount(0)
-      if (eggResetTimerRef.current) clearTimeout(eggResetTimerRef.current)
-      eggResetTimerRef.current = setTimeout(() => setShowMilestoneEgg(false), 4200)
-    }
-  }
 
   function openFeature(featureId) {
     setSelectedId(featureId)
@@ -285,12 +240,6 @@ export default function Guide() {
     ]
     const idx = new Date().getDate() % tips.length
     return tips[idx]
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (eggResetTimerRef.current) clearTimeout(eggResetTimerRef.current)
-    }
   }, [])
 
   return (
@@ -327,21 +276,14 @@ export default function Guide() {
               </div>
             </div>
 
-            <motion.button
-              type="button"
-              onClick={handleProgressMorphTap}
-              whileHover={tabMorph.whileHover}
-              whileTap={tabMorph.whileTap}
-              transition={tabMorph.transition}
-              className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mt-3.5 w-full text-left"
-            >
+            <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mt-3.5">
               <div className="flex items-center justify-between gap-3 mb-1.5">
                 <p className="text-[12px] font-semibold text-ink-2">Guide completion</p>
                 <p className="text-[11px] font-semibold text-brand">{progressPct}%</p>
               </div>
-              <div className="progress-morph-track">
+              <div className="h-2 rounded-pill bg-kosha-border overflow-hidden">
                 <motion.div
-                  className="progress-morph-fill bg-brand"
+                  className="h-full rounded-pill bg-brand"
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPct}%` }}
                   transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -350,44 +292,23 @@ export default function Guide() {
               <p className="text-[11px] text-ink-3 mt-1.5">
                 {viewedCount}/{FEATURE_CARDS.length} feature cards viewed
               </p>
-            </motion.button>
-
-            <AnimatePresence>
-              {showMilestoneEgg && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                  transition={MOTION_SCHEMES.expressive.effects}
-                  className="mt-2 rounded-card border border-brand-border bg-brand-container px-3 py-2"
-                >
-                  <p className="text-[11px] font-semibold text-brand-on">Morph unlocked</p>
-                  <p className="text-[11px] text-ink-3 mt-0.5">Explorer mode active. You cleared every guide card.</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-              <motion.button
+              <button
                 type="button"
                 onClick={() => openFeature(nextFeature.id)}
-                whileHover={ctaMorph.whileHover}
-                whileTap={ctaMorph.whileTap}
-                transition={ctaMorph.transition}
                 className="btn-primary h-10 px-4 text-[12px] whitespace-nowrap"
               >
                 Continue with {nextFeature.title}
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 type="button"
                 onClick={() => navigate(nextFeature.route)}
-                whileHover={ctaMorph.whileHover}
-                whileTap={ctaMorph.whileTap}
-                transition={ctaMorph.transition}
                 className="btn-secondary h-10 px-4 text-[12px] whitespace-nowrap"
               >
                 Open {nextFeature.title}
-              </motion.button>
+              </button>
             </div>
           </div>
         </motion.div>
@@ -409,17 +330,14 @@ export default function Guide() {
             {GUIDE_TABS.map((tab) => {
               const active = tab.id === activeTab
               return (
-                <motion.button
+                <button
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  whileHover={tabMorph.whileHover}
-                  whileTap={tabMorph.whileTap}
-                  transition={tabMorph.transition}
                   className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
                 >
                   {tab.label}
-                </motion.button>
+                </button>
               )
             })}
           </div>
@@ -439,9 +357,9 @@ export default function Guide() {
                 <motion.button
                   key={card.id}
                   type="button"
-                  whileHover={featureCardMorph.whileHover}
-                  whileTap={featureCardMorph.whileTap}
-                  transition={featureCardMorph.transition}
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.985 }}
+                  transition={{ duration: 0.1 }}
                   onClick={() => openFeature(card.id)}
                   className="card p-4 text-left"
                 >
@@ -499,24 +417,18 @@ export default function Guide() {
         </motion.div>
 
         <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-2">
-          <motion.button
+          <button
             onClick={() => navigate('/')}
-            whileHover={ctaMorph.whileHover}
-            whileTap={ctaMorph.whileTap}
-            transition={ctaMorph.transition}
             className="btn-tonal flex-1 py-3 whitespace-nowrap text-[12px] sm:text-[13px]"
           >
             <ArrowLeft size={15} /> Back to dashboard
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             onClick={() => navigate('/transactions')}
-            whileHover={ctaMorph.whileHover}
-            whileTap={ctaMorph.whileTap}
-            transition={ctaMorph.transition}
             className="btn-primary flex-1 py-3 whitespace-nowrap text-[12px] sm:text-[13px]"
           >
             Open transactions <ArrowRight size={15} />
-          </motion.button>
+          </button>
         </motion.div>
       </motion.div>
       </div>
@@ -540,7 +452,7 @@ export default function Guide() {
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 24 }}
-                transition={MOTION_SCHEMES.standard.spatial}
+                transition={{ duration: 0.2 }}
                 className="card p-4 md:p-5 max-h-[78vh] overflow-y-auto w-full max-w-[560px]"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -624,12 +536,9 @@ export default function Guide() {
                   </div>
                 </div>
 
-                <motion.button
+                <button
                   type="button"
                   className="btn-primary w-full py-3 whitespace-nowrap"
-                  whileHover={ctaMorph.whileHover}
-                  whileTap={ctaMorph.whileTap}
-                  transition={ctaMorph.transition}
                   onClick={() => {
                     const route = selectedFeature.route
                     setSelectedId(null)
@@ -637,7 +546,7 @@ export default function Guide() {
                   }}
                 >
                   Open {selectedFeature.title} <ArrowRight size={15} />
-                </motion.button>
+                </button>
               </motion.div>
             </div>
           </>

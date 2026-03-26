@@ -27,7 +27,6 @@ import {
   setReviewedReconciliationIds,
 } from '../lib/reconciliation'
 import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases, calculateAliasQuality, identifyMerchantsInCooldown } from '../lib/reconciliationMetrics'
-import { createMorphInteraction } from '../lib/animations'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -41,15 +40,6 @@ const REVIEW_STATE_FILTERS = [
   { id: 'linked', label: 'Linked' },
   { id: 'reviewed', label: 'Reviewed' },
 ]
-
-const filterChipMorph = createMorphInteraction({
-  scheme: 'standard',
-  hoverY: -1,
-  hoverScale: 1.01,
-  hoverRadius: 999,
-  tapScale: 0.984,
-  tapRadius: 999,
-})
 
 export default function Reconciliation() {
   const navigate = useNavigate()
@@ -341,9 +331,9 @@ export default function Reconciliation() {
             <p className="text-[11px] font-semibold text-ink-3">Queue progress</p>
             <p className="text-[11px] text-ink-3">{reviewProgress.resolved}/{reviewProgress.total || 0} resolved</p>
           </div>
-          <div className="progress-morph-track">
+          <div className="h-2 rounded-pill bg-kosha-border overflow-hidden">
             <motion.div
-              className="progress-morph-fill bg-brand"
+              className="h-full rounded-pill bg-brand"
               initial={{ width: 0 }}
               animate={{ width: `${reviewProgress.pct}%` }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -371,9 +361,9 @@ export default function Reconciliation() {
                 key={chip.id}
                 type="button"
                 onClick={() => setReviewStateFilter(chip.id)}
-                whileHover={filterChipMorph.whileHover}
-                whileTap={filterChipMorph.whileTap}
-                transition={filterChipMorph.transition}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.12 }}
                 aria-pressed={active}
                 className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
               >
@@ -395,9 +385,9 @@ export default function Reconciliation() {
                 key={chip.id}
                 type="button"
                 onClick={() => setFilter(chip.id)}
-                whileHover={filterChipMorph.whileHover}
-                whileTap={filterChipMorph.whileTap}
-                transition={filterChipMorph.transition}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.12 }}
                 aria-pressed={active}
                 className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
               >
