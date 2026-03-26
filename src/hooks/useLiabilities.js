@@ -23,10 +23,7 @@ function runInBackground(promise, scope) {
 
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'none' }),
-    queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
-  ])
+  await queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' })
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {

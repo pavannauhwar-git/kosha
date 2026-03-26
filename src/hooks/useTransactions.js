@@ -114,8 +114,6 @@ export async function invalidateCache() {
   // ~300-500ms later for the same mutation.
   suppress('transactions')
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'none' }),
-    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
     queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),

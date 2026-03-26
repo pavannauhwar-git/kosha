@@ -82,12 +82,7 @@ export default defineConfig({
           {
             // Supabase auth endpoints — NetworkFirst (always validate session)
             urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-auth',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 10, maxAgeSeconds: 3600 },
-            },
+            handler: 'NetworkOnly',
           },
           {
             // Supabase data endpoints — StaleWhileRevalidate (instant + fresh)
