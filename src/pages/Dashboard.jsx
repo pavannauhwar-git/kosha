@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat } from 'lucide-react'
 import {
   useRecentTransactions,
@@ -19,12 +19,12 @@ import { createFadeUp, createStagger } from '../lib/animations'
 // FIX (defect 4.3): Extracted sub-components. Each renders independently —
 // a transaction list refetch no longer re-renders the hero card or pace card,
 // and a balance update no longer re-renders the transaction list.
-import DashboardHeroCard          from '../components/dashboard/DashboardHeroCard'
-import DashboardPulseStrip        from '../components/dashboard/DashboardPulseStrip'
-import DashboardPaceCard          from '../components/dashboard/DashboardPaceCard'
+import DashboardHeroCard from '../components/dashboard/DashboardHeroCard'
+import DashboardPulseStrip from '../components/dashboard/DashboardPulseStrip'
+import DashboardPaceCard from '../components/dashboard/DashboardPaceCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
-import DashboardActivityFeed      from '../components/dashboard/DashboardActivityFeed'
-import PageHeader                 from '../components/PageHeader'
+import DashboardActivityFeed from '../components/dashboard/DashboardActivityFeed'
+import PageHeader from '../components/PageHeader'
 import AppToast from '../components/common/AppToast'
 import StatMini from '../components/common/StatMini'
 import { useFinancialEvents } from '../hooks/useFinancialEvents'
@@ -39,8 +39,6 @@ const QUICK_ACTIONS = [
   { label: 'Invest', Icon: Plus, bg: 'bg-invest-bg', color: 'var(--c-invest-text)', type: 'investment', strokeWidth: 2.6 },
   { label: 'Bills', Icon: Repeat, bg: 'bg-repay-bg', color: 'var(--c-warning)', type: 'bills', strokeWidth: 2.4 },
 ]
-
-const dashboardFade = { duration: 0.2, ease: 'easeOut' }
 
 function DashboardHeroSkeleton() {
   return (
@@ -123,9 +121,9 @@ export default function Dashboard() {
       setNow(prev => {
         if (
           prev.getFullYear() !== next.getFullYear() ||
-          prev.getMonth()    !== next.getMonth()    ||
-          prev.getDate()     !== next.getDate()     ||
-          prev.getHours()    !== next.getHours()
+          prev.getMonth() !== next.getMonth() ||
+          prev.getDate() !== next.getDate() ||
+          prev.getHours() !== next.getHours()
         ) {
           return next
         }
@@ -147,16 +145,16 @@ export default function Dashboard() {
 
   const { profile } = useAuth()
 
-  const [showAdd,      setShowAdd]      = useState(false)
-  const [editTxn,      setEditTxn]      = useState(null)
-  const [addType,      setAddType]      = useState('expense')
+  const [showAdd, setShowAdd] = useState(false)
+  const [editTxn, setEditTxn] = useState(null)
+  const [addType, setAddType] = useState('expense')
   const [duplicateTxn, setDuplicateTxn] = useState(null)
-  const [heroMode,     setHeroMode]     = useState('balance')
-  const [toast,        setToast]        = useState(null)
-  const [heavyReady,   setHeavyReady]   = useState(false)
+  const [heroMode, setHeroMode] = useState('balance')
+  const [toast, setToast] = useState(null)
+  const [heavyReady, setHeavyReady] = useState(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => setHeavyReady(true), 280)
+    const timer = setTimeout(() => setHeavyReady(true), 50)
     return () => clearTimeout(timer)
   }, [])
 
@@ -167,13 +165,13 @@ export default function Dashboard() {
     fetching: recentFetching,
   } = useRecentTransactions(5)
   const { data: digestTxnRows = [] } = useTransactionDigest(14, 200, { enabled: heavyReady })
-  const { todaySpend }              = useTodayExpenses({ enabled: heavyReady })
+  const { todaySpend } = useTodayExpenses({ enabled: heavyReady })
   const {
     data: summary,
     loading: summaryLoading,
     fetching: summaryFetching,
   } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
-  const { data: lastSummary }       = useMonthSummary(
+  const { data: lastSummary } = useMonthSummary(
     now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
     now.getMonth() === 0 ? 12 : now.getMonth(),
     { enabled: heavyReady }
@@ -190,27 +188,27 @@ export default function Dashboard() {
     balanceHorizonDate.getFullYear(),
     balanceHorizonDate.getMonth() + 1
   )
-  const { pending: bills = [] }     = useLiabilities({ includePaid: false, enabled: heavyReady })
+  const { pending: bills = [] } = useLiabilities({ includePaid: false, enabled: heavyReady })
   const { data: financialEvents = [] } = useFinancialEvents(3, { enabled: heavyReady })
 
-  const isInitialLoading = recentLoading || summaryLoading || runningBalanceLoading
-  const isBackgroundFetching = !isInitialLoading && (recentFetching || summaryFetching || runningBalanceFetching)
+  const heroLoading = summaryLoading || runningBalanceLoading
+  const isBackgroundFetching = (!summaryLoading && summaryFetching) || (!runningBalanceLoading && runningBalanceFetching) || (!recentLoading && recentFetching)
 
   // ── Derived values ─────────────────────────────────────────────────────
-  const earned   = summary?.earned     || 0
-  const spent    = summary?.expense    || 0
+  const earned = summary?.earned || 0
+  const spent = summary?.expense || 0
   const invested = summary?.investment || 0
-  const rate     = savingsRate(earned, spent)
+  const rate = savingsRate(earned, spent)
 
   const lastInvested = lastSummary?.investment || 0
-  const investDiff   = invested - lastInvested
-  const investUp     = investDiff > 0
+  const investDiff = invested - lastInvested
+  const investUp = investDiff > 0
 
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Good morning'
-    : hour < 17  ? 'Good afternoon'
-    : hour < 21  ? 'Good evening'
-    : 'Good night'
+    : hour < 17 ? 'Good afternoon'
+      : hour < 21 ? 'Good evening'
+        : 'Good night'
 
   const firstName = useMemo(
     () => profile?.display_name?.split(' ')[0] || '',
@@ -218,8 +216,8 @@ export default function Dashboard() {
   )
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const dayOfMonth  = now.getDate()
-  const paceOk      = earned === 0 || spent / earned <= dayOfMonth / daysInMonth + 0.05
+  const dayOfMonth = now.getDate()
+  const paceOk = earned === 0 || spent / earned <= dayOfMonth / daysInMonth + 0.05
 
   // FIX (defect 5.3): The old code derived dueSoon and insight from `bills`
   // directly. When the liabilities query refetched (even with identical data),
@@ -302,17 +300,17 @@ export default function Dashboard() {
 
   const insight = useMemo(() => {
     const spendPct = earned > 0 ? spent / earned : 0
-    const dayPct   = dayOfMonth / daysInMonth
+    const dayPct = dayOfMonth / daysInMonth
     if (!earned && !spent) return 'Log a transaction to start your money story 📊'
     if (spendPct < dayPct - 0.15) return `Under pace · ${rate}% saved so far ✨`
     if (spendPct > dayPct + 0.15) return 'Spending running hot this month · ease up 📈'
     if (dueSoonCount > 0) return `${dueSoonCount} bill${dueSoonCount > 1 ? 's' : ''} coming due · plan ahead 📅`
-    if (investDiff > 0)   return `Invested ${fmt(Math.abs(investDiff))} more than last month 💪`
-    if (rate >= 25)       return `Saving ${rate}% of income · outstanding month 🎯`
+    if (investDiff > 0) return `Invested ${fmt(Math.abs(investDiff))} more than last month 💪`
+    if (rate >= 25) return `Saving ${rate}% of income · outstanding month 🎯`
     return `Saving ${rate}% this month · right on track 👍`
-  // FIX (defect 5.3): deps are now primitives (dueSoonCount) not the bills array.
-  // This memo only recalculates when earned/spent/rate/dueSoonCount/investDiff
-  // actually change in value — not on every array reference change from a refetch.
+    // FIX (defect 5.3): deps are now primitives (dueSoonCount) not the bills array.
+    // This memo only recalculates when earned/spent/rate/dueSoonCount/investDiff
+    // actually change in value — not on every array reference change from a refetch.
   }, [earned, spent, dayOfMonth, daysInMonth, rate, dueSoonCount, investDiff])
 
   const todayFocus = useMemo(() => {
@@ -427,51 +425,16 @@ export default function Dashboard() {
   return (
     <div className="page">
       <PageHeader title="Dashboard" className="mb-1" />
-      <AnimatePresence initial={false}>
-        {isInitialLoading ? (
-          <motion.div
-            key="dashboard-loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: dashboardFade }}
-            exit={{ opacity: 0, transition: dashboardFade }}
-            className="space-y-4 md:space-y-5 pt-0"
-          >
-            <div>
-              <p className="text-caption text-ink-3">
-                {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
-              </p>
-              <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
-                {greeting}{firstName ? `, ${firstName}` : ''} 👋
-              </h1>
-            </div>
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="show"
 
-            <DashboardHeroSkeleton />
-
-            <div className="card py-4 px-3">
-              <div className="flex justify-between gap-1.5">
-                {Array.from({ length: 4 }).map((_, idx) => (
-                  <div key={`quick-action-skeleton-${idx}`} className="flex flex-col items-center gap-1.5 min-w-[62px]">
-                    <div className="w-12 h-12 rounded-full shimmer opacity-80" />
-                    <div className="h-2.5 w-11 rounded-full shimmer opacity-70" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <DashboardRecentSkeleton />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="dashboard-content"
-            variants={stagger}
-            initial="hidden"
-            animate="show"
-            exit={{ opacity: 0, transition: dashboardFade }}
-            className="space-y-4 md:space-y-5 pt-0"
-          >
+        className="space-y-4 md:space-y-5 pt-0"
+      >
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
-            <motion.div variants={fadeUp}>
+        <motion.div variants={fadeUp}>
           <p className="text-caption text-ink-3">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
@@ -485,52 +448,65 @@ export default function Dashboard() {
 
         {/* ── Hero card — sub-component, renders independently ─────── */}
         <motion.div variants={fadeUp}>
-          <DashboardHeroCard
-            now={balanceHorizonDate}
-            runningBalance={runningBalance}
-            rate={rate}
-            earned={earned}
-            spent={spent}
-            invested={invested}
-            bills={bills}
-            heroMode={heroMode}
-            onHeroModeToggle={handleHeroModeToggle}
-          />
+          {heroLoading ? <DashboardHeroSkeleton /> : (
+            <DashboardHeroCard
+              now={balanceHorizonDate}
+              runningBalance={runningBalance}
+              rate={rate}
+              earned={earned}
+              spent={spent}
+              invested={invested}
+              bills={bills}
+              heroMode={heroMode}
+              onHeroModeToggle={handleHeroModeToggle}
+            />
+          )}
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="card p-3.5">
-            <div className="flex items-center justify-between gap-3 mb-0.5">
-              <p className="section-label">Today focus</p>
-              <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${
-                todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
-                  ? 'bg-warning-bg text-warning-text'
-                  : todayFocus.tone === 'good'
-                    ? 'bg-income-bg text-income-text'
-                    : 'bg-brand-container text-brand-on'
-              }`}>
-                Priority
-              </span>
+          {summaryLoading ? (
+            <div className="card p-3.5">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="h-3 w-20 rounded-full shimmer opacity-80" />
+                <div className="h-5 w-14 rounded-full shimmer opacity-70" />
+              </div>
+              <div className="h-4 w-44 rounded-full shimmer opacity-85 mb-2" />
+              <div className="h-2.5 w-full rounded-full shimmer opacity-70" />
             </div>
-            <p className="card-title">{todayFocus.title}</p>
-            <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>
-            <div className="grid grid-cols-2 gap-2 mt-2.5">
-              <button
-                type="button"
-                onClick={() => navigate(todayFocus.primaryRoute)}
-                className="btn-primary h-12 px-4 text-[12px] justify-center"
-              >
-                {todayFocus.primaryLabel}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(todayFocus.secondaryRoute)}
-                className="btn-secondary h-12 px-4 text-[12px] justify-center"
-              >
-                {todayFocus.secondaryLabel}
-              </button>
+          ) : (
+
+            <div className="card p-3.5">
+              <div className="flex items-center justify-between gap-3 mb-0.5">
+                <p className="section-label">Today focus</p>
+                <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
+                    ? 'bg-warning-bg text-warning-text'
+                    : todayFocus.tone === 'good'
+                      ? 'bg-income-bg text-income-text'
+                      : 'bg-brand-container text-brand-on'
+                  }`}>
+                  Priority
+                </span>
+              </div>
+              <p className="card-title">{todayFocus.title}</p>
+              <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>
+              <div className="grid grid-cols-2 gap-2 mt-2.5">
+                <button
+                  type="button"
+                  onClick={() => navigate(todayFocus.primaryRoute)}
+                  className="btn-primary h-12 px-4 text-[12px] justify-center"
+                >
+                  {todayFocus.primaryLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(todayFocus.secondaryRoute)}
+                  className="btn-secondary h-12 px-4 text-[12px] justify-center"
+                >
+                  {todayFocus.secondaryLabel}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
 
         {/* ── Quick-action strip ────────────────────────────────────── */}
@@ -622,12 +598,11 @@ export default function Dashboard() {
                   {investDiff === 0
                     ? <Minus size={12} className="text-ink-3" />
                     : investUp
-                      ? <TrendingUp   size={12} className="text-income-text" />
+                      ? <TrendingUp size={12} className="text-income-text" />
                       : <TrendingDown size={12} className="text-expense-text" />}
-                  <span className={`text-caption font-semibold ${
-                    investDiff === 0 ? 'text-ink-3'
-                    : investUp ? 'text-income-text' : 'text-expense-text'
-                  }`}>
+                  <span className={`text-caption font-semibold ${investDiff === 0 ? 'text-ink-3'
+                      : investUp ? 'text-income-text' : 'text-expense-text'
+                    }`}>
                     {investDiff === 0 ? 'Same as last month'
                       : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
                   </span>
@@ -651,12 +626,14 @@ export default function Dashboard() {
 
         {/* ── Recent transactions — sub-component ──────────────────── */}
         <motion.div variants={fadeUp}>
-          <DashboardRecentTransactions
-            recent={recent}
-            onDelete={handleDelete}
-            onTap={handleTap}
-            onDuplicate={handleDuplicate}
-          />
+          {recentLoading ? <DashboardRecentSkeleton /> : (
+            <DashboardRecentTransactions
+              recent={recent}
+              onDelete={handleDelete}
+              onTap={handleTap}
+              onDuplicate={handleDuplicate}
+            />
+          )}
         </motion.div>
 
         {/* ── Financial activity feed ─────────────────────────────── */}
@@ -666,9 +643,7 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </motion.div>
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
 

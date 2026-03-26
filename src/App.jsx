@@ -706,12 +706,11 @@ function DashboardWarmPrefetch() {
             staleTime: 30 * 1000,
           }),
           queryClient.prefetchQuery({
-            queryKey: ['balance', year, month],
+            queryKey: ['balance', 2099, 12],  // Far future to avoid collisions with real month queries
             queryFn: async () => {
-              const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
               const { data: balance, error } = await supabase.rpc('get_running_balance', {
                 p_user_id: user.id,
-                p_end_date: endDate,
+                p_end_date: '2099-12-31',
               })
               if (error) throw error
               return Number(balance || 0)
