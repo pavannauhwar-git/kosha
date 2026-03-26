@@ -1,8 +1,8 @@
 /**
- * AddTransactionSheet.jsx — Deferred Refetch UI Contract
+ * AddTransactionSheet.jsx
  *
- * The sheet closes immediately after a confirmed DB write, then triggers
- * query invalidation 300ms later in the background to avoid blocking motion.
+ * Closes immediately after the DB write succeeds. The optimistic cache update
+ * provides instant visual feedback; background invalidation reconciles later.
  */
 
 import { useReducer, useRef } from 'react'

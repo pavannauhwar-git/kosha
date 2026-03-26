@@ -143,7 +143,7 @@ function BillsSkeleton() {
 }
 
 // ── Route → skeleton map ──────────────────────────────────────────────────
-function RouteSkeleton({ pathname }) {
+export function RouteSkeleton({ pathname }) {
   if (pathname.startsWith('/transactions')) return <TransactionsSkeleton />
   if (pathname.startsWith('/monthly'))      return <MonthlySkeleton />
   if (pathname.startsWith('/analytics'))    return <AnalyticsSkeleton />

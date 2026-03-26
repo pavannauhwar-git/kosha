@@ -7,7 +7,7 @@ import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
 import { supabase } from './lib/supabase'
 import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS } from './hooks/useTransactions'
 import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
-import AuthGuard from './components/AuthGuard'
+import AuthGuard, { RouteSkeleton } from './components/AuthGuard'
 import ProfileMenu from './components/ProfileMenu'
 import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
 import { C } from './lib/colors'
@@ -47,8 +47,20 @@ const ROUTE_PRELOADERS = {
   '/reconciliation': () => import('./pages/Reconciliation'),
 }
 
-function PageFallback() {
-  return <div className="min-h-dvh bg-kosha-bg" />
+function PageFallback({ pathname }) {
+  return (
+    <div className="min-h-dvh bg-kosha-bg">
+      <RouteSkeleton pathname={pathname || '/'} />
+    </div>
+  )
+}
+
+function SuspenseSkeleton({ pathname, children }) {
+  return (
+    <Suspense fallback={<PageFallback pathname={pathname} />}>
+      {children}
+    </Suspense>
+  )
 }
 
 const NAV = [
@@ -739,18 +751,18 @@ function AppShell() {
           <Route path="/login" element={<Login />} />
           <Route path="/join/:token" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/not-found" element={<Suspense fallback={<PageFallback />}><NotFound /></Suspense>} />
-          <Route path="/onboarding" element={<Suspense fallback={<PageFallback />}><AuthGuard><Onboarding /></AuthGuard></Suspense>} />
-          <Route path="/" element={<Suspense fallback={<PageFallback />}><AuthGuard><Dashboard /></AuthGuard></Suspense>} />
-          <Route path="/transactions" element={<Suspense fallback={<PageFallback />}><AuthGuard><Transactions /></AuthGuard></Suspense>} />
-          <Route path="/monthly" element={<Suspense fallback={<PageFallback />}><AuthGuard><Monthly /></AuthGuard></Suspense>} />
-          <Route path="/analytics" element={<Suspense fallback={<PageFallback />}><AuthGuard><Analytics /></AuthGuard></Suspense>} />
-          <Route path="/bills" element={<Suspense fallback={<PageFallback />}><AuthGuard><Bills /></AuthGuard></Suspense>} />
-          <Route path="/reconciliation" element={<Suspense fallback={<PageFallback />}><AuthGuard><Reconciliation /></AuthGuard></Suspense>} />
-          <Route path="/guide" element={<Suspense fallback={<PageFallback />}><AuthGuard><Guide /></AuthGuard></Suspense>} />
-          <Route path="/settings" element={<Suspense fallback={<PageFallback />}><AuthGuard><Settings /></AuthGuard></Suspense>} />
-          <Route path="/about" element={<Suspense fallback={<PageFallback />}><About /></Suspense>} />
-          <Route path="/report-bug" element={<Suspense fallback={<PageFallback />}><ReportBug /></Suspense>} />
+          <Route path="/not-found" element={<SuspenseSkeleton pathname="/not-found"><NotFound /></SuspenseSkeleton>} />
+          <Route path="/onboarding" element={<SuspenseSkeleton pathname="/onboarding"><AuthGuard><Onboarding /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/" element={<SuspenseSkeleton pathname="/"><AuthGuard><Dashboard /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/transactions" element={<SuspenseSkeleton pathname="/transactions"><AuthGuard><Transactions /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/monthly" element={<SuspenseSkeleton pathname="/monthly"><AuthGuard><Monthly /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/analytics" element={<SuspenseSkeleton pathname="/analytics"><AuthGuard><Analytics /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/bills" element={<SuspenseSkeleton pathname="/bills"><AuthGuard><Bills /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/reconciliation" element={<SuspenseSkeleton pathname="/reconciliation"><AuthGuard><Reconciliation /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/guide" element={<SuspenseSkeleton pathname="/guide"><AuthGuard><Guide /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/settings" element={<SuspenseSkeleton pathname="/settings"><AuthGuard><Settings /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/about" element={<SuspenseSkeleton pathname="/about"><About /></SuspenseSkeleton>} />
+          <Route path="/report-bug" element={<SuspenseSkeleton pathname="/report-bug"><ReportBug /></SuspenseSkeleton>} />
           <Route path="*" element={<Navigate to="/not-found" replace />} />
         </Routes>
       </ContentWrapper>

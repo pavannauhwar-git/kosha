@@ -10,6 +10,7 @@ import {
   Buildings, CurrencyBtc, Scroll, Briefcase, IdentificationBadge,
   Certificate,
 } from '@phosphor-icons/react'
+import { memo } from 'react'
 import { getCategory } from '../lib/categories'
 
 export const ICON_MAP = {
@@ -25,7 +26,7 @@ export const ICON_MAP = {
   Certificate,
 }
 
-export default function CategoryIcon({ categoryId, size = 20, className = '' }) {
+function CategoryIcon({ categoryId, size = 20, className = '' }) {
   const cat  = getCategory(categoryId)
   const Icon = ICON_MAP[cat.icon] || Package
 
@@ -47,3 +48,5 @@ export default function CategoryIcon({ categoryId, size = 20, className = '' }) 
     </div>
   )
 }
+
+export default memo(CategoryIcon)

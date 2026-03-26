@@ -18,6 +18,7 @@ import { downloadCsv, toCsv } from '../lib/csv'
 import PageHeader from '../components/PageHeader'
 import { getAuthUserId } from '../lib/authStore'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import SkeletonLayout from '../components/common/SkeletonLayout'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 
@@ -120,7 +121,7 @@ export default function Transactions() {
     setDisplayCount(50)   // reset in same event — single re-render
   }
 
-  const { data, total } = useTransactions({
+  const { data, total, loading: txnLoading } = useTransactions({
     type:      typeFilter === 'all' ? undefined : typeFilter,
     category:  catFilter || undefined,
     search:    debouncedSearch || undefined,
@@ -130,7 +131,10 @@ export default function Transactions() {
     withCount: true,
   })
 
-  const groups = useMemo(() => groupByDate(data), [data])
+  const groups = useMemo(() => {
+    const grouped = groupByDate(data)
+    return grouped.map(([dateKey, txns]) => [dateKey, txns, groupNet(txns)])
+  }, [data])
   const hasMore = useMemo(() => total > data.length, [total, data.length])
   const focusTxnId = searchParams.get('focus')
   const hasActiveFilters = typeFilter !== 'all' || !!catFilter || datePreset !== 'all' || !!debouncedSearch
@@ -408,7 +412,16 @@ export default function Transactions() {
       )}
 
       {/* Transaction groups */}
-      {groups.length === 0 ? (
+      {txnLoading && data.length === 0 ? (
+        <SkeletonLayout
+          className="space-y-3"
+          sections={[
+            { type: 'block', height: 'h-[280px]' },
+            { type: 'block', height: 'h-[200px]' },
+            { type: 'block', height: 'h-[160px]' },
+          ]}
+        />
+      ) : groups.length === 0 ? (
         <EmptyState
           icon={<CheckCircle2 size={24} className="text-brand" />}
           title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
@@ -434,33 +447,30 @@ export default function Transactions() {
         />
       ) : (
         <div className="space-y-3.5">
-          {groups.map(([dateKey, txns]) => {
-            const net = groupNet(txns)
-            return (
-              <div key={dateKey} className="list-card overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3
-                                border-b border-kosha-border bg-kosha-surface-2">
-                  <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
-                    {dateLabel(dateKey)}
-                  </span>
-                  <span className={`text-caption font-semibold
-                    ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                    {net >= 0 ? '+' : ''}{fmt(net)}
-                  </span>
-                </div>
-                {txns.map((t, i) => (
-                  <TransactionItem
-                    key={t.id} txn={t}
-                    onDelete={handleDelete}
-                    onTap={handleTap}
-                    isLast={i === txns.length - 1}
-                    onDuplicate={handleDuplicate}
-                    isHighlighted={highlightedTxnId === t.id}
-                  />
-                ))}
+          {groups.map(([dateKey, txns, net]) => (
+            <div key={dateKey} className="list-card overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3
+                              border-b border-kosha-border bg-kosha-surface-2">
+                <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
+                  {dateLabel(dateKey)}
+                </span>
+                <span className={`text-caption font-semibold
+                  ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                  {net >= 0 ? '+' : ''}{fmt(net)}
+                </span>
               </div>
-            )
-          })}
+              {txns.map((t, i) => (
+                <TransactionItem
+                  key={t.id} txn={t}
+                  onDelete={handleDelete}
+                  onTap={handleTap}
+                  isLast={i === txns.length - 1}
+                  onDuplicate={handleDuplicate}
+                  isHighlighted={highlightedTxnId === t.id}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       )}
 

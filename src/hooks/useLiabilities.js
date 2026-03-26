@@ -24,10 +24,7 @@ function runInBackground(promise, scope) {
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
   await Promise.all([
-    // Use 'all' so both the Dashboard due-bills strip and the Bills page
-    // refresh immediately after a mutation.
-    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'all' }),
-    // Monthly page uses month-scoped liabilities; keep it consistent after mutations.
+    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
   ])
 }
@@ -284,7 +281,7 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
     const created = await addFn(payload)
     optimisticallyDeleteLiabilityFromCache(optimisticId)
     optimisticallyInsertPendingLiability(created)
-    await invalidateLiabilityFn()
+    runInBackground(invalidateLiabilityFn(), 'liability add cache invalidation')
     return created
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -302,10 +299,13 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     const invalidateTransactionFn = __testOverrides?.invalidateTransactionCache || invalidateTransactionCache
 
     const result = await markPaidFn(liability)
-    await Promise.all([
-      invalidateLiabilityFn(),
-      invalidateTransactionFn(),
-    ])
+    runInBackground(
+      Promise.all([
+        invalidateLiabilityFn(),
+        invalidateTransactionFn(),
+      ]),
+      'liability markPaid cache invalidation'
+    )
     return result
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -322,7 +322,7 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
     const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
 
     await deleteFn(id)
-    await invalidateLiabilityFn()
+    runInBackground(invalidateLiabilityFn(), 'liability delete cache invalidation')
     return true
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)

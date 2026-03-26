@@ -428,7 +428,7 @@ export default function Dashboard() {
   return (
     <div className="page">
       <PageHeader title="Dashboard" className="mb-2" />
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence initial={false}>
         {isInitialLoading ? (
           <motion.div
             key="dashboard-loading"
