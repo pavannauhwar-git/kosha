@@ -114,8 +114,8 @@ export async function invalidateCache() {
   // ~300-500ms later for the same mutation.
   suppress('transactions')
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'none' }),
-    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
+    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
@@ -766,6 +766,9 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
       ? await updateFn(id, payload)
       : await addFn(payload)
 
+    await queryClient.cancelQueries({ queryKey: ['transactions'] })
+    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
+
     if (!id) {
       optimisticallyDeleteTransactionFromCache(optimisticId)
     }
@@ -792,7 +795,10 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
     const invalidateFn = __testOverrides?.invalidateCache || invalidateCache
 
     await deleteFn(id)
-    await invalidateFn()
+    await queryClient.cancelQueries({ queryKey: ['transactions'] })
+    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
+    
+    runInBackground(invalidateFn(),'transactions delete mutation cache invalidation')
     return true
   } catch (error) {
     restoreCacheSnapshot(snapshot)

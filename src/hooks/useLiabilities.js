@@ -24,7 +24,7 @@ function runInBackground(promise, scope) {
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'none' }),
+    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
   ])
 }
@@ -280,6 +280,8 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
     const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
 
     const created = await addFn(payload)
+    await queryClient.cancelQueries({ queryKey: ['liabilities'] })
+
     optimisticallyDeleteLiabilityFromCache(optimisticId)
     optimisticallyInsertPendingLiability(created)
     runInBackground(invalidateLiabilityFn(), 'liability add cache invalidation')
@@ -302,6 +304,10 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     const invalidateTransactionFn = __testOverrides?.invalidateTransactionCache || invalidateTransactionCache
 
     const result = await markPaidFn(liability)
+    await queryClient.cancelQueries({ queryKey: ['liabilities'] })
+    await queryClient.cancelQueries({ queryKey: ['transactions'] })
+    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
+
     runInBackground(
       Promise.all([
         invalidateLiabilityFn(),
@@ -326,6 +332,7 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
     const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
 
     await deleteFn(id)
+    await queryClient.cancelQueries({ queryKey: ['liabilities'] })
     runInBackground(invalidateLiabilityFn(), 'liability delete cache invalidation')
     return true
   } catch (error) {
