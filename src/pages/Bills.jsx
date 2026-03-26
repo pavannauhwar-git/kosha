@@ -378,28 +378,14 @@ export default function Bills() {
 
           {/* ── Pending empty state ── */}
           {tab === 'pending' && visiblePending.length === 0 && (
-            <div className="card py-10 px-6 flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-income-bg flex items-center
-                              justify-center mb-4">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                  <path d="M9 16.5l5 5 9-9"
-                    className="text-income-text" stroke="currentColor" strokeWidth="2.5"
-                    strokeLinecap="round" strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <p className="text-[17px] font-bold text-ink mb-2">You're all clear</p>
-              <p className="text-label text-ink-3 mb-5 max-w-[200px] leading-relaxed">
-                No pending bills. You're on top of your finances.
-              </p>
-              <button
-                onClick={() => setShowAdd(true)}
-                className="px-6 py-2.5 rounded-pill bg-warning text-white text-label font-semibold
-                           active:scale-95 transition-transform duration-75"
-              >
-                Add a bill
-              </button>
-            </div>
+            <EmptyState
+              className="py-8"
+              icon={<Check size={24} className="text-income-text" />}
+              title="You're all clear"
+              description="No pending bills right now. Add recurring dues to keep reminders and cashflow planning accurate."
+              actionLabel="Add a bill"
+              onAction={() => setShowAdd(true)}
+            />
           )}
 
           {tab === 'paid' && paidLoading && visiblePaid.length === 0 && (

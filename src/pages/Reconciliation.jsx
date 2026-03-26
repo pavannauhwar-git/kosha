@@ -204,6 +204,9 @@ export default function Reconciliation() {
     return { total, resolved, queue, pct }
   }, [insights.candidates, linkedIdSet, effectiveReviewedIds])
 
+  const hasTransactions = (data || []).length > 0
+  const hasActiveFilters = reviewStateFilter !== 'queue' || filter !== 'all'
+
   const markReviewedLocal = useCallback((id) => {
     if (!id) return
     setLocalReviewedIds((prev) => {
@@ -587,15 +590,32 @@ export default function Reconciliation() {
             { type: 'block', height: 'h-[160px]' },
           ]}
         />
+      ) : !hasTransactions ? (
+        <EmptyState
+          icon={<History size={24} className="text-brand" />}
+          title="Nothing to reconcile yet"
+          description="Add transactions first. Reconciliation checks will automatically surface quality and matching signals here."
+          actionLabel="Go to transactions"
+          onAction={() => navigate('/transactions')}
+        />
       ) : visibleItems.length === 0 ? (
         <EmptyState
           icon={<CheckCircle2 size={24} className="text-income-text" />}
-          title={reviewStateFilter === 'queue' ? 'Queue is clear' : 'Nothing in this view'}
+          title={hasActiveFilters ? 'No items for selected filters' : 'Queue is clear'}
           description={
-            reviewStateFilter === 'queue'
+            hasActiveFilters
+              ? 'Try resetting filters to inspect the full reconciliation queue.'
+              : reviewStateFilter === 'queue'
               ? 'No pending items right now. Your recent data quality checks look good.'
               : 'Try switching view or quality filters to inspect more items.'
           }
+          actionLabel={hasActiveFilters ? 'Reset filters' : 'Open transactions'}
+          onAction={hasActiveFilters
+            ? () => {
+                setReviewStateFilter('queue')
+                setFilter('all')
+              }
+            : () => navigate('/transactions')}
         />
       ) : (
         <motion.div layout className="space-y-2.5">

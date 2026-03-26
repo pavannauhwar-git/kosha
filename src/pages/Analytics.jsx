@@ -6,6 +6,7 @@ import CategorySpendingChart from '../components/CategorySpendingChart'
 import { fmt } from '../lib/utils'
 import PageHeader from '../components/PageHeader'
 import { MONTH_SHORT } from '../lib/constants'
+import { useNavigate } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
@@ -26,6 +27,7 @@ function toFiniteNumber(value) {
 
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
+  const navigate = useNavigate()
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
@@ -111,6 +113,24 @@ export default function Analytics() {
     return items.slice(0, 3)
   }, [data, catEntries, categoryTotal])
 
+  const hasYearData = useMemo(() => {
+    return (
+      Number(data?.totalIncome || 0) > 0 ||
+      Number(data?.totalExpense || 0) > 0 ||
+      Number(data?.totalInvestment || 0) > 0 ||
+      catEntries.length > 0 ||
+      top5.length > 0 ||
+      vehicleData.length > 0
+    )
+  }, [
+    data?.totalIncome,
+    data?.totalExpense,
+    data?.totalInvestment,
+    catEntries.length,
+    top5.length,
+    vehicleData.length,
+  ])
+
   return (
     <div className="page">
       <PageHeader title="Analytics" className="mb-2" />
@@ -146,35 +166,36 @@ export default function Analytics() {
           transition={{ duration: 0.25 }}
           className="page-stack"
         >
-          {/* ── 1. Hero summary ──────────────────────────────────────── */}
-          <AnnualSummaryCard
-            data={data}
-            prevData={prevData}
-            year={year}
-          />
-
-          {strategicRecommendations.length > 0 && (
-            <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
-              <SectionHeader
-                className="mb-1"
-                title="So what now?"
-                rightText="Actionable next steps"
+          {hasYearData ? (
+            <>
+              {/* ── 1. Hero summary ──────────────────────────────────────── */}
+              <AnnualSummaryCard
+                data={data}
+                prevData={prevData}
+                year={year}
               />
-              <div className="space-y-2">
-                {strategicRecommendations.map((line) => (
-                  <p key={line} className="text-[12px] text-ink-2 leading-relaxed">
-                    - {line}
-                  </p>
-                ))}
-              </div>
-            </motion.div>
-          )}
 
-          <>
-            {data ? <YearlyInsightsCard data={data} catEntries={catEntries} /> : null}
+              {strategicRecommendations.length > 0 && (
+                <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
+                  <SectionHeader
+                    className="mb-1"
+                    title="So what now?"
+                    rightText="Actionable next steps"
+                  />
+                  <div className="space-y-2">
+                    {strategicRecommendations.map((line) => (
+                      <p key={line} className="text-[12px] text-ink-2 leading-relaxed">
+                        - {line}
+                      </p>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
 
-            {/* ── 2. Performance trends ───────────────────────────────── */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-4">
+              {data ? <YearlyInsightsCard data={data} catEntries={catEntries} /> : null}
+
+              {/* ── 2. Performance trends ─────────────────────────────── */}
               <CashFlowChart
                 chartData={chartData}
                 totalIncome={data?.totalIncome}
@@ -184,10 +205,8 @@ export default function Analytics() {
                 netData={netData}
                 netAxisMax={netAxisMax}
               />
-            </div>
 
-            {/* ── 3. Spending intelligence ────────────────────────────── */}
-            <div className="grid grid-cols-1 gap-4">
+              {/* ── 3. Spending intelligence ─────────────────────────── */}
               {catEntries.length > 0 ? (
                 <CategorySpendingChart
                   entries={catEntries}
@@ -207,10 +226,8 @@ export default function Analytics() {
                   <p className="text-[12px] text-ink-3 mt-1">No high-spend transactions found for this year yet.</p>
                 </div>
               )}
-            </div>
 
-            {/* ── 4. Allocation and year comparison ───────────────────── */}
-            <div className="grid grid-cols-1 gap-4">
+              {/* ── 4. Allocation and year comparison ─────────────────── */}
               {vehicleData.length > 0 && vehicleTotal > 0 ? (
                 <PortfolioAllocation vehicleData={vehicleData} />
               ) : (
@@ -227,7 +244,7 @@ export default function Analytics() {
                     <p className="text-[11px] text-ink-3 mt-0.5">Choose comparison depth</p>
                   </div>
                   <div className="inline-flex rounded-full border border-kosha-border bg-kosha-surface p-1">
-                    {[1, 2, 5].map((value) => {
+                    {[2, 5, 10].map((value) => {
                       const active = value === yoyRange
                       return (
                         <button
@@ -260,19 +277,23 @@ export default function Analytics() {
                 </div>
               )}
             </div>
-
-            {!data?.totalIncome && !data?.totalExpense && !data?.totalInvestment && (
+            </>
+          ) : (
             <EmptyState
               title={`No data for ${year}`}
-              description="Pick a different year or add transactions to unlock yearly analytics and trends."
-              actionLabel="Go to current year"
+              description="This year is empty right now. Add transactions to unlock yearly trends, category intelligence, and YoY comparisons."
+              actionLabel={year === currentYear ? 'Add transaction' : 'Go to current year'}
               onAction={() => {
-                const now = new Date()
-                setYear(now.getFullYear())
+                if (year === currentYear) {
+                  navigate('/transactions')
+                  return
+                }
+                setYear(currentYear)
               }}
+              secondaryLabel={year === currentYear ? undefined : 'Add transaction'}
+              onSecondaryAction={year === currentYear ? undefined : () => navigate('/transactions')}
             />
-            )}
-          </>
+          )}
 
         </motion.div>
       )}

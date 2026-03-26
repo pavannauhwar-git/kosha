@@ -70,7 +70,9 @@ function YoYTooltip({ active, payload, label }) {
 export default function YoYCards({ years, currentYear, enabled = true, rangeYears = 5 }) {
   const yearQueries = useQueries({
     queries: years.map((year) => ({
-      queryKey: ['year', year],
+      // Use a dedicated cache key to avoid colliding with useYearSummary(['year', year])
+      // which returns a richer payload (monthly/category/top5) for the Analytics page.
+      queryKey: ['yearYoy', year],
       queryFn: () => fetchYearSummary(year),
       enabled,
       staleTime: 5 * 60 * 1000,
@@ -98,7 +100,7 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
           spent,
           invested,
         }
-        })
+      })
   }, [years, yearQueries])
 
   const currentPoint = useMemo(

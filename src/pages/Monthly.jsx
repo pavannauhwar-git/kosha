@@ -202,6 +202,22 @@ export default function Monthly() {
     }
   }, [catEntries, budgets, year, month])
 
+  const hasMonthData = useMemo(() => {
+    const totalsPresent = earned > 0 || spent > 0 || invested > 0
+    const categoryPresent = catEntries.length > 0 || vehicleEntries.length > 0
+    const planningPresent = monthlyBillStatus.total > 0 || reconcileQueueCount > 0
+
+    return totalsPresent || categoryPresent || planningPresent
+  }, [
+    earned,
+    spent,
+    invested,
+    catEntries.length,
+    vehicleEntries.length,
+    monthlyBillStatus.total,
+    reconcileQueueCount,
+  ])
+
   const monthCloseSummary = useMemo(() => {
     const totalOutflow = spent + invested
     const net = earned - totalOutflow
@@ -319,6 +335,36 @@ export default function Monthly() {
           transition={{ duration: 0.25 }}
           className="page-stack"
         >
+          {!hasMonthData ? (
+            <EmptyState
+              title="No data for this month"
+              description="This month is empty right now. Add transactions to unlock month-close insights, budgets, and reconciliation cues."
+              actionLabel={
+                year === now.getFullYear() && month === now.getMonth() + 1
+                  ? 'Add transaction'
+                  : 'Go to current month'
+              }
+              onAction={() => {
+                if (year === now.getFullYear() && month === now.getMonth() + 1) {
+                  navigate('/transactions')
+                  return
+                }
+                setYear(now.getFullYear())
+                setMonth(now.getMonth() + 1)
+              }}
+              secondaryLabel={
+                year === now.getFullYear() && month === now.getMonth() + 1
+                  ? undefined
+                  : 'Add transaction'
+              }
+              onSecondaryAction={
+                year === now.getFullYear() && month === now.getMonth() + 1
+                  ? undefined
+                  : () => navigate('/transactions')
+              }
+            />
+          ) : (
+          <>
           <div className="card p-4">
             <SectionHeader
               className="mb-2"
@@ -486,18 +532,7 @@ export default function Monthly() {
             </div>
           </button>
           )}
-
-          {earned === 0 && spent === 0 && invested === 0 && (
-            <EmptyState
-              title="No data for this month"
-              description="Try another month or add transactions to start seeing month-close insights and budget tracking."
-              actionLabel="Go to current month"
-              onAction={() => {
-                const current = new Date()
-                setYear(current.getFullYear())
-                setMonth(current.getMonth() + 1)
-              }}
-            />
+          </>
           )}
         </motion.div>
       )}
