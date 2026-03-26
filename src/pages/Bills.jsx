@@ -244,10 +244,10 @@ export default function Bills() {
 
   return (
     <div className="page">
-      <PageHeader title="Bills & Dues" className="mb-2" />
+      <PageHeader title="Bills & Dues" className="mb-1" />
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-2.5 flex items-center justify-between gap-3">
         <div>
           {visiblePending.length > 0 ? (
             <p className="text-caption text-ink-3 mt-0.5">

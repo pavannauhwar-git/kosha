@@ -300,10 +300,10 @@ export default function Monthly() {
 
   return (
     <div className="page">
-      <PageHeader title="Monthly" className="mb-2" />
+      <PageHeader title="Monthly" className="mb-1" />
 
       <PickerNavigator
-        className="mb-4"
+        className="mb-3"
         label={`${MONTH_NAMES[month - 1]} ${year}`}
         onPrev={prev}
         onNext={next}
@@ -319,7 +319,7 @@ export default function Monthly() {
         }}
       />
 
-      <div className="mb-4 md:mb-5">
+      <div className="mb-3 md:mb-4">
         <MonthHeroCard month={month} year={year} data={data} />
       </div>
 

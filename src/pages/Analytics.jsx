@@ -135,11 +135,11 @@ export default function Analytics() {
 
   return (
     <div className="page">
-      <PageHeader title="Analytics" className="mb-2" />
+      <PageHeader title="Analytics" className="mb-1" />
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
       <PickerNavigator
-        className="mb-4"
+        className="mb-3"
         label={year}
         onPrev={() => setYear((y) => Math.max(MIN_NAV_YEAR, y - 1))}
         onNext={() => setYear((y) => Math.min(MAX_NAV_YEAR, y + 1))}

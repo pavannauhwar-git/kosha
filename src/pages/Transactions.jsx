@@ -286,9 +286,9 @@ export default function Transactions() {
 
   return (
     <div className="page">
-      <PageHeader title="Transactions" className="mb-2" />
+      <PageHeader title="Transactions" className="mb-1" />
 
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-2.5 flex items-center justify-between gap-3">
         <div>
           <p className="text-caption text-ink-3 mt-0.5">
             {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}

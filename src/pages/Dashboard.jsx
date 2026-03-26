@@ -426,7 +426,7 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <PageHeader title="Dashboard" className="mb-2" />
+      <PageHeader title="Dashboard" className="mb-1" />
       <AnimatePresence initial={false}>
         {isInitialLoading ? (
           <motion.div
@@ -434,7 +434,7 @@ export default function Dashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1, transition: dashboardFade }}
             exit={{ opacity: 0, transition: dashboardFade }}
-            className="page-stack pt-0"
+            className="space-y-4 md:space-y-5 pt-0"
           >
             <div>
               <p className="text-caption text-ink-3">
@@ -467,7 +467,7 @@ export default function Dashboard() {
             initial="hidden"
             animate="show"
             exit={{ opacity: 0, transition: dashboardFade }}
-            className="page-stack pt-0"
+            className="space-y-4 md:space-y-5 pt-0"
           >
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
