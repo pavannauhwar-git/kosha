@@ -2,13 +2,17 @@ import { memo } from 'react'
 import {
   AreaChart, Area,
   BarChart, Bar,
-  ComposedChart,
   LineChart, Line,
   XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, Cell,
 } from 'recharts'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
+
+function toFiniteNumber(value) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
 
 // ── Tooltips ──────────────────────────────────────────────────────────────
 
@@ -75,13 +79,19 @@ const NetTooltip = ({ active, payload, label }) => {
 // ── CashFlow chart ─────────────────────────────────────────────────────────
 
 export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncome }) {
-  if (!chartData.length) return null
+  const safeData = (Array.isArray(chartData) ? chartData : []).map((point) => ({
+    name: point?.name || '-',
+    Income: toFiniteNumber(point?.Income),
+    Spent: toFiniteNumber(point?.Spent),
+  }))
 
-  const chartH = chartData.length <= 4 ? 180 : 220
-  const totalSpent = chartData.reduce((sum, point) => sum + Number(point.Spent || 0), 0)
-  const totalNet = chartData.reduce((sum, point) => sum + (Number(point.Income || 0) - Number(point.Spent || 0)), 0)
-  const bestMonth = chartData.reduce((best, point) => {
-    const gap = Number(point.Income || 0) - Number(point.Spent || 0)
+  if (!safeData.length) return null
+
+  const chartH = safeData.length <= 4 ? 180 : 220
+  const totalSpent = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Spent), 0)
+  const totalNet = safeData.reduce((sum, point) => sum + (toFiniteNumber(point.Income) - toFiniteNumber(point.Spent)), 0)
+  const bestMonth = safeData.reduce((best, point) => {
+    const gap = toFiniteNumber(point.Income) - toFiniteNumber(point.Spent)
     if (!best || gap > best.gap) return { name: point.name, gap }
     return best
   }, null)
@@ -126,46 +136,34 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
       </div>
 
       <ResponsiveContainer width="100%" height={chartH}>
-        <ComposedChart data={chartData} margin={{ top: 8, right: 16, left: 12, bottom: 0 }}>
+        <AreaChart data={safeData} margin={{ top: 8, right: 16, left: 12, bottom: 0 }}>
           <defs>
             <linearGradient id="gIncome" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%"  stopColor={C.chartIncome}  stopOpacity={0.20} />
               <stop offset="95%" stopColor={C.chartIncome}  stopOpacity={0.02} />
             </linearGradient>
             <linearGradient id="gExpense" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={C.chartExpense} stopOpacity={0.35} />
+              <stop offset="5%"  stopColor={C.chartExpense} stopOpacity={0.20} />
               <stop offset="95%" stopColor={C.chartExpense} stopOpacity={0.02} />
             </linearGradient>
           </defs>
-          <ReferenceLine y={0} stroke="rgba(31,37,95,0.14)" strokeWidth={1} />
           <XAxis dataKey="name"
             tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide />
           <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(31,37,95,0.10)', strokeWidth: 1 }} />
-          <Bar
-            dataKey="Spent"
-            fill="url(#gExpense)"
-            radius={[10, 10, 6, 6]}
-            maxBarSize={24}
-            name="Spent"
-          />
           <Area dataKey="Income" type="monotone"
             stroke={C.chartIncome} strokeWidth={3} fill="url(#gIncome)" dot={false}
             activeDot={{ r: 5, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
             name="Income"
           />
-          <Line
-            type="monotone"
-            dataKey="Spent"
-            stroke={C.chartExpense}
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
+          <Area dataKey="Spent" type="monotone"
+            stroke={C.chartExpense} strokeWidth={3} fill="url(#gExpense)" dot={false}
+            activeDot={{ r: 5, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
             name="Spent"
           />
-        </ComposedChart>
+        </AreaChart>
       </ResponsiveContainer>
 
       <div className="flex justify-center gap-6 pb-1 pt-2">
@@ -183,29 +181,27 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 // ── NetSavings chart ───────────────────────────────────────────────────────
 
 export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisMax }) {
-  if (!netData.length) return null
+  const safeData = (Array.isArray(netData) ? netData : []).map((point) => ({
+    name: point?.name || '-',
+    Net: toFiniteNumber(point?.Net),
+  }))
 
-  const totalNet = netData.reduce((s, m) => s + m.Net, 0)
-  const positiveMonths = netData.filter((m) => Number(m.Net || 0) >= 0).length
-  const bestMonth = netData.reduce((best, point) => {
-    const val = Number(point.Net || 0)
+  if (!safeData.length) return null
+
+  const safeAxisMax = Math.max(1000, toFiniteNumber(netAxisMax))
+
+  const totalNet = safeData.reduce((s, m) => s + toFiniteNumber(m.Net), 0)
+  const positiveMonths = safeData.filter((m) => toFiniteNumber(m.Net) >= 0).length
+  const bestMonth = safeData.reduce((best, point) => {
+    const val = toFiniteNumber(point.Net)
     if (!best || val > best.value) return { name: point.name, value: val }
     return best
   }, null)
-  const worstMonth = netData.reduce((worst, point) => {
-    const val = Number(point.Net || 0)
+  const worstMonth = safeData.reduce((worst, point) => {
+    const val = toFiniteNumber(point.Net)
     if (!worst || val < worst.value) return { name: point.name, value: val }
     return worst
   }, null)
-
-  let runningTotal = 0
-  const netWithTrend = netData.map((point) => {
-    runningTotal += Number(point.Net || 0)
-    return {
-      ...point,
-      Running: runningTotal,
-    }
-  })
 
   return (
     <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
@@ -248,35 +244,25 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
       </div>
 
       <ResponsiveContainer width="100%" height={180}>
-        <ComposedChart data={netWithTrend} margin={{ top: 4, right: 12, left: 12, bottom: 0 }}>
+        <BarChart data={safeData} margin={{ top: 4, right: 12, left: 12, bottom: 0 }}>
           <XAxis dataKey="name"
             tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
-          <YAxis yAxisId="net" hide domain={[-netAxisMax, netAxisMax]} />
-          <YAxis yAxisId="running" hide />
+          <YAxis hide domain={[-safeAxisMax, safeAxisMax]} />
           <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(31,37,95,0.06)' }} />
           <ReferenceLine y={0} stroke="rgba(31,37,95,0.22)" strokeWidth={1} />
-          <Bar yAxisId="net" dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={26} minPointSize={4}>
-            {netWithTrend.map((entry, i) => (
+          <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={26}>
+            {safeData.map((entry, i) => (
               <Cell key={i}
                 fill={entry.Net >= 0 ? C.chartIncome : C.chartExpense}
                 fillOpacity={0.90}
               />
             ))}
           </Bar>
-          <Line
-            yAxisId="running"
-            type="monotone"
-            dataKey="Running"
-            stroke="rgba(31,37,95,0.72)"
-            strokeWidth={2}
-            dot={false}
-            name="Cumulative"
-          />
-        </ComposedChart>
+        </BarChart>
       </ResponsiveContainer>
-      <div className="pt-2 text-[11px] text-ink-3">Bars = monthly net, line = cumulative savings path.</div>
+      <div className="pt-2 text-[11px] text-ink-3">Monthly net after expenses and investments.</div>
     </div>
   )
 })

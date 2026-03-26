@@ -19,6 +19,11 @@ import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
 
+function toFiniteNumber(value) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
   const now = new Date()
@@ -41,14 +46,14 @@ export default function Analytics() {
   const chartData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
       name: MONTH_SHORT[i],
-      Income: Math.round(m.income),
-      Spent: Math.round(m.expense),
+      Income: Math.round(toFiniteNumber(m?.income)),
+      Spent: Math.round(toFiniteNumber(m?.expense)),
     })), [data?.monthly])
 
   const netData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
       name: MONTH_SHORT[i],
-      Net: Math.round(m.income - m.expense - m.investment),
+      Net: Math.round(toFiniteNumber(m?.income) - toFiniteNumber(m?.expense) - toFiniteNumber(m?.investment)),
     })), [data?.monthly])
 
   const netAxisMax = useMemo(() => {
@@ -62,11 +67,17 @@ export default function Analytics() {
   }, [year, yoyRange])
 
   const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
-    .sort((a, b) => b[1] - a[1]).slice(0, 8), [data?.byCategory])
+    .map(([key, value]) => [key, toFiniteNumber(value)])
+    .filter(([, value]) => value > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8), [data?.byCategory])
   const categoryTotal = useMemo(() => catEntries.reduce((s, [, v]) => s + v, 0) || 1, [catEntries])
 
   const vehicleData = useMemo(
-    () => Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1]),
+    () => Object.entries(data?.byVehicle || {})
+      .map(([key, value]) => [key, toFiniteNumber(value)])
+      .filter(([, value]) => value > 0)
+      .sort((a, b) => b[1] - a[1]),
     [data?.byVehicle]
   )
   const vehicleTotal = useMemo(
