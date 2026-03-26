@@ -16,22 +16,26 @@ const _dateLabelFmt = new Intl.DateTimeFormat(_locale, {
 })
 
 export function fmt(n, compact = false) {
-  if (n === null || n === undefined) return '-'
+  if (n === null || n === undefined || !Number.isFinite(n)) return '-'
   const abs = Math.abs(n)
   if (compact) {
-    if (abs >= 1_00_000) return `₹${(n / 1_00_000).toFixed(1)}L`
-    if (abs >= 1_000) return `₹${(n / 1_000).toFixed(1)}K`
+    const sign = n < 0 ? '-' : ''
+    if (abs >= 1_00_000) return `${sign}₹${(abs / 1_00_000).toFixed(1)}L`
+    if (abs >= 1_000) return `${sign}₹${(abs / 1_000).toFixed(1)}K`
   }
   return _currencyFmt.format(n)
 }
 
 export function fmtFull(n) {
-  return _currencyFmt.format(n ?? 0)
+  const safe = Number.isFinite(n) ? n : 0
+  return _currencyFmt.format(safe)
 }
 
 export function fmtDate(dateStr) {
   if (!dateStr) return ''
-  return _dateFmt.format(new Date(dateStr))
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return ''
+  return _dateFmt.format(d)
 }
 
 export function todayStr() {
@@ -45,10 +49,12 @@ export function monthStr(date = new Date()) {
 }
 
 export function dateLabel(dateStr) {
-  const d       = new Date(dateStr)
-  const today   = new Date(); today.setHours(0,0,0,0)
-  const yest    = new Date(today); yest.setDate(today.getDate() - 1)
-  const dLocal  = new Date(d); dLocal.setHours(0,0,0,0)
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return ''
+  const today    = new Date(); today.setHours(0,0,0,0)
+  const yest     = new Date(today); yest.setDate(today.getDate() - 1)
+  const dLocal   = new Date(d); dLocal.setHours(0,0,0,0)
   if (dLocal.getTime() === today.getTime())  return 'Today'
   if (dLocal.getTime() === yest.getTime())   return 'Yesterday'
   return _dateLabelFmt.format(d)
@@ -100,8 +106,11 @@ export function savingsRate(earned, spent) {
 
 // ── Bills ─────────────────────────────────────────────────────────────────
 export function daysUntil(dateStr) {
-  const due   = new Date(dateStr); due.setHours(0,0,0,0)
-  const today = new Date();        today.setHours(0,0,0,0)
+  if (!dateStr) return NaN
+  const due = new Date(dateStr)
+  if (Number.isNaN(due.getTime())) return NaN
+  due.setHours(0,0,0,0)
+  const today = new Date(); today.setHours(0,0,0,0)
   return Math.round((due - today) / (1000 * 60 * 60 * 24))
 }
 

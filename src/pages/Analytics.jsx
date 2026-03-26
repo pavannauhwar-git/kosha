@@ -1,3 +1,4 @@
+import { CATEGORIES } from '../lib/categories'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { CashFlowChart, NetSavingsChart } from '../components/dashboard/AnalyticsCharts'
@@ -102,13 +103,14 @@ export default function Analytics() {
       }
     }
 
-    if (catEntries.length > 0) {
-      const [topCat, topValue] = catEntries[0]
-      const concentrationPct = Math.round((Number(topValue || 0) / categoryTotal) * 100)
-      if (concentrationPct >= 35) {
-        items.push(`${topCat} contributes ${concentrationPct}% of expense concentration. Add a monthly cap and monitor variance.`)
+      if (catEntries.length > 0) {
+        const [topCat, topValue] = catEntries[0]
+        const concentrationPct = Math.round((Number(topValue || 0) / categoryTotal) * 100)
+        if (concentrationPct >= 35) {
+          const catLabel = CATEGORIES.find(c => c.id === topCat)?.label || topCat
+          items.push(`${catLabel} contributes ${concentrationPct}% of expense concentration. Add a monthly cap and monitor variance.`)
+        }
       }
-    }
 
     return items.slice(0, 3)
   }, [data, catEntries, categoryTotal])

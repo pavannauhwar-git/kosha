@@ -136,6 +136,7 @@ export default function Bills() {
       if (error) throw error
       if (!rows?.length) {
         setErrToast(`No ${tab} bills to export.`)
+        setTimeout(() => setErrToast(null), 4000)
         return
       }
 
@@ -164,12 +165,13 @@ export default function Bills() {
       downloadCsv(`kosha-${tab}-bills-${date}.csv`, csv)
     } catch (e) {
       setErrToast(e.message || 'Could not export bills CSV.')
+      setTimeout(() => setErrToast(null), 4000)
     }
   }
 
   async function handleAdd() {
     if (!form.description.trim()) { setFormErr('Enter a description'); return }
-    if (!form.amount || isNaN(+form.amount)) { setFormErr('Enter a valid amount'); return }
+    if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
     if (!form.due_date) { setFormErr('Select a due date'); return }
 
     const billData = {
@@ -249,7 +251,7 @@ export default function Bills() {
         <div>
           {visiblePending.length > 0 ? (
             <p className="text-caption text-ink-3 mt-0.5">
-              Next due in {Math.min(...visiblePending.map(b => Math.max(0, daysUntil(b.due_date))))} days
+              Next due in {Math.min(...visiblePending.map(b => Math.max(0, daysUntil(b.due_date) || 0)).filter(Number.isFinite))} days
             </p>
           ) : (
             <p className="text-caption text-ink-3 mt-0.5">{totalBills} bill{totalBills !== 1 ? 's' : ''}</p>
@@ -493,7 +495,7 @@ export default function Bills() {
           <>
             <motion.div className="sheet-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={() => setShowAdd(false)}
+              onClick={() => { setShowAdd(false); setFormErr(''); setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' }) }}
             />
             <motion.div className="sheet-panel"
               initial={{ y: '100%' }}

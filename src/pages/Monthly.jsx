@@ -34,7 +34,11 @@ export default function Monthly() {
   }, [])
 
   const { data, loading } = useMonthSummary(year, month)
+  const monthStartDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const monthEndDate = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
   const { data: txnRows = [] } = useTransactions({
+    startDate: monthStartDate,
+    endDate: monthEndDate,
     limit: 250,
     enabled: heavyReady,
     columns: TRANSACTION_INSIGHTS_COLUMNS,

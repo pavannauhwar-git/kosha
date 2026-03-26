@@ -23,7 +23,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
   onHeroModeToggle,
 }) {
   const safeToSpend = runningBalance !== null
-    ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + +b.amount, 0))
+    ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0))
     : null
 
   return (

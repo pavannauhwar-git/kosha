@@ -404,7 +404,6 @@ export default function Dashboard() {
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)
-      throw e
     }
   }, [])
 

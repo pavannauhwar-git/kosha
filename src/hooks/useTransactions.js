@@ -20,6 +20,7 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['year'],
   ['balance'],
   ['todayExpenses'],
+  ['transactionYearBounds'],
 ]
 
 export const TRANSACTION_LIST_COLUMNS =
@@ -51,8 +52,8 @@ async function maybeGenerateRecurringTransactions(userId) {
     await supabase.rpc('generate_recurring_transactions', { p_user_id: userId })
     return true
   } catch (error) {
+    lastRecurringSyncAt = 0
     const message = String(error?.message || '')
-    // Safe no-op when migration has not yet been applied on an environment.
     if (message.includes('generate_recurring_transactions')) return false
     console.warn('[Kosha] recurring transaction generation failed', error)
     return false
@@ -113,20 +114,15 @@ export async function invalidateCache() {
   // ~300-500ms later for the same mutation.
   suppress('transactions')
   await Promise.all([
-    // Keep list surfaces strongly consistent across routes. Dashboard's
-    // "Latest" feed depends on transactionsRecent; if mutations happen on
-    // Transactions page, pre-refresh this family as well so Dashboard stays
-    // correct immediately on navigation.
     queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'none' }),
     queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
     queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
-    // Aggregates are only relevant when the user can see them, so 'active' is
-    // fine — the next mount will trigger a stale refetch automatically.
     queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
   ])
 }
 
@@ -193,8 +189,8 @@ export function useTransactions({ type, category, search, limit, startDate, endD
   const shouldFetchCount = enabled && withCount && (!hasLimit || safeRows.length >= numericLimit)
 
   const { data: countData } = useQuery({
-    queryKey: txnCountKey({ type, category, startDate, endDate }),
-    enabled:  shouldFetchCount,
+    queryKey: txnCountKey({ type, category, search, startDate, endDate }),
+    enabled: shouldFetchCount,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
         const userId = getAuthUserId()
@@ -203,10 +199,11 @@ export function useTransactions({ type, category, search, limit, startDate, endD
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
 
-        if (type)     q = q.eq('type', type)
-        if (category) q = q.eq('category', category)
-        if (startDate) q = q.gte('date', startDate)
-        if (endDate)   q = q.lte('date', endDate)
+        if (type)       q = q.eq('type', type)
+        if (category)   q = q.eq('category', category)
+        if (search)     q = q.ilike('description', `%${search}%`)
+        if (startDate)  q = q.gte('date', startDate)
+        if (endDate)    q = q.lte('date', endDate)
 
         const { count, error: err } = await q
         if (err) throw err
@@ -260,7 +257,7 @@ export function useTransactionDigest(days = 14, limit = 200, options = {}) {
   const startISO = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['transactionsDigest', safeDays, safeLimit],
+    queryKey: ['transactionsDigest', safeDays, safeLimit, startISO],
     enabled,
     queryFn: () => traceQuery('transactions:digest', async () => {
       const userId = getAuthUserId()
@@ -633,6 +630,7 @@ function upsertRecentTransactionCaches(txn) {
 }
 
 function cloneCacheData(data) {
+  if (data === undefined) return undefined
   if (typeof globalThis.structuredClone === 'function') {
     return globalThis.structuredClone(data)
   }

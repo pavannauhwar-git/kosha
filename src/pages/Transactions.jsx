@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2 } from 'lucide-react'
 import {
@@ -148,12 +148,22 @@ export default function Transactions() {
     }
   }, [])
 
+  const focusExpandCountRef = useRef(0)
+
+  useEffect(() => {
+    if (!focusTxnId) return
+    focusExpandCountRef.current = 0
+  }, [focusTxnId])
+
   useEffect(() => {
     if (!focusTxnId) return
 
     const found = data.find(t => t.id === focusTxnId)
     if (!found) {
-      if (hasMore) setDisplayCount(n => n + 100)
+      if (hasMore && focusExpandCountRef.current < 10) {
+        focusExpandCountRef.current += 1
+        setDisplayCount(n => n + 100)
+      }
       return
     }
 
@@ -208,6 +218,8 @@ export default function Transactions() {
       if (typeFilter !== 'all') q = q.eq('type', typeFilter)
       if (catFilter)            q = q.eq('category', catFilter)
       if (debouncedSearch)      q = q.ilike('description', `%${debouncedSearch}%`)
+      if (startDate)            q = q.gte('date', startDate)
+      if (endDate)              q = q.lte('date', endDate)
 
       const { data: exportRows, error } = await q
       if (error) throw error
@@ -261,7 +273,7 @@ export default function Transactions() {
       setToast(e.message || 'Could not export transactions.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [typeFilter, catFilter, debouncedSearch])
+  }, [typeFilter, catFilter, debouncedSearch, startDate, endDate])
 
   const dismissGuideHint = useCallback(() => {
     setShowGuideHint(false)

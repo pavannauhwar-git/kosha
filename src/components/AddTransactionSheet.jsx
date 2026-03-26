@@ -38,9 +38,17 @@ function nextRecurringDate(dateStr, recurrence) {
   const d = new Date(`${dateStr}T00:00:00`)
   if (Number.isNaN(d.getTime())) return null
 
-  if (recurrence === 'monthly') d.setMonth(d.getMonth() + 1)
-  if (recurrence === 'quarterly') d.setMonth(d.getMonth() + 3)
-  if (recurrence === 'yearly') d.setFullYear(d.getFullYear() + 1)
+  const origDay = d.getDate()
+  if (recurrence === 'monthly') {
+    d.setMonth(d.getMonth() + 1)
+    if (d.getDate() !== origDay) d.setDate(0)
+  } else if (recurrence === 'quarterly') {
+    d.setMonth(d.getMonth() + 3)
+    if (d.getDate() !== origDay) d.setDate(0)
+  } else if (recurrence === 'yearly') {
+    d.setFullYear(d.getFullYear() + 1)
+    if (d.getDate() !== origDay) d.setDate(0)
+  }
 
   return d.toISOString().slice(0, 10)
 }
@@ -303,7 +311,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   async function handleSave() {
     // Client-side validation — fast, no async
-    if (!amount || isNaN(+amount) || +amount <= 0) {
+    if (!amount || !Number.isFinite(+amount) || +amount <= 0) {
       dispatch({ type: 'SAVING_ERROR', value: 'Enter a valid amount' })
       return
     }
@@ -314,16 +322,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
     const payload = {
       type,
-      description:  desc.trim(),
-      amount:       +amount,
-      category:     type === 'investment' ? 'other' : normalizeCategoryForType(type, category),
+      description: desc.trim(),
+      amount:      +amount,
+      category:    type === 'investment' ? 'other' : normalizeCategoryForType(type, category),
       date,
       payment_mode: mode,
-      is_repayment: false,
+      is_repayment: editTxn ? !!editTxn.is_repayment : false,
       is_recurring: isRecurring,
       recurrence: isRecurring ? recurrence : null,
       next_run_date: isRecurring ? nextRecurringDate(date, recurrence) : null,
-      notes:        notes.trim() || null,
+      notes:       notes.trim() || null,
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
     }
 
