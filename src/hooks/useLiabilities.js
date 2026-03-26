@@ -24,7 +24,7 @@ function runInBackground(promise, scope) {
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'none' }),
     queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
   ])
 }
@@ -263,6 +263,7 @@ export function optimisticallyDeleteLiabilityFromCache(id) {
 
 export async function addLiabilityMutation(payload, __testOverrides = null) {
   const snapshot = snapshotLiabilityCaches()
+  suppress('liabilities')
   const optimisticId = `optimistic-liability-${Date.now()}`
   const nowIso = new Date().toISOString()
 
@@ -291,6 +292,8 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
 
 export async function markLiabilityPaidMutation(liability, __testOverrides = null) {
   const snapshot = snapshotLiabilityCaches()
+  suppress('liabilities')
+  suppress('transactions')
   optimisticallyMarkLiabilityPaid(liability)
 
   try {
@@ -315,6 +318,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
 
 export async function deleteLiabilityMutation(id, __testOverrides = null) {
   const snapshot = snapshotLiabilityCaches()
+  suppress('liabilities')
   optimisticallyDeleteLiabilityFromCache(id)
 
   try {

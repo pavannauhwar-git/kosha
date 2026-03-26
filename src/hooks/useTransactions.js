@@ -117,8 +117,8 @@ export async function invalidateCache() {
     // "Latest" feed depends on transactionsRecent; if mutations happen on
     // Transactions page, pre-refresh this family as well so Dashboard stays
     // correct immediately on navigation.
-    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'all' }),
+    queryClient.invalidateQueries({ queryKey: ['transactions'],    refetchType: 'none' }),
+    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
     queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
     // Aggregates are only relevant when the user can see them, so 'active' is
     // fine — the next mount will trigger a stale refetch automatically.
@@ -734,6 +734,8 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
     ['transactionsRecent'],
   ])
 
+  suppress('transactions')
+
   const nowIso = new Date().toISOString()
   const optimisticId = id || `optimistic-txn-${Date.now()}`
 
@@ -784,6 +786,7 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
     ['transactionsRecent'],
   ])
 
+  suppress('transactions')
   optimisticallyDeleteTransactionFromCache(id)
 
   try {
