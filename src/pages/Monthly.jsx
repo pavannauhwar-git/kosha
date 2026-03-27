@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRightLeft, CalendarDays } from 'lucide-react'
+import { ArrowRightLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
@@ -341,7 +341,6 @@ export default function Monthly() {
         >
           {!hasMonthData ? (
             <EmptyState
-              Icon={<CalendarDays size={24} className="text-brand" />}
               title="No data for this month"
               description="This month is empty right now. Add transactions to unlock month-close insights, budgets, and reconciliation cues."
               actionLabel={

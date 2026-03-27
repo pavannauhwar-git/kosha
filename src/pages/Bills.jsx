@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight, Receipt } from 'lucide-react'
+import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useLiabilities,
@@ -400,7 +400,6 @@ export default function Bills() {
           {tab === 'paid' && !paidLoading && visiblePaid.length === 0 && (
             <EmptyState
               className="py-8"
-              icon={<Receipt size={24} className="text-ink-3" />}
               title="No paid bills yet"
               description="Bills you mark as paid will show up here for history and tracking."
               actionLabel="View pending"

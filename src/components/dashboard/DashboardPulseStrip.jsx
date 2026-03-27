@@ -1,33 +1,25 @@
-import { memo, useRef, useState, useEffect } from 'react'
+import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fmt } from '../../lib/utils'
 
+/**
+ * DashboardPulseStrip
+ *
+ * The horizontal scrollable context strip showing today's spend,
+ * upcoming bills, and a contextual spending insight.
+ *
+ * Extracted so changes to the transaction list or running balance
+ * don't cause this strip to re-render unnecessarily.
+ */
 const DashboardPulseStrip = memo(function DashboardPulseStrip({
   todaySpend,
   totalBillsAmt,
   insight,
 }) {
   const navigate = useNavigate()
-  const scrollRef = useRef(null)
-  const [fadeRight, setFadeRight] = useState(false)
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const check = () => setFadeRight(el.scrollWidth > el.clientWidth + el.scrollLeft + 2)
-    check()
-    el.addEventListener('scroll', check, { passive: true })
-    const ro = new ResizeObserver(check)
-    ro.observe(el)
-    return () => {
-      el.removeEventListener('scroll', check)
-      ro.disconnect()
-    }
-  }, [])
 
   return (
-    <div className="relative">
-      <div ref={scrollRef} className="overflow-x-auto -mx-4 px-4">
+    <div className="overflow-x-auto -mx-4 px-4">
       <div className="flex gap-2 w-max pr-4">
         {/* Today */}
         <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl
@@ -60,18 +52,14 @@ const DashboardPulseStrip = memo(function DashboardPulseStrip({
         )}
 
         {/* Contextual insight */}
-        <div className="shrink-0 min-w-[140px] max-w-[220px] flex flex-col gap-1 px-3 py-2.5 rounded-2xl
+        <div className="shrink-0 w-[175px] flex flex-col gap-1 px-3 py-2.5 rounded-2xl
                         bg-kosha-surface-2 border border-kosha-border">
           <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">
             Insight
           </p>
           <p className="text-[12px] font-medium text-ink leading-snug">{insight}</p>
-          </div>
         </div>
       </div>
-      {fadeRight && (
-        <div className="absolute top-0 right-0 bottom-0 w-6 pointer-events-none bg-gradient-to-l from-kosha-bg to-transparent" />
-      )}
     </div>
   )
 })

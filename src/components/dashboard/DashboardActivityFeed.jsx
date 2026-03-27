@@ -20,6 +20,10 @@ function actionMeta(action) {
   }
 }
 
+function entityLabel(entityType) {
+  return entityType === 'transaction' ? 'Transaction' : 'Bill'
+}
+
 function formatEventTime(iso) {
   if (!iso) return ''
   const dt = new Date(iso)
@@ -72,8 +76,12 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
 
               <div className="min-w-0 flex-1">
                 <p className={`text-[14px] font-semibold ${meta.tone}`}>{meta.label}</p>
-                <p className="text-[11px] text-ink-4">{formatEventTime(evt.created_at)}</p>
+                <p className="text-[11px] text-ink-3 truncate">
+                  {entityLabel(evt.entity_type)} ID: {String(evt.entity_id || '').slice(0, 8)}
+                </p>
               </div>
+
+              <p className="text-[11px] text-ink-4 whitespace-nowrap">{formatEventTime(evt.created_at)}</p>
             </div>
           )
         })}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef, use } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2 } from 'lucide-react'
 import {
@@ -60,10 +60,7 @@ export default function Transactions() {
   const [datePreset,    setDatePreset]    = useState('all')
   const [displayCount,  setDisplayCount]  = useState(50)
   const [toast,         setToast]         = useState(null)
-  const [toastAction,   setToastAction]   = useState(null)
   const [duplicateTxn,  setDuplicateTxn]  = useState(null)
-  const pendingDeleteRef = useRef(null)
-  const [undoKey, setUndoKey] = useState(0)
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -185,51 +182,13 @@ export default function Transactions() {
     return () => clearTimeout(timeoutId)
   }, [focusTxnId, data, hasMore, searchParams, setSearchParams])
 
-  const flushPendingDelete = useCallback(() => {
-    const pending = pendingDeleteRef.current
-    if (!pending) return
-    clearTimeout(pending.timer)
-    pendingDeleteRef.current = null
-    removeTransactionMutation(pending.id).catch(() => {})
-  }, [])
-
-  const handleDelete = useCallback((id) => {
+  const handleDelete = useCallback(async (id) => {
     if (!id) return
-    flushPendingDelete()
-
-    const timer = setTimeout(() => {
-    pendingDeleteRef.current = null
-    setToast(null)
-    setToastAction(null)
-    removeTransactionMutation(id).catch((e) => {
+    try {
+      await removeTransactionMutation(id)
+    } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
-      setToastAction(null)
       setTimeout(() => setToast(null), 4000)
-    })
-  }, 4000)
-
-    pendingDeleteRef.current = { id, timer }
-    setToast('Transaction deleted')
-    setToastAction({
-      label: 'Undo',
-      onClick: () => {
-        const p = pendingDeleteRef.current
-        if (p?.timer) clearTimeout(p.timer)
-        pendingDeleteRef.current = null
-        setToast(null)
-        setToastAction(null)
-        setUndoKey((k) => k + 1)
-      },
-    })
-  }, [flushPendingDelete])
-
-  useEffect(() => {
-    return () => {
-      const p = pendingDeleteRef.current
-      if (p?.timer) {
-        clearTimeout(p.timer)
-        removeTransactionMutation(p.id).catch(() => {})
-      }
     }
   }, [])
 
@@ -476,9 +435,7 @@ export default function Transactions() {
         />
       ) : groups.length === 0 ? (
         <EmptyState
-          icon={hasActiveFilters
-            ? <SlidersHorizontal size={24} className="text-ink-3" />
-            : <ArrowRight size={24} className="text-brand" />}
+          icon={<CheckCircle2 size={24} className="text-brand" />}
           title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
           description={
             hasActiveFilters
@@ -516,7 +473,7 @@ export default function Transactions() {
               </div>
               {txns.map((t, i) => (
                 <TransactionItem
-                  key={`${t.id}-${undoKey}`} txn={t} // include undoKey to force remount on undo (to cancel pending delete)
+                  key={t.id} txn={t}
                   onDelete={handleDelete}
                   onTap={handleTap}
                   isLast={i === txns.length - 1}
@@ -539,7 +496,7 @@ export default function Transactions() {
         </button>
       )}
 
-      <AppToast message={toast} action={toastAction} onDismiss={() => { setToast(null); setToastAction(null) }} />
+      <AppToast message={toast} onDismiss={() => setToast(null)} />
 
       <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={24} className="text-white" />
