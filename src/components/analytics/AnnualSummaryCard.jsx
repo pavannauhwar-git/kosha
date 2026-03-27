@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 
@@ -61,12 +62,10 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
         {fmt(annualBalance)}
       </p>
 
-      <div className="mt-2 mb-4 flex flex-wrap items-center gap-2">
-        <div className="inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
-          <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
-            {avgSavings}% avg savings rate
-          </span>
-        </div>
+      <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
+        <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
+          {avgSavings}% avg savings rate
+        </span>
       </div>
 
       <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
@@ -94,6 +93,25 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-1">
+        <div className="flex justify-between mb-2">
+          <span className="text-caption font-medium" style={{ color: C.heroLabel }}>
+            Savings rate
+          </span>
+          <span className="text-caption font-bold" style={{ color: C.heroAccentSolid }}>
+            {avgSavings}%
+          </span>
+        </div>
+        <div className="bar-dark-track">
+          <motion.div
+            className="bar-dark-fill"
+            initial={{ width: 0 }}
+            animate={{ width: `${avgSavings}%` }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+          />
+        </div>
       </div>
     </div>
   )

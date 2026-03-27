@@ -239,36 +239,8 @@ export default function Analytics() {
                 </div>
               )}
 
-              <div className="card p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="section-label">YoY range</p>
-                    <p className="text-[11px] text-ink-3 mt-0.5">Choose comparison depth</p>
-                  </div>
-                  <div className="inline-flex rounded-full border border-kosha-border bg-kosha-surface p-1">
-                    {[2, 5, 10].map((value) => {
-                      const active = value === yoyRange
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => setYoyRange(value)}
-                          className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors ${
-                            active
-                              ? 'bg-brand text-white'
-                              : 'text-ink-2 hover:bg-kosha-surface-2'
-                          }`}
-                        >
-                          {value}Y
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-
               {heavyReady ? (
-                <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} />
+                <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} onRangeChange={setYoyRange} />
               ) : (
                 <div className="card p-4">
                   <div className="flex items-center justify-between mb-2">

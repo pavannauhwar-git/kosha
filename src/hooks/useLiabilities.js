@@ -23,7 +23,11 @@ function runInBackground(promise, scope) {
 
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  await queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' })
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: LIABILITY_PENDING_QUERY_KEY, refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: LIABILITY_PAID_QUERY_KEY, refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
+  ])
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {
@@ -241,7 +245,7 @@ export function optimisticallyMarkLiabilityPaid(liability) {
   if (!liability?.id) return
 
   const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
-  if (!Array.isArray(pendingData)) {
+  if (Array.isArray(pendingData)) {
     queryClient.setQueryData(
       LIABILITY_PENDING_QUERY_KEY,
       pendingData.filter((row) => row?.id !== liability.id)

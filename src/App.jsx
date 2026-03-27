@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { lazy, Suspense, useEffect, useCallback, useRef } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback, useRef, use } from 'react'
 import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -460,6 +460,12 @@ function BottomNav() {
   const navigate = useNavigate()
   const scrolledDown = useScrollDirection()
   const prefetchRoute = useRouteIntentPrefetch()
+  const [layoutReady, setLayoutReady] = useState(false)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setLayoutReady(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
 
   if (BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
 
@@ -484,10 +490,12 @@ function BottomNav() {
               transition={{ type: 'spring', stiffness: 600, damping: 28 }}
             >
               <div className="nav-icon-wrap">
-                {isActive && (
+                {isActive && (layoutReady ? (
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
                     transition={{ type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }} />
-                )}
+                ) : (
+                  <div className="nav-icon-bg" />
+                ))}
                 <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.15 }}>
                   <item.Icon size={22} weight="fill" color={C.brand} />
                 </motion.span>
