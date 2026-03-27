@@ -9,7 +9,7 @@ function CategoryLine({ pct, color, overBudget = false }) {
   const barColor = overBudget ? C.expense : color
 
   return (
-    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FF' }}>
+    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE5F8' }}>
       <div
         className="h-full rounded-full"
         style={{

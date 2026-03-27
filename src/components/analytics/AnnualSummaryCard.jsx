@@ -81,16 +81,6 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
               </p>
             </div>
 
-            <div className="mt-2 h-1.5 rounded-full bg-white/20 overflow-hidden">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${card.delta.width}%`,
-                  background: C.heroAccentSolid,
-                  transition: 'width 280ms ease-out',
-                }}
-              />
-            </div>
           </div>
         ))}
       </div>

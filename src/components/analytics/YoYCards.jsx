@@ -161,16 +161,16 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
       <div className="flex items-center justify-between mb-2">
         <p className="section-label">Year over year trends</p>
         {onRangeChange ? (
-          <div className="inline-flex rounded-full border border-kosha-border bg-kosha-surface p-0.5">
+          <div className="inline-flex rounded-full border border-kosha-border bg-kosha-surface-2 p-1">
             {[3, 5, 7].map((value) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => onRangeChange(value)}
-                className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-full transition-colors ${
+                className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors ${
                   value === rangeYears
                     ? 'bg-kosha-primary text-white'
-                    : 'text-ink-2 hover:bg-kosha-surface-2'
+                    : 'text-ink-2 hover:bg-kosha-surface hover:text-ink'
                 }`}
               >
                 {value}

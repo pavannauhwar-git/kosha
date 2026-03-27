@@ -5,21 +5,22 @@ export default {
     extend: {
       colors: {
         // ── App backgrounds ───────────────────────────────────────────────
-        'kosha-bg':            '#FEFEFF',
-        'kosha-bg-2':          '#FAFBFF',
+        'kosha-bg':            '#FDFBFF',
+        'kosha-bg-2':          '#FAF7FF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F8FAFF',
-        'kosha-border':        '#C4CFFF',
-        'kosha-border-strong': '#6C83FF',
+        'kosha-surface-2':     '#F6F2FF',
+        'kosha-border':        '#D4C0E4',
+        'kosha-border-strong': '#A855F7',
 
-        // ── Brand — Periwinkle Violet + Lime Yellow ─────────────────────
-        'brand':           '#243BAF',
-        'brand-dark':      '#1B2D85',
-        'brand-mid':       '#3D5AFE',
-        'brand-bg':        '#EEF2FF',
-        'brand-container': '#E8EDFF',
-        'brand-on':        '#243BAF',
-        'brand-accent':    '#F4FF00',
+        // ── Brand ─────────────────────
+        'brand':           '#4B0082',
+        'brand-dark':      '#350060',
+        'brand-mid':       '#7928CA',
+        'brand-light':     '#A855F7',
+        'brand-bg':        '#F5F0FF',
+        'brand-container': '#E8E5F8',
+        'brand-on':        '#4B0082',
+        'brand-accent':    '#CCFF00',
 
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#059669',
@@ -34,10 +35,10 @@ export default {
         'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#FF1DCE',
-        'invest-bg':     '#FBEFF5',
-        'invest-text':   '#7F2A52',
-        'invest-border': '#E9BFD2',
+        'invest':        '#0284C7',
+        'invest-bg':     '#F0F9FF',
+        'invest-text':   '#0369A1',
+        'invest-border': '#BAE6FD',
 
         // ── Repayment / Bills ─────────────────────────────────────────────
         'repay':        '#CA8A04',
@@ -51,11 +52,11 @@ export default {
         'warning-border': '#FDE68A',
         'warning-text':   '#B45309',
 
-        // ── Ink — indigo-tinted neutrals ──────────────────────────────────
-        'ink':   '#1F255F',
-        'ink-2': '#313A86',
-        'ink-3': '#6E75A8',
-        'ink-4': '#A0A7CD',
+        // ── Ink ──────────────────────────────────
+        'ink':   '#1E1533',
+        'ink-2': '#382758',
+        'ink-3': '#756496',
+        'ink-4': '#A89BBE',
 
         // ── Utility ───────────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',
@@ -87,12 +88,12 @@ export default {
       },
 
       boxShadow: {
-        'card':       '0 2px 7px rgba(18,28,74,0.06), 0 0 0 0.5px rgba(18,28,74,0.08)',
-        'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
-        'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
-        'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
-        'fab':        '0 4px 14px rgba(47,59,206,0.36)',
-        'focus':      '0 0 0 3px rgba(36,59,175,0.30)',
+        'card':       '0 2px 7px rgba(30,21,51,0.06), 0 0 0 0.5px rgba(30,21,51,0.08)',
+        'card-md':    '0 4px 14px rgba(30,21,51,0.10), 0 0 0 0.5px rgba(30,21,51,0.08)',
+        'card-lg':    '0 8px 24px rgba(30,21,51,0.14), 0 0 0 0.5px rgba(30,21,51,0.08)',
+        'apple-card': '0 20px 48px rgba(30,21,51,0.20), 0 8px 20px rgba(30,21,51,0.12)',
+        'fab':        '0 4px 14px rgba(75,0,130,0.36)',
+        'focus':      '0 0 0 3px rgba(75,0,130,0.30)',
         'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
         'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
       },
