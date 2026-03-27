@@ -272,7 +272,7 @@ export default function Bills() {
       <div className="mb-5 grid grid-cols-2 gap-2">
         <button
           onClick={() => setTab('pending')}
-          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+          className={`h-10 w-full rounded-card text-caption font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'pending'
               ? 'bg-warning text-white shadow-card'
               : 'bg-warning/15 text-warning-text border border-warning/20'}`}
@@ -281,7 +281,7 @@ export default function Bills() {
         </button>
         <button
           onClick={() => setTab('paid')}
-          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+          className={`h-10 w-full rounded-card text-caption font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'paid'
               ? 'bg-income-text text-white shadow-card'
               : 'bg-income-bg text-income-text border border-income-border'}`}
@@ -300,7 +300,7 @@ export default function Bills() {
               {visiblePending.length} bill{visiblePending.length !== 1 ? 's' : ''}
             </span>
           </div>
-          <p className="text-[28px] font-bold text-ink tracking-tight tabular-nums mb-3">
+          <p className="text-display font-bold text-ink tracking-tight tabular-nums mb-3">
             {fmt(totalPending)}
           </p>
           {/* Progress bar — due-this-week proportion of total */}
@@ -331,12 +331,12 @@ export default function Bills() {
             <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-caption text-ink-3">Due in 7 days</p>
               <p className="text-lg font-bold text-warning-text tabular-nums">{fmt(dueSoonAmount)}</p>
-              <p className="text-[11px] text-ink-3 mt-0.5">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
+              <p className="text-caption text-ink-3 mt-0.5">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
             </div>
             <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-caption text-ink-3">Due this month</p>
               <p className="text-lg font-bold text-ink tabular-nums">{fmt(dueThisMonth.amount)}</p>
-              <p className="text-[11px] text-ink-3 mt-0.5">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>
+              <p className="text-caption text-ink-3 mt-0.5">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>
             </div>
           </div>
         </div>
@@ -393,7 +393,7 @@ export default function Bills() {
           {tab === 'paid' && paidLoading && visiblePaid.length === 0 && (
             <div className="card p-4">
               <p className="section-label">Paid bills</p>
-              <p className="text-[12px] text-ink-3 mt-1">Loading paid history...</p>
+              <p className="text-caption text-ink-3 mt-1">Loading paid history...</p>
             </div>
           )}
 
@@ -417,13 +417,13 @@ export default function Bills() {
             return (
               <div key={bill.id}>
                 {showBucketHeader && (
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-3 px-1 mb-1 mt-2">
+                  <p className="text-caption font-semibold uppercase tracking-wide text-ink-3 px-1 mb-1 mt-2">
                     {bill._bucket === 'overdue' ? 'Overdue' : bill._bucket === 'dueSoon' ? 'Due this week' : 'Later'}
                   </p>
                 )}
                 <div
                   id={`bill-${bill.id}`}
-                  className={`${shadow} p-3.5 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
+                  className={`${shadow} p-4 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -438,19 +438,19 @@ export default function Bills() {
                       <p className="text-lg font-bold amt-expense mb-2">{fmt(+bill.amount)}</p>
                       <div className="flex items-center gap-2 flex-wrap">
                         {tab === 'pending' ? (
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
+                          <span className={`text-caption font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
                             {dueLabel(days)}
                           </span>
                         ) : (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-income-bg text-income-text">
+                          <span className="text-caption font-semibold px-2 py-0.5 rounded-pill bg-income-bg text-income-text">
                             Paid {fmtDate(bill.due_date)}
                           </span>
                         )}
                         {bill.is_recurring && (
-                          <span className="text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
+                          <span className="text-caption text-ink-3 capitalize">{bill.recurrence}</span>
                         )}
                         {(bill.__optimistic || String(bill.id || '').startsWith('optimistic-')) && (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
+                          <span className="text-caption font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
                             Syncing...
                           </span>
                         )}
@@ -536,11 +536,11 @@ export default function Bills() {
                     <div className="w-8 h-8 rounded-chip bg-warning-bg flex items-center justify-center shrink-0">
                       <span className="text-warning-text text-xs font-bold">📅</span>
                     </div>
-                    <span className="flex-1 text-[15px] text-ink">Due Date</span>
+                    <span className="flex-1 text-label text-ink">Due Date</span>
                     <input type="date"
                       value={form.due_date}
                       onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-                      className="text-[15px] text-ink-3 bg-transparent outline-none text-right
+                      className="text-label text-ink-3 bg-transparent outline-none text-right
                                  focus:text-warning-text" />
                   </label>
                 </div>

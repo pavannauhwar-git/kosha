@@ -328,8 +328,8 @@ export default function Reconciliation() {
 
         <div className="mt-4">
           <div className="flex items-center justify-between gap-2 mb-1.5">
-            <p className="text-[11px] font-semibold text-ink-3">Queue progress</p>
-            <p className="text-[11px] text-ink-3">{reviewProgress.resolved}/{reviewProgress.total || 0} resolved</p>
+            <p className="text-caption font-semibold text-ink-3">Queue progress</p>
+            <p className="text-caption text-ink-3">{reviewProgress.resolved}/{reviewProgress.total || 0} resolved</p>
           </div>
           <div className="h-2 rounded-pill bg-kosha-border overflow-hidden">
             <motion.div
@@ -339,7 +339,7 @@ export default function Reconciliation() {
               transition={{ duration: 0.35, ease: 'easeOut' }}
             />
           </div>
-          <p className="text-[11px] text-ink-3 mt-1">
+          <p className="text-caption text-ink-3 mt-1">
             {reviewProgress.queue > 0
               ? `${reviewProgress.queue} item${reviewProgress.queue > 1 ? 's' : ''} still in queue.`
               : 'Queue clear. Reconciliation quality looks healthy.'}
@@ -348,7 +348,7 @@ export default function Reconciliation() {
       </div>
 
       <div className="sticky-toolbar">
-        <p className="text-[11px] text-ink-3 px-1 mb-2">
+        <p className="text-caption text-ink-3 px-1 mb-2">
           View: {REVIEW_STATE_FILTERS.find((item) => item.id === reviewStateFilter)?.label || 'In queue'} · {FILTERS.find((item) => item.id === filter)?.label || 'All'}
         </p>
 
@@ -368,7 +368,7 @@ export default function Reconciliation() {
                 className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
               >
                 {chip.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                <span className={`text-micro px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
                   {count}
                 </span>
               </motion.button>
@@ -392,7 +392,7 @@ export default function Reconciliation() {
                 className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
               >
                 {chip.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                <span className={`text-micro px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
                   {count}
                 </span>
               </motion.button>
@@ -408,7 +408,7 @@ export default function Reconciliation() {
             <p className="text-caption text-ink-3 mt-1">
               Paste rows in date, description, amount format. Kosha will suggest likely transaction matches.
             </p>
-            <p className="text-[11px] text-ink-4 mt-1">
+            <p className="text-caption text-ink-4 mt-1">
               Learned aliases: {learnedAliasCount}
             </p>
           </div>
@@ -417,7 +417,7 @@ export default function Reconciliation() {
               type="button"
               onClick={() => { void resetLearnedAliases() }}
               disabled={learnedAliasCount === 0 || resettingAliases || reviewTableUnavailable}
-              className="btn-secondary h-9 px-3 text-[12px]"
+              className="btn-secondary h-9 px-3 text-caption"
             >
               <RotateCcw size={13} />
               {resettingAliases ? 'Resetting' : 'Reset aliases'}
@@ -445,12 +445,12 @@ export default function Reconciliation() {
               }`}
             />
             <div>
-              <p className={`text-[12px] font-semibold ${
+              <p className={`text-caption font-semibold ${
                 driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-brand'
               }`}>
                 {driftMessage.title}
               </p>
-              <p className="text-[11px] text-ink-3 mt-0.5">{driftMessage.message}</p>
+              <p className="text-caption text-ink-3 mt-0.5">{driftMessage.message}</p>
             </div>
           </motion.div>
         )}
@@ -502,20 +502,20 @@ export default function Reconciliation() {
           <div className="mt-4 border-t border-kosha-border pt-3">
             <div className="flex items-center gap-2 mb-2">
               <History size={14} className="text-ink-4" />
-              <p className="text-[12px] font-semibold text-ink-2">Recent matching decisions</p>
+              <p className="text-caption font-semibold text-ink-2">Recent matching decisions</p>
             </div>
             <div className="space-y-2">
               {recentLinkDecisions.map((row) => (
                 <div key={row.transactionId} className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
-                  <p className="text-[12px] text-ink-2 truncate">{row.statementPreview}</p>
-                  <p className="text-[11px] text-ink-4 mt-0.5 truncate">
+                  <p className="text-caption text-ink-2 truncate">{row.statementPreview}</p>
+                  <p className="text-caption text-ink-4 mt-0.5 truncate">
                     Linked to: {row.transactionLabel}
                     {row.amount != null ? ` · ${fmt(Number(row.amount || 0))}` : ''}
                     {row.date ? ` · ${fmtDate(row.date)}` : ''}
                   </p>
                   <button
                     type="button"
-                    className="text-[11px] font-semibold text-brand mt-1 inline-flex items-center gap-1"
+                    className="text-caption font-semibold text-brand mt-1 inline-flex items-center gap-1"
                     onClick={() => navigate(`/transactions?focus=${row.transactionId}`)}
                   >
                     Open <ArrowRight size={11} />
@@ -528,17 +528,17 @@ export default function Reconciliation() {
 
         {(aliasQualities.length > 0 || demotedMerchants.size > 0) && (
           <div className="mt-4 border-t border-kosha-border pt-3">
-            <p className="text-[12px] font-semibold text-ink-2 mb-2">Merchant recognition</p>
+            <p className="text-caption font-semibold text-ink-2 mb-2">Merchant recognition</p>
             
             {aliasQualities.length > 0 && (
               <div className="mb-3">
-                <p className="text-[11px] text-ink-3 mb-1.5">Top merchant matches (30-day)</p>
+                <p className="text-caption text-ink-3 mb-1.5">Top merchant matches (30-day)</p>
                 <div className="space-y-1">
                   {aliasQualities.slice(0, 3).map((alias) => (
                     <div key={alias.merchant} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-1.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[11px] text-ink-2 truncate">{alias.merchant}</p>
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                        <p className="text-caption text-ink-2 truncate">{alias.merchant}</p>
+                        <span className={`text-micro font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                           alias.qualityScore >= 90 ? 'bg-income-bg text-income-text'
                           : alias.qualityScore >= 70 ? 'bg-brand-bg text-brand'
                           : 'bg-warning-bg text-warning-text'
@@ -546,7 +546,7 @@ export default function Reconciliation() {
                           {alias.qualityScore}%
                         </span>
                       </div>
-                      <p className="text-[10px] text-ink-4 mt-0.5">{alias.successCount} linked, {alias.rejectionCount} rejected</p>
+                      <p className="text-micro text-ink-4 mt-0.5">{alias.successCount} linked, {alias.rejectionCount} rejected</p>
                     </div>
                   ))}
                 </div>
@@ -555,7 +555,7 @@ export default function Reconciliation() {
 
             {demotedMerchants.size > 0 && (
               <div>
-                <p className="text-[11px] text-ink-3 mb-1.5">Temporarily skipped merchants (2+ mismatches)</p>
+                <p className="text-caption text-ink-3 mb-1.5">Temporarily skipped merchants (2+ mismatches)</p>
                 <div className="space-y-1">
                   {Array.from(demotedMerchants).slice(0, 3).map((merchant) => {
                     const inCooldown = merchantsInCooldown.has(merchant)
@@ -563,8 +563,8 @@ export default function Reconciliation() {
                       <div key={merchant} className={`rounded-card border px-2.5 py-1.5 ${
                         inCooldown ? 'border-warning-border bg-warning-bg/10' : 'border-kosha-border bg-expense-bg/10'
                       }`}>
-                        <p className={`text-[11px] truncate ${inCooldown ? 'text-warning-text' : 'text-expense-text'}`}>{merchant}</p>
-                        <p className="text-[10px] text-ink-4 mt-0.5">
+                        <p className={`text-caption truncate ${inCooldown ? 'text-warning-text' : 'text-expense-text'}`}>{merchant}</p>
+                        <p className="text-micro text-ink-4 mt-0.5">
                           {inCooldown 
                             ? 'Cooldown active. Matching is paused for 14 days after repeated mismatches.'
                             : 'Cooldown completed. This merchant can be learned again from new matches.'}
@@ -574,7 +574,7 @@ export default function Reconciliation() {
                   })}
                 </div>
                 {demotedMerchants.size > 3 && (
-                  <p className="text-[10px] text-ink-4 mt-1.5">+{demotedMerchants.size - 3} more demoted merchants</p>
+                  <p className="text-micro text-ink-4 mt-1.5">+{demotedMerchants.size - 3} more demoted merchants</p>
                 )}
               </div>
             )}
@@ -632,7 +632,7 @@ export default function Reconciliation() {
                 exit={{ opacity: 0, y: -8, scale: 0.99 }}
                 whileHover={{ y: -1 }}
                 transition={{ duration: 0.2 }}
-                className="card p-3.5"
+                className="card p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -663,7 +663,7 @@ export default function Reconciliation() {
 
                 {item.flags.missingCategory && txn.type === 'expense' && (
                   <div className="mt-3 pt-3 border-t border-kosha-border">
-                    <label className="text-[11px] font-semibold text-ink-3 block mb-1.5">
+                    <label className="text-caption font-semibold text-ink-3 block mb-1.5">
                       Set category
                     </label>
                     <select
@@ -741,7 +741,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
           </p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`text-[11px] px-2 py-1 rounded-full font-semibold whitespace-nowrap ${
+          <span className={`text-caption px-2 py-1 rounded-full font-semibold whitespace-nowrap ${
             row.confidence === 'high'
               ? 'bg-income-bg text-income-text'
               : row.confidence === 'medium'
@@ -751,7 +751,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
             {row.confidence}
           </span>
           {isLinked && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-income-bg text-income-text font-semibold">
+            <span className="text-micro px-1.5 py-0.5 rounded-full bg-income-bg text-income-text font-semibold">
               ✓ Linked
             </span>
           )}
@@ -763,7 +763,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
           <p className="text-caption text-expense-text">Could not parse this line.</p>
           <details className="text-caption text-ink-3 mt-1">
             <summary className="cursor-pointer font-semibold">Formatting tips</summary>
-            <ul className="list-disc list-inside text-[11px] mt-1 space-y-0.5">
+            <ul className="list-disc list-inside text-caption mt-1 space-y-0.5">
               <li>Include a date (e.g., 24/03/2026 or 2026-03-24)</li>
               <li>Include an amount (e.g., 542.00 or 542)</li>
               <li>Separate fields with comma, pipe, or tab</li>

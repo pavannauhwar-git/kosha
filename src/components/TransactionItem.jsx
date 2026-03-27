@@ -134,7 +134,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
                      bg-brand-container active:opacity-80 transition-opacity duration-100"
           >
             <CopySimple size={18} weight="bold" color="var(--c-brand)" />
-            <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
+            <span className="text-micro font-semibold" style={{ color: 'var(--c-brand)' }}>
               Repeat
             </span>
           </button>
@@ -145,7 +145,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
                      bg-expense active:opacity-80 transition-opacity duration-100"
           >
             <Trash size={18} weight="bold" color="white" />
-            <span className="text-[10px] font-semibold text-white">Delete</span>
+            <span className="text-micro font-semibold text-white">Delete</span>
           </button>
         </motion.div>
       )}
@@ -179,43 +179,43 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold text-ink truncate leading-snug">
+          <p className="text-label font-semibold text-ink truncate leading-snug">
             {txn.description}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             {showDate
-              ? <span className="text-[11px] text-ink-3">{fmtDate(txn.date)}</span>
-              : <span className="text-[11px] text-ink-3">{rowLabel}</span>
+              ? <span className="text-caption text-ink-3">{fmtDate(txn.date)}</span>
+              : <span className="text-caption text-ink-3">{rowLabel}</span>
             }
             {mode && (
-              <span className="text-[10px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
+              <span className="text-micro font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
                 {mode}
               </span>
             )}
             {txn.is_repayment && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
+              <span className="text-micro px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
                 Repayment
               </span>
             )}
             {txn.is_recurring && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand-on font-medium capitalize">
+              <span className="text-micro px-1.5 py-0.5 rounded-pill bg-brand-container text-brand-on font-medium capitalize">
                 {txn.recurrence || 'Recurring'}
               </span>
             )}
             {txn.is_auto_generated && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
+              <span className="text-micro px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
                 Auto
               </span>
             )}
             {isOptimistic && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-warning-bg text-warning-text font-medium">
+              <span className="text-micro px-1.5 py-0.5 rounded-pill bg-warning-bg text-warning-text font-medium">
                 Syncing...
               </span>
             )}
           </div>
         </div>
 
-        <span className={`text-[14px] shrink-0 tabular-nums font-semibold ${amtCls}`}>
+        <span className={`text-label shrink-0 tabular-nums font-semibold ${amtCls}`}>
           {prefix}{fmt(txn.amount)}
         </span>
       </motion.div>

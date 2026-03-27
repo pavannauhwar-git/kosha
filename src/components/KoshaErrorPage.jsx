@@ -65,11 +65,11 @@ export default function KoshaErrorPage({
             <div className="flex items-center gap-3">
               <KoshaLogo size={42} />
               <div>
-                <p className="text-[11px] font-bold tracking-[0.18em] text-brand">KOSHA</p>
+                <p className="text-caption font-bold tracking-[0.18em] text-brand">KOSHA</p>
                 <p className="text-caption font-medium text-ink-3">Recovery mode</p>
               </div>
             </div>
-            <span className={`rounded-pill border px-2.5 py-1 text-[11px] font-semibold ${toneClass}`}>
+            <span className={`rounded-pill border px-2.5 py-1 text-caption font-semibold ${toneClass}`}>
               {badgeLabel}
             </span>
           </div>
@@ -83,7 +83,7 @@ export default function KoshaErrorPage({
                 <AlertTriangle size={18} />
               </div>
               <div>
-                <h1 className="text-[22px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
+                <h1 className="text-value font-bold leading-tight tracking-tight text-ink">{title}</h1>
                 <p className="mt-1.5 text-label leading-relaxed text-ink-2">{description}</p>
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onPrimary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-[14px] font-semibold text-white transition-all duration-100 active:scale-[0.98]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-label font-semibold text-white transition-all duration-100 active:scale-[0.98]"
             >
               <PrimaryIcon size={16} />
               {primaryLabel}
@@ -104,7 +104,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onSecondary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-[14px] font-semibold text-ink transition-all duration-100 active:scale-[0.98]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-label font-semibold text-ink transition-all duration-100 active:scale-[0.98]"
             >
               <SecondaryIcon size={16} />
               {secondaryLabel}
@@ -115,7 +115,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onTertiary}
-              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-brand transition-all duration-100 active:scale-[0.98]"
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-label font-semibold text-brand transition-all duration-100 active:scale-[0.98]"
             >
               <TertiaryIcon size={16} />
               {tertiaryLabel}
@@ -129,14 +129,14 @@ export default function KoshaErrorPage({
                 <button
                   type="button"
                   onClick={handleCopyDetail}
-                  className="inline-flex items-center gap-1.5 rounded-pill border border-kosha-border bg-white px-2.5 py-1 text-[11px] font-semibold text-ink-2"
+                  className="inline-flex items-center gap-1.5 rounded-pill border border-kosha-border bg-white px-2.5 py-1 text-caption font-semibold text-ink-2"
                 >
                   {copied ? <Check size={12} /> : <Copy size={12} />}
                   {copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
 
-              <pre className="max-h-44 overflow-auto border-t border-kosha-border px-3 py-3 text-[11px] leading-relaxed text-ink-3 whitespace-pre-wrap break-words">
+              <pre className="max-h-44 overflow-auto border-t border-kosha-border px-3 py-3 text-caption leading-relaxed text-ink-3 whitespace-pre-wrap break-words">
                 {normalizedDetail}
               </pre>
             </div>

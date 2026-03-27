@@ -16,7 +16,7 @@ export default function EmptyState({
         </div>
       ) : null}
 
-      <p className="text-[17px] font-bold text-ink mb-2">{title}</p>
+      <p className="text-body font-bold text-ink mb-2">{title}</p>
       <p className="text-label text-ink-3 mb-5 max-w-[240px] leading-relaxed">{description}</p>
 
       {(actionLabel && onAction) || (secondaryLabel && onSecondaryAction) ? (

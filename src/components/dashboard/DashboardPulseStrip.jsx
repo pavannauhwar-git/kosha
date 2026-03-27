@@ -32,10 +32,10 @@ const DashboardPulseStrip = memo(function DashboardPulseStrip({
         {/* Today */}
         <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl
                         bg-kosha-surface border border-kosha-border">
-          <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">
+          <p className="text-micro font-semibold text-ink-4 uppercase tracking-wider">
             Today
           </p>
-          <p className={`text-[13px] font-bold tabular-nums leading-none ${
+          <p className={`text-caption font-bold tabular-nums leading-none ${
             todaySpend > 0 ? 'text-expense-text' : 'text-income-text'
           }`}>
             {todaySpend > 0 ? fmt(todaySpend, true) : 'All clear 🌿'}
@@ -50,10 +50,10 @@ const DashboardPulseStrip = memo(function DashboardPulseStrip({
                        bg-repay-bg border border-repay-border text-left
                        active:opacity-75 transition-opacity"
           >
-            <p className="text-[10px] font-semibold text-repay-text uppercase tracking-wider">
+            <p className="text-micro font-semibold text-repay-text uppercase tracking-wider">
               Bills due
             </p>
-            <p className="text-[13px] font-bold text-repay-text tabular-nums leading-none">
+            <p className="text-caption font-bold text-repay-text tabular-nums leading-none">
               {fmt(totalBillsAmt, true)}
             </p>
           </button>
@@ -62,10 +62,10 @@ const DashboardPulseStrip = memo(function DashboardPulseStrip({
         {/* Contextual insight */}
         <div className="shrink-0 min-w-[140px] max-w-[220px] flex flex-col gap-1 px-3 py-2.5 rounded-2xl
                         bg-kosha-surface-2 border border-kosha-border">
-          <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">
+          <p className="text-micro font-semibold text-ink-4 uppercase tracking-wider">
             Insight
           </p>
-          <p className="text-[12px] font-medium text-ink leading-snug">{insight}</p>
+          <p className="text-caption font-medium text-ink leading-snug">{insight}</p>
           </div>
         </div>
       </div>

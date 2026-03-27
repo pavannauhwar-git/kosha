@@ -138,7 +138,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                 disabled={inviteLoading}
               />
               {inviteMsg && (
-                <p className="text-[11px] px-3 pb-1 text-brand">{inviteMsg}</p>
+                <p className="text-caption px-3 pb-1 text-brand">{inviteMsg}</p>
               )}
 
               <MenuDivider />

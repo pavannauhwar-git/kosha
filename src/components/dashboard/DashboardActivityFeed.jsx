@@ -45,8 +45,8 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
         <div className="list-card">
           <div className="px-4 py-6 text-center">
             <History size={18} className="mx-auto text-ink-4 mb-2" />
-            <p className="text-[13px] text-ink-3">No activity logged yet.</p>
-            <p className="text-[11px] text-ink-4 mt-1">Your edits, deletes, and bill updates will appear here.</p>
+            <p className="text-caption text-ink-3">No activity logged yet.</p>
+            <p className="text-caption text-ink-4 mt-1">Your edits, deletes, and bill updates will appear here.</p>
           </div>
         </div>
       </div>
@@ -71,8 +71,8 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className={`text-[14px] font-semibold ${meta.tone}`}>{meta.label}</p>
-                <p className="text-[11px] text-ink-4">{formatEventTime(evt.created_at)}</p>
+                <p className={`text-caption font-semibold ${meta.tone}`}>{meta.label}</p>
+                <p className="text-caption text-ink-4">{formatEventTime(evt.created_at)}</p>
               </div>
             </div>
           )

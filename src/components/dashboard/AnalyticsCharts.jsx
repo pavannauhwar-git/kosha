@@ -118,18 +118,18 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 
       <div className="mb-3 grid grid-cols-3 gap-2">
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Spent</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(totalSpent, true)}</p>
+          <p className="text-micro text-ink-3">Spent</p>
+          <p className="text-caption font-bold tabular-nums text-expense-text">{fmt(totalSpent, true)}</p>
         </div>
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Net</p>
-          <p className={`text-[12px] font-bold tabular-nums ${totalNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+          <p className="text-micro text-ink-3">Net</p>
+          <p className={`text-caption font-bold tabular-nums ${totalNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
             {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
           </p>
         </div>
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Best month</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">
+          <p className="text-micro text-ink-3">Best month</p>
+          <p className="text-caption font-bold tabular-nums text-ink">
             {bestMonth?.name || '—'}
           </p>
         </div>
@@ -230,16 +230,16 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
 
       <div className="mb-3 grid grid-cols-3 gap-2">
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Positive months</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">{positiveMonths}/{netData.length}</p>
+          <p className="text-micro text-ink-3">Positive months</p>
+          <p className="text-caption font-bold tabular-nums text-ink">{positiveMonths}/{netData.length}</p>
         </div>
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Best month</p>
-          <p className="text-[12px] font-bold tabular-nums text-income-text">{bestMonth?.name || '—'}</p>
+          <p className="text-micro text-ink-3">Best month</p>
+          <p className="text-caption font-bold tabular-nums text-income-text">{bestMonth?.name || '—'}</p>
         </div>
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Weak month</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{worstMonth?.name || '—'}</p>
+          <p className="text-micro text-ink-3">Weak month</p>
+          <p className="text-caption font-bold tabular-nums text-expense-text">{worstMonth?.name || '—'}</p>
         </div>
       </div>
 
@@ -262,7 +262,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      <div className="pt-2 text-[11px] text-ink-3">Monthly net after expenses and investments.</div>
+      <div className="pt-2 text-micro text-ink-3">Monthly net after expenses and investments.</div>
     </div>
   )
 })

@@ -34,12 +34,12 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-[15px] font-medium leading-snug
+        <p className={`text-label font-medium leading-snug
                        ${destructive ? 'text-expense-text' : 'text-ink'}`}>
           {label}
         </p>
         {sublabel && (
-          <p className="text-[12px] text-ink-3 mt-0.5 truncate">{sublabel}</p>
+          <p className="text-caption text-ink-3 mt-0.5 truncate">{sublabel}</p>
         )}
       </div>
       {rightElement && (
@@ -207,7 +207,7 @@ export default function Settings() {
         >
           <ArrowLeft size={16} className="text-ink-2" />
         </button>
-        <h1 className="text-[17px] font-bold text-ink tracking-tight">Account Settings</h1>
+        <h1 className="text-body font-bold text-ink tracking-tight">Account Settings</h1>
       </div>
 
       <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
@@ -226,7 +226,7 @@ export default function Settings() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-[36px] font-bold text-brand">{initial}</span>
+                  <span className="text-hero font-bold text-brand">{initial}</span>
                 )}
               </div>
               {/* Camera badge */}
@@ -243,11 +243,11 @@ export default function Settings() {
               </button>
             </div>
             <div className="text-center">
-              <p className="text-[16px] font-bold text-ink">{displayName}</p>
+              <p className="text-body font-bold text-ink">{displayName}</p>
               <p className="text-caption text-ink-3">{user?.email}</p>
             </div>
             {photoError && (
-              <p className="text-[12px] text-expense-text text-center">{photoError}</p>
+              <p className="text-caption text-expense-text text-center">{photoError}</p>
             )}
           </motion.div>
 
@@ -297,7 +297,7 @@ export default function Settings() {
                 label="Enable reminders"
                 sublabel="Turn reminder notifications on or off"
                 onClick={() => toggleReminderField('enabled')}
-                rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.enabled ? 'ON' : 'OFF'}</span>}
+                rightElement={<span className="text-caption font-semibold">{reminderPrefs.enabled ? 'ON' : 'OFF'}</span>}
               />
               <Divider />
               <SettingRow
@@ -306,7 +306,7 @@ export default function Settings() {
                 sublabel="Daily reminder when bills are near due"
                 onClick={() => toggleReminderField('bill_due')}
                 disabled={!reminderPrefs.enabled}
-                rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.bill_due ? 'ON' : 'OFF'}</span>}
+                rightElement={<span className="text-caption font-semibold">{reminderPrefs.bill_due ? 'ON' : 'OFF'}</span>}
               />
               <Divider />
               <SettingRow
@@ -315,7 +315,7 @@ export default function Settings() {
                 sublabel="Warn when spending runs above month pace"
                 onClick={() => toggleReminderField('spending_pace')}
                 disabled={!reminderPrefs.enabled}
-                rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.spending_pace ? 'ON' : 'OFF'}</span>}
+                rightElement={<span className="text-caption font-semibold">{reminderPrefs.spending_pace ? 'ON' : 'OFF'}</span>}
               />
               <Divider />
               <SettingRow
@@ -323,11 +323,11 @@ export default function Settings() {
                 label="Notification permission"
                 sublabel={`Current: ${notificationPermission}`}
                 onClick={enableNotifications}
-                rightElement={<span className="text-[11px] font-semibold">Request</span>}
+                rightElement={<span className="text-caption font-semibold">Request</span>}
               />
             </div>
             {reminderMsg && (
-              <p className="text-[12px] text-ink-3 mt-2 px-1">{reminderMsg}</p>
+              <p className="text-caption text-ink-3 mt-2 px-1">{reminderMsg}</p>
             )}
           </motion.div>
 
@@ -347,26 +347,26 @@ export default function Settings() {
               />
               <Divider />
               <div className="px-4 py-3 space-y-2">
-                <p className="text-[12px] font-semibold text-ink-3">Recent invites ({pendingInviteCount}/{MAX_ACTIVE_INVITES} active)</p>
+                <p className="text-caption font-semibold text-ink-3">Recent invites ({pendingInviteCount}/{MAX_ACTIVE_INVITES} active)</p>
                 {walletLoading ? (
-                  <p className="text-[12px] text-ink-3">Loading invites…</p>
+                  <p className="text-caption text-ink-3">Loading invites…</p>
                 ) : walletInvites.length === 0 ? (
-                  <p className="text-[12px] text-ink-3">No invite links yet.</p>
+                  <p className="text-caption text-ink-3">No invite links yet.</p>
                 ) : (
                   walletInvites.map((invite) => {
                     const status = inviteStatusLabel(invite)
                     return (
                       <div key={invite.id} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-[11px] text-ink-3">{fmtDate(invite.created_at)}</p>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                          <p className="text-caption text-ink-3">{fmtDate(invite.created_at)}</p>
+                          <span className={`text-micro font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
                             {status}
                           </span>
                         </div>
-                        <p className="text-[11px] text-ink-2 mt-1 truncate">{buildJoinInviteUrl(invite.token)}</p>
+                        <p className="text-caption text-ink-2 mt-1 truncate">{buildJoinInviteUrl(invite.token)}</p>
                         <button
                           type="button"
-                          className="text-[11px] mt-1.5 text-brand font-semibold inline-flex items-center gap-1"
+                          className="text-caption mt-1.5 text-brand font-semibold inline-flex items-center gap-1"
                           onClick={() => { void copyInviteLink(invite.token) }}
                         >
                           <Copy size={12} /> Copy link
@@ -378,7 +378,7 @@ export default function Settings() {
               </div>
             </div>
             {(walletMsg || walletError) && (
-              <p className={`text-[12px] mt-2 px-1 ${walletError ? 'text-expense-text' : 'text-ink-3'}`}>
+              <p className={`text-caption mt-2 px-1 ${walletError ? 'text-expense-text' : 'text-ink-3'}`}>
                 {walletError || walletMsg}
               </p>
             )}

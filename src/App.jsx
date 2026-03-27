@@ -415,8 +415,8 @@ function DesktopSidebar() {
       <div className="flex items-center gap-2.5 px-2 pb-6 pt-2">
         <KoshaLogo size={32} />
         <div>
-          <p className="text-[15px] font-bold text-ink tracking-tight leading-none">Kosha</p>
-          <p className="text-[10px] text-ink-3 font-medium tracking-widest uppercase mt-0.5">Finance</p>
+          <p className="text-label font-bold text-ink tracking-tight leading-none">Kosha</p>
+          <p className="text-micro text-ink-3 font-medium tracking-widest uppercase mt-0.5">Finance</p>
         </div>
       </div>
 
@@ -434,7 +434,7 @@ function DesktopSidebar() {
               style={{ background: isActive ? C.brandContainer : 'transparent' }}
             >
               <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.brand : C.inkMuted} />
-              <span className="text-[14px]" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
+              <span className="text-label" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
                 {item.label}
               </span>
             </button>
@@ -446,7 +446,7 @@ function DesktopSidebar() {
         <div className="flex items-center gap-2.5">
           <ProfileMenu dropUp />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-ink truncate">{displayName}</p>
+            <p className="text-caption font-semibold text-ink truncate">{displayName}</p>
           </div>
         </div>
       </div>

@@ -3,14 +3,6 @@ import { motion } from 'framer-motion'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 
-/**
- * DashboardHeroCard
- *
- * Extracted from Dashboard.jsx to prevent the entire page re-rendering
- * when unrelated data (e.g. recent transactions list) updates.
- *
- * Wrapped in memo: only re-renders when its own props change.
- */
 const DashboardHeroCard = memo(function DashboardHeroCard({
   now,
   runningBalance,
@@ -45,7 +37,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <p className="text-caption font-medium" style={{ color: C.heroLabel }}>
             {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
           </p>
-          <div className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white/70 uppercase tracking-wider">
+          <div className="px-1.5 py-0.5 rounded-full bg-white/10 text-micro font-bold text-white/70 uppercase tracking-wider">
             Tap
           </div>
         </div>
@@ -75,9 +67,9 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
             className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl"
             style={{ background: C.heroStatBg }}
           >
-            <p className="text-[11px] sm:text-caption mb-0.5 truncate"
+            <p className="text-caption mb-0.5 truncate"
               style={{ color: C.heroLabel }}>{s.label}</p>
-            <p className="text-[12px] sm:text-label font-bold text-white tabular-nums truncate">
+            <p className="text-caption font-bold text-white tabular-nums truncate">
               {fmt(s.val)}
             </p>
           </div>

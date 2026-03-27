@@ -1,10 +1,3 @@
-/**
- * AddTransactionSheet.jsx
- *
- * Closes immediately after the DB write succeeds. The optimistic cache update
- * provides instant visual feedback; background invalidation reconciles later.
- */
-
 import { useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, NotePencil, CaretRight, Sparkle } from '@phosphor-icons/react'
@@ -141,7 +134,7 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
         <div className="sheet-handle" />
         <div className="px-4 pb-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[18px] font-bold text-ink">{title}</h3>
+            <h3 className="text-value font-bold text-ink">{title}</h3>
             <button onClick={onClose} className="close-btn">
               <X size={16} className="text-ink-3" />
             </button>
@@ -156,7 +149,7 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
                   style={{ background: cat.bg }}>
                   <CategoryIcon categoryId={cat.id} size={16} />
                 </div>
-                <span className={`flex-1 text-[15px] ${selected === cat.id ? 'text-brand font-medium' : 'text-ink'}`}>
+                <span className={`flex-1 text-label ${selected === cat.id ? 'text-brand font-medium' : 'text-ink'}`}>
                   {cat.label}
                 </span>
                 <span className={`text-lg w-5 text-right ${selected === cat.id ? 'text-brand' : 'invisible'}`}>✓</span>
@@ -184,7 +177,7 @@ function ModePicker({ selected, onSelect, onClose }) {
         <div className="sheet-handle" />
         <div className="px-4 pb-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[18px] font-bold text-ink">Payment Mode</h3>
+            <h3 className="text-value font-bold text-ink">Payment Mode</h3>
             <button onClick={onClose} className="close-btn">
               <X size={16} className="text-ink-3" />
             </button>
@@ -203,7 +196,7 @@ function ModePicker({ selected, onSelect, onClose }) {
                       <Icon size={16} weight="duotone" color={m.color} />
                     </div>
                   )}
-                  <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>
+                  <span className={`flex-1 text-label ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>
                     {m.label}
                   </span>
                   <span className={`text-lg w-5 text-right ${selected === m.id ? 'text-brand' : 'invisible'}`}>✓</span>
@@ -232,7 +225,7 @@ function VehiclePicker({ selected, onSelect, onClose }) {
         <div className="sheet-handle" />
         <div className="px-4 pb-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[18px] font-bold text-ink">Investment Type</h3>
+            <h3 className="text-value font-bold text-ink">Investment Type</h3>
             <button onClick={onClose} className="close-btn">
               <X size={16} className="text-ink-3" />
             </button>
@@ -251,7 +244,7 @@ function VehiclePicker({ selected, onSelect, onClose }) {
                       <Icon size={16} weight="duotone" color={v.color} />
                     </div>
                   )}
-                  <span className={`flex-1 text-[15px] ${selected === v.label ? 'text-brand font-medium' : 'text-ink'}`}>
+                  <span className={`flex-1 text-label ${selected === v.label ? 'text-brand font-medium' : 'text-ink'}`}>
                     {v.label}
                   </span>
                   <span className={`text-lg w-5 text-right ${selected === v.label ? 'text-brand' : 'invisible'}`}>✓</span>
@@ -377,7 +370,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-[20px] font-bold text-ink">
+            <h2 className="text-value font-bold text-ink">
               {editTxn ? 'Edit Transaction' : 'Add Transaction'}
             </h2>
             <div className="flex items-center gap-3">
@@ -420,7 +413,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                              rounded-2xl p-4 min-h-[100px] outline-none focus:ring-2
                              ring-brand/50 resize-none shadow-inner disabled:opacity-50"
                 />
-                <p className="text-[11px] text-ink-4 mt-2 px-2 flex items-center gap-1">
+                <p className="text-caption text-ink-4 mt-2 px-2 flex items-center gap-1">
                   <Sparkle size={12} /> Auto-fills amount, description, category, and mode.
                 </p>
               </motion.div>
@@ -433,7 +426,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <button key={t.id}
                 onClick={() => setType(t.id)}
                 disabled={isSaving}
-                className={`flex-1 py-2 rounded-card text-[13px] font-semibold border transition-all
+                className={`flex-1 py-2 rounded-card text-caption font-semibold border transition-all
                   min-w-0 truncate disabled:opacity-50
                   ${type === t.id
                     ? `${t.bg} ${t.color} border-transparent`
@@ -474,10 +467,10 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
                 <span className="text-brand text-xs font-bold">📅</span>
               </div>
-              <span className="flex-1 text-[15px] text-ink">Date</span>
+              <span className="flex-1 text-label text-ink">Date</span>
               <input type="date" value={date} onChange={e => set('date', e.target.value)}
                 disabled={isSaving}
-                className="text-[15px] text-ink-3 bg-transparent outline-none text-right disabled:opacity-50" />
+                className="text-label text-ink-3 bg-transparent outline-none text-right disabled:opacity-50" />
             </label>
 
             {/* Category */}
@@ -488,9 +481,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 disabled={isSaving}
               >
                 <CategoryIcon categoryId={category} size={16} />
-                <span className="flex-1 text-[15px] text-ink text-left">Category</span>
+                <span className="flex-1 text-label text-ink text-left">Category</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[13px] text-ink-3">{selectedCat?.label}</span>
+                  <span className="text-caption text-ink-3">{selectedCat?.label}</span>
                   <CaretRight size={14} className="text-ink-4" />
                 </div>
               </button>
@@ -517,9 +510,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                     </div>
                   )
                 })()}
-                <span className="flex-1 text-[15px] text-ink text-left">Type of Investment</span>
+                <span className="flex-1 text-label text-ink text-left">Type of Investment</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[13px] text-ink-3">{vehicle}</span>
+                  <span className="text-caption text-ink-3">{vehicle}</span>
                   <CaretRight size={14} className="text-ink-4" />
                 </div>
               </button>
@@ -544,9 +537,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   </div>
                 )
               })()}
-              <span className="flex-1 text-[15px] text-ink text-left">Payment Mode</span>
+              <span className="flex-1 text-label text-ink text-left">Payment Mode</span>
               <div className="flex items-center gap-1">
-                <span className="text-[13px] text-ink-3">{selectedMode?.label}</span>
+                <span className="text-caption text-ink-3">{selectedMode?.label}</span>
                 <CaretRight size={14} className="text-ink-4" />
               </div>
             </button>
@@ -555,8 +548,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <div className="px-4 py-3 border-t border-kosha-border">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[14px] font-medium text-ink">Recurring transaction</p>
-                  <p className="text-[12px] text-ink-3">Auto-generates based on selected frequency.</p>
+                  <p className="text-label font-medium text-ink">Recurring transaction</p>
+                  <p className="text-caption text-ink-3">Auto-generates based on selected frequency.</p>
                 </div>
                 <button
                   type="button"
@@ -603,11 +596,11 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 flex items-center justify-center shrink-0">
                 <NotePencil size={15} className="text-ink-3" />
               </div>
-              <span className="flex-1 text-[15px] text-ink text-left">
+              <span className="flex-1 text-label text-ink text-left">
                 {notes.trim() ? 'Note' : 'Add a note'}
               </span>
               {notes.trim()
-                ? <span className="text-[12px] text-ink-3 max-w-[120px] truncate">{notes.trim()}</span>
+                ? <span className="text-caption text-ink-3 max-w-[120px] truncate">{notes.trim()}</span>
                 : <CaretRight size={14} className={`text-ink-4 transition-transform duration-200 ${showNotes ? 'rotate-90' : ''}`} />
               }
             </button>
@@ -628,7 +621,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                       value={notes}
                       onChange={e => set('notes', e.target.value)}
                       disabled={isSaving}
-                      className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-[14px]
+                      className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-label
                                  text-ink placeholder-ink-4 outline-none resize-none
                                  border border-transparent focus:border-brand-border
                                  transition-colors duration-150 disabled:opacity-50"
@@ -640,7 +633,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           </div>
 
           {/* Error message */}
-          {error && <p className="text-expense-text text-[13px] mb-3 px-1">{error}</p>}
+          {error && <p className="text-expense-text text-caption mb-3 px-1">{error}</p>}
 
           {/*
             Save button — the most important element.
@@ -655,7 +648,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className={`w-full py-4 rounded-card text-[17px] font-semibold flex items-center
+              className={`w-full py-4 rounded-card text-body font-semibold flex items-center
                           justify-center gap-2 transition-all
                           ${isSaving
                             ? 'bg-brand/70 text-white/90 scale-[0.98] cursor-not-allowed'

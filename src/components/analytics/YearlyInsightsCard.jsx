@@ -49,9 +49,9 @@ export default function YearlyInsightsCard({ data, catEntries }) {
         <div className="w-6 h-6 rounded-lg bg-brand flex items-center justify-center shrink-0">
           <Sparkle size={12} className="text-white" weight="fill" />
         </div>
-        <h3 className="text-[13px] font-bold text-ink">Yearly Insights</h3>
+        <h3 className="text-caption font-bold text-ink">Yearly Insights</h3>
       </div>
-      <p className="text-[13px] text-ink-2 leading-relaxed relative">{text}</p>
+      <p className="text-caption text-ink-2 leading-relaxed relative">{text}</p>
     </div>
   )
 }

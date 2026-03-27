@@ -215,7 +215,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
                 : 'border-kosha-border bg-kosha-surface'}`}
           >
             <CategoryIcon categoryId={cat.id} size={16} />
-            <span className="text-[10px] font-medium text-ink-3 text-center leading-tight truncate w-full">
+            <span className="text-micro font-medium text-ink-3 text-center leading-tight truncate w-full">
               {cat.label.split(' ')[0]}
             </span>
           </button>
