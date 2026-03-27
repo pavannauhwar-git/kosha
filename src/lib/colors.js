@@ -52,7 +52,7 @@ export const C = {
   heroAccent:      'rgba(244,255,0,0.78)',
   heroAccentBg:    'rgba(244,255,0,0.22)',
   heroAccentSolid: '#F4FF00',
-  heroLabel:       'rgba(255,255,255,0.55)', // "Total balance" label
+  heroLabel:       'rgba(255,255,255,0.82)', // "Total balance" label
   heroDimmer:      'rgba(255,255,255,0.35)', // "KOSHA" watermark
   heroDivider:     'rgba(255,255,255,0.12)', // horizontal rule
   heroStatBg:      'rgba(255,255,255,0.10)', // Earned/Spent/Invested chips

@@ -1,6 +1,7 @@
 import { CATEGORIES } from '../lib/categories'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { BarChart3 } from 'lucide-react'
 import { CashFlowChart, NetSavingsChart } from '../components/dashboard/AnalyticsCharts'
 import { useYearSummary } from '../hooks/useTransactions'
 import CategorySpendingChart from '../components/CategorySpendingChart'
@@ -282,6 +283,7 @@ export default function Analytics() {
             </>
           ) : (
             <EmptyState
+              Icon={<BarChart3 size={24} className="text-brand" />}
               title={`No data for ${year}`}
               description="This year is empty right now. Add transactions to unlock yearly trends, category intelligence, and YoY comparisons."
               actionLabel={year === currentYear ? 'Add transaction' : 'Go to current year'}
