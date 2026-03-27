@@ -438,11 +438,11 @@ export default function Dashboard() {
           <p className="text-caption text-ink-3">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="text-value font-bold text-ink tracking-tight">
+          <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
           {isBackgroundFetching && (
-            <p className="text-caption text-ink-3 mt-1">Syncing latest data...</p>
+            <p className="text-[11px] text-ink-3 mt-1">Syncing latest data...</p>
           )}
         </motion.div>
 
@@ -465,7 +465,7 @@ export default function Dashboard() {
 
         <motion.div variants={fadeUp}>
           {summaryLoading ? (
-            <div className="card p-4">
+            <div className="card p-3.5">
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="h-3 w-20 rounded-full shimmer opacity-80" />
                 <div className="h-5 w-14 rounded-full shimmer opacity-70" />
@@ -475,10 +475,10 @@ export default function Dashboard() {
             </div>
           ) : (
 
-            <div className="card p-4">
+            <div className="card p-3.5">
               <div className="flex items-center justify-between gap-3 mb-0.5">
                 <p className="section-label">Today focus</p>
-                <span className={`text-micro px-2 py-1 rounded-full font-semibold ${todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
+                <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
                     ? 'bg-warning-bg text-warning-text'
                     : todayFocus.tone === 'good'
                       ? 'bg-income-bg text-income-text'
@@ -488,19 +488,19 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="card-title">{todayFocus.title}</p>
-              <p className="text-caption text-ink-3 mt-1">{todayFocus.detail}</p>
+              <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>
               <div className="grid grid-cols-2 gap-2 mt-2.5">
                 <button
                   type="button"
                   onClick={() => navigate(todayFocus.primaryRoute)}
-                  className="btn-primary h-12 px-4 text-caption justify-center"
+                  className="btn-primary h-12 px-4 text-[12px] justify-center"
                 >
                   {todayFocus.primaryLabel}
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate(todayFocus.secondaryRoute)}
-                  className="btn-secondary h-12 px-4 text-caption justify-center"
+                  className="btn-secondary h-12 px-4 text-[12px] justify-center"
                 >
                   {todayFocus.secondaryLabel}
                 </button>
@@ -510,7 +510,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Quick-action strip ────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="card py-4">
+        <motion.div variants={fadeUp} className="card py-4 px-3">
           <div className="flex justify-between gap-1.5">
             {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
               <button key={label}
@@ -521,7 +521,7 @@ export default function Dashboard() {
                   style={{ color }}>
                   <Icon size={20} strokeWidth={strokeWidth} />
                 </div>
-                <span className="text-caption font-semibold text-ink-3">{label}</span>
+                <span className="text-[11px] font-semibold text-ink-3">{label}</span>
               </button>
             ))}
           </div>
@@ -561,7 +561,7 @@ export default function Dashboard() {
 
         {heavyReady && weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
-            <div className="card p-4">
+            <div className="card p-3.5">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div>
                   <p className="section-label">What changed this week</p>
@@ -580,7 +580,7 @@ export default function Dashboard() {
               </div>
 
               {weeklyDigest.topCategory && (
-                <p className="text-caption text-ink-3 mt-2">
+                <p className="text-[11px] text-ink-3 mt-2">
                   Top spend category this week: <span className="font-semibold text-ink-2">{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
                 </p>
               )}
@@ -591,7 +591,7 @@ export default function Dashboard() {
         {/* ── Investments ───────────────────────────────────────────── */}
         {heavyReady && invested > 0 && (
           <motion.div variants={fadeUp}>
-            <div className="card p-4">
+            <div className="card p-3.5">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-caption text-ink-3 font-medium">Invested this month</p>
                 <div className="flex items-center gap-1.5">
@@ -608,7 +608,7 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
-              <p className="text-value font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
+              <p className="text-[22px] md:text-[24px] font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
             </div>
           </motion.div>
         )}

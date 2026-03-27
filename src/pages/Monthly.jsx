@@ -398,7 +398,7 @@ export default function Monthly() {
               </div>
             </div>
 
-            <p className="text-caption text-ink-3">{monthCloseSummary.message}</p>
+            <p className="text-[11px] text-ink-3">{monthCloseSummary.message}</p>
           </div>
 
           {heavyReady && budgetVariance.hasBudgets && (
@@ -462,19 +462,19 @@ export default function Monthly() {
           )}
 
           {heavyReady && vehicleEntries.length > 0 && (
-            <div className="card p-4">
+            <div className="card p-3.5">
               <div className="flex items-center justify-between mb-2.5">
                 <p className="section-label">Investments</p>
-                <span className="text-caption font-semibold text-invest-text tabular-nums pr-0.5 text-right">
+                <span className="text-[11px] font-semibold text-invest-text tabular-nums pr-0.5 text-right">
                   {fmt(vehicleEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0))}
                 </span>
               </div>
 
               <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
                 {vehicleEntries.map(([vehicle, amt]) => (
-                  <div key={vehicle} className="card p-4 shrink-0 min-w-[150px] sm:min-w-[170px]">
-                    <p className="text-caption text-ink-3 font-medium mb-0.5 truncate">{vehicle}</p>
-                    <p className="text-value leading-tight font-bold text-invest-text tabular-nums whitespace-nowrap pr-0.5">{fmt(amt)}</p>
+                  <div key={vehicle} className="card p-3.5 shrink-0 min-w-[150px] sm:min-w-[170px]">
+                    <p className="text-[11px] text-ink-3 font-medium mb-0.5 truncate">{vehicle}</p>
+                    <p className="text-[18px] sm:text-[20px] leading-tight font-bold text-invest-text tabular-nums whitespace-nowrap pr-0.5">{fmt(amt)}</p>
                   </div>
                 ))}
               </div>
@@ -497,10 +497,10 @@ export default function Monthly() {
                 <div key={item.cta} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className={`text-caption font-semibold ${item.done ? 'text-income-text' : 'text-warning-text'}`}>
+                      <p className={`text-[12px] font-semibold ${item.done ? 'text-income-text' : 'text-warning-text'}`}>
                         {item.done ? 'Complete' : 'Attention needed'}
                       </p>
-                      <p className="text-caption text-ink-2 mt-0.5">{item.label}</p>
+                      <p className="text-[12px] text-ink-2 mt-0.5">{item.label}</p>
                     </div>
                     <button
                       type="button"

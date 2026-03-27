@@ -187,7 +187,7 @@ export default function Analytics() {
                   />
                   <div className="space-y-2">
                     {strategicRecommendations.map((line) => (
-                      <p key={line} className="text-caption text-ink-2 leading-relaxed">
+                      <p key={line} className="text-[12px] text-ink-2 leading-relaxed">
                         - {line}
                       </p>
                     ))}
@@ -218,7 +218,7 @@ export default function Analytics() {
               ) : (
                 <div className="card p-4">
                   <p className="section-label">Spent by Category</p>
-                  <p className="text-caption text-ink-3 mt-1">No spending categories yet for this year.</p>
+                  <p className="text-[12px] text-ink-3 mt-1">No spending categories yet for this year.</p>
                 </div>
               )}
               {top5.length > 0 ? (
@@ -226,7 +226,7 @@ export default function Analytics() {
               ) : (
                 <div className="card p-4">
                   <p className="section-label">Top Expenses {year}</p>
-                  <p className="text-caption text-ink-3 mt-1">No high-spend transactions found for this year yet.</p>
+                  <p className="text-[12px] text-ink-3 mt-1">No high-spend transactions found for this year yet.</p>
                 </div>
               )}
 
@@ -236,7 +236,7 @@ export default function Analytics() {
               ) : (
                 <div className="card p-4">
                   <p className="section-label">Portfolio allocation</p>
-                  <p className="text-caption text-ink-3 mt-1">Add investments to unlock allocation breakdown.</p>
+                  <p className="text-[12px] text-ink-3 mt-1">Add investments to unlock allocation breakdown.</p>
                 </div>
               )}
 
@@ -244,7 +244,7 @@ export default function Analytics() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="section-label">YoY range</p>
-                    <p className="text-caption text-ink-3 mt-0.5">Choose comparison depth</p>
+                    <p className="text-[11px] text-ink-3 mt-0.5">Choose comparison depth</p>
                   </div>
                   <div className="inline-flex rounded-full border border-kosha-border bg-kosha-surface p-1">
                     {[2, 5, 10].map((value) => {
@@ -254,7 +254,7 @@ export default function Analytics() {
                           key={value}
                           type="button"
                           onClick={() => setYoyRange(value)}
-                          className={`px-3 py-1 text-caption font-semibold rounded-full transition-colors ${
+                          className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-colors ${
                             active
                               ? 'bg-brand text-white'
                               : 'text-ink-2 hover:bg-kosha-surface-2'
@@ -276,7 +276,7 @@ export default function Analytics() {
                     <p className="section-label">Year over year trends</p>
                     <span className="text-caption text-ink-3">Preparing</span>
                   </div>
-                  <p className="text-caption text-ink-3">Preparing comparison data...</p>
+                  <p className="text-[12px] text-ink-3">Preparing comparison data...</p>
                 </div>
               )}
             </div>

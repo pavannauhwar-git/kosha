@@ -254,7 +254,7 @@ export default function Guide() {
         >
           <ArrowLeft size={16} className="text-ink-2" />
         </button>
-        <h1 className="text-body font-bold text-ink tracking-tight">Guide</h1>
+        <h1 className="text-[17px] font-bold text-ink tracking-tight">Guide</h1>
       </div>
 
       <div className="px-4 pt-6 pb-24 max-w-[860px] mx-auto">
@@ -278,8 +278,8 @@ export default function Guide() {
 
             <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mt-3.5">
               <div className="flex items-center justify-between gap-3 mb-1.5">
-                <p className="text-caption font-semibold text-ink-2">Guide completion</p>
-                <p className="text-caption font-semibold text-brand">{progressPct}%</p>
+                <p className="text-[12px] font-semibold text-ink-2">Guide completion</p>
+                <p className="text-[11px] font-semibold text-brand">{progressPct}%</p>
               </div>
               <div className="h-2 rounded-pill bg-kosha-border overflow-hidden">
                 <motion.div
@@ -289,7 +289,7 @@ export default function Guide() {
                   transition={{ duration: 0.35, ease: 'easeOut' }}
                 />
               </div>
-              <p className="text-caption text-ink-3 mt-1.5">
+              <p className="text-[11px] text-ink-3 mt-1.5">
                 {viewedCount}/{FEATURE_CARDS.length} feature cards viewed
               </p>
             </div>
@@ -298,14 +298,14 @@ export default function Guide() {
               <button
                 type="button"
                 onClick={() => openFeature(nextFeature.id)}
-                className="btn-primary h-10 px-4 text-caption whitespace-nowrap"
+                className="btn-primary h-10 px-4 text-[12px] whitespace-nowrap"
               >
                 Continue with {nextFeature.title}
               </button>
               <button
                 type="button"
                 onClick={() => navigate(nextFeature.route)}
-                className="btn-secondary h-10 px-4 text-caption whitespace-nowrap"
+                className="btn-secondary h-10 px-4 text-[12px] whitespace-nowrap"
               >
                 Open {nextFeature.title}
               </button>
@@ -342,10 +342,10 @@ export default function Guide() {
             })}
           </div>
           <div className="flex items-center justify-between gap-3 mb-3 px-1">
-            <p className="text-caption text-ink-3">
+            <p className="text-[12px] text-ink-3">
               {activeTab === 'all' ? 'All feature cards' : `${GUIDE_TABS.find((tab) => tab.id === activeTab)?.label || 'Filtered'} cards`}
             </p>
-            <p className="text-caption font-semibold text-ink-2">
+            <p className="text-[12px] font-semibold text-ink-2">
               Viewed {viewedCount}/{FEATURE_CARDS.length}
             </p>
           </div>
@@ -366,19 +366,19 @@ export default function Guide() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-body font-semibold text-ink truncate">{card.title}</p>
-                      <p className="text-caption text-ink-3 mt-0.5 truncate">{card.subtitle}</p>
+                      <p className="text-[12px] text-ink-3 mt-0.5 truncate">{card.subtitle}</p>
                     </div>
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${card.accent}`}>
                       <Icon size={16} />
                     </div>
                   </div>
                   <div className="mt-2 inline-flex items-center gap-1">
-                    <span className={`text-micro px-1.5 py-0.5 rounded-full font-semibold ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface-2 text-ink-3'}`}>
                       {isViewed ? 'Viewed' : 'New'}
                     </span>
                   </div>
                   <p className="text-label text-ink-3 mt-2.5">{card.summary}</p>
-                  <div className="mt-3 inline-flex items-center gap-1 text-caption font-semibold text-brand">
+                  <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
                     Open details <ArrowRight size={13} />
                   </div>
                 </motion.button>
@@ -390,9 +390,9 @@ export default function Guide() {
         <motion.section variants={fadeUp} className="w-full">
           <p className="section-label mb-1.5">Playbook cadence</p>
           <div className="card p-4 space-y-2.5">
-            <p className="text-caption text-ink-2"><span className="font-semibold">Daily:</span> Dashboard pulse + quick capture</p>
-            <p className="text-caption text-ink-2"><span className="font-semibold">Weekly:</span> Bills check + Reconciliation cleanup</p>
-            <p className="text-caption text-ink-2"><span className="font-semibold">Monthly:</span> Analytics review + export backup</p>
+            <p className="text-[13px] text-ink-2"><span className="font-semibold">Daily:</span> Dashboard pulse + quick capture</p>
+            <p className="text-[13px] text-ink-2"><span className="font-semibold">Weekly:</span> Bills check + Reconciliation cleanup</p>
+            <p className="text-[13px] text-ink-2"><span className="font-semibold">Monthly:</span> Analytics review + export backup</p>
           </div>
         </motion.section>
 
@@ -419,13 +419,13 @@ export default function Guide() {
         <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={() => navigate('/')}
-            className="btn-tonal flex-1 py-3 whitespace-nowrap text-caption sm:text-caption"
+            className="btn-tonal flex-1 py-3 whitespace-nowrap text-[12px] sm:text-[13px]"
           >
             <ArrowLeft size={15} /> Back to dashboard
           </button>
           <button
             onClick={() => navigate('/transactions')}
-            className="btn-primary flex-1 py-3 whitespace-nowrap text-caption sm:text-caption"
+            className="btn-primary flex-1 py-3 whitespace-nowrap text-[12px] sm:text-[13px]"
           >
             Open transactions <ArrowRight size={15} />
           </button>
@@ -458,7 +458,7 @@ export default function Guide() {
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <p className="text-body font-semibold text-ink">{selectedFeature.title}</p>
-                    <p className="text-caption text-ink-3 mt-0.5">{selectedFeature.subtitle}</p>
+                    <p className="text-[12px] text-ink-3 mt-0.5">{selectedFeature.subtitle}</p>
                   </div>
                   <button
                     type="button"
@@ -471,13 +471,13 @@ export default function Guide() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                  <p className="text-caption text-ink-3 shrink-0">
+                  <p className="text-[11px] text-ink-3 shrink-0">
                     Card {selectedIndex + 1} of {navigationPool.length}
                   </p>
                   <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto">
                     <button
                       type="button"
-                      className="h-9 px-3 rounded-pill border border-kosha-border bg-kosha-surface text-caption font-semibold text-ink-2 inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="h-9 px-3 rounded-pill border border-kosha-border bg-kosha-surface text-[12px] font-semibold text-ink-2 inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                       onClick={() => moveFeature(-1)}
                       disabled={selectedIndex <= 0}
                     >
@@ -486,7 +486,7 @@ export default function Guide() {
                     </button>
                     <button
                       type="button"
-                      className="h-9 px-3 rounded-pill border border-kosha-border bg-kosha-surface text-caption font-semibold text-ink-2 inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="h-9 px-3 rounded-pill border border-kosha-border bg-kosha-surface text-[12px] font-semibold text-ink-2 inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                       onClick={() => moveFeature(1)}
                       disabled={selectedIndex >= navigationPool.length - 1}
                     >
@@ -497,15 +497,15 @@ export default function Guide() {
                 </div>
 
                 <div className="rounded-card bg-kosha-surface-2 p-3 mb-3">
-                  <p className="text-caption text-ink-2">{selectedFeature.summary}</p>
-                  <p className="text-caption text-ink-3 mt-1">{selectedFeature.whenToUse}</p>
+                  <p className="text-[12px] text-ink-2">{selectedFeature.summary}</p>
+                  <p className="text-[11px] text-ink-3 mt-1">{selectedFeature.whenToUse}</p>
                 </div>
 
                 <div className="mb-3">
-                  <p className="text-caption font-semibold text-ink-2 mb-1.5">Recommended workflow</p>
+                  <p className="text-[12px] font-semibold text-ink-2 mb-1.5">Recommended workflow</p>
                   <div className="space-y-1.5">
                     {selectedFeature.workflow.map((step, idx) => (
-                      <p key={step} className="text-caption text-ink-3">
+                      <p key={step} className="text-[12px] text-ink-3">
                         <span className="font-semibold text-brand">{idx + 1}.</span> {step}
                       </p>
                     ))}
@@ -514,23 +514,23 @@ export default function Guide() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
                   <div className="rounded-card border border-income-border bg-income-bg/30 p-2.5">
-                    <p className="text-caption font-semibold text-income-text mb-1 inline-flex items-center gap-1">
+                    <p className="text-[12px] font-semibold text-income-text mb-1 inline-flex items-center gap-1">
                       <CheckCircle2 size={13} /> Do this
                     </p>
                     <div className="space-y-1">
                       {selectedFeature.doThis.map((point) => (
-                        <p key={point} className="text-caption text-ink-3">- {point}</p>
+                        <p key={point} className="text-[11px] text-ink-3">- {point}</p>
                       ))}
                     </div>
                   </div>
 
                   <div className="rounded-card border border-warning-border bg-warning-bg/35 p-2.5">
-                    <p className="text-caption font-semibold text-warning-text mb-1 inline-flex items-center gap-1">
+                    <p className="text-[12px] font-semibold text-warning-text mb-1 inline-flex items-center gap-1">
                       <AlertCircle size={13} /> Avoid this
                     </p>
                     <div className="space-y-1">
                       {selectedFeature.avoidThis.map((point) => (
-                        <p key={point} className="text-caption text-ink-3">- {point}</p>
+                        <p key={point} className="text-[11px] text-ink-3">- {point}</p>
                       ))}
                     </div>
                   </div>

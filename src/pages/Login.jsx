@@ -186,7 +186,7 @@ export default function Login() {
 
               {/* ── Heading ───────────────────────────────────────────────── */}
               <div className="mb-4">
-                <h1 className="text-display font-bold text-ink tracking-tight leading-tight mb-1.5">
+                <h1 className="text-[26px] font-bold text-ink tracking-tight leading-tight mb-1.5">
                   {mode === 'signin'
                     ? 'Welcome back'
                     : mode === 'signup'

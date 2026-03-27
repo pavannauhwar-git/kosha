@@ -74,10 +74,10 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
       <div className="mb-3.5 space-y-2">
         {cards.map((card) => (
           <div key={card.label} className="px-3 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
-            <p className="text-micro mb-0.5" style={{ color: C.heroLabel }}>{card.label}</p>
+            <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>{card.label}</p>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-caption font-bold text-white tabular-nums">{fmt(card.value)}</p>
-              <p className="text-micro whitespace-nowrap" style={{ color: C.heroLabel }}>
+              <p className="text-[12px] font-bold text-white tabular-nums">{fmt(card.value)}</p>
+              <p className="text-[10px] whitespace-nowrap" style={{ color: C.heroLabel }}>
                 {card.delta.label}
               </p>
             </div>

@@ -56,9 +56,9 @@ function YoYTooltip({ active, payload, label }) {
 
   return (
     <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
-      <p className="text-caption font-semibold text-ink mb-1">{label}</p>
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       {payload.map((row) => (
-        <div key={row.dataKey} className="flex items-center justify-between gap-3 text-caption">
+        <div key={row.dataKey} className="flex items-center justify-between gap-3 text-[11px]">
           <span style={{ color: row.color }}>{row.name}</span>
           <span className="font-semibold text-ink tabular-nums">{fmt(Number(row.value || 0), true)}</span>
         </div>
@@ -121,7 +121,7 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
           <p className="section-label">Year over year trends</p>
           <span className="text-caption text-ink-3">Loading</span>
         </div>
-        <p className="text-caption text-ink-3">Loading yearly comparison...</p>
+        <p className="text-[12px] text-ink-3">Loading yearly comparison...</p>
       </div>
     )
   }
@@ -133,7 +133,7 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
           <p className="section-label">Year over year trends</p>
           <span className="text-caption text-ink-3">No history</span>
         </div>
-        <p className="text-caption text-ink-3">No yearly data available yet for this range.</p>
+        <p className="text-[12px] text-ink-3">No yearly data available yet for this range.</p>
       </div>
     )
   }
@@ -166,8 +166,8 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
       <div className="grid grid-cols-3 gap-2 mb-2.5">
         {deltas.map((row) => (
           <div key={row.label} className="rounded-card border border-kosha-border bg-kosha-surface p-2">
-            <p className="text-micro text-ink-3">{row.label}</p>
-            <p className={`text-caption font-bold tabular-nums ${row.tone}`}>
+            <p className="text-[10px] text-ink-3">{row.label}</p>
+            <p className={`text-[12px] font-bold tabular-nums ${row.tone}`}>
               {row.delta === null
                 ? '—'
                 : `${row.delta > 0 ? '+' : ''}${row.delta}%`}

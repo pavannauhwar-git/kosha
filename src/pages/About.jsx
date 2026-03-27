@@ -21,7 +21,7 @@ const LINKEDIN = 'https://www.linkedin.com/in/pavannauhwar/'
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-caption font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+    <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
       {children}
     </p>
   )
@@ -34,8 +34,8 @@ function CardRow({ icon, label, sublabel, right, onClick, href }) {
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-label font-medium text-ink leading-snug">{label}</p>
-        {sublabel && <p className="text-caption text-ink-3 mt-0.5 truncate">{sublabel}</p>}
+        <p className="text-[15px] font-medium text-ink leading-snug">{label}</p>
+        {sublabel && <p className="text-[12px] text-ink-3 mt-0.5 truncate">{sublabel}</p>}
       </div>
       {right && <div className="shrink-0">{right}</div>}
     </>
@@ -89,7 +89,7 @@ export default function About() {
         >
           <ArrowLeftIcon size={16} className="text-ink-2" />
         </button>
-        <h1 className="text-body font-bold text-ink tracking-tight">About</h1>
+        <h1 className="text-[17px] font-bold text-ink tracking-tight">About</h1>
       </div>
 
       <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
@@ -104,27 +104,27 @@ export default function About() {
               <div className="flex items-center gap-3 mb-3">
                 <KoshaLogo size={42} />
                 <div>
-                  <p className="text-body font-bold text-white leading-tight">Kosha</p>
-                  <p className="text-caption text-white/75">Personal finance, simplified</p>
+                  <p className="text-[17px] font-bold text-white leading-tight">Kosha</p>
+                  <p className="text-[12px] text-white/75">Personal finance, simplified</p>
                 </div>
               </div>
 
-              <p className="text-caption text-white/90 leading-relaxed max-w-[460px]">
+              <p className="text-[13px] text-white/90 leading-relaxed max-w-[460px]">
                 Built for clarity and calm. Kosha helps you capture money movement fast, trust your numbers, and make better decisions without noise.
               </p>
 
               <div className="grid grid-cols-3 gap-2 mt-4">
                 <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
-                  <p className="text-micro text-white/70">Version</p>
-                  <p className="text-caption font-semibold text-white">v{latestVersion}</p>
+                  <p className="text-[10px] text-white/70">Version</p>
+                  <p className="text-[12px] font-semibold text-white">v{latestVersion}</p>
                 </div>
                 <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
-                  <p className="text-micro text-white/70">Releases</p>
-                  <p className="text-caption font-semibold text-white">{releaseCount}</p>
+                  <p className="text-[10px] text-white/70">Releases</p>
+                  <p className="text-[12px] font-semibold text-white">{releaseCount}</p>
                 </div>
                 <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
-                  <p className="text-micro text-white/70">Improvements</p>
-                  <p className="text-caption font-semibold text-white">{shippedItems}+</p>
+                  <p className="text-[10px] text-white/70">Improvements</p>
+                  <p className="text-[12px] font-semibold text-white">{shippedItems}+</p>
                 </div>
               </div>
 
@@ -132,7 +132,7 @@ export default function About() {
                 <button
                   type="button"
                   onClick={() => navigate('/guide')}
-                  className="h-10 px-4 rounded-pill bg-white text-brand text-caption font-semibold whitespace-nowrap"
+                  className="h-10 px-4 rounded-pill bg-white text-brand text-[12px] font-semibold whitespace-nowrap"
                 >
                   Open product guide
                 </button>
@@ -140,7 +140,7 @@ export default function About() {
                   href={REPO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-10 px-4 rounded-pill border border-white/35 text-white text-caption font-semibold inline-flex items-center justify-center whitespace-nowrap"
+                  className="h-10 px-4 rounded-pill border border-white/35 text-white text-[12px] font-semibold inline-flex items-center justify-center whitespace-nowrap"
                 >
                   View GitHub
                 </a>
@@ -151,12 +151,12 @@ export default function About() {
           <motion.div variants={fadeUp}>
             <SectionLabel>Why Kosha</SectionLabel>
             <div className="card p-4">
-              <p className="text-caption text-ink-2 leading-relaxed">
+              <p className="text-[13px] text-ink-2 leading-relaxed">
                 Most finance tools either overwhelm with dashboards or hide the details you need. Kosha is designed to keep both direction and precision in one flow: Dashboard for pulse, Transactions for truth, Reconciliation for trust.
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {['Fast capture', 'Clear insights', 'Privacy first'].map((pill) => (
-                  <span key={pill} className="text-caption font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand-on">
+                  <span key={pill} className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand-on">
                     {pill}
                   </span>
                 ))}
@@ -200,14 +200,14 @@ export default function About() {
                           <StarIcon size={17} weight="duotone" color={C.brand} />
                         </div>
                         <div>
-                          <p className="text-label font-semibold text-ink">
+                          <p className="text-[15px] font-semibold text-ink">
                             v{release.version}
                           </p>
-                          <p className="text-caption text-ink-3 mt-0.5">{release.date}</p>
+                          <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
                         </div>
                       </div>
                       {ri === 0 && (
-                        <span className="text-caption font-semibold px-2.5 py-1 rounded-full
+                        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
                                bg-brand-container text-brand-on">
                           Latest
                         </span>
@@ -218,7 +218,7 @@ export default function About() {
                       {release.items.map((item, i) => (
                         <div key={i} className="flex items-start gap-2.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-brand mt-[6px] shrink-0" />
-                          <p className="text-caption text-ink-2 leading-snug">{item}</p>
+                          <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
                         </div>
                       ))}
                     </div>
@@ -231,7 +231,7 @@ export default function About() {
                   <Divider />
                   <button
                     onClick={() => setShowAllVersions(v => !v)}
-                    className="w-full px-4 py-3 text-caption font-semibold text-brand
+                    className="w-full px-4 py-3 text-[13px] font-semibold text-brand
                                text-center active:bg-kosha-surface-2 transition-colors
                                flex items-center justify-center gap-1.5"
                   >
@@ -253,7 +253,7 @@ export default function About() {
                 <div className="flex flex-wrap gap-2">
                   {['React 18', 'Supabase', 'Tailwind CSS', 'Vite', 'Framer Motion', 'Phosphor Icons'].map(tech => (
                     <span key={tech}
-                      className="text-caption font-medium text-brand bg-brand-container
+                      className="text-[12px] font-medium text-brand bg-brand-container
                                  px-2.5 py-1 rounded-full">
                       {tech}
                     </span>
@@ -285,7 +285,7 @@ export default function About() {
                                 flex items-center justify-center shrink-0 mt-0.5">
                   <LockIcon size={17} weight="duotone" color={C.brand} />
                 </div>
-                <p className="text-caption text-ink-2 leading-relaxed flex-1 pt-1">
+                <p className="text-[13px] text-ink-2 leading-relaxed flex-1 pt-1">
                   Your data lives in your own Supabase instance, protected by
                   row-level security. No analytics, no tracking, no third-party sharing.
                 </p>

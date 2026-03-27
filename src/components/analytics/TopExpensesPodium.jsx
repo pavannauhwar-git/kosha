@@ -24,12 +24,12 @@ export default function TopExpensesPodium({ top5, year }) {
             <div key={rank} className="flex flex-col flex-1 items-center min-w-0">
               <div className="w-full flex flex-col items-center pb-3 px-0.5">
                 <CategoryIcon categoryId={item.category} size={14} />
-                <p className="text-caption font-medium text-ink text-center mt-1.5 leading-tight line-clamp-2">{item.description}</p>
-                <p className="text-caption font-bold text-expense-text tabular-nums mt-1">{fmt(item.amount)}</p>
-                <p className="text-micro text-ink-3 mt-0.5">{fmtDate(item.date)}</p>
+                <p className="text-[11px] font-medium text-ink text-center mt-1.5 leading-tight line-clamp-2">{item.description}</p>
+                <p className="text-[13px] font-bold text-expense-text tabular-nums mt-1">{fmt(item.amount)}</p>
+                <p className="text-[10px] text-ink-3 mt-0.5">{fmtDate(item.date)}</p>
               </div>
               <div className="w-full rounded-t-xl flex items-center justify-center" style={{ height: platformH, background: grad }}>
-                <span className="text-caption font-extrabold" style={{ color: rankColor }}>#{rank}</span>
+                <span className="text-[13px] font-extrabold" style={{ color: rankColor }}>#{rank}</span>
               </div>
             </div>
           ))}

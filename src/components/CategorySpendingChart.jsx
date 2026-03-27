@@ -52,10 +52,10 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
     : null
 
   return (
-    <div className="card p-4">
+    <div className="card p-3.5">
       <div className="flex items-center justify-between gap-3 mb-2.5">
         <p className="section-label">{title}</p>
-        {subtitle && <span className="text-micro text-ink-3 text-right">{subtitle}</span>}
+        {subtitle && <span className="text-[10px] text-ink-3 text-right">{subtitle}</span>}
       </div>
 
       <div className="rounded-card overflow-hidden">
@@ -85,10 +85,10 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="text-caption font-semibold text-ink truncate">
+                  <span className="text-[12px] font-semibold text-ink truncate">
                     {cat?.label || catId}
                   </span>
-                  <span className="text-caption font-semibold tabular-nums shrink-0 text-expense-text">
+                  <span className="text-[12px] font-semibold tabular-nums shrink-0 text-expense-text">
                     {fmt(amt)}
                   </span>
                 </div>
@@ -101,15 +101,15 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
 
                 <div className="mt-1 flex items-center justify-between gap-2">
                   {hasBudget ? (
-                    <p className={`text-micro tabular-nums ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
+                    <p className={`text-[10px] tabular-nums ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
                       {fmt(amt)} / {fmt(budget)}
                     </p>
                   ) : (
-                    <p className="text-micro text-ink-4">{Math.round((amt / total) * 100)}% of total</p>
+                    <p className="text-[10px] text-ink-4">{Math.round((amt / total) * 100)}% of total</p>
                   )}
 
                   {hasBudget ? (
-                    <span className={`text-micro font-semibold shrink-0 ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
+                    <span className={`text-[10px] font-semibold shrink-0 ${overBudget ? 'text-expense-text' : 'text-ink-3'}`}>
                       {overBudget
                         ? `+${fmt(Math.abs(remaining))} over`
                         : `${fmt(remaining)} left`}
@@ -118,7 +118,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
                 </div>
 
                 {hasBudget && pacePct !== null && barPct > pacePct && !overBudget && (
-                  <p className="text-micro text-warning-text mt-0.5 font-medium text-right tracking-tight">
+                  <p className="text-[9px] text-warning-text mt-0.5 font-medium text-right tracking-tight">
                     {barPct - pacePct}% ahead of pace
                   </p>
                 )}

@@ -61,7 +61,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
             exit={{ y: 60, opacity: 0, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-value font-bold text-ink">Edit Display Name</h2>
+              <h2 className="text-[18px] font-bold text-ink">Edit Display Name</h2>
               <button onClick={saving ? undefined : onClose} className="close-btn" disabled={saving}>
                 <X size={16} className="text-ink-3" />
               </button>

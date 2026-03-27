@@ -12,7 +12,7 @@ export default {
         'kosha-border':        '#C4CFFF',
         'kosha-border-strong': '#6C83FF',
 
-        // ── Brand ─────────────────────
+        // ── Brand — Periwinkle Violet + Lime Yellow ─────────────────────
         'brand':           '#243BAF',
         'brand-dark':      '#1B2D85',
         'brand-mid':       '#3D5AFE',
@@ -51,7 +51,7 @@ export default {
         'warning-border': '#FDE68A',
         'warning-text':   '#B45309',
 
-        // ── Ink ──────────────────────────────────
+        // ── Ink — indigo-tinted neutrals ──────────────────────────────────
         'ink':   '#1F255F',
         'ink-2': '#313A86',
         'ink-3': '#6E75A8',
@@ -70,7 +70,6 @@ export default {
       },
 
       fontSize: {
-        'micro':  ['10px', { lineHeight: '1.4',  letterSpacing: '0.02em'  }],
         'caption': ['12px', { lineHeight: '1.4',  letterSpacing: '0.01em'  }],
         'label':   ['14px', { lineHeight: '1.4',  letterSpacing: '0em'     }],
         'body':    ['16px', { lineHeight: '1.5',  letterSpacing: '0em'     }],

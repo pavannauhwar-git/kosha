@@ -241,7 +241,7 @@ export default function ReportBug() {
           <div className="w-7 h-7 rounded-chip bg-brand-container flex items-center justify-center">
             <Bug size={14} className="text-brand" />
           </div>
-          <h1 className="text-body font-bold text-ink tracking-tight">Report Bug</h1>
+          <h1 className="text-[17px] font-bold text-ink tracking-tight">Report Bug</h1>
         </div>
 
         <button
@@ -267,7 +267,7 @@ export default function ReportBug() {
               <div className="w-11 h-11 rounded-pill bg-income-bg text-income-text border border-income-border flex items-center justify-center mb-3">
                 <Check size={18} />
               </div>
-              <h2 className="text-value leading-tight font-bold text-ink tracking-tight">
+              <h2 className="text-[22px] leading-tight font-bold text-ink tracking-tight">
                 {submitted.isDuplicate ? 'Matched an existing report' : 'Report submitted'}
               </h2>
               <p className="text-label text-ink-2 mt-2">
@@ -279,11 +279,11 @@ export default function ReportBug() {
               <div className="mt-4 card-inset p-3 border border-kosha-border">
                 <p className="text-caption text-ink-3">Reference</p>
                 <div className="mt-1.5 flex items-center justify-between gap-2">
-                  <p className="font-mono text-caption text-ink">#{submitted.id}</p>
+                  <p className="font-mono text-[13px] text-ink">#{submitted.id}</p>
                   <button
                     type="button"
                     onClick={handleCopyReference}
-                    className="px-2.5 py-1 rounded-pill border border-kosha-border bg-white text-caption font-semibold text-ink"
+                    className="px-2.5 py-1 rounded-pill border border-kosha-border bg-white text-[11px] font-semibold text-ink"
                   >
                     {copiedRef ? 'Copied' : 'Copy ID'}
                   </button>
@@ -294,14 +294,14 @@ export default function ReportBug() {
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-label font-semibold text-ink"
+                  className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-[14px] font-semibold text-ink"
                 >
                   Done
                 </button>
                 <button
                   type="button"
                   onClick={goDashboard}
-                  className="py-3 rounded-card bg-brand text-white text-label font-semibold"
+                  className="py-3 rounded-card bg-brand text-white text-[14px] font-semibold"
                 >
                   Go to dashboard
                 </button>
@@ -315,7 +315,7 @@ export default function ReportBug() {
                   Share what broke, what you expected, and a screenshot if possible. No financial entries are attached automatically.
                 </p>
                 {displayReportedScreen && (
-                  <p className="text-caption text-ink-3 mt-3">
+                  <p className="text-[11px] text-ink-3 mt-3">
                     Reported screen: <span className="font-mono text-ink-2">{displayReportedScreen}</span>
                   </p>
                 )}
@@ -364,7 +364,7 @@ export default function ReportBug() {
                     {parsedTags.map(tag => (
                       <span
                         key={tag}
-                        className="text-caption font-semibold text-brand-on bg-brand-container px-2 py-0.5 rounded-pill"
+                        className="text-[11px] font-semibold text-brand-on bg-brand-container px-2 py-0.5 rounded-pill"
                       >
                         {tag}
                       </span>
@@ -375,13 +375,13 @@ export default function ReportBug() {
                 <div className="card-inset p-3 border border-kosha-border">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-caption font-semibold text-ink">Screenshot (optional)</p>
+                      <p className="text-[13px] font-semibold text-ink">Screenshot (optional)</p>
                       {screenshot ? (
-                        <p className="text-caption text-ink-3 truncate">
+                        <p className="text-[11px] text-ink-3 truncate">
                           {screenshot.name} · {fileSizeLabel(screenshot.size)}
                         </p>
                       ) : (
-                        <p className="text-caption text-ink-3">Attach a screenshot to speed up triage.</p>
+                        <p className="text-[11px] text-ink-3">Attach a screenshot to speed up triage.</p>
                       )}
                     </div>
                     <label className="shrink-0 px-3 py-1.5 rounded-pill border border-kosha-border bg-kosha-surface text-label font-semibold text-ink cursor-pointer">
@@ -398,7 +398,7 @@ export default function ReportBug() {
                     <button
                       type="button"
                       onClick={() => setScreenshot(null)}
-                      className="mt-2 text-caption font-semibold text-expense-text"
+                      className="mt-2 text-[11px] font-semibold text-expense-text"
                     >
                       Remove screenshot
                     </button>
@@ -429,7 +429,7 @@ export default function ReportBug() {
                   onClick={() => setIncludeDiagnostics(v => !v)}
                   className="w-full flex items-center justify-between px-3 py-2.5 rounded-card border border-kosha-border bg-kosha-surface"
                 >
-                  <span className="text-label font-medium text-ink">Include diagnostics</span>
+                  <span className="text-[14px] font-medium text-ink">Include diagnostics</span>
                   <span className={`text-caption font-semibold px-2 py-0.5 rounded-pill
                     ${includeDiagnostics
                       ? 'bg-brand-container text-brand-on'
@@ -438,7 +438,7 @@ export default function ReportBug() {
                   </span>
                 </button>
 
-                <p className="text-caption text-ink-3 -mt-1">
+                <p className="text-[11px] text-ink-3 -mt-1">
                   Adds route, browser, device, and app version. No financial entries are attached.
                 </p>
 
@@ -459,7 +459,7 @@ export default function ReportBug() {
             <button
               type="button"
               onClick={goDashboard}
-              className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-label font-semibold text-ink"
+              className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-[14px] font-semibold text-ink"
             >
               Go to dashboard
             </button>
@@ -469,7 +469,7 @@ export default function ReportBug() {
                 type="submit"
                 form="report-bug-form"
                 disabled={saving}
-                className={`py-3 rounded-card text-label font-semibold transition-all
+                className={`py-3 rounded-card text-[14px] font-semibold transition-all
                   ${saving
                     ? 'bg-brand/70 text-white/90 scale-[0.98]'
                     : 'bg-brand text-white active:scale-[0.98]'}`}
@@ -480,7 +480,7 @@ export default function ReportBug() {
               <button
                 type="button"
                 onClick={() => navigate('/login', { state: { from: '/report-bug' } })}
-                className="inline-flex items-center justify-center gap-2 py-3 rounded-card bg-brand text-white text-label font-semibold"
+                className="inline-flex items-center justify-center gap-2 py-3 rounded-card bg-brand text-white text-[14px] font-semibold"
               >
                 <LogIn size={15} />
                 Sign in to report

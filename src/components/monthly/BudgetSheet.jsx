@@ -53,7 +53,7 @@ export default function BudgetSheet({ cat, current, onSave, onRemove, onClose })
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <CategoryIcon categoryId={cat.id} size={18} />
-              <h2 className="text-value font-bold text-ink">{cat.label} Budget</h2>
+              <h2 className="text-[20px] font-bold text-ink">{cat.label} Budget</h2>
             </div>
             <button onClick={saving ? undefined : onClose} className="close-btn" disabled={saving}>
               <X size={16} className="text-ink-3" />
@@ -79,7 +79,7 @@ export default function BudgetSheet({ cat, current, onSave, onRemove, onClose })
           <button
             onClick={handleSave}
             disabled={saving || !value || +value <= 0}
-            className="w-full py-4 rounded-card text-body font-semibold bg-brand text-white
+            className="w-full py-4 rounded-card text-[17px] font-semibold bg-brand text-white
                        active:scale-[0.98] disabled:opacity-40 transition-all mb-3"
           >
             {saving ? 'Saving…' : current ? 'Update Budget' : 'Set Budget'}
@@ -89,7 +89,7 @@ export default function BudgetSheet({ cat, current, onSave, onRemove, onClose })
             <button
               onClick={handleRemove}
               disabled={saving}
-              className="w-full py-3 rounded-card text-label font-semibold
+              className="w-full py-3 rounded-card text-[15px] font-semibold
                          bg-expense-bg text-expense-text border border-expense-border
                          active:scale-[0.98] disabled:opacity-40 transition-all"
             >

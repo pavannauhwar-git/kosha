@@ -180,11 +180,11 @@
 
   /* -- Section label ───────────────────────────────────────────────── */
   .section-label {
-    @apply text-micro font-semibold text-ink-3 tracking-tight leading-none;
+    @apply text-[10.5px] font-semibold text-ink-3 tracking-tight leading-none;
   }
 
   .card-title {
-    @apply text-label font-semibold text-ink;
+    @apply text-[13px] font-semibold text-ink;
   }
 
   /* -- Type chips ──────────────────────────────────────────────────── */
@@ -209,7 +209,7 @@
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3 rounded-pill text-caption font-semibold border transition-all duration-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3 rounded-pill text-[11px] font-semibold border transition-all duration-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
   }
 
   .chip-control-muted {
@@ -221,7 +221,7 @@
   }
 
   .chip-control-sm {
-    @apply h-8 px-2.5 text-micro gap-1;
+    @apply h-8 px-2.5 text-[10.5px] gap-1;
   }
 
   /* -- Amount colours ──────────────────────────────────────────────── */
@@ -263,7 +263,7 @@
   }
 
   .btn-secondary-sm {
-    @apply btn-secondary h-8 px-3 text-caption font-semibold;
+    @apply btn-secondary h-8 px-3 text-[11px] font-semibold;
   }
 
   .btn-danger {
@@ -556,7 +556,7 @@
   }
 
   .section-label {
-    font-size: 10px;
+    font-size: 10.5px;
   }
 
   .card-title {
@@ -567,7 +567,7 @@
     height: 2.1rem;
     padding-left: 0.65rem;
     padding-right: 0.65rem;
-    font-size: 10px;
+    font-size: 10.5px;
     gap: 0.25rem;
   }
 
