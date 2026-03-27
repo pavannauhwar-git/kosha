@@ -1,6 +1,14 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 
+/**
+ * DashboardPaceCard
+ *
+ * Shows the monthly spending pace — two progress bars comparing
+ * "days elapsed" vs "budget consumed". Extracted from Dashboard.jsx
+ * so it only re-renders when month summary data changes, not when
+ * the recent transaction list or running balance updates.
+ */
 const DashboardPaceCard = memo(function DashboardPaceCard({
   dayOfMonth,
   daysInMonth,
@@ -28,7 +36,7 @@ const DashboardPaceCard = memo(function DashboardPaceCard({
             <span className="text-caption text-ink-3">Month elapsed</span>
             <span className="text-caption font-semibold text-ink">{dayPct}%</span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE5F8' }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FF' }}>
             <motion.div className="h-full rounded-full bg-income"
               initial={{ width: 0 }}
               animate={{ width: `${dayPct}%` }}
@@ -46,7 +54,7 @@ const DashboardPaceCard = memo(function DashboardPaceCard({
               {spendPct}%
             </span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE5F8' }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FF' }}>
             <motion.div className="h-full rounded-full bg-expense"
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(spendPct, 100)}%` }}

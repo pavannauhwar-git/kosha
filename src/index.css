@@ -64,44 +64,44 @@
        Keep in sync with src/lib/colors.js and tailwind.config.js
     ───────────────────────────────────────────────────────────────── */
 
-    /* Brand */
-    --c-brand: #4B0082;
-    --c-brand-mid: #7928CA;
-    --c-brand-container: #E8E5F8;
-    --c-brand-border: #D4C0E4;
-    --c-brand-rgb: 75, 0, 130;
+    /* Brand — Periwinkle Violet */
+    --c-brand: #243BAF;
+    --c-brand-mid: #3D5AFE;
+    --c-brand-container: #E8EDFF;
+    --c-brand-border: #C4CFFF;
+    --c-brand-rgb: 36, 59, 175;
     /* used in rgba() calls */
-    --c-brand-mid-rgb: 121, 40, 202;
+    --c-brand-mid-rgb: 61, 90, 254;
     /* used in rgba() calls */
 
-    /* Accent */
-    --c-accent: #CCFF00;
-    --c-accent-rgb: 204, 255, 0;
+    /* Accent — Lime Yellow (on dark bg only) */
+    --c-accent: #F4FF00;
+    --c-accent-rgb: 244, 255, 0;
     /* used in rgba() calls */
 
     /* Semantics */
     --c-income: #059669;
-    --c-invest-text: #0369a1;
+    --c-invest-text: #7F2A52;
     /* text on invest-bg */
     --c-expense: #E11D48;
     --c-expense-bright: #E11D48;
     --c-warning: #CA8A04;
 
     /* Ink */
-    --c-ink-muted: #756496;
+    --c-ink-muted: #6E75A8;
 
     /* Hero card overlays */
-    --c-hero-accent: rgba(204, 255, 0, 0.85);
-    --c-hero-accent-bg: rgba(204, 255, 0, 0.22);
-    --c-hero-accent-fill: rgba(204, 255, 0, 0.85);
+    --c-hero-accent: rgba(244, 255, 0, 0.78);
+    --c-hero-accent-bg: rgba(244, 255, 0, 0.22);
+    --c-hero-accent-fill: rgba(244, 255, 0, 0.78);
     --c-hero-label: rgba(255, 255, 255, 0.55);
     --c-hero-dimmer: rgba(255, 255, 255, 0.35);
     --c-hero-divider: rgba(255, 255, 255, 0.12);
     --c-hero-stat-bg: rgba(255, 255, 255, 0.10);
 
     /* Shimmer animation colors */
-    --c-shimmer-1: #F3EFFF;
-    --c-shimmer-2: #E7DFFF;
+    --c-shimmer-1: #F3F4FF;
+    --c-shimmer-2: #E7EAFF;
 
     /* Motion timing scale */
     --motion-fast: 90ms;
@@ -130,7 +130,7 @@
   /* -- Cards ───────────────────────────────────────────────────────── */
   .card {
     @apply bg-kosha-surface rounded-card shadow-card;
-    border: 0.5px solid rgba(30, 21, 51, 0.06);
+    border: 0.5px solid rgba(18, 28, 74, 0.06);
   }
 
   .page-stack {
@@ -319,7 +319,7 @@
     gap: 0;
     padding: 9px 12px;
     border-radius: 24px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,244,255,0.94) 100%);
+    background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,248,255,0.94) 100%);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow:
@@ -415,8 +415,8 @@
     margin-left: auto;
     margin-right: auto;
     max-width: 560px;
-    box-shadow: 0 -4px 28px rgba(30, 21, 51, 0.14);
-    border-top: 0.5px solid rgba(30, 21, 51, 0.08);
+    box-shadow: 0 -4px 28px rgba(18, 28, 74, 0.14);
+    border-top: 0.5px solid rgba(18, 28, 74, 0.08);
     border-radius: 20px 20px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     max-height: calc(100dvh - var(--safe-top) - 0.5rem);
