@@ -171,6 +171,73 @@ export default function About() {
               <CardRow
                 icon={<CodeIcon size={17} weight="duotone" color={C.brand} />}
 
+                return (
+                  <div className="min-h-dvh bg-gradient-to-br from-kosha-bg via-white to-brand/10">
+                    {/* Sticky header */}
+                    <div
+                      className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
+                      style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
+                    >
+                      <button
+                        onClick={() => navigate(-1)}
+                        className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center active:bg-kosha-surface-2"
+                      >
+                        <ArrowLeftIcon size={16} className="text-ink-2" />
+                      </button>
+                      <h1 className="text-[17px] font-bold text-ink tracking-tight">About</h1>
+                    </div>
+
+                    <div className="px-4 pt-8 pb-24 max-w-[820px] mx-auto">
+                      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-10">
+                        {/* Modern split hero */}
+                        <motion.div variants={fadeUp} className="flex flex-col md:flex-row items-center md:items-stretch gap-8 bg-white rounded-3xl shadow-xl p-0 overflow-hidden border border-kosha-border">
+                          <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-brand/10 to-white p-8 md:p-12">
+                            <KoshaLogo size={60} />
+                            <h2 className="mt-4 text-3xl font-extrabold text-brand tracking-tight leading-tight">Kosha</h2>
+                            <p className="mt-2 text-lg text-ink-3 font-medium">Personal finance, simplified</p>
+                            <div className="flex gap-3 mt-6">
+                              <span className="inline-block bg-brand-container text-brand-on text-xs font-semibold px-3 py-1 rounded-full">v{latestVersion}</span>
+                              <span className="inline-block bg-kosha-surface-2 text-ink-3 text-xs font-semibold px-3 py-1 rounded-full">{releaseCount} releases</span>
+                              <span className="inline-block bg-kosha-surface-2 text-ink-3 text-xs font-semibold px-3 py-1 rounded-full">{shippedItems}+ improvements</span>
+                            </div>
+                            <div className="flex gap-2 mt-6">
+                              <button
+                                type="button"
+                                onClick={() => navigate('/guide')}
+                                className="h-10 px-5 rounded-full bg-brand text-white text-sm font-semibold shadow hover:bg-brand/90 transition"
+                              >
+                                Product Guide
+                              </button>
+                              <a
+                                href={REPO_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="h-10 px-5 rounded-full border border-brand text-brand text-sm font-semibold shadow hover:bg-brand/10 transition flex items-center"
+                              >
+                                GitHub
+                              </a>
+                            </div>
+                          </div>
+                          <div className="flex-1 flex flex-col justify-center p-8 md:p-12 bg-gradient-to-br from-white to-brand/5">
+                            <h3 className="text-2xl font-bold text-ink mb-2">A tool for clarity and calm</h3>
+                            <p className="text-base text-ink-2 leading-relaxed mb-4">
+                              Kosha is designed for people who want to understand their money without the noise. Fast capture, clear insights, and privacy-first by design. No ads, no tracking, just your numbers—yours to trust.
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {['Clarity', 'Speed', 'Privacy', 'Open Source'].map((pill) => (
+                                <span key={pill} className="text-xs font-semibold px-3 py-1 rounded-full bg-brand-container text-brand-on">
+                                  {pill}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                              <CodeIcon size={18} weight="duotone" color={C.brand} />
+                              <span className="text-sm text-ink-3">by Pavan Kumar Nauhwar</span>
+                              <a href={LINKEDIN} target="_blank" rel="noopener noreferrer" className="ml-2 text-brand underline text-xs">LinkedIn</a>
+                            </div>
+                          </div>
+                        </motion.div>
+
                         {/* Why Kosha */}
                         <motion.div variants={fadeUp}>
                           <SectionLabel>Why Kosha</SectionLabel>
