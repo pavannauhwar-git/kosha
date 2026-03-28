@@ -259,53 +259,43 @@ export default function Guide() {
 
       <div className="px-4 pt-6 pb-24 max-w-[860px] mx-auto">
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5 max-w-[760px] mx-auto">
-        <motion.div variants={fadeUp} className="card p-4 md:p-5 relative overflow-hidden">
-          <div className="absolute -right-8 -top-10 w-28 h-28 rounded-full bg-brand/10 blur-2xl" />
-          <div className="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-brand/10 blur-2xl" />
-
-          <div className="relative z-[1]">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
-                <BookOpen size={18} className="text-brand" />
-              </div>
-              <div>
-                <p className="text-body font-semibold text-ink">Kosha Guide</p>
-                <p className="text-label text-ink-3 mt-1">
-                  Explore each page with practical workflows, common mistakes to avoid, and fast next actions.
-                </p>
-              </div>
+        {/* Minimalist upper card */}
+        <motion.div variants={fadeUp} className="rounded-2xl border border-kosha-border bg-white/80 shadow-none p-0 flex flex-col md:flex-row items-center gap-0 overflow-hidden">
+          <div className="flex items-center gap-3 px-6 py-6 md:py-8 md:px-10 w-full md:w-auto">
+            <div className="w-10 h-10 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
+              <BookOpen size={18} className="text-brand" />
             </div>
-
-            <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mt-3.5">
-              <div className="flex items-center justify-between gap-3 mb-1.5">
-                <p className="text-[12px] font-semibold text-ink-2">Guide completion</p>
-                <p className="text-[11px] font-semibold text-brand">{progressPct}%</p>
-              </div>
-              <div className="h-2 rounded-pill bg-kosha-border overflow-hidden">
-                <motion.div
-                  className="h-full rounded-pill bg-brand"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.35, ease: 'easeOut' }}
-                />
-              </div>
-              <p className="text-[11px] text-ink-3 mt-1.5">
-                {viewedCount}/{FEATURE_CARDS.length} feature cards viewed
-              </p>
+            <div>
+              <p className="text-lg font-semibold text-ink mb-0.5">Kosha Guide</p>
+              <p className="text-sm text-ink-3">Minimal workflows, fewer mistakes, faster actions.</p>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+          </div>
+          <div className="flex-1 flex flex-col items-end justify-center px-6 py-4 md:py-8 md:px-10 border-t md:border-t-0 md:border-l border-kosha-border/60 w-full md:w-auto">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-semibold text-ink-2">Guide completion</span>
+              <span className="text-xs font-semibold text-brand">{progressPct}%</span>
+            </div>
+            <div className="h-2 w-full md:w-40 rounded-pill bg-kosha-border overflow-hidden">
+              <motion.div
+                className="h-full rounded-pill bg-brand"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              />
+            </div>
+            <span className="text-[11px] text-ink-3 mt-1">{viewedCount}/{FEATURE_CARDS.length} viewed</span>
+            <div className="flex gap-2 mt-3">
               <button
                 type="button"
                 onClick={() => openFeature(nextFeature.id)}
-                className="btn-primary h-10 px-4 text-[12px] whitespace-nowrap"
+                className="btn-primary h-9 px-4 text-xs whitespace-nowrap"
               >
-                Continue with {nextFeature.title}
+                Continue: {nextFeature.title}
               </button>
               <button
                 type="button"
                 onClick={() => navigate(nextFeature.route)}
-                className="btn-secondary h-10 px-4 text-[12px] whitespace-nowrap"
+                className="btn-secondary h-9 px-4 text-xs whitespace-nowrap"
               >
                 Open {nextFeature.title}
               </button>
@@ -342,10 +332,10 @@ export default function Guide() {
             })}
           </div>
           <div className="flex items-center justify-between gap-3 mb-3 px-1">
-            <p className="text-[12px] text-ink-3">
+            <p className="text-xs text-ink-3">
               {activeTab === 'all' ? 'All feature cards' : `${GUIDE_TABS.find((tab) => tab.id === activeTab)?.label || 'Filtered'} cards`}
             </p>
-            <p className="text-[12px] font-semibold text-ink-2">
+            <p className="text-xs font-semibold text-ink-2">
               Viewed {viewedCount}/{FEATURE_CARDS.length}
             </p>
           </div>
@@ -361,12 +351,12 @@ export default function Guide() {
                   whileTap={{ scale: 0.985 }}
                   transition={{ duration: 0.1 }}
                   onClick={() => openFeature(card.id)}
-                  className="card p-4 text-left"
+                  className="card p-3 text-left bg-white border border-kosha-border/60 shadow-none"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-body font-semibold text-ink truncate">{card.title}</p>
-                      <p className="text-[12px] text-ink-3 mt-0.5 truncate">{card.subtitle}</p>
+                      <p className="text-[15px] font-semibold text-ink truncate">{card.title}</p>
+                      <p className="text-xs text-ink-3 mt-0.5 truncate">{card.subtitle}</p>
                     </div>
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${card.accent}`}>
                       <Icon size={16} />
@@ -377,8 +367,8 @@ export default function Guide() {
                       {isViewed ? 'Viewed' : 'New'}
                     </span>
                   </div>
-                  <p className="text-label text-ink-3 mt-2.5">{card.summary}</p>
-                  <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
+                  <p className="text-xs text-ink-3 mt-2.5">{card.summary}</p>
+                  <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand">
                     Open details <ArrowRight size={13} />
                   </div>
                 </motion.button>

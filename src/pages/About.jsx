@@ -170,78 +170,231 @@ export default function About() {
             <div className="card overflow-hidden p-0">
               <CardRow
                 icon={<CodeIcon size={17} weight="duotone" color={C.brand} />}
-                label="Pavan Kumar Nauhwar"
-                sublabel="Developer · India"
-                href={LINKEDIN}
-                right={
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke={C.inkMuted} strokeWidth="2">
-                    <polyline points="9,18 15,12 9,6" />
-                  </svg>
-                }
-              />
-            </div>
-          </motion.div>
 
-          {/* ── What's New ────────────────────────────────────────── */}
-          <motion.div variants={fadeUp}>
-            <SectionLabel>What's new</SectionLabel>
-            <div className="card overflow-hidden p-0">
-
-              {CHANGELOG
-                .slice(0, showAllVersions ? CHANGELOG.length : 1)
-                .map((release, ri) => (
-                  <div key={release.version}>
-                    {ri > 0 && <Divider />}
-                    <div className="flex items-center justify-between px-4 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-chip bg-brand-container
-                              flex items-center justify-center shrink-0">
-                          <StarIcon size={17} weight="duotone" color={C.brand} />
-                        </div>
-                        <div>
-                          <p className="text-[15px] font-semibold text-ink">
-                            v{release.version}
-                          </p>
-                          <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
-                        </div>
-                      </div>
-                      {ri === 0 && (
-                        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
-                               bg-brand-container text-brand-on">
-                          Latest
-                        </span>
-                      )}
+                return (
+                  <div className="min-h-dvh bg-gradient-to-br from-kosha-bg via-white to-brand/10">
+                    {/* Sticky header */}
+                    <div
+                      className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
+                      style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
+                    >
+                      <button
+                        onClick={() => navigate(-1)}
+                        className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center active:bg-kosha-surface-2"
+                      >
+                        <ArrowLeftIcon size={16} className="text-ink-2" />
+                      </button>
+                      <h1 className="text-[17px] font-bold text-ink tracking-tight">About</h1>
                     </div>
-                    <Divider />
-                    <div className="px-4 py-3.5 space-y-2.5">
-                      {release.items.map((item, i) => (
-                        <div key={i} className="flex items-start gap-2.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-brand mt-[6px] shrink-0" />
-                          <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
-                        </div>
-                      ))}
+
+                    <div className="px-4 pt-8 pb-24 max-w-[820px] mx-auto">
+                      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-10">
+                        {/* Modern split hero */}
+                        <motion.div variants={fadeUp} className="flex flex-col md:flex-row items-center md:items-stretch gap-8 bg-white rounded-3xl shadow-xl p-0 overflow-hidden border border-kosha-border">
+                          <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-brand/10 to-white p-8 md:p-12">
+                            <KoshaLogo size={60} />
+                            <h2 className="mt-4 text-3xl font-extrabold text-brand tracking-tight leading-tight">Kosha</h2>
+                            <p className="mt-2 text-lg text-ink-3 font-medium">Personal finance, simplified</p>
+                            <div className="flex gap-3 mt-6">
+                              <span className="inline-block bg-brand-container text-brand-on text-xs font-semibold px-3 py-1 rounded-full">v{latestVersion}</span>
+                              <span className="inline-block bg-kosha-surface-2 text-ink-3 text-xs font-semibold px-3 py-1 rounded-full">{releaseCount} releases</span>
+                              <span className="inline-block bg-kosha-surface-2 text-ink-3 text-xs font-semibold px-3 py-1 rounded-full">{shippedItems}+ improvements</span>
+                            </div>
+                            <div className="flex gap-2 mt-6">
+                              <button
+                                type="button"
+                                onClick={() => navigate('/guide')}
+                                className="h-10 px-5 rounded-full bg-brand text-white text-sm font-semibold shadow hover:bg-brand/90 transition"
+                              >
+                                Product Guide
+                              </button>
+                              <a
+                                href={REPO_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="h-10 px-5 rounded-full border border-brand text-brand text-sm font-semibold shadow hover:bg-brand/10 transition flex items-center"
+                              >
+                                GitHub
+                              </a>
+                            </div>
+                          </div>
+                          <div className="flex-1 flex flex-col justify-center p-8 md:p-12 bg-gradient-to-br from-white to-brand/5">
+                            <h3 className="text-2xl font-bold text-ink mb-2">A tool for clarity and calm</h3>
+                            <p className="text-base text-ink-2 leading-relaxed mb-4">
+                              Kosha is designed for people who want to understand their money without the noise. Fast capture, clear insights, and privacy-first by design. No ads, no tracking, just your numbers—yours to trust.
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {['Clarity', 'Speed', 'Privacy', 'Open Source'].map((pill) => (
+                                <span key={pill} className="text-xs font-semibold px-3 py-1 rounded-full bg-brand-container text-brand-on">
+                                  {pill}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                              <CodeIcon size={18} weight="duotone" color={C.brand} />
+                              <span className="text-sm text-ink-3">by Pavan Kumar Nauhwar</span>
+                              <a href={LINKEDIN} target="_blank" rel="noopener noreferrer" className="ml-2 text-brand underline text-xs">LinkedIn</a>
+                            </div>
+                          </div>
+                        </motion.div>
+
+                        {/* Why Kosha */}
+                        <motion.div variants={fadeUp}>
+                          <SectionLabel>Why Kosha</SectionLabel>
+                          <div className="bg-white rounded-xl shadow p-6 border border-kosha-border">
+                            <p className="text-base text-ink-2 leading-relaxed mb-3">
+                              Most finance tools either overwhelm with dashboards or hide the details you need. Kosha keeps both direction and precision in one flow: Dashboard for pulse, Transactions for truth, Reconciliation for trust.
+                            </p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {['Fast capture', 'Clear insights', 'Privacy first'].map((pill) => (
+                                <span key={pill} className="text-xs font-semibold px-3 py-1 rounded-full bg-brand-container text-brand-on">
+                                  {pill}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+
+                        {/* Author */}
+                        <motion.div variants={fadeUp}>
+                          <SectionLabel>Author</SectionLabel>
+                          <div className="bg-white rounded-xl shadow p-0 border border-kosha-border">
+                            <CardRow
+                              icon={<CodeIcon size={17} weight="duotone" color={C.brand} />}
+                              label="Pavan Kumar Nauhwar"
+                              sublabel="Developer · India"
+                              href={LINKEDIN}
+                              right={
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                  stroke={C.inkMuted} strokeWidth="2">
+                                  <polyline points="9,18 15,12 9,6" />
+                                </svg>
+                              }
+                            />
+                          </div>
+                        </motion.div>
+
+                        {/* What's New */}
+                        <motion.div variants={fadeUp}>
+                          <SectionLabel>What's new</SectionLabel>
+                          <div className="bg-white rounded-xl shadow p-0 border border-kosha-border">
+                            {CHANGELOG
+                              .slice(0, showAllVersions ? CHANGELOG.length : 1)
+                              .map((release, ri) => (
+                                <div key={release.version}>
+                                  {ri > 0 && <Divider />}
+                                  <div className="flex items-center justify-between px-4 py-3.5">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-9 h-9 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
+                                        <StarIcon size={17} weight="duotone" color={C.brand} />
+                                      </div>
+                                      <div>
+                                        <p className="text-[15px] font-semibold text-ink">v{release.version}</p>
+                                        <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
+                                      </div>
+                                    </div>
+                                    {ri === 0 && (
+                                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-brand-container text-brand-on">Latest</span>
+                                    )}
+                                  </div>
+                                  <Divider />
+                                  <div className="px-4 py-3.5 space-y-2.5">
+                                    {release.items.map((item, i) => (
+                                      <div key={i} className="flex items-start gap-2.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-brand mt-[6px] shrink-0" />
+                                        <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            {CHANGELOG.length > 1 && (
+                              <>
+                                <Divider />
+                                <button
+                                  onClick={() => setShowAllVersions(v => !v)}
+                                  className="w-full px-4 py-3 text-[13px] font-semibold text-brand text-center active:bg-kosha-surface-2 transition-colors flex items-center justify-center gap-1.5"
+                                >
+                                  {showAllVersions
+                                    ? <>Hide older versions <CaretUpIcon size={13} weight="bold" /></>
+                                    : <>Older versions ({CHANGELOG.length - 1}) <CaretDownIcon size={13} weight="bold" /></>}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </motion.div>
+
+                        {/* Built With */}
+                        <motion.div variants={fadeUp}>
+                          <SectionLabel>Built with</SectionLabel>
+                          <div className="bg-white rounded-xl shadow p-0 border border-kosha-border">
+                            <div className="px-4 py-3.5">
+                              <div className="flex flex-wrap gap-2">
+                                {['React 18', 'Supabase', 'Tailwind CSS', 'Vite', 'Framer Motion', 'Phosphor Icons'].map(tech => (
+                                  <span key={tech} className="text-xs font-medium text-brand bg-brand-container px-3 py-1 rounded-full">{tech}</span>
+                                ))}
+                              </div>
+                            </div>
+                            <Divider />
+                            <CardRow
+                              icon={<GithubLogoIcon size={17} weight="fill" color={C.ink} />}
+                              label="View on GitHub"
+                              sublabel="pavannauhwar-git/kosha"
+                              href={REPO_URL}
+                              right={
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.inkMuted} strokeWidth="2">
+                                  <polyline points="9,18 15,12 9,6" />
+                                </svg>
+                              }
+                            />
+                          </div>
+                        </motion.div>
+
+                        {/* Privacy */}
+                        <motion.div variants={fadeUp}>
+                          <SectionLabel>Privacy</SectionLabel>
+                          <div className="bg-white rounded-xl shadow p-0 border border-kosha-border">
+                            <div className="flex items-start gap-3 px-4 py-3.5">
+                              <div className="w-9 h-9 rounded-chip bg-brand-container flex items-center justify-center shrink-0 mt-0.5">
+                                <LockIcon size={17} weight="duotone" color={C.brand} />
+                              </div>
+                              <p className="text-base text-ink-2 leading-relaxed flex-1 pt-1">
+                                Your data lives in your own Supabase instance, protected by row-level security. No analytics, no tracking, no third-party sharing.
+                              </p>
+                            </div>
+                          </div>
+                        </motion.div>
+
+                        {/* Support Kosha */}
+                        <motion.div variants={fadeUp}>
+                          <SectionLabel>Support Kosha</SectionLabel>
+                          <div className="bg-white rounded-xl shadow p-0 border border-kosha-border">
+                            <CardRow
+                              icon={<CurrencyInrIcon size={17} weight="bold" color={C.brand} />}
+                              label={<span className="font-semibold">Pay via UPI</span>}
+                              sublabel={<span className="text-xs">{UPI_ID}</span>}
+                              onClick={copyUpi}
+                              right={
+                                copied
+                                  ? <CheckIcon size={15} weight="bold" color={C.income} />
+                                  : <CopyIcon size={15} color={C.inkMuted} />
+                              }
+                            />
+                            <div className="px-4 pb-3 text-xs text-ink-3">If you find Kosha useful, consider supporting its development. Thank you!</div>
+                          </div>
+                        </motion.div>
+
+                        {/* Footer */}
+                        <motion.div variants={fadeUp} className="flex items-center justify-center gap-1.5 pt-2 pb-2">
+                          <p className="text-caption text-ink-4">v{latestVersion} · Made with</p>
+                          <HeartIcon size={12} weight="fill" color={C.expense} />
+                          <p className="text-caption text-ink-4">in India</p>
+                        </motion.div>
+
+                      </motion.div>
                     </div>
                   </div>
-                ))
-              }
-
-              {CHANGELOG.length > 1 && (
-                <>
-                  <Divider />
-                  <button
-                    onClick={() => setShowAllVersions(v => !v)}
-                    className="w-full px-4 py-3 text-[13px] font-semibold text-brand
-                               text-center active:bg-kosha-surface-2 transition-colors
-                               flex items-center justify-center gap-1.5"
-                  >
-                    {showAllVersions
-                      ? <>Hide older versions <CaretUpIcon size={13} weight="bold" /></>
-                      : <>Older versions ({CHANGELOG.length - 1}) <CaretDownIcon size={13} weight="bold" /></>
-                    }
-                  </button>
-                </>
-              )}
+                )
             </div>
           </motion.div>
 
