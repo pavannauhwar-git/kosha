@@ -5,63 +5,63 @@ export default {
     extend: {
       colors: {
         // ── App backgrounds ───────────────────────────────────────────────
-        'kosha-bg':            '#F8FAFC',
-        'kosha-bg-2':          '#F1F5F9',
+        'kosha-bg':            '#FEFEFF',
+        'kosha-bg-2':          '#FAFBFF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F8FAFC',
-        'kosha-border':        '#E2E8F0',
-        'kosha-border-strong': '#CBD5E1',
+        'kosha-surface-2':     '#F8FAFF',
+        'kosha-border':        '#C4CFFF',
+        'kosha-border-strong': '#6C83FF',
 
-        // ── Brand — Modern Indigo ──────────────────────────────────────────
-        'brand':           '#4F46E5',
-        'brand-dark':      '#3730A3',
-        'brand-mid':       '#6366F1',
+        // ── Brand — Periwinkle Violet + Lime Yellow ─────────────────────
+        'brand':           '#243BAF',
+        'brand-dark':      '#1B2D85',
+        'brand-mid':       '#3D5AFE',
         'brand-bg':        '#EEF2FF',
-        'brand-container': '#E0E7FF',
-        'brand-on':        '#3730A3',
-        'brand-accent':    '#4F46E5',
+        'brand-container': '#E8EDFF',
+        'brand-on':        '#243BAF',
+        'brand-accent':    '#F4FF00',
 
         // ── Income ────────────────────────────────────────────────────────
-        'income':        '#10B981',
+        'income':        '#059669',
         'income-bg':     '#ECFDF5',
         'income-text':   '#047857',
         'income-border': '#A7F3D0',
 
         // ── Expense ───────────────────────────────────────────────────────
-        'expense':        '#F43F5E',
+        'expense':        '#E11D48',
         'expense-bg':     '#FFF1F2',
         'expense-text':   '#BE123C',
         'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#8B5CF6',
-        'invest-bg':     '#F5F3FF',
-        'invest-text':   '#5B21B6',
-        'invest-border': '#C4B5FD',
+        'invest':        '#FF1DCE',
+        'invest-bg':     '#FBEFF5',
+        'invest-text':   '#7F2A52',
+        'invest-border': '#E9BFD2',
 
         // ── Repayment / Bills ─────────────────────────────────────────────
-        'repay':        '#F59E0B',
-        'repay-bg':     '#FFFBEB',
-        'repay-text':   '#B45309',
-        'repay-border': '#FDE68A',
+        'repay':        '#CA8A04',
+        'repay-bg':     '#FEFCE8',
+        'repay-text':   '#A16207',
+        'repay-border': '#FEF08A',
 
         // ── Warning ───────────────────────────────────────────────────────
-        'warning':        '#F59E0B',
+        'warning':        '#D97706',
         'warning-bg':     '#FFFBEB',
         'warning-border': '#FDE68A',
         'warning-text':   '#B45309',
 
-        // ── Ink — Slate Neutrals ──────────────────────────────────────────
-        'ink':   '#0F172A',
-        'ink-2': '#334155',
-        'ink-3': '#64748B',
-        'ink-4': '#94A3B8',
+        // ── Ink — indigo-tinted neutrals ──────────────────────────────────
+        'ink':   '#1F255F',
+        'ink-2': '#313A86',
+        'ink-3': '#6E75A8',
+        'ink-4': '#A0A7CD',
 
         // ── Utility ───────────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',
         'on-grad-2': '#FFFFFFBF',
-        'success':   '#10B981',
-        'danger':    '#F43F5E',
+        'success':   '#059669',
+        'danger':    '#E11D48',
       },
 
       fontFamily: {
@@ -87,14 +87,14 @@ export default {
       },
 
       boxShadow: {
-        'card':       '0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)',
-        'card-md':    '0 4px 6px -1px rgba(15,23,42,0.1), 0 2px 4px -1px rgba(15,23,42,0.06)',
-        'card-lg':    '0 10px 15px -3px rgba(15,23,42,0.1), 0 4px 6px -2px rgba(15,23,42,0.05)',
-        'apple-card': '0 20px 40px -10px rgba(15,23,42,0.12), 0 8px 16px -4px rgba(15,23,42,0.08)',
-        'fab':        '0 4px 14px rgba(79,70,229,0.36)',
-        'focus':      '0 0 0 3px rgba(79,70,229,0.30)',
-        'urgent':     '0 4px 6px -1px rgba(244,63,94,0.20), 0 2px 4px -1px rgba(244,63,94,0.15)',
-        'warn':       '0 4px 6px -1px rgba(245,158,11,0.20), 0 2px 4px -1px rgba(245,158,11,0.15)',
+        'card':       '0 2px 7px rgba(18,28,74,0.06), 0 0 0 0.5px rgba(18,28,74,0.08)',
+        'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
+        'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
+        'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
+        'fab':        '0 4px 14px rgba(47,59,206,0.36)',
+        'focus':      '0 0 0 3px rgba(36,59,175,0.30)',
+        'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
+        'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
       },
 
       keyframes: {

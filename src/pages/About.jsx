@@ -92,57 +92,65 @@ export default function About() {
         <h1 className="text-[17px] font-bold text-ink tracking-tight">About</h1>
       </div>
 
-      <div className="px-4 pt-8 pb-24 max-w-[640px] mx-auto">
-        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-8">
+      <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
+        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
 
           {/* ── Hero strip ────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="text-center py-6">
-             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-md border border-kosha-border mb-6">
-                <KoshaLogo size={36} />
-             </div>
-             <h1 className="text-display font-bold text-ink mb-3 tracking-tight">Kosha</h1>
-             <p className="text-body text-ink-3 max-w-[480px] mx-auto leading-relaxed">
-               Personal finance, simplified. Built for clarity and calm. Capture movement fast, trust your numbers, and make better decisions.
-             </p>
-             <div className="flex items-center justify-center gap-3 mt-8">
+          <motion.div variants={fadeUp} className="card-hero p-5 relative overflow-hidden">
+            <div className="absolute -right-8 -top-10 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -left-10 -bottom-12 w-40 h-40 rounded-full bg-black/10 blur-2xl" />
+
+            <div className="relative z-[1]">
+              <div className="flex items-center gap-3 mb-3">
+                <KoshaLogo size={42} />
+                <div>
+                  <p className="text-[17px] font-bold text-white leading-tight">Kosha</p>
+                  <p className="text-[12px] text-white/75">Personal finance, simplified</p>
+                </div>
+              </div>
+
+              <p className="text-[13px] text-white/90 leading-relaxed max-w-[460px]">
+                Built for clarity and calm. Kosha helps you capture money movement fast, trust your numbers, and make better decisions without noise.
+              </p>
+
+              <div className="grid grid-cols-3 gap-2 mt-4">
+                <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
+                  <p className="text-[10px] text-white/70">Version</p>
+                  <p className="text-[12px] font-semibold text-white">v{latestVersion}</p>
+                </div>
+                <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
+                  <p className="text-[10px] text-white/70">Releases</p>
+                  <p className="text-[12px] font-semibold text-white">{releaseCount}</p>
+                </div>
+                <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
+                  <p className="text-[10px] text-white/70">Improvements</p>
+                  <p className="text-[12px] font-semibold text-white">{shippedItems}+</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
                 <button
                   type="button"
                   onClick={() => navigate('/guide')}
-                  className="h-11 px-6 rounded-pill bg-ink text-white text-[14px] font-medium whitespace-nowrap hover:bg-ink-2 transition-colors"
+                  className="h-10 px-4 rounded-pill bg-white text-brand text-[12px] font-semibold whitespace-nowrap"
                 >
-                  Explore Guide
+                  Open product guide
                 </button>
                 <a
                   href={REPO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-11 px-6 rounded-pill bg-white border border-kosha-border text-ink text-[14px] font-medium inline-flex items-center justify-center whitespace-nowrap hover:bg-kosha-surface-2 transition-colors shadow-sm"
+                  className="h-10 px-4 rounded-pill border border-white/35 text-white text-[12px] font-semibold inline-flex items-center justify-center whitespace-nowrap"
                 >
                   View GitHub
                 </a>
-             </div>
+              </div>
+            </div>
           </motion.div>
 
           <motion.div variants={fadeUp}>
-             <div className="grid grid-cols-3 gap-3">
-                <div className="card p-4 text-center">
-                  <p className="text-[12px] font-medium tracking-wide text-ink-3 uppercase mb-1">Version</p>
-                  <p className="text-[18px] font-bold text-ink">v{latestVersion}</p>
-                </div>
-                <div className="card p-4 text-center">
-                  <p className="text-[12px] font-medium tracking-wide text-ink-3 uppercase mb-1">Releases</p>
-                  <p className="text-[18px] font-bold text-ink">{releaseCount}</p>
-                </div>
-                <div className="card p-4 text-center">
-                  <p className="text-[12px] font-medium tracking-wide text-ink-3 uppercase mb-1">Updates</p>
-                  <p className="text-[18px] font-bold text-ink">{shippedItems}+</p>
-                </div>
-             </div>
-          </motion.div>
-
-          <motion.div variants={fadeUp}>
-            <SectionLabel>Core Philosophy</SectionLabel>
-            <div className="card p-6">
+            <SectionLabel>Why Kosha</SectionLabel>
+            <div className="card p-4">
               <p className="text-[13px] text-ink-2 leading-relaxed">
                 Most finance tools either overwhelm with dashboards or hide the details you need. Kosha is designed to keep both direction and precision in one flow: Dashboard for pulse, Transactions for truth, Reconciliation for trust.
               </p>

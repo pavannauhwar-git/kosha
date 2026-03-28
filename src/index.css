@@ -64,41 +64,44 @@
        Keep in sync with src/lib/colors.js and tailwind.config.js
     ───────────────────────────────────────────────────────────────── */
 
-    /* Brand — Modern Indigo */
-    --c-brand: #4F46E5;
-    --c-brand-mid: #6366F1;
-    --c-brand-container: #E0E7FF;
-    --c-brand-border: #E2E8F0;
-    --c-brand-rgb: 79, 70, 229;
-    --c-brand-mid-rgb: 99, 102, 241;
+    /* Brand — Periwinkle Violet */
+    --c-brand: #243BAF;
+    --c-brand-mid: #3D5AFE;
+    --c-brand-container: #E8EDFF;
+    --c-brand-border: #C4CFFF;
+    --c-brand-rgb: 36, 59, 175;
+    /* used in rgba() calls */
+    --c-brand-mid-rgb: 61, 90, 254;
+    /* used in rgba() calls */
 
-    /* Accent — Modern Indigo Accent (Replacing Yellow) */
-    --c-accent: #818CF8;
-    --c-accent-rgb: 129, 140, 248;
+    /* Accent — Lime Yellow (on dark bg only) */
+    --c-accent: #F4FF00;
+    --c-accent-rgb: 244, 255, 0;
+    /* used in rgba() calls */
 
     /* Semantics */
-    --c-income: #10B981;
-    --c-invest-text: #5B21B6;
+    --c-income: #059669;
+    --c-invest-text: #7F2A52;
     /* text on invest-bg */
-    --c-expense: #F43F5E;
-    --c-expense-bright: #F43F5E;
-    --c-warning: #F59E0B;
+    --c-expense: #E11D48;
+    --c-expense-bright: #E11D48;
+    --c-warning: #CA8A04;
 
     /* Ink */
-    --c-ink-muted: #64748B;
+    --c-ink-muted: #6E75A8;
 
     /* Hero card overlays */
-    --c-hero-accent: rgba(129, 140, 248, 0.78);
-    --c-hero-accent-bg: rgba(129, 140, 248, 0.22);
-    --c-hero-accent-fill: rgba(129, 140, 248, 0.78);
-    --c-hero-label: rgba(255, 255, 255, 0.65);
+    --c-hero-accent: rgba(244, 255, 0, 0.78);
+    --c-hero-accent-bg: rgba(244, 255, 0, 0.22);
+    --c-hero-accent-fill: rgba(244, 255, 0, 0.78);
+    --c-hero-label: rgba(255, 255, 255, 0.55);
     --c-hero-dimmer: rgba(255, 255, 255, 0.35);
-    --c-hero-divider: rgba(255, 255, 255, 0.15);
-    --c-hero-stat-bg: rgba(255, 255, 255, 0.15);
+    --c-hero-divider: rgba(255, 255, 255, 0.12);
+    --c-hero-stat-bg: rgba(255, 255, 255, 0.10);
 
     /* Shimmer animation colors */
-    --c-shimmer-1: #F8FAFC;
-    --c-shimmer-2: #F1F5F9;
+    --c-shimmer-1: #F3F4FF;
+    --c-shimmer-2: #E7EAFF;
 
     /* Motion timing scale */
     --motion-fast: 90ms;
@@ -127,22 +130,21 @@
   /* -- Cards ───────────────────────────────────────────────────────── */
   .card {
     @apply bg-kosha-surface rounded-card shadow-card;
-    border: 1px solid var(--c-brand-border);
+    border: 0.5px solid rgba(18, 28, 74, 0.06);
   }
 
   .page-stack {
-    @apply flex flex-col gap-6;
+    @apply space-y-5 md:space-y-6;
   }
 
   .sticky-toolbar {
-    @apply sticky z-10 -mx-1 px-1 py-3 bg-kosha-bg/80 backdrop-blur-md;
+    @apply sticky z-10 -mx-1 px-1 py-2 bg-kosha-bg/95 backdrop-blur-sm border-y border-kosha-border;
     top: var(--sticky-top-offset);
     margin-bottom: 1.5rem;
   }
 
   .card-md {
     @apply bg-kosha-surface rounded-card shadow-card-md;
-    border: 1px solid var(--c-brand-border);
   }
 
   .card-inset {
@@ -166,15 +168,14 @@
   /* -- List card ───────────────────────────────────────────────────── */
   .list-card {
     @apply bg-kosha-surface rounded-card shadow-card overflow-hidden;
-    border: 1px solid var(--c-brand-border);
   }
 
   .list-row {
-    @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface transition-colors duration-150 cursor-pointer hover:bg-kosha-surface-2;
+    @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface transition-colors duration-150 cursor-pointer hover:bg-kosha-surface-2/60;
   }
 
   .list-row+.list-row {
-    border-top: 1px solid var(--c-brand-border);
+    border-top: 0.5px solid var(--c-brand-border);
   }
 
   /* -- Section label ───────────────────────────────────────────────── */
@@ -208,11 +209,11 @@
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-4 rounded-pill text-[12px] font-medium border transition-all duration-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3 rounded-pill text-[11px] font-semibold border transition-all duration-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
   }
 
   .chip-control-muted {
-    @apply chip-control bg-white text-ink-3 border-kosha-border hover:bg-kosha-surface-2 shadow-sm;
+    @apply chip-control bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2;
   }
 
   .chip-control-active {
@@ -242,15 +243,15 @@
 
   /* -- Buttons ─────────────────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all duration-100 active:scale-[0.98] select-none cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all duration-100 active:scale-[0.99] select-none cursor-pointer;
   }
 
   .btn-primary {
-    @apply btn bg-brand text-white px-6 py-3 shadow-md shadow-brand/20 hover:bg-brand-mid;
+    @apply btn bg-brand text-white px-6 py-3;
   }
 
   .btn-tonal {
-    @apply btn bg-brand-container text-brand px-6 py-3 hover:bg-brand-container/80;
+    @apply btn bg-brand-container text-brand-on px-6 py-3;
   }
 
   .btn-ghost {
@@ -258,7 +259,7 @@
   }
 
   .btn-secondary {
-    @apply btn bg-white text-ink-2 border border-kosha-border px-4 py-2 shadow-sm hover:bg-kosha-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
+    @apply btn bg-kosha-surface text-ink-2 border border-kosha-border px-4 py-2 hover:bg-kosha-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
   }
 
   .btn-secondary-sm {
@@ -271,8 +272,7 @@
 
   /* -- FAB ─────────────────────────────────────────────────────────── */
   .fab {
-    @apply fixed w-[56px] h-[56px] bg-brand text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
-    box-shadow: 0 8px 24px -6px rgba(79, 70, 229, 0.4);
+    @apply fixed w-14 h-14 bg-brand text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
@@ -281,8 +281,7 @@
 
   /* Bills page FAB — amber/warning to match bills colour theme */
   .fab-bills {
-    @apply fixed w-[56px] h-[56px] bg-warning text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
-    box-shadow: 0 8px 24px -6px rgba(245, 158, 11, 0.4);
+    @apply fixed w-14 h-14 bg-warning text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
@@ -318,16 +317,16 @@
     display: flex;
     align-items: center;
     gap: 0;
-    padding: 8px 12px;
-    border-radius: 28px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    padding: 9px 12px;
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,248,255,0.94) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     box-shadow:
-      0 12px 32px rgba(15, 23, 42, 0.12),
-      0 4px 12px rgba(15, 23, 42, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 1),
-      0 0 0 1px rgba(226, 232, 240, 0.6);
+      0 18px 36px rgba(15, 23, 42, 0.18),
+      0 4px 10px rgba(15, 23, 42, 0.08),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.90),
+      0 0 0 1px rgba(148, 163, 184, 0.2);
     pointer-events: auto;
     /* No transition here — Framer controls all animation */
   }
@@ -360,13 +359,13 @@
     justify-content: center;
   }
 
-  /* The sliding pill background */
+  /* The sliding green pill background */
   .nav-icon-bg {
     position: absolute;
     inset: 0;
     border-radius: 9999px;
-    background: rgba(var(--c-brand-rgb), 0.12);
-    box-shadow: inset 0 0 0 1px rgba(var(--c-brand-rgb), 0.04);
+    background: rgba(var(--c-brand-rgb), 0.2);
+    box-shadow: inset 0 0 0 1px rgba(var(--c-brand-rgb), 0.08);
   }
 
   /* Both icon layers sit on top of the pill, stacked in same spot */
@@ -416,9 +415,9 @@
     margin-left: auto;
     margin-right: auto;
     max-width: 560px;
-    box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.12);
-    border-top: 1px solid var(--c-brand-border);
-    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -4px 28px rgba(18, 28, 74, 0.14);
+    border-top: 0.5px solid rgba(18, 28, 74, 0.08);
+    border-radius: 20px 20px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     max-height: calc(100dvh - var(--safe-top) - 0.5rem);
     overflow-y: auto;
