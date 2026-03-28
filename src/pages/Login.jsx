@@ -160,55 +160,25 @@ export default function Login() {
 
   return (
     <div
-      className="h-dvh overflow-y-auto relative"
-      style={{
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        background: 'linear-gradient(145deg, #1E1B4B 0%, #312E81 40%, #3730A3 70%, #4338CA 100%)',
-      }}
+      className="h-dvh bg-kosha-bg px-4 overflow-y-auto"
+      style={{paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      {/* Floating gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-20 -right-20 w-72 h-72 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(202,255,4,0.12) 0%, transparent 70%)' }}
-        />
-        <div
-          className="absolute top-1/2 -left-32 w-64 h-64 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)' }}
-        />
-        <div
-          className="absolute -bottom-16 right-1/4 w-48 h-48 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(202,255,4,0.08) 0%, transparent 70%)' }}
-        />
-      </div>
-
-      <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 relative z-10">
+      <div className="min-h-full flex flex-col items-center justify-center py-8">
         <div className="w-full max-w-[380px]">
           <motion.div
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
             initial="hidden"
             animate="show"
           >
-            {/* ── Card with glassmorphism ──────────────────────────────── */}
+            {/* ── Card ─────────────────────────────────────────────────────── */}
             <motion.div
               variants={fadeUp}
-              className="rounded-hero p-6 mb-4"
-              style={{
-                background: 'rgba(255,255,255,0.95)',
-                backdropFilter: 'blur(24px)',
-                WebkitBackdropFilter: 'blur(24px)',
-                boxShadow: '0 20px 60px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.2)',
-              }}
+              className="card p-6 mb-4"
             >
 
               {/* ── Logo ──────────────────────────────────────────────────── */}
               <div className="flex flex-col items-center mb-4">
-                <div className="p-0.5 rounded-2xl" style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #CAFF04 100%)' }}>
-                  <div className="bg-white rounded-[14px] p-1">
-                    <KoshaLogo size={48} />
-                  </div>
-                </div>
+                <KoshaLogo size={56} />
                 <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
                   Your Financial Sheath
                 </p>
@@ -384,15 +354,10 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading || googleLoading || isRedirectingAfterReset}
-                  className="w-full py-4 rounded-card
+                  className="w-full py-4 rounded-card bg-brand text-white
                          text-body font-semibold mt-1
                          active:scale-[0.98] transition-all duration-75
                          disabled:opacity-60"
-                  style={{
-                    background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)',
-                    color: '#fff',
-                    boxShadow: '0 4px 14px rgba(79,70,229,0.3)',
-                  }}
                 >
                   {loading
                     ? (mode === 'signin'
@@ -460,7 +425,7 @@ export default function Login() {
 
             {/* ── Footer ─────────────────────────────────────────────────── */}
             <motion.div variants={fadeUp}>
-              <AboutKoshaLink className="text-center pt-1" style={{ color: 'rgba(255,255,255,0.5)' }} />
+              <AboutKoshaLink className="text-center pt-1" />
             </motion.div>
           </motion.div>
         </div>

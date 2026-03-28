@@ -25,13 +25,6 @@ export const C = {
   accentBg:        'rgba(129,140,248,0.22)',
   accentFill:      'rgba(129,140,248,0.78)',
 
-  // ── Contrast — Electric Lime ─────────────────────────────────────
-  lime:            '#CAFF04',
-  limeMuted:       '#D4FF3D',
-  limeDark:        '#9ACC00',
-  limeBg:          'rgba(202,255,4,0.12)',
-  limeOnDark:      '#CAFF04',
-
   // ── Income — Emerald ─────────────────────────────────────────────
   income:          '#10B981',
   incomeText:      '#047857',

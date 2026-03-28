@@ -23,106 +23,84 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   const avgSavings = data?.avgSavings || 0
   const annualBalance = totalIncome - totalExpense - totalInvestment
 
-  const metrics = [
+  const cards = [
     {
       label: 'Earned',
       value: totalIncome,
       delta: getDelta(totalIncome, prevData?.totalIncome),
-      color: C.income,
-      bg: 'rgba(16,185,129,0.08)',
-      borderColor: 'rgba(16,185,129,0.18)',
     },
     {
       label: 'Spent',
       value: totalExpense,
       delta: getDelta(totalExpense, prevData?.totalExpense),
-      color: C.expense,
-      bg: 'rgba(244,63,94,0.08)',
-      borderColor: 'rgba(244,63,94,0.18)',
     },
     {
       label: 'Invested',
       value: totalInvestment,
       delta: getDelta(totalInvestment, prevData?.totalInvestment),
-      color: C.invest,
-      bg: 'rgba(139,92,246,0.08)',
-      borderColor: 'rgba(139,92,246,0.18)',
     },
   ]
 
   return (
-    <div className="space-y-3">
-      {/* Main balance card — dark indigo with lime accent */}
-      <div
-        className="relative overflow-hidden rounded-hero p-5"
-        style={{
-          background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #3730A3 100%)',
-          boxShadow: '0 20px 40px -10px rgba(15,23,42,0.25), 0 0 0 1px rgba(99,102,241,0.1)',
-        }}
-      >
-        <div
-          className="absolute top-0 right-0 w-40 h-40 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(202,255,4,0.08) 0%, transparent 70%)' }}
-        />
-
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <p className="text-[11px] font-bold tracking-[0.12em] uppercase" style={{ color: C.lime }}>
-            {year} Analytics
-          </p>
-          <div
-            className="px-2.5 py-1 rounded-pill text-[11px] font-semibold"
-            style={{ background: 'rgba(202,255,4,0.12)', color: C.lime }}
-          >
-            {avgSavings}% saved
-          </div>
-        </div>
-
-        <p className="text-[11px] font-medium mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-          Annual balance
+    <div className="card-hero p-5 md:p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between gap-3 mb-3.5">
+        <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
+          Year snapshot
         </p>
-        <p
-          className="font-bold tabular-nums leading-none tracking-tight"
-          style={{ fontSize: 36, color: annualBalance >= 0 ? '#fff' : '#FFB3AF' }}
-        >
-          {fmt(annualBalance)}
+        <p className="text-caption font-bold tracking-widest" style={{ color: C.heroDimmer }}>
+          {year}
         </p>
-
-        <div className="mt-4">
-          <div className="flex justify-between mb-1.5">
-            <span className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Savings rate
-            </span>
-            <span className="text-[11px] font-bold" style={{ color: C.lime }}>
-              {avgSavings}%
-            </span>
-          </div>
-          <div className="h-1.5 rounded-pill w-full relative overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
-            <motion.div
-              className="h-full rounded-pill absolute inset-y-0 left-0"
-              style={{ background: `linear-gradient(90deg, ${C.lime} 0%, ${C.limeMuted} 100%)` }}
-              initial={{ width: 0 }}
-              animate={{ width: `${avgSavings}%` }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
-            />
-          </div>
-        </div>
       </div>
 
-      {/* Bento metric cards */}
-      <div className="grid grid-cols-3 gap-2.5">
-        {metrics.map((m) => (
-          <div
-            key={m.label}
-            className="rounded-card p-3 border"
-            style={{ background: m.bg, borderColor: m.borderColor }}
-          >
-            <p className="text-[10px] font-semibold text-ink-3 uppercase tracking-wide mb-1">{m.label}</p>
-            <p className="text-[14px] font-bold tabular-nums text-ink leading-tight">{fmt(m.value, true)}</p>
-            <p className="text-[10px] mt-1 font-medium" style={{ color: m.color }}>
-              {m.delta.label}
-            </p>
+      <p className="text-caption font-medium mb-1" style={{ color: C.heroLabel }}>
+        Annual balance
+      </p>
+      <p
+        className={`font-bold tabular-nums leading-[0.95] tracking-tight ${annualBalance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}
+        style={{ fontSize: 38 }}
+      >
+        {fmt(annualBalance)}
+      </p>
+
+      <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
+        <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
+          {avgSavings}% avg savings rate
+        </span>
+      </div>
+
+      <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
+
+      <div className="mb-3.5 space-y-2">
+        {cards.map((card) => (
+          <div key={card.label} className="px-3 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
+            <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>{card.label}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12px] font-bold text-white tabular-nums">{fmt(card.value)}</p>
+              <p className="text-[10px] whitespace-nowrap" style={{ color: C.heroLabel }}>
+                {card.delta.label}
+              </p>
+            </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-1">
+        <div className="flex justify-between mb-2">
+          <span className="text-caption font-medium" style={{ color: C.heroLabel }}>
+            Savings rate
+          </span>
+          <span className="text-caption font-bold" style={{ color: C.heroAccentSolid }}>
+            {avgSavings}%
+          </span>
+        </div>
+        <div className="bar-dark-track">
+          <motion.div
+            className="bar-dark-fill"
+            initial={{ width: 0 }}
+            animate={{ width: `${avgSavings}%` }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+          />
+        </div>
       </div>
     </div>
   )

@@ -21,13 +21,6 @@ export default {
         'brand-on':        '#3730A3',
         'brand-accent':    '#4F46E5',
 
-        // ── Lime — Contrast Accent ────────────────────────────────────────
-        'lime':          '#CAFF04',
-        'lime-dark':     '#9ACC00',
-        'lime-bg':       'rgba(202,255,4,0.12)',
-        'lime-border':   'rgba(202,255,4,0.25)',
-        'lime-on-dark':  '#CAFF04',
-
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#10B981',
         'income-bg':     '#ECFDF5',

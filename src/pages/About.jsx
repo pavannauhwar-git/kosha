@@ -96,15 +96,15 @@ export default function About() {
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-8">
 
           {/* ── Hero strip ────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="text-center py-3">
-             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white shadow-md border border-kosha-border mb-3">
-                <KoshaLogo size={28} />
+          <motion.div variants={fadeUp} className="text-center py-6">
+             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-md border border-kosha-border mb-6">
+                <KoshaLogo size={36} />
              </div>
-             <h1 className="text-display font-bold text-ink mb-2 tracking-tight">Kosha</h1>
-             <p className="text-label text-ink-3 max-w-[480px] mx-auto leading-relaxed">
+             <h1 className="text-display font-bold text-ink mb-3 tracking-tight">Kosha</h1>
+             <p className="text-body text-ink-3 max-w-[480px] mx-auto leading-relaxed">
                Personal finance, simplified. Built for clarity and calm. Capture movement fast, trust your numbers, and make better decisions.
              </p>
-             <div className="flex items-center justify-center gap-3 mt-5">
+             <div className="flex items-center justify-center gap-3 mt-8">
                 <button
                   type="button"
                   onClick={() => navigate('/guide')}
