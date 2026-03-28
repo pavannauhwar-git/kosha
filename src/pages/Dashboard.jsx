@@ -12,7 +12,7 @@ import {
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/AddTransactionSheet'
-import { fmt, savingsRate, daysUntil } from '../lib/utils'
+import { fmt, surplusRate, daysUntil } from '../lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { createFadeUp, createStagger } from '../lib/animations'
 
@@ -198,7 +198,7 @@ export default function Dashboard() {
   const earned = summary?.earned || 0
   const spent = summary?.expense || 0
   const invested = summary?.investment || 0
-  const rate = savingsRate(earned, spent)
+  const rate = surplusRate(earned, spent, invested)
 
   const lastInvested = lastSummary?.investment || 0
   const investDiff = invested - lastInvested
@@ -302,12 +302,12 @@ export default function Dashboard() {
     const spendPct = earned > 0 ? spent / earned : 0
     const dayPct = dayOfMonth / daysInMonth
     if (!earned && !spent) return 'Log a transaction to start your money story 📊'
-    if (spendPct < dayPct - 0.15) return `Under pace · ${rate}% saved so far ✨`
+    if (spendPct < dayPct - 0.15) return `Under pace · ${rate}% surplus so far ✨`
     if (spendPct > dayPct + 0.15) return 'Spending running hot this month · ease up 📈'
     if (dueSoonCount > 0) return `${dueSoonCount} bill${dueSoonCount > 1 ? 's' : ''} coming due · plan ahead 📅`
     if (investDiff > 0) return `Invested ${fmt(Math.abs(investDiff))} more than last month 💪`
-    if (rate >= 25) return `Saving ${rate}% of income · outstanding month 🎯`
-    return `Saving ${rate}% this month · right on track 👍`
+    if (rate >= 25) return `${rate}% surplus · outstanding month 🎯`
+    return `${rate}% surplus this month · right on track 👍`
     // FIX (defect 5.3): deps are now primitives (dueSoonCount) not the bills array.
     // This memo only recalculates when earned/spent/rate/dueSoonCount/investDiff
     // actually change in value — not on every array reference change from a refetch.
@@ -340,8 +340,8 @@ export default function Dashboard() {
 
     if (earned > 0 && rate < 15) {
       return {
-        title: 'Savings pace can improve',
-        detail: `Current savings rate is ${rate}%. A small spend reduction today can lift month-end confidence.`,
+        title: 'Surplus can improve',
+        detail: `Current surplus is ${rate}%. A small spend reduction today can lift month-end confidence.`,
         primaryLabel: 'Open monthly',
         primaryRoute: '/monthly',
         secondaryLabel: 'Log expense',

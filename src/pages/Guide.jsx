@@ -62,7 +62,7 @@ const FEATURE_CARDS = [
     summary: 'One-screen view of balance, pace, dues, and recent movement.',
     whenToUse: 'Use this every morning and evening for quick financial orientation.',
     workflow: [
-      'Check the hero card for balance direction and savings pace.',
+      'Check the hero card for balance direction and surplus pace.',
       'Use quick actions to log income, expense, investment, or bill payment.',
       'Open recent transactions only if a number looks off.',
     ],

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { fmt, savingsRate } from '../../lib/utils'
+import { fmt, surplusRate } from '../../lib/utils'
 import { C } from '../../lib/colors'
 import { MONTH_NAMES } from '../../lib/constants'
 
@@ -8,7 +8,7 @@ export default function MonthHeroCard({ month, year, data }) {
   const spent = data?.expense || 0
   const invested = data?.investment || 0
   const balance = data?.balance || 0
-  const rate = savingsRate(earned, spent)
+  const rate = surplusRate(earned, spent, invested)
 
   return (
     <div className="card-hero p-6 relative overflow-hidden">
@@ -30,7 +30,7 @@ export default function MonthHeroCard({ month, year, data }) {
 
       <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
         <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
-          {rate}% saved
+          {rate}% surplus
         </span>
       </div>
 
@@ -53,7 +53,7 @@ export default function MonthHeroCard({ month, year, data }) {
 
       <div>
         <div className="flex justify-between mb-2">
-          <span className="text-caption" style={{ color: C.heroLabel }}>Savings rate</span>
+          <span className="text-caption" style={{ color: C.heroLabel }}>Surplus rate</span>
           <span className="text-caption font-semibold text-white">{rate}%</span>
         </div>
         <div className="bar-dark-track">

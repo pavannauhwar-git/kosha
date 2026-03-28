@@ -95,11 +95,11 @@ export default function Analytics() {
     const totalInvestment = Number(data?.totalInvestment || 0)
 
     if (totalIncome > 0) {
-      const savingsPct = Math.round(((totalIncome - totalExpense - totalInvestment) / totalIncome) * 100)
-      if (savingsPct < 15) {
-        items.push(`Savings rate is ${savingsPct}%. Reduce discretionary spend by 5-10% next month to improve buffer.`)
+      const surplusPct = Math.round(((totalIncome - totalExpense - totalInvestment) / totalIncome) * 100)
+      if (surplusPct < 15) {
+        items.push(`Surplus rate is ${surplusPct}%. Reduce discretionary spend by 5-10% next month to improve your buffer.`)
       } else {
-        items.push(`Savings rate is ${savingsPct}%. Maintain this pace and route surplus into planned investments.`)
+        items.push(`Surplus rate is ${surplusPct}%. You have a healthy leftover - consider routing it into investments or savings goals.`)
       }
     }
 

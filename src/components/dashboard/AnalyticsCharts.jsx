@@ -208,10 +208,10 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
-            Net Savings
+            Monthly Surplus
           </p>
           <p style={{ fontSize: 11, color: 'rgba(49,58,134,0.55)', marginTop: 2 }}>
-            Monthly net with cumulative direction
+            Leftover each month after expenses &amp; investments
           </p>
         </div>
         <div className="text-right">
@@ -223,7 +223,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
             {fmt(Math.abs(totalNet), true)}
           </p>
           <p style={{ fontSize: 10, color: 'rgba(49,58,134,0.55)', marginTop: 1 }}>
-            {totalNet >= 0 ? 'net saved' : 'net deficit'}
+            {totalNet >= 0 ? 'net surplus' : 'net deficit'}
           </p>
         </div>
       </div>
