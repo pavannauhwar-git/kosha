@@ -15,7 +15,7 @@ import {
 } from '../lib/reminders'
 import { buildJoinInviteUrl, createInvite, inviteStatusLabel, listInvites, MAX_ACTIVE_INVITES } from '../lib/invites'
 import { fmtDate } from '../lib/utils'
-import { useFileUploads } from '../hooks/useFileUploads'
+import useFileUploads from '../hooks/useFileUploads'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
