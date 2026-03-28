@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Camera, Trash2, Pencil, Check, BellRing, ShieldAlert, Users, Link2, Copy } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, Camera, Trash2, Pencil, Check, BellRing, ShieldAlert, Users, Link2, Copy, FileArchive, Upload, Download, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/EditProfileNameDialog'
@@ -15,6 +15,7 @@ import {
 } from '../lib/reminders'
 import { buildJoinInviteUrl, createInvite, inviteStatusLabel, listInvites, MAX_ACTIVE_INVITES } from '../lib/invites'
 import { fmtDate } from '../lib/utils'
+import { useFileUploads } from '../hooks/useFileUploads'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -65,6 +66,13 @@ export default function Settings() {
   const [walletError, setWalletError] = useState('')
   const [walletMsg, setWalletMsg] = useState('')
   const [creatingInvite, setCreatingInvite] = useState(false)
+
+  const { files: uploads, loading: uploadsLoading, uploadFile, deleteFile, downloadFile, refresh: refreshUploads } = useFileUploads()
+  const zipInputRef = useRef(null)
+  const [uploadingZip, setUploadingZip] = useState(false)
+  const [uploadMsg, setUploadMsg] = useState('')
+  const [uploadMsgType, setUploadMsgType] = useState('info')
+  const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
     setReminderPrefs(reminderPrefs)
@@ -190,6 +198,54 @@ export default function Settings() {
     } finally {
       setCreatingInvite(false)
     }
+  }
+
+  function showUploadMsg(msg, type = 'info') {
+    setUploadMsg(msg)
+    setUploadMsgType(type)
+    setTimeout(() => setUploadMsg(''), 3000)
+  }
+
+  async function handleZipUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingZip(true)
+    try {
+      await uploadFile(file)
+      showUploadMsg('File uploaded successfully.')
+    } catch (err) {
+      showUploadMsg(err.message || 'Upload failed.', 'error')
+    } finally {
+      setUploadingZip(false)
+      if (zipInputRef.current) zipInputRef.current.value = ''
+    }
+  }
+
+  async function handleDeleteUpload(upload) {
+    setDeletingId(upload.id)
+    try {
+      await deleteFile(upload)
+      showUploadMsg('File deleted.')
+    } catch (err) {
+      showUploadMsg(err.message || 'Could not delete file.', 'error')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  async function handleDownload(upload) {
+    try {
+      await downloadFile(upload)
+    } catch (err) {
+      showUploadMsg(err.message || 'Download failed.', 'error')
+    }
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '0 B'
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} MB`
   }
 
   return (
@@ -384,16 +440,101 @@ export default function Settings() {
             )}
           </motion.div>
 
+          {/* ── File uploads section ───────────────────────────────────── */}
+          <motion.div variants={fadeUp}>
+            <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
+              File Uploads
+            </p>
+            <div className="card overflow-hidden p-0">
+              <SettingRow
+              icon={uploadingZip
+                ? <Loader2 size={16} className="text-brand animate-spin" />
+                : <Upload size={16} className="text-brand" />}
+              label={uploadingZip ? 'Uploading…' : 'Upload a zip file'}
+              sublabel="Max 5 MB per file"
+              onClick={() => zipInputRef.current?.click()}
+              disabled={uploadingZip}
+            />
+            <Divider />
+              <div className="px-4 py-3 space-y-2">
+                <p className="text-[12px] font-semibold text-ink-3">
+                  Your files {!uploadsLoading && `(${uploads.length})`}
+                </p>
+                {uploadsLoading ? (
+                  <p className="text-[12px] text-ink-3">Loading files…</p>
+                ) : uploads.length === 0 ? (
+                  <p className="text-[12px] text-ink-3">No files uploaded yet.</p>
+                ) : (
+                  <AnimatePresence mode="popLayout">
+                    {uploads.map((u) => {
+                      return (
+                        <motion.div
+                          key={u.id}
+                          layout
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, x: -40 }}
+                          transition={{ duration: 0.2 }}
+                          className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
+                              <FileArchive size={14} className="text-brand" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-medium text-ink truncate">{u.file_name}</p>
+                              <p className="text-[11px] text-ink-3">{fmtSize(u.size_bytes)} {fmtDate(u.created_at)}</p>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => handleDownload(u)}
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-brand hover:bg-brand-container active:bg-brand-container transition-colors"
+                                title="Download"
+                              >
+                                <Download size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUpload(u)}
+                                disabled={deletingId === u.id}
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-expense-text hover:bg-expense-bg active:bg-expense-bg transition-colors disabled:opacity-50"
+                                title="Delete"
+                              >
+                                {deletingId === u.id
+                                  ? <Loader2 size={14} className="animate-spin" />
+                                  : <Trash2 size={14} />}
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )
+                    })}
+                  </AnimatePresence>
+                )}
+              </div>
+            </div>
+            {uploadMsg && (
+              <p className={`text-[12px] mt-2 px-1 ${uploadMsgType === 'error' ? 'text-expense-text' : 'text-ink-3'}`}>
+                {uploadMsg}
+              </p>
+            )}
+          </motion.div>
         </motion.div>
       </div>
 
-      {/* Hidden file input */}
+      {/* Hidden file inputs */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         className="hidden"
         onChange={handleFileChange}
+      />
+      <input
+        ref={zipInputRef}
+        type="file"
+        accept=".zip,application/zip"
+        className="hidden"
+        onChange={handleZipUpload}
       />
 
       {/* Edit name dialog */}
