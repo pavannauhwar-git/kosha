@@ -1073,3 +1073,35 @@ drop policy if exists "reconciliation_reviews: delete own" on public.reconciliat
 create policy "reconciliation_reviews: delete own" on public.reconciliation_reviews
   for delete
   using (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- User file uploads — metadata table
+-- Files stored in Supabase Storage bucket "user-uploads", scoped to user_id.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create table if not exists user_uploads (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null,
+  file_name   text not null,
+  storage_path text not null,
+  size_bytes  bigint not null check (size_bytes > 0 and size_bytes <= 5242880),
+  mime_type   text not null default 'application/zip',
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists idx_user_uploads_user
+  on public.user_uploads(user_id, created_at desc);
+
+alter table public.user_uploads enable row level security;
+
+drop policy if exists "user_uploads: select own" on public.user_uploads;
+create policy "user_uploads: select own" on public.user_uploads
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "user_uploads: insert own" on public.user_uploads;
+create policy "user_uploads: insert own" on public.user_uploads
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "user_uploads: delete own" on public.user_uploads;
+create policy "user_uploads: delete own" on public.user_uploads
+  for delete using (auth.uid() = user_id);
