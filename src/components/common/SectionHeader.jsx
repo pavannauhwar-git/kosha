@@ -6,7 +6,7 @@ export default function SectionHeader({
   className = '',
 }) {
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-0 mt-2 ${className}`.trim()}>
+    <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-0 ${className}`.trim()}>
       <div className="min-w-0">
         <p className="section-label">{title}</p>
         {subtitle ? <p className="text-[10.5px] text-ink-3 leading-tight mt-px">{subtitle}</p> : null}

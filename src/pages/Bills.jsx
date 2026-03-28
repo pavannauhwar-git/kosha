@@ -247,7 +247,7 @@ export default function Bills() {
       <PageHeader title="Bills & Dues" className="mb-1" />
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="mb-2.5 flex items-center justify-between gap-3 mt-2">
+      <div className="mb-2.5 flex items-center justify-between gap-3">
         <div>
           {tab === 'pending' && visiblePending.length > 0 ? (
             <p className="text-caption text-ink-3 mt-0.5">

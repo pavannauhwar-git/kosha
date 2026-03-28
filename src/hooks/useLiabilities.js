@@ -23,10 +23,7 @@ function runInBackground(promise, scope) {
 
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
-  ])
+  await queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' })
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {
@@ -64,7 +61,7 @@ export function useLiabilities({ includePaid = true, enabled = true } = {}) {
 
   return {
     pending: pendingQuery.data  || [],
-    paid:    includePaid ? (paidQuery.data || []) : [],
+    paid:    paidQuery.data || [],
     loading: pendingQuery.isLoading || (includePaid && paidQuery.isLoading),
     pendingLoading: pendingQuery.isLoading,
     paidLoading: includePaid ? paidQuery.isLoading : false,
@@ -251,14 +248,16 @@ export function optimisticallyMarkLiabilityPaid(liability) {
     )
   }
 
+  const paidRow = { ...liability, paid: true, __optimistic: true }
   const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY)
   if (Array.isArray(paidData)) {
-    const paidRow = { ...liability, paid: true, __optimistic: true }
     const deduped = paidData.filter((row) => row?.id !== liability.id)
     queryClient.setQueryData(
       LIABILITY_PAID_QUERY_KEY,
       sortLiabilitiesByDueDateAsc([...deduped, paidRow])
     )
+  } else {
+    queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, [paidRow])
   }
 }
 
@@ -331,7 +330,8 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
 
     optimisticallyMarkLiabilityPaid(liability)
 
-    const txnId = result?.transaction_id
+    const rpcRow = Array.isArray(result) ? result[0] : result
+    const txnId = rpcRow?.linked_transaction_id
     if (txnId) {
       optimisticallyUpsertTransactionInCache({
         id: txnId,
@@ -353,10 +353,13 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       })
     }
 
-    await Promise.all([
+    runInBackground(
+      Promise.all([
         invalidateLiabilityFn(),
         invalidateTransactionFn(),
-      ])
+      ]),
+      'liability markPaid cache invalidation'
+    )
     return result
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
