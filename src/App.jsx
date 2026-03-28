@@ -275,7 +275,7 @@ function useRouteIntentPrefetch() {
           const avgSavings = monthsWithIncome.length
             ? Math.round(
                 monthsWithIncome.reduce(
-                  (sum, m) => sum + ((m.income - m.expense - m.investment) / m.income) * 100, 0
+                  (sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0
                 ) / monthsWithIncome.length
               )
             : 0

@@ -8,14 +8,11 @@ export default function YearlyInsightsCard({ data, catEntries }) {
   const text = (() => {
     const parts = []
     const inc = data?.totalIncome || 0
-    const exp = data?.totalExpense || 0
-    const inv = data?.totalInvestment || 0
-    const surplusPct = inc > 0 ? Math.round(((inc - exp - inv) / inc) * 100) : 0
+    const rate = inc > 0 ? Math.round(((inc - (data?.totalExpense || 0)) / inc) * 100) : 0
 
-    if (surplusPct > 20) parts.push(`You've had a strong year, keeping ${surplusPct}% of your earnings as surplus.`)
-    else if (surplusPct > 0) parts.push(`You retained ${surplusPct}% of your income after expenses and investments.`)
-    else if (surplusPct === 0) parts.push(`Your income and expenses were perfectly balanced this year.`)
-    else parts.push(`Your expenses and investments exceeded your earnings this year.`)
+    if (rate > 20) parts.push(`You've had a strong year, saving ${rate}% of your earnings.`)
+    else if (rate > 0) parts.push(`You saved ${rate}% of your income.`)
+    else parts.push('You spent more than you earned this year.')
 
     if (data?.monthly) {
       let maxExp = 0

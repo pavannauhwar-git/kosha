@@ -98,10 +98,10 @@ export function chipClass(type, isRepayment = false) {
   return 'chip-income'
 }
 
-// ── Surplus rate ──────────────────────────────────────────────────────────
-export function surplusRate(earned, spent, invested = 0) {
+// ── Savings rate ──────────────────────────────────────────────────────────
+export function savingsRate(earned, spent) {
   if (!earned || earned === 0) return 0
-  return Math.max(0, Math.min(100, Math.round(((earned - spent - invested) / earned) * 100)))
+  return Math.max(0, Math.min(100, Math.round(((earned - spent) / earned) * 100)))
 }
 
 // ── Bills ─────────────────────────────────────────────────────────────────

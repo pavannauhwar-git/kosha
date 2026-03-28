@@ -1,19 +1,18 @@
 import { motion } from 'framer-motion'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
-import { tr } from 'framer-motion/client'
 
 function getDelta(current, previous) {
   const prev = Number(previous || 0)
   if (prev <= 0) {
-    return { pct: null, width: 0, label: 'No prior year' }
+    return { pct: null, width: 0, label: 'No baseline' }
   }
 
   const pct = Math.round(((Number(current || 0) - prev) / prev) * 100)
   return {
     pct,
     width: Math.min(100, Math.max(8, Math.abs(pct))),
-    label: `${pct >= 0 ? '+' : ''}${pct}%`,
+    label: `${pct >= 0 ? '+' : ''}${pct}% vs last year`,
   }
 }
 
@@ -21,8 +20,8 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   const totalIncome = data?.totalIncome || 0
   const totalExpense = data?.totalExpense || 0
   const totalInvestment = data?.totalInvestment || 0
-  const leftover = totalIncome - totalExpense - totalInvestment
-  const surplusPct = totalIncome > 0 ? Math.round((leftover / totalIncome) * 100) : 0
+  const avgSavings = data?.avgSavings || 0
+  const annualBalance = totalIncome - totalExpense - totalInvestment
 
   const cards = [
     {
@@ -54,33 +53,33 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
       </div>
 
       <p className="text-caption font-medium mb-1" style={{ color: C.heroLabel }}>
-        Leftover balance
+        Annual balance
       </p>
       <p
-        className={`font-bold tabular-nums leading-[0.95] tracking-tight ${leftover >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}
+        className={`font-bold tabular-nums leading-[0.95] tracking-tight ${annualBalance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}
         style={{ fontSize: 38 }}
       >
-        {fmt(leftover)}
+        {fmt(annualBalance)}
       </p>
 
       <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
         <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
-          {surplusPct}% surplus after expenses &amp; investments
+          {avgSavings}% avg savings rate
         </span>
       </div>
 
       <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
 
-      <div className="grid grid-cols-3 gap-2 mb-3.5">
+      <div className="mb-3.5 space-y-2">
         {cards.map((card) => (
-          <div key={card.label} className="px-2.5 py-2.5 rounded-2xl min-w-0" style={{ background: C.heroStatBg }}>
-            <p className="text-[10px] mb-1" style={{ color: C.heroLabel }}>{card.label}</p>
-            <p className="text-[13px] sm:text-[14px] font-bold text-white tabular-nums truncate">
-              {fmt(card.value, true)}
-            </p>
-            <p className="text-[10px] mt-0.5" style={{ color: C.heroLabel }}>
-               {card.delta.label}
-            </p>
+          <div key={card.label} className="px-3 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
+            <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>{card.label}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12px] font-bold text-white tabular-nums">{fmt(card.value)}</p>
+              <p className="text-[10px] whitespace-nowrap" style={{ color: C.heroLabel }}>
+                {card.delta.label}
+              </p>
+            </div>
           </div>
         ))}
       </div>
@@ -88,17 +87,17 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
       <div className="mt-1">
         <div className="flex justify-between mb-2">
           <span className="text-caption font-medium" style={{ color: C.heroLabel }}>
-            Surplus rate
+            Savings rate
           </span>
           <span className="text-caption font-bold" style={{ color: C.heroAccentSolid }}>
-            {surplusPct}%
+            {avgSavings}%
           </span>
         </div>
         <div className="bar-dark-track">
           <motion.div
             className="bar-dark-fill"
             initial={{ width: 0 }}
-            animate={{ width: `${Math.max(0, surplusPct)}%` }}
+            animate={{ width: `${avgSavings}%` }}
             transition={{ duration: 0.7, ease: 'easeOut' }}
           />
         </div>

@@ -102,7 +102,7 @@ function StepIncome({ name, onNext, onBack }) {
         Hey {name}, what's your monthly income?
       </motion.h2>
       <motion.p variants={fadeUp} className="text-label text-ink-3 mb-8">
-        Used to calculate your surplus rate. You can change this anytime.
+        Used to calculate your savings rate. You can change this anytime.
       </motion.p>
 
       <motion.input
