@@ -6,9 +6,7 @@ import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 import { invalidateCache as invalidateTransactionCache, optimisticallyUpsertTransactionInCache } from './useTransactions'
-import { optimisticallyInsertFinancialEvent, invalidateFinancialEvents } from './useFinancialEvents'
-import { act } from 'react'
-import { desc } from 'framer-motion/client'
+import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth']]
 
@@ -240,7 +238,7 @@ export function optimisticallyInsertPendingLiability(liability) {
   )
 }
 
-export function optimisticallyMarkLiabilityPaid(liability) {
+export function optimisticallyMarkLiabilityPaid(liability, { optimistic = true } = {}) {
   if (!liability?.id) return
 
   const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
@@ -251,7 +249,9 @@ export function optimisticallyMarkLiabilityPaid(liability) {
     )
   }
 
-  const paidRow = { ...liability, paid: true, __optimistic: true }
+  const paidRow = optimistic
+    ? { ...liability, paid: true, __optimistic: true }
+    : { ...liability, paid: true }
   const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY)
   if (Array.isArray(paidData)) {
     const deduped = paidData.filter((row) => row?.id !== liability.id)
@@ -335,7 +335,6 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
     })
 
     runInBackground(invalidateLiabilityFn(), 'liability add cache invalidation')
-    runInBackground(invalidateFinancialEvents(), 'financial events refresh')
     return created
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -355,11 +354,13 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     const invalidateTransactionFn = __testOverrides?.invalidateTransactionCache || invalidateTransactionCache
 
     const result = await markPaidFn(liability)
+    suppress('liabilities')
+    suppress('transactions')
     await queryClient.cancelQueries({ queryKey: ['liabilities'] })
     await queryClient.cancelQueries({ queryKey: ['transactions'] })
     await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
-    optimisticallyMarkLiabilityPaid(liability)
+    optimisticallyMarkLiabilityPaid(liability, { optimistic: false })
 
     const rpcRow = Array.isArray(result) ? result[0] : result
     const txnId = rpcRow?.linked_transaction_id
@@ -398,7 +399,6 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       Promise.all([
         invalidateLiabilityFn(),
         invalidateTransactionFn(),
-        invalidateFinancialEvents(),
       ]),
       'liability markPaid cache invalidation'
     )

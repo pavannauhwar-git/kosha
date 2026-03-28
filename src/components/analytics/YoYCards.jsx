@@ -169,7 +169,7 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
                 onClick={() => onRangeChange(value)}
                 className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-full transition-colors ${
                   value === rangeYears
-                    ? 'bg-kosha-primary text-white'
+                    ? 'bg-brand text-white'
                     : 'text-ink-2 hover:bg-kosha-surface-2'
                 }`}
               >

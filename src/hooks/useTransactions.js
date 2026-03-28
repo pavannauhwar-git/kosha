@@ -6,8 +6,7 @@ import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
-import { optimisticallyInsertFinancialEvent, invalidateFinancialEvents } from './useFinancialEvents'
-import { desc } from 'framer-motion/client'
+import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
 // ── Query key factories ───────────────────────────────────────────────────
 const txnListKey  = (filters) => ['transactions', filters]
@@ -791,7 +790,6 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
     })
 
     await invalidateFn()
-    runInBackground(invalidateFinancialEvents(), 'financial events refresh')
     return savedTxn
   } catch (error) {
     restoreCacheSnapshot(snapshot)
@@ -832,7 +830,6 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
     })
 
     runInBackground(invalidateFn(),'transactions delete mutation cache invalidation')
-    runInBackground(invalidateFinancialEvents(), 'financial events refresh')
     return true
   } catch (error) {
     restoreCacheSnapshot(snapshot)
