@@ -249,10 +249,12 @@ export default function Bills() {
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-2.5 flex items-center justify-between gap-3 mt-2">
         <div>
-          {visiblePending.length > 0 ? (
+          {tab === 'pending' && visiblePending.length > 0 ? (
             <p className="text-caption text-ink-3 mt-0.5">
               Next due in {Math.min(...visiblePending.map(b => Math.max(0, daysUntil(b.due_date) || 0)).filter(Number.isFinite))} days
             </p>
+          ) : tab === 'paid' ? (
+            <p className="text-caption text-ink-3 mt-0.5">{visiblePaid.length} paid bill{visiblePaid.length !== 1 ? 's' : ''}</p>
           ) : (
             <p className="text-caption text-ink-3 mt-0.5">{totalBills} bill{totalBills !== 1 ? 's' : ''}</p>
           )}
@@ -291,7 +293,7 @@ export default function Bills() {
       </div>
 
       {/* ── Structured summary card ───────────────────────────────────── */}
-      {visiblePending.length > 0 && (
+      {tab === 'pending' && visiblePending.length > 0 && (
         <div className="card mb-4 p-4">
           <div className="flex items-center justify-between mb-1">
             <span className="text-caption text-ink-3">Total pending</span>
@@ -324,7 +326,7 @@ export default function Bills() {
         </div>
       )}
 
-      {visiblePending.length > 0 && (
+      {tab === 'pending' && visiblePending.length > 0 && (
         <div className="card mb-5 p-4">
           <p className="section-label mb-1">Cash impact preview</p>
           <div className="grid grid-cols-2 gap-2">

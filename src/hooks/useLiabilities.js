@@ -5,7 +5,7 @@ import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
-import { invalidateCache as invalidateTransactionCache } from './useTransactions'
+import { invalidateCache as invalidateTransactionCache, optimisticallyUpsertTransactionInCache } from './useTransactions'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth']]
 
@@ -23,7 +23,10 @@ function runInBackground(promise, scope) {
 
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  await queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' })
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
+  ])
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {
@@ -326,15 +329,34 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     await queryClient.cancelQueries({ queryKey: ['transactions'] })
     await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
-    optimisticallyMarkLiabilityPaid(liability) // Re-apply to ensure cache is correct after cancellations
+    optimisticallyMarkLiabilityPaid(liability)
 
-    runInBackground(
-      Promise.all([
+    const txnId = result?.transaction_id
+    if (txnId) {
+      optimisticallyUpsertTransactionInCache({
+        id: txnId,
+        date: new Date().toISOString().slice(0, 10),
+        created_at: new Date().toISOString(),
+        type: 'expense',
+        amount: liability.amount,
+        description: liability.description,
+        category: 'bills',
+        investment_vehicle: null,
+        is_repayment: false,
+        payment_mode: 'other',
+        notes: `Auto-created from bill: ${liability.description}`,
+        is_recurring: false,
+        recurrence: null,
+        next_run_date: null,
+        source_transaction_id: null,
+        is_auto_generated: false,
+      })
+    }
+
+    await Promise.all([
         invalidateLiabilityFn(),
         invalidateTransactionFn(),
-      ]),
-      'liability markPaid cache invalidation'
-    )
+      ])
     return result
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
