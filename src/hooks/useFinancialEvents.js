@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient } from '../lib/queryClient'
+import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { traceQuery } from '../lib/queryTrace'
 
 const EVENT_COLUMNS = 'id, action, entity_type, entity_id, metadata, created_at'
+
 export function optimisticallyInsertFinancialEvent({ action, entityType, entityId, metadata }) {
   try {
     const event = {
@@ -22,13 +23,14 @@ export function optimisticallyInsertFinancialEvent({ action, entityType, entityI
       const limit = key[1] || 10
       queryClient.setQueryData(key, [event, ...rows].slice(0, limit))
     }
+    void evictSwCacheEntries('/financial_events').catch(() => { })
   } catch (e) {
-    // No-op in environments without financial events table (e.g. during early development).
     console.warn('[Kosha] optimistic financial event injection failed', e)
   }
 }
 
 export async function invalidateFinancialEvents() {
+  await evictSwCacheEntries('/financial_events')
   await queryClient.invalidateQueries({ queryKey: ['financialEvents'], refetchType: 'active' })
 }
 

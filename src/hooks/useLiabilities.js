@@ -1,6 +1,6 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient } from '../lib/queryClient'
+import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
@@ -24,7 +24,11 @@ function runInBackground(promise, scope) {
 
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  await queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' })
+  await evictSwCacheEntries('/liabilities')
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
+  ])
 }
 
 async function fetchLiabilitiesByPaid(paidValue) {
@@ -363,27 +367,26 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     optimisticallyMarkLiabilityPaid(liability, { optimistic: false })
 
     const rpcRow = Array.isArray(result) ? result[0] : result
-    const txnId = rpcRow?.linked_transaction_id
-    if (txnId) {
-      optimisticallyUpsertTransactionInCache({
-        id: txnId,
-        date: new Date().toISOString().slice(0, 10),
-        created_at: new Date().toISOString(),
-        type: 'expense',
-        amount: liability.amount,
-        description: liability.description,
-        category: 'bills',
-        investment_vehicle: null,
-        is_repayment: false,
-        payment_mode: 'other',
-        notes: `Auto-created from bill: ${liability.description}`,
-        is_recurring: false,
-        recurrence: null,
-        next_run_date: null,
-        source_transaction_id: null,
-        is_auto_generated: false,
-      })
-    }
+    const txnId = rpcRow?.transaction_id || `optimistic-txn-markpaid-${Date.now()}`
+
+    optimisticallyUpsertTransactionInCache({
+      id: txnId,
+      date: new Date().toISOString().slice(0, 10),
+      created_at: new Date().toISOString(),
+      type: 'expense',
+      amount: liability.amount,
+      description: liability.description,
+      category: 'bills',
+      investment_vehicle: null,
+      is_repayment: false,
+      payment_mode: 'other',
+      notes: `Auto-created from bill: ${liability.description}`,
+      is_recurring: false,
+      recurrence: null,
+      next_run_date: null,
+      source_transaction_id: null,
+      is_auto_generated: false,
+    })
 
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.BILL_MARK_PAID,
@@ -396,10 +399,15 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     })
 
     runInBackground(
-      Promise.all([
-        invalidateLiabilityFn(),
-        invalidateTransactionFn(),
-      ]),
+      (async () => {
+        await evictSwCacheEntries('/transactions')
+        await Promise.all([
+          invalidateLiabilityFn(),
+          invalidateTransactionFn(),
+          queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'none' }),
+          queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
+        ])
+      })(),
       'liability markPaid cache invalidation'
     )
     return result

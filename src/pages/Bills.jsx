@@ -24,7 +24,7 @@ export default function Bills() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [tab, setTab] = useState(() => (searchParams.get('tab') === 'paid' ? 'paid' : 'pending'))
-  const { pending, paid, loading, pendingLoading, paidLoading } = useLiabilities({ includePaid: tab === 'paid' })
+  const { pending, paid, loading, pendingLoading, paidLoading } = useLiabilities({ includePaid: true })
   const [showAdd, setShowAdd] = useState(false)
   const [payingId, setPayingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
