@@ -42,9 +42,7 @@ export default function useFileUploads() {
     }
 
     const userId = getAuthUserId()
-    const timestamp = Date.now()
-    const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-    const storagePath = `${userId}/${timestamp}_${safeName}`
+    const storagePath = userId + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
 
     const { error: uploadErr } = await supabase.storage
       .from(BUCKET)
