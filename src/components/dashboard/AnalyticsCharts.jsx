@@ -81,9 +81,8 @@ const NetTooltip = ({ active, payload, label }) => {
 export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncome }) {
   const safeData = (Array.isArray(chartData) ? chartData : []).map((point) => ({
     name: point?.name || '-',
-    Income: point?.Income,
-    Spent: point?.Spent,
-    PredictedSpent: point?.PredictedSpent,
+    Income: toFiniteNumber(point?.Income),
+    Spent: toFiniteNumber(point?.Spent),
   }))
 
   if (!safeData.length) return null
@@ -154,19 +153,15 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
           />
           <YAxis hide />
           <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(31,37,95,0.10)', strokeWidth: 1 }} />
-          <Area dataKey="Income" type="monotone" connectNulls={false}
+          <Area dataKey="Income" type="monotone"
             stroke={C.chartIncome} strokeWidth={3} fill="url(#gIncome)" dot={false}
             activeDot={{ r: 5, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
             name="Income"
           />
-          <Area dataKey="Spent" type="monotone" connectNulls={false}
+          <Area dataKey="Spent" type="monotone"
             stroke={C.chartExpense} strokeWidth={3} fill="url(#gExpense)" dot={false}
             activeDot={{ r: 5, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
             name="Spent"
-          />
-          <Line dataKey="PredictedSpent" type="monotone" connectNulls={true}
-            stroke={C.chartExpense} strokeWidth={2} strokeDasharray="4 4" dot={false}
-            name="Predicted" activeDot={false} fill="none" opacity={0.5}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -188,7 +183,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisMax }) {
   const safeData = (Array.isArray(netData) ? netData : []).map((point) => ({
     name: point?.name || '-',
-    Net: point?.Net,
+    Net: toFiniteNumber(point?.Net),
   }))
 
   if (!safeData.length) return null
@@ -260,7 +255,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={26}>
             {safeData.map((entry, i) => (
               <Cell key={i}
-                fill={entry.Net === null ? 'transparent' : (entry.Net >= 0 ? C.chartIncome : C.chartExpense)}
+                fill={entry.Net >= 0 ? C.chartIncome : C.chartExpense}
                 fillOpacity={0.90}
               />
             ))}

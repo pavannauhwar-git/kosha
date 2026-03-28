@@ -64,17 +64,17 @@
        Keep in sync with src/lib/colors.js and tailwind.config.js
     ───────────────────────────────────────────────────────────────── */
 
-    /* Brand — Royal Indigo */
-    --c-brand: #5b21b6;
-    --c-brand-mid: #6d28d9;
-    --c-brand-container: #ede9fe;
+    /* Brand — Modern Indigo */
+    --c-brand: #4F46E5;
+    --c-brand-mid: #6366F1;
+    --c-brand-container: #E0E7FF;
     --c-brand-border: #E2E8F0;
-    --c-brand-rgb: 91, 33, 182;
-    --c-brand-mid-rgb: 109, 40, 217;
+    --c-brand-rgb: 79, 70, 229;
+    --c-brand-mid-rgb: 99, 102, 241;
 
-    /* Accent — Chartreuse */
-    --c-accent: #7FFF00;
-    --c-accent-rgb: 127, 255, 0;
+    /* Accent — Modern Indigo Accent (Replacing Yellow) */
+    --c-accent: #818CF8;
+    --c-accent-rgb: 129, 140, 248;
 
     /* Semantics */
     --c-income: #10B981;
@@ -88,9 +88,9 @@
     --c-ink-muted: #64748B;
 
     /* Hero card overlays */
-    --c-hero-accent: rgba(127, 255, 0, 0.78);
-    --c-hero-accent-bg: rgba(127, 255, 0, 0.22);
-    --c-hero-accent-fill: rgba(127, 255, 0, 0.78);
+    --c-hero-accent: rgba(129, 140, 248, 0.78);
+    --c-hero-accent-bg: rgba(129, 140, 248, 0.22);
+    --c-hero-accent-fill: rgba(129, 140, 248, 0.78);
     --c-hero-label: rgba(255, 255, 255, 0.65);
     --c-hero-dimmer: rgba(255, 255, 255, 0.35);
     --c-hero-divider: rgba(255, 255, 255, 0.15);
@@ -391,7 +391,7 @@
 
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
-    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-kosha-border shadow-sm focus:border-brand focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-150;
+    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-transparent focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-150;
     min-width: 0;
     will-change: transform;
     transform: translateZ(0);

@@ -13,17 +13,17 @@
 
 export const C = {
 
-  // ── Brand — Royal Indigo ─────────────────────────────────────────
-  brand:           '#5b21b6', // Royal Indigo
-  brandMid:        '#6d28d9',
-  brandLight:      '#8b5cf6',
-  brandContainer:  '#ede9fe',
+  // ── Brand — Modern Indigo ────────────────────────────────────────
+  brand:           '#4F46E5',
+  brandMid:        '#6366F1',
+  brandLight:      '#818CF8',
+  brandContainer:  '#E0E7FF',
   brandBorder:     '#E2E8F0',
 
-  // ── Accent — Chartreuse ──────────────────────────────────────────
-  accent:          '#7FFF00', // Chartreuse
-  accentBg:        'rgba(127,255,0,0.22)',
-  accentFill:      'rgba(127,255,0,0.78)',
+  // ── Accent — Indigo Light Accent ─────────────────────────────────
+  accent:          '#818CF8',
+  accentBg:        'rgba(129,140,248,0.22)',
+  accentFill:      'rgba(129,140,248,0.78)',
 
   // ── Income — Emerald ─────────────────────────────────────────────
   income:          '#10B981',
@@ -47,9 +47,9 @@ export const C = {
   inkMuted:        '#64748B',
 
   // ── Hero card overlays ───────────────────────────────────────────
-  heroAccent:      'rgba(127,255,0,0.78)', // Chartreuse
-  heroAccentBg:    'rgba(127,255,0,0.22)',
-  heroAccentSolid: '#7FFF00',
+  heroAccent:      'rgba(129,140,248,0.78)',
+  heroAccentBg:    'rgba(129,140,248,0.22)',
+  heroAccentSolid: '#818CF8',
   heroLabel:       'rgba(255,255,255,0.65)',
   heroDimmer:      'rgba(255,255,255,0.35)',
   heroDivider:     'rgba(255,255,255,0.15)',
@@ -58,21 +58,21 @@ export const C = {
   // ── Chart glow colours ───────────────────────────────────────────
   chartIncome:     '#34D399',
   chartExpense:    '#FB7185',
-  chartDark:       '#312e81',
+  chartDark:       '#3730A3',
   chartGrid:       'rgba(255,255,255,0.06)',
   chartCursor:     'rgba(255,255,255,0.06)',
 
-  // ── Portfolio donut — royalty indigo family, darkest → lightest ──────────
+  // ── Portfolio donut — indigo family, darkest → lightest ──────────
   portfolio: [
-    '#2e1065',
-    '#312e81',
-    '#4c1d95',
-    '#5b21b6',
-    '#6d28d9',
-    '#8b5cf6',
+    '#312E81',
+    '#3730A3',
+    '#4F46E5',
+    '#6366F1',
+    '#818CF8',
+    '#A5B4FC',
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#5b21b6',
-  logoHighlight: '#7FFF00',
+  logoBg:        '#4F46E5',
+  logoHighlight: '#818CF8',
 }

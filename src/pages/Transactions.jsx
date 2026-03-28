@@ -458,10 +458,7 @@ export default function Transactions() {
               }}
         />
       ) : (
-        <div className="space-y-3.5 relative">
-          {/* Action Helper Mascot */}
-          <Mascot type="bot" className="absolute top-12 right-2 md:right-8 z-30 w-24 h-24" />
-
+        <div className="space-y-3.5">
           {groups.map(([dateKey, txns, net]) => (
             <div key={dateKey} className="list-card overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3

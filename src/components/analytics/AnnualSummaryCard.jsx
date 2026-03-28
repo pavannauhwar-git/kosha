@@ -42,46 +42,60 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3 mb-2">
-      <div className="col-span-2 card p-5 flex flex-col items-center justify-center text-center bg-brand-container border border-transparent shadow-none">
-        <p className="text-[11px] font-bold tracking-widest uppercase text-brand mb-1">
-          {year} Net Growth
+    <div className="card-hero p-5 md:p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between gap-3 mb-3.5">
+        <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
+          Year snapshot
         </p>
-        <p
-          className={`font-bold tabular-nums tracking-tight ${annualBalance >= 0 ? 'text-brand-dark' : 'text-expense-text'}`}
-          style={{ fontSize: 36, lineHeight: 1 }}
-        >
-          {fmt(annualBalance)}
+        <p className="text-caption font-bold tracking-widest" style={{ color: C.heroDimmer }}>
+          {year}
         </p>
-        <div className="mt-3 inline-flex items-center px-3 py-1 rounded-pill bg-white/60 text-brand-dark">
-          <span className="text-[11px] font-semibold">
-            {avgSavings}% average savings rate
-          </span>
-        </div>
       </div>
 
-      {cards.map((card) => (
-        <div key={card.label} className="card p-4">
-          <p className="text-[11px] text-ink-3 mb-1">{card.label}</p>
-          <p className="text-[18px] font-bold text-ink tabular-nums">{fmt(card.value)}</p>
-          <p className={`text-[10px] whitespace-nowrap mt-1 ${card.delta.pct >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-            {card.delta.label}
-          </p>
-        </div>
-      ))}
+      <p className="text-caption font-medium mb-1" style={{ color: C.heroLabel }}>
+        Annual balance
+      </p>
+      <p
+        className={`font-bold tabular-nums leading-[0.95] tracking-tight ${annualBalance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}
+        style={{ fontSize: 38 }}
+      >
+        {fmt(annualBalance)}
+      </p>
 
-      <div className="card p-4 flex flex-col justify-center">
-        <div className="flex justify-between mb-1.5">
-          <span className="text-[11px] font-medium text-ink-3">
-            Avg Savings
+      <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
+        <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
+          {avgSavings}% avg savings rate
+        </span>
+      </div>
+
+      <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
+
+      <div className="mb-3.5 space-y-2">
+        {cards.map((card) => (
+          <div key={card.label} className="px-3 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
+            <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>{card.label}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12px] font-bold text-white tabular-nums">{fmt(card.value)}</p>
+              <p className="text-[10px] whitespace-nowrap" style={{ color: C.heroLabel }}>
+                {card.delta.label}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-1">
+        <div className="flex justify-between mb-2">
+          <span className="text-caption font-medium" style={{ color: C.heroLabel }}>
+            Savings rate
           </span>
-          <span className="text-[11px] font-bold text-brand">
+          <span className="text-caption font-bold" style={{ color: C.heroAccentSolid }}>
             {avgSavings}%
           </span>
         </div>
-        <div className="h-1.5 w-full bg-kosha-surface-2 rounded-full overflow-hidden">
+        <div className="bar-dark-track">
           <motion.div
-            className="h-full bg-brand"
+            className="bar-dark-fill"
             initial={{ width: 0 }}
             animate={{ width: `${avgSavings}%` }}
             transition={{ duration: 0.7, ease: 'easeOut' }}

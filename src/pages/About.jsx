@@ -92,12 +92,12 @@ export default function About() {
         <h1 className="text-[17px] font-bold text-ink tracking-tight">About</h1>
       </div>
 
-      <div className="px-4 pt-4 pb-24 max-w-[640px] mx-auto">
-        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      <div className="px-4 pt-8 pb-24 max-w-[640px] mx-auto">
+        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-8">
 
           {/* ── Hero strip ────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="text-center py-2">
-             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white shadow-sm border border-kosha-border mb-3">
+          <motion.div variants={fadeUp} className="text-center py-6">
+             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-md border border-kosha-border mb-6">
                 <KoshaLogo size={36} />
              </div>
              <h1 className="text-display font-bold text-ink mb-3 tracking-tight">Kosha</h1>

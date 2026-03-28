@@ -319,9 +319,7 @@ export default function Monthly() {
         }}
       />
 
-      <div className="mb-3 md:mb-4 relative mt-10 md:mt-12">
-        {/* Sleeping / Relaxed Mascot */}
-        <Mascot type="sleepy" className="absolute -top-10 -right-2 md:-top-14 md:-right-4 z-10 w-24 h-24" />
+      <div className="mb-3 md:mb-4">
         <MonthHeroCard month={month} year={year} data={data} />
       </div>
 

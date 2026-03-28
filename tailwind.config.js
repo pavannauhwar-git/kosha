@@ -12,14 +12,14 @@ export default {
         'kosha-border':        '#E2E8F0',
         'kosha-border-strong': '#CBD5E1',
 
-        // ── Brand — Royal Indigo & Chartreuse ──────────────────────────
-        'brand':           '#5b21b6', // Royal Indigo
-        'brand-dark':      '#312e81',
-        'brand-mid':       '#6d28d9',
-        'brand-bg':        '#f5f3ff',
-        'brand-container': '#ede9fe',
-        'brand-on':        '#312e81',
-        'brand-accent':    '#7FFF00', // Chartreuse
+        // ── Brand — Modern Indigo ──────────────────────────────────────────
+        'brand':           '#4F46E5',
+        'brand-dark':      '#3730A3',
+        'brand-mid':       '#6366F1',
+        'brand-bg':        '#EEF2FF',
+        'brand-container': '#E0E7FF',
+        'brand-on':        '#3730A3',
+        'brand-accent':    '#4F46E5',
 
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#10B981',
