@@ -76,6 +76,12 @@
     --c-accent: #818CF8;
     --c-accent-rgb: 129, 140, 248;
 
+    /* Lime — Contrast accent */
+    --c-lime: #CAFF04;
+    --c-lime-rgb: 202, 255, 4;
+    --c-lime-dark: #9ACC00;
+    --c-lime-bg: rgba(202, 255, 4, 0.12);
+
     /* Semantics */
     --c-income: #10B981;
     --c-invest-text: #5B21B6;
@@ -115,11 +121,11 @@
 
 @layer components {
 
-  /* -- Hero card — Wise Forest Green ──────────────────────────────── */
-  /* Single gradient layer (was 6) — dramatically cheaper on GPU.      */
+  /* -- Hero card — Deep Indigo with Lime glow ─────────────────────── */
   .card-hero {
     background:
-      radial-gradient(ellipse at 85% 15%, rgba(var(--c-accent-rgb), 0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 15%, rgba(var(--c-lime-rgb), 0.10) 0%, transparent 50%),
+      radial-gradient(ellipse at 15% 85%, rgba(var(--c-accent-rgb), 0.18) 0%, transparent 55%),
       linear-gradient(145deg, var(--c-brand) 0%, var(--c-brand-mid) 100%);
     @apply rounded-hero shadow-apple-card;
   }
@@ -272,7 +278,7 @@
   /* -- FAB ─────────────────────────────────────────────────────────── */
   .fab {
     @apply fixed w-[56px] h-[56px] bg-brand text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
-    box-shadow: 0 8px 24px -6px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 8px 24px -6px rgba(79, 70, 229, 0.4), 0 0 0 2px rgba(202, 255, 4, 0.15);
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
@@ -391,7 +397,7 @@
 
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
-    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-transparent focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-150;
+    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-kosha-border focus:outline-none focus:shadow-focus focus:border-brand/30 focus:bg-white transition-all duration-150;
     min-width: 0;
     will-change: transform;
     transform: translateZ(0);

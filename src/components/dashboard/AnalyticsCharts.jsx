@@ -79,11 +79,20 @@ const NetTooltip = ({ active, payload, label }) => {
 // ── CashFlow chart ─────────────────────────────────────────────────────────
 
 export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncome }) {
-  const safeData = (Array.isArray(chartData) ? chartData : []).map((point) => ({
-    name: point?.name || '-',
-    Income: toFiniteNumber(point?.Income),
-    Spent: toFiniteNumber(point?.Spent),
-  }))
+  const currentMonth = new Date().getMonth() // 0-indexed
+
+  const safeData = (Array.isArray(chartData) ? chartData : []).map((point, idx) => {
+    const income = toFiniteNumber(point?.Income)
+    const spent = toFiniteNumber(point?.Spent)
+    const isFuture = idx > currentMonth
+    return {
+      name: point?.name || '-',
+      Income: isFuture ? null : income,
+      Spent: isFuture ? null : spent,
+      IncomeForecast: isFuture ? income : (idx === currentMonth ? income : null),
+      SpentForecast: isFuture ? spent : (idx === currentMonth ? spent : null),
+    }
+  })
 
   if (!safeData.length) return null
 
@@ -157,11 +166,23 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             stroke={C.chartIncome} strokeWidth={3} fill="url(#gIncome)" dot={false}
             activeDot={{ r: 5, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
             name="Income"
+            connectNulls={false}
           />
           <Area dataKey="Spent" type="monotone"
             stroke={C.chartExpense} strokeWidth={3} fill="url(#gExpense)" dot={false}
             activeDot={{ r: 5, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
             name="Spent"
+            connectNulls={false}
+          />
+          <Line dataKey="IncomeForecast" type="monotone"
+            stroke={C.chartIncome} strokeWidth={2} strokeDasharray="6 4"
+            dot={false} connectNulls legendType="none" name="Income forecast"
+            strokeOpacity={0.5}
+          />
+          <Line dataKey="SpentForecast" type="monotone"
+            stroke={C.chartExpense} strokeWidth={2} strokeDasharray="6 4"
+            dot={false} connectNulls legendType="none" name="Spent forecast"
+            strokeOpacity={0.5}
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -1,6 +1,6 @@
 import { memo, useState, useCallback } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { Trash, CopySimple, CircleNotch, DotsThreeVertical } from '@phosphor-icons/react'
+import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
 import CategoryIcon, { ICON_MAP } from './CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../lib/utils'
 import { getCategory, INVESTMENT_VEHICLES } from '../lib/categories'
@@ -219,16 +219,6 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           <span className={`text-[14px] tabular-nums font-semibold ${amtCls}`}>
             {prefix}{fmt(txn.amount)}
           </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              x.get() < -10 ? snapToRest() : snapToPeek()
-            }}
-            className="w-7 h-7 flex items-center justify-center text-ink-4 hover:text-ink-2 hover:bg-kosha-border/50 rounded-full transition-colors ml-1 -mr-1"
-          >
-            <DotsThreeVertical size={18} weight="bold" />
-          </button>
         </div>
       </motion.div>
 
