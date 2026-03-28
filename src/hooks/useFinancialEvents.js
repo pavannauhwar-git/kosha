@@ -6,7 +6,7 @@ import { traceQuery } from '../lib/queryTrace'
 
 const EVENT_COLUMNS = 'id, action, entity_type, entity_id, metadata, created_at'
 
-export function optimisticallyUpdateFinancialEvents({ action, entityType, entityId, metadata }) {
+export function optimisticallyInsertFinancialEvent({ action, entityType, entityId, metadata }) {
   const event = {
     id: `optimistic-evt-${Date.now()}`,
     action,
@@ -18,7 +18,7 @@ export function optimisticallyUpdateFinancialEvents({ action, entityType, entity
   }
   const entries = queryClient.getQueriesData({ queryKey: ['financialEvents'] })
   for (const [key, rows] of entries) {
-    if (Array.isArray(rows)) continue
+    if (!Array.isArray(rows)) continue
     const limit = key[1] || 10
     queryClient.setQueryData(key, [event, ...rows].slice(0, limit))
   }
