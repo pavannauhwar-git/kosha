@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, cache } from 'react'
-import { supabase } from '..lib/supabase'
+import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 
 const BUCKET = 'user-uploads'
