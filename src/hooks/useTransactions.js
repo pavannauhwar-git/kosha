@@ -6,6 +6,8 @@ import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
+import { optimisticallyInsertFinancialEvent, invalidateFinancialEvents } from './useFinancialEvents'
+import { desc } from 'framer-motion/client'
 
 // ── Query key factories ───────────────────────────────────────────────────
 const txnListKey  = (filters) => ['transactions', filters]
@@ -543,6 +545,7 @@ export async function addTransaction(payload) {
       entityType: 'transaction',
       entityId: data.id,
       metadata: {
+        description: data.description,
         amount: data.amount,
         type: data.type,
         date: data.date,
@@ -575,7 +578,10 @@ export async function updateTransaction(id, payload) {
       entityType: 'transaction',
       entityId: data.id,
       metadata: {
-        before: null,
+        description: data.description,
+        amount: data.amount,
+        type: data.type,
+        category: data.category,
         after: data,
       },
     }),
@@ -771,7 +777,21 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
       optimisticallyDeleteTransactionFromCache(optimisticId)
     }
     optimisticallyUpsertTransactionInCache(savedTxn)
+
+    optimisticallyInsertFinancialEvent({
+      action: id ? FINANCIAL_EVENT_ACTIONS.TXN_UPDATE : FINANCIAL_EVENT_ACTIONS.TXN_ADD,
+      entityType: 'transaction',
+      entityId: savedTxn.id,
+      metadata: {
+        description: savedTxn.description,
+        amount: savedTxn.amount,
+        type: savedTxn.type,
+        category: savedTxn.category,
+      },
+    })
+
     await invalidateFn()
+    runInBackground(invalidateFinancialEvents(), 'financial events refresh')
     return savedTxn
   } catch (error) {
     restoreCacheSnapshot(snapshot)
@@ -780,6 +800,7 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
 }
 
 export async function removeTransactionMutation(id, __testOverrides = null) {
+  const cachedTxn = getTransactionFromCacheById(id)
   const snapshot = snapshotCacheFamilies([
     ['transactions'],
     ['transactionsRecent'],
@@ -798,7 +819,20 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
 
     optimisticallyDeleteTransactionFromCache(id)
 
+    optimisticallyInsertFinancialEvent({
+      action: FINANCIAL_EVENT_ACTIONS.TXN_DELETE,
+      entityType: 'transaction',
+      entityId: id,
+      metadata: {
+        description: cachedTxn?.description,
+        amount: cachedTxn?.amount,
+        type: cachedTxn?.type,
+        category: cachedTxn?.category,
+      },
+    })
+
     runInBackground(invalidateFn(),'transactions delete mutation cache invalidation')
+    runInBackground(invalidateFinancialEvents(), 'financial events refresh')
     return true
   } catch (error) {
     restoreCacheSnapshot(snapshot)

@@ -1,9 +1,32 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
+import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { traceQuery } from '../lib/queryTrace'
 
 const EVENT_COLUMNS = 'id, action, entity_type, entity_id, metadata, created_at'
+
+export function optimisticallyUpdateFinancialEvents({ action, entityType, entityId, metadata }) {
+  const event = {
+    id: `optimistic-evt-${Date.now()}`,
+    action,
+    entity_type: entityType,
+    entity_id: entityId,
+    metadata: metadata || null,
+    created_at: new Date().toISOString(),
+    __optimistic: true,
+  }
+  const entries = queryClient.getQueriesData({ queryKey: ['financialEvents'] })
+  for (const [key, rows] of entries) {
+    if (Array.isArray(rows)) continue
+    const limit = key[1] || 10
+    queryClient.setQueryData(key, [event, ...rows].slice(0, limit))
+  }
+}
+
+export function invalidateFinancialEvents() {
+  queryClient.invalidateQueries({ queryKey: ['financialEvents'], refetchType: 'active' })
+}
 
 export function useFinancialEvents(limit = 10, options = {}) {
   const { enabled = true } = options

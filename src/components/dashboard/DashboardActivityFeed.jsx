@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react'
 import { History, ArrowRightLeft, Trash2, CheckCircle2, PlusCircle, FileEdit } from 'lucide-react'
+import { fmt } from '../../lib/utils'
 
 function actionMeta(action) {
   switch (action) {
@@ -8,20 +9,70 @@ function actionMeta(action) {
     case 'transaction_updated':
       return { label: 'Transaction edited', tone: 'text-brand', Icon: FileEdit }
     case 'transaction_deleted':
-      return { label: 'Transaction deleted', tone: 'text-expense-text', Icon: Trash2 }
+      return { label: 'Transaction removed', tone: 'text-expense-text', Icon: Trash2 }
     case 'liability_added':
       return { label: 'Bill added', tone: 'text-warning-text', Icon: PlusCircle }
     case 'liability_marked_paid':
       return { label: 'Bill marked paid', tone: 'text-income-text', Icon: CheckCircle2 }
     case 'liability_deleted':
-      return { label: 'Bill deleted', tone: 'text-expense-text', Icon: Trash2 }
+      return { label: 'Bill removed', tone: 'text-expense-text', Icon: Trash2 }
     default:
       return { label: 'Financial change', tone: 'text-ink-3', Icon: ArrowRightLeft }
   }
 }
 
-function entityLabel(entityType) {
-  return entityType === 'transaction' ? 'Transaction' : 'Bill'
+function formatShortDate(dateStr) {
+  if (!dateStr) return ''
+  const dt = new Date(dateStr)
+  if (Number.isNaN(dt.getTime())) return ''
+  
+  return dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+}
+
+function eventSubtitle(evt) {
+  const m = evt.metadata || {}
+  const action = evt.action
+
+  const desc = m.description || m.after?.description || ''
+  const rawAmount = m.amount ?? m.after?.amount
+  const amt = rawAmt != null && Number.isFinite(Number(rawAmt)) ? fmt(Number(rawAmt)) : ''
+  const category = m.category || m.after?.category || ''
+
+  if (action === 'transaction_added' || action === 'transaction_updated') {
+    if (desc && amt) return `₹${amt} - ${desc}`
+    if (amt && category) return `₹${amt} - ${category}`
+    if (desc) return desc
+    if (amt) return amt
+    if (category) return category
+  }
+
+  if (action === 'transaction_deleted') {
+    if (desc && amt) return `₹${amt} - ${desc}`
+    if (desc) return desc
+    if (amt) return amt
+  }
+
+  if (action === 'liability_added') {
+    const due = formatShortDate(m.due_date)
+    if (desc && amt) return `₹${amt} - ${desc}`
+    if (amt && due) return `₹${amt} - due ${due}`
+    if (desc) return desc
+    if (amt) return amt
+  }
+
+  if (action === 'liability_marked_paid') {
+    if (desc && amt) return `₹${amt} - ${desc}`
+    if (desc) return desc
+    if (amt) return `₹${amt} settled`
+  }
+
+  if (action === 'liability_deleted') {
+    if (desc && amt) return `₹${amt} - ${desc}`
+    if (desc) return desc
+    if (amt) return amt
+  }
+
+  return evt.entity_type === 'transaction' ? 'Transaction' : 'Bill'
 }
 
 function formatEventTime(iso) {
@@ -75,10 +126,8 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className={`text-[14px] font-semibold ${meta.tone}`}>{meta.label}</p>
-                <p className="text-[11px] text-ink-3 truncate">
-                  {entityLabel(evt.entity_type)} ID: {String(evt.entity_id || '').slice(0, 8)}
-                </p>
+                <p className={`text-[13px] font-semibold ${meta.tone}`}>{meta.label}</p>
+                <p className="text-[11px] text-ink-3 truncate">{eventSubtitle(evt)}</p>
               </div>
 
               <p className="text-[11px] text-ink-4 whitespace-nowrap">{formatEventTime(evt.created_at)}</p>

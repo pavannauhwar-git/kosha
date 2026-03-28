@@ -6,6 +6,9 @@ import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 import { invalidateCache as invalidateTransactionCache, optimisticallyUpsertTransactionInCache } from './useTransactions'
+import { optimisticallyInsertFinancialEvent, invalidateFinancialEvents } from './useFinancialEvents'
+import { act } from 'react'
+import { desc } from 'framer-motion/client'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth']]
 
@@ -132,6 +135,7 @@ export async function addLiability(payload) {
       entityType: 'liability',
       entityId: data.id,
       metadata: {
+        description: data.description,
         amount: data.amount,
         due_date: data.due_date,
         is_recurring: data.is_recurring,
@@ -162,14 +166,13 @@ export async function markPaid(liability) {
       entityType: 'liability',
       entityId: liability.id,
       metadata: {
-        before: null,
-        after: null,
+        description: liability.description,
+        amount: liability.amount,
         rpc_result: result || null,
       },
     }),
     'liabilities markPaid audit'
   )
-
   return result;
 }
 
@@ -261,6 +264,21 @@ export function optimisticallyMarkLiabilityPaid(liability) {
   }
 }
 
+function getLiabilityFromCacheById(id) {
+  if (!id) return null
+  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  if (Array.isArray(pendingData)) {
+    const found = pendingData.find((row) => row?.id === id)
+    if (found) return found
+  }
+  const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY)
+  if (Array.isArray(paidData)) {
+    const found = paidData.find((row) => row?.id === id)
+    if (found) return found
+  }
+  return null
+}
+
 export function optimisticallyDeleteLiabilityFromCache(id) {
   if (!id) return
 
@@ -304,7 +322,20 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
 
     optimisticallyDeleteLiabilityFromCache(optimisticId)
     optimisticallyInsertPendingLiability(created)
+
+    optimisticallyInsertFinancialEvent({
+      action: FINANCIAL_EVENT_ACTIONS.BILL_ADD,
+      entityType: 'liability',
+      entityId: created.id,
+      metadata: {
+        description: created.description,
+        amount: created.amount,
+        due_date: created.due_date,
+      },
+    })
+
     runInBackground(invalidateLiabilityFn(), 'liability add cache invalidation')
+    runInBackground(invalidateFinancialEvents(), 'financial events refresh')
     return created
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -353,10 +384,21 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       })
     }
 
+    optimisticallyInsertFinancialEvent({
+      action: FINANCIAL_EVENT_ACTIONS.BILL_MARK_PAID,
+      entityType: 'liability',
+      entityId: liability.id,
+      metadata: {
+        description: liability.description,
+        amount: liability.amount,
+      },
+    })
+
     runInBackground(
       Promise.all([
         invalidateLiabilityFn(),
         invalidateTransactionFn(),
+        invalidateFinancialEvents(),
       ]),
       'liability markPaid cache invalidation'
     )
@@ -368,6 +410,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
 }
 
 export async function deleteLiabilityMutation(id, __testOverrides = null) {
+  const cachedBill = getLiabilityFromCacheById(id)
   const snapshot = snapshotLiabilityCaches()
   suppress('liabilities')
   optimisticallyDeleteLiabilityFromCache(id)
@@ -379,7 +422,17 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
     await deleteFn(id)
     await queryClient.cancelQueries({ queryKey: ['liabilities'] })
 
-    optimisticallyDeleteLiabilityFromCache(id) // Re-apply to ensure cache is correct after cancellations
+    optimisticallyDeleteLiabilityFromCache(id)
+
+    optimisticallyInsertFinancialEvent({
+      action: FINANCIAL_EVENT_ACTIONS.BILL_DELETE,
+      entityType: 'liability',
+      entityId: id,
+      metadata: {
+        description: cachedBill?.description,
+        amount: cachedBill?.amount,
+      },
+    })
 
     runInBackground(invalidateLiabilityFn(), 'liability delete cache invalidation')
     return true
