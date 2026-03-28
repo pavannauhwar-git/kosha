@@ -37,76 +37,47 @@ export default function KoshaErrorPage({
 
   return (
     <div
-      className="fixed inset-0 z-[80] overflow-hidden bg-kosha-bg"
+      className="fixed inset-0 z-[80] overflow-hidden bg-white text-ink"
       style={{
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
       }}
     >
-      <div className="pointer-events-none absolute inset-0">
-        <div
-          className="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(91,81,224,0.24) 0%, rgba(91,81,224,0) 68%)' }}
-        />
-        <div
-          className="absolute -bottom-20 -left-12 h-72 w-72 rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(226,255,90,0.24) 0%, rgba(226,255,90,0) 72%)' }}
-        />
-      </div>
-
-      <div className="relative flex h-full items-center justify-center px-4 py-8">
+      <div className="relative flex h-full items-center justify-center p-6">
         <motion.section
-          initial={{ opacity: 0, y: 12, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.24, ease: 'easeOut' }}
-          className="w-full max-w-[470px] max-h-full overflow-y-auto rounded-[28px] border border-kosha-border bg-white p-6 shadow-apple-card"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="w-full max-w-[420px] max-h-full overflow-y-auto flex flex-col items-center text-center"
         >
-          <div className="mb-5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <KoshaLogo size={42} />
-              <div>
-                <p className="text-[11px] font-bold tracking-[0.18em] text-brand">KOSHA</p>
-                <p className="text-caption font-medium text-ink-3">Recovery mode</p>
-              </div>
+          <div className="mb-8">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-kosha-surface-2 border border-kosha-border shadow-sm mb-6">
+              <AlertTriangle size={28} className={isNotFound ? 'text-warning' : 'text-expense'} />
             </div>
-            <span className={`rounded-pill border px-2.5 py-1 text-[11px] font-semibold ${toneClass}`}>
-              {badgeLabel}
-            </span>
+            <h1 className="text-[26px] font-bold tracking-tight text-ink mb-2">
+              {isNotFound ? 'Page Not Found' : title}
+            </h1>
+            <p className="text-body text-ink-3">
+              {description} {helperText}
+            </p>
           </div>
 
-          <div
-            className="rounded-[20px] border border-kosha-border p-4"
-            style={{ background: 'linear-gradient(145deg, rgba(237,233,255,0.9) 0%, rgba(255,255,255,1) 85%)' }}
-          >
-            <div className="flex items-start gap-3">
-              <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border ${toneClass}`}>
-                <AlertTriangle size={18} />
-              </div>
-              <div>
-                <h1 className="text-[22px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
-                <p className="mt-1.5 text-label leading-relaxed text-ink-2">{description}</p>
-              </div>
-            </div>
-          </div>
-
-          <p className="mt-3 text-caption leading-relaxed text-ink-3">{helperText}</p>
-
-          <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="w-full flex flex-col gap-3">
             <button
               type="button"
               onClick={onPrimary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-[14px] font-semibold text-white transition-all duration-100 active:scale-[0.98]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[12px] bg-ink px-4 py-3.5 text-[15px] font-semibold text-white shadow-sm transition-all duration-100 hover:bg-ink-2 active:scale-[0.98]"
             >
-              <PrimaryIcon size={16} />
+              <PrimaryIcon size={18} />
               {primaryLabel}
             </button>
 
             <button
               type="button"
               onClick={onSecondary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-[14px] font-semibold text-ink transition-all duration-100 active:scale-[0.98]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[12px] bg-white border border-kosha-border px-4 py-3.5 text-[15px] font-semibold text-ink shadow-sm transition-all duration-100 hover:bg-kosha-surface-2 active:scale-[0.98]"
             >
-              <SecondaryIcon size={16} />
+              <SecondaryIcon size={18} />
               {secondaryLabel}
             </button>
           </div>
@@ -115,7 +86,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onTertiary}
-              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-brand transition-all duration-100 active:scale-[0.98]"
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 px-4 py-3 text-[14px] font-medium text-ink-3 transition-opacity hover:text-ink"
             >
               <TertiaryIcon size={16} />
               {tertiaryLabel}
@@ -123,20 +94,19 @@ export default function KoshaErrorPage({
           )}
 
           {normalizedDetail && (
-            <div className="mt-4 rounded-card border border-kosha-border bg-kosha-surface-2">
-              <div className="flex items-center justify-between gap-2 px-3 py-2.5">
-                <p className="text-caption font-semibold text-ink-2">Technical details</p>
+            <div className="mt-8 w-full text-left">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[12px] font-medium text-ink-3 uppercase tracking-wider">Error Details</p>
                 <button
                   type="button"
                   onClick={handleCopyDetail}
-                  className="inline-flex items-center gap-1.5 rounded-pill border border-kosha-border bg-white px-2.5 py-1 text-[11px] font-semibold text-ink-2"
+                  className="inline-flex items-center gap-1.5 text-[12px] font-medium text-brand hover:underline"
                 >
-                  {copied ? <Check size={12} /> : <Copy size={12} />}
-                  {copied ? 'Copied' : 'Copy'}
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? 'Copied' : 'Copy log'}
                 </button>
               </div>
-
-              <pre className="max-h-44 overflow-auto border-t border-kosha-border px-3 py-3 text-[11px] leading-relaxed text-ink-3 whitespace-pre-wrap break-words">
+              <pre className="w-full max-h-48 overflow-auto rounded-xl border border-kosha-border bg-kosha-surface-2 p-4 text-[12px] leading-relaxed text-ink-2 whitespace-pre-wrap break-words">
                 {normalizedDetail}
               </pre>
             </div>
