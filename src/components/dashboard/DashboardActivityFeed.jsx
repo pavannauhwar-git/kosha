@@ -34,7 +34,7 @@ function eventSubtitle(evt) {
   const action = evt.action
 
   const desc = m.description || m.after?.description || ''
-  const rawAmount = m.amount ?? m.after?.amount
+  const rawAmt= m.amount ?? m.after?.amount
   const amt = rawAmt != null && Number.isFinite(Number(rawAmt)) ? fmt(Number(rawAmt)) : ''
   const category = m.category || m.after?.category || ''
 
