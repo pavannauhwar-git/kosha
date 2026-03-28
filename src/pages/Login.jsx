@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import AboutKoshaLink from '../components/AboutKoshaLink'
 import KoshaLogo from '../components/KoshaLogo'
+import Mascot from '../components/common/Mascot'
 import { C } from '../lib/colors'
 import { createFadeUp } from '../lib/animations'
 
@@ -160,11 +161,20 @@ export default function Login() {
 
   return (
     <div
-      className="h-dvh bg-kosha-bg px-4 overflow-y-auto"
+      className="h-dvh bg-kosha-bg relative overflow-y-auto px-4"
       style={{paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="min-h-full flex flex-col items-center justify-center py-8">
-        <div className="w-full max-w-[380px]">
+      {/* ── Soft Background Elements ──────────────── */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden flex justify-center items-center opacity-30 select-none">
+        {/* Soft abstract blobs */}
+        <div className="absolute w-[400px] h-[400px] rounded-full bg-brand-container mix-blend-multiply blur-[80px] top-[10%] right-[10%]"></div>
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-accent-bg mix-blend-multiply blur-[100px] bottom-[-10%] left-[-10%]"></div>
+      </div>
+
+      <div className="min-h-full relative z-10 flex flex-col items-center justify-center py-8">
+        <div className="w-full max-w-[380px] relative">
+          <Mascot type="peek" className="absolute -top-16 -right-6 md:-top-20 md:-right-8 w-28 h-28 md:w-36 md:h-36 z-20" />
+
           <motion.div
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
             initial="hidden"
@@ -173,7 +183,7 @@ export default function Login() {
             {/* ── Card ─────────────────────────────────────────────────────── */}
             <motion.div
               variants={fadeUp}
-              className="card p-6 mb-4"
+              className="card p-6 mb-4 backdrop-blur-xl bg-kosha-surface/90"
             >
 
               {/* ── Logo ──────────────────────────────────────────────────── */}

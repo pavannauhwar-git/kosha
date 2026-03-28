@@ -17,6 +17,7 @@ import YoYCards from '../components/analytics/YoYCards'
 import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
 import YearlyInsightsCard from '../components/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
+import Mascot from '../components/common/Mascot'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
@@ -32,7 +33,7 @@ export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
-  const [yoyRange, setYoyRange] = useState(5)
+  const [yoyRange, setYoyRange] = useState(3)
   const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
 
@@ -46,18 +47,32 @@ export default function Analytics() {
 
   const top5 = data?.top5 || []
 
-  const chartData = useMemo(() => (data?.monthly || [])
-    .map((m, i) => ({
-      name: MONTH_SHORT[i],
-      Income: Math.round(toFiniteNumber(m?.income)),
-      Spent: Math.round(toFiniteNumber(m?.expense)),
-    })), [data?.monthly])
+  const chartData = useMemo(() => {
+    const currentMonth = new Date().getMonth();
+    const isCurrentYear = year === new Date().getFullYear();
+    return (data?.monthly || []).map((m, i) => {
+      const isFuture = isCurrentYear && i > currentMonth;
+      return {
+        name: MONTH_SHORT[i],
+        Income: isFuture ? null : Math.round(toFiniteNumber(m?.income)),
+        Spent: isFuture ? null : Math.round(toFiniteNumber(m?.expense)),
+        // Optional predictive or dashed fallback data:
+        PredictedSpent: isFuture ? Math.round(toFiniteNumber(data?.monthly[currentMonth]?.expense) || 0) : null
+      }
+    })
+  }, [data?.monthly, year])
 
-  const netData = useMemo(() => (data?.monthly || [])
-    .map((m, i) => ({
-      name: MONTH_SHORT[i],
-      Net: Math.round(toFiniteNumber(m?.income) - toFiniteNumber(m?.expense) - toFiniteNumber(m?.investment)),
-    })), [data?.monthly])
+  const netData = useMemo(() => {
+    const currentMonth = new Date().getMonth();
+    const isCurrentYear = year === new Date().getFullYear();
+    return (data?.monthly || []).map((m, i) => {
+      const isFuture = isCurrentYear && i > currentMonth;
+      return {
+        name: MONTH_SHORT[i],
+        Net: isFuture ? null : Math.round(toFiniteNumber(m?.income) - toFiniteNumber(m?.expense) - toFiniteNumber(m?.investment)),
+      }
+    })
+  }, [data?.monthly, year])
 
   const netAxisMax = useMemo(() => {
     const maxAbs = netData.reduce((m, row) => Math.max(m, Math.abs(row.Net)), 0)

@@ -447,7 +447,10 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Hero card — sub-component, renders independently ─────── */}
-        <motion.div variants={fadeUp}>
+        <motion.div variants={fadeUp} className="relative mt-8 md:mt-10">
+          {/* Cartoon Mascot */}
+          <Mascot type="cat" className="absolute -top-12 -left-2 md:-top-16 md:-left-4 z-10 w-20 h-20 md:w-28 md:h-28" />
+
           {heroLoading ? <DashboardHeroSkeleton /> : (
             <DashboardHeroCard
               now={balanceHorizonDate}
