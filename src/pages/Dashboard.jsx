@@ -435,7 +435,7 @@ export default function Dashboard() {
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <p className="text-caption text-ink-3">
+          <p className="text-caption text-ink-3 mt-2">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
