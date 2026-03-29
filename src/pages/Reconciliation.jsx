@@ -305,13 +305,14 @@ export default function Reconciliation() {
   return (
     <div className="page">
       <PageHeader title="Reconciliation" />
+      <p className="text-[12px] text-ink-3 mb-3">Use this page to clean transaction quality so Dashboard, Monthly, and Analytics numbers stay trustworthy.</p>
 
       <div className="card p-4 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-ink">Review and reconcile</p>
+            <p className="text-sm font-semibold text-ink">Data quality control</p>
             <p className="text-caption text-ink-3 mt-1">
-              Resolve high-signal issues before month close so reports, budgets, and trends stay trustworthy.
+              Fix missing categories, duplicates, and statement mismatches before month close.
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-brand-container text-brand flex items-center justify-center shrink-0">

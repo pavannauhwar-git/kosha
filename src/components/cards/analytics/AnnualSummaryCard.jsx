@@ -27,7 +27,17 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   const totalIncome = data?.totalIncome || 0
   const totalExpense = data?.totalExpense || 0
   const totalInvestment = data?.totalInvestment || 0
-  const avgSavings = data?.avgSavings || 0
+  const monthlyRows = Array.isArray(data?.monthly) ? data.monthly : []
+  const monthsWithIncome = monthlyRows.filter((m) => Number(m?.income || 0) > 0)
+  const avgSurplusRate = monthsWithIncome.length
+    ? Math.round(
+        monthsWithIncome.reduce((sum, row) => {
+          const income = Number(row?.income || 0)
+          const outflow = Number(row?.expense || 0) + Number(row?.investment || 0)
+          return sum + ((income - outflow) / income) * 100
+        }, 0) / monthsWithIncome.length
+      )
+    : 0
   const annualBalance = totalIncome - totalExpense - totalInvestment
   const previousAnnualBalance = (prevData?.totalIncome || 0) - (prevData?.totalExpense || 0) - (prevData?.totalInvestment || 0)
   const annualBalanceDelta = getDelta(annualBalance, previousAnnualBalance)
@@ -96,14 +106,14 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3.5">
         <div className="rounded-card bg-kosha-surface-2 p-2.5 border border-kosha-border">
-          <p className="text-[10px] text-ink-3">Net balance</p>
+          <p className="text-[10px] text-ink-3">Year surplus</p>
           <p className={`text-[14px] font-bold tabular-nums ${annualBalance >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
             {annualBalance >= 0 ? '+' : '-'}{fmt(Math.abs(annualBalance))}
           </p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5 border border-kosha-border">
-          <p className="text-[10px] text-ink-3">Avg savings</p>
-          <p className="text-[14px] font-bold tabular-nums text-ink">{avgSavings}%</p>
+          <p className="text-[10px] text-ink-3">Avg surplus</p>
+          <p className="text-[14px] font-bold tabular-nums text-ink">{avgSurplusRate}%</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5 border border-kosha-border">
           <p className="text-[10px] text-ink-3">Income</p>

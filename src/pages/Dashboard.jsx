@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus } from 'lucide-react'
+import { Bell, ArrowRight, Plus } from 'lucide-react'
 import {
   useRecentTransactions,
   useTransactionDigest,
@@ -144,26 +144,11 @@ export default function Dashboard() {
   const [heroMode, setHeroMode] = useState('balance')
   const [toast, setToast] = useState(null)
   const [heavyReady, setHeavyReady] = useState(false)
-  const [denseMode, setDenseMode] = useState(() => {
-    try {
-      return localStorage.getItem('kosha:dense-dashboard') === '1'
-    } catch {
-      return false
-    }
-  })
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 50)
     return () => clearTimeout(timer)
   }, [])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('kosha:dense-dashboard', denseMode ? '1' : '0')
-    } catch {
-      // Ignore storage failures (privacy mode / quota)
-    }
-  }, [denseMode])
 
   // ── Data fetching ─────────────────────────────────────────────────────
   const {
@@ -178,11 +163,6 @@ export default function Dashboard() {
     loading: summaryLoading,
     fetching: summaryFetching,
   } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
-  const { data: lastSummary } = useMonthSummary(
-    now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
-    now.getMonth() === 0 ? 12 : now.getMonth(),
-    { enabled: heavyReady }
-  )
   // Total balance should reflect all scheduled/future-dated transactions.
   // Month-level detail remains available via monthly summaries elsewhere.
   const balanceHorizonDate = useMemo(() => new Date(2099, 11, 31), [])
@@ -206,10 +186,6 @@ export default function Dashboard() {
   const spent = summary?.expense || 0
   const invested = summary?.investment || 0
   const rate = savingsRate(earned, spent)
-
-  const lastInvested = lastSummary?.investment || 0
-  const investDiff = invested - lastInvested
-  const investUp = investDiff > 0
 
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Good morning'
@@ -340,11 +316,6 @@ export default function Dashboard() {
     }
   }, [digestTxnRows, now, todaySpend])
 
-  const investSharePct = earned > 0 ? Math.round((invested / earned) * 100) : 0
-  const projectedInvested = dayOfMonth > 0 ? (invested / dayOfMonth) * daysInMonth : invested
-  const projectedInvestDiff = projectedInvested - lastInvested
-  const projectedInvestUp = projectedInvestDiff > 0
-
   const todayFocus = useMemo(() => {
     if (dueSoonCount > 0) {
       return {
@@ -421,12 +392,6 @@ export default function Dashboard() {
   }, [dueSoonCount, earned, spent, dayOfMonth, daysInMonth])
 
   // ── Stable callbacks — useCallback deps are all stable primitives ──────
-  const openQuickAdd = useCallback((type) => {
-    setAddType(type)
-    setEditTxn(null)
-    setShowAdd(true)
-  }, [])
-
   const handleDelete = useCallback(async (id) => {
     if (!id) return
     try {
@@ -457,27 +422,19 @@ export default function Dashboard() {
   return (
     <div className="page">
       <PageHeader title="Dashboard" className="mb-1" />
+      <p className="text-[12px] text-ink-3 mb-3">Use this page for today and this week: current position, daily variance, and short-horizon changes.</p>
       <motion.div
         variants={stagger}
         initial="hidden"
         animate="show"
-        className={`${denseMode ? 'space-y-3 md:space-y-3.5' : 'space-y-4 md:space-y-5'} pt-0`}
+        className="space-y-4 md:space-y-5 pt-0"
       >
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-caption text-ink-3">
-              {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-            <button
-              type="button"
-              onClick={() => setDenseMode((v) => !v)}
-              className="text-[11px] font-semibold px-2.5 py-1 rounded-pill border border-kosha-border text-ink-3 bg-kosha-surface"
-            >
-              {denseMode ? 'Standard view' : 'Dense view'}
-            </button>
-          </div>
+          <p className="text-caption text-ink-3">
+            {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
           <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
@@ -612,8 +569,8 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="card-title">{todayFocus.title}</p>
-              {!denseMode && <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>}
-              <div className={`grid ${denseMode ? 'grid-cols-1' : 'grid-cols-2'} gap-2 mt-2.5`}>
+              <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>
+              <div className="grid grid-cols-2 gap-2 mt-2.5">
                 <button
                   type="button"
                   onClick={() => navigate(todayFocus.primaryRoute)}
@@ -621,15 +578,13 @@ export default function Dashboard() {
                 >
                   {todayFocus.primaryLabel}
                 </button>
-                {!denseMode && (
-                  <button
-                    type="button"
-                    onClick={() => navigate(todayFocus.secondaryRoute)}
-                    className="btn-secondary h-12 px-4 text-[12px] justify-center"
-                  >
-                    {todayFocus.secondaryLabel}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => navigate(todayFocus.secondaryRoute)}
+                  className="btn-secondary h-12 px-4 text-[12px] justify-center"
+                >
+                  {todayFocus.secondaryLabel}
+                </button>
               </div>
             </div>
           )}
@@ -671,67 +626,6 @@ export default function Dashboard() {
                   Top spend category this week: <span className="font-semibold text-ink-2">{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
                 </p>
               )}
-            </div>
-          </motion.div>
-        )}
-
-        {heavyReady && (
-          <motion.div variants={fadeUp}>
-            <div className="card p-3.5">
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div>
-                  <p className="section-label">Investment momentum</p>
-                  <p className="text-caption text-ink-3 mt-0.5">
-                    {invested > 0
-                      ? 'Track contribution pace and compare month-end trajectory.'
-                      : 'No investments logged yet this month.'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {investDiff === 0
-                    ? <Minus size={12} className="text-ink-3" />
-                    : investUp
-                      ? <TrendingUp size={12} className="text-income-text" />
-                      : <TrendingDown size={12} className="text-expense-text" />}
-                  <span className={`text-caption font-semibold ${investDiff === 0 ? 'text-ink-3' : investUp ? 'text-income-text' : 'text-expense-text'}`}>
-                    {investDiff === 0 ? 'Same as last month' : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mb-2.5">
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-[10px] text-ink-3">This month</p>
-                  <p className="text-[15px] font-bold text-invest-text tabular-nums">{fmt(invested)}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-[10px] text-ink-3">Income share</p>
-                  <p className="text-[15px] font-bold text-ink tabular-nums">{earned > 0 ? `${investSharePct}%` : '—'}</p>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-ink-3">
-                Projected month-end: <span className="font-semibold text-ink-2 tabular-nums">{fmt(projectedInvested)}</span>
-                {' '}
-                ({projectedInvestUp ? '+' : ''}{fmt(projectedInvestDiff)} vs last month)
-              </p>
-
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                <button
-                  type="button"
-                  onClick={() => openQuickAdd('investment')}
-                  className="btn-primary h-10 px-3 text-[11px] justify-center"
-                >
-                  Add investment
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/analytics')}
-                  className="btn-secondary h-10 px-3 text-[11px] justify-center"
-                >
-                  Open insights
-                </button>
-              </div>
             </div>
           </motion.div>
         )}

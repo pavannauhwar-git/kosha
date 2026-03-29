@@ -79,7 +79,7 @@ const NetTooltip = ({ active, payload, label }) => {
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.78)' }}>Net</span>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.78)' }}>Leftover</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: valueColor }}>{fmt(val)}</span>
       </div>
     </div>
@@ -236,10 +236,10 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
-            Net Savings
+            Leftover / Surplus
           </p>
           <p style={{ fontSize: 11, color: 'rgba(49,58,134,0.55)', marginTop: 2 }}>
-            Monthly net with cumulative direction
+            Income minus expenses and investments
           </p>
         </div>
         <div className="text-right">
@@ -248,10 +248,10 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
             color: totalNet >= 0 ? C.chartIncome : C.chartExpense,
             letterSpacing: '-0.01em',
           }}>
-            {fmt(Math.abs(totalNet), true)}
+            {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
           </p>
           <p style={{ fontSize: 10, color: 'rgba(49,58,134,0.55)', marginTop: 1 }}>
-            {totalNet >= 0 ? 'net saved' : 'net deficit'}
+            {totalNet >= 0 ? 'year surplus' : 'year deficit'}
           </p>
         </div>
       </div>
@@ -262,11 +262,11 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           <p className="text-[12px] font-bold tabular-nums text-ink">{positiveMonths}/{netData.length}</p>
         </div>
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Best month</p>
+          <p className="text-[10px] text-ink-3">Highest surplus</p>
           <p className="text-[12px] font-bold tabular-nums text-income-text">{bestMonth?.name || '—'}</p>
         </div>
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Weak month</p>
+          <p className="text-[10px] text-ink-3">Deepest deficit</p>
           <p className="text-[12px] font-bold tabular-nums text-expense-text">{worstMonth?.name || '—'}</p>
         </div>
       </div>
@@ -290,7 +290,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      <div className="pt-2 text-[11px] text-ink-3">Monthly net after expenses and investments.</div>
+      <div className="pt-2 text-[11px] text-ink-3">Monthly leftover after expenses and investments.</div>
     </div>
   )
 })

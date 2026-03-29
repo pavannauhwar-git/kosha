@@ -53,16 +53,16 @@ export default function Analytics() {
       Spent: Math.round(toFiniteNumber(m?.expense)),
     })), [data?.monthly])
 
-  const netData = useMemo(() => (data?.monthly || [])
+  const surplusData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
       name: MONTH_SHORT[i],
       Net: Math.round(toFiniteNumber(m?.income) - toFiniteNumber(m?.expense) - toFiniteNumber(m?.investment)),
     })), [data?.monthly])
 
   const netAxisMax = useMemo(() => {
-    const maxAbs = netData.reduce((m, row) => Math.max(m, Math.abs(row.Net)), 0)
+    const maxAbs = surplusData.reduce((m, row) => Math.max(m, Math.abs(row.Net)), 0)
     return Math.max(1000, Math.ceil(maxAbs * 1.15))
-  }, [netData])
+  }, [surplusData])
 
   const yoyYears = useMemo(() => {
     return Array.from({ length: yoyRange }, (_, i) => year - (yoyRange - 1) + i)
@@ -136,6 +136,7 @@ export default function Analytics() {
   return (
     <div className="page">
       <PageHeader title="Analytics" className="mb-1" />
+      <p className="text-[12px] text-ink-3 mb-3">Use this page for full-year decisions: where money went, what remained as surplus, and what to optimize next.</p>
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
       <PickerNavigator
@@ -219,7 +220,7 @@ export default function Analytics() {
               />
 
               <NetSavingsChart
-                netData={netData}
+                netData={surplusData}
                 netAxisMax={netAxisMax}
               />
 

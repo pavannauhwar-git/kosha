@@ -307,6 +307,7 @@ export default function Monthly() {
   return (
     <div className="page">
       <PageHeader title="Monthly" className="mb-1" />
+      <p className="text-[12px] text-ink-3 mb-3">Use this page to close one month clearly: what happened, what is off-track, and what to fix before month-end.</p>
 
       <PickerNavigator
         className="mb-3"

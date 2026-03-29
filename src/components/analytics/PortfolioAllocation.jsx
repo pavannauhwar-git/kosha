@@ -72,6 +72,13 @@ export default function PortfolioAllocation({ vehicleData }) {
           ))}
         </div>
       </div>
+
+      <div className="mt-4 pt-3 border-t border-kosha-border">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-caption text-ink-3">Total investment</span>
+          <span className="text-caption font-bold text-invest-text tabular-nums">{fmt(total)}</span>
+        </div>
+      </div>
     </div>
   )
 }

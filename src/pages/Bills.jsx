@@ -245,6 +245,7 @@ export default function Bills() {
   return (
     <div className="page">
       <PageHeader title="Bills & Dues" className="mb-1" />
+      <p className="text-[12px] text-ink-3 mb-3">Use this page to avoid missed dues: what is due soon, how urgent it is, and how much cash is committed.</p>
 
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-2.5 flex items-center justify-between gap-3">

@@ -9,11 +9,12 @@ export default function YearlyInsightsCard({ data, catEntries }) {
   const text = (() => {
     const parts = []
     const inc = data?.totalIncome || 0
-    const rate = inc > 0 ? Math.round(((inc - (data?.totalExpense || 0)) / inc) * 100) : 0
+    const totalOutflow = (data?.totalExpense || 0) + (data?.totalInvestment || 0)
+    const rate = inc > 0 ? Math.round(((inc - totalOutflow) / inc) * 100) : 0
 
-    if (rate > 20) parts.push(`You've had a strong year, saving ${rate}% of your earnings.`)
-    else if (rate > 0) parts.push(`You saved ${rate}% of your income.`)
-    else parts.push('You spent more than you earned this year.')
+    if (rate > 20) parts.push(`You converted ${rate}% of earnings into yearly surplus after spending and investments.`)
+    else if (rate > 0) parts.push(`Your yearly surplus was ${rate}% of income after spending and investments.`)
+    else parts.push('Outflow was higher than income this year after including investments.')
 
     if (data?.monthly) {
       let maxExp = 0
@@ -56,7 +57,7 @@ export default function YearlyInsightsCard({ data, catEntries }) {
         <div className="w-6 h-6 rounded-lg bg-brand flex items-center justify-center shrink-0">
           <Sparkle size={12} className="text-white" weight="fill" />
         </div>
-        <h3 className="text-[13px] font-bold text-ink">Yearly Insights</h3>
+        <h3 className="text-[13px] font-bold text-ink">Year in plain words</h3>
       </div>
       <p className="text-[13px] text-ink-2 leading-relaxed relative">{text}</p>
     </div>
