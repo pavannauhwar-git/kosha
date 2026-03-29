@@ -18,8 +18,8 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0))
     : null
 
-  const heroAccentStrong = '#F2D53C'
-  const heroBadgeBg = 'linear-gradient(135deg, rgba(242, 213, 60, 0.92) 0%, rgba(255, 229, 125, 0.86) 100%)'
+  const heroAccentStrong = C.heroAccent
+  const heroBadgeBg = 'linear-gradient(135deg, rgba(198, 255, 0, 0.92) 0%, rgba(228, 255, 112, 0.88) 100%)'
   const heroBadgeText = '#16376A'
 
   return (

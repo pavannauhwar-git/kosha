@@ -9,8 +9,8 @@ export default function MonthHeroCard({ month, year, data }) {
   const invested = data?.investment || 0
   const balance = data?.balance || 0
   const rate = savingsRate(earned, spent)
-  const heroAccentStrong = '#F2D53C'
-  const heroBadgeBg = 'linear-gradient(135deg, rgba(242, 213, 60, 0.92) 0%, rgba(255, 229, 125, 0.86) 100%)'
+  const heroAccentStrong = C.heroAccent
+  const heroBadgeBg = 'linear-gradient(135deg, rgba(198, 255, 0, 0.92) 0%, rgba(228, 255, 112, 0.88) 100%)'
   const heroBadgeText = '#16376A'
 
   return (

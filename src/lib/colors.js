@@ -7,11 +7,11 @@ export const C = {
   brandContainer:  '#E7F2FF',
   brandBorder:     '#BBD9FF',
 
-  // ── Contrast Accent — Canary ─────────────────────────────────────
+  // ── Contrast Accent — Electric Lime ──────────────────────────────
   // Use sparingly for highlights and focused callouts.
-  accent:          '#F2D53C',
-  accentBg:        '#F2D53C',
-  accentFill:      '#F2D53C',
+  accent:          '#C6FF00',
+  accentBg:        '#C6FF00',
+  accentFill:      '#C6FF00',
 
   // ── Income — Emerald H=174° ───────────────────────────────────────
   income:          '#0E9F6E',
@@ -34,10 +34,10 @@ export const C = {
   ink:             '#10213F',
   inkMuted:        '#5E6D8F',
 
-  // ── Hero card overlays (canary over azure) ───────────────────────
-  heroAccent:      '#F2D53C',
-  heroAccentBg:    '#F2D53C',
-  heroAccentSolid: '#F2D53C',
+  // ── Hero card overlays (electric lime over azure) ────────────────
+  heroAccent:      '#C6FF00',
+  heroAccentBg:    '#C6FF00',
+  heroAccentSolid: '#C6FF00',
   heroLabel:       'rgba(255,255,255,0.64)', // labels and helper copy on hero
   heroDimmer:      'rgba(255,255,255,0.46)', // low-priority watermark/meta
   heroDivider:     'rgba(255,255,255,0.16)', // horizontal rule
