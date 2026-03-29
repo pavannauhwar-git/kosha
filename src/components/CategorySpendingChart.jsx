@@ -9,7 +9,7 @@ function CategoryLine({ pct, color, overBudget = false }) {
   const barColor = overBudget ? C.expense : color
 
   return (
-    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FF' }}>
+    <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
       <div
         className="h-full rounded-full"
         style={{
@@ -79,7 +79,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
                           ${i < entries.length - 1 ? 'border-b border-kosha-border' : ''}`}
             >
               <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: cat?.bg || '#E9EEF6' }}>
+                style={{ background: cat?.bg || 'rgba(255,255,255,0.06)' }}>
                 <CategoryIcon categoryId={catId} size={16} />
               </div>
 

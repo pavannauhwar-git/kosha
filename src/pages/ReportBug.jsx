@@ -283,7 +283,7 @@ export default function ReportBug() {
                   <button
                     type="button"
                     onClick={handleCopyReference}
-                    className="px-2.5 py-1 rounded-pill border border-kosha-border bg-white text-[11px] font-semibold text-ink"
+                    className="px-2.5 py-1 rounded-pill border border-kosha-border bg-kosha-surface text-[11px] font-semibold text-ink"
                   >
                     {copiedRef ? 'Copied' : 'Copy ID'}
                   </button>

@@ -9,7 +9,7 @@ export default function TopExpensesPodium({ top5, year }) {
   const PODIUM = [
     { rank: 2, platformH: 56, grad: `linear-gradient(170deg,${C.brandContainer},${C.brandLight})`, rankColor: C.brand },
     { rank: 1, platformH: 80, grad: `linear-gradient(170deg,${C.brandLight},${C.brand})`, rankColor: '#FFFFFF' },
-    { rank: 3, platformH: 40, grad: `linear-gradient(170deg,#F7F5FF,${C.brandBorder})`, rankColor: C.brandMid },
+    { rank: 3, platformH: 40, grad: `linear-gradient(170deg,${C.brandContainer},${C.brandBorder})`, rankColor: C.brandMid },
   ]
   const slots = PODIUM.map(p => ({ ...p, item: top3[p.rank - 1] })).filter(p => p.item)
 

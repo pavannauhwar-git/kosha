@@ -1,5 +1,5 @@
 /**
- * Kosha palette — JS constants
+ * Kosha palette — Stripe-inspired dark theme
  *
  * Single source of truth for every colour used in inline styles,
  * Framer Motion animate props, recharts fill/stroke props,
@@ -13,69 +13,66 @@
 
 export const C = {
 
-  // ── Brand — Periwinkle Violet ────────────────────────────────────
-  brand:           '#243BAF',
-  brandMid:        '#3D5AFE',
-  brandLight:      '#6C83FF',
-  brandContainer:  '#E8EDFF',
-  brandBorder:     '#C4CFFF',
+  // ── Brand — Stripe Indigo ────────────────────────────────────────
+  brand:           '#635bff',
+  brandMid:        '#7a73ff',
+  brandLight:      '#a5b4fc',
+  brandContainer:  'rgba(99,91,255,0.15)',
+  brandBorder:     'rgba(255,255,255,0.10)',
 
-  // ── Accent — Lime Yellow ─────────────────────────────────────────
-  // Used ONLY against dark periwinkle backgrounds (hero card, logo).
-  // Never use on white — fails contrast.
-  accent:          '#F4FF00',
-  accentBg:        'rgba(244,255,0,0.22)',
-  accentFill:      'rgba(244,255,0,0.78)',
+  // ── Accent — Cyan ────────────────────────────────────────────────
+  accent:          '#80e9ff',
+  accentBg:        'rgba(128,233,255,0.15)',
+  accentFill:      '#80e9ff',
 
-  // ── Income — Emerald H=174° ───────────────────────────────────────
-  income:          '#059669',
-  incomeText:      '#047857',
+  // ── Income — Teal ────────────────────────────────────────────────
+  income:          '#00d4aa',
+  incomeText:      '#00d4aa',
 
-  // ── Expense — Rose H=354° ─────────────────────────────────────────
-  expense:         '#E11D48',
-  expenseBright:   '#E11D48',   // same — no separate "bright" needed
+  // ── Expense — Rose ───────────────────────────────────────────────
+  expense:         '#ff5c83',
+  expenseBright:   '#ff5c83',
 
-  // ── Investment — Sky Blue H=200° (MD3 Secondary) ───────────────────
-  invest:          '#FF1DCE',   // custom investment accent
-  investText:      '#7F2A52',   // darker text tone on light invest backgrounds
+  // ── Investment — Purple ──────────────────────────────────────────
+  invest:          '#a960ee',
+  investText:      '#c084fc',
 
-  saved:           '#243BAF',   // brand indigo — residual money in Kosha
+  saved:           '#635bff',
 
-  // ── Bills — Amber H=84° ───────────────────────────────────────────
-  bills:           '#CA8A04',
+  // ── Bills — Gold ─────────────────────────────────────────────────
+  bills:           '#f7b32b',
 
-  // ── Ink — indigo-tinted neutrals ─────────────────────────────────
-  ink:             '#1F255F',
-  inkMuted:        '#6E75A8',
+  // ── Ink — light-on-dark ──────────────────────────────────────────
+  ink:             '#f6f9fc',
+  inkMuted:        '#8898aa',
 
-  // ── Hero card overlays (lime/white on deep periwinkle) ────────────
-  heroAccent:      'rgba(244,255,0,0.78)',
-  heroAccentBg:    'rgba(244,255,0,0.22)',
-  heroAccentSolid: '#F4FF00',
-  heroLabel:       'rgba(255,255,255,0.55)', // "Total balance" label
-  heroDimmer:      'rgba(255,255,255,0.35)', // "KOSHA" watermark
-  heroDivider:     'rgba(255,255,255,0.12)', // horizontal rule
-  heroStatBg:      'rgba(255,255,255,0.10)', // Earned/Spent/Invested chips
+  // ── Hero card overlays ───────────────────────────────────────────
+  heroAccent:      '#80e9ff',
+  heroAccentBg:    'rgba(128,233,255,0.15)',
+  heroAccentSolid: '#80e9ff',
+  heroLabel:       'rgba(255,255,255,0.55)',
+  heroDimmer:      'rgba(255,255,255,0.25)',
+  heroDivider:     'rgba(255,255,255,0.08)',
+  heroStatBg:      'rgba(255,255,255,0.06)',
 
-  // ── Chart glow colours — on dark periwinkle card background ──────
-  // Brighter variants of semantic colours so they glow on dark substrate
-  chartIncome:     '#34D399',   // bright emerald glow on dark
-  chartExpense:    '#FB7185',   // bright rose glow on dark
-  chartDark:       '#1B2D85',   // dark chart card background = brand-dark
-  chartGrid:       'rgba(255,255,255,0.06)', // grid lines on dark card
-  chartCursor:     'rgba(255,255,255,0.06)', // tooltip cursor on dark card
+  // ── Chart glow colours ───────────────────────────────────────────
+  chartIncome:     '#00d4aa',
+  chartExpense:    '#ff5c83',
+  chartDark:       '#0d2d4d',
+  chartGrid:       'rgba(255,255,255,0.06)',
+  chartCursor:     'rgba(255,255,255,0.08)',
 
-  // ── Portfolio donut — periwinkle family, darkest → lightest ──────
+  // ── Portfolio donut — indigo/cyan family ────────────────────────
   portfolio: [
-    '#1F255F',
-    '#243BAF',
-    '#3D5AFE',
-    '#6C83FF',
-    '#E8EDFF',
-    '#C4CFFF',
+    '#635bff',
+    '#7a73ff',
+    '#a5b4fc',
+    '#80e9ff',
+    '#00d4aa',
+    '#a960ee',
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#243BAF',
-  logoHighlight: '#F4FF00',
+  logoBg:        '#635bff',
+  logoHighlight: '#80e9ff',
 }
