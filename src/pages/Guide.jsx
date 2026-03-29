@@ -372,7 +372,6 @@ export default function Guide() {
                   transition={{ duration: 0.1 }}
                   onClick={() => openFeature(card.id)}
                   className="card p-4 text-left relative"
-                  style={mesh ? { background: `${mesh}, #ffffff` } : undefined}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">

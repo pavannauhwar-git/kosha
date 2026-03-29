@@ -115,24 +115,18 @@
     color: #ffffff;
   }
 
-  /* Dashboard & Monthly — Stripe-style flowing color bands
-     Deep saturated colors for strong white-text contrast.
-     Multi-angle linear gradients create flowing ribbon effect */
+  /* Dashboard & Monthly — Stripe-style flowing petal gradient
+     Conic + shaped radials mimic flowing ribbon/petal shapes.
+     Deep saturated core with bright flowing edges for contrast */
   .card-hero-dashboard,
   .card-hero-monthly {
     background:
-      linear-gradient(160deg, rgba(6,182,212,0.30) 0%, transparent 35%),
-      linear-gradient(
-        135deg,
-        #312e81 0%,
-        #4c1d95 14%,
-        #7c3aed 30%,
-        #a855f7 44%,
-        #d946ef 56%,
-        #ec4899 68%,
-        #be123c 84%,
-        #881337 100%
-      );
+      conic-gradient(from 220deg at 70% 60%, rgba(251,146,60,0.0) 0%, rgba(251,146,60,0.85) 8%, rgba(244,114,182,0.70) 16%, transparent 24%),
+      conic-gradient(from 140deg at 35% 40%, rgba(192,132,252,0.0) 0%, rgba(192,132,252,0.80) 10%, rgba(236,72,153,0.65) 20%, transparent 30%),
+      radial-gradient(ellipse 120% 80% at 75% 55%, rgba(251,146,60,0.75) 0%, rgba(236,72,153,0.60) 30%, transparent 60%),
+      radial-gradient(ellipse 100% 120% at 25% 50%, rgba(139,92,246,0.70) 0%, rgba(192,132,252,0.50) 30%, transparent 60%),
+      radial-gradient(ellipse 60% 60% at 55% 20%, rgba(99,91,255,0.55) 0%, transparent 50%),
+      linear-gradient(145deg, #312e81 0%, #4c1d95 30%, #7c3aed 55%, #a855f7 80%, #c084fc 100%);
   }
 
   /* -- Cards — clean white ──────────────────────────────────── */

@@ -129,19 +129,14 @@ export default function About() {
             <div
               className="relative overflow-hidden rounded-hero p-6"
               style={{
-                background:
-                  'radial-gradient(ellipse at 15% 55%, rgba(244,114,182,0.82) 0%, transparent 52%),' +
-                  'radial-gradient(ellipse at 85% 20%, rgba(251,191,36,0.48) 0%, transparent 46%),' +
-                  'radial-gradient(ellipse at 75% 80%, rgba(168,85,247,0.68) 0%, transparent 52%),' +
-                  'radial-gradient(ellipse at 45% 15%, rgba(251,146,60,0.42) 0%, transparent 46%),' +
-                  'linear-gradient(135deg, #f9a8d4 0%, #c084fc 50%, #fdba74 100%)',
-                boxShadow: '0 24px 64px rgba(244,114,182,0.18), 0 8px 24px rgba(0,0,0,0.08)',
+                background: '#0a2540',
+                boxShadow: '0 24px 64px rgba(10,37,64,0.20), 0 8px 24px rgba(0,0,0,0.08)',
               }}
             >
-              {/* Animated glow orb */}
+              {/* Subtle brand glow */}
               <div
                 className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl pointer-events-none"
-                style={{ background: 'rgba(255,255,255,0.15)' }}
+                style={{ background: 'rgba(99,91,255,0.20)' }}
               />
 
               <div className="relative z-[1]">
@@ -182,8 +177,8 @@ export default function About() {
                       key={label}
                       className="rounded-[14px] px-3 py-2.5"
                       style={{
-                        background: 'rgba(255,255,255,0.15)',
-                        border: '1px solid rgba(255,255,255,0.20)',
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.12)',
                       }}
                     >
                       <p className="text-[10px] font-medium uppercase tracking-wider"
