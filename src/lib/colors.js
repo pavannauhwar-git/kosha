@@ -49,14 +49,13 @@ export const C = {
   inkMuted:        '#6E75A8',
 
   // ── Hero card overlays (lime/white on deep periwinkle) ────────────
-  // ── Hero Card Overlay — updated for Apple light gradient ───────
-  heroAccent:      '#8C8C94', // A neutral gray for "Balance overview"
-  heroAccentBg:    'rgba(0,0,0,0.05)',
-  heroAccentSolid: '#1D1D1F', // Dark text
-  heroLabel:       'rgba(0,0,0,0.5)', // "Total balance" label
-  heroDimmer:      'rgba(0,0,0,0.3)', // "KOSHA" watermark
-  heroDivider:     'rgba(0,0,0,0.1)', // horizontal rule
-  heroStatBg:      'rgba(0,0,0,0.05)', // Earned/Spent/Invested chips
+  heroAccent:      'rgba(244,255,0,0.78)',
+  heroAccentBg:    'rgba(244,255,0,0.22)',
+  heroAccentSolid: '#F4FF00',
+  heroLabel:       'rgba(255,255,255,0.55)', // "Total balance" label
+  heroDimmer:      'rgba(255,255,255,0.35)', // "KOSHA" watermark
+  heroDivider:     'rgba(255,255,255,0.12)', // horizontal rule
+  heroStatBg:      'rgba(255,255,255,0.10)', // Earned/Spent/Invested chips
 
   // ── Chart glow colours — on dark periwinkle card background ──────
   // Brighter variants of semantic colours so they glow on dark substrate

@@ -45,11 +45,11 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <p className="text-caption font-medium" style={{ color: C.heroLabel }}>
             {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
           </p>
-          <div className="px-1.5 py-0.5 rounded-full bg-black/10 text-[10px] font-bold text-black/40 uppercase tracking-wider">
+          <div className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white/70 uppercase tracking-wider">
             Tap
           </div>
         </div>
-        <p className="text-hero font-bold text-ink leading-none tracking-tight tabular-nums">
+        <p className="text-hero font-bold text-white leading-none tracking-tight tabular-nums">
           {heroMode === 'balance'
             ? (runningBalance !== null ? fmt(runningBalance) : '—')
             : (safeToSpend    !== null ? fmt(safeToSpend)    : '—')}
@@ -77,7 +77,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           >
             <p className="text-[11px] sm:text-caption mb-0.5 truncate"
               style={{ color: C.heroLabel }}>{s.label}</p>
-            <p className="text-[12px] sm:text-label font-bold text-ink tabular-nums truncate">
+            <p className="text-[12px] sm:text-label font-bold text-white tabular-nums truncate">
               {fmt(s.val)}
             </p>
           </div>

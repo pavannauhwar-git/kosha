@@ -49,7 +49,7 @@ const ROUTE_PRELOADERS = {
 
 function PageFallback({ pathname }) {
   return (
-    <div className="min-h-dvh bg-transparent">
+    <div className="min-h-dvh bg-kosha-bg">
       <RouteSkeleton pathname={pathname || '/'} />
     </div>
   )
@@ -750,7 +750,7 @@ function DashboardWarmPrefetch() {
 // ── App shell ─────────────────────────────────────────────────────────────
 function AppShell() {
   return (
-    <div className="min-h-dvh bg-transparent">
+    <div className="min-h-dvh bg-kosha-bg">
       <RuntimeRouteTracker />
       <DesktopSidebar />
       <ContentWrapper>
