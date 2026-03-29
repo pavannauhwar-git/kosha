@@ -62,8 +62,8 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
         Annual balance
       </p>
       <p
-        className="font-bold tabular-nums leading-[0.95] tracking-tight text-[28px] sm:text-[38px]"
-        style={{ color: annualBalance >= 0 ? C.accent : C.expense }}
+        className="font-bold tabular-nums leading-[0.95] tracking-tight"
+        style={{ fontSize: 38, color: annualBalance >= 0 ? C.accent : C.expense }}
       >
         {fmt(annualBalance)}
       </p>
@@ -83,16 +83,16 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
           const sc = STAT_COLORS[card.label]
           return (
             <div key={card.label}
-              className="px-2 py-2.5 sm:px-3 sm:py-3 rounded-2xl min-w-0"
+              className="px-3 py-3 rounded-2xl"
               style={{ background: sc.bg, border: `1px solid ${sc.border}` }}
             >
               <p className="text-[10px] mb-1 text-ink-3 font-medium">{card.label}</p>
-              <p className="text-[11px] sm:text-[13px] font-bold tabular-nums"
+              <p className="text-[12px] sm:text-[13px] font-bold tabular-nums truncate"
                 style={{ color: sc.accent }}
               >
                 {fmt(card.value)}
               </p>
-              <p className="text-[9px] sm:text-[10px] mt-1 text-ink-4">
+              <p className="text-[10px] mt-1 text-ink-4 truncate">
                 {card.delta.label}
               </p>
             </div>

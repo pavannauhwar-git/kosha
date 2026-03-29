@@ -36,14 +36,14 @@ export default function YearlyInsightsCard({ data, catEntries }) {
   })()
 
   return (
-    <div className="rounded-card p-4 relative" style={{ background: 'rgba(99,91,255,0.06)', border: '1px solid rgba(99,91,255,0.10)' }}>
+    <div className="rounded-card p-4 relative" style={{ background: '#0a2540', color: '#ffffff' }}>
       <div className="flex items-center gap-2 mb-2 relative">
-        <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(99,91,255,0.12)' }}>
-          <Sparkle size={12} className="text-brand" weight="fill" />
+        <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(99,91,255,0.25)' }}>
+          <Sparkle size={12} className="text-white" weight="fill" />
         </div>
-        <h3 className="text-[13px] font-bold text-ink">Yearly Insights</h3>
+        <h3 className="text-[13px] font-bold" style={{ color: '#ffffff' }}>Yearly Insights</h3>
       </div>
-      <p className="text-[13px] leading-relaxed relative text-ink-2">{text}</p>
+      <p className="text-[13px] leading-relaxed relative" style={{ color: 'rgba(255,255,255,0.72)' }}>{text}</p>
     </div>
   )
 }
