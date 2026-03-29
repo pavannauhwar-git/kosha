@@ -259,57 +259,49 @@ export default function Guide() {
 
       <div className="px-4 pt-6 pb-24 max-w-[860px] mx-auto">
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5 max-w-[760px] mx-auto">
-        <motion.div variants={fadeUp} className="card p-4 md:p-5 relative overflow-hidden">
-          <div className="absolute -right-8 -top-10 w-28 h-28 rounded-full bg-brand/10 blur-2xl" />
-          <div className="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-brand/10 blur-2xl" />
-
-          <div className="relative z-[1]">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
-                <BookOpen size={18} className="text-brand" />
-              </div>
-              <div>
-                <p className="text-body font-semibold text-ink">Kosha Guide</p>
-                <p className="text-label text-ink-3 mt-1">
-                  Explore each page with practical workflows, common mistakes to avoid, and fast next actions.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mt-3.5">
-              <div className="flex items-center justify-between gap-3 mb-1.5">
-                <p className="text-[12px] font-semibold text-ink-2">Guide completion</p>
-                <p className="text-[11px] font-semibold text-brand">{progressPct}%</p>
-              </div>
-              <div className="h-2 rounded-pill bg-kosha-border overflow-hidden">
-                <motion.div
-                  className="h-full rounded-pill bg-brand"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.35, ease: 'easeOut' }}
-                />
-              </div>
-              <p className="text-[11px] text-ink-3 mt-1.5">
-                {viewedCount}/{FEATURE_CARDS.length} feature cards viewed
+        <motion.div variants={fadeUp} className="card p-4 md:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[20px] font-bold text-ink tracking-tight leading-tight">Kosha Guide</p>
+              <p className="text-[13px] text-ink-3 mt-1 leading-relaxed">
+                Practical workflows, mistakes to avoid, and fast next actions for every page.
               </p>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-              <button
-                type="button"
-                onClick={() => openFeature(nextFeature.id)}
-                className="btn-primary h-10 px-4 text-[12px] whitespace-nowrap"
-              >
-                Continue with {nextFeature.title}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(nextFeature.route)}
-                className="btn-secondary h-10 px-4 text-[12px] whitespace-nowrap"
-              >
-                Open {nextFeature.title}
-              </button>
+            <div className="w-10 h-10 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
+              <BookOpen size={18} className="text-brand" />
             </div>
+          </div>
+
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[12px] font-semibold text-ink-2">Progress</p>
+              <p className="text-[11px] font-semibold text-brand">{viewedCount} / {FEATURE_CARDS.length} viewed · {progressPct}%</p>
+            </div>
+            <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+              <motion.div
+                className="h-full rounded-pill bg-brand"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+            <button
+              type="button"
+              onClick={() => openFeature(nextFeature.id)}
+              className="btn-primary h-10 px-4 text-[12px] whitespace-nowrap"
+            >
+              Continue with {nextFeature.title}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(nextFeature.route)}
+              className="btn-secondary h-10 px-4 text-[12px] whitespace-nowrap"
+            >
+              Open {nextFeature.title}
+            </button>
           </div>
         </motion.div>
 

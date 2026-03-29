@@ -95,56 +95,51 @@ export default function About() {
       <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
 
-          {/* ── Hero strip ────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="card-hero p-5 relative overflow-hidden">
-            <div className="absolute -right-8 -top-10 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
-            <div className="absolute -left-10 -bottom-12 w-40 h-40 rounded-full bg-black/10 blur-2xl" />
-
-            <div className="relative z-[1]">
-              <div className="flex items-center gap-3 mb-3">
-                <KoshaLogo size={42} />
-                <div>
-                  <p className="text-[17px] font-bold text-white leading-tight">Kosha</p>
-                  <p className="text-[12px] text-white/75">Personal finance, simplified</p>
-                </div>
+          {/* ── Identity card ───────────────────────────────────── */}
+          <motion.div variants={fadeUp} className="card p-5">
+            <div className="flex items-center gap-4 pb-4 border-b border-kosha-border">
+              <KoshaLogo size={52} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[22px] font-bold text-ink leading-tight tracking-tight">Kosha</p>
+                <p className="text-[13px] text-ink-3 mt-0.5">Personal finance, simplified</p>
               </div>
-
-              <p className="text-[13px] text-white/90 leading-relaxed max-w-[460px]">
-                Built for clarity and calm. Kosha helps you capture money movement fast, trust your numbers, and make better decisions without noise.
-              </p>
-
-              <div className="grid grid-cols-3 gap-2 mt-4">
-                <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
-                  <p className="text-[10px] text-white/70">Version</p>
-                  <p className="text-[12px] font-semibold text-white">v{latestVersion}</p>
-                </div>
-                <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
-                  <p className="text-[10px] text-white/70">Releases</p>
-                  <p className="text-[12px] font-semibold text-white">{releaseCount}</p>
-                </div>
-                <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
-                  <p className="text-[10px] text-white/70">Improvements</p>
-                  <p className="text-[12px] font-semibold text-white">{shippedItems}+</p>
-                </div>
+              <div className="shrink-0 text-right">
+                <p className="text-[10px] text-ink-4 uppercase tracking-wide">Version</p>
+                <p className="text-[15px] font-bold text-brand">v{latestVersion}</p>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                <button
-                  type="button"
-                  onClick={() => navigate('/guide')}
-                  className="h-10 px-4 rounded-pill bg-white text-brand text-[12px] font-semibold whitespace-nowrap"
-                >
-                  Open product guide
-                </button>
-                <a
-                  href={REPO_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-10 px-4 rounded-pill border border-white/35 text-white text-[12px] font-semibold inline-flex items-center justify-center whitespace-nowrap"
-                >
-                  View GitHub
-                </a>
+            <p className="text-[13px] text-ink-2 leading-relaxed mt-4">
+              Built for clarity and calm. Kosha helps you capture money movement fast, trust your numbers, and make better decisions without noise.
+            </p>
+
+            <div className="flex gap-3 mt-4">
+              <div className="flex-1 bg-kosha-surface-2 rounded-card px-3 py-2.5 text-center">
+                <p className="text-[18px] font-bold text-ink leading-none">{releaseCount}</p>
+                <p className="text-[10px] text-ink-3 mt-1">Releases</p>
               </div>
+              <div className="flex-1 bg-kosha-surface-2 rounded-card px-3 py-2.5 text-center">
+                <p className="text-[18px] font-bold text-ink leading-none">{shippedItems}+</p>
+                <p className="text-[10px] text-ink-3 mt-1">Improvements</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => navigate('/guide')}
+                className="btn-primary h-10 px-4 text-[12px] whitespace-nowrap"
+              >
+                Open product guide
+              </button>
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary h-10 px-4 text-[12px] whitespace-nowrap inline-flex items-center justify-center"
+              >
+                View GitHub
+              </a>
             </div>
           </motion.div>
 
