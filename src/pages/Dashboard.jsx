@@ -42,7 +42,7 @@ const QUICK_ACTIONS = [
 
 function DashboardHeroSkeleton() {
   return (
-    <div className="card-hero p-6 relative overflow-hidden">
+    <div className="card-hero p-5 relative overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <div className="h-3 w-28 rounded-full shimmer" />
         <div className="h-3 w-14 rounded-full shimmer" />
@@ -427,7 +427,7 @@ export default function Dashboard() {
         initial="hidden"
         animate="show"
 
-        className="space-y-4 md:space-y-5 pt-0"
+        className="space-y-3.5 md:space-y-4 pt-0"
       >
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
@@ -514,7 +514,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Quick-action strip ────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className="card py-4 px-3">
+        <motion.div variants={fadeUp} className="card py-3.5 px-3">
           <div className="flex justify-between gap-1.5">
             {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
               <button key={label}

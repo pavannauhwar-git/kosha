@@ -48,8 +48,8 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   ]
 
   return (
-    <div className="card p-5 md:p-6">
-      <div className="flex items-center justify-between gap-3 mb-4">
+    <div className="card p-4 md:p-5">
+      <div className="flex items-center justify-between gap-3 mb-3">
         <p className="text-caption font-bold tracking-widest uppercase text-ink-3">
           Year snapshot
         </p>
@@ -68,7 +68,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
         {fmt(annualBalance)}
       </p>
 
-      <div className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill"
+      <div className="mt-2 mb-4 inline-flex items-center px-2.5 py-1 rounded-pill"
         style={{ background: 'rgba(99,91,255,0.08)' }}
       >
         <span className="text-caption font-semibold" style={{ color: C.brand }}>
@@ -76,9 +76,9 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
         </span>
       </div>
 
-      <div className="border-t border-kosha-border mb-4" />
+      <div className="border-t border-kosha-border mb-3" />
 
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-3">
         {cards.map((card) => {
           const sc = STAT_COLORS[card.label]
           return (

@@ -20,8 +20,8 @@ const DashboardPaceCard = memo(function DashboardPaceCard({
   const spendPct = earned > 0 ? Math.round((spent / earned) * 100) : 0
 
   return (
-    <div className="card p-4">
-      <div className="mb-3">
+    <div className="card p-3.5">
+      <div className="mb-2">
         <p className={`text-[15px] font-bold leading-snug ${
           paceOk ? 'text-income-text' : 'text-expense-text'
         }`}>
