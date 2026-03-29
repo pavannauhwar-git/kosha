@@ -547,7 +547,7 @@
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
   .page {
-    @apply min-h-dvh px-4 md:px-5;
+    @apply px-4 md:px-5;
     background: #ffffff;
     padding-top: 0.5rem;
     padding-bottom: calc(var(--nav-height) + 0.8rem);
