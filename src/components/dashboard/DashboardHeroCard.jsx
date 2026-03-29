@@ -22,7 +22,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     : null
 
   return (
-    <motion.div className="card-hero card-hero-dashboard p-5 relative overflow-hidden">
+    <motion.div className="card-hero card-hero-dashboard p-6 relative overflow-hidden">
       {/* Subtle highlight shimmer */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-hero">
         <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full opacity-30"
@@ -30,7 +30,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       </div>
 
       <div className="relative z-10">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-5">
           <p className="text-[11px] font-semibold tracking-[0.12em] uppercase"
             style={{ color: C.heroAccent }}>
             Balance overview
@@ -60,14 +60,14 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           </p>
         </div>
 
-        <div className="mt-2.5 mb-4 inline-flex items-center px-3 py-1.5 rounded-pill"
+        <div className="mt-3 mb-5 inline-flex items-center px-3 py-1.5 rounded-pill"
           style={{ background: C.heroAccentBg }}>
           <span className="text-[12px] font-semibold" style={{ color: C.heroAccentSolid }}>
             {rate}% saved this month
           </span>
         </div>
 
-        <div className="mb-3" style={{ borderTop: `1px solid ${C.heroDivider}` }} />
+        <div className="mb-4" style={{ borderTop: `1px solid ${C.heroDivider}` }} />
 
         <div className="flex justify-between gap-2">
           {[
@@ -88,7 +88,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           ))}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-5">
           <div className="flex justify-between mb-2">
             <span className="text-[12px] font-medium" style={{ color: C.heroLabel }}>
               Savings rate

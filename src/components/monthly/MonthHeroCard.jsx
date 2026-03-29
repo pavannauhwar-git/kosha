@@ -11,8 +11,8 @@ export default function MonthHeroCard({ month, year, data }) {
   const rate = savingsRate(earned, spent)
 
   return (
-    <div className="card-hero card-hero-monthly p-5 relative overflow-hidden">
-      <div className="flex items-center justify-between mb-3">
+    <div className="card-hero card-hero-monthly p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
           {MONTH_NAMES[month - 1].slice(0, 3)} {year}
         </p>
@@ -28,15 +28,15 @@ export default function MonthHeroCard({ month, year, data }) {
         {fmt(balance)}
       </p>
 
-      <div className="mt-2 mb-4 inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
+      <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
         <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
           {rate}% saved
         </span>
       </div>
 
-      <div className="border-t mb-3" style={{ borderColor: C.heroDivider }} />
+      <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
 
-      <div className="flex justify-between gap-1.5 sm:gap-2 mb-4">
+      <div className="flex justify-between gap-1.5 sm:gap-2 mb-5">
         {[
           { label: 'Earned', val: earned },
           { label: 'Spent', val: spent },

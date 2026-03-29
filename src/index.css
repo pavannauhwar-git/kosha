@@ -90,7 +90,7 @@
     --c-hero-label: rgba(255,255,255,0.60);
     --c-hero-dimmer: rgba(255,255,255,0.30);
     --c-hero-divider: rgba(255,255,255,0.10);
-    --c-hero-stat-bg: rgba(255,255,255,0.14);
+    --c-hero-stat-bg: rgba(255,255,255,0.12);
 
     --c-shimmer-1: rgba(0,0,0,0.04);
     --c-shimmer-2: rgba(0,0,0,0.08);
@@ -115,23 +115,24 @@
     color: #ffffff;
   }
 
-  /* Dashboard & Monthly — Stripe-style flowing color bands
-     Deep saturated colors for strong white-text contrast.
-     Multi-angle linear gradients create flowing ribbon effect */
+  /* Dashboard & Monthly — VISA-inspired silk gradient
+     Smooth diagonal flow: rose → lavender → mauve → peach → gold
+     Two subtle radial overlays add depth without blotchiness */
   .card-hero-dashboard,
   .card-hero-monthly {
     background:
-      linear-gradient(160deg, rgba(6,182,212,0.30) 0%, transparent 35%),
+      radial-gradient(ellipse at 15% 40%, rgba(236,72,153,0.28) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 60%, rgba(251,146,60,0.22) 0%, transparent 55%),
       linear-gradient(
         135deg,
-        #312e81 0%,
-        #4c1d95 14%,
-        #7c3aed 30%,
-        #a855f7 44%,
-        #d946ef 56%,
-        #ec4899 68%,
-        #be123c 84%,
-        #881337 100%
+        #ec4899 0%,
+        #d46aaf 16%,
+        #b88ad2 34%,
+        #a78bfa 48%,
+        #c8a0b8 60%,
+        #e0a880 74%,
+        #f0ba68 88%,
+        #fbbf24 100%
       );
   }
 
@@ -143,7 +144,7 @@
   }
 
   .page-stack {
-    @apply space-y-3.5 md:space-y-4;
+    @apply space-y-5 md:space-y-6;
   }
 
   .sticky-toolbar {
@@ -152,7 +153,7 @@
     border-top: 1px solid rgba(0,0,0,0.06);
     border-bottom: 1px solid rgba(0,0,0,0.06);
     top: var(--sticky-top-offset);
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
   }
 
   .card-md {
@@ -194,7 +195,7 @@
   }
 
   .list-row {
-    @apply flex items-center gap-3 px-4 py-3 transition-colors duration-150 cursor-pointer;
+    @apply flex items-center gap-3 px-4 py-3.5 transition-colors duration-150 cursor-pointer;
     background: transparent;
   }
 
@@ -549,8 +550,8 @@
   .page {
     @apply min-h-dvh px-4 md:px-5;
     background: #ffffff;
-    padding-top: 0.5rem;
-    padding-bottom: calc(var(--nav-height) + 0.8rem);
+    padding-top: 0.6rem;
+    padding-bottom: calc(var(--nav-height) + 1.1rem);
     max-width: 640px;
     margin-left: auto;
     margin-right: auto;
@@ -648,12 +649,12 @@
 
 @media (max-width: 390px) {
   .page {
-    padding-top: 0.4rem;
-    padding-bottom: calc(var(--nav-height) + 0.7rem);
+    padding-top: 0.5rem;
+    padding-bottom: calc(var(--nav-height) + 0.9rem);
   }
 
   .page-stack {
-    row-gap: 0.75rem;
+    row-gap: 0.9rem;
   }
 
   .section-label {
