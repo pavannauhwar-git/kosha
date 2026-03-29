@@ -435,7 +435,7 @@ export default function Dashboard() {
           <p className="text-caption" style={{ color: '#6b7c93' }}>
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="text-[20px] md:text-[24px] font-bold tracking-tight" style={{ color: '#1a0a2e' }}>
+          <h1 className="text-[20px] md:text-[24px] font-bold tracking-tight" style={{ color: '#0a2540' }}>
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
           {isBackgroundFetching && (
@@ -486,7 +486,7 @@ export default function Dashboard() {
                       ? 'rgba(247,179,43,0.12)'
                       : todayFocus.tone === 'good'
                         ? 'rgba(0,212,170,0.12)'
-                        : 'rgba(75,0,130,0.12)'
+                        : 'rgba(99,91,255,0.12)'
                   }}>
                   Priority
                 </span>
@@ -542,7 +542,7 @@ export default function Dashboard() {
                   <Bell size={16} style={{ color: '#f7b32b' }} />
                 </div>
                 <div>
-                  <p className="text-body font-semibold" style={{ color: '#1a0a2e' }}>
+                  <p className="text-body font-semibold" style={{ color: '#0a2540' }}>
                     {dueSoonCount} bill{dueSoonCount > 1 ? 's' : ''} due soon
                   </p>
                   <p className="text-label" style={{ color: '#6b7c93' }}>{dueSoonDescs}</p>

@@ -17,11 +17,11 @@
 
 @keyframes txn-focus-pulse {
   0% {
-    box-shadow: inset 0 0 0 2px rgba(75, 0, 130, 0.38);
-    background-color: rgba(75, 0, 130, 0.08);
+    box-shadow: inset 0 0 0 2px rgba(99, 91, 255, 0.38);
+    background-color: rgba(99, 91, 255, 0.08);
   }
   100% {
-    box-shadow: inset 0 0 0 0 rgba(75, 0, 130, 0);
+    box-shadow: inset 0 0 0 0 rgba(99, 91, 255, 0);
     background-color: transparent;
   }
 }
@@ -43,7 +43,7 @@
 
   body {
     background: #ffffff;
-    color: #1a0a2e;
+    color: #0a2540;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     width: 100%;
     max-width: 100%;
@@ -64,16 +64,16 @@
     --nav-height: calc(88px + env(safe-area-inset-bottom, 0px));
     --sticky-top-offset: calc(var(--safe-top) + 64px);
 
-    /* ── Royal Indigo × Electric Lime palette ─────────────────────── */
-    --c-brand: #4b0082;
-    --c-brand-mid: #6a1b9a;
-    --c-brand-container: rgba(75,0,130,0.15);
+    /* ── Stripe-inspired Palette CSS variables ────────────────────── */
+    --c-brand: #635bff;
+    --c-brand-mid: #7a73ff;
+    --c-brand-container: rgba(99,91,255,0.15);
     --c-brand-border: rgba(0,0,0,0.08);
-    --c-brand-rgb: 75, 0, 130;
-    --c-brand-mid-rgb: 106, 27, 154;
+    --c-brand-rgb: 99, 91, 255;
+    --c-brand-mid-rgb: 122, 115, 255;
 
-    --c-accent: #4b0082;
-    --c-accent-rgb: 75, 0, 130;
+    --c-accent: #0a2540;
+    --c-accent-rgb: 10, 37, 64;
 
     --c-income: #00d4aa;
     --c-invest-text: #c084fc;
@@ -81,16 +81,16 @@
     --c-expense-bright: #ff5c83;
     --c-warning: #f7b32b;
 
-    --c-ink-muted: #5c5470;
+    --c-ink-muted: #6b7c93;
 
-    /* Hero card overlays — lime accent on deep indigo gradient */
-    --c-hero-accent: #CCFF00;
-    --c-hero-accent-bg: rgba(204,255,0,0.16);
-    --c-hero-accent-fill: #CCFF00;
-    --c-hero-label: rgba(255,255,255,0.70);
-    --c-hero-dimmer: rgba(255,255,255,0.40);
+    /* Hero card overlays — white text on vivid gradient */
+    --c-hero-accent: #ffffff;
+    --c-hero-accent-bg: rgba(255,255,255,0.18);
+    --c-hero-accent-fill: #ffffff;
+    --c-hero-label: rgba(255,255,255,0.60);
+    --c-hero-dimmer: rgba(255,255,255,0.30);
     --c-hero-divider: rgba(255,255,255,0.10);
-    --c-hero-stat-bg: rgba(255,255,255,0.12);
+    --c-hero-stat-bg: rgba(255,255,255,0.14);
 
     --c-shimmer-1: rgba(0,0,0,0.04);
     --c-shimmer-2: rgba(0,0,0,0.08);
@@ -115,16 +115,18 @@
     color: #ffffff;
   }
 
-  /* Dashboard & Monthly — Royal Indigo with Electric Lime accents
-     Deep indigo core radiating into violet, with lime glow highlights */
+  /* Dashboard & Monthly — Stripe-style flowing petal gradient
+     Conic + shaped radials mimic flowing ribbon/petal shapes.
+     Deep saturated core with bright flowing edges for contrast */
   .card-hero-dashboard,
   .card-hero-monthly {
     background:
-      radial-gradient(ellipse 50% 50% at 85% 15%, rgba(204,255,0,0.30) 0%, transparent 60%),
-      radial-gradient(ellipse 40% 40% at 15% 85%, rgba(204,255,0,0.18) 0%, transparent 55%),
-      radial-gradient(ellipse 120% 80% at 70% 55%, rgba(106,27,154,0.80) 0%, rgba(75,0,130,0.60) 30%, transparent 60%),
-      radial-gradient(ellipse 100% 120% at 30% 40%, rgba(124,58,237,0.50) 0%, rgba(75,0,130,0.40) 40%, transparent 65%),
-      linear-gradient(145deg, #1a0033 0%, #2d004d 25%, #4b0082 50%, #6a1b9a 75%, #7c4dff 100%);
+      conic-gradient(from 220deg at 70% 60%, rgba(251,146,60,0.0) 0%, rgba(251,146,60,0.85) 8%, rgba(244,114,182,0.70) 16%, transparent 24%),
+      conic-gradient(from 140deg at 35% 40%, rgba(192,132,252,0.0) 0%, rgba(192,132,252,0.80) 10%, rgba(236,72,153,0.65) 20%, transparent 30%),
+      radial-gradient(ellipse 120% 80% at 75% 55%, rgba(251,146,60,0.75) 0%, rgba(236,72,153,0.60) 30%, transparent 60%),
+      radial-gradient(ellipse 100% 120% at 25% 50%, rgba(139,92,246,0.70) 0%, rgba(192,132,252,0.50) 30%, transparent 60%),
+      radial-gradient(ellipse 60% 60% at 55% 20%, rgba(99,91,255,0.55) 0%, transparent 50%),
+      linear-gradient(145deg, #312e81 0%, #4c1d95 30%, #7c3aed 55%, #a855f7 80%, #c084fc 100%);
   }
 
   /* -- Cards — clean white ──────────────────────────────────── */
@@ -201,14 +203,14 @@
   /* -- Section label ───────────────────────────────────────────────── */
   .section-label {
     @apply text-[10.5px] font-semibold tracking-tight leading-none;
-    color: #5c5470;
+    color: #6b7c93;
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
 
   .card-title {
     @apply text-[13px] font-semibold;
-    color: #1a0a2e;
+    color: #0a2540;
   }
 
   /* -- Type chips ──────────────────────────────────────────────────── */
@@ -238,8 +240,8 @@
 
   .chip-neutral {
     @apply text-xs font-semibold px-2.5 py-1 rounded-pill;
-    background: rgba(75,0,130,0.08);
-    color: #4b0082;
+    background: rgba(99,91,255,0.08);
+    color: #635bff;
   }
 
   .chip-control {
@@ -260,9 +262,9 @@
 
   .chip-control-active {
     @apply chip-control;
-    background: rgba(75,0,130,0.10);
-    color: #4b0082;
-    border-color: rgba(75,0,130,0.25);
+    background: rgba(99,91,255,0.10);
+    color: #635bff;
+    border-color: rgba(99,91,255,0.25);
   }
 
   .chip-control-sm {
@@ -297,29 +299,29 @@
 
   .btn-primary {
     @apply btn px-6 py-3;
-    background: #4b0082;
+    background: #635bff;
     color: #ffffff;
-    box-shadow: 0 2px 8px rgba(75,0,130,0.35);
+    box-shadow: 0 2px 8px rgba(99,91,255,0.35);
   }
 
   .btn-primary:hover {
-    background: #6a1b9a;
+    background: #7a73ff;
   }
 
   .btn-tonal {
     @apply btn px-6 py-3;
-    background: rgba(75,0,130,0.08);
-    color: #4b0082;
+    background: rgba(99,91,255,0.08);
+    color: #635bff;
   }
 
   .btn-ghost {
     @apply btn px-4 py-2;
-    color: #4b0082;
+    color: #635bff;
     background: transparent;
   }
 
   .btn-ghost:hover {
-    background: rgba(75,0,130,0.06);
+    background: rgba(99,91,255,0.06);
   }
 
   .btn-secondary {
@@ -347,9 +349,9 @@
   /* -- FAB — Stripe purple glow ─────────────────────────────────────── */
   .fab {
     @apply fixed w-14 h-14 rounded-2xl flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
-    background: #4b0082;
-    color: #CCFF00;
-    box-shadow: 0 4px 16px rgba(75,0,130,0.50), 0 0 0 1px rgba(75,0,130,0.60);
+    background: #635bff;
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(99,91,255,0.50), 0 0 0 1px rgba(99,91,255,0.60);
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
@@ -443,8 +445,8 @@
     position: absolute;
     inset: 0;
     border-radius: 9999px;
-    background: rgba(75, 0, 130, 0.10);
-    box-shadow: inset 0 0 0 1px rgba(75, 0, 130, 0.10);
+    background: rgba(99, 91, 255, 0.10);
+    box-shadow: inset 0 0 0 1px rgba(99, 91, 255, 0.10);
   }
 
   /* Both icon layers sit on top of the pill, stacked in same spot */
@@ -470,7 +472,7 @@
   .input {
     @apply w-full max-w-full rounded-card px-4 py-3.5 text-base focus:outline-none transition-all duration-150;
     background: #ffffff;
-    color: #1a0a2e;
+    color: #0a2540;
     border: 1px solid rgba(0,0,0,0.12);
     min-width: 0;
     will-change: transform;
@@ -483,8 +485,8 @@
 
   .input:focus {
     background: #ffffff;
-    border-color: rgba(75,0,130,0.50);
-    box-shadow: 0 0 0 3px rgba(75,0,130,0.15);
+    border-color: rgba(99,91,255,0.50);
+    box-shadow: 0 0 0 3px rgba(99,91,255,0.15);
   }
 
   /* -- Bottom sheet — dark glass ─────────────────────────────────────── */
@@ -567,7 +569,7 @@
 
   .bar-light-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0;
-    background: linear-gradient(90deg, #0e9f6e, #4b0082);
+    background: linear-gradient(90deg, #0e9f6e, #635bff);
     transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 

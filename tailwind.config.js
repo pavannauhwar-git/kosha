@@ -12,14 +12,14 @@ export default {
         'kosha-border':        'rgba(0,0,0,0.08)',
         'kosha-border-strong': 'rgba(0,0,0,0.16)',
 
-        // ── Brand — Royal Indigo ──────────────────────────────────
-        'brand':           '#4b0082',
-        'brand-dark':      '#36005e',
-        'brand-mid':       '#6a1b9a',
-        'brand-bg':        'rgba(75,0,130,0.08)',
-        'brand-container': 'rgba(75,0,130,0.10)',
-        'brand-on':        '#4b0082',
-        'brand-accent':    '#CCFF00',
+        // ── Brand — Stripe Indigo ──────────────────────────────────
+        'brand':           '#635bff',
+        'brand-dark':      '#4b45c6',
+        'brand-mid':       '#7a73ff',
+        'brand-bg':        'rgba(99,91,255,0.08)',
+        'brand-container': 'rgba(99,91,255,0.10)',
+        'brand-on':        '#635bff',
+        'brand-accent':    '#0a2540',
 
         // ── Income ────────────────────────────────────────────────────
         'income':        '#0e9f6e',
@@ -52,10 +52,10 @@ export default {
         'warning-text':   '#d97706',
 
         // ── Ink — dark on light ───────────────────────────────────────
-        'ink':   '#1a0a2e',
-        'ink-2': '#3d2b55',
-        'ink-3': '#5c5470',
-        'ink-4': '#8b83a0',
+        'ink':   '#0a2540',
+        'ink-2': '#425466',
+        'ink-3': '#6b7c93',
+        'ink-4': '#8898aa',
 
         // ── Utility ───────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',
