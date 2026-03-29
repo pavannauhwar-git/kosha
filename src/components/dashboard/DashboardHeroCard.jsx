@@ -22,11 +22,15 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     : null
 
   return (
-    <motion.div className="card-hero card-hero-dashboard p-6 relative overflow-hidden">
-      {/* Subtle highlight shimmer */}
+    <motion.div className="card-hero p-6 relative overflow-hidden">
+      {/* Mesh gradient orbs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-hero">
-        <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full opacity-30"
-          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.40) 0%, transparent 70%)' }} />
+        <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full opacity-40"
+          style={{ background: 'radial-gradient(circle, #635bff 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-full opacity-30"
+          style={{ background: 'radial-gradient(circle, #a960ee 0%, transparent 70%)' }} />
+        <div className="absolute top-10 right-20 w-40 h-40 rounded-full opacity-20"
+          style={{ background: 'radial-gradient(circle, #f7b32b 0%, transparent 70%)' }} />
       </div>
 
       <div className="relative z-10">
@@ -71,13 +75,13 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
 
         <div className="flex justify-between gap-2">
           {[
-            { label: 'Earned',   val: earned },
-            { label: 'Spent',    val: spent },
-            { label: 'Invested', val: invested },
+            { label: 'Earned',   val: earned,   color: '#00d4aa' },
+            { label: 'Spent',    val: spent,    color: '#ff5c83' },
+            { label: 'Invested', val: invested, color: '#c084fc' },
           ].map(s => (
             <div key={s.label}
               className="flex-1 min-w-0 px-3 py-3 rounded-2xl"
-              style={{ background: C.heroStatBg }}
+              style={{ background: C.heroStatBg, borderLeft: `2px solid ${s.color}` }}
             >
               <p className="text-[11px] mb-1 truncate"
                 style={{ color: C.heroLabel }}>{s.label}</p>

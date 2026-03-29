@@ -11,7 +11,7 @@ export default function MonthHeroCard({ month, year, data }) {
   const rate = savingsRate(earned, spent)
 
   return (
-    <div className="card-hero card-hero-monthly p-6 relative overflow-hidden">
+    <div className="card-hero p-6 relative overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
           {MONTH_NAMES[month - 1].slice(0, 3)} {year}

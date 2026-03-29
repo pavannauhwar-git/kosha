@@ -36,11 +36,11 @@ export default function YearlyInsightsCard({ data, catEntries }) {
   })()
 
   return (
-    <div className="card p-4 overflow-hidden relative" style={{ background: 'radial-gradient(ellipse at 85% 15%, rgba(244,114,182,0.14) 0%, transparent 55%), radial-gradient(ellipse at 15% 85%, rgba(139,92,246,0.10) 0%, transparent 55%), linear-gradient(135deg, rgba(249,168,212,0.08) 0%, rgba(253,186,116,0.06) 100%), #ffffff' }}>
+    <div className="card p-4 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, rgba(99,91,255,0.15) 0%, rgba(128,233,255,0.08) 100%)' }}>
       <div
         className="absolute top-0 right-0 w-28 h-28 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle at 70% 30%, rgba(251,191,36,0.12) 0%, transparent 70%)',
+          background: 'radial-gradient(circle at 70% 30%, rgba(55,48,163,0.10) 0%, transparent 70%)',
           borderRadius: '50%',
           transform: 'translate(20%, -20%)',
         }}

@@ -268,7 +268,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
 })
 
 const TREND_CHART_BG =
-  'radial-gradient(ellipse at 85% 20%, rgba(244,114,182,0.10) 0%, transparent 55%), radial-gradient(ellipse at 15% 80%, rgba(139,92,246,0.08) 0%, transparent 55%), linear-gradient(180deg, #fdf4ff 0%, #f5f3ff 100%)'
+  'radial-gradient(circle at 85% 20%, rgba(99,91,255,0.10) 0%, rgba(99,91,255,0) 58%), linear-gradient(180deg, #f5f7fc 0%, #eef2f7 100%)'
 
 const ConfidenceTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
