@@ -3,14 +3,6 @@ import { motion } from 'framer-motion'
 import { fmt } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 
-/**
- * DashboardHeroCard
- *
- * Extracted from Dashboard.jsx to prevent the entire page re-rendering
- * when unrelated data (e.g. recent transactions list) updates.
- *
- * Wrapped in memo: only re-renders when its own props change.
- */
 const DashboardHeroCard = memo(function DashboardHeroCard({
   now,
   runningBalance,
@@ -27,7 +19,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     : null
 
   const heroAccentSoft = 'rgba(242, 213, 60, 0.78)'
-  const heroAccentBgSoft = 'rgba(242, 213, 60, 0.18)'
+  const heroAccentBgSoft = 'rgba(242, 213, 60, 0.40)'
 
   return (
     <motion.div className="card-hero p-6 relative overflow-hidden">

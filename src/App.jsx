@@ -458,7 +458,7 @@ function DesktopSidebar() {
 function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
-  const scrolledDown = useScrollDirection()
+  const scrolledDown = useScrollDirection(location.pathname)
   const prefetchRoute = useRouteIntentPrefetch()
   const [layoutReady, setLayoutReady] = useState(false)
 

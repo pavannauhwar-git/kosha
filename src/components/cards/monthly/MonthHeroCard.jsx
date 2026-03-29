@@ -10,7 +10,7 @@ export default function MonthHeroCard({ month, year, data }) {
   const balance = data?.balance || 0
   const rate = savingsRate(earned, spent)
   const heroAccentSoft = 'rgba(242, 213, 60, 0.78)'
-  const heroAccentBgSoft = 'rgba(242, 213, 60, 0.18)'
+  const heroAccentBgSoft = 'rgba(242, 213, 60, 0.40)'
 
   return (
     <div className="card-hero p-6 relative overflow-hidden">

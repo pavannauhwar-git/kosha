@@ -387,15 +387,61 @@ export default function Monthly() {
 
     const total = rows.reduce((sum, row) => sum + row.value, 0)
     const top = rows[0] || null
+    const second = rows[1] || null
     const topPct = top && total > 0 ? Math.round((top.value / total) * 100) : 0
     const deployRate = inflow > 0 ? Math.round((invested / inflow) * 100) : 0
+
+    const actions = []
+    if (total <= 0) {
+      actions.push('No tagged vehicle allocation yet. Add investment entries with a vehicle label to unlock mix intelligence.')
+      actions.push('Start with one core vehicle this month, then diversify once cadence is consistent.')
+      actions.push('After logging the first investment, review concentration to plan the second one.')
+    } else {
+      if (topPct >= 55 && second) {
+        actions.push(`Concentration alert: ${top.name} is ${topPct}% of this month. Next top-up in ${second.name} can reduce risk.`)
+      } else if (topPct >= 55) {
+        actions.push(`Concentration alert: ${top.name} is ${topPct}% of this month. Add another vehicle category for balance.`)
+      } else {
+        actions.push(`Concentration is manageable. Largest holding is ${topPct}% of this month's investments.`)
+      }
+
+      if (rows.length < 3) {
+        actions.push('Diversification opportunity: add at least one new vehicle category in the next investment.')
+      } else {
+        actions.push('Diversification base is healthy. Keep future top-ups close to the current planned weights.')
+      }
+
+      if (deployRate < 10) {
+        actions.push(`Deployment is ${deployRate}% of inflow. A small top-up can improve long-term consistency.`)
+      } else if (deployRate > 35) {
+        actions.push(`Deployment is ${deployRate}% of inflow. Ensure monthly cash runway remains intact before increasing further.`)
+      } else {
+        actions.push(`Deployment is ${deployRate}% of inflow, within a balanced range for this month.`)
+      }
+    }
+
+    const nextAction = (() => {
+      if (total <= 0) {
+        return 'Log your first investment for this month to activate allocation tracking.'
+      }
+      if (topPct >= 55 && second) {
+        return `Log the next investment in ${second.name} to rebalance concentration.`
+      }
+      if (rows.length < 3) {
+        return 'Log the next investment into a new vehicle category for diversification.'
+      }
+      return 'Log the next planned top-up to keep this month on allocation target.'
+    })()
 
     return {
       rows,
       total,
       top,
+      second,
       topPct,
       deployRate,
+      actions,
+      nextAction,
     }
   }, [vehicleEntries, inflow, invested])
 
@@ -523,6 +569,7 @@ export default function Monthly() {
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Top vehicle</p>
                   <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
+                  <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">{monthlyPortfolioSnapshot.top ? fmt(monthlyPortfolioSnapshot.top.value, true) : '—'}</p>
                 </div>
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Concentration</p>
@@ -547,7 +594,10 @@ export default function Monthly() {
                       <div key={row.name}>
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <span className="text-[11px] text-ink-2 truncate">{row.name}</span>
-                          <span className="text-[11px] text-ink-3 tabular-nums">{pct}%</span>
+                          <div className="text-right shrink-0">
+                            <p className="text-[11px] text-ink-2 tabular-nums leading-tight">{fmt(row.value, true)}</p>
+                            <p className="text-[10px] text-ink-3 tabular-nums leading-tight">{pct}%</p>
+                          </div>
                         </div>
                         <div className="h-1.5 rounded-pill bg-brand-container/55 overflow-hidden">
                           <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(8, pct)}%` }} />
@@ -560,11 +610,24 @@ export default function Monthly() {
                 <p className="text-[11px] text-ink-3 mb-2">Investment entries exist but vehicle allocation is not tagged yet.</p>
               )}
 
-              <p className="text-[11px] text-ink-3">
-                {monthlyPortfolioSnapshot.topPct >= 55
-                  ? `Concentration is high at ${monthlyPortfolioSnapshot.topPct}%. Consider splitting next deployment across another vehicle.`
-                  : `Allocation balance looks stable. Keep deployment near ${monthlyPortfolioSnapshot.deployRate}% unless month-close runway tightens.`}
-              </p>
+              <div className="space-y-1.5 mb-3">
+                {monthlyPortfolioSnapshot.actions.slice(0, 3).map((line, index) => (
+                  <p key={`monthly-portfolio-action-${index}`} className="text-[11px] text-ink-3">
+                    {index + 1}. {line}
+                  </p>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-kosha-border flex items-center justify-between gap-2">
+                <p className="text-[11px] text-ink-3 flex-1 leading-relaxed">{monthlyPortfolioSnapshot.nextAction}</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/transactions', { state: { openAddInvestment: true } })}
+                  className="btn-secondary-sm shrink-0"
+                >
+                  Log investment
+                </button>
+              </div>
             </div>
           )}
 

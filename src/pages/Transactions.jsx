@@ -17,7 +17,7 @@ import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
 import PageHeader from '../components/layout/PageHeader'
 import { getAuthUserId } from '../lib/authStore'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
@@ -50,6 +50,7 @@ function groupNet(txns) {
 
 export default function Transactions() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [typeFilter,    setTypeFilter]    = useState('all')
   const [catFilter,     setCatFilter]     = useState('')
   const [search,        setSearch]        = useState('')
@@ -283,6 +284,17 @@ export default function Transactions() {
       // no-op
     }
   }, [])
+
+  useEffect(() => {
+    if (!location.state?.openAddInvestment) return
+
+    setEditTxn(null)
+    setDuplicateTxn(null)
+    setAddType('investment')
+    setShowAdd(true)
+
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [location.state, location.pathname, location.search, navigate])
 
   return (
     <div className="page">

@@ -131,5 +131,5 @@ export function dueChipClass(days) {
   if (days < 0)   return 'bg-expense-bg text-expense-text'
   if (days === 0) return 'bg-warning-bg text-warning-text'
   if (days <= 3)  return 'bg-warning-bg text-warning-text'
-  return 'bg-brand-container text-brand-on'
+  return 'bg-repay-bg text-repay-text'
 }

@@ -19,6 +19,16 @@ import AppToast from '../components/common/AppToast'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
+const BUCKET_LABEL_CLASS = {
+  overdue: 'bg-expense-bg text-expense-text border border-expense-border',
+  dueSoon: 'bg-warning-bg text-warning-text border border-warning-border',
+  later: 'bg-repay-bg text-repay-text border border-repay-border',
+}
+const BUCKET_CARD_TONE_CLASS = {
+  overdue: 'border border-expense-border/70 bg-expense-bg/35',
+  dueSoon: 'border border-warning-border/70 bg-warning-bg/35',
+  later: 'border border-repay-border/65 bg-repay-bg/25',
+}
 
 export default function Bills() {
   const navigate = useNavigate()
@@ -276,7 +286,7 @@ export default function Bills() {
           onClick={() => setTab('pending')}
           className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'pending'
-              ? 'bg-warning-bg text-warning-text border border-warning-border'
+              ? 'bg-warning text-white border border-warning shadow-warn'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Pending ({visiblePending.length})
@@ -285,7 +295,7 @@ export default function Bills() {
           onClick={() => setTab('paid')}
           className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'paid'
-              ? 'bg-repay-bg text-repay-text border border-repay-border'
+              ? 'bg-repay text-white border border-repay shadow-warn'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Paid ({visiblePaid.length})
@@ -294,36 +304,36 @@ export default function Bills() {
 
       {/* ── Summary card ─────────────────────────────────────────────── */}
       {tab === 'pending' && visiblePending.length > 0 && (
-        <div className="card mb-5 p-5">
-          <div className="flex items-start justify-between gap-3 pb-4 border-b border-kosha-border">
+        <div className="card mb-5 p-5 border border-warning-border bg-gradient-to-br from-warning-bg/75 via-kosha-surface to-repay-bg/60">
+          <div className="flex items-start justify-between gap-3 pb-4 border-b border-warning-border/60">
             <div>
               <p className="text-caption text-ink-3 mb-0.5">Total pending</p>
               <p className="text-[28px] font-bold text-ink tracking-tight tabular-nums leading-none">
                 {fmt(totalPending)}
               </p>
             </div>
-            <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2 px-2.5 py-1 rounded-pill border border-kosha-border">
+            <span className="text-caption font-semibold text-repay-text bg-warning-bg/70 px-2.5 py-1 rounded-pill border border-warning-border">
               {visiblePending.length} bill{visiblePending.length !== 1 ? 's' : ''}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mt-4">
-            <div className="bg-kosha-surface-2 rounded-card px-3 py-2.5">
+            <div className="bg-warning-bg rounded-card border border-warning-border/70 px-3 py-2.5">
               <p className="text-[10px] text-ink-3 mb-1">Due in 7 days</p>
               <p className="text-[17px] font-bold text-warning-text tabular-nums leading-none">{fmt(dueSoonAmount)}</p>
               <p className="text-[11px] text-ink-3 mt-1">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
             </div>
-            <div className="bg-kosha-surface-2 rounded-card px-3 py-2.5">
+            <div className="bg-repay-bg rounded-card border border-repay-border/70 px-3 py-2.5">
               <p className="text-[10px] text-ink-3 mb-1">Due this month</p>
-              <p className="text-[17px] font-bold text-ink tabular-nums leading-none">{fmt(dueThisMonth.amount)}</p>
+              <p className="text-[17px] font-bold text-repay-text tabular-nums leading-none">{fmt(dueThisMonth.amount)}</p>
               <p className="text-[11px] text-ink-3 mt-1">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>
             </div>
           </div>
 
           <div className="mt-3.5">
-            <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-1.5">
+            <div className="h-1.5 bg-warning-border/45 rounded-pill overflow-hidden mb-1.5">
               <motion.div
-                className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-warning'}`}
+                className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-repay'}`}
                 initial={{ width: 0 }} animate={{ width: `${barPct || 100}%` }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
               />
@@ -332,16 +342,16 @@ export default function Bills() {
               <span className="text-[11px] text-ink-3">
                 {dueSoonCount > 0 ? `${fmt(dueSoonAmount)} due this week` : 'All bills on schedule'}
               </span>
-              {barPct > 0 && (
-                <span className="text-[11px] font-semibold text-warning-text">{barPct}% urgent</span>
-              )}
+              <span className={`text-[11px] font-semibold ${barPct > 0 ? 'text-warning-text' : 'text-repay-text'}`}>
+                {barPct > 0 ? `${barPct}% urgent` : 'Stable'}
+              </span>
             </div>
           </div>
         </div>
       )}
 
       {showGuideHint && (
-        <div className="card mb-6 p-4">
+        <div className="card mb-6 p-4 border border-warning-border/70 bg-warning-bg/35">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-warning-bg flex items-center justify-center shrink-0">
               <BookOpen size={16} className="text-warning-text" />
@@ -380,7 +390,7 @@ export default function Bills() {
           {tab === 'pending' && visiblePending.length === 0 && (
             <EmptyState
               className="py-8"
-              icon={<Check size={24} className="text-income-text" />}
+              icon={<Check size={24} className="text-repay-text" />}
               title="You're all clear"
               description="No pending bills right now. Add recurring dues to keep reminders and cashflow planning accurate."
               actionLabel="Add a bill"
@@ -411,16 +421,22 @@ export default function Bills() {
             const shadow = tab === 'pending' ? dueShadow(days) : 'card'
             const chipCls = dueChipClass(days)
             const showBucketHeader = tab === 'pending' && (index === 0 || rows[index - 1]._bucket !== bill._bucket)
+            const bucketLabelClass = BUCKET_LABEL_CLASS[bill._bucket] || BUCKET_LABEL_CLASS.later
+            const bucketCardToneClass = tab === 'pending'
+              ? (BUCKET_CARD_TONE_CLASS[bill._bucket] || BUCKET_CARD_TONE_CLASS.later)
+              : 'border border-repay-border/60 bg-repay-bg/20'
             return (
               <div key={bill.id}>
                 {showBucketHeader && (
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-3 px-1 mb-1 mt-2">
-                    {bill._bucket === 'overdue' ? 'Overdue' : bill._bucket === 'dueSoon' ? 'Due this week' : 'Later'}
-                  </p>
+                  <div className="px-1 mb-1 mt-2">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-pill text-[10px] font-semibold uppercase tracking-wide ${bucketLabelClass}`}>
+                      {bill._bucket === 'overdue' ? 'Overdue' : bill._bucket === 'dueSoon' ? 'Due this week' : 'Later'}
+                    </span>
+                  </div>
                 )}
                 <div
                   id={`bill-${bill.id}`}
-                  className={`${shadow} p-3.5 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
+                  className={`${shadow} ${bucketCardToneClass} p-3.5 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -439,7 +455,7 @@ export default function Bills() {
                             {dueLabel(days)}
                           </span>
                         ) : (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-income-bg text-income-text">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-repay-bg text-repay-text border border-repay-border/70">
                             Paid {fmtDate(bill.due_date)}
                           </span>
                         )}
@@ -460,8 +476,8 @@ export default function Bills() {
                           onClick={() => handleMarkPaid(bill)}
                           disabled={!!payingId || !!deletingId || !!bill.__optimistic}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-card
-                                     bg-income-bg text-income-text text-xs font-semibold
-                                     border border-income-border active:scale-[0.98] transition-all duration-100
+                                     bg-repay-bg text-repay-text text-xs font-semibold
+                                     border border-repay-border active:scale-[0.98] transition-all duration-100
                                      disabled:opacity-60"
                         >
                           {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
@@ -574,7 +590,7 @@ export default function Bills() {
                   <button onClick={handleAdd}
                     disabled={addSaving}
                     className={`w-full py-4 rounded-card font-semibold transition-all
-                               ${addSaving ? 'bg-warning/70 text-white/90 scale-[0.99]' : 'bg-warning text-white active:scale-[0.99]'}`}>
+                               ${addSaving ? 'bg-repay/70 text-white/90 scale-[0.99]' : 'bg-gradient-to-r from-warning to-repay text-white active:scale-[0.99]'}`}>
                     {addSaving ? 'Adding…' : 'Add Bill'}
                   </button>
                 </div>

@@ -10,14 +10,34 @@ import { useState, useEffect, useRef } from 'react'
  * Uses requestAnimationFrame to batch updates (no jank).
  * Passive scroll listener — zero main-thread blocking.
  */
-export function useScrollDirection() {
+export function useScrollDirection(resetKey) {
+  const initialY = typeof window !== 'undefined' ? window.scrollY : 0
   const [scrolledDown, setScrolledDown] = useState(false)
-  const lastY   = useRef(0)
+  const lastY   = useRef(initialY)
   const ticking = useRef(false)
+  const ignoreUntil = useRef(0)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    lastY.current = window.scrollY
+    setScrolledDown(false)
+
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    ignoreUntil.current = now + 280
+  }, [resetKey])
 
   useEffect(() => {
     const update = () => {
       const y = window.scrollY
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+
+      if (now < ignoreUntil.current) {
+        // Ignore automatic layout/restore scroll jitter during skeleton -> page swap.
+        lastY.current = y
+        ticking.current = false
+        return
+      }
 
       if (y < 60) {
         // Always show full nav near the top

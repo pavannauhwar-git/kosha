@@ -1,7 +1,9 @@
 import { C } from '../../../lib/colors'
 import { fmt } from '../../../lib/utils'
+import { useNavigate } from 'react-router-dom'
 
 export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) {
+  const navigate = useNavigate()
   const safeVehicleData = (Array.isArray(vehicleData) ? vehicleData : [])
     .map(([name, value]) => ({
       name,
@@ -26,6 +28,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
     ...row,
     pct: totalPortfolio > 0 ? Math.round((row.value / totalPortfolio) * 100) : 0,
   }))
+  const rebalanceTarget = safeVehicleData[1]?.name || null
 
   const actions = []
   if (totalPortfolio <= 0) {
@@ -52,6 +55,22 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
     }
   }
 
+  const nextAction = (() => {
+    if (totalPortfolio <= 0) {
+      return 'Log your first investment entry to activate allocation tracking and concentration alerts.'
+    }
+    if (topHoldingPct >= 55 && rebalanceTarget) {
+      return `Log the next investment in ${rebalanceTarget} to reduce concentration risk.`
+    }
+    if (safeVehicleData.length < 3) {
+      return 'Log the next investment in a new vehicle category to improve diversification.'
+    }
+    if (deploymentRate < 10) {
+      return 'Log a small top-up this week to keep yearly deployment momentum.'
+    }
+    return 'Log your next planned monthly top-up to stay aligned with this allocation mix.'
+  })()
+
   return (
     <div className="card p-4">
       <div className="flex items-start justify-between gap-3 mb-2.5">
@@ -70,6 +89,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
             <div className="rounded-card bg-kosha-surface-2 p-2.5">
               <p className="text-[10px] text-ink-3">Top holding</p>
               <p className="text-[12px] font-bold text-ink truncate">{topHolding?.name || '—'}</p>
+              <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">{topHolding ? fmt(topHolding.value, true) : '—'}</p>
             </div>
             <div className="rounded-card bg-kosha-surface-2 p-2.5">
               <p className="text-[10px] text-ink-3">Concentration</p>
@@ -86,7 +106,10 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
               <div key={row.name}>
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-[11px] text-ink-2 truncate">{row.name}</span>
-                  <span className="text-[11px] text-ink-3 tabular-nums">{row.pct}%</span>
+                  <div className="text-right shrink-0">
+                    <p className="text-[11px] text-ink-2 tabular-nums leading-tight">{fmt(row.value, true)}</p>
+                    <p className="text-[10px] text-ink-3 tabular-nums leading-tight">{row.pct}%</p>
+                  </div>
                 </div>
                 <div className="h-1.5 rounded-pill bg-brand-container/55 overflow-hidden">
                   <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(8, row.pct)}%` }} />
@@ -97,12 +120,23 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
         </>
       ) : null}
 
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 mb-3">
         {actions.slice(0, 3).map((line, index) => (
           <p key={`portfolio-action-${index}`} className="text-[11px] text-ink-3">
             {index + 1}. {line}
           </p>
         ))}
+      </div>
+
+      <div className="pt-2 border-t border-kosha-border flex items-center justify-between gap-2">
+        <p className="text-[11px] text-ink-3 flex-1 leading-relaxed">{nextAction}</p>
+        <button
+          type="button"
+          onClick={() => navigate('/transactions', { state: { openAddInvestment: true } })}
+          className="btn-secondary-sm shrink-0"
+        >
+          Log investment
+        </button>
       </div>
 
       <div className="mt-2 h-px" style={{ background: C.brandBorder }} />
