@@ -569,7 +569,7 @@ export default function Monthly() {
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Top vehicle</p>
                   <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
-                  <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">{monthlyPortfolioSnapshot.top ? fmt(monthlyPortfolioSnapshot.top.value, true) : '—'}</p>
+                  <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">{monthlyPortfolioSnapshot.top ? fmt(monthlyPortfolioSnapshot.top.value) : '—'}</p>
                 </div>
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Concentration</p>
@@ -595,7 +595,7 @@ export default function Monthly() {
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <span className="text-[11px] text-ink-2 truncate">{row.name}</span>
                           <div className="text-right shrink-0">
-                            <p className="text-[11px] text-ink-2 tabular-nums leading-tight">{fmt(row.value, true)}</p>
+                            <p className="text-[11px] text-ink-2 tabular-nums leading-tight">{fmt(row.value)}</p>
                             <p className="text-[10px] text-ink-3 tabular-nums leading-tight">{pct}%</p>
                           </div>
                         </div>

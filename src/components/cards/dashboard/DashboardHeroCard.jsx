@@ -18,14 +18,15 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0))
     : null
 
-  const heroAccentSoft = 'rgba(242, 213, 60, 0.78)'
-  const heroAccentBgSoft = 'rgba(242, 213, 60, 0.40)'
+  const heroAccentStrong = '#F2D53C'
+  const heroBadgeBg = 'linear-gradient(135deg, rgba(242, 213, 60, 0.92) 0%, rgba(255, 229, 125, 0.86) 100%)'
+  const heroBadgeText = '#16376A'
 
   return (
     <motion.div className="card-hero p-6 relative overflow-hidden">
       <div className="flex items-center justify-between mb-3.5">
         <p className="text-caption font-bold tracking-widest uppercase"
-          style={{ color: heroAccentSoft }}>
+          style={{ color: heroAccentStrong }}>
           Balance overview
         </p>
         <p className="text-caption font-bold tracking-widest"
@@ -51,9 +52,11 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
         </p>
       </div>
 
-      <div className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill border border-white/12"
-        style={{ background: heroAccentBgSoft }}>
-        <span className="text-caption font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
+      <div
+        className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill border"
+        style={{ background: heroBadgeBg, borderColor: 'rgba(255,255,255,0.38)' }}
+      >
+        <span className="text-caption font-bold" style={{ color: heroBadgeText }}>
           {rate}% saved this month
         </span>
       </div>
@@ -84,7 +87,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <span className="text-caption font-medium" style={{ color: C.heroLabel }}>
             Savings rate
           </span>
-          <span className="text-caption font-bold" style={{ color: heroAccentSoft }}>
+          <span className="text-caption font-bold" style={{ color: heroAccentStrong }}>
             {rate}%
           </span>
         </div>

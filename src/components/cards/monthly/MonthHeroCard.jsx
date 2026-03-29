@@ -9,13 +9,14 @@ export default function MonthHeroCard({ month, year, data }) {
   const invested = data?.investment || 0
   const balance = data?.balance || 0
   const rate = savingsRate(earned, spent)
-  const heroAccentSoft = 'rgba(242, 213, 60, 0.78)'
-  const heroAccentBgSoft = 'rgba(242, 213, 60, 0.40)'
+  const heroAccentStrong = '#F2D53C'
+  const heroBadgeBg = 'linear-gradient(135deg, rgba(242, 213, 60, 0.92) 0%, rgba(255, 229, 125, 0.86) 100%)'
+  const heroBadgeText = '#16376A'
 
   return (
     <div className="card-hero p-6 relative overflow-hidden">
       <div className="flex items-center justify-between mb-3.5">
-        <p className="text-caption font-bold tracking-widest uppercase" style={{ color: heroAccentSoft }}>
+        <p className="text-caption font-bold tracking-widest uppercase" style={{ color: heroAccentStrong }}>
           {MONTH_NAMES[month - 1].slice(0, 3)} {year}
         </p>
         <p className="text-caption font-bold tracking-widest" style={{ color: C.heroDimmer }}>
@@ -30,8 +31,11 @@ export default function MonthHeroCard({ month, year, data }) {
         {fmt(balance)}
       </p>
 
-      <div className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill border border-white/12" style={{ background: heroAccentBgSoft }}>
-        <span className="text-caption font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
+      <div
+        className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill border"
+        style={{ background: heroBadgeBg, borderColor: 'rgba(255,255,255,0.38)' }}
+      >
+        <span className="text-caption font-bold" style={{ color: heroBadgeText }}>
           {rate}% saved
         </span>
       </div>
@@ -56,7 +60,7 @@ export default function MonthHeroCard({ month, year, data }) {
       <div>
         <div className="flex justify-between mb-2">
           <span className="text-caption" style={{ color: C.heroLabel }}>Savings rate</span>
-          <span className="text-caption font-semibold" style={{ color: heroAccentSoft }}>{rate}%</span>
+          <span className="text-caption font-semibold" style={{ color: heroAccentStrong }}>{rate}%</span>
         </div>
         <div className="bar-dark-track">
           <motion.div

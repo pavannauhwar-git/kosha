@@ -295,7 +295,7 @@ export default function Bills() {
           onClick={() => setTab('paid')}
           className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'paid'
-              ? 'bg-repay text-white border border-repay shadow-warn'
+              ? 'bg-income text-white border border-income shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Paid ({visiblePaid.length})

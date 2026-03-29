@@ -734,7 +734,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
             <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-[10px] text-ink-3">Current surplus</p>
               <p className={`text-[12px] font-bold tabular-nums ${currentSurplus >= 0 ? 'text-brand' : 'text-warning-text'}`}>
-                {currentSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(currentSurplus), true)}
+                {currentSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(currentSurplus))}
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5">{currentSavingsRate}% savings rate</p>
             </div>
@@ -742,7 +742,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
             <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-[10px] text-ink-3">Potential lift</p>
               <p className="text-[12px] font-bold tabular-nums text-brand">
-                +{fmt(reductionAmount, true)}
+                +{fmt(reductionAmount)}
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5">From {selectedCategory?.label || 'selected category'}</p>
             </div>
@@ -750,7 +750,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
             <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-[10px] text-ink-3">Projected surplus</p>
               <p className={`text-[12px] font-bold tabular-nums ${projectedSurplus >= 0 ? 'text-brand' : 'text-warning-text'}`}>
-                {projectedSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(projectedSurplus), true)}
+                {projectedSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(projectedSurplus))}
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5">{projectedSavingsRate}% savings rate</p>
             </div>
