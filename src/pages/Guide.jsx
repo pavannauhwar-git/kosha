@@ -50,6 +50,15 @@ function persistViewed(nextSet) {
   }
 }
 
+const CARD_MESH = {
+  dashboard: 'radial-gradient(ellipse at 90% 10%, rgba(244,114,182,0.18) 0%, transparent 55%), radial-gradient(ellipse at 10% 90%, rgba(168,85,247,0.14) 0%, transparent 55%), linear-gradient(135deg, rgba(249,168,212,0.10) 0%, rgba(253,186,116,0.08) 100%)',
+  transactions: 'radial-gradient(ellipse at 85% 15%, rgba(14,159,110,0.16) 0%, transparent 55%), radial-gradient(ellipse at 15% 85%, rgba(251,191,36,0.12) 0%, transparent 55%), linear-gradient(135deg, rgba(14,159,110,0.06) 0%, rgba(251,191,36,0.06) 100%)',
+  bills: 'radial-gradient(ellipse at 80% 20%, rgba(251,146,60,0.18) 0%, transparent 55%), radial-gradient(ellipse at 20% 80%, rgba(244,114,182,0.12) 0%, transparent 55%), linear-gradient(135deg, rgba(251,146,60,0.08) 0%, rgba(251,191,36,0.06) 100%)',
+  analytics: 'radial-gradient(ellipse at 85% 15%, rgba(139,92,246,0.16) 0%, transparent 55%), radial-gradient(ellipse at 15% 85%, rgba(244,114,182,0.14) 0%, transparent 55%), linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(251,191,36,0.06) 100%)',
+  monthly: 'radial-gradient(ellipse at 80% 20%, rgba(244,114,182,0.16) 0%, transparent 55%), radial-gradient(ellipse at 20% 80%, rgba(251,191,36,0.14) 0%, transparent 55%), linear-gradient(135deg, rgba(251,146,60,0.08) 0%, rgba(168,85,247,0.06) 100%)',
+  reconciliation: 'radial-gradient(ellipse at 80% 20%, rgba(99,91,255,0.16) 0%, transparent 55%), radial-gradient(ellipse at 20% 80%, rgba(14,159,110,0.12) 0%, transparent 55%), linear-gradient(135deg, rgba(99,91,255,0.08) 0%, rgba(14,159,110,0.06) 100%)',
+}
+
 const FEATURE_CARDS = [
   {
     id: 'dashboard',
@@ -353,6 +362,7 @@ export default function Guide() {
             {filteredCards.map((card) => {
               const Icon = card.icon
               const isViewed = viewed.has(card.id)
+              const mesh = CARD_MESH[card.id] || ''
               return (
                 <motion.button
                   key={card.id}
@@ -361,7 +371,8 @@ export default function Guide() {
                   whileTap={{ scale: 0.985 }}
                   transition={{ duration: 0.1 }}
                   onClick={() => openFeature(card.id)}
-                  className="card p-4 text-left"
+                  className="card p-4 text-left relative overflow-hidden"
+                  style={mesh ? { background: `${mesh}, #ffffff` } : undefined}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">

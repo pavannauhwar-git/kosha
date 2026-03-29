@@ -42,7 +42,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   ]
 
   return (
-    <div className="card-hero p-5 md:p-6 relative overflow-hidden">
+    <div className="card-hero card-hero-analytics p-5 md:p-6 relative overflow-hidden">
       <div className="flex items-center justify-between gap-3 mb-3.5">
         <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
           Year snapshot

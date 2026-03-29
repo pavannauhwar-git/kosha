@@ -130,12 +130,12 @@ export default function About() {
               className="relative overflow-hidden rounded-hero p-6"
               style={{
                 background:
-                  'radial-gradient(ellipse at 10% 20%, rgba(128,90,255,0.85) 0%, transparent 55%),' +
-                  'radial-gradient(ellipse at 90% 80%, rgba(0,209,178,0.70) 0%, transparent 55%),' +
-                  'radial-gradient(ellipse at 50% 50%, rgba(99,91,255,0.65) 0%, transparent 60%),' +
-                  'radial-gradient(ellipse at 80% 10%, rgba(255,182,72,0.45) 0%, transparent 40%),' +
-                  'linear-gradient(135deg, #635bff 0%, #0a2540 50%, #0e7490 100%)',
-                boxShadow: '0 24px 64px rgba(99,91,255,0.20), 0 8px 24px rgba(0,0,0,0.10)',
+                  'radial-gradient(ellipse at 15% 55%, rgba(244,114,182,0.82) 0%, transparent 52%),' +
+                  'radial-gradient(ellipse at 85% 20%, rgba(251,191,36,0.48) 0%, transparent 46%),' +
+                  'radial-gradient(ellipse at 75% 80%, rgba(168,85,247,0.68) 0%, transparent 52%),' +
+                  'radial-gradient(ellipse at 45% 15%, rgba(251,146,60,0.42) 0%, transparent 46%),' +
+                  'linear-gradient(135deg, #f9a8d4 0%, #c084fc 50%, #fdba74 100%)',
+                boxShadow: '0 24px 64px rgba(244,114,182,0.18), 0 8px 24px rgba(0,0,0,0.08)',
               }}
             >
               {/* Animated glow orb */}

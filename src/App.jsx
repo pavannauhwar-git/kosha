@@ -750,7 +750,7 @@ function DashboardWarmPrefetch() {
 // ── App shell ─────────────────────────────────────────────────────────────
 function AppShell() {
   return (
-    <div className="min-h-dvh" style={{ background: '#0a2540' }}>
+    <div className="min-h-dvh" style={{ background: '#ffffff' }}>
       <RuntimeRouteTracker />
       <DesktopSidebar />
       <ContentWrapper>

@@ -177,80 +177,93 @@ export default function Analytics() {
                 year={year}
               />
 
+              {/* ── 2. Insights + Recommendations ────────────────────────── */}
+              {data ? <YearlyInsightsCard data={data} catEntries={catEntries} /> : null}
+
               {strategicRecommendations.length > 0 && (
-                <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
+                <div className="card p-4 relative overflow-hidden"
+                  style={{
+                    background: 'radial-gradient(ellipse at 90% 10%, rgba(251,191,36,0.10) 0%, transparent 55%), radial-gradient(ellipse at 10% 90%, rgba(139,92,246,0.08) 0%, transparent 55%), #ffffff',
+                  }}
+                >
                   <SectionHeader
-                    className="mb-1"
+                    className="mb-2"
                     title="So what now?"
                     rightText="Actionable next steps"
                   />
                   <div className="space-y-2">
                     {strategicRecommendations.map((line) => (
                       <p key={line} className="text-[12px] text-ink-2 leading-relaxed">
-                        - {line}
+                        → {line}
                       </p>
                     ))}
                   </div>
-                </motion.div>
-              )}
-
-            <div className="space-y-4">
-              {data ? <YearlyInsightsCard data={data} catEntries={catEntries} /> : null}
-
-              {/* ── 2. Performance trends ─────────────────────────────── */}
-              <CashFlowChart
-                chartData={chartData}
-                totalIncome={data?.totalIncome}
-              />
-
-              <NetSavingsChart
-                netData={netData}
-                netAxisMax={netAxisMax}
-              />
-
-              {/* ── 3. Spending intelligence ─────────────────────────── */}
-              {catEntries.length > 0 ? (
-                <CategorySpendingChart
-                  entries={catEntries}
-                  total={categoryTotal}
-                />
-              ) : (
-                <div className="card p-4">
-                  <p className="section-label">Spent by Category</p>
-                  <p className="text-[12px] text-ink-3 mt-1">No spending categories yet for this year.</p>
-                </div>
-              )}
-              {top5.length > 0 ? (
-                <TopExpensesPodium top5={top5} year={year} />
-              ) : (
-                <div className="card p-4">
-                  <p className="section-label">Top Expenses {year}</p>
-                  <p className="text-[12px] text-ink-3 mt-1">No high-spend transactions found for this year yet.</p>
                 </div>
               )}
 
-              {/* ── 4. Allocation and year comparison ─────────────────── */}
-              {vehicleData.length > 0 && vehicleTotal > 0 ? (
-                <PortfolioAllocation vehicleData={vehicleData} />
-              ) : (
-                <div className="card p-4">
-                  <p className="section-label">Portfolio allocation</p>
-                  <p className="text-[12px] text-ink-3 mt-1">Add investments to unlock allocation breakdown.</p>
+              {/* ── 3. Performance trends ─────────────────────────────── */}
+              <div>
+                <p className="section-label mb-2 px-0.5">Performance</p>
+                <div className="space-y-4">
+                  <CashFlowChart
+                    chartData={chartData}
+                    totalIncome={data?.totalIncome}
+                  />
+                  <NetSavingsChart
+                    netData={netData}
+                    netAxisMax={netAxisMax}
+                  />
                 </div>
-              )}
+              </div>
 
-              {heavyReady ? (
-                <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} onRangeChange={setYoyRange} />
-              ) : (
-                <div className="card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="section-label">Year over year trends</p>
-                    <span className="text-caption text-ink-3">Preparing</span>
-                  </div>
-                  <p className="text-[12px] text-ink-3">Preparing comparison data...</p>
+              {/* ── 4. Spending intelligence ─────────────────────────── */}
+              <div>
+                <p className="section-label mb-2 px-0.5">Spending Intelligence</p>
+                <div className="space-y-4">
+                  {catEntries.length > 0 ? (
+                    <CategorySpendingChart
+                      entries={catEntries}
+                      total={categoryTotal}
+                    />
+                  ) : (
+                    <div className="card p-4">
+                      <p className="text-[12px] text-ink-3">No spending categories yet for this year.</p>
+                    </div>
+                  )}
+                  {top5.length > 0 ? (
+                    <TopExpensesPodium top5={top5} year={year} />
+                  ) : (
+                    <div className="card p-4">
+                      <p className="text-[12px] text-ink-3">No high-spend transactions found for this year yet.</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+
+              {/* ── 5. Allocation and year comparison ─────────────────── */}
+              <div>
+                <p className="section-label mb-2 px-0.5">Portfolio & Trends</p>
+                <div className="space-y-4">
+                  {vehicleData.length > 0 && vehicleTotal > 0 ? (
+                    <PortfolioAllocation vehicleData={vehicleData} />
+                  ) : (
+                    <div className="card p-4">
+                      <p className="text-[12px] text-ink-3">Add investments to unlock allocation breakdown.</p>
+                    </div>
+                  )}
+                  {heavyReady ? (
+                    <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} onRangeChange={setYoyRange} />
+                  ) : (
+                    <div className="card p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="section-label">Year over year trends</p>
+                        <span className="text-caption text-ink-3">Preparing</span>
+                      </div>
+                      <p className="text-[12px] text-ink-3">Preparing comparison data...</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </>
           ) : (
             <EmptyState
