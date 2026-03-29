@@ -7,12 +7,12 @@ export const C = {
   brandContainer:  '#E2E7FF',
   brandBorder:     '#B8C4FF',
 
-  // ── Accent — Natural Lime ────────────────────────────────────────
+  // ── Accent — Sport Lime ──────────────────────────────────────────
   // Hero-card contrast over dark brand surfaces.
-  // Vivid enough to pop, but less synthetic than electric lime.
-  accent:          '#C7E34F',
-  accentBg:        'rgba(199,227,79,0.24)',
-  accentFill:      'rgba(199,227,79,0.92)',
+  // Brighter and faster-feeling, while staying in a natural lime range.
+  accent:          '#D6F24A',
+  accentBg:        'rgba(214,242,74,0.28)',
+  accentFill:      'rgba(214,242,74,0.96)',
 
   // ── Income — Emerald H=174° ───────────────────────────────────────
   income:          '#059669',
@@ -35,10 +35,10 @@ export const C = {
   ink:             '#141B47',
   inkMuted:        '#5E6AA8',
 
-  // ── Hero card overlays (Natural Lime over deep brand) ────────────
-  heroAccent:      '#D6EF72',
-  heroAccentBg:    'rgba(199,227,79,0.24)',
-  heroAccentSolid: '#E2F58E',
+  // ── Hero card overlays (Sport Lime over deep brand) ──────────────
+  heroAccent:      '#E0F76E',
+  heroAccentBg:    'rgba(214,242,74,0.28)',
+  heroAccentSolid: '#ECFF98',
   heroLabel:       'rgba(255,255,255,0.64)', // labels and helper copy on hero
   heroDimmer:      'rgba(255,255,255,0.46)', // low-priority watermark/meta
   heroDivider:     'rgba(255,255,255,0.16)', // horizontal rule
