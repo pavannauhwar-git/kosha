@@ -16,6 +16,12 @@ function getDelta(current, previous) {
   }
 }
 
+const STAT_COLORS = {
+  Earned:   { accent: C.income,  bg: 'rgba(14,159,110,0.08)', border: 'rgba(14,159,110,0.14)' },
+  Spent:    { accent: C.expense, bg: 'rgba(232,54,78,0.06)',  border: 'rgba(232,54,78,0.12)' },
+  Invested: { accent: C.invest,  bg: 'rgba(124,58,237,0.06)', border: 'rgba(124,58,237,0.12)' },
+}
+
 export default function AnnualSummaryCard({ data, prevData, year }) {
   const totalIncome = data?.totalIncome || 0
   const totalExpense = data?.totalExpense || 0
@@ -42,60 +48,71 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   ]
 
   return (
-    <div className="card-hero card-hero-analytics p-5 md:p-6 relative overflow-hidden">
-      <div className="flex items-center justify-between gap-3 mb-3.5">
-        <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
+    <div className="card p-5 md:p-6">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <p className="text-caption font-bold tracking-widest uppercase text-ink-3">
           Year snapshot
         </p>
-        <p className="text-caption font-bold tracking-widest" style={{ color: C.heroDimmer }}>
+        <p className="text-caption font-bold tracking-widest text-ink-4">
           {year}
         </p>
       </div>
 
-      <p className="text-caption font-medium mb-1" style={{ color: C.heroLabel }}>
+      <p className="text-caption font-medium mb-1 text-ink-3">
         Annual balance
       </p>
       <p
-        className={`font-bold tabular-nums leading-[0.95] tracking-tight ${annualBalance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}
-        style={{ fontSize: 38 }}
+        className="font-bold tabular-nums leading-[0.95] tracking-tight"
+        style={{ fontSize: 38, color: annualBalance >= 0 ? C.accent : C.expense }}
       >
         {fmt(annualBalance)}
       </p>
 
-      <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
-        <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
+      <div className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill"
+        style={{ background: 'rgba(99,91,255,0.08)' }}
+      >
+        <span className="text-caption font-semibold" style={{ color: C.brand }}>
           {avgSavings}% avg savings rate
         </span>
       </div>
 
-      <div className="border-t mb-4" style={{ borderColor: C.heroDivider }} />
+      <div className="border-t border-kosha-border mb-4" />
 
-      <div className="mb-3.5 space-y-2">
-        {cards.map((card) => (
-          <div key={card.label} className="px-3 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
-            <p className="text-[10px] mb-0.5" style={{ color: C.heroLabel }}>{card.label}</p>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[12px] font-bold text-white tabular-nums">{fmt(card.value)}</p>
-              <p className="text-[10px] whitespace-nowrap" style={{ color: C.heroLabel }}>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {cards.map((card) => {
+          const sc = STAT_COLORS[card.label]
+          return (
+            <div key={card.label}
+              className="px-3 py-3 rounded-2xl"
+              style={{ background: sc.bg, border: `1px solid ${sc.border}` }}
+            >
+              <p className="text-[10px] mb-1 text-ink-3 font-medium">{card.label}</p>
+              <p className="text-[12px] sm:text-[13px] font-bold tabular-nums truncate"
+                style={{ color: sc.accent }}
+              >
+                {fmt(card.value)}
+              </p>
+              <p className="text-[10px] mt-1 text-ink-4 truncate">
                 {card.delta.label}
               </p>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      <div className="mt-1">
+      <div>
         <div className="flex justify-between mb-2">
-          <span className="text-caption font-medium" style={{ color: C.heroLabel }}>
+          <span className="text-caption font-medium text-ink-3">
             Savings rate
           </span>
-          <span className="text-caption font-bold" style={{ color: C.heroAccentSolid }}>
+          <span className="text-caption font-bold" style={{ color: C.brand }}>
             {avgSavings}%
           </span>
         </div>
-        <div className="bar-dark-track">
+        <div className="h-2 rounded-pill overflow-hidden" style={{ background: 'rgba(0,0,0,0.06)' }}>
           <motion.div
-            className="bar-dark-fill"
+            className="h-full rounded-pill"
+            style={{ background: `linear-gradient(90deg, ${C.brand}, ${C.brandMid})` }}
             initial={{ width: 0 }}
             animate={{ width: `${avgSavings}%` }}
             transition={{ duration: 0.7, ease: 'easeOut' }}
