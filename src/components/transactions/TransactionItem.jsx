@@ -17,7 +17,7 @@ const MODE_LABEL = {
   other:       '',
 }
 
-function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, isLast = false, isHighlighted = false }) {
+function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, compact = false, isLast = false, isHighlighted = false }) {
   const x = useMotionValue(0)
 
   const actionOpacity = useTransform(x, [0, -30, -PEEK_X], [0, 0.5, 1])
@@ -152,7 +152,10 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
 
       {/* Draggable row */}
       <motion.div
-        className="list-row active:bg-kosha-surface-2"
+        className={`${compact
+          ? 'flex items-center gap-3 px-4 py-3 bg-kosha-surface active:bg-kosha-surface-2'
+          : 'list-row active:bg-kosha-surface-2'
+          }`}
         style={{ x }}
         drag={isOptimistic ? false : 'x'}
         dragConstraints={{ left: -PEEK_X * 1.5, right: 0 }}
@@ -163,59 +166,65 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         transition={{ scale: { duration: 0.08 } }}
       >
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+          className={`${compact ? 'w-8 h-8' : 'w-9 h-9'} rounded-full flex items-center justify-center shrink-0`}
           style={{ background: investmentVehicle?.bg || cat.bg }}
         >
           {txn.type === 'investment' && investmentVehicle ? (
             (() => {
               const Icon = ICON_MAP[investmentVehicle.icon]
               return Icon
-                ? <Icon size={18} weight="duotone" color={investmentVehicle.color} />
-                : <CategoryIcon categoryId={txn.category} size={18} />
+                ? <Icon size={compact ? 16 : 18} weight="duotone" color={investmentVehicle.color} />
+                : <CategoryIcon categoryId={txn.category} size={compact ? 16 : 18} />
             })()
           ) : (
-            <CategoryIcon categoryId={txn.category} size={18} />
+            <CategoryIcon categoryId={txn.category} size={compact ? 16 : 18} />
           )}
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold text-ink truncate leading-snug">
+          <p className={`${compact ? 'text-[13px]' : 'text-[14px]'} font-semibold text-ink truncate leading-snug`}>
             {txn.description}
           </p>
-          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            {showDate
-              ? <span className="text-[11px] text-ink-3">{fmtDate(txn.date)}</span>
-              : <span className="text-[11px] text-ink-3">{rowLabel}</span>
-            }
-            {mode && (
-              <span className="text-[10px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
-                {mode}
-              </span>
-            )}
-            {txn.is_repayment && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
-                Repayment
-              </span>
-            )}
-            {txn.is_recurring && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand-on font-medium capitalize">
-                {txn.recurrence || 'Recurring'}
-              </span>
-            )}
-            {txn.is_auto_generated && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
-                Auto
-              </span>
-            )}
-            {isOptimistic && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-warning-bg text-warning-text font-medium">
-                Syncing...
-              </span>
-            )}
-          </div>
+          {compact ? (
+            <p className="text-[11px] text-ink-3 truncate mt-0.5">
+              {showDate ? fmtDate(txn.date) : rowLabel}
+            </p>
+          ) : (
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              {showDate
+                ? <span className="text-[11px] text-ink-3">{fmtDate(txn.date)}</span>
+                : <span className="text-[11px] text-ink-3">{rowLabel}</span>
+              }
+              {mode && (
+                <span className="text-[10px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
+                  {mode}
+                </span>
+              )}
+              {txn.is_repayment && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
+                  Repayment
+                </span>
+              )}
+              {txn.is_recurring && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand-on font-medium capitalize">
+                  {txn.recurrence || 'Recurring'}
+                </span>
+              )}
+              {txn.is_auto_generated && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
+                  Auto
+                </span>
+              )}
+              {isOptimistic && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-warning-bg text-warning-text font-medium">
+                  Syncing...
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        <span className={`text-[14px] shrink-0 tabular-nums font-semibold ${amtCls}`}>
+        <span className={`${compact ? 'text-[13px]' : 'text-[14px]'} shrink-0 tabular-nums font-semibold ${amtCls}`}>
           {prefix}{fmt(txn.amount)}
         </span>
       </motion.div>
@@ -228,7 +237,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
       )}
 
       {!isLast && (
-        <div className="absolute bottom-0 left-[60px] right-0 h-[0.5px] bg-kosha-border" />
+        <div className={`absolute bottom-0 right-0 h-[0.5px] bg-kosha-border ${compact ? 'left-0' : 'left-[60px]'}`} />
       )}
     </div>
   )

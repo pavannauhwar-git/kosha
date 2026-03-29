@@ -11,7 +11,6 @@ import {
   VolatilityScoreCard,
 } from '../components/dashboard/AnalyticsCharts'
 import { useYearSummary } from '../hooks/useTransactions'
-import CategorySpendingChart from '../components/categories/CategorySpendingChart'
 import { fmt } from '../lib/utils'
 import PageHeader from '../components/layout/PageHeader'
 import { MONTH_SHORT } from '../lib/constants'
@@ -23,8 +22,6 @@ import SectionHeader from '../components/common/SectionHeader'
 import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
 import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
-import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
-import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
@@ -51,8 +48,6 @@ export default function Analytics() {
 
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
-
-  const top5 = data?.top5 || []
 
   const flowTrendData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
@@ -107,10 +102,6 @@ export default function Analytics() {
       .filter(([, value]) => value > 0)
       .sort((a, b) => b[1] - a[1]),
     [data?.byVehicle]
-  )
-  const vehicleTotal = useMemo(
-    () => vehicleData.reduce((sum, [, value]) => sum + (Number(value) || 0), 0),
-    [vehicleData]
   )
 
   const strategicRecommendations = useMemo(() => {
@@ -173,7 +164,6 @@ export default function Analytics() {
       Number(data?.totalExpense || 0) > 0 ||
       Number(data?.totalInvestment || 0) > 0 ||
       allCatEntries.length > 0 ||
-      top5.length > 0 ||
       vehicleData.length > 0
     )
   }, [
@@ -181,7 +171,6 @@ export default function Analytics() {
     data?.totalExpense,
     data?.totalInvestment,
     allCatEntries.length,
-    top5.length,
     vehicleData.length,
   ])
 
@@ -222,6 +211,12 @@ export default function Analytics() {
         >
           {hasYearData ? (
             <>
+              <AnnualSummaryCard
+                data={data}
+                prevData={prevData}
+                year={year}
+              />
+
               {strategicRecommendations.length > 0 && (
                 <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
                   <SectionHeader
@@ -240,7 +235,7 @@ export default function Analytics() {
                 </motion.div>
               )}
 
-              <YearlyInsightsCard data={data} catEntries={catEntries} />
+              <YearlyInsightsCard data={data} catEntries={catEntries} vehicleData={vehicleData} />
 
             <div className="space-y-4">
 
@@ -286,13 +281,6 @@ export default function Analytics() {
                 totalInvestment={data?.totalInvestment}
               />
 
-              {/* ── 4. Annual snapshot (non-hero) ───────────────────── */}
-              <AnnualSummaryCard
-                data={data}
-                prevData={prevData}
-                year={year}
-              />
-
               {decisionSignals.length > 0 && (
                 <div className="card p-4">
                   <SectionHeader title="Decision signals" rightText="What to act on" className="mb-2" />
@@ -307,38 +295,7 @@ export default function Analytics() {
                 </div>
               )}
 
-              {/* ── 5. Spending intelligence ─────────────────────────── */}
-              {catEntries.length > 0 ? (
-                <CategorySpendingChart
-                  entries={catEntries}
-                  total={categoryTotal}
-                  initialVisibleCount={5}
-                  collapseKey={`${year}`}
-                />
-              ) : (
-                <div className="card p-4">
-                  <p className="section-label">Spent by Category</p>
-                  <p className="text-[12px] text-ink-3 mt-1">No spending categories yet for this year.</p>
-                </div>
-              )}
-              {top5.length > 0 ? (
-                <TopExpensesPodium top5={top5} year={year} />
-              ) : (
-                <div className="card p-4">
-                  <p className="section-label">Top Expenses {year}</p>
-                  <p className="text-[12px] text-ink-3 mt-1">No high-spend transactions found for this year yet.</p>
-                </div>
-              )}
-
-              {/* ── 6. Portfolio composition ─────────────────────────── */}
-              {vehicleData.length > 0 && vehicleTotal > 0 ? (
-                <PortfolioAllocation vehicleData={vehicleData} />
-              ) : (
-                <div className="card p-4">
-                  <p className="section-label">Portfolio allocation</p>
-                  <p className="text-[12px] text-ink-3 mt-1">Add investments to unlock allocation breakdown.</p>
-                </div>
-              )}
+              {/* Spent-by-category and standalone portfolio sections intentionally removed. */}
             </div>
             </>
           ) : (

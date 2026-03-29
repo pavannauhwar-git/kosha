@@ -276,7 +276,7 @@ export default function Bills() {
           onClick={() => setTab('pending')}
           className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'pending'
-              ? 'bg-warning text-white shadow-card'
+              ? 'bg-warning-bg text-warning-text border border-warning-border'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Pending ({visiblePending.length})
@@ -285,7 +285,7 @@ export default function Bills() {
           onClick={() => setTab('paid')}
           className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'paid'
-              ? 'bg-income-text text-white shadow-card'
+              ? 'bg-brand-container text-brand-on border border-brand-border'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Paid ({visiblePaid.length})

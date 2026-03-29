@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, Plus } from 'lucide-react'
+import { Bell, ArrowRight, Plus, ShieldAlert, TrendingUp, WalletCards } from 'lucide-react'
 import {
   useRecentTransactions,
   useTransactionDigest,
@@ -28,9 +28,27 @@ import AppToast from '../components/common/AppToast'
 import StatMini from '../components/common/StatMini'
 import { useFinancialEvents } from '../hooks/useFinancialEvents'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
+import { CATEGORIES } from '../lib/categories'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
+
+const CONTROLLABLE_CATEGORY_IDS = new Set([
+  'food',
+  'groceries',
+  'entertainment',
+  'shopping',
+  'dining_out',
+  'travel',
+  'personal',
+  'subscription',
+  'salon',
+  'gym',
+  'pets',
+  'electronics',
+  'home',
+  'other',
+])
 
 function DashboardHeroSkeleton() {
   return (
@@ -79,13 +97,13 @@ function DashboardRecentSkeleton() {
 
       <div className="list-card">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={`recent-skeleton-${i}`} className="px-4 py-3.5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl shimmer opacity-80 shrink-0" />
+          <div key={`recent-skeleton-${i}`} className="px-4 py-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full shimmer opacity-80 shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="h-3.5 w-2/5 rounded-full shimmer opacity-85" />
-              <div className="mt-2 h-2.5 w-1/4 rounded-full shimmer opacity-70" />
+              <div className="h-3 w-2/5 rounded-full shimmer opacity-85" />
+              <div className="mt-1.5 h-2.5 w-1/4 rounded-full shimmer opacity-70" />
             </div>
-            <div className="h-3.5 w-16 rounded-full shimmer opacity-80" />
+            <div className="h-3 w-16 rounded-full shimmer opacity-80" />
           </div>
         ))}
       </div>
@@ -144,6 +162,7 @@ export default function Dashboard() {
   const [heroMode, setHeroMode] = useState('balance')
   const [toast, setToast] = useState(null)
   const [heavyReady, setHeavyReady] = useState(false)
+  const [opportunityCutPct, setOpportunityCutPct] = useState(12)
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 50)
@@ -156,7 +175,7 @@ export default function Dashboard() {
     loading: recentLoading,
     fetching: recentFetching,
   } = useRecentTransactions(5)
-  const { data: digestTxnRows = [] } = useTransactionDigest(14, 200, { enabled: heavyReady })
+  const { data: digestTxnRows = [] } = useTransactionDigest(42, 500, { enabled: heavyReady })
   const { todaySpend, loading: todaySpendLoading } = useTodayExpenses({ enabled: heavyReady })
   const {
     data: summary,
@@ -196,6 +215,11 @@ export default function Dashboard() {
   const firstName = useMemo(
     () => profile?.display_name?.split(' ')[0] || '',
     [profile?.display_name]
+  )
+
+  const categoryLabelMap = useMemo(
+    () => new Map(CATEGORIES.map((category) => [category.id, category.label])),
+    []
   )
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
@@ -315,6 +339,166 @@ export default function Dashboard() {
       sparkMax,
     }
   }, [digestTxnRows, now, todaySpend])
+
+  const cashRiskRadar = useMemo(() => {
+    const current = now.getTime()
+    const dayMs = 24 * 60 * 60 * 1000
+    const horizonEnd = current + (14 * dayMs)
+
+    const upcomingDueRows = (Array.isArray(bills) ? bills : []).filter((bill) => {
+      const ts = new Date(bill?.due_date || 0).getTime()
+      return Number.isFinite(ts) && ts <= horizonEnd
+    })
+
+    const obligations14 = upcomingDueRows.reduce((sum, bill) => sum + Number(bill?.amount || 0), 0)
+
+    const income28 = (Array.isArray(digestTxnRows) ? digestTxnRows : [])
+      .filter((row) => {
+        if (row?.type !== 'income' || row?.is_repayment) return false
+        const ts = new Date(row?.date || row?.created_at || 0).getTime()
+        return Number.isFinite(ts) && ts >= (current - (28 * dayMs)) && ts <= current
+      })
+      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+
+    const projectedInflow14 = income28 > 0
+      ? (income28 / 28) * 14
+      : (earned > 0 ? (earned / Math.max(dayOfMonth, 1)) * 14 : 0)
+
+    const coverageRatio = projectedInflow14 > 0
+      ? obligations14 / projectedInflow14
+      : (obligations14 > 0 ? 9 : 0)
+
+    let risk = 'Low'
+    if (coverageRatio > 0.85) risk = 'High'
+    else if (coverageRatio > 0.45) risk = 'Medium'
+
+    const meterPct = Math.max(6, Math.min(100, Math.round(coverageRatio * 100)))
+    const buffer = projectedInflow14 - obligations14
+
+    let action = {
+      label: 'Open monthly plan',
+      route: '/monthly',
+      note: 'Buffer looks healthy. Keep planned due coverage and route extra cash intentionally.',
+    }
+
+    if (risk === 'High') {
+      action = {
+        label: 'Review bills now',
+        route: '/bills',
+        note: 'Obligations are close to predicted inflow. Sequence due dates and cut discretionary spend this week.',
+      }
+    } else if (risk === 'Medium') {
+      action = {
+        label: 'Protect cash buffer',
+        route: '/monthly',
+        note: 'Coverage is moderate. Reserve bill cash before optional spending this week.',
+      }
+    }
+
+    return {
+      obligations14,
+      projectedInflow14,
+      buffer,
+      risk,
+      meterPct,
+      dueCount: upcomingDueRows.length,
+      action,
+    }
+  }, [bills, digestTxnRows, earned, dayOfMonth, now])
+
+  const spendingDrift = useMemo(() => {
+    const current = now.getTime()
+    const dayMs = 24 * 60 * 60 * 1000
+    const thisWeekStart = current - (7 * dayMs)
+    const prior4WeekStart = thisWeekStart - (28 * dayMs)
+
+    const thisWeekRows = (Array.isArray(digestTxnRows) ? digestTxnRows : []).filter((row) => {
+      if (row?.type !== 'expense') return false
+      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      return Number.isFinite(ts) && ts >= thisWeekStart && ts <= current
+    })
+
+    const prior4WeekRows = (Array.isArray(digestTxnRows) ? digestTxnRows : []).filter((row) => {
+      if (row?.type !== 'expense') return false
+      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      return Number.isFinite(ts) && ts >= prior4WeekStart && ts < thisWeekStart
+    })
+
+    const thisWeekSpend = thisWeekRows.reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+    const prior4WeekSpend = prior4WeekRows.reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+    const avg4WeekSpend = prior4WeekSpend / 4
+    const driftAmount = thisWeekSpend - avg4WeekSpend
+    const driftPct = avg4WeekSpend > 0 ? Math.round((driftAmount / avg4WeekSpend) * 100) : null
+
+    const thisWeekByCategory = new Map()
+    for (const row of thisWeekRows) {
+      const key = String(row?.category || 'other')
+      thisWeekByCategory.set(key, (thisWeekByCategory.get(key) || 0) + Number(row?.amount || 0))
+    }
+
+    const prior4ByCategory = new Map()
+    for (const row of prior4WeekRows) {
+      const key = String(row?.category || 'other')
+      prior4ByCategory.set(key, (prior4ByCategory.get(key) || 0) + Number(row?.amount || 0))
+    }
+
+    const categoryKeys = new Set([...thisWeekByCategory.keys(), ...prior4ByCategory.keys()])
+    const topDrivers = [...categoryKeys]
+      .map((key) => {
+        const thisWeekValue = thisWeekByCategory.get(key) || 0
+        const baselineWeekly = (prior4ByCategory.get(key) || 0) / 4
+        const delta = thisWeekValue - baselineWeekly
+        return {
+          key,
+          label: categoryLabelMap.get(key) || key,
+          thisWeekValue,
+          delta,
+        }
+      })
+      .filter((row) => row.delta > 0)
+      .sort((a, b) => b.delta - a.delta)
+      .slice(0, 2)
+
+    const maxDriverDelta = Math.max(...topDrivers.map((row) => row.delta), 1)
+
+    return {
+      thisWeekSpend,
+      avg4WeekSpend,
+      driftAmount,
+      driftPct,
+      topDrivers,
+      maxDriverDelta,
+      hasData: thisWeekRows.length > 0 || prior4WeekRows.length > 0,
+    }
+  }, [digestTxnRows, now, categoryLabelMap])
+
+  const opportunityWallet = useMemo(() => {
+    const categoryRows = Object.entries(summary?.byCategory || {})
+      .map(([id, amount]) => ({
+        id,
+        label: categoryLabelMap.get(id) || id,
+        amount: Number(amount || 0),
+      }))
+      .filter((row) => row.amount > 0 && CONTROLLABLE_CATEGORY_IDS.has(row.id))
+      .sort((a, b) => b.amount - a.amount)
+
+    const selectedRows = categoryRows.slice(0, 3).map((row) => ({
+      ...row,
+      targetCut: (row.amount * opportunityCutPct) / 100,
+    }))
+
+    const recoverable = selectedRows.reduce((sum, row) => sum + row.targetCut, 0)
+    const monthNet = earned - spent - invested
+    const projectedNet = monthNet + recoverable
+
+    return {
+      hasData: selectedRows.length > 0,
+      rows: selectedRows,
+      recoverable,
+      monthNet,
+      projectedNet,
+    }
+  }, [summary?.byCategory, categoryLabelMap, opportunityCutPct, earned, spent, invested])
 
   const todayFocus = useMemo(() => {
     if (dueSoonCount > 0) {
@@ -519,6 +703,198 @@ export default function Dashboard() {
                   })}
                 </div>
               </>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-3.5">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-warning-bg flex items-center justify-center shrink-0">
+                  <ShieldAlert size={15} className="text-warning-text" />
+                </div>
+                <div>
+                  <p className="section-label">Cash Risk Radar</p>
+                  <p className="text-caption text-ink-3 mt-0.5">14-day obligations vs predicted inflow coverage</p>
+                </div>
+              </div>
+              <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${cashRiskRadar.risk === 'Low'
+                ? 'bg-income-bg text-income-text'
+                : cashRiskRadar.risk === 'Medium'
+                  ? 'bg-warning-bg text-warning-text'
+                  : 'bg-expense-bg text-expense-text'
+                }`}>
+                {cashRiskRadar.risk} risk
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mb-2.5">
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                <p className="text-[10px] text-ink-3">Obligations</p>
+                <p className="text-[12px] font-bold text-warning-text tabular-nums">{fmt(cashRiskRadar.obligations14)}</p>
+              </div>
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                <p className="text-[10px] text-ink-3">Pred. inflow</p>
+                <p className="text-[12px] font-bold text-income-text tabular-nums">{fmt(cashRiskRadar.projectedInflow14)}</p>
+              </div>
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                <p className="text-[10px] text-ink-3">Buffer</p>
+                <p className={`text-[12px] font-bold tabular-nums ${cashRiskRadar.buffer >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                  {cashRiskRadar.buffer >= 0 ? '+' : '-'}{fmt(Math.abs(cashRiskRadar.buffer))}
+                </p>
+              </div>
+            </div>
+
+            <div className="h-2 rounded-pill bg-kosha-surface-2 overflow-hidden">
+              <div
+                className={`${cashRiskRadar.risk === 'Low' ? 'bg-income' : cashRiskRadar.risk === 'Medium' ? 'bg-warning' : 'bg-expense'} h-full rounded-pill`}
+                style={{ width: `${cashRiskRadar.meterPct}%` }}
+              />
+            </div>
+
+            <p className="text-[11px] text-ink-3 mt-2">
+              {cashRiskRadar.dueCount} bill{cashRiskRadar.dueCount !== 1 ? 's' : ''} fall in the next 14 days. {cashRiskRadar.action.note}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => navigate(cashRiskRadar.action.route)}
+              className="btn-secondary h-9 px-3 text-[11px] mt-2"
+            >
+              {cashRiskRadar.action.label}
+            </button>
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-3.5">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+                  <TrendingUp size={15} className="text-brand" />
+                </div>
+                <div>
+                  <p className="section-label">Spending Drift</p>
+                  <p className="text-caption text-ink-3 mt-0.5">This week vs 4-week average weekly spend</p>
+                </div>
+              </div>
+              <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${spendingDrift.driftAmount <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                {spendingDrift.driftAmount <= 0 ? 'Stable' : 'Drifting'}
+              </span>
+            </div>
+
+            {spendingDrift.hasData ? (
+              <>
+                <div className="grid grid-cols-2 gap-2 mb-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">This week</p>
+                    <p className="text-[12px] font-bold text-expense-text tabular-nums">{fmt(spendingDrift.thisWeekSpend)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">4w avg/week</p>
+                    <p className="text-[12px] font-bold text-ink tabular-nums">{fmt(spendingDrift.avg4WeekSpend)}</p>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-ink-3 mb-2">
+                  {spendingDrift.driftPct == null
+                    ? 'Not enough historical data yet for drift percentage.'
+                    : `Weekly drift is ${spendingDrift.driftPct >= 0 ? '+' : ''}${spendingDrift.driftPct}% against your 4-week baseline.`}
+                </p>
+
+                {spendingDrift.topDrivers.length > 0 && (
+                  <div className="space-y-2">
+                    {spendingDrift.topDrivers.map((driver) => (
+                      <div key={driver.key}>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-[11px] text-ink-2 truncate">{driver.label}</span>
+                          <span className="text-[11px] font-semibold text-warning-text tabular-nums">+{fmt(driver.delta)}</span>
+                        </div>
+                        <div className="h-1.5 rounded-pill bg-kosha-surface-2 overflow-hidden">
+                          <div
+                            className="h-full rounded-pill bg-warning"
+                            style={{ width: `${Math.max(8, Math.round((driver.delta / spendingDrift.maxDriverDelta) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-[11px] text-ink-3">No enough weekly spend history yet. Keep logging transactions to unlock drift drivers.</p>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-3.5">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+                  <WalletCards size={15} className="text-brand" />
+                </div>
+                <div>
+                  <p className="section-label">Opportunity Wallet</p>
+                  <p className="text-caption text-ink-3 mt-0.5">Recoverable surplus from controllable categories</p>
+                </div>
+              </div>
+              <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-brand-container text-brand-on">
+                {opportunityCutPct}% cut mode
+              </span>
+            </div>
+
+            {opportunityWallet.hasData ? (
+              <>
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  {[8, 12, 15].map((pct) => (
+                    <button
+                      key={`cut-${pct}`}
+                      type="button"
+                      onClick={() => setOpportunityCutPct(pct)}
+                      className={`chip-control chip-control-sm ${opportunityCutPct === pct
+                        ? 'bg-brand-container text-brand-on border-brand-container'
+                        : 'chip-control-muted'
+                        }`}
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Recoverable</p>
+                    <p className="text-[12px] font-bold text-brand tabular-nums">+{fmt(opportunityWallet.recoverable)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Projected net</p>
+                    <p className={`text-[12px] font-bold tabular-nums ${opportunityWallet.projectedNet >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                      {opportunityWallet.projectedNet >= 0 ? '+' : '-'}{fmt(Math.abs(opportunityWallet.projectedNet))}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {opportunityWallet.rows.map((row) => (
+                    <div key={`wallet-${row.id}`} className="flex items-center justify-between rounded-card bg-kosha-surface-2 px-2.5 py-2">
+                      <p className="text-[11px] text-ink-2 truncate">{row.label}</p>
+                      <p className="text-[11px] font-semibold text-brand tabular-nums shrink-0">+{fmt(row.targetCut)}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/monthly')}
+                  className="btn-secondary h-9 px-3 text-[11px] mt-2"
+                >
+                  Apply target cuts
+                </button>
+              </>
+            ) : (
+              <p className="text-[11px] text-ink-3">Add spending entries in controllable categories to calculate recoverable surplus opportunities.</p>
             )}
           </div>
         </motion.div>

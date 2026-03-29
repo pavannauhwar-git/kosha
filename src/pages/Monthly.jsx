@@ -5,7 +5,7 @@ import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '
 import { useBudgets } from '../hooks/useBudgets'
 import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
-import { fmt } from '../lib/utils'
+import { fmt, daysUntil } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
 import { CATEGORIES } from '../lib/categories'
 import PageHeader from '../components/layout/PageHeader'
@@ -33,9 +33,6 @@ export default function Monthly() {
   }, [])
 
   const { data, loading } = useMonthSummary(year, month)
-  const prevYear = month === 1 ? year - 1 : year
-  const prevMonth = month === 1 ? 12 : month - 1
-  const { data: prevMonthSummary } = useMonthSummary(prevYear, prevMonth, { enabled: heavyReady })
   const monthStartDate = `${year}-${String(month).padStart(2, '0')}-01`
   const monthEndDate = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
   const { data: txnRows = [] } = useTransactions({
@@ -46,7 +43,7 @@ export default function Monthly() {
     columns: TRANSACTION_INSIGHTS_COLUMNS,
   })
   const { budgets, setBudget, removeBudget } = useBudgets({ enabled: heavyReady })
-  const { pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
+  const { rows: monthBills = [], pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
   const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews({ enabled: heavyReady })
 
   const reviewedIds = useMemo(
@@ -102,31 +99,6 @@ export default function Monthly() {
     [allCatEntries, budgets]
   )
 
-  const investmentSnapshot = useMemo(() => {
-    const previousInvestment = Number(prevMonthSummary?.investment || 0)
-    const investmentDelta = invested - previousInvestment
-    const shareOfInflow = inflow > 0 ? Math.round((invested / inflow) * 100) : 0
-    const topVehicleEntry = vehicleEntries[0] || null
-
-    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
-    const daysInTargetMonth = new Date(year, month, 0).getDate()
-    const daysElapsed = isCurrentMonth
-      ? Math.max(1, Math.min(now.getDate(), daysInTargetMonth))
-      : daysInTargetMonth
-    const projectedInvestment = isCurrentMonth
-      ? (daysElapsed > 0 ? (invested / daysElapsed) * daysInTargetMonth : invested)
-      : invested
-
-    return {
-      previousInvestment,
-      investmentDelta,
-      shareOfInflow,
-      projectedInvestment,
-      topVehicleName: topVehicleEntry?.[0] || 'No vehicle yet',
-      topVehicleAmount: Number(topVehicleEntry?.[1] || 0),
-    }
-  }, [prevMonthSummary?.investment, invested, inflow, vehicleEntries, year, month, now])
-
   const monthlyBillStatus = useMemo(() => {
     const total = pendingBills.length + paidBills.length
     const paidPct = total > 0 ? Math.round((paidBills.length / total) * 100) : 100
@@ -139,41 +111,7 @@ export default function Monthly() {
     }
   }, [pendingBills, paidBills])
 
-  const monthlyChecklist = useMemo(() => {
-    const budgetCoverageTarget = allCatEntries.length
-    const budgetCoveragePct = budgetCoverageTarget > 0
-      ? Math.round((budgetCount / budgetCoverageTarget) * 100)
-      : 100
-
-    return {
-      reconciliation: {
-        done: reconcileQueueCount === 0,
-        label: reconcileQueueCount === 0
-          ? 'Reconciliation queue is clear'
-          : `${reconcileQueueCount} reconciliation item${reconcileQueueCount > 1 ? 's' : ''} pending`,
-        cta: 'Open reconciliation',
-        route: '/reconciliation',
-      },
-      bills: {
-        done: monthlyBillStatus.pending === 0,
-        label: monthlyBillStatus.total === 0
-          ? 'No bills scheduled in this month'
-          : `${monthlyBillStatus.paid}/${monthlyBillStatus.total} bills marked paid (${monthlyBillStatus.paidPct}%)`,
-        cta: 'Open bills',
-        route: '/bills',
-      },
-      budgets: {
-        done: budgetCoveragePct >= 80,
-        label: budgetCoverageTarget === 0
-          ? 'No expense categories to budget yet'
-          : `${budgetCount}/${budgetCoverageTarget} spending categories have budgets (${budgetCoveragePct}%)`,
-        cta: 'Set budgets',
-        route: '/monthly',
-      },
-    }
-  }, [reconcileQueueCount, monthlyBillStatus, allCatEntries.length, budgetCount])
-
-  const budgetVariance = useMemo(() => {
+  const budgetAccuracy = useMemo(() => {
     const rows = allCatEntries
       .map(([id, spent]) => ({
         id,
@@ -185,56 +123,168 @@ export default function Monthly() {
     if (!rows.length) {
       return {
         hasBudgets: false,
+        accuracyScore: 0,
         totalBudget: 0,
         totalSpent: 0,
-        projectedSpend: 0,
-        projectedDelta: 0,
-        overCount: 0,
-        nearLimitCount: 0,
-        onTrackCount: 0,
         rows: [],
       }
     }
 
-    const today = new Date()
-    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
-    const daysInMonth = new Date(year, month, 0).getDate()
-    const daysElapsed = isCurrentMonth ? Math.min(today.getDate(), daysInMonth) : daysInMonth
-
     const totalBudget = rows.reduce((sum, row) => sum + row.budget, 0)
     const totalSpent = rows.reduce((sum, row) => sum + row.spent, 0)
-    const projectedSpend = daysElapsed > 0
-      ? (isCurrentMonth ? (totalSpent / daysElapsed) * daysInMonth : totalSpent)
-      : totalSpent
 
-    const enrichedRows = rows
+    const scoredRows = rows
       .map((row) => {
         const ratio = row.budget > 0 ? row.spent / row.budget : 0
+        const variance = row.spent - row.budget
+        const variancePct = row.budget > 0 ? (variance / row.budget) * 100 : 0
+        const absVariancePct = Math.abs(variancePct)
+        const score = Math.max(0, Math.round(100 - Math.min(absVariancePct, 100)))
         const cat = CATEGORIES.find((item) => item.id === row.id)
+
+        let band = 'On track'
+        let bandClass = 'bg-income-bg text-income-text'
+        if (variancePct > 20) {
+          band = 'Overrun'
+          bandClass = 'bg-expense-bg text-expense-text'
+        } else if (variancePct > 8) {
+          band = 'Watch'
+          bandClass = 'bg-warning-bg text-warning-text'
+        } else if (variancePct < -10) {
+          band = 'Under'
+          bandClass = 'bg-brand-container text-brand-on'
+        }
+
         return {
           ...row,
           label: cat?.label || row.id,
           ratio,
-          delta: row.budget - row.spent,
+          variance,
+          variancePct,
+          score,
+          band,
+          bandClass,
+          ratioPct: Math.max(0, Math.min(100, Math.round(ratio * 100))),
         }
       })
-      .sort((a, b) => a.delta - b.delta)
+      .sort((a, b) => Math.abs(b.variancePct) - Math.abs(a.variancePct))
 
-    const overCount = enrichedRows.filter((row) => row.ratio > 1).length
-    const nearLimitCount = enrichedRows.filter((row) => row.ratio <= 1 && row.ratio >= 0.9).length
+    const accuracyScore = Math.round(
+      scoredRows.reduce((sum, row) => sum + row.score, 0) / scoredRows.length
+    )
 
     return {
       hasBudgets: true,
+      accuracyScore,
       totalBudget,
       totalSpent,
-      projectedSpend,
-      projectedDelta: totalBudget - projectedSpend,
-      overCount,
-      nearLimitCount,
-      onTrackCount: Math.max(0, enrichedRows.length - overCount - nearLimitCount),
-      rows: enrichedRows,
+      rows: scoredRows,
     }
-  }, [allCatEntries, budgets, year, month])
+  }, [allCatEntries, budgets])
+
+  const autopilotHealth = useMemo(() => {
+    const recurringBills = monthBills.filter((bill) => !!bill?.is_recurring)
+    const recurringBillsPaid = recurringBills.filter((bill) => !!bill?.paid)
+    const overdueRecurringBills = recurringBills.filter((bill) => !bill?.paid && daysUntil(bill?.due_date) < 0)
+
+    const recurringInvestments = txnRows.filter((row) => row?.type === 'investment' && !!row?.is_recurring)
+    const autoRecurringInvestments = recurringInvestments.filter((row) => !!row?.is_auto_generated)
+    const manualRecurringInvestments = recurringInvestments.filter((row) => !row?.is_auto_generated)
+
+    const billAutomationPct = recurringBills.length > 0
+      ? Math.round((recurringBillsPaid.length / recurringBills.length) * 100)
+      : 100
+    const investmentAutomationPct = recurringInvestments.length > 0
+      ? Math.round((autoRecurringInvestments.length / recurringInvestments.length) * 100)
+      : 100
+
+    const missedAutomations = overdueRecurringBills.length + manualRecurringInvestments.length
+    const healthScore = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round((billAutomationPct * 0.55) + (investmentAutomationPct * 0.45) - (missedAutomations * 8))
+      )
+    )
+
+    return {
+      healthScore,
+      recurringBillsCount: recurringBills.length,
+      recurringBillsPaidCount: recurringBillsPaid.length,
+      recurringInvestmentCount: recurringInvestments.length,
+      autoRecurringInvestmentCount: autoRecurringInvestments.length,
+      overdueRecurringBills,
+      manualRecurringInvestments,
+      missedAutomations,
+    }
+  }, [monthBills, txnRows])
+
+  const monthCloseReadiness = useMemo(() => {
+    const categorizedRows = txnRows.filter((row) => row?.type === 'expense' || row?.type === 'investment')
+    const missingCategoryCount = categorizedRows.filter((row) => !row?.category || row?.category === 'other').length
+    const categoryCompletenessPct = categorizedRows.length > 0
+      ? Math.round(((categorizedRows.length - missingCategoryCount) / categorizedRows.length) * 100)
+      : 100
+
+    const expenseAmounts = txnRows
+      .filter((row) => row?.type === 'expense')
+      .map((row) => Number(row?.amount || 0))
+      .filter((value) => value > 0)
+      .sort((a, b) => a - b)
+    const midIndex = Math.floor(expenseAmounts.length / 2)
+    const medianExpense = expenseAmounts.length
+      ? (expenseAmounts.length % 2 === 0
+          ? (expenseAmounts[midIndex - 1] + expenseAmounts[midIndex]) / 2
+          : expenseAmounts[midIndex])
+      : 0
+    const unusualThreshold = Math.max(2500, medianExpense * 2)
+
+    const unusualRows = txnRows.filter((row) => (
+      row?.type === 'expense' && Number(row?.amount || 0) >= unusualThreshold
+    ))
+    const reviewedUnusualCount = unusualRows.filter((row) => reviewedIds.has(row?.id)).length
+
+    const items = [
+      {
+        key: 'reconciliation',
+        done: reconcileQueueCount === 0,
+        label: reconcileQueueCount === 0
+          ? 'Reconciliation queue is clear.'
+          : `${reconcileQueueCount} reconciliation item${reconcileQueueCount > 1 ? 's' : ''} pending.`,
+        cta: 'Open reconciliation',
+        route: '/reconciliation',
+      },
+      {
+        key: 'categories',
+        done: missingCategoryCount === 0,
+        label: missingCategoryCount === 0
+          ? 'Category completeness is clean.'
+          : `${missingCategoryCount} transaction${missingCategoryCount > 1 ? 's are' : ' is'} still uncategorized.`,
+        cta: 'Open transactions',
+        route: '/transactions',
+      },
+      {
+        key: 'unusual',
+        done: unusualRows.length === 0 || reviewedUnusualCount === unusualRows.length,
+        label: unusualRows.length === 0
+          ? 'No unusual spend spikes found this month.'
+          : `${reviewedUnusualCount}/${unusualRows.length} unusual transaction${unusualRows.length > 1 ? 's' : ''} reviewed.`,
+        cta: 'Review unusual',
+        route: '/reconciliation',
+      },
+    ]
+
+    const completedCount = items.filter((item) => item.done).length
+    const completionPct = Math.round((completedCount / items.length) * 100)
+
+    return {
+      items,
+      completionPct,
+      categoryCompletenessPct,
+      unusualCount: unusualRows.length,
+      reviewedUnusualCount,
+    }
+  }, [txnRows, reviewedIds, reconcileQueueCount])
 
   const hasMonthData = useMemo(() => {
     const totalsPresent = inflow > 0 || spent > 0 || invested > 0
@@ -442,50 +492,59 @@ export default function Monthly() {
             <div className="card p-4">
               <SectionHeader
                 className="mb-2"
-                title="Investment snapshot"
-                subtitle="Contribution pace, concentration, and month-end projection"
+                title="Budget accuracy"
+                subtitle="Planned vs actual with variance bands"
                 badge={{
-                  label: invested > 0 ? `${investmentSnapshot.shareOfInflow}% of inflow` : 'No deployment',
-                  className: invested > 0 ? 'bg-brand-container text-brand-on' : 'bg-kosha-surface-2 text-ink-3 border border-kosha-border',
+                  label: budgetAccuracy.hasBudgets ? `${budgetAccuracy.accuracyScore}/100` : 'No budgets',
+                  className: budgetAccuracy.hasBudgets && budgetAccuracy.accuracyScore >= 75
+                    ? 'bg-income-bg text-income-text'
+                    : budgetAccuracy.hasBudgets
+                      ? 'bg-warning-bg text-warning-text'
+                      : 'bg-kosha-surface-2 text-ink-3 border border-kosha-border',
                 }}
               />
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">This month</p>
-                  <p className="text-base font-bold text-invest-text tabular-nums">{fmt(invested)}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Vs last month</p>
-                  <p className={`text-base font-bold tabular-nums ${investmentSnapshot.investmentDelta >= 0 ? 'text-brand' : 'text-warning-text'}`}>
-                    {investmentSnapshot.investmentDelta >= 0 ? '+' : '-'}{fmt(Math.abs(investmentSnapshot.investmentDelta))}
-                  </p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Projected close</p>
-                  <p className="text-base font-bold text-ink tabular-nums">{fmt(investmentSnapshot.projectedInvestment)}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3 truncate">Top vehicle</p>
-                  <p className="text-[12px] font-semibold text-ink truncate">{investmentSnapshot.topVehicleName}</p>
-                  <p className="text-[12px] font-bold text-invest-text tabular-nums mt-0.5">{fmt(investmentSnapshot.topVehicleAmount)}</p>
-                </div>
-              </div>
+              {budgetAccuracy.hasBudgets ? (
+                <>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                      <p className="text-caption text-ink-3">Planned</p>
+                      <p className="text-base font-bold text-ink tabular-nums">{fmt(budgetAccuracy.totalBudget)}</p>
+                    </div>
+                    <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                      <p className="text-caption text-ink-3">Actual</p>
+                      <p className="text-base font-bold text-expense-text tabular-nums">{fmt(budgetAccuracy.totalSpent)}</p>
+                    </div>
+                  </div>
 
-              <p className="text-[11px] text-ink-3">
-                {invested > 0
-                  ? `Investment deployment is ${investmentSnapshot.shareOfInflow}% of total inflow for this month.`
-                  : 'No investment entries yet. Add one to track deployment pace and concentration.'}
-              </p>
+                  <div className="space-y-2">
+                    {budgetAccuracy.rows.slice(0, 6).map((row) => (
+                      <div key={row.id} className="rounded-card bg-kosha-surface-2 p-2.5">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p className="text-[12px] font-semibold text-ink truncate">{row.label}</p>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-pill shrink-0 ${row.bandClass}`}>{row.band}</span>
+                        </div>
 
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                <button type="button" onClick={() => navigate('/analytics')} className="btn-secondary h-10 px-3 text-[11px] justify-center">
-                  Open analytics
-                </button>
-                <button type="button" onClick={() => navigate('/transactions')} className="btn-primary h-10 px-3 text-[11px] justify-center">
-                  Log investment
-                </button>
-              </div>
+                        <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden mb-1.5">
+                          <div
+                            className={`h-full rounded-pill ${row.variance > 0 ? 'bg-warning' : 'bg-income'}`}
+                            style={{ width: `${Math.max(6, row.ratioPct)}%` }}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 text-[10px] text-ink-3 tabular-nums">
+                          <span>Planned {fmt(row.budget)} · Actual {fmt(row.spent)}</span>
+                          <span className={row.variance > 0 ? 'text-expense-text' : 'text-income-text'}>
+                            {row.variance > 0 ? '+' : '-'}{fmt(Math.abs(row.variance))}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-[12px] text-ink-3">Set budgets on category rows below to unlock budget accuracy scoring.</p>
+              )}
             </div>
           )}
 
@@ -493,14 +552,83 @@ export default function Monthly() {
             <div className="card p-4">
               <SectionHeader
                 className="mb-2"
-                title="Month-close checklist"
-                subtitle="Resolve these to trust month-end outcomes."
-                badge={{ label: 'Action plan', className: 'bg-brand-container text-brand-on' }}
+                title="Autopilot health"
+                subtitle="Recurring bills and recurring investments reliability"
+                badge={{
+                  label: `${autopilotHealth.healthScore}/100`,
+                  className: autopilotHealth.healthScore >= 75
+                    ? 'bg-income-bg text-income-text'
+                    : autopilotHealth.healthScore >= 50
+                      ? 'bg-warning-bg text-warning-text'
+                      : 'bg-expense-bg text-expense-text',
+                }}
               />
 
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Recurring bills</p>
+                  <p className="text-base font-bold text-ink tabular-nums">{autopilotHealth.recurringBillsPaidCount}/{autopilotHealth.recurringBillsCount}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Auto investments</p>
+                  <p className="text-base font-bold text-brand tabular-nums">{autopilotHealth.autoRecurringInvestmentCount}/{autopilotHealth.recurringInvestmentCount}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Missed automations</p>
+                  <p className={`text-base font-bold tabular-nums ${autopilotHealth.missedAutomations === 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                    {autopilotHealth.missedAutomations}
+                  </p>
+                </div>
+              </div>
+
+              {autopilotHealth.missedAutomations > 0 ? (
+                <div className="space-y-2">
+                  {autopilotHealth.overdueRecurringBills.length > 0 && (
+                    <p className="text-[11px] text-warning-text">
+                      {autopilotHealth.overdueRecurringBills.length} recurring bill{autopilotHealth.overdueRecurringBills.length > 1 ? 's are' : ' is'} overdue.
+                    </p>
+                  )}
+                  {autopilotHealth.manualRecurringInvestments.length > 0 && (
+                    <p className="text-[11px] text-warning-text">
+                      {autopilotHealth.manualRecurringInvestments.length} recurring investment entr{autopilotHealth.manualRecurringInvestments.length > 1 ? 'ies were' : 'y was'} logged manually (automation missed).
+                    </p>
+                  )}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button type="button" onClick={() => navigate('/bills')} className="btn-secondary h-9 px-3 text-[11px] justify-center">
+                      Fix bills
+                    </button>
+                    <button type="button" onClick={() => navigate('/transactions')} className="btn-primary h-9 px-3 text-[11px] justify-center">
+                      Fix investments
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-ink-3">Autopilot routines are healthy. No broken recurring cycles detected this month.</p>
+              )}
+            </div>
+          )}
+
+          {heavyReady && (
+            <div className="card p-4">
+              <SectionHeader
+                className="mb-2"
+                title="Month-close readiness"
+                subtitle="Checklist for reconciliation quality and close confidence"
+                badge={{
+                  label: `${monthCloseReadiness.completionPct}% complete`,
+                  className: monthCloseReadiness.completionPct >= 80
+                    ? 'bg-income-bg text-income-text'
+                    : 'bg-warning-bg text-warning-text',
+                }}
+              />
+
+              <div className="h-2 rounded-pill bg-kosha-border overflow-hidden mb-3">
+                <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(6, monthCloseReadiness.completionPct)}%` }} />
+              </div>
+
               <div className="space-y-2.5">
-                {[monthlyChecklist.reconciliation, monthlyChecklist.bills, monthlyChecklist.budgets].map((item) => (
-                  <div key={item.cta} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
+                {monthCloseReadiness.items.map((item) => (
+                  <div key={item.key} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
                     <div className="flex items-center justify-between gap-2.5">
                       <div className="min-w-0 flex items-center gap-2.5">
                         <span className={`text-[10px] px-2 py-0.5 rounded-pill font-semibold shrink-0 ${item.done ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
@@ -516,55 +644,6 @@ export default function Monthly() {
                         {item.cta}
                       </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {heavyReady && budgetVariance.hasBudgets && (
-            <div className="card p-4">
-              <SectionHeader
-                className="mb-2"
-                title="Budget variance"
-                subtitle={
-                  budgetVariance.projectedDelta >= 0
-                    ? `${fmt(Math.abs(budgetVariance.projectedDelta))} projected buffer`
-                    : `${fmt(Math.abs(budgetVariance.projectedDelta))} projected overshoot`
-                }
-                badge={{
-                  label: budgetVariance.projectedDelta >= 0 ? 'On trajectory' : 'Needs correction',
-                  className: budgetVariance.projectedDelta >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text',
-                }}
-              />
-
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Over budget</p>
-                  <p className="text-base font-bold text-expense-text tabular-nums">{budgetVariance.overCount}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Near limit</p>
-                  <p className="text-base font-bold text-warning-text tabular-nums">{budgetVariance.nearLimitCount}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5 col-span-2 flex items-center justify-between gap-3">
-                  <p className="text-caption text-ink-3">On track</p>
-                  <p className="text-base font-bold text-income-text tabular-nums">{budgetVariance.onTrackCount}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                {budgetVariance.rows.slice(0, 4).map((row) => (
-                    <div key={row.id} className="flex items-center justify-between rounded-card bg-kosha-surface-2 p-2.5 gap-3">
-                    <div className="min-w-0 flex items-center gap-2">
-                      <p className="text-sm text-ink-2 truncate">{row.label}</p>
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-pill shrink-0 ${row.delta >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}>
-                        {row.delta >= 0 ? 'On track' : 'Over'}
-                      </span>
-                    </div>
-                    <p className={`text-sm font-semibold tabular-nums shrink-0 ${row.delta >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                      {row.delta >= 0 ? `${fmt(row.delta)} left` : `${fmt(Math.abs(row.delta))} over`}
-                    </p>
                   </div>
                 ))}
               </div>
@@ -587,26 +666,6 @@ export default function Monthly() {
               }
               onCategoryClick={openBudgetSheet}
             />
-          )}
-
-          {heavyReady && vehicleEntries.length > 0 && (
-            <div className="card p-3.5">
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="section-label">Investments</p>
-                <span className="text-[11px] font-semibold text-invest-text tabular-nums pr-0.5 text-right">
-                  {fmt(vehicleEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0))}
-                </span>
-              </div>
-
-              <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
-                {vehicleEntries.map(([vehicle, amt]) => (
-                  <div key={vehicle} className="card p-3.5 shrink-0 min-w-[150px] sm:min-w-[170px]">
-                    <p className="text-[11px] text-ink-3 font-medium mb-0.5 truncate">{vehicle}</p>
-                    <p className="text-[18px] sm:text-[20px] leading-tight font-bold text-invest-text tabular-nums whitespace-nowrap pr-0.5">{fmt(amt)}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
           )}
 
           </>

@@ -61,6 +61,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
             key={t.id}
             txn={t}
             showDate
+            compact
             isLast={i === lastIndex}
             onDelete={onDelete}
             onTap={onTap}

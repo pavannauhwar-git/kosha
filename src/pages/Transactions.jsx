@@ -305,17 +305,17 @@ export default function Transactions() {
 
       {/* Search */}
       <div className="relative mb-2.5 md:mb-3">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
         <input
-          className="input pl-9 pr-9 py-2.5 md:py-3"
+          className="input pl-8 pr-8 py-2 md:py-2.5 text-[14px]"
           placeholder="Search transactions…"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
         {search && (
           <button onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3">
-            <X size={14} />
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3">
+            <X size={13} />
           </button>
         )}
       </div>
@@ -330,10 +330,10 @@ export default function Transactions() {
               setDatePreset(preset.id)
               setDisplayCount(50)
             }}
-            className={`chip-control ${
+            className={`chip-control chip-control-sm ${
               datePreset === preset.id
                 ? 'bg-brand-container text-brand-on border-brand-container'
-                : 'chip-control-muted'
+                : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'
             }`}
           >
             {preset.label}
@@ -346,9 +346,9 @@ export default function Transactions() {
         {TYPES.map(t => (
           <button key={t.id}
             onClick={() => handleTypeFilter(t.id)}
-            className={`chip-control ${typeFilter === t.id
+            className={`chip-control chip-control-sm ${typeFilter === t.id
               ? TYPE_CHIP[t.id]
-              : 'chip-control-muted'}`}
+              : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
           >
             {t.label}
           </button>
@@ -356,12 +356,12 @@ export default function Transactions() {
 
         <button
           onClick={() => setShowCats(v => !v)}
-            className={`chip-control
+            className={`chip-control chip-control-sm
                       ${catFilter
             ? 'bg-brand-container text-brand-on border-brand-container'
-            : 'chip-control-muted'}`}
+            : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
         >
-          <SlidersHorizontal size={12} />
+          <SlidersHorizontal size={11} />
           {catFilter ? CATEGORIES.find(c => c.id === catFilter)?.label || 'Category' : 'Category'}
           {catFilter && (
             <button
@@ -369,7 +369,7 @@ export default function Transactions() {
               aria-label="Clear category filter"
               onClick={e => { e.stopPropagation(); handleCatFilter('') }}
             >
-              <X size={11} />
+              <X size={10} />
             </button>
           )}
         </button>
@@ -388,10 +388,10 @@ export default function Transactions() {
             {filterCategories.map(c => (
               <button key={c.id}
                 onClick={() => { handleCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
-                className={`chip-control px-2.5
+                className={`chip-control chip-control-sm
                             ${catFilter === c.id
                   ? 'bg-brand-container text-brand-on border-brand-container'
-                              : 'chip-control-muted'}`}
+                              : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
               >
                 {c.label}
               </button>

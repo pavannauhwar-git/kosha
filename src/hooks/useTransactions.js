@@ -28,7 +28,7 @@ export const TRANSACTION_LIST_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
 
 export const TRANSACTION_INSIGHTS_COLUMNS =
-  'id, date, created_at, type, amount, description, category, payment_mode, is_repayment'
+  'id, date, created_at, type, amount, description, category, payment_mode, is_repayment, is_recurring, is_auto_generated, source_transaction_id, investment_vehicle'
 
 const TRANSACTION_MUTATION_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
