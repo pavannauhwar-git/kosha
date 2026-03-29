@@ -74,9 +74,9 @@
     --c-brand-mid-rgb: 30, 54, 216;
     /* used in rgba() calls */
 
-    /* Accent — Chartreuse (on dark bg only) */
-    --c-accent: #7FFF00;
-    --c-accent-rgb: 127, 255, 0;
+    /* Accent — Electric Lime (on dark bg only) */
+    --c-accent: #CCFF00;
+    --c-accent-rgb: 204, 255, 0;
     /* used in rgba() calls */
 
     /* Semantics */
@@ -91,9 +91,9 @@
     --c-ink-muted: #5E6AA8;
 
     /* Hero card overlays */
-    --c-hero-accent: rgba(127, 255, 0, 0.66);
-    --c-hero-accent-bg: rgba(127, 255, 0, 0.16);
-    --c-hero-accent-fill: rgba(127, 255, 0, 0.66);
+    --c-hero-accent: rgba(204, 255, 0, 0.66);
+    --c-hero-accent-bg: rgba(204, 255, 0, 0.16);
+    --c-hero-accent-fill: rgba(204, 255, 0, 0.66);
     --c-hero-label: rgba(255, 255, 255, 0.64);
     --c-hero-dimmer: rgba(255, 255, 255, 0.46);
     --c-hero-divider: rgba(255, 255, 255, 0.16);

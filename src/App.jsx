@@ -518,19 +518,21 @@ function BottomNav() {
 
 // ── Auth callback ─────────────────────────────────────────────────────────
 function AuthCallback() {
-  const { user, profile, loading } = useAuth()
-  if (loading) return null
+  const { user, profile, loading, profileLoading } = useAuth()
+  if (loading || (user && profileLoading)) return null
   if (!user) return <Navigate to="/login" replace />
-  if (profile && !profile.onboarded) return <Navigate to="/onboarding" replace />
+  if (!profile || !profile.onboarded) return <Navigate to="/onboarding" replace />
   return <Navigate to="/" replace />
 }
 
+const REALTIME_CONNECT_TIMEOUT_MS = 8000
+const REALTIME_FALLBACK_POLL_MS = 45000
+const REALTIME_RETRY_DELAYS_MS = [15000, 30000, 60000]
+
 // ── Global Realtime Sync ──────────────────────────────────────────────────
-// Probes the WebSocket once. If it fails, calls supabase.realtime.disconnect()
-// to stop ALL internal Supabase retry loops — these fire at the browser level
-// and flood the connection pool, blocking REST API refetches.
-// The app works fully without Realtime via local cache injection on mutations.
-// Realtime only adds multi-device / multi-tab sync on top of that.
+// Realtime is a freshness enhancer, not a source of truth.
+// If the socket is unavailable, fall back to periodic invalidation of active
+// queries and keep retrying the websocket in the background with backoff.
 function GlobalRealtimeSync() {
   const { user } = useAuth()
 
@@ -539,7 +541,11 @@ function GlobalRealtimeSync() {
 
     const timeoutIds = new Map()
     let channel = null
-    let gaveUp = false
+    let connectTimerId = null
+    let reconnectTimerId = null
+    let fallbackIntervalId = null
+    let attempt = 0
+    let active = true
 
     function scheduleInvalidate(key, invalidate) {
       if (isSuppressed(key)) return
@@ -550,50 +556,134 @@ function GlobalRealtimeSync() {
       }, 300))
     }
 
-    // Give the WebSocket 8 seconds to connect. If it hasn't by then,
-    // disconnect realtime entirely to stop browser-level retry spam.
-    const giveUpTimer = setTimeout(() => {
-      if (!gaveUp && channel) {
-        gaveUp = true
-        console.warn('[Kosha] Realtime WebSocket did not connect within 8s. Disabling to unblock HTTP requests.')
-        supabase.removeChannel(channel)
-        channel = null
-        // This stops ALL internal Supabase realtime retry loops.
-        supabase.realtime.disconnect()
+    function clearConnectTimer() {
+      if (connectTimerId) {
+        clearTimeout(connectTimerId)
+        connectTimerId = null
       }
-    }, 8000)
-
-    channel = supabase.channel(`kosha-sync-${user.id}`)
-
-    for (const policy of REALTIME_INVALIDATION_POLICIES) {
-      channel = channel.on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: policy.table },
-        () => scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
-      )
     }
 
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        // Connected — cancel the give-up timer
-        clearTimeout(giveUpTimer)
+    function clearReconnectTimer() {
+      if (reconnectTimerId) {
+        clearTimeout(reconnectTimerId)
+        reconnectTimerId = null
       }
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        if (!gaveUp) {
-          gaveUp = true
-          clearTimeout(giveUpTimer)
-          console.warn('[Kosha] Realtime channel error. Disabling to unblock HTTP requests.')
-          supabase.removeChannel(channel)
-          channel = null
-          supabase.realtime.disconnect()
+    }
+
+    function removeActiveChannel() {
+      clearConnectTimer()
+      if (channel) {
+        supabase.removeChannel(channel)
+        channel = null
+      }
+    }
+
+    function invalidateFreshness() {
+      for (const policy of REALTIME_INVALIDATION_POLICIES) {
+        scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
+      }
+    }
+
+    function startFallbackPolling() {
+      if (fallbackIntervalId) return
+      invalidateFreshness()
+      fallbackIntervalId = setInterval(() => {
+        invalidateFreshness()
+      }, REALTIME_FALLBACK_POLL_MS)
+    }
+
+    function stopFallbackPolling() {
+      if (!fallbackIntervalId) return
+      clearInterval(fallbackIntervalId)
+      fallbackIntervalId = null
+    }
+
+    function scheduleReconnect(reason) {
+      if (!active || reconnectTimerId) return
+
+      const delay = REALTIME_RETRY_DELAYS_MS[Math.min(attempt, REALTIME_RETRY_DELAYS_MS.length - 1)]
+      attempt += 1
+
+      reconnectTimerId = setTimeout(() => {
+        reconnectTimerId = null
+        if (!active) return
+
+        if (typeof supabase.realtime.connect === 'function') {
+          supabase.realtime.connect()
         }
+
+        subscribeToChannel(reason)
+      }, delay)
+    }
+
+    function enterFallback(reason) {
+      if (!active) return
+
+      console.warn(`[Kosha] Realtime unavailable (${reason}). Falling back to periodic refresh.`)
+      removeActiveChannel()
+
+      if (typeof supabase.realtime.disconnect === 'function') {
+        supabase.realtime.disconnect()
       }
-    })
+
+      startFallbackPolling()
+      scheduleReconnect(reason)
+    }
+
+    function subscribeToChannel(trigger = 'initial') {
+      if (!active) return
+
+      removeActiveChannel()
+
+      let subscribed = false
+      let nextChannel = supabase.channel(`kosha-sync-${user.id}`)
+
+      for (const policy of REALTIME_INVALIDATION_POLICIES) {
+        nextChannel = nextChannel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: policy.table },
+          () => scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
+        )
+      }
+
+      channel = nextChannel
+      connectTimerId = setTimeout(() => {
+        if (!subscribed) {
+          enterFallback('connect-timeout')
+        }
+      }, REALTIME_CONNECT_TIMEOUT_MS)
+
+      channel.subscribe((status) => {
+        if (!active || channel !== nextChannel) return
+
+        if (status === 'SUBSCRIBED') {
+          subscribed = true
+          attempt = 0
+          clearConnectTimer()
+          clearReconnectTimer()
+          stopFallbackPolling()
+          invalidateFreshness()
+          if (trigger !== 'initial') {
+            console.info('[Kosha] Realtime freshness restored.')
+          }
+          return
+        }
+
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          enterFallback(String(status).toLowerCase())
+        }
+      })
+    }
+
+    subscribeToChannel()
 
     return () => {
-      clearTimeout(giveUpTimer)
+      active = false
+      clearConnectTimer()
+      clearReconnectTimer()
+      stopFallbackPolling()
       timeoutIds.forEach(id => clearTimeout(id))
-      if (channel) supabase.removeChannel(channel)
+      removeActiveChannel()
     }
   }, [user?.id])
 

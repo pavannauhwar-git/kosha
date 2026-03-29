@@ -153,11 +153,11 @@ export function RouteSkeleton({ pathname }) {
 
 // ── AuthGuard ─────────────────────────────────────────────────────────────
 export default function AuthGuard({ children }) {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, profileLoading } = useAuth()
   const location = useLocation()
 
   // Auth initialising — show the skeleton that matches the destination route
-  if (loading) return (
+  if (loading || (user && profileLoading)) return (
     <div className="min-h-dvh bg-kosha-bg">
       <RouteSkeleton pathname={location.pathname} />
     </div>
@@ -168,8 +168,8 @@ export default function AuthGuard({ children }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  // User confirmed — check onboarding only if profile loaded AND incomplete
-  if (profile && !profile.onboarded && location.pathname !== '/onboarding') {
+  // User confirmed — require a resolved onboarded profile before entering the app.
+  if ((!profile || !profile.onboarded) && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
   }
 

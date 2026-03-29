@@ -10,6 +10,7 @@ export function useAuthState() {
   const [user,    setUser]    = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(true)
 
   const profileQueryKey = useCallback(
     (userId) => [...USER_PROFILE_QUERY_KEY, userId],
@@ -21,13 +22,20 @@ export function useAuthState() {
       .from('profiles')
       .select(PROFILE_COLUMNS)
       .eq('id', userId)
-      .single()
+      .maybeSingle()
     if (error) throw error
     return data || null
   }, [])
 
   const loadProfile = useCallback(async (userId) => {
-    if (!userId) { setProfile(null); return }
+    if (!userId) {
+      setProfile(null)
+      setProfileLoading(false)
+      return
+    }
+
+    setProfileLoading(true)
+
     try {
       const data = await queryClient.fetchQuery({
         queryKey: profileQueryKey(userId),
@@ -36,24 +44,36 @@ export function useAuthState() {
       setProfile(data)
     } catch {
       setProfile(null)
+    } finally {
+      setProfileLoading(false)
     }
   }, [fetchProfileByUserId, profileQueryKey])
 
   const invalidateAndRefetchProfile = useCallback(async (userId) => {
-    if (!userId) { setProfile(null); return null }
+    if (!userId) {
+      setProfile(null)
+      setProfileLoading(false)
+      return null
+    }
 
-    await queryClient.invalidateQueries({
-      queryKey: profileQueryKey(userId),
-      refetchType: 'active',
-    })
+    setProfileLoading(true)
 
-    const fresh = await queryClient.fetchQuery({
-      queryKey: profileQueryKey(userId),
-      queryFn: () => fetchProfileByUserId(userId),
-    })
+    try {
+      await queryClient.invalidateQueries({
+        queryKey: profileQueryKey(userId),
+        refetchType: 'active',
+      })
 
-    setProfile(fresh)
-    return fresh
+      const fresh = await queryClient.fetchQuery({
+        queryKey: profileQueryKey(userId),
+        queryFn: () => fetchProfileByUserId(userId),
+      })
+
+      setProfile(fresh)
+      return fresh
+    } finally {
+      setProfileLoading(false)
+    }
   }, [fetchProfileByUserId, profileQueryKey])
 
   useEffect(() => {
@@ -73,8 +93,12 @@ export function useAuthState() {
           setUser(u)
           setLoading(false)
           initialised = true
+          setProfileLoading(!!u)
           if (u) loadProfile(u.id)
-          else   setProfile(null)
+          else {
+            setProfile(null)
+            setProfileLoading(false)
+          }
           return
         }
 
@@ -92,8 +116,12 @@ export function useAuthState() {
           setAuthUser(u)
           setUser(u)
           if (!initialised) { setLoading(false); initialised = true }
+          setProfileLoading(!!u)
           if (u) loadProfile(u.id)
-          else   setProfile(null)
+          else {
+            setProfile(null)
+            setProfileLoading(false)
+          }
           return
         }
 
@@ -101,6 +129,7 @@ export function useAuthState() {
           clearAuthUser()
           setUser(null)
           setProfile(null)
+          setProfileLoading(false)
           if (!initialised) { setLoading(false); initialised = true }
           return
         }
@@ -117,6 +146,7 @@ export function useAuthState() {
       if (!initialised) {
         console.warn('[Kosha] Auth INITIAL_SESSION did not fire within 3s. Releasing loading state.')
         setLoading(false)
+        setProfileLoading(false)
         initialised = true
       }
     }, 3000)
@@ -176,6 +206,7 @@ export function useAuthState() {
       clearAuthUser()
       setUser(null)
       setProfile(null)
+      setProfileLoading(false)
       queryClient.clear()
     }
   }, [])
@@ -191,8 +222,14 @@ export function useAuthState() {
   // functions are now created once and never recreated.
   const updateProfile = useCallback(async (updates) => {
     const userId = getAuthUserId()
+    const payload = {
+      id: userId,
+      ...updates,
+    }
+
     const { data, error } = await supabase
-      .from('profiles').update(updates).eq('id', userId)
+      .from('profiles')
+      .upsert(payload, { onConflict: 'id' })
       .select(PROFILE_COLUMNS)
       .single()
     if (error) throw error
@@ -209,8 +246,7 @@ export function useAuthState() {
 
     const { data,error } = await supabase
       .from('profiles')
-      .update({ display_name: trimmedName })
-      .eq('id', userId)
+      .upsert({ id: userId, display_name: trimmedName }, { onConflict: 'id' })
       .select(PROFILE_COLUMNS)
       .single()
 
@@ -222,7 +258,7 @@ export function useAuthState() {
   }, [profileQueryKey])
 
   return {
-    user, profile, loading,
+    user, profile, loading, profileLoading,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
