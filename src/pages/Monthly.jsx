@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRightLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
@@ -400,6 +399,39 @@ export default function Monthly() {
             <p className="text-[11px] text-ink-3">{monthCloseSummary.message}</p>
           </div>
 
+          {heavyReady && (
+          <div className="card p-4">
+            <SectionHeader
+              className="mb-2"
+              title="Month-close checklist"
+              subtitle="Resolve these to trust month-end outcomes."
+              badge={{ label: 'Action plan', className: 'bg-brand-container text-brand-on' }}
+            />
+
+            <div className="space-y-2.5">
+              {[monthlyChecklist.reconciliation, monthlyChecklist.bills, monthlyChecklist.budgets].map((item) => (
+                <div key={item.cta} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="min-w-0 flex items-center gap-2.5">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-pill font-semibold shrink-0 ${item.done ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                        {item.done ? 'Complete' : 'Attention'}
+                      </span>
+                      <p className="text-[12px] text-ink-2 truncate">{item.label}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(item.route)}
+                      className="btn-secondary-sm shrink-0"
+                    >
+                      {item.cta}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          )}
+
           {heavyReady && budgetVariance.hasBudgets && (
             <div className="card p-4">
               <SectionHeader
@@ -433,9 +465,14 @@ export default function Monthly() {
 
               <div className="space-y-2">
                 {budgetVariance.rows.slice(0, 4).map((row) => (
-                    <div key={row.id} className="flex items-center justify-between rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-sm text-ink-2 truncate pr-3">{row.label}</p>
-                    <p className={`text-sm font-semibold tabular-nums ${row.delta >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                    <div key={row.id} className="flex items-center justify-between rounded-card bg-kosha-surface-2 p-2.5 gap-3">
+                    <div className="min-w-0 flex items-center gap-2">
+                      <p className="text-sm text-ink-2 truncate">{row.label}</p>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-pill shrink-0 ${row.delta >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'}`}>
+                        {row.delta >= 0 ? 'On track' : 'Over'}
+                      </span>
+                    </div>
+                    <p className={`text-sm font-semibold tabular-nums shrink-0 ${row.delta >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                       {row.delta >= 0 ? `${fmt(row.delta)} left` : `${fmt(Math.abs(row.delta))} over`}
                     </p>
                   </div>
@@ -482,60 +519,6 @@ export default function Monthly() {
 
           <BreakdownCard earned={earned} spent={spent} invested={invested} />
 
-          {heavyReady && (
-          <div className="card p-4">
-            <SectionHeader
-              className="mb-2"
-              title="Month-close checklist"
-              subtitle="Resolve these to trust month-end outcomes."
-              badge={{ label: 'Action plan', className: 'bg-brand-container text-brand-on' }}
-            />
-
-            <div className="space-y-2.5">
-              {[monthlyChecklist.reconciliation, monthlyChecklist.bills, monthlyChecklist.budgets].map((item) => (
-                <div key={item.cta} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className={`text-[12px] font-semibold ${item.done ? 'text-income-text' : 'text-warning-text'}`}>
-                        {item.done ? 'Complete' : 'Attention needed'}
-                      </p>
-                      <p className="text-[12px] text-ink-2 mt-0.5">{item.label}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => navigate(item.route)}
-                      className="btn-secondary-sm shrink-0"
-                    >
-                      {item.cta}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          )}
-
-          {heavyReady && (
-          <button
-            type="button"
-            onClick={() => navigate('/reconciliation')}
-            className="card p-4 w-full text-left"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-ink">Reconciliation workspace</p>
-                <p className="text-caption text-ink-3 mt-0.5">
-                  {reconcileQueueCount > 0
-                    ? `${reconcileQueueCount} item${reconcileQueueCount > 1 ? 's' : ''} ready for quality review`
-                    : 'No pending review items right now'}
-                </p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-brand-container text-brand flex items-center justify-center shrink-0">
-                <ArrowRightLeft size={18} />
-              </div>
-            </div>
-          </button>
-          )}
           </>
           )}
         </motion.div>

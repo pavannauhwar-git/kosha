@@ -28,7 +28,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
 
   return (
     <motion.div className="card-hero p-6 relative overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3.5">
         <p className="text-caption font-bold tracking-widest uppercase"
           style={{ color: C.heroAccent }}>
           Balance overview
@@ -45,18 +45,18 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <p className="text-caption font-medium" style={{ color: C.heroLabel }}>
             {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
           </p>
-          <div className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white/70 uppercase tracking-wider">
+          <div className="px-1.5 py-0.5 rounded-full bg-white/12 border border-white/10 text-[10px] font-bold text-white/80 uppercase tracking-wider">
             Tap
           </div>
         </div>
-        <p className="text-hero font-bold text-white leading-none tracking-tight tabular-nums">
+        <p className="text-hero font-bold text-white leading-[0.92] tracking-tight tabular-nums">
           {heroMode === 'balance'
             ? (runningBalance !== null ? fmt(runningBalance) : '—')
             : (safeToSpend    !== null ? fmt(safeToSpend)    : '—')}
         </p>
       </div>
 
-      <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill"
+      <div className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill border border-white/12"
         style={{ background: C.heroAccentBg }}>
         <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
           {rate}% saved this month
@@ -72,7 +72,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           { label: 'Invested', val: invested },
         ].map(s => (
           <div key={s.label}
-            className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl"
+            className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl border border-white/10 backdrop-blur-[1px]"
             style={{ background: C.heroStatBg }}
           >
             <p className="text-[11px] sm:text-caption mb-0.5 truncate"

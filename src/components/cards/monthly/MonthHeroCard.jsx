@@ -12,7 +12,7 @@ export default function MonthHeroCard({ month, year, data }) {
 
   return (
     <div className="card-hero p-6 relative overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3.5">
         <p className="text-caption font-bold tracking-widest uppercase" style={{ color: C.heroAccent }}>
           {MONTH_NAMES[month - 1].slice(0, 3)} {year}
         </p>
@@ -24,11 +24,11 @@ export default function MonthHeroCard({ month, year, data }) {
       <p className="text-caption font-medium mb-1" style={{ color: C.heroLabel }}>
         Monthly balance
       </p>
-      <p className={`text-hero font-bold leading-none tabular-nums ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
+      <p className={`text-hero font-bold leading-[0.92] tabular-nums ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
         {fmt(balance)}
       </p>
 
-      <div className="mt-2 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill" style={{ background: C.heroAccentBg }}>
+      <div className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill border border-white/12" style={{ background: C.heroAccentBg }}>
         <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
           {rate}% saved
         </span>
@@ -42,7 +42,7 @@ export default function MonthHeroCard({ month, year, data }) {
           { label: 'Spent', val: spent },
           { label: 'Invested', val: invested },
         ].map(s => (
-          <div key={s.label} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
+          <div key={s.label} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl border border-white/10 backdrop-blur-[1px]" style={{ background: C.heroStatBg }}>
             <p className="text-[11px] sm:text-caption mb-0.5 truncate" style={{ color: C.heroLabel }}>
               {s.label}
             </p>

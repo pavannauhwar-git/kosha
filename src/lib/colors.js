@@ -13,19 +13,19 @@
 
 export const C = {
 
-  // ── Brand — Periwinkle Violet ────────────────────────────────────
-  brand:           '#243BAF',
-  brandMid:        '#3D5AFE',
-  brandLight:      '#6C83FF',
-  brandContainer:  '#E8EDFF',
-  brandBorder:     '#C4CFFF',
+  // ── Brand — Zaffre ───────────────────────────────────────────────
+  brand:           '#0014A8',
+  brandMid:        '#1E36D8',
+  brandLight:      '#4E63F0',
+  brandContainer:  '#E2E7FF',
+  brandBorder:     '#B8C4FF',
 
-  // ── Accent — Lime Yellow ─────────────────────────────────────────
-  // Used ONLY against dark periwinkle backgrounds (hero card, logo).
-  // Never use on white — fails contrast.
-  accent:          '#F4FF00',
-  accentBg:        'rgba(244,255,0,0.22)',
-  accentFill:      'rgba(244,255,0,0.78)',
+  // ── Accent — Chartreuse ──────────────────────────────────────────
+  // Reserved for hero-card highlights over dark brand surfaces.
+  // Keep usage sparse to avoid visual noise.
+  accent:          '#7FFF00',
+  accentBg:        'rgba(127,255,0,0.16)',
+  accentFill:      'rgba(127,255,0,0.66)',
 
   // ── Income — Emerald H=174° ───────────────────────────────────────
   income:          '#059669',
@@ -35,47 +35,47 @@ export const C = {
   expense:         '#E11D48',
   expenseBright:   '#E11D48',   // same — no separate "bright" needed
 
-  // ── Investment — Sky Blue H=200° (MD3 Secondary) ───────────────────
-  invest:          '#FF1DCE',   // custom investment accent
-  investText:      '#7F2A52',   // darker text tone on light invest backgrounds
+  // ── Investment — Violet Accent ────────────────────────────────────
+  invest:          '#C026D3',
+  investText:      '#7A1F84',
 
-  saved:           '#243BAF',   // brand indigo — residual money in Kosha
+  saved:           '#0014A8',
 
   // ── Bills — Amber H=84° ───────────────────────────────────────────
-  bills:           '#CA8A04',
+  bills:           '#A16207',
 
   // ── Ink — indigo-tinted neutrals ─────────────────────────────────
-  ink:             '#1F255F',
-  inkMuted:        '#6E75A8',
+  ink:             '#141B47',
+  inkMuted:        '#5E6AA8',
 
-  // ── Hero card overlays (lime/white on deep periwinkle) ────────────
-  heroAccent:      'rgba(244,255,0,0.78)',
-  heroAccentBg:    'rgba(244,255,0,0.22)',
-  heroAccentSolid: '#F4FF00',
-  heroLabel:       'rgba(255,255,255,0.55)', // "Total balance" label
-  heroDimmer:      'rgba(255,255,255,0.35)', // "KOSHA" watermark
-  heroDivider:     'rgba(255,255,255,0.12)', // horizontal rule
-  heroStatBg:      'rgba(255,255,255,0.10)', // Earned/Spent/Invested chips
+  // ── Hero card overlays (Chartreuse over deep brand) ──────────────
+  heroAccent:      'rgba(127,255,0,0.66)',
+  heroAccentBg:    'rgba(127,255,0,0.16)',
+  heroAccentSolid: '#A4FF3F',
+  heroLabel:       'rgba(255,255,255,0.64)', // labels and helper copy on hero
+  heroDimmer:      'rgba(255,255,255,0.46)', // low-priority watermark/meta
+  heroDivider:     'rgba(255,255,255,0.16)', // horizontal rule
+  heroStatBg:      'rgba(255,255,255,0.12)', // stat chips on hero
 
   // ── Chart glow colours — on dark periwinkle card background ──────
   // Brighter variants of semantic colours so they glow on dark substrate
   chartIncome:     '#34D399',   // bright emerald glow on dark
   chartExpense:    '#FB7185',   // bright rose glow on dark
-  chartDark:       '#1B2D85',   // dark chart card background = brand-dark
+  chartDark:       '#000D78',
   chartGrid:       'rgba(255,255,255,0.06)', // grid lines on dark card
   chartCursor:     'rgba(255,255,255,0.06)', // tooltip cursor on dark card
 
   // ── Portfolio donut — periwinkle family, darkest → lightest ──────
   portfolio: [
-    '#1F255F',
-    '#243BAF',
-    '#3D5AFE',
-    '#6C83FF',
-    '#E8EDFF',
-    '#C4CFFF',
+    '#141B47',
+    '#0014A8',
+    '#1E36D8',
+    '#4E63F0',
+    '#E2E7FF',
+    '#B8C4FF',
   ],
 
-  // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#243BAF',
-  logoHighlight: '#F4FF00',
+  // ── Logo SVG (no Chartreuse) ─────────────────────────────────────
+  logoBg:        '#0014A8',
+  logoHighlight: '#FFFFFF',
 }

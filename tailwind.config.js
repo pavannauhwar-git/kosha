@@ -9,17 +9,17 @@ export default {
         'kosha-bg-2':          '#FAFBFF',
         'kosha-surface':       '#FFFFFF',
         'kosha-surface-2':     '#F8FAFF',
-        'kosha-border':        '#C4CFFF',
-        'kosha-border-strong': '#6C83FF',
+        'kosha-border':        '#B8C4FF',
+        'kosha-border-strong': '#4E63F0',
 
-        // ── Brand — Periwinkle Violet + Lime Yellow ─────────────────────
-        'brand':           '#243BAF',
-        'brand-dark':      '#1B2D85',
-        'brand-mid':       '#3D5AFE',
-        'brand-bg':        '#EEF2FF',
-        'brand-container': '#E8EDFF',
-        'brand-on':        '#243BAF',
-        'brand-accent':    '#F4FF00',
+        // ── Brand — Zaffre + Chartreuse ─────────────────────────────────
+        'brand':           '#0014A8',
+        'brand-dark':      '#000B73',
+        'brand-mid':       '#1E36D8',
+        'brand-bg':        '#EEF1FF',
+        'brand-container': '#E2E7FF',
+        'brand-on':        '#001171',
+        'brand-accent':    '#A4FF3F',
 
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#059669',
@@ -34,15 +34,15 @@ export default {
         'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#FF1DCE',
-        'invest-bg':     '#FBEFF5',
-        'invest-text':   '#7F2A52',
-        'invest-border': '#E9BFD2',
+        'invest':        '#C026D3',
+        'invest-bg':     '#F9ECFB',
+        'invest-text':   '#7A1F84',
+        'invest-border': '#EEC5F5',
 
         // ── Repayment / Bills ─────────────────────────────────────────────
-        'repay':        '#CA8A04',
+        'repay':        '#A16207',
         'repay-bg':     '#FEFCE8',
-        'repay-text':   '#A16207',
+        'repay-text':   '#854D0E',
         'repay-border': '#FEF08A',
 
         // ── Warning ───────────────────────────────────────────────────────
@@ -52,10 +52,10 @@ export default {
         'warning-text':   '#B45309',
 
         // ── Ink — indigo-tinted neutrals ──────────────────────────────────
-        'ink':   '#1F255F',
-        'ink-2': '#313A86',
-        'ink-3': '#6E75A8',
-        'ink-4': '#A0A7CD',
+        'ink':   '#141B47',
+        'ink-2': '#26306D',
+        'ink-3': '#5E6AA8',
+        'ink-4': '#99A4D1',
 
         // ── Utility ───────────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',
@@ -91,8 +91,8 @@ export default {
         'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
-        'fab':        '0 4px 14px rgba(47,59,206,0.36)',
-        'focus':      '0 0 0 3px rgba(36,59,175,0.30)',
+        'fab':        '0 4px 14px rgba(0,20,168,0.36)',
+        'focus':      '0 0 0 3px rgba(0,20,168,0.36)',
         'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
         'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
       },

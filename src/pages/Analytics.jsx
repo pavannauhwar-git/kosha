@@ -15,7 +15,6 @@ import SectionHeader from '../components/common/SectionHeader'
 import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
 import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
-import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
 
 const MIN_NAV_YEAR = 1900
@@ -32,7 +31,7 @@ export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
-  const [yoyRange, setYoyRange] = useState(5)
+  const [yoyRange, setYoyRange] = useState(3)
   const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
 
@@ -196,9 +195,21 @@ export default function Analytics() {
               )}
 
             <div className="space-y-4">
-              {data ? <YearlyInsightsCard data={data} catEntries={catEntries} /> : null}
 
-              {/* ── 2. Performance trends ─────────────────────────────── */}
+              {/* ── 2. Year-over-year context ───────────────────────── */}
+              {heavyReady ? (
+                <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} onRangeChange={setYoyRange} />
+              ) : (
+                <div className="card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="section-label">Year over year trends</p>
+                    <span className="text-caption text-ink-3">Preparing</span>
+                  </div>
+                  <p className="text-[12px] text-ink-3">Preparing comparison data...</p>
+                </div>
+              )}
+
+              {/* ── 3. Performance trends ─────────────────────────────── */}
               <CashFlowChart
                 chartData={chartData}
                 totalIncome={data?.totalIncome}
@@ -209,7 +220,7 @@ export default function Analytics() {
                 netAxisMax={netAxisMax}
               />
 
-              {/* ── 3. Spending intelligence ─────────────────────────── */}
+              {/* ── 4. Spending intelligence ─────────────────────────── */}
               {catEntries.length > 0 ? (
                 <CategorySpendingChart
                   entries={catEntries}
@@ -230,25 +241,13 @@ export default function Analytics() {
                 </div>
               )}
 
-              {/* ── 4. Allocation and year comparison ─────────────────── */}
+              {/* ── 5. Portfolio composition ─────────────────────────── */}
               {vehicleData.length > 0 && vehicleTotal > 0 ? (
                 <PortfolioAllocation vehicleData={vehicleData} />
               ) : (
                 <div className="card p-4">
                   <p className="section-label">Portfolio allocation</p>
                   <p className="text-[12px] text-ink-3 mt-1">Add investments to unlock allocation breakdown.</p>
-                </div>
-              )}
-
-              {heavyReady ? (
-                <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} onRangeChange={setYoyRange} />
-              ) : (
-                <div className="card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="section-label">Year over year trends</p>
-                    <span className="text-caption text-ink-3">Preparing</span>
-                  </div>
-                  <p className="text-[12px] text-ink-3">Preparing comparison data...</p>
                 </div>
               )}
             </div>

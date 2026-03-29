@@ -6,7 +6,6 @@ import {
   useTransactionDigest,
   useMonthSummary,
   useRunningBalance,
-  useTodayExpenses,
   removeTransactionMutation,
 } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
@@ -20,7 +19,6 @@ import { createFadeUp, createStagger } from '../lib/animations'
 // a transaction list refetch no longer re-renders the hero card or pace card,
 // and a balance update no longer re-renders the transaction list.
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
-import DashboardPulseStrip from '../components/dashboard/DashboardPulseStrip'
 import DashboardPaceCard from '../components/cards/dashboard/DashboardPaceCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
 import DashboardActivityFeed from '../components/dashboard/DashboardActivityFeed'
@@ -165,7 +163,6 @@ export default function Dashboard() {
     fetching: recentFetching,
   } = useRecentTransactions(5)
   const { data: digestTxnRows = [] } = useTransactionDigest(14, 200, { enabled: heavyReady })
-  const { todaySpend } = useTodayExpenses({ enabled: heavyReady })
   const {
     data: summary,
     loading: summaryLoading,
@@ -228,13 +225,11 @@ export default function Dashboard() {
   // Fix: derive stable primitive values from bills ONCE, then use those
   // primitives as memo deps. Array reference changes that don't change the
   // derived values no longer trigger downstream recalculations.
-  const { dueSoonCount, dueSoonDescs, totalBillsAmt } = useMemo(() => {
+  const { dueSoonCount, dueSoonDescs } = useMemo(() => {
     let count = 0
-    let total = 0
     const descs = []
 
     for (const b of bills) {
-      total += +b.amount
       if (daysUntil(b.due_date) <= 7) {
         count += 1
         if (descs.length < 2) descs.push(b.description)
@@ -244,7 +239,6 @@ export default function Dashboard() {
     return {
       dueSoonCount: count,
       dueSoonDescs: descs.join(' · '),
-      totalBillsAmt: total,
     }
   }, [bills])
 
@@ -297,21 +291,6 @@ export default function Dashboard() {
       hasSignals: inLast7.length > 0 || inPrev7.length > 0,
     }
   }, [digestTxnRows, now])
-
-  const insight = useMemo(() => {
-    const spendPct = earned > 0 ? spent / earned : 0
-    const dayPct = dayOfMonth / daysInMonth
-    if (!earned && !spent) return 'Log a transaction to start your money story 📊'
-    if (spendPct < dayPct - 0.15) return `Under pace · ${rate}% saved so far ✨`
-    if (spendPct > dayPct + 0.15) return 'Spending running hot this month · ease up 📈'
-    if (dueSoonCount > 0) return `${dueSoonCount} bill${dueSoonCount > 1 ? 's' : ''} coming due · plan ahead 📅`
-    if (investDiff > 0) return `Invested ${fmt(Math.abs(investDiff))} more than last month 💪`
-    if (rate >= 25) return `Saving ${rate}% of income · outstanding month 🎯`
-    return `Saving ${rate}% this month · right on track 👍`
-    // FIX (defect 5.3): deps are now primitives (dueSoonCount) not the bills array.
-    // This memo only recalculates when earned/spent/rate/dueSoonCount/investDiff
-    // actually change in value — not on every array reference change from a refetch.
-  }, [earned, spent, dayOfMonth, daysInMonth, rate, dueSoonCount, investDiff])
 
   const todayFocus = useMemo(() => {
     if (dueSoonCount > 0) {
@@ -463,6 +442,27 @@ export default function Dashboard() {
           )}
         </motion.div>
 
+        {/* ── Bill alert ────────────────────────────────────────────── */}
+        {dueSoonCount > 0 && (
+          <motion.div variants={fadeUp}>
+            <button onClick={() => navigate('/bills')}
+              className="card-warn w-full flex items-center justify-between px-4 py-4 text-left">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-warning-bg flex items-center justify-center shrink-0">
+                  <Bell size={16} className="text-warning-text" />
+                </div>
+                <div>
+                  <p className="text-body font-semibold text-ink">
+                    {dueSoonCount} bill{dueSoonCount > 1 ? 's' : ''} due soon
+                  </p>
+                  <p className="text-label text-ink-3">{dueSoonDescs}</p>
+                </div>
+              </div>
+              <ArrowRight size={15} className="text-ink-4 shrink-0" />
+            </button>
+          </motion.div>
+        )}
+
         <motion.div variants={fadeUp}>
           {summaryLoading ? (
             <div className="card p-3.5">
@@ -474,7 +474,6 @@ export default function Dashboard() {
               <div className="h-2.5 w-full rounded-full shimmer opacity-70" />
             </div>
           ) : (
-
             <div className="card p-3.5">
               <div className="flex items-center justify-between gap-3 mb-0.5">
                 <p className="section-label">Today focus</p>
@@ -526,27 +525,6 @@ export default function Dashboard() {
             ))}
           </div>
         </motion.div>
-
-        {/* ── Bill alert ────────────────────────────────────────────── */}
-        {dueSoonCount > 0 && (
-          <motion.div variants={fadeUp}>
-            <button onClick={() => navigate('/bills')}
-              className="card-warn w-full flex items-center justify-between px-4 py-4 text-left">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-warning-bg flex items-center justify-center shrink-0">
-                  <Bell size={16} className="text-warning-text" />
-                </div>
-                <div>
-                  <p className="text-body font-semibold text-ink">
-                    {dueSoonCount} bill{dueSoonCount > 1 ? 's' : ''} due soon
-                  </p>
-                  <p className="text-label text-ink-3">{dueSoonDescs}</p>
-                </div>
-              </div>
-              <ArrowRight size={15} className="text-ink-4 shrink-0" />
-            </button>
-          </motion.div>
-        )}
 
         {/* ── Pace card — sub-component ────────────────────────────── */}
         <motion.div variants={fadeUp}>
@@ -610,17 +588,6 @@ export default function Dashboard() {
               </div>
               <p className="text-[22px] md:text-[24px] font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
             </div>
-          </motion.div>
-        )}
-
-        {/* ── Pulse strip — sub-component ───────────────────────────── */}
-        {heavyReady && (
-          <motion.div variants={fadeUp}>
-            <DashboardPulseStrip
-              todaySpend={todaySpend}
-              totalBillsAmt={totalBillsAmt}
-              insight={insight}
-            />
           </motion.div>
         )}
 

@@ -67,7 +67,7 @@ function YoYTooltip({ active, payload, label }) {
   )
 }
 
-export default function YoYCards({ years, currentYear, enabled = true, rangeYears = 5, onRangeChange }) {
+export default function YoYCards({ years, currentYear, enabled = true, rangeYears = 3, onRangeChange }) {
   const yearQueries = useQueries({
     queries: years.map((year) => ({
       // Use a dedicated cache key to avoid colliding with useYearSummary(['year', year])
@@ -162,7 +162,7 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
         <p className="section-label">Year over year trends</p>
         {onRangeChange ? (
           <div className="inline-flex rounded-full border border-kosha-border bg-kosha-surface p-0.5">
-            {[3, 5, 7].map((value) => (
+            {[3, 6, 9, 12].map((value) => (
               <button
                 key={value}
                 type="button"
