@@ -36,14 +36,22 @@ export default function YearlyInsightsCard({ data, catEntries }) {
   })()
 
   return (
-    <div className="rounded-card p-4 relative" style={{ background: '#0a2540', color: '#ffffff' }}>
+    <div className="card p-4 overflow-hidden relative" style={{ background: 'radial-gradient(ellipse at 85% 15%, rgba(244,114,182,0.14) 0%, transparent 55%), radial-gradient(ellipse at 15% 85%, rgba(139,92,246,0.10) 0%, transparent 55%), linear-gradient(135deg, rgba(249,168,212,0.08) 0%, rgba(253,186,116,0.06) 100%), #ffffff' }}>
+      <div
+        className="absolute top-0 right-0 w-28 h-28 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at 70% 30%, rgba(251,191,36,0.12) 0%, transparent 70%)',
+          borderRadius: '50%',
+          transform: 'translate(20%, -20%)',
+        }}
+      />
       <div className="flex items-center gap-2 mb-2 relative">
-        <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(99,91,255,0.25)' }}>
+        <div className="w-6 h-6 rounded-lg bg-brand flex items-center justify-center shrink-0">
           <Sparkle size={12} className="text-white" weight="fill" />
         </div>
-        <h3 className="text-[13px] font-bold" style={{ color: '#ffffff' }}>Yearly Insights</h3>
+        <h3 className="text-[13px] font-bold text-ink">Yearly Insights</h3>
       </div>
-      <p className="text-[13px] leading-relaxed relative" style={{ color: 'rgba(255,255,255,0.72)' }}>{text}</p>
+      <p className="text-[13px] text-ink-2 leading-relaxed relative">{text}</p>
     </div>
   )
 }

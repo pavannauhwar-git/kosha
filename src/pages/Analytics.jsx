@@ -181,7 +181,11 @@ export default function Analytics() {
               {data ? <YearlyInsightsCard data={data} catEntries={catEntries} /> : null}
 
               {strategicRecommendations.length > 0 && (
-                <div className="card p-4">
+                <div className="card p-4 relative overflow-hidden"
+                  style={{
+                    background: 'radial-gradient(ellipse at 90% 10%, rgba(251,191,36,0.10) 0%, transparent 55%), radial-gradient(ellipse at 10% 90%, rgba(139,92,246,0.08) 0%, transparent 55%), #ffffff',
+                  }}
+                >
                   <SectionHeader
                     className="mb-2"
                     title="So what now?"
