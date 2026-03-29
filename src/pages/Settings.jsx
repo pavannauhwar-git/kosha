@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Camera, Trash2, Pencil, Check, BellRing, ShieldAlert, Users, Link2, Copy, FileArchive, Upload, Download, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import EditProfileNameDialog from '../components/EditProfileNameDialog'
+import EditProfileNameDialog from '../components/dialogs/EditProfileNameDialog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
 import {
@@ -270,7 +270,7 @@ export default function Settings() {
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
 
           {/* ── Avatar ───────────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="flex flex-col items-center gap-3 py-4">
+          <motion.div variants={fadeUp} className="card p-5 flex flex-col items-center gap-3">
             <div className="relative">
               <div className="w-24 h-24 rounded-full bg-brand-container
                               flex items-center justify-center overflow-hidden
@@ -309,7 +309,7 @@ export default function Settings() {
 
           {/* ── Profile section ─────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
+            <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
               Profile
             </p>
             <div className="card overflow-hidden p-0">
@@ -344,7 +344,7 @@ export default function Settings() {
 
           {/* ── Reminders section ───────────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
+            <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
               Reminders
             </p>
             <div className="card overflow-hidden p-0">
@@ -389,7 +389,7 @@ export default function Settings() {
 
           {/* ── Shared wallet section ───────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
+            <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
               Shared Wallet
             </p>
             <div className="card overflow-hidden p-0">
@@ -442,7 +442,7 @@ export default function Settings() {
 
           {/* ── File uploads section ───────────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <p className="text-caption font-semibold text-ink-3 uppercase tracking-wider mb-2 px-1">
+            <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
               File Uploads
             </p>
             <div className="card overflow-hidden p-0">

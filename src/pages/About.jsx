@@ -7,7 +7,7 @@ import {
   GithubLogoIcon, LockIcon, StarIcon, CaretDownIcon, CaretUpIcon,
 } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
-import KoshaLogo from '../components/KoshaLogo'
+import KoshaLogo from '../components/brand/KoshaLogo'
 import { CHANGELOG } from '../lib/changelog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'

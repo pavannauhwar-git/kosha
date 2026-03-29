@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, ArrowRight, CheckCircle2, History, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import PageHeader from '../components/PageHeader'
+import PageHeader from '../components/layout/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
@@ -314,7 +314,7 @@ export default function Reconciliation() {
               Resolve high-signal issues before month close so reports, budgets, and trends stay trustworthy.
             </p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-brand-container text-brand flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-brand-container text-brand flex items-center justify-center shrink-0">
             <ShieldCheck size={18} />
           </div>
         </div>

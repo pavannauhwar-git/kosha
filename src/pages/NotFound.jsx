@@ -1,6 +1,6 @@
 import { ArrowLeft, Home } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import KoshaErrorPage from '../components/KoshaErrorPage'
+import KoshaErrorPage from '../components/errors/KoshaErrorPage'
 import { useAuth } from '../context/AuthContext'
 
 export default function NotFound() {

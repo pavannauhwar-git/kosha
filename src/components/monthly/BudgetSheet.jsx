@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import CategoryIcon from '../CategoryIcon'
+import CategoryIcon from '../categories/CategoryIcon'
 
 export default function BudgetSheet({ cat, current, onSave, onRemove, onClose }) {
   const [value, setValue] = useState(current ? String(current) : '')

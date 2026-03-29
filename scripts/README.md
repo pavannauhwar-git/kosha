@@ -1,19 +1,28 @@
 # Scripts
 
-This folder contains project scripts used for development, migration, and automated checks.
+This folder contains project scripts used for development, verification, release checks, and one-off tools.
 
-## Active scripts
+## Structure
 
-- `load_env.mjs`: Loads local environment variables for Node-based scripts.
-- `migrate.py`: Data migration helper.
-- `generate_icons.py`: Generates icon assets.
-- `test_join_flow.mjs`: End-to-end join/invite flow validation.
-- `test_liabilities_realtime.mjs`: Realtime liabilities event validation.
-- `test_mutation_paths.mjs`: Ensures centralized mutation call paths are used.
-- `test_mutation_integration_paths.mjs`: Verifies all screens use centralized mutation actions only.
-- `test_mutation_rollback_contract.mjs`: Verifies optimistic + rollback contract in mutation hooks.
-- `test_production_asset_integrity.mjs`: Checks production asset URLs/content-types to catch rewrite/MIME regressions.
-- `test_reconciliation_schema_live.mjs`: Verifies `reconciliation_reviews` table exists in the live Supabase project.
+- `load_env.mjs`: Shared env loader for Node-based scripts.
+- `ops/`: Operational and release checks.
+	- `check_deploy_readiness.mjs`
+	- `release_candidate_check.mjs`
+- `tests/`: Automated validation scripts (all `test:*` npm scripts point here).
+	- `test_join_flow.mjs`
+	- `test_liabilities_realtime.mjs`
+	- `test_mutation_paths.mjs`
+	- `test_mutation_integration_paths.mjs`
+	- `test_mutation_rollback_contract.mjs`
+	- `test_mutation_stress.mjs`
+	- `test_production_asset_integrity.mjs`
+	- `test_reconciliation_flow.mjs`
+	- `test_reconciliation_metrics.mjs`
+	- `test_reconciliation_schema_live.mjs`
+	- `test_statement_matching.mjs`
+- `tools/`: Asset/data utilities.
+	- `generate_icons.py`
+	- `migrate.py`
 
 ## QA notes
 
@@ -23,5 +32,5 @@ This folder contains project scripts used for development, migration, and automa
 
 ## Archived scripts
 
-Legacy one-off patch/fix scripts were moved to `scripts/archive/legacy-patches/`.
+Legacy one-off patch/fix scripts are in `scripts/archive/legacy-patches/`.
 They are retained for history/reference and are not part of normal app runtime.

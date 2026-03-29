@@ -7,8 +7,8 @@ import { saveTransactionMutation } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
 import { consumeInviteToken, getInviteToken } from '../lib/invites'
 import { EXPENSE_CATEGORIES } from '../lib/categories'
-import CategoryIcon from '../components/CategoryIcon'
-import KoshaLogo from '../components/KoshaLogo'
+import CategoryIcon from '../components/categories/CategoryIcon'
+import KoshaLogo from '../components/brand/KoshaLogo'
 import { createFadeUp, createStagger } from '../lib/animations'
 
 const fadeUp = createFadeUp(8, 0.2)

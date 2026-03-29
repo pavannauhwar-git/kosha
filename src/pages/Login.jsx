@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import AboutKoshaLink from '../components/AboutKoshaLink'
-import KoshaLogo from '../components/KoshaLogo'
+import AboutKoshaLink from '../components/brand/AboutKoshaLink'
+import KoshaLogo from '../components/brand/KoshaLogo'
 import { C } from '../lib/colors'
 import { createFadeUp } from '../lib/animations'
 
@@ -177,16 +177,17 @@ export default function Login() {
             >
 
               {/* ── Logo ──────────────────────────────────────────────────── */}
-              <div className="flex flex-col items-center mb-4">
-                <KoshaLogo size={56} />
-                <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
-                  Your Financial Sheath
-                </p>
+              <div className="flex items-center gap-3 mb-5 pb-4 border-b border-kosha-border">
+                <KoshaLogo size={40} />
+                <div>
+                  <p className="text-[17px] font-bold text-ink leading-tight">Kosha</p>
+                  <p className="text-[12px] text-ink-3 mt-0.5">Personal finance, simplified</p>
+                </div>
               </div>
 
               {/* ── Heading ───────────────────────────────────────────────── */}
-              <div className="mb-4">
-                <h1 className="text-[26px] font-bold text-ink tracking-tight leading-tight mb-1.5">
+              <div className="mb-5">
+                <h1 className="text-[24px] font-bold text-ink tracking-tight leading-tight mb-1">
                   {mode === 'signin'
                     ? 'Welcome back'
                     : mode === 'signup'
@@ -195,7 +196,7 @@ export default function Login() {
                         ? 'Reset password'
                         : 'Set new password'}
                 </h1>
-                <p className="text-label text-ink-3">
+                <p className="text-[13px] text-ink-3">
                   {mode === 'signin'
                     ? 'Sign in to continue to Kosha'
                     : mode === 'signup'

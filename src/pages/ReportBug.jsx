@@ -264,10 +264,10 @@ export default function ReportBug() {
               animate={{ opacity: 1, y: 0 }}
               className="card p-5"
             >
-              <div className="w-11 h-11 rounded-pill bg-income-bg text-income-text border border-income-border flex items-center justify-center mb-3">
+              <div className="w-11 h-11 rounded-xl bg-income-bg text-income-text border border-income-border flex items-center justify-center mb-4">
                 <Check size={18} />
               </div>
-              <h2 className="text-[22px] leading-tight font-bold text-ink tracking-tight">
+              <h2 className="text-[20px] leading-tight font-bold text-ink tracking-tight">
                 {submitted.isDuplicate ? 'Matched an existing report' : 'Report submitted'}
               </h2>
               <p className="text-label text-ink-2 mt-2">
@@ -309,15 +309,24 @@ export default function ReportBug() {
             </motion.div>
           ) : (
             <>
-              <div className="card p-4">
-                <p className="text-label font-semibold text-ink">Help us fix this quickly</p>
-                <p className="text-caption text-ink-3 mt-1.5">
-                  Share what broke, what you expected, and a screenshot if possible. No financial entries are attached automatically.
-                </p>
+              <div className="card p-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-expense-bg flex items-center justify-center shrink-0">
+                    <Bug size={18} className="text-expense-text" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[17px] font-bold text-ink leading-tight">Help us fix this</p>
+                    <p className="text-[13px] text-ink-3 mt-1 leading-relaxed">
+                      Share what broke, what you expected, and a screenshot if possible.
+                    </p>
+                  </div>
+                </div>
                 {displayReportedScreen && (
-                  <p className="text-[11px] text-ink-3 mt-3">
-                    Reported screen: <span className="font-mono text-ink-2">{displayReportedScreen}</span>
-                  </p>
+                  <div className="mt-3.5 pt-3.5 border-t border-kosha-border">
+                    <p className="text-[11px] text-ink-3">
+                      Reported on <span className="font-mono text-ink-2">{displayReportedScreen}</span>
+                    </p>
+                  </div>
                 )}
               </div>
 

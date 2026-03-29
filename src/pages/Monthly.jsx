@@ -5,18 +5,18 @@ import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
 import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
-import CategorySpendingChart from '../components/CategorySpendingChart'
+import CategorySpendingChart from '../components/categories/CategorySpendingChart'
 import { fmt } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
 import { CATEGORIES } from '../lib/categories'
-import PageHeader from '../components/PageHeader'
+import PageHeader from '../components/layout/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
 import BudgetSheet from '../components/monthly/BudgetSheet'
-import MonthHeroCard from '../components/monthly/MonthHeroCard'
-import BreakdownCard from '../components/monthly/BreakdownCard'
+import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
+import BreakdownCard from '../components/cards/monthly/BreakdownCard'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
 
@@ -381,17 +381,17 @@ export default function Monthly() {
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
-              <div className="rounded-card bg-kosha-surface p-3 border border-kosha-border">
+              <div className="rounded-card bg-kosha-surface-2 p-3">
                 <p className="text-caption text-ink-3">Net close</p>
                 <p className={`text-sm font-bold tabular-nums ${monthCloseSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                   {monthCloseSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(monthCloseSummary.net))}
                 </p>
               </div>
-              <div className="rounded-card bg-kosha-surface p-3 border border-kosha-border">
+              <div className="rounded-card bg-kosha-surface-2 p-3">
                 <p className="text-caption text-ink-3">Outflow</p>
                 <p className="text-sm font-bold tabular-nums text-ink-2">{fmt(monthCloseSummary.totalOutflow)}</p>
               </div>
-              <div className="rounded-card bg-kosha-surface p-3 border border-kosha-border">
+              <div className="rounded-card bg-kosha-surface-2 p-3">
                 <p className="text-caption text-ink-3">{monthCloseSummary.timelineLabel}</p>
                 <p className="text-sm font-bold tabular-nums text-ink-2">{monthCloseSummary.timelineValue}</p>
               </div>
@@ -417,15 +417,15 @@ export default function Monthly() {
               />
 
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Over budget</p>
                   <p className="text-base font-bold text-expense-text tabular-nums">{budgetVariance.overCount}</p>
                 </div>
-                <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Near limit</p>
                   <p className="text-base font-bold text-warning-text tabular-nums">{budgetVariance.nearLimitCount}</p>
                 </div>
-                <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border col-span-2 flex items-center justify-between gap-3">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5 col-span-2 flex items-center justify-between gap-3">
                   <p className="text-caption text-ink-3">On track</p>
                   <p className="text-base font-bold text-income-text tabular-nums">{budgetVariance.onTrackCount}</p>
                 </div>
@@ -433,7 +433,7 @@ export default function Monthly() {
 
               <div className="space-y-2">
                 {budgetVariance.rows.slice(0, 4).map((row) => (
-                  <div key={row.id} className="flex items-center justify-between rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                    <div key={row.id} className="flex items-center justify-between rounded-card bg-kosha-surface-2 p-2.5">
                     <p className="text-sm text-ink-2 truncate pr-3">{row.label}</p>
                     <p className={`text-sm font-semibold tabular-nums ${row.delta >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                       {row.delta >= 0 ? `${fmt(row.delta)} left` : `${fmt(Math.abs(row.delta))} over`}

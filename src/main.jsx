@@ -6,7 +6,7 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import App from './App'
 import './index.css'
-import { GlobalErrorBoundary } from './components/GlobalErrorBoundary'
+import { GlobalErrorBoundary } from './components/errors/GlobalErrorBoundary'
 import { startRuntimeMonitor } from './lib/runtimeMonitor'
 
 startRuntimeMonitor()

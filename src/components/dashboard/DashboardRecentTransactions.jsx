@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
-import TransactionItem from '../TransactionItem'
+import TransactionItem from '../transactions/TransactionItem'
 import EmptyState from '../common/EmptyState'
 
 /**

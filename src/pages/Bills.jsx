@@ -12,7 +12,7 @@ import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
-import PageHeader from '../components/PageHeader'
+import PageHeader from '../components/layout/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import AppToast from '../components/common/AppToast'
@@ -292,75 +292,71 @@ export default function Bills() {
         </button>
       </div>
 
-      {/* ── Structured summary card ───────────────────────────────────── */}
+      {/* ── Summary card ─────────────────────────────────────────────── */}
       {tab === 'pending' && visiblePending.length > 0 && (
-        <div className="card mb-4 p-4">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-caption text-ink-3">Total pending</span>
-            <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2
-                             px-2 py-0.5 rounded-pill">
+        <div className="card mb-5 p-5">
+          <div className="flex items-start justify-between gap-3 pb-4 border-b border-kosha-border">
+            <div>
+              <p className="text-caption text-ink-3 mb-0.5">Total pending</p>
+              <p className="text-[28px] font-bold text-ink tracking-tight tabular-nums leading-none">
+                {fmt(totalPending)}
+              </p>
+            </div>
+            <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2 px-2.5 py-1 rounded-pill border border-kosha-border">
               {visiblePending.length} bill{visiblePending.length !== 1 ? 's' : ''}
             </span>
           </div>
-          <p className="text-[28px] font-bold text-ink tracking-tight tabular-nums mb-3">
-            {fmt(totalPending)}
-          </p>
-          {/* Progress bar — due-this-week proportion of total */}
-          <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-2">
-            <motion.div
-              className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-income-text'}`}
-              initial={{ width: 0 }} animate={{ width: `${barPct || 100}%` }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-            />
-          </div>
-          <div className="flex justify-between">
-            <span className="text-caption text-ink-3">
-              {dueSoonCount > 0
-                ? `Due this week · ${fmt(dueSoonAmount)}`
-                : 'All bills on schedule'}
-            </span>
-            {barPct > 0 && (
-              <span className="text-caption font-semibold text-warning-text">{barPct}% urgent</span>
-            )}
-          </div>
-        </div>
-      )}
 
-      {tab === 'pending' && visiblePending.length > 0 && (
-        <div className="card mb-5 p-4">
-          <p className="section-label mb-1">Cash impact preview</p>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-              <p className="text-caption text-ink-3">Due in 7 days</p>
-              <p className="text-lg font-bold text-warning-text tabular-nums">{fmt(dueSoonAmount)}</p>
-              <p className="text-[11px] text-ink-3 mt-0.5">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <div className="bg-kosha-surface-2 rounded-card px-3 py-2.5">
+              <p className="text-[10px] text-ink-3 mb-1">Due in 7 days</p>
+              <p className="text-[17px] font-bold text-warning-text tabular-nums leading-none">{fmt(dueSoonAmount)}</p>
+              <p className="text-[11px] text-ink-3 mt-1">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
             </div>
-            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-              <p className="text-caption text-ink-3">Due this month</p>
-              <p className="text-lg font-bold text-ink tabular-nums">{fmt(dueThisMonth.amount)}</p>
-              <p className="text-[11px] text-ink-3 mt-0.5">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>
+            <div className="bg-kosha-surface-2 rounded-card px-3 py-2.5">
+              <p className="text-[10px] text-ink-3 mb-1">Due this month</p>
+              <p className="text-[17px] font-bold text-ink tabular-nums leading-none">{fmt(dueThisMonth.amount)}</p>
+              <p className="text-[11px] text-ink-3 mt-1">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+
+          <div className="mt-3.5">
+            <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-1.5">
+              <motion.div
+                className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-income-text'}`}
+                initial={{ width: 0 }} animate={{ width: `${barPct || 100}%` }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              />
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[11px] text-ink-3">
+                {dueSoonCount > 0 ? `${fmt(dueSoonAmount)} due this week` : 'All bills on schedule'}
+              </span>
+              {barPct > 0 && (
+                <span className="text-[11px] font-semibold text-warning-text">{barPct}% urgent</span>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {showGuideHint && (
-        <div className="card mb-6 p-4 border border-brand-border bg-brand-container/40">
+        <div className="card mb-6 p-4">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
               <BookOpen size={16} className="text-brand" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-body font-semibold text-ink">Bills setup tip</p>
-              <p className="text-label text-ink-3 mt-0.5">Mark recurring bills properly to keep due alerts and auto-generation accurate.</p>
+              <p className="text-[14px] font-semibold text-ink">Bills setup tip</p>
+              <p className="text-[12px] text-ink-3 mt-0.5 leading-relaxed">Mark recurring bills properly to keep due alerts and auto-generation accurate.</p>
               <button
                 onClick={() => navigate('/guide')}
-                className="text-label font-semibold text-brand mt-2 inline-flex items-center gap-1"
+                className="text-[12px] font-semibold text-brand mt-2 inline-flex items-center gap-1"
               >
-                Open guide <ArrowRight size={13} />
+                Open guide <ArrowRight size={12} />
               </button>
             </div>
-            <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss bills hint">
+            <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors shrink-0" aria-label="Dismiss bills hint">
               <X size={14} />
             </button>
           </div>

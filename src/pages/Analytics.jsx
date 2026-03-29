@@ -3,19 +3,19 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { CashFlowChart, NetSavingsChart } from '../components/dashboard/AnalyticsCharts'
 import { useYearSummary } from '../hooks/useTransactions'
-import CategorySpendingChart from '../components/CategorySpendingChart'
+import CategorySpendingChart from '../components/categories/CategorySpendingChart'
 import { fmt } from '../lib/utils'
-import PageHeader from '../components/PageHeader'
+import PageHeader from '../components/layout/PageHeader'
 import { MONTH_SHORT } from '../lib/constants'
 import { useNavigate } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
-import AnnualSummaryCard from '../components/analytics/AnnualSummaryCard'
-import YoYCards from '../components/analytics/YoYCards'
+import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
+import YoYCards from '../components/cards/analytics/YoYCards'
 import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
-import YearlyInsightsCard from '../components/analytics/YearlyInsightsCard'
+import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
 
 const MIN_NAV_YEAR = 1900
@@ -184,11 +184,12 @@ export default function Analytics() {
                     title="So what now?"
                     rightText="Actionable next steps"
                   />
-                  <div className="space-y-2">
-                    {strategicRecommendations.map((line) => (
-                      <p key={line} className="text-[12px] text-ink-2 leading-relaxed">
-                        - {line}
-                      </p>
+                  <div className="space-y-2.5">
+                    {strategicRecommendations.map((line, i) => (
+                      <div key={line} className="flex items-start gap-2.5">
+                        <span className="text-[11px] font-bold text-brand mt-0.5 shrink-0 w-4 text-right">{i + 1}</span>
+                        <p className="text-[12px] text-ink-2 leading-relaxed">{line}</p>
+                      </div>
                     ))}
                   </div>
                 </motion.div>

@@ -1,4 +1,4 @@
-import CategoryIcon from '../CategoryIcon'
+import CategoryIcon from '../categories/CategoryIcon'
 import { fmt, fmtDate } from '../../lib/utils'
 import { C } from '../../lib/colors'
 
