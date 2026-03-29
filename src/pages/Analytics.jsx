@@ -3,7 +3,6 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   CashFlowChart,
-  NetSavingsChart,
   MoneyFlowComparisonChart,
   SurplusTrajectoryChart,
   WhatIfSimulatorCard,
@@ -22,6 +21,7 @@ import SectionHeader from '../components/common/SectionHeader'
 import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
 import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
+import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
@@ -63,11 +63,6 @@ export default function Analytics() {
       name: MONTH_SHORT[i],
       Net: Math.round(toFiniteNumber(m?.income) - toFiniteNumber(m?.expense) - toFiniteNumber(m?.investment)),
     })), [data?.monthly])
-
-  const netAxisMax = useMemo(() => {
-    const maxAbs = surplusData.reduce((m, row) => Math.max(m, Math.abs(row.Net)), 0)
-    return Math.max(1000, Math.ceil(maxAbs * 1.15))
-  }, [surplusData])
 
   const yoyYears = useMemo(() => {
     return Array.from({ length: yoyRange }, (_, i) => year - (yoyRange - 1) + i)
@@ -235,7 +230,9 @@ export default function Analytics() {
                 </motion.div>
               )}
 
-              <YearlyInsightsCard data={data} catEntries={catEntries} vehicleData={vehicleData} />
+              <YearlyInsightsCard data={data} catEntries={catEntries} />
+
+              <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
 
             <div className="space-y-4">
 
@@ -269,11 +266,6 @@ export default function Analytics() {
                 totalIncome={data?.totalIncome}
               />
 
-              <NetSavingsChart
-                netData={surplusData}
-                netAxisMax={netAxisMax}
-              />
-
               <WhatIfSimulatorCard
                 categories={scenarioCategories}
                 totalIncome={data?.totalIncome}
@@ -295,7 +287,7 @@ export default function Analytics() {
                 </div>
               )}
 
-              {/* Spent-by-category and standalone portfolio sections intentionally removed. */}
+              {/* Spent-by-category section intentionally removed; yearly portfolio lives in the snapshot card above. */}
             </div>
             </>
           ) : (

@@ -285,7 +285,7 @@ export default function Bills() {
           onClick={() => setTab('paid')}
           className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'paid'
-              ? 'bg-brand-container text-brand-on border border-brand-border'
+              ? 'bg-repay-bg text-repay-text border border-repay-border'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Paid ({visiblePaid.length})
@@ -323,7 +323,7 @@ export default function Bills() {
           <div className="mt-3.5">
             <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-1.5">
               <motion.div
-                className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-income-text'}`}
+                className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-warning'}`}
                 initial={{ width: 0 }} animate={{ width: `${barPct || 100}%` }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
               />
@@ -343,15 +343,15 @@ export default function Bills() {
       {showGuideHint && (
         <div className="card mb-6 p-4">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
-              <BookOpen size={16} className="text-brand" />
+            <div className="w-9 h-9 rounded-xl bg-warning-bg flex items-center justify-center shrink-0">
+              <BookOpen size={16} className="text-warning-text" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-semibold text-ink">Bills setup tip</p>
               <p className="text-[12px] text-ink-3 mt-0.5 leading-relaxed">Mark recurring bills properly to keep due alerts and auto-generation accurate.</p>
               <button
                 onClick={() => navigate('/guide')}
-                className="text-[12px] font-semibold text-brand mt-2 inline-flex items-center gap-1"
+                className="text-[12px] font-semibold text-warning-text mt-2 inline-flex items-center gap-1"
               >
                 Open guide <ArrowRight size={12} />
               </button>
@@ -426,7 +426,7 @@ export default function Bills() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         {bill.is_recurring && (
-                          <Repeat size={12} className="text-brand shrink-0" />
+                          <Repeat size={12} className="text-warning-text shrink-0" />
                         )}
                         <p className="text-sm font-semibold text-ink truncate">
                           {bill.description}
@@ -518,8 +518,8 @@ export default function Bills() {
 
                 <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3 overflow-hidden
                                 flex items-center gap-2 border border-transparent
-                                focus-within:border-brand
-                                focus-within:ring-2 focus-within:ring-brand/25
+                                focus-within:border-warning-border
+                                focus-within:ring-2 focus-within:ring-warning/25
                                 transition-all duration-100">
                   <span className="font-display text-xl text-warning-text">₹</span>
                   <input className="flex-1 bg-transparent font-display text-2xl text-ink outline-none min-w-0"

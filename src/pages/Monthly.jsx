@@ -380,6 +380,25 @@ export default function Monthly() {
     }
   }, [inflow, spent, invested, year, month])
 
+  const monthlyPortfolioSnapshot = useMemo(() => {
+    const rows = vehicleEntries
+      .map(([name, value]) => ({ name, value: Number(value || 0) }))
+      .filter((row) => row.value > 0)
+
+    const total = rows.reduce((sum, row) => sum + row.value, 0)
+    const top = rows[0] || null
+    const topPct = top && total > 0 ? Math.round((top.value / total) * 100) : 0
+    const deployRate = inflow > 0 ? Math.round((invested / inflow) * 100) : 0
+
+    return {
+      rows,
+      total,
+      top,
+      topPct,
+      deployRate,
+    }
+  }, [vehicleEntries, inflow, invested])
+
   const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
 
   return (
@@ -402,10 +421,6 @@ export default function Monthly() {
           }
         }}
       />
-
-      <div className="mb-3 md:mb-4">
-        <MonthHeroCard month={month} year={year} data={data} />
-      </div>
 
       {loading ? (
         <SkeletonLayout
@@ -453,6 +468,10 @@ export default function Monthly() {
             />
           ) : (
           <>
+          <div className="mb-3 md:mb-4">
+            <MonthHeroCard month={month} year={year} data={data} />
+          </div>
+
           <div className="card p-4">
             <SectionHeader
               className="mb-2"
@@ -486,6 +505,67 @@ export default function Monthly() {
 
           {heavyReady && (
             <BreakdownCard earned={inflow} spent={spent} invested={invested} totalLabel="Total inflow" />
+          )}
+
+          {heavyReady && (monthlyPortfolioSnapshot.rows.length > 0 || invested > 0) && (
+            <div className="card p-4">
+              <SectionHeader
+                className="mb-2"
+                title="Portfolio snapshot"
+                subtitle="Where this month's investments are concentrated"
+                badge={{
+                  label: monthlyPortfolioSnapshot.total > 0 ? fmt(monthlyPortfolioSnapshot.total, true) : 'No allocation',
+                  className: 'bg-invest-bg text-invest-text',
+                }}
+              />
+
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Top vehicle</p>
+                  <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Concentration</p>
+                  <p className={`text-[12px] font-bold tabular-nums ${monthlyPortfolioSnapshot.topPct >= 55 ? 'text-warning-text' : 'text-brand'}`}>
+                    {monthlyPortfolioSnapshot.topPct}%
+                  </p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Deploy rate</p>
+                  <p className="text-[12px] font-bold tabular-nums text-invest-text">{monthlyPortfolioSnapshot.deployRate}%</p>
+                </div>
+              </div>
+
+              {monthlyPortfolioSnapshot.rows.length > 0 ? (
+                <div className="space-y-2 mb-2">
+                  {monthlyPortfolioSnapshot.rows.slice(0, 4).map((row) => {
+                    const pct = monthlyPortfolioSnapshot.total > 0
+                      ? Math.round((row.value / monthlyPortfolioSnapshot.total) * 100)
+                      : 0
+
+                    return (
+                      <div key={row.name}>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-[11px] text-ink-2 truncate">{row.name}</span>
+                          <span className="text-[11px] text-ink-3 tabular-nums">{pct}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-pill bg-brand-container/55 overflow-hidden">
+                          <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(8, pct)}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-[11px] text-ink-3 mb-2">Investment entries exist but vehicle allocation is not tagged yet.</p>
+              )}
+
+              <p className="text-[11px] text-ink-3">
+                {monthlyPortfolioSnapshot.topPct >= 55
+                  ? `Concentration is high at ${monthlyPortfolioSnapshot.topPct}%. Consider splitting next deployment across another vehicle.`
+                  : `Allocation balance looks stable. Keep deployment near ${monthlyPortfolioSnapshot.deployRate}% unless month-close runway tightens.`}
+              </p>
+            </div>
           )}
 
           {heavyReady && (

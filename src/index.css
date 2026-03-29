@@ -121,7 +121,10 @@
   /* -- Hero card ───────────────────────────────────────────────────── */
   .card-hero {
     background: var(--c-brand);
-    @apply rounded-hero shadow-apple-card;
+    @apply rounded-hero;
+    box-shadow:
+      0 14px 30px rgba(var(--c-brand-rgb), 0.18),
+      0 6px 16px rgba(16, 33, 63, 0.10);
   }
 
   /* -- Cards ───────────────────────────────────────────────────────── */

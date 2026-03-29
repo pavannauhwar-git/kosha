@@ -2,21 +2,9 @@ import { Sparkle } from '@phosphor-icons/react'
 import { CATEGORIES } from '../../../lib/categories'
 import { MONTH_SHORT } from '../../../lib/constants'
 import { C } from '../../../lib/colors'
-import { fmt } from '../../../lib/utils'
 
-export default function YearlyInsightsCard({ data, catEntries, vehicleData = [] }) {
+export default function YearlyInsightsCard({ data, catEntries }) {
   if (!data?.monthly?.length && !(data?.totalIncome || data?.totalExpense)) return null
-
-  const safeVehicleData = (Array.isArray(vehicleData) ? vehicleData : [])
-    .map(([name, value]) => [name, Number(value || 0)])
-    .filter(([, value]) => value > 0)
-  const totalPortfolio = safeVehicleData.reduce((sum, [, value]) => sum + value, 0)
-  const topVehicle = safeVehicleData[0] || null
-  const portfolioRows = safeVehicleData.slice(0, 3).map(([name, value]) => ({
-    name,
-    value,
-    pct: totalPortfolio > 0 ? Math.round((value / totalPortfolio) * 100) : 0,
-  }))
 
   const text = (() => {
     const parts = []
@@ -64,41 +52,6 @@ export default function YearlyInsightsCard({ data, catEntries, vehicleData = [] 
         <h3 className="text-[13px] font-bold text-ink">Year in plain words</h3>
       </div>
       <p className="text-[13px] text-ink-2 leading-relaxed relative">{text}</p>
-
-      <div className="mt-3 rounded-card border border-kosha-border bg-kosha-surface p-3">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-semibold tracking-wide uppercase text-ink-3">Portfolio snapshot</p>
-          <span className="text-[11px] font-semibold tabular-nums text-invest-text">
-            {totalPortfolio > 0 ? fmt(totalPortfolio, true) : 'No investments'}
-          </span>
-        </div>
-
-        {totalPortfolio > 0 ? (
-          <>
-            {topVehicle && (
-              <p className="text-[11px] text-ink-3 mb-2">
-                Largest holding: <span className="font-semibold text-ink-2">{topVehicle[0]}</span>
-              </p>
-            )}
-
-            <div className="space-y-2">
-              {portfolioRows.map((row) => (
-                <div key={row.name}>
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-[11px] text-ink-2 truncate">{row.name}</span>
-                    <span className="text-[11px] text-ink-3 tabular-nums">{row.pct}%</span>
-                  </div>
-                  <div className="h-1.5 rounded-pill bg-brand-container/55 overflow-hidden">
-                    <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(8, row.pct)}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <p className="text-[11px] text-ink-3">Add investment entries to unlock portfolio concentration and mix insights.</p>
-        )}
-      </div>
     </div>
   )
 }

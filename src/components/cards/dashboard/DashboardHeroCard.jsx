@@ -26,11 +26,14 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0))
     : null
 
+  const heroAccentSoft = 'rgba(242, 213, 60, 0.78)'
+  const heroAccentBgSoft = 'rgba(242, 213, 60, 0.18)'
+
   return (
     <motion.div className="card-hero p-6 relative overflow-hidden">
       <div className="flex items-center justify-between mb-3.5">
         <p className="text-caption font-bold tracking-widest uppercase"
-          style={{ color: C.heroAccent }}>
+          style={{ color: heroAccentSoft }}>
           Balance overview
         </p>
         <p className="text-caption font-bold tracking-widest"
@@ -57,8 +60,8 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       </div>
 
       <div className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill border border-white/12"
-        style={{ background: C.heroAccentBg }}>
-        <span className="text-caption font-semibold" style={{ color: C.ink }}>
+        style={{ background: heroAccentBgSoft }}>
+        <span className="text-caption font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
           {rate}% saved this month
         </span>
       </div>
@@ -89,7 +92,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <span className="text-caption font-medium" style={{ color: C.heroLabel }}>
             Savings rate
           </span>
-          <span className="text-caption font-bold" style={{ color: C.heroAccentSolid }}>
+          <span className="text-caption font-bold" style={{ color: heroAccentSoft }}>
             {rate}%
           </span>
         </div>
