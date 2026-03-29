@@ -14,6 +14,7 @@ import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
 import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
+import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
 import PortfolioAllocation from '../components/analytics/PortfolioAllocation'
 import TopExpensesPodium from '../components/analytics/TopExpensesPodium'
 
@@ -68,12 +69,12 @@ export default function Analytics() {
       .filter((y) => y >= MIN_NAV_YEAR && y <= MAX_NAV_YEAR)
   }, [year, yoyRange])
 
-  const catEntries = useMemo(() => Object.entries(data?.byCategory || {})
+  const allCatEntries = useMemo(() => Object.entries(data?.byCategory || {})
     .map(([key, value]) => [key, toFiniteNumber(value)])
     .filter(([, value]) => value > 0)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8), [data?.byCategory])
-  const categoryTotal = useMemo(() => catEntries.reduce((s, [, v]) => s + v, 0) || 1, [catEntries])
+    .sort((a, b) => b[1] - a[1]), [data?.byCategory])
+  const catEntries = useMemo(() => allCatEntries.slice(0, 8), [allCatEntries])
+  const categoryTotal = useMemo(() => allCatEntries.reduce((s, [, v]) => s + v, 0) || 1, [allCatEntries])
 
   const vehicleData = useMemo(
     () => Object.entries(data?.byVehicle || {})
@@ -119,7 +120,7 @@ export default function Analytics() {
       Number(data?.totalIncome || 0) > 0 ||
       Number(data?.totalExpense || 0) > 0 ||
       Number(data?.totalInvestment || 0) > 0 ||
-      catEntries.length > 0 ||
+      allCatEntries.length > 0 ||
       top5.length > 0 ||
       vehicleData.length > 0
     )
@@ -127,7 +128,7 @@ export default function Analytics() {
     data?.totalIncome,
     data?.totalExpense,
     data?.totalInvestment,
-    catEntries.length,
+    allCatEntries.length,
     top5.length,
     vehicleData.length,
   ])
@@ -194,6 +195,8 @@ export default function Analytics() {
                 </motion.div>
               )}
 
+              <YearlyInsightsCard data={data} catEntries={catEntries} />
+
             <div className="space-y-4">
 
               {/* ── 2. Year-over-year context ───────────────────────── */}
@@ -225,6 +228,8 @@ export default function Analytics() {
                 <CategorySpendingChart
                   entries={catEntries}
                   total={categoryTotal}
+                  initialVisibleCount={5}
+                  collapseKey={`${year}`}
                 />
               ) : (
                 <div className="card p-4">

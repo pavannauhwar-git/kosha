@@ -1,6 +1,5 @@
 import { memo } from 'react'
 import {
-  AreaChart, Area,
   BarChart, Bar,
   LineChart, Line,
   XAxis, YAxis, Tooltip, ReferenceLine,
@@ -16,18 +15,23 @@ function toFiniteNumber(value) {
 
 // ── Tooltips ──────────────────────────────────────────────────────────────
 
-const DarkTooltip = ({ active, payload, label }) => {
+const PulseTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
-  const uniquePayload = payload.filter(
-    (entry, idx, arr) => arr.findIndex((item) => item.name === entry.name) === idx
-  )
+
+  const point = payload?.[0]?.payload || {}
+  const income = toFiniteNumber(point?.Income)
+  const spent = toFiniteNumber(point?.Spent)
+  const pulse = toFiniteNumber(point?.Pulse)
+  const pulsePct = income > 0 ? Math.round((pulse / income) * 100) : 0
+  const pulseColor = pulse >= 0 ? C.chartIncome : C.chartExpense
+
   return (
     <div style={{
       background: 'rgba(34,43,109,0.96)',
       borderRadius: 12,
       padding: '10px 14px',
       boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
-      minWidth: 140,
+      minWidth: 170,
       border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
       <p style={{
@@ -36,14 +40,20 @@ const DarkTooltip = ({ active, payload, label }) => {
       }}>
         {label}
       </p>
-      {uniquePayload.map(p => (
-        <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>{p.name}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: p.stroke || p.fill || p.color }}>
-            {fmt(p.value)}
-          </span>
-        </div>
-      ))}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Income</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: C.chartIncome }}>{fmt(income)}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Spent</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: C.chartExpense }}>{fmt(spent)}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Pulse</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: pulseColor }}>
+          {pulse >= 0 ? '+' : '-'}{fmt(Math.abs(pulse))} ({pulsePct}%)
+        </span>
+      </div>
     </div>
   )
 }
@@ -83,18 +93,31 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
     name: point?.name || '-',
     Income: toFiniteNumber(point?.Income),
     Spent: toFiniteNumber(point?.Spent),
+    Pulse: toFiniteNumber(point?.Income) - toFiniteNumber(point?.Spent),
   }))
 
   if (!safeData.length) return null
 
-  const chartH = safeData.length <= 4 ? 180 : 220
+  const chartH = safeData.length <= 4 ? 190 : 230
+  const totalIncomeSafe = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Income), 0)
   const totalSpent = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Spent), 0)
-  const totalNet = safeData.reduce((sum, point) => sum + (toFiniteNumber(point.Income) - toFiniteNumber(point.Spent)), 0)
-  const bestMonth = safeData.reduce((best, point) => {
-    const gap = toFiniteNumber(point.Income) - toFiniteNumber(point.Spent)
-    if (!best || gap > best.gap) return { name: point.name, gap }
+  const totalNet = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Pulse), 0)
+  const strongestMonth = safeData.reduce((best, point) => {
+    if (!best || point.Pulse > best.pulse) return { name: point.name, pulse: point.Pulse }
     return best
   }, null)
+  const weakestMonth = safeData.reduce((worst, point) => {
+    if (!worst || point.Pulse < worst.pulse) return { name: point.name, pulse: point.Pulse }
+    return worst
+  }, null)
+  const positivePulseMonths = safeData.filter((point) => point.Pulse >= 0).length
+  const spendVelocity = totalIncomeSafe > 0
+    ? Math.round((totalSpent / totalIncomeSafe) * 100)
+    : 0
+  const pulseAxisMax = Math.max(
+    1000,
+    Math.ceil(Math.max(...safeData.map((point) => Math.abs(toFiniteNumber(point.Pulse))), 0) * 1.15)
+  )
 
   return (
     <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
@@ -104,70 +127,75 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             Cash Flow Pulse
           </p>
           <p style={{ fontSize: 11, color: 'rgba(49,58,134,0.55)', marginTop: 2 }}>
-            Income trend vs monthly outflow
+            Monthly surplus/deficit rhythm
           </p>
         </div>
         <div className="text-right">
           <p className="font-bold tabular-nums"
-            style={{ fontSize: 15, color: C.chartIncome, letterSpacing: '-0.01em' }}>
-            {fmt(totalIncome || 0, true)}
+            style={{
+              fontSize: 15,
+              color: totalNet >= 0 ? C.chartIncome : C.chartExpense,
+              letterSpacing: '-0.01em',
+            }}>
+            {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
           </p>
-          <p style={{ fontSize: 10, color: 'rgba(49,58,134,0.55)', marginTop: 1 }}>earned</p>
+          <p style={{ fontSize: 10, color: 'rgba(49,58,134,0.55)', marginTop: 1 }}>net pulse</p>
         </div>
       </div>
 
-      <div className="mb-3 grid grid-cols-3 gap-2">
+      <div className="mb-3 grid grid-cols-2 md:grid-cols-4 gap-2">
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Spent</p>
+          <p className="text-[10px] text-ink-3">Income</p>
+          <p className="text-[12px] font-bold tabular-nums text-income-text">{fmt(totalIncome || totalIncomeSafe, true)}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Outflow</p>
           <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(totalSpent, true)}</p>
         </div>
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Net</p>
-          <p className={`text-[12px] font-bold tabular-nums ${totalNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-            {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
-          </p>
+          <p className="text-[10px] text-ink-3">Positive months</p>
+          <p className="text-[12px] font-bold tabular-nums text-ink">{positivePulseMonths}/{safeData.length}</p>
         </div>
         <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Best month</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">
-            {bestMonth?.name || '—'}
+          <p className="text-[10px] text-ink-3">Spend velocity</p>
+          <p className={`text-[12px] font-bold tabular-nums ${spendVelocity <= 85 ? 'text-income-text' : 'text-warning-text'}`}>
+            {spendVelocity}%
           </p>
         </div>
       </div>
 
       <ResponsiveContainer width="100%" height={chartH}>
-        <AreaChart data={safeData} margin={{ top: 8, right: 16, left: 12, bottom: 0 }}>
-          <defs>
-            <linearGradient id="gIncome" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={C.chartIncome}  stopOpacity={0.20} />
-              <stop offset="95%" stopColor={C.chartIncome}  stopOpacity={0.02} />
-            </linearGradient>
-            <linearGradient id="gExpense" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={C.chartExpense} stopOpacity={0.20} />
-              <stop offset="95%" stopColor={C.chartExpense} stopOpacity={0.02} />
-            </linearGradient>
-          </defs>
+        <BarChart data={safeData} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
           <XAxis dataKey="name"
             tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
-          <YAxis hide />
-          <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(31,37,95,0.10)', strokeWidth: 1 }} />
-          <Area dataKey="Income" type="monotone"
-            stroke={C.chartIncome} strokeWidth={3} fill="url(#gIncome)" dot={false}
-            activeDot={{ r: 5, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
-            name="Income"
-          />
-          <Area dataKey="Spent" type="monotone"
-            stroke={C.chartExpense} strokeWidth={3} fill="url(#gExpense)" dot={false}
-            activeDot={{ r: 5, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
-            name="Spent"
-          />
-        </AreaChart>
+          <YAxis hide domain={[-pulseAxisMax, pulseAxisMax]} />
+          <Tooltip content={<PulseTooltip />} cursor={{ fill: 'rgba(31,37,95,0.06)' }} />
+          <ReferenceLine y={0} stroke="rgba(31,37,95,0.24)" strokeWidth={1} />
+          <Bar dataKey="Pulse" radius={[8, 8, 8, 8]} maxBarSize={28}>
+            {safeData.map((entry, i) => (
+              <Cell
+                key={i}
+                fill={entry.Pulse >= 0 ? C.chartIncome : C.chartExpense}
+                fillOpacity={0.92}
+              />
+            ))}
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
 
-      <div className="flex justify-center gap-6 pb-1 pt-2">
-        {[['Income', C.chartIncome], ['Spent', C.chartExpense]].map(([l, c]) => (
+      <div className="flex flex-wrap justify-between gap-2 pb-1 pt-2">
+        <div className="text-[11px] text-ink-3">
+          Best pulse: <span className="font-semibold text-income-text">{strongestMonth?.name || '—'}</span>
+        </div>
+        <div className="text-[11px] text-ink-3">
+          Stress month: <span className="font-semibold text-expense-text">{weakestMonth?.name || '—'}</span>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-6 pb-1 pt-1">
+        {[['Surplus pulse', C.chartIncome], ['Deficit pulse', C.chartExpense]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: c }} />
             <span style={{ fontSize: 11, color: 'rgba(49,58,134,0.60)', fontWeight: 500 }}>{l}</span>

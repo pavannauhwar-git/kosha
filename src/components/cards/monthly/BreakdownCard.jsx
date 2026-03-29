@@ -1,7 +1,7 @@
 import { fmt } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 
-export default function BreakdownCard({ earned, spent, invested }) {
+export default function BreakdownCard({ earned, spent, invested, totalLabel = 'Total income' }) {
   const saved = Math.max(0, earned - spent - invested)
   const spentPct = earned > 0 ? Math.round((spent / earned) * 100) : 0
   const investedPct = earned > 0 ? Math.round((invested / earned) * 100) : 0
@@ -86,7 +86,7 @@ export default function BreakdownCard({ earned, spent, invested }) {
 
       <div className="mt-4 pt-3 border-t border-kosha-border">
         <div className="flex justify-between">
-          <span className="text-caption text-ink-3">Total income</span>
+          <span className="text-caption text-ink-3">{totalLabel}</span>
           <span className="text-caption font-bold text-income-text tabular-nums">{fmt(earned)}</span>
         </div>
       </div>

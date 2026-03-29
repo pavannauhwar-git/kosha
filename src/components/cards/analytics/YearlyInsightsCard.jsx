@@ -1,6 +1,7 @@
 import { Sparkle } from '@phosphor-icons/react'
 import { CATEGORIES } from '../../../lib/categories'
 import { MONTH_SHORT } from '../../../lib/constants'
+import { C } from '../../../lib/colors'
 
 export default function YearlyInsightsCard({ data, catEntries }) {
   if (!data?.monthly?.length && !(data?.totalIncome || data?.totalExpense)) return null
@@ -36,11 +37,17 @@ export default function YearlyInsightsCard({ data, catEntries }) {
   })()
 
   return (
-    <div className="card p-4 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #EDE9FF 0%, #F5F3FF 100%)' }}>
+    <div
+      className="card p-4 overflow-hidden relative"
+      style={{
+        background: `linear-gradient(135deg, ${C.brandContainer} 0%, #F8FAFF 100%)`,
+        border: `1px solid ${C.brandBorder}`,
+      }}
+    >
       <div
         className="absolute top-0 right-0 w-28 h-28 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle at 70% 30%, rgba(55,48,163,0.10) 0%, transparent 70%)',
+          background: `radial-gradient(circle at 70% 30%, ${C.heroAccentBg} 0%, transparent 72%)`,
           borderRadius: '50%',
           transform: 'translate(20%, -20%)',
         }}

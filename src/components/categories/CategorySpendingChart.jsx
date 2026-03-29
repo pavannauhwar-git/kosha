@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
@@ -41,8 +41,31 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   onCategoryClick,
   month,
   year,
+  initialVisibleCount,
+  collapseKey,
 }) {
-  if (!entries.length) return null
+  const safeEntries = Array.isArray(entries) ? entries : []
+
+  const safeInitialVisibleCount = Math.max(
+    1,
+    Number.isFinite(Number(initialVisibleCount))
+      ? Number(initialVisibleCount)
+      : safeEntries.length
+  )
+
+  const hasOverflow = safeEntries.length > safeInitialVisibleCount
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    setExpanded(false)
+  }, [collapseKey])
+
+  const visibleEntries = useMemo(() => {
+    if (!hasOverflow || expanded) return safeEntries
+    return safeEntries.slice(0, safeInitialVisibleCount)
+  }, [safeEntries, expanded, hasOverflow, safeInitialVisibleCount])
+
+  if (!safeEntries.length) return null
 
   const now = new Date()
   const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear()
@@ -59,7 +82,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
       </div>
 
       <div className="rounded-card overflow-hidden">
-        {entries.map(([catId, amt], i) => {
+        {visibleEntries.map(([catId, amt], i) => {
           const cat       = CATEGORIES.find(c => c.id === catId)
           const budget    = budgets[catId] || 0
           const hasBudget = budget > 0
@@ -76,7 +99,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
               onClick={onCategoryClick ? () => onCategoryClick(cat) : undefined}
               className={`w-full flex items-center gap-2.5 bg-kosha-surface px-3 py-2.5 text-left
                           ${onCategoryClick ? 'active:bg-kosha-surface-2 transition-colors' : ''}
-                          ${i < entries.length - 1 ? 'border-b border-kosha-border' : ''}`}
+                          ${i < visibleEntries.length - 1 ? 'border-b border-kosha-border' : ''}`}
             >
               <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                 style={{ background: cat?.bg || '#E9EEF6' }}>
@@ -127,6 +150,20 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
           )
         })}
       </div>
+
+      {hasOverflow && (
+        <div className="pt-2 text-right">
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            className="text-[11px] font-semibold text-brand hover:opacity-85"
+          >
+            {expanded
+              ? `Show fewer categories`
+              : `Show all ${safeEntries.length} categories`}
+          </button>
+        </div>
+      )}
     </div>
   )
 })

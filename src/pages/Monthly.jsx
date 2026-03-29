@@ -76,24 +76,27 @@ export default function Monthly() {
   }
 
   const earned = data?.earned || 0
+  const repayments = data?.repayments || 0
   const spent = data?.expense || 0
   const invested = data?.investment || 0
+  const inflow = earned + repayments
 
-  const catEntries = useMemo(
-    () => Object.entries(data?.byCategory || {}).sort((a, b) => b[1] - a[1]).slice(0, 8),
+  const allCatEntries = useMemo(
+    () => Object.entries(data?.byCategory || {}).sort((a, b) => b[1] - a[1]),
     [data?.byCategory]
   )
+  const catEntries = useMemo(() => allCatEntries.slice(0, 8), [allCatEntries])
   const categoryTotal = useMemo(
-    () => catEntries.reduce((s, [, v]) => s + v, 0) || 1,
-    [catEntries]
+    () => allCatEntries.reduce((s, [, v]) => s + v, 0) || 1,
+    [allCatEntries]
   )
   const vehicleEntries = useMemo(
     () => Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1]),
     [data?.byVehicle]
   )
   const budgetCount = useMemo(
-    () => catEntries.filter(([id]) => budgets[id]).length,
-    [catEntries, budgets]
+    () => allCatEntries.filter(([id]) => budgets[id]).length,
+    [allCatEntries, budgets]
   )
 
   const monthlyBillStatus = useMemo(() => {
@@ -109,7 +112,7 @@ export default function Monthly() {
   }, [pendingBills, paidBills])
 
   const monthlyChecklist = useMemo(() => {
-    const budgetCoverageTarget = catEntries.length
+    const budgetCoverageTarget = allCatEntries.length
     const budgetCoveragePct = budgetCoverageTarget > 0
       ? Math.round((budgetCount / budgetCoverageTarget) * 100)
       : 100
@@ -140,10 +143,10 @@ export default function Monthly() {
         route: '/monthly',
       },
     }
-  }, [reconcileQueueCount, monthlyBillStatus, catEntries.length, budgetCount])
+  }, [reconcileQueueCount, monthlyBillStatus, allCatEntries.length, budgetCount])
 
   const budgetVariance = useMemo(() => {
-    const rows = catEntries
+    const rows = allCatEntries
       .map(([id, spent]) => ({
         id,
         spent: Number(spent || 0),
@@ -203,19 +206,19 @@ export default function Monthly() {
       onTrackCount: Math.max(0, enrichedRows.length - overCount - nearLimitCount),
       rows: enrichedRows,
     }
-  }, [catEntries, budgets, year, month])
+  }, [allCatEntries, budgets, year, month])
 
   const hasMonthData = useMemo(() => {
-    const totalsPresent = earned > 0 || spent > 0 || invested > 0
-    const categoryPresent = catEntries.length > 0 || vehicleEntries.length > 0
+    const totalsPresent = inflow > 0 || spent > 0 || invested > 0
+    const categoryPresent = allCatEntries.length > 0 || vehicleEntries.length > 0
     const planningPresent = monthlyBillStatus.total > 0 || reconcileQueueCount > 0
 
     return totalsPresent || categoryPresent || planningPresent
   }, [
-    earned,
+    inflow,
     spent,
     invested,
-    catEntries.length,
+    allCatEntries.length,
     vehicleEntries.length,
     monthlyBillStatus.total,
     reconcileQueueCount,
@@ -223,7 +226,7 @@ export default function Monthly() {
 
   const monthCloseSummary = useMemo(() => {
     const totalOutflow = spent + invested
-    const net = earned - totalOutflow
+    const net = inflow - totalOutflow
 
     const periodEnd = new Date(year, month, 0)
     periodEnd.setHours(0, 0, 0, 0)
@@ -237,10 +240,13 @@ export default function Monthly() {
 
     const daysInMonth = new Date(year, month, 0).getDate()
     const daysElapsed = isCurrentMonth ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth
+    const projectedInflow = isCurrentMonth
+      ? (daysElapsed > 0 ? (inflow / daysElapsed) * daysInMonth : inflow)
+      : inflow
     const projectedOutflow = isCurrentMonth
       ? (daysElapsed > 0 ? (totalOutflow / daysElapsed) * daysInMonth : totalOutflow)
       : totalOutflow
-    const projectedNet = earned - projectedOutflow
+    const projectedNet = projectedInflow - projectedOutflow
 
     const health = isCurrentMonth ? (projectedNet >= 0 ? 'healthy' : 'at-risk') : (net >= 0 ? 'healthy' : 'at-risk')
 
@@ -254,13 +260,13 @@ export default function Monthly() {
       timelineValue = 'Closed'
       if (net > 0) {
         statusLabel = 'Closed positive'
-        message = `Closed the month with positive cash flow of +${fmt(Math.abs(net))}. Income was ${fmt(earned)} against outflow of ${fmt(totalOutflow)}.`
+        message = `Closed the month with positive cash flow of +${fmt(Math.abs(net))}. Inflow was ${fmt(inflow)} against outflow of ${fmt(totalOutflow)}.`
       } else if (net < 0) {
         statusLabel = 'Closed negative'
-        message = `Closed the month with negative cash flow of -${fmt(Math.abs(net))}. Outflow exceeded income by ${fmt(Math.abs(net))}.`
+        message = `Closed the month with negative cash flow of -${fmt(Math.abs(net))}. Outflow exceeded inflow by ${fmt(Math.abs(net))}.`
       } else {
         statusLabel = 'Closed breakeven'
-        message = `Closed the month at breakeven. Income and outflow both settled at ${fmt(earned)}.`
+        message = `Closed the month at breakeven. Inflow and outflow both settled at ${fmt(inflow)}.`
       }
     } else if (isCurrentMonth) {
       const daysRemaining = Math.max(0, daysInMonth - daysElapsed)
@@ -284,6 +290,7 @@ export default function Monthly() {
     }
 
     return {
+      inflow,
       totalOutflow,
       net,
       daysLeft,
@@ -293,7 +300,7 @@ export default function Monthly() {
       timelineValue,
       message,
     }
-  }, [earned, spent, invested, year, month])
+  }, [inflow, spent, invested, year, month])
 
   const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
 
@@ -429,6 +436,8 @@ export default function Monthly() {
                 </div>
               ))}
             </div>
+
+            <BreakdownCard earned={inflow} spent={spent} invested={invested} totalLabel="Total inflow" />
           </div>
           )}
 
@@ -485,6 +494,8 @@ export default function Monthly() {
             <CategorySpendingChart
               entries={catEntries}
               total={categoryTotal}
+              initialVisibleCount={4}
+              collapseKey={`${year}-${month}`}
               budgets={budgets}
               month={month}
               year={year}
@@ -516,8 +527,6 @@ export default function Monthly() {
               </div>
             </div>
           )}
-
-          <BreakdownCard earned={earned} spent={spent} invested={invested} />
 
           </>
           )}
