@@ -49,7 +49,7 @@ const ROUTE_PRELOADERS = {
 
 function PageFallback({ pathname }) {
   return (
-    <div className="min-h-dvh" style={{ background: '#0a2540' }}>
+    <div className="min-h-dvh" style={{ background: '#ffffff' }}>
       <RouteSkeleton pathname={pathname || '/'} />
     </div>
   )
@@ -402,10 +402,10 @@ function DesktopSidebar() {
         position: 'fixed',
         top: 0, left: 0, bottom: 0,
         width: 220,
-        background: 'rgba(10,37,64,0.92)',
+        background: 'rgba(255,255,255,0.92)',
         backdropFilter: 'blur(24px) saturate(180%)',
         WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        borderRight: '1px solid rgba(255,255,255,0.08)',
+        borderRight: '1px solid rgba(0,0,0,0.08)',
         zIndex: 30,
         padding: '0 12px',
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
@@ -415,8 +415,8 @@ function DesktopSidebar() {
       <div className="flex items-center gap-2.5 px-2 pb-6 pt-2">
         <KoshaLogo size={32} />
         <div>
-          <p className="text-[15px] font-bold tracking-tight leading-none" style={{ color: '#f6f9fc' }}>Kosha</p>
-          <p className="text-[10px] font-medium tracking-widest uppercase mt-0.5" style={{ color: '#8898aa' }}>Finance</p>
+          <p className="text-[15px] font-bold tracking-tight leading-none" style={{ color: '#0a2540' }}>Kosha</p>
+          <p className="text-[10px] font-medium tracking-widest uppercase mt-0.5" style={{ color: '#6b7c93' }}>Finance</p>
         </div>
       </div>
 
@@ -431,7 +431,7 @@ function DesktopSidebar() {
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-100 w-full text-left"
-              style={{ background: isActive ? 'rgba(99,91,255,0.15)' : 'transparent' }}
+              style={{ background: isActive ? 'rgba(99,91,255,0.08)' : 'transparent' }}
             >
               <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.brand : C.inkMuted} />
               <span className="text-[14px]" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
@@ -442,11 +442,11 @@ function DesktopSidebar() {
         })}
       </nav>
 
-      <div className="px-2 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="px-2 pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
         <div className="flex items-center gap-2.5">
           <ProfileMenu dropUp />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold truncate" style={{ color: '#f6f9fc' }}>{displayName}</p>
+            <p className="text-[13px] font-semibold truncate" style={{ color: '#0a2540' }}>{displayName}</p>
           </div>
         </div>
       </div>

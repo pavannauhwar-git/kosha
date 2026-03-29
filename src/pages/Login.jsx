@@ -162,32 +162,32 @@ export default function Login() {
     <div
       className="h-dvh overflow-y-auto relative"
       style={{
-        background: '#0a2540',
+        background: 'linear-gradient(145deg, #f6f9fc 0%, #eef2f7 50%, #f0edff 100%)',
         paddingTop: 'env(safe-area-inset-top, 0px)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      {/* ── Mesh gradient background orbs ──────────────────────────── */}
+      {/* ── Vivid Stripe gradient orbs ─────────────────────────────── */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
           className="absolute rounded-full blur-3xl"
           style={{
-            width: 420, height: 420, top: '-8%', left: '-10%',
-            background: 'radial-gradient(circle, rgba(128,233,255,0.18) 0%, transparent 70%)',
+            width: 480, height: 480, top: '-12%', left: '-14%',
+            background: 'radial-gradient(circle, rgba(99,91,255,0.25) 0%, transparent 70%)',
           }}
         />
         <div
           className="absolute rounded-full blur-3xl"
           style={{
-            width: 500, height: 500, bottom: '-15%', right: '-12%',
-            background: 'radial-gradient(circle, rgba(99,91,255,0.20) 0%, transparent 70%)',
+            width: 520, height: 520, bottom: '-15%', right: '-12%',
+            background: 'radial-gradient(circle, rgba(14,159,110,0.18) 0%, transparent 70%)',
           }}
         />
         <div
           className="absolute rounded-full blur-3xl"
           style={{
-            width: 300, height: 300, top: '40%', left: '60%',
-            background: 'radial-gradient(circle, rgba(169,96,238,0.12) 0%, transparent 70%)',
+            width: 350, height: 350, top: '35%', left: '55%',
+            background: 'radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 70%)',
           }}
         />
       </div>
@@ -215,11 +215,9 @@ export default function Login() {
               variants={fadeUp}
               className="rounded-hero p-7 mb-5"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                backdropFilter: 'blur(24px)',
-                WebkitBackdropFilter: 'blur(24px)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 24px 64px rgba(0,0,0,0.30), 0 0 0 1px rgba(255,255,255,0.04)',
+                background: '#ffffff',
+                border: '1px solid rgba(0,0,0,0.08)',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
               }}
             >
 
@@ -255,8 +253,8 @@ export default function Login() {
                        active:scale-[0.98] transition-all duration-100
                        disabled:opacity-60 mb-5"
                   style={{
-                    background: 'rgba(255,255,255,0.07)',
-                    border: '1px solid rgba(255,255,255,0.12)',
+                    background: '#f6f9fc',
+                    border: '1px solid rgba(0,0,0,0.10)',
                   }}
                 >
                   <GoogleLogo />
@@ -267,9 +265,9 @@ export default function Login() {
               {/* ── Divider ───────────────────────────────────────────── */}
               {(mode === 'signin' || mode === 'signup') && (
                 <div className="flex items-center gap-4 mb-5">
-                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                  <div className="flex-1 h-px" style={{ background: 'rgba(0,0,0,0.08)' }} />
                   <span className="text-[12px] text-ink-4 font-medium uppercase tracking-wider">or</span>
-                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                  <div className="flex-1 h-px" style={{ background: 'rgba(0,0,0,0.08)' }} />
                 </div>
               )}
 
@@ -354,7 +352,7 @@ export default function Login() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       className="flex items-start gap-2 rounded-[12px] px-3.5 py-3"
-                      style={{ background: 'rgba(0,212,170,0.12)', border: '1px solid rgba(0,212,170,0.20)' }}
+                      style={{ background: 'rgba(14,159,110,0.08)', border: '1px solid rgba(14,159,110,0.15)' }}
                     >
                       <p className="text-[13px] text-income-text font-medium">{notice}</p>
                     </motion.div>
@@ -368,7 +366,7 @@ export default function Login() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       className="flex items-start gap-2 rounded-[12px] px-3.5 py-3"
-                      style={{ background: 'rgba(99,91,255,0.12)', border: '1px solid rgba(99,91,255,0.20)' }}
+                      style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.15)' }}
                     >
                       <p className="text-[13px] font-medium" style={{ color: C.brandLight }}>
                         Redirecting to sign in in {resetCountdown}s...
@@ -385,7 +383,7 @@ export default function Login() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       className="flex items-start gap-2.5 rounded-[12px] px-3.5 py-3"
-                      style={{ background: 'rgba(255,92,131,0.10)', border: '1px solid rgba(255,92,131,0.20)' }}
+                      style={{ background: 'rgba(232,54,78,0.06)', border: '1px solid rgba(232,54,78,0.12)' }}
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" className="shrink-0 mt-px" fill="none">
                         <circle cx="8" cy="8" r="7" stroke={C.expense} strokeWidth="1.2" />

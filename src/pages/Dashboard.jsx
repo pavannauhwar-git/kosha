@@ -53,11 +53,11 @@ function DashboardHeroSkeleton() {
 
       <div className="mt-3 mb-5 h-6 w-32 rounded-full shimmer" />
 
-      <div className="mb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+      <div className="mb-4" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }} />
 
       <div className="flex justify-between gap-1.5 sm:gap-2">
         {[1, 2, 3].map((slot) => (
-          <div key={slot} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <div key={slot} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl" style={{ background: 'rgba(0,0,0,0.03)' }}>
             <div className="h-2.5 w-12 rounded-full shimmer" />
             <div className="mt-1 h-3.5 w-16 rounded-full shimmer" />
           </div>
@@ -69,7 +69,7 @@ function DashboardHeroSkeleton() {
           <div className="h-2.5 w-20 rounded-full shimmer" />
           <div className="h-2.5 w-8 rounded-full shimmer" />
         </div>
-        <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+        <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.06)' }}>
           <div className="h-full w-[56%] shimmer" />
         </div>
       </div>
@@ -432,14 +432,14 @@ export default function Dashboard() {
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <p className="text-caption" style={{ color: '#8898aa' }}>
+          <p className="text-caption" style={{ color: '#6b7c93' }}>
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="text-[20px] md:text-[24px] font-bold tracking-tight" style={{ color: '#f6f9fc' }}>
+          <h1 className="text-[20px] md:text-[24px] font-bold tracking-tight" style={{ color: '#0a2540' }}>
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
           {isBackgroundFetching && (
-            <p className="text-[11px] mt-1" style={{ color: '#5e6e82' }}>Syncing latest data...</p>
+            <p className="text-[11px] mt-1" style={{ color: '#8898aa' }}>Syncing latest data...</p>
           )}
         </motion.div>
 
@@ -492,7 +492,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <p className="card-title">{todayFocus.title}</p>
-              <p className="text-[12px] mt-1" style={{ color: '#8898aa' }}>{todayFocus.detail}</p>
+              <p className="text-[12px] mt-1" style={{ color: '#6b7c93' }}>{todayFocus.detail}</p>
               <div className="grid grid-cols-2 gap-2 mt-2.5">
                 <button
                   type="button"
@@ -525,7 +525,7 @@ export default function Dashboard() {
                   style={{ background: bg, color }}>
                   <Icon size={20} strokeWidth={strokeWidth} />
                 </div>
-                <span className="text-[11px] font-semibold" style={{ color: '#8898aa' }}>{label}</span>
+                <span className="text-[11px] font-semibold" style={{ color: '#6b7c93' }}>{label}</span>
               </button>
             ))}
           </div>
@@ -542,10 +542,10 @@ export default function Dashboard() {
                   <Bell size={16} style={{ color: '#f7b32b' }} />
                 </div>
                 <div>
-                  <p className="text-body font-semibold" style={{ color: '#f6f9fc' }}>
+                  <p className="text-body font-semibold" style={{ color: '#0a2540' }}>
                     {dueSoonCount} bill{dueSoonCount > 1 ? 's' : ''} due soon
                   </p>
-                  <p className="text-label" style={{ color: '#8898aa' }}>{dueSoonDescs}</p>
+                  <p className="text-label" style={{ color: '#6b7c93' }}>{dueSoonDescs}</p>
                 </div>
               </div>
               <ArrowRight size={15} className="text-ink-4 shrink-0" />
@@ -570,7 +570,7 @@ export default function Dashboard() {
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div>
                   <p className="section-label">What changed this week</p>
-                  <p className="text-caption mt-0.5" style={{ color: '#5e6e82' }}>7-day vs previous 7-day digest</p>
+                  <p className="text-caption mt-0.5" style={{ color: '#8898aa' }}>7-day vs previous 7-day digest</p>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-semibold ${weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'}`}
                   style={{ background: weeklyDigest.spendDelta <= 0 ? 'rgba(0,212,170,0.12)' : 'rgba(247,179,43,0.12)' }}>
@@ -586,8 +586,8 @@ export default function Dashboard() {
               </div>
 
               {weeklyDigest.topCategory && (
-                <p className="text-[11px] mt-2" style={{ color: '#8898aa' }}>
-                  Top spend category this week: <span className="font-semibold" style={{ color: '#c1c9d2' }}>{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
+                <p className="text-[11px] mt-2" style={{ color: '#6b7c93' }}>
+                  Top spend category this week: <span className="font-semibold" style={{ color: '#425466' }}>{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
                 </p>
               )}
             </div>
@@ -599,7 +599,7 @@ export default function Dashboard() {
           <motion.div variants={fadeUp}>
             <div className="card p-3.5">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-caption font-medium" style={{ color: '#8898aa' }}>Invested this month</p>
+                <p className="text-caption font-medium" style={{ color: '#6b7c93' }}>Invested this month</p>
                 <div className="flex items-center gap-1.5">
                   {investDiff === 0
                     ? <Minus size={12} className="text-ink-3" />
@@ -609,7 +609,7 @@ export default function Dashboard() {
                   <span className={`text-caption font-semibold ${investDiff === 0 ? ''
                       : investUp ? 'text-income-text' : 'text-expense-text'
                     }`}
-                    style={investDiff === 0 ? { color: '#8898aa' } : {}}>
+                    style={investDiff === 0 ? { color: '#6b7c93' } : {}}>
                     {investDiff === 0 ? 'Same as last month'
                       : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
                   </span>

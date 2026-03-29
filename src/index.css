@@ -42,8 +42,8 @@
   }
 
   body {
-    background: #0a2540;
-    color: #f6f9fc;
+    background: #ffffff;
+    color: #0a2540;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     width: 100%;
     max-width: 100%;
@@ -68,12 +68,12 @@
     --c-brand: #635bff;
     --c-brand-mid: #7a73ff;
     --c-brand-container: rgba(99,91,255,0.15);
-    --c-brand-border: rgba(255,255,255,0.10);
+    --c-brand-border: rgba(0,0,0,0.08);
     --c-brand-rgb: 99, 91, 255;
     --c-brand-mid-rgb: 122, 115, 255;
 
-    --c-accent: #80e9ff;
-    --c-accent-rgb: 128, 233, 255;
+    --c-accent: #0a2540;
+    --c-accent-rgb: 10, 37, 64;
 
     --c-income: #00d4aa;
     --c-invest-text: #c084fc;
@@ -81,19 +81,19 @@
     --c-expense-bright: #ff5c83;
     --c-warning: #f7b32b;
 
-    --c-ink-muted: #8898aa;
+    --c-ink-muted: #6b7c93;
 
-    /* Hero card overlays — now bright on dark gradient */
-    --c-hero-accent: #80e9ff;
-    --c-hero-accent-bg: rgba(128,233,255,0.15);
-    --c-hero-accent-fill: #80e9ff;
+    /* Hero card overlays — white text on vivid gradient */
+    --c-hero-accent: #ffffff;
+    --c-hero-accent-bg: rgba(255,255,255,0.18);
+    --c-hero-accent-fill: #ffffff;
     --c-hero-label: rgba(255,255,255,0.60);
     --c-hero-dimmer: rgba(255,255,255,0.30);
     --c-hero-divider: rgba(255,255,255,0.10);
     --c-hero-stat-bg: rgba(255,255,255,0.08);
 
-    --c-shimmer-1: rgba(255,255,255,0.04);
-    --c-shimmer-2: rgba(255,255,255,0.08);
+    --c-shimmer-1: rgba(0,0,0,0.04);
+    --c-shimmer-2: rgba(0,0,0,0.08);
 
     --motion-fast: 90ms;
     --motion-base: 140ms;
@@ -108,24 +108,23 @@
 
 @layer components {
 
-  /* -- Hero card — Stripe mesh gradient ───────────────────────────── */
+  /* -- Hero card — Stripe vivid mesh gradient ──────────────────── */
   .card-hero {
     background:
-      radial-gradient(ellipse at 10% 20%, rgba(128,233,255,0.30) 0%, transparent 50%),
-      radial-gradient(ellipse at 90% 80%, rgba(169,96,238,0.25) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, rgba(99,91,255,0.20) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 10%, rgba(247,179,43,0.15) 0%, transparent 40%),
-      linear-gradient(135deg, #0d2d4d 0%, #0a2540 40%, #11325a 100%);
+      radial-gradient(ellipse at 10% 20%, rgba(128,90,255,0.85) 0%, transparent 55%),
+      radial-gradient(ellipse at 90% 80%, rgba(0,209,178,0.70) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(99,91,255,0.65) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 10%, rgba(255,182,72,0.45) 0%, transparent 40%),
+      linear-gradient(135deg, #635bff 0%, #0a2540 50%, #0e7490 100%);
     @apply rounded-hero shadow-apple-card;
-    border: 1px solid rgba(255,255,255,0.08);
+    border: none;
+    color: #ffffff;
   }
 
-  /* -- Cards — glass morphism ─────────────────────────────────────── */
+  /* -- Cards — clean white ──────────────────────────────────── */
   .card {
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
     @apply rounded-card shadow-card;
   }
 
@@ -135,36 +134,34 @@
 
   .sticky-toolbar {
     @apply sticky z-10 -mx-1 px-1 py-2 backdrop-blur-xl;
-    background: rgba(10,37,64,0.85);
-    border-top: 1px solid rgba(255,255,255,0.06);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.88);
+    border-top: 1px solid rgba(0,0,0,0.06);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
     top: var(--sticky-top-offset);
     margin-bottom: 1.5rem;
   }
 
   .card-md {
-    background: rgba(255,255,255,0.06);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
     @apply rounded-card shadow-card-md;
   }
 
   .card-inset {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.05);
+    background: #f6f9fc;
+    border: 1px solid rgba(0,0,0,0.05);
     @apply rounded-card;
   }
 
   .card-urgent {
-    background: rgba(255,92,131,0.08);
-    border: 1px solid rgba(255,92,131,0.15);
+    background: rgba(232,54,78,0.06);
+    border: 1px solid rgba(232,54,78,0.12);
     @apply rounded-card shadow-urgent;
   }
 
   .card-warn {
-    background: rgba(247,179,43,0.08);
-    border: 1px solid rgba(247,179,43,0.15);
+    background: rgba(217,119,6,0.06);
+    border: 1px solid rgba(217,119,6,0.12);
     @apply rounded-card shadow-warn;
   }
 
@@ -200,68 +197,68 @@
   /* -- Section label ───────────────────────────────────────────────── */
   .section-label {
     @apply text-[10.5px] font-semibold tracking-tight leading-none;
-    color: #8898aa;
+    color: #6b7c93;
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
 
   .card-title {
     @apply text-[13px] font-semibold;
-    color: #f6f9fc;
+    color: #0a2540;
   }
 
   /* -- Type chips ──────────────────────────────────────────────────── */
   .chip-income {
     @apply text-xs font-semibold px-2.5 py-1 rounded-pill;
-    background: rgba(0,212,170,0.12);
-    color: #00d4aa;
+    background: rgba(14,159,110,0.08);
+    color: #0e9f6e;
   }
 
   .chip-expense {
     @apply text-xs font-semibold px-2.5 py-1 rounded-pill;
-    background: rgba(255,92,131,0.12);
-    color: #ff5c83;
+    background: rgba(232,54,78,0.08);
+    color: #e8364e;
   }
 
   .chip-invest {
     @apply text-xs font-semibold px-2.5 py-1 rounded-pill;
-    background: rgba(169,96,238,0.12);
-    color: #c084fc;
+    background: rgba(124,58,237,0.08);
+    color: #7c3aed;
   }
 
   .chip-repay {
     @apply text-xs font-semibold px-2.5 py-1 rounded-pill;
-    background: rgba(247,179,43,0.12);
-    color: #f7b32b;
+    background: rgba(217,119,6,0.08);
+    color: #d97706;
   }
 
   .chip-neutral {
     @apply text-xs font-semibold px-2.5 py-1 rounded-pill;
-    background: rgba(99,91,255,0.12);
-    color: #a5b4fc;
+    background: rgba(99,91,255,0.08);
+    color: #635bff;
   }
 
   .chip-control {
     @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3 rounded-pill text-[11px] font-semibold transition-all duration-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
-    border: 1px solid rgba(255,255,255,0.10);
+    border: 1px solid rgba(0,0,0,0.10);
   }
 
   .chip-control-muted {
     @apply chip-control;
-    background: rgba(255,255,255,0.04);
-    color: #8898aa;
-    border-color: rgba(255,255,255,0.10);
+    background: rgba(0,0,0,0.02);
+    color: #6b7c93;
+    border-color: rgba(0,0,0,0.10);
   }
 
   .chip-control-muted:hover {
-    background: rgba(255,255,255,0.08);
+    background: rgba(0,0,0,0.04);
   }
 
   .chip-control-active {
     @apply chip-control;
-    background: rgba(99,91,255,0.20);
-    color: #a5b4fc;
-    border-color: rgba(99,91,255,0.30);
+    background: rgba(99,91,255,0.10);
+    color: #635bff;
+    border-color: rgba(99,91,255,0.25);
   }
 
   .chip-control-sm {
@@ -270,22 +267,22 @@
 
   /* -- Amount colours ──────────────────────────────────────────────── */
   .amt-income {
-    color: #00d4aa;
+    color: #0e9f6e;
     @apply font-semibold;
   }
 
   .amt-expense {
-    color: #ff5c83;
+    color: #e8364e;
     @apply font-semibold;
   }
 
   .amt-invest {
-    color: #c084fc;
+    color: #7c3aed;
     @apply font-semibold;
   }
 
   .amt-repay {
-    color: #f7b32b;
+    color: #d97706;
     @apply font-semibold;
   }
 
@@ -307,29 +304,29 @@
 
   .btn-tonal {
     @apply btn px-6 py-3;
-    background: rgba(99,91,255,0.15);
-    color: #a5b4fc;
+    background: rgba(99,91,255,0.08);
+    color: #635bff;
   }
 
   .btn-ghost {
     @apply btn px-4 py-2;
-    color: #80e9ff;
+    color: #635bff;
     background: transparent;
   }
 
   .btn-ghost:hover {
-    background: rgba(128,233,255,0.08);
+    background: rgba(99,91,255,0.06);
   }
 
   .btn-secondary {
     @apply btn px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/25;
-    background: rgba(255,255,255,0.06);
-    color: #c1c9d2;
-    border: 1px solid rgba(255,255,255,0.10);
+    background: #ffffff;
+    color: #425466;
+    border: 1px solid rgba(0,0,0,0.10);
   }
 
   .btn-secondary:hover {
-    background: rgba(255,255,255,0.10);
+    background: #f6f9fc;
   }
 
   .btn-secondary-sm {
@@ -338,9 +335,9 @@
 
   .btn-danger {
     @apply btn px-6 py-3;
-    background: rgba(255,92,131,0.15);
-    color: #ff5c83;
-    border: 1px solid rgba(255,92,131,0.20);
+    background: rgba(232,54,78,0.08);
+    color: #e8364e;
+    border: 1px solid rgba(232,54,78,0.15);
   }
 
   /* -- FAB — Stripe purple glow ─────────────────────────────────────── */
@@ -358,8 +355,8 @@
   /* Bills page FAB */
   .fab-bills {
     @apply fixed w-14 h-14 rounded-2xl flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
-    background: #f7b32b;
-    color: #0a2540;
+    background: #d97706;
+    color: #ffffff;
     box-shadow: 0 4px 16px rgba(247,179,43,0.50), 0 0 0 1px rgba(247,179,43,0.60);
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
@@ -398,14 +395,14 @@
     gap: 0;
     padding: 9px 12px;
     border-radius: 24px;
-    background: rgba(10,37,64,0.85);
+    background: rgba(255,255,255,0.92);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     box-shadow:
-      0 18px 40px rgba(0, 0, 0, 0.40),
-      0 4px 12px rgba(0, 0, 0, 0.20),
-      inset 0 0.5px 0 rgba(255, 255, 255, 0.12),
-      0 0 0 1px rgba(255, 255, 255, 0.08);
+      0 18px 40px rgba(0, 0, 0, 0.10),
+      0 4px 12px rgba(0, 0, 0, 0.06),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.90),
+      0 0 0 1px rgba(0, 0, 0, 0.08);
     pointer-events: auto;
   }
 
@@ -442,8 +439,8 @@
     position: absolute;
     inset: 0;
     border-radius: 9999px;
-    background: rgba(99, 91, 255, 0.25);
-    box-shadow: inset 0 0 0 1px rgba(99, 91, 255, 0.15);
+    background: rgba(99, 91, 255, 0.10);
+    box-shadow: inset 0 0 0 1px rgba(99, 91, 255, 0.10);
   }
 
   /* Both icon layers sit on top of the pill, stacked in same spot */
@@ -468,22 +465,22 @@
   /* -- Input — dark glass ───────────────────────────────────────────── */
   .input {
     @apply w-full max-w-full rounded-card px-4 py-3.5 text-base focus:outline-none transition-all duration-150;
-    background: rgba(255,255,255,0.06);
-    color: #f6f9fc;
-    border: 1px solid rgba(255,255,255,0.10);
+    background: #ffffff;
+    color: #0a2540;
+    border: 1px solid rgba(0,0,0,0.12);
     min-width: 0;
     will-change: transform;
     transform: translateZ(0);
   }
 
   .input::placeholder {
-    color: #5e6e82;
+    color: #8898aa;
   }
 
   .input:focus {
-    background: rgba(255,255,255,0.08);
+    background: #ffffff;
     border-color: rgba(99,91,255,0.50);
-    box-shadow: 0 0 0 3px rgba(99,91,255,0.20);
+    box-shadow: 0 0 0 3px rgba(99,91,255,0.15);
   }
 
   /* -- Bottom sheet — dark glass ─────────────────────────────────────── */
@@ -500,9 +497,9 @@
     margin-left: auto;
     margin-right: auto;
     max-width: 560px;
-    background: #0d2d4d;
-    border-top: 1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.40);
+    background: #ffffff;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
     border-radius: 20px 20px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     max-height: calc(100dvh - var(--safe-top) - 0.5rem);
@@ -525,15 +522,15 @@
     pointer-events: none;
     background: linear-gradient(
       180deg,
-      rgba(13, 45, 77, 0.98) 0%,
-      rgba(13, 45, 77, 0.86) 35%,
-      rgba(13, 45, 77, 0) 100%
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(255, 255, 255, 0.86) 35%,
+      rgba(255, 255, 255, 0) 100%
     );
   }
 
   .sheet-handle {
     @apply w-9 h-1 rounded-pill mx-auto mt-3 mb-5;
-    background: rgba(255,255,255,0.20);
+    background: rgba(0,0,0,0.15);
   }
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
@@ -549,23 +546,23 @@
   /* -- Progress bars — glowing on dark ──────────────────────────────── */
   .bar-dark-track {
     @apply h-2 rounded-pill w-full relative overflow-hidden;
-    background: rgba(255, 255, 255, 0.10);
+    background: rgba(0, 0, 0, 0.06);
   }
 
   .bar-dark-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0;
-    background: linear-gradient(90deg, #80e9ff, #635bff);
+    background: linear-gradient(90deg, #635bff, #7a73ff);
     transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .bar-light-track {
     @apply h-2 rounded-pill w-full relative overflow-hidden;
-    background: rgba(255, 255, 255, 0.10);
+    background: rgba(0, 0, 0, 0.06);
   }
 
   .bar-light-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0;
-    background: linear-gradient(90deg, #00d4aa, #635bff);
+    background: linear-gradient(90deg, #0e9f6e, #635bff);
     transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -580,13 +577,13 @@
   /* -- Close button ────────────────────────────────────────────────── */
   .close-btn {
     @apply w-9 h-9 rounded-pill flex items-center justify-center transition-all duration-100 cursor-pointer;
-    background: rgba(255,255,255,0.08);
+    background: rgba(0,0,0,0.05);
     will-change: transform;
     transform: translateZ(0);
   }
 
   .close-btn:hover {
-    background: rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.08);
   }
 
   .close-btn:active {
@@ -629,9 +626,9 @@
 
 .shimmer {
   background: linear-gradient(90deg,
-      rgba(255,255,255,0.04) 25%,
-      rgba(255,255,255,0.08) 50%,
-      rgba(255,255,255,0.04) 75%);
+      rgba(0,0,0,0.03) 25%,
+      rgba(0,0,0,0.06) 50%,
+      rgba(0,0,0,0.03) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
 }
