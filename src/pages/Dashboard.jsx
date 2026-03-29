@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat } from 'lucide-react'
+import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat, Activity } from 'lucide-react'
 import {
   useRecentTransactions,
   useTransactionDigest,
