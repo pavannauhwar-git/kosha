@@ -36,7 +36,7 @@ export default function YearlyInsightsCard({ data, catEntries }) {
   })()
 
   return (
-    <div className="card p-4 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, rgba(99,91,255,0.15) 0%, rgba(128,233,255,0.08) 100%)' }}>
+    <div className="card p-4 overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #EDE9FF 0%, #F5F3FF 100%)' }}>
       <div
         className="absolute top-0 right-0 w-28 h-28 pointer-events-none"
         style={{

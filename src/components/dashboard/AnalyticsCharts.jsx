@@ -100,10 +100,10 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
     <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-label font-semibold text-ink">
+          <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
             Cash Flow Pulse
           </p>
-          <p style={{ fontSize: 11, color: '#8898aa', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: 'rgba(49,58,134,0.55)', marginTop: 2 }}>
             Income trend vs monthly outflow
           </p>
         </div>
@@ -112,7 +112,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             style={{ fontSize: 15, color: C.chartIncome, letterSpacing: '-0.01em' }}>
             {fmt(totalIncome || 0, true)}
           </p>
-          <p style={{ fontSize: 10, color: '#8898aa', marginTop: 1 }}>earned</p>
+          <p style={{ fontSize: 10, color: 'rgba(49,58,134,0.55)', marginTop: 1 }}>earned</p>
         </div>
       </div>
 
@@ -148,11 +148,11 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             </linearGradient>
           </defs>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: '#8898aa', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide />
-          <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
+          <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(31,37,95,0.10)', strokeWidth: 1 }} />
           <Area dataKey="Income" type="monotone"
             stroke={C.chartIncome} strokeWidth={3} fill="url(#gIncome)" dot={false}
             activeDot={{ r: 5, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
@@ -170,7 +170,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
         {[['Income', C.chartIncome], ['Spent', C.chartExpense]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: c }} />
-            <span style={{ fontSize: 11, color: '#8898aa', fontWeight: 500 }}>{l}</span>
+            <span style={{ fontSize: 11, color: 'rgba(49,58,134,0.60)', fontWeight: 500 }}>{l}</span>
           </div>
         ))}
       </div>
@@ -207,10 +207,10 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
     <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-label font-semibold text-ink">
+          <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
             Net Savings
           </p>
-          <p style={{ fontSize: 11, color: '#8898aa', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: 'rgba(49,58,134,0.55)', marginTop: 2 }}>
             Monthly net with cumulative direction
           </p>
         </div>
@@ -222,7 +222,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           }}>
             {fmt(Math.abs(totalNet), true)}
           </p>
-          <p style={{ fontSize: 10, color: '#8898aa', marginTop: 1 }}>
+          <p style={{ fontSize: 10, color: 'rgba(49,58,134,0.55)', marginTop: 1 }}>
             {totalNet >= 0 ? 'net saved' : 'net deficit'}
           </p>
         </div>
@@ -246,12 +246,12 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={safeData} margin={{ top: 4, right: 12, left: 12, bottom: 0 }}>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: '#8898aa', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide domain={[-safeAxisMax, safeAxisMax]} />
-          <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-          <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+          <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(31,37,95,0.06)' }} />
+          <ReferenceLine y={0} stroke="rgba(31,37,95,0.22)" strokeWidth={1} />
           <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={26}>
             {safeData.map((entry, i) => (
               <Cell key={i}

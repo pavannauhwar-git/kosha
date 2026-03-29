@@ -7,7 +7,7 @@ import KoshaLogo from '../components/KoshaLogo'
 import { C } from '../lib/colors'
 import { createFadeUp } from '../lib/animations'
 
-const fadeUp = createFadeUp(14, 0.28)
+const fadeUp = createFadeUp(10, 0.22)
 
 function GoogleLogo() {
   return (
@@ -160,72 +160,33 @@ export default function Login() {
 
   return (
     <div
-      className="h-dvh overflow-y-auto relative"
-      style={{
-        background: '#0a2540',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-      }}
+      className="h-dvh bg-kosha-bg px-4 overflow-y-auto"
+      style={{paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      {/* ── Mesh gradient background orbs ──────────────────────────── */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div
-          className="absolute rounded-full blur-3xl"
-          style={{
-            width: 420, height: 420, top: '-8%', left: '-10%',
-            background: 'radial-gradient(circle, rgba(128,233,255,0.18) 0%, transparent 70%)',
-          }}
-        />
-        <div
-          className="absolute rounded-full blur-3xl"
-          style={{
-            width: 500, height: 500, bottom: '-15%', right: '-12%',
-            background: 'radial-gradient(circle, rgba(99,91,255,0.20) 0%, transparent 70%)',
-          }}
-        />
-        <div
-          className="absolute rounded-full blur-3xl"
-          style={{
-            width: 300, height: 300, top: '40%', left: '60%',
-            background: 'radial-gradient(circle, rgba(169,96,238,0.12) 0%, transparent 70%)',
-          }}
-        />
-      </div>
-
-      <div className="relative min-h-full flex flex-col items-center justify-center px-5 py-10">
-        <div className="w-full max-w-[400px]">
+      <div className="min-h-full flex flex-col items-center justify-center py-8">
+        <div className="w-full max-w-[380px]">
           <motion.div
-            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } } }}
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
             initial="hidden"
             animate="show"
           >
-            {/* ── Logo & branding ─────────────────────────────────────── */}
-            <motion.div variants={fadeUp} className="flex flex-col items-center mb-8">
-              <KoshaLogo size={60} />
-              <h2
-                className="mt-4 text-[13px] font-bold tracking-[0.2em] uppercase"
-                style={{ color: C.accent }}
-              >
-                Kosha
-              </h2>
-            </motion.div>
-
-            {/* ── Glass card ──────────────────────────────────────────── */}
+            {/* ── Card ─────────────────────────────────────────────────────── */}
             <motion.div
               variants={fadeUp}
-              className="rounded-hero p-7 mb-5"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                backdropFilter: 'blur(24px)',
-                WebkitBackdropFilter: 'blur(24px)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 24px 64px rgba(0,0,0,0.30), 0 0 0 1px rgba(255,255,255,0.04)',
-              }}
+              className="card p-6 mb-4"
             >
 
-              {/* ── Heading ───────────────────────────────────────────── */}
-              <div className="mb-6">
-                <h1 className="text-[28px] font-bold text-ink tracking-tight leading-tight mb-2">
+              {/* ── Logo ──────────────────────────────────────────────────── */}
+              <div className="flex flex-col items-center mb-4">
+                <KoshaLogo size={56} />
+                <p className="mt-3 text-caption font-semibold text-ink-3 tracking-widest uppercase">
+                  Your Financial Sheath
+                </p>
+              </div>
+
+              {/* ── Heading ───────────────────────────────────────────────── */}
+              <div className="mb-4">
+                <h1 className="text-[26px] font-bold text-ink tracking-tight leading-tight mb-1.5">
                   {mode === 'signin'
                     ? 'Welcome back'
                     : mode === 'signup'
@@ -234,7 +195,7 @@ export default function Login() {
                         ? 'Reset password'
                         : 'Set new password'}
                 </h1>
-                <p className="text-[15px] text-ink-3 leading-relaxed">
+                <p className="text-label text-ink-3">
                   {mode === 'signin'
                     ? 'Sign in to continue to Kosha'
                     : mode === 'signup'
@@ -245,39 +206,36 @@ export default function Login() {
                 </p>
               </div>
 
-              {/* ── Google ────────────────────────────────────────────── */}
+              {/* ── Google ────────────────────────────────────────────────── */}
               {(mode === 'signin' || mode === 'signup') && (
                 <button
                   onClick={handleGoogle}
                   disabled={googleLoading || loading}
-                  className="w-full flex items-center justify-center gap-3 h-[52px]
-                       rounded-[14px] text-[15px] font-semibold text-ink
-                       active:scale-[0.98] transition-all duration-100
-                       disabled:opacity-60 mb-5"
-                  style={{
-                    background: 'rgba(255,255,255,0.07)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                  }}
+                  className="w-full flex items-center justify-center gap-3 py-3.5
+                       rounded-card border border-kosha-border bg-kosha-surface
+                       text-label font-semibold text-ink
+                       active:scale-[0.98] transition-all duration-75
+                       disabled:opacity-60 mb-4 shadow-card"
                 >
                   <GoogleLogo />
                   {googleLoading ? 'Redirecting…' : 'Continue with Google'}
                 </button>
               )}
 
-              {/* ── Divider ───────────────────────────────────────────── */}
+              {/* ── Divider ───────────────────────────────────────────────── */}
               {(mode === 'signin' || mode === 'signup') && (
-                <div className="flex items-center gap-4 mb-5">
-                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                  <span className="text-[12px] text-ink-4 font-medium uppercase tracking-wider">or</span>
-                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex-1 h-px bg-kosha-border" />
+                  <span className="text-caption text-ink-4 font-medium">or</span>
+                  <div className="flex-1 h-px bg-kosha-border" />
                 </div>
               )}
 
-              {/* ── Email / password form ─────────────────────────────── */}
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {/* ── Email / password form ─────────────────────────────────── */}
+              <form onSubmit={handleSubmit} className="space-y-3">
                 {mode !== 'reset' && (
                   <div>
-                    <label className="block text-[13px] font-semibold text-ink-3 mb-2">
+                    <label className="block text-caption font-semibold text-ink-3 mb-1.5">
                       Email address
                     </label>
                     <input
@@ -294,7 +252,7 @@ export default function Login() {
 
                 {mode !== 'forgot' && (
                   <div>
-                    <label className="block text-[13px] font-semibold text-ink-3 mb-2">
+                    <label className="block text-caption font-semibold text-ink-3 mb-1.5">
                       {mode === 'reset' ? 'New password' : 'Password'}
                       {(mode === 'signup' || mode === 'reset') && (
                         <span className="font-normal text-ink-4 ml-1">· min 8 characters</span>
@@ -314,7 +272,7 @@ export default function Login() {
 
                 {mode === 'reset' && (
                   <div>
-                    <label className="block text-[13px] font-semibold text-ink-3 mb-2">
+                    <label className="block text-caption font-semibold text-ink-3 mb-1.5">
                       Confirm new password
                     </label>
                     <input
@@ -339,8 +297,7 @@ export default function Login() {
                         setError(null)
                         setNotice(null)
                       }}
-                      className="text-[14px] font-semibold"
-                      style={{ color: C.accent }}
+                      className="text-label font-semibold text-brand"
                     >
                       Forgot password?
                     </button>
@@ -350,13 +307,12 @@ export default function Login() {
                 <AnimatePresence>
                   {notice && (
                     <motion.div
-                      initial={{ opacity: 0, y: -6 }}
+                      initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      className="flex items-start gap-2 rounded-[12px] px-3.5 py-3"
-                      style={{ background: 'rgba(0,212,170,0.12)', border: '1px solid rgba(0,212,170,0.20)' }}
+                      className="flex items-start gap-2 bg-income-bg rounded-card px-3 py-2.5"
                     >
-                      <p className="text-[13px] text-income-text font-medium">{notice}</p>
+                      <p className="text-caption text-income-text font-medium">{notice}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -364,50 +320,44 @@ export default function Login() {
                 <AnimatePresence>
                   {isRedirectingAfterReset && (
                     <motion.div
-                      initial={{ opacity: 0, y: -6 }}
+                      initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      className="flex items-start gap-2 rounded-[12px] px-3.5 py-3"
-                      style={{ background: 'rgba(99,91,255,0.12)', border: '1px solid rgba(99,91,255,0.20)' }}
+                      className="flex items-start gap-2 bg-brand-container rounded-card px-3 py-2.5"
                     >
-                      <p className="text-[13px] font-medium" style={{ color: C.brandLight }}>
+                      <p className="text-caption text-brand font-medium">
                         Redirecting to sign in in {resetCountdown}s...
                       </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* ── Error ────────────────────────────────────────────── */}
+                {/* ── Error ─────────────────────────────────────────────── */}
                 <AnimatePresence>
                   {error && (
                     <motion.div
-                      initial={{ opacity: 0, y: -6 }}
+                      initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      className="flex items-start gap-2.5 rounded-[12px] px-3.5 py-3"
-                      style={{ background: 'rgba(255,92,131,0.10)', border: '1px solid rgba(255,92,131,0.20)' }}
+                      className="flex items-start gap-2 bg-expense-bg rounded-card px-3 py-2.5"
                     >
-                      <svg width="16" height="16" viewBox="0 0 16 16" className="shrink-0 mt-px" fill="none">
-                        <circle cx="8" cy="8" r="7" stroke={C.expense} strokeWidth="1.2" />
-                        <path d="M8 5v3.5M8 10.5v.5" stroke={C.expense} strokeWidth="1.4" strokeLinecap="round" />
+                      <svg width="15" height="15" viewBox="0 0 15 15" className="shrink-0 mt-px" fill="none">
+                        <circle cx="7.5" cy="7.5" r="7" stroke={C.expense} strokeWidth="1.2" />
+                        <path d="M7.5 4.5v3.5M7.5 10v.5" stroke={C.expense} strokeWidth="1.4" strokeLinecap="round" />
                       </svg>
-                      <p className="text-[13px] text-expense-text font-medium">{error}</p>
+                      <p className="text-caption text-expense-text font-medium">{error}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* ── Submit ───────────────────────────────────────────── */}
+                {/* ── Submit ────────────────────────────────────────────── */}
                 <button
                   type="submit"
                   disabled={loading || googleLoading || isRedirectingAfterReset}
-                  className="w-full h-[52px] rounded-[14px] text-white
-                         text-[16px] font-semibold mt-1
-                         active:scale-[0.98] transition-all duration-100
-                         disabled:opacity-50"
-                  style={{
-                    background: 'linear-gradient(135deg, #635bff 0%, #7a73ff 100%)',
-                    boxShadow: '0 4px 20px rgba(99,91,255,0.40), 0 0 0 1px rgba(99,91,255,0.50)',
-                  }}
+                  className="w-full py-4 rounded-card bg-brand text-white
+                         text-body font-semibold mt-1
+                         active:scale-[0.98] transition-all duration-75
+                         disabled:opacity-60"
                 >
                   {loading
                     ? (mode === 'signin'
@@ -427,9 +377,9 @@ export default function Login() {
                 </button>
               </form>
 
-              {/* ── Toggle mode ───────────────────────────────────────── */}
+              {/* ── Toggle mode ───────────────────────────────────────────── */}
               {mode === 'forgot' ? (
-                <p className="text-[14px] text-ink-3 text-center mt-5">
+                <p className="text-label text-ink-3 text-center mt-4">
                   Remembered your password?{' '}
                   <button
                     onClick={() => {
@@ -437,14 +387,13 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="font-semibold"
-                    style={{ color: C.accent }}
+                    className="text-brand font-semibold"
                   >
                     Sign in
                   </button>
                 </p>
               ) : mode === 'reset' ? (
-                <p className="text-[14px] text-ink-3 text-center mt-5">
+                <p className="text-label text-ink-3 text-center mt-4">
                   Opened the wrong page?{' '}
                   <button
                     onClick={() => {
@@ -452,14 +401,13 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="font-semibold"
-                    style={{ color: C.accent }}
+                    className="text-brand font-semibold"
                   >
                     Back to sign in
                   </button>
                 </p>
               ) : (
-                <p className="text-[14px] text-ink-3 text-center mt-5">
+                <p className="text-label text-ink-3 text-center mt-4">
                   {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
                   <button
                     onClick={() => {
@@ -467,8 +415,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="font-semibold"
-                    style={{ color: C.accent }}
+                    className="text-brand font-semibold"
                   >
                     {mode === 'signin' ? 'Sign up' : 'Sign in'}
                   </button>
@@ -476,9 +423,9 @@ export default function Login() {
               )}
             </motion.div>
 
-            {/* ── Footer ──────────────────────────────────────────────── */}
+            {/* ── Footer ─────────────────────────────────────────────────── */}
             <motion.div variants={fadeUp}>
-              <AboutKoshaLink className="text-center pt-2" />
+              <AboutKoshaLink className="text-center pt-1" />
             </motion.div>
           </motion.div>
         </div>

@@ -34,43 +34,43 @@ const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
 
 const QUICK_ACTIONS = [
-  { label: 'Income', Icon: TrendingUp, bg: 'rgba(0,212,170,0.12)', color: '#00d4aa', type: 'income', strokeWidth: 2.4 },
-  { label: 'Expense', Icon: TrendingDown, bg: 'rgba(255,92,131,0.12)', color: '#ff5c83', type: 'expense', strokeWidth: 2.4 },
-  { label: 'Invest', Icon: Plus, bg: 'rgba(169,96,238,0.12)', color: '#c084fc', type: 'investment', strokeWidth: 2.6 },
-  { label: 'Bills', Icon: Repeat, bg: 'rgba(247,179,43,0.12)', color: '#f7b32b', type: 'bills', strokeWidth: 2.4 },
+  { label: 'Income', Icon: TrendingUp, bg: 'bg-income-bg', color: 'var(--c-income)', type: 'income', strokeWidth: 2.4 },
+  { label: 'Expense', Icon: TrendingDown, bg: 'bg-expense-bg', color: 'var(--c-expense-bright)', type: 'expense', strokeWidth: 2.4 },
+  { label: 'Invest', Icon: Plus, bg: 'bg-invest-bg', color: 'var(--c-invest-text)', type: 'investment', strokeWidth: 2.6 },
+  { label: 'Bills', Icon: Repeat, bg: 'bg-repay-bg', color: 'var(--c-warning)', type: 'bills', strokeWidth: 2.4 },
 ]
 
 function DashboardHeroSkeleton() {
   return (
     <div className="card-hero p-6 relative overflow-hidden">
       <div className="flex items-center justify-between mb-4">
-        <div className="h-3 w-28 rounded-full shimmer" />
-        <div className="h-3 w-14 rounded-full shimmer" />
+        <div className="h-3 w-28 rounded-full shimmer opacity-80" />
+        <div className="h-3 w-14 rounded-full shimmer opacity-70" />
       </div>
 
-      <div className="mb-1 h-3 w-24 rounded-full shimmer" />
-      <div className="h-11 w-44 rounded-2xl shimmer" />
+      <div className="mb-1 h-3 w-24 rounded-full shimmer opacity-70" />
+      <div className="h-11 w-44 rounded-2xl shimmer opacity-85" />
 
-      <div className="mt-3 mb-5 h-6 w-32 rounded-full shimmer" />
+      <div className="mt-3 mb-5 h-6 w-32 rounded-full shimmer opacity-75" />
 
-      <div className="mb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+      <div className="border-t mb-4 border-white/15" />
 
       <div className="flex justify-between gap-1.5 sm:gap-2">
         {[1, 2, 3].map((slot) => (
-          <div key={slot} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <div className="h-2.5 w-12 rounded-full shimmer" />
-            <div className="mt-1 h-3.5 w-16 rounded-full shimmer" />
+          <div key={slot} className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl bg-white/10">
+            <div className="h-2.5 w-12 rounded-full shimmer opacity-70" />
+            <div className="mt-1 h-3.5 w-16 rounded-full shimmer opacity-85" />
           </div>
         ))}
       </div>
 
       <div className="mt-4">
         <div className="flex justify-between mb-2">
-          <div className="h-2.5 w-20 rounded-full shimmer" />
-          <div className="h-2.5 w-8 rounded-full shimmer" />
+          <div className="h-2.5 w-20 rounded-full shimmer opacity-70" />
+          <div className="h-2.5 w-8 rounded-full shimmer opacity-80" />
         </div>
-        <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-          <div className="h-full w-[56%] shimmer" />
+        <div className="h-2.5 rounded-full bg-white/15 overflow-hidden">
+          <div className="h-full w-[56%] shimmer opacity-80" />
         </div>
       </div>
     </div>
@@ -82,15 +82,18 @@ function DashboardRecentSkeleton() {
     <div>
       <div className="flex items-center justify-between mb-3">
         <p className="section-label">Latest</p>
-        <div className="h-3 w-14 rounded-full shimmer" />
+        <div className="h-3 w-14 rounded-full shimmer opacity-75" />
+      </div>
+
+      <div className="list-card">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={`recent-skeleton-${i}`} className="px-4 py-3.5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl shimmer shrink-0" />
+            <div className="w-10 h-10 rounded-xl shimmer opacity-80 shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="h-3.5 w-2/5 rounded-full shimmer" />
-              <div className="mt-2 h-2.5 w-1/4 rounded-full shimmer" />
+              <div className="h-3.5 w-2/5 rounded-full shimmer opacity-85" />
+              <div className="mt-2 h-2.5 w-1/4 rounded-full shimmer opacity-70" />
             </div>
-            <div className="h-3.5 w-16 rounded-full shimmer" />
+            <div className="h-3.5 w-16 rounded-full shimmer opacity-80" />
           </div>
         ))}
       </div>
@@ -432,14 +435,14 @@ export default function Dashboard() {
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <p className="text-caption" style={{ color: '#8898aa' }}>
+          <p className="text-caption text-ink-3">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="text-[20px] md:text-[24px] font-bold tracking-tight" style={{ color: '#f6f9fc' }}>
+          <h1 className="text-[20px] md:text-[24px] font-bold text-ink tracking-tight">
             {greeting}{firstName ? `, ${firstName}` : ''} 👋
           </h1>
           {isBackgroundFetching && (
-            <p className="text-[11px] mt-1" style={{ color: '#5e6e82' }}>Syncing latest data...</p>
+            <p className="text-[11px] text-ink-3 mt-1">Syncing latest data...</p>
           )}
         </motion.div>
 
@@ -464,11 +467,11 @@ export default function Dashboard() {
           {summaryLoading ? (
             <div className="card p-3.5">
               <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="h-3 w-20 rounded-full shimmer" />
-                <div className="h-5 w-14 rounded-full shimmer" />
+                <div className="h-3 w-20 rounded-full shimmer opacity-80" />
+                <div className="h-5 w-14 rounded-full shimmer opacity-70" />
               </div>
-              <div className="h-4 w-44 rounded-full shimmer mb-2" />
-              <div className="h-2.5 w-full rounded-full shimmer" />
+              <div className="h-4 w-44 rounded-full shimmer opacity-85 mb-2" />
+              <div className="h-2.5 w-full rounded-full shimmer opacity-70" />
             </div>
           ) : (
 
@@ -476,23 +479,16 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-3 mb-0.5">
                 <p className="section-label">Today focus</p>
                 <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
-                    ? 'text-warning-text'
+                    ? 'bg-warning-bg text-warning-text'
                     : todayFocus.tone === 'good'
-                      ? 'text-income-text'
-                      : 'text-brand-on'
-                  }`}
-                  style={{
-                    background: todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
-                      ? 'rgba(247,179,43,0.12)'
-                      : todayFocus.tone === 'good'
-                        ? 'rgba(0,212,170,0.12)'
-                        : 'rgba(99,91,255,0.12)'
-                  }}>
+                      ? 'bg-income-bg text-income-text'
+                      : 'bg-brand-container text-brand-on'
+                  }`}>
                   Priority
                 </span>
               </div>
               <p className="card-title">{todayFocus.title}</p>
-              <p className="text-[12px] mt-1" style={{ color: '#8898aa' }}>{todayFocus.detail}</p>
+              <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>
               <div className="grid grid-cols-2 gap-2 mt-2.5">
                 <button
                   type="button"
@@ -521,11 +517,11 @@ export default function Dashboard() {
                 onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
                 className="flex flex-col items-center gap-1.5 active:scale-[0.98] transition-transform duration-100 min-w-[62px]"
               >
-                <div className="w-12 h-12 rounded-full flex items-center justify-center"
-                  style={{ background: bg, color }}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
+                  style={{ color }}>
                   <Icon size={20} strokeWidth={strokeWidth} />
                 </div>
-                <span className="text-[11px] font-semibold" style={{ color: '#8898aa' }}>{label}</span>
+                <span className="text-[11px] font-semibold text-ink-3">{label}</span>
               </button>
             ))}
           </div>
@@ -537,15 +533,14 @@ export default function Dashboard() {
             <button onClick={() => navigate('/bills')}
               className="card-warn w-full flex items-center justify-between px-4 py-4 text-left">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(247,179,43,0.12)' }}>
-                  <Bell size={16} style={{ color: '#f7b32b' }} />
+                <div className="w-9 h-9 rounded-xl bg-warning-bg flex items-center justify-center shrink-0">
+                  <Bell size={16} className="text-warning-text" />
                 </div>
                 <div>
-                  <p className="text-body font-semibold" style={{ color: '#f6f9fc' }}>
+                  <p className="text-body font-semibold text-ink">
                     {dueSoonCount} bill{dueSoonCount > 1 ? 's' : ''} due soon
                   </p>
-                  <p className="text-label" style={{ color: '#8898aa' }}>{dueSoonDescs}</p>
+                  <p className="text-label text-ink-3">{dueSoonDescs}</p>
                 </div>
               </div>
               <ArrowRight size={15} className="text-ink-4 shrink-0" />
@@ -570,10 +565,9 @@ export default function Dashboard() {
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div>
                   <p className="section-label">What changed this week</p>
-                  <p className="text-caption mt-0.5" style={{ color: '#5e6e82' }}>7-day vs previous 7-day digest</p>
+                  <p className="text-caption text-ink-3 mt-0.5">7-day vs previous 7-day digest</p>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'}`}
-                  style={{ background: weeklyDigest.spendDelta <= 0 ? 'rgba(0,212,170,0.12)' : 'rgba(247,179,43,0.12)' }}>
+                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${weeklyDigest.spendDelta <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
                   {weeklyDigest.spendDelta <= 0 ? 'Spending cooled' : 'Spending up'}
                 </span>
               </div>
@@ -586,8 +580,8 @@ export default function Dashboard() {
               </div>
 
               {weeklyDigest.topCategory && (
-                <p className="text-[11px] mt-2" style={{ color: '#8898aa' }}>
-                  Top spend category this week: <span className="font-semibold" style={{ color: '#c1c9d2' }}>{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
+                <p className="text-[11px] text-ink-3 mt-2">
+                  Top spend category this week: <span className="font-semibold text-ink-2">{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
                 </p>
               )}
             </div>
@@ -599,23 +593,22 @@ export default function Dashboard() {
           <motion.div variants={fadeUp}>
             <div className="card p-3.5">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-caption font-medium" style={{ color: '#8898aa' }}>Invested this month</p>
+                <p className="text-caption text-ink-3 font-medium">Invested this month</p>
                 <div className="flex items-center gap-1.5">
                   {investDiff === 0
                     ? <Minus size={12} className="text-ink-3" />
                     : investUp
                       ? <TrendingUp size={12} className="text-income-text" />
                       : <TrendingDown size={12} className="text-expense-text" />}
-                  <span className={`text-caption font-semibold ${investDiff === 0 ? ''
+                  <span className={`text-caption font-semibold ${investDiff === 0 ? 'text-ink-3'
                       : investUp ? 'text-income-text' : 'text-expense-text'
-                    }`}
-                    style={investDiff === 0 ? { color: '#8898aa' } : {}}>
+                    }`}>
                     {investDiff === 0 ? 'Same as last month'
                       : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
                   </span>
                 </div>
               </div>
-              <p className="text-[22px] md:text-[24px] font-bold tabular-nums leading-[0.98] tracking-tight" style={{ color: '#c084fc' }}>{fmt(invested)}</p>
+              <p className="text-[22px] md:text-[24px] font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
             </div>
           </motion.div>
         )}

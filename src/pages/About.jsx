@@ -5,7 +5,6 @@ import {
   ArrowLeftIcon,
   HeartIcon, CodeIcon, CurrencyInrIcon, CopyIcon, CheckIcon,
   GithubLogoIcon, LockIcon, StarIcon, CaretDownIcon, CaretUpIcon,
-  RocketLaunchIcon, ShieldCheckIcon, LightningIcon,
 } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
 import KoshaLogo from '../components/KoshaLogo'
@@ -13,8 +12,8 @@ import { CHANGELOG } from '../lib/changelog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
 
-const fadeUp = createFadeUp(8, 0.22)
-const stagger = createStagger(0.06, 0.06)
+const fadeUp = createFadeUp(6, 0.18)
+const stagger = createStagger(0.06, 0.04)
 
 const UPI_ID = 'kumar.pavan.pk96@okicici'
 const REPO_URL = 'https://github.com/pavannauhwar-git/kosha'
@@ -22,42 +21,20 @@ const LINKEDIN = 'https://www.linkedin.com/in/pavannauhwar/'
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-[11px] font-bold uppercase tracking-[0.10em] mb-3 px-1"
-       style={{ color: C.accent }}>
+    <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
       {children}
     </p>
-  )
-}
-
-function GlassCard({ children, className = '', style = {} }) {
-  return (
-    <div
-      className={`rounded-[20px] ${className}`}
-      style={{
-        background: 'rgba(255,255,255,0.04)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.20)',
-        ...style,
-      }}
-    >
-      {children}
-    </div>
   )
 }
 
 function CardRow({ icon, label, sublabel, right, onClick, href }) {
   const inner = (
     <>
-      <div
-        className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
-        style={{ background: 'rgba(99,91,255,0.12)', border: '1px solid rgba(99,91,255,0.15)' }}
-      >
+      <div className="w-9 h-9 rounded-chip flex items-center justify-center shrink-0 bg-brand-container">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-semibold text-ink leading-snug">{label}</p>
+        <p className="text-[15px] font-medium text-ink leading-snug">{label}</p>
         {sublabel && <p className="text-[12px] text-ink-3 mt-0.5 truncate">{sublabel}</p>}
       </div>
       {right && <div className="shrink-0">{right}</div>}
@@ -99,170 +76,100 @@ export default function About() {
   }
 
   return (
-    <div className="min-h-dvh" style={{ background: '#0a2540' }}>
+    <div className="min-h-dvh bg-kosha-bg">
 
       {/* ── Sticky header ─────────────────────────────────────────── */}
       <div
-        className="sticky top-0 z-20 px-4 py-3 flex items-center gap-3"
-        style={{
-          background: 'rgba(10,37,64,0.88)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)',
-          paddingBottom: '0.75rem',
-        }}
+        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
       >
         <button
           onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
+          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center active:bg-kosha-surface-2"
         >
-          <ArrowLeftIcon size={16} color={C.ink} />
+          <ArrowLeftIcon size={16} className="text-ink-2" />
         </button>
         <h1 className="text-[17px] font-bold text-ink tracking-tight">About</h1>
       </div>
 
       <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
-        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-7">
+        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
 
-          {/* ── Hero section — full mesh gradient ─────────────────── */}
-          <motion.div variants={fadeUp}>
-            <div
-              className="relative overflow-hidden rounded-hero p-6"
-              style={{
-                background:
-                  'radial-gradient(ellipse at 15% 20%, rgba(128,233,255,0.25) 0%, transparent 50%),' +
-                  'radial-gradient(ellipse at 85% 75%, rgba(169,96,238,0.20) 0%, transparent 50%),' +
-                  'radial-gradient(ellipse at 50% 50%, rgba(99,91,255,0.18) 0%, transparent 55%),' +
-                  'linear-gradient(135deg, #0d2d4d 0%, #0a2540 50%, #11325a 100%)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 24px 64px rgba(0,0,0,0.35), 0 0 80px rgba(128,233,255,0.06)',
-              }}
-            >
-              {/* Animated glow orb */}
-              <div
-                className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl pointer-events-none"
-                style={{ background: 'rgba(128,233,255,0.12)' }}
-              />
+          {/* ── Hero strip ────────────────────────────────────────── */}
+          <motion.div variants={fadeUp} className="card-hero p-5 relative overflow-hidden">
+            <div className="absolute -right-8 -top-10 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute -left-10 -bottom-12 w-40 h-40 rounded-full bg-black/10 blur-2xl" />
 
-              <div className="relative z-[1]">
-                <div className="flex items-center gap-4 mb-4">
-                  <KoshaLogo size={52} />
-                  <div>
-                    <p
-                      className="text-[20px] font-bold leading-tight"
-                      style={{ color: '#f6f9fc' }}
-                    >
-                      Kosha
-                    </p>
-                    <p
-                      className="text-[13px] font-medium mt-0.5"
-                      style={{ color: C.accent }}
-                    >
-                      Personal finance, simplified
-                    </p>
-                  </div>
+            <div className="relative z-[1]">
+              <div className="flex items-center gap-3 mb-3">
+                <KoshaLogo size={42} />
+                <div>
+                  <p className="text-[17px] font-bold text-white leading-tight">Kosha</p>
+                  <p className="text-[12px] text-white/75">Personal finance, simplified</p>
                 </div>
+              </div>
 
-                <p
-                  className="text-[14px] leading-relaxed max-w-[440px] mb-5"
-                  style={{ color: 'rgba(255,255,255,0.70)' }}
+              <p className="text-[13px] text-white/90 leading-relaxed max-w-[460px]">
+                Built for clarity and calm. Kosha helps you capture money movement fast, trust your numbers, and make better decisions without noise.
+              </p>
+
+              <div className="grid grid-cols-3 gap-2 mt-4">
+                <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
+                  <p className="text-[10px] text-white/70">Version</p>
+                  <p className="text-[12px] font-semibold text-white">v{latestVersion}</p>
+                </div>
+                <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
+                  <p className="text-[10px] text-white/70">Releases</p>
+                  <p className="text-[12px] font-semibold text-white">{releaseCount}</p>
+                </div>
+                <div className="rounded-card bg-white/12 border border-white/20 px-2.5 py-2">
+                  <p className="text-[10px] text-white/70">Improvements</p>
+                  <p className="text-[12px] font-semibold text-white">{shippedItems}+</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => navigate('/guide')}
+                  className="h-10 px-4 rounded-pill bg-white text-brand text-[12px] font-semibold whitespace-nowrap"
                 >
-                  Built for clarity and calm. Capture money movement fast, trust your numbers,
-                  and make better decisions without noise.
-                </p>
-
-                {/* Stats row */}
-                <div className="grid grid-cols-3 gap-2.5">
-                  {[
-                    { label: 'Version', value: `v${latestVersion}` },
-                    { label: 'Releases', value: String(releaseCount) },
-                    { label: 'Shipped', value: `${shippedItems}+` },
-                  ].map(({ label, value }) => (
-                    <div
-                      key={label}
-                      className="rounded-[14px] px-3 py-2.5"
-                      style={{
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                      }}
-                    >
-                      <p className="text-[10px] font-medium uppercase tracking-wider"
-                         style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</p>
-                      <p className="text-[14px] font-bold mt-0.5"
-                         style={{ color: '#f6f9fc' }}>{value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Action buttons */}
-                <div className="grid grid-cols-2 gap-2.5 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/guide')}
-                    className="h-11 rounded-[12px] text-[13px] font-semibold
-                               active:scale-[0.97] transition-all duration-100"
-                    style={{
-                      background: 'linear-gradient(135deg, #635bff 0%, #7a73ff 100%)',
-                      color: '#ffffff',
-                      boxShadow: '0 4px 16px rgba(99,91,255,0.35)',
-                    }}
-                  >
-                    Product guide
-                  </button>
-                  <a
-                    href={REPO_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-11 rounded-[12px] text-[13px] font-semibold inline-flex items-center
-                               justify-center active:scale-[0.97] transition-all duration-100"
-                    style={{
-                      background: 'rgba(255,255,255,0.08)',
-                      color: '#f6f9fc',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                    }}
-                  >
-                    View GitHub
-                  </a>
-                </div>
+                  Open product guide
+                </button>
+                <a
+                  href={REPO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-10 px-4 rounded-pill border border-white/35 text-white text-[12px] font-semibold inline-flex items-center justify-center whitespace-nowrap"
+                >
+                  View GitHub
+                </a>
               </div>
             </div>
           </motion.div>
 
-          {/* ── Why Kosha — feature pillars ────────────────────────── */}
           <motion.div variants={fadeUp}>
             <SectionLabel>Why Kosha</SectionLabel>
-            <GlassCard className="p-5">
-              <p className="text-[14px] text-ink-2 leading-relaxed mb-5">
-                Most finance tools either overwhelm with dashboards or hide the details you need.
-                Kosha keeps direction and precision in one flow.
+            <div className="card p-4">
+              <p className="text-[13px] text-ink-2 leading-relaxed">
+                Most finance tools either overwhelm with dashboards or hide the details you need. Kosha is designed to keep both direction and precision in one flow: Dashboard for pulse, Transactions for truth, Reconciliation for trust.
               </p>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { icon: <RocketLaunchIcon size={18} weight="duotone" color={C.accent} />, label: 'Fast capture' },
-                  { icon: <LightningIcon size={18} weight="duotone" color={C.accent} />, label: 'Clear insights' },
-                  { icon: <ShieldCheckIcon size={18} weight="duotone" color={C.accent} />, label: 'Privacy first' },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex flex-col items-center gap-2 rounded-[14px] py-3 px-2"
-                    style={{ background: 'rgba(128,233,255,0.06)', border: '1px solid rgba(128,233,255,0.10)' }}
-                  >
-                    {item.icon}
-                    <span className="text-[11px] font-semibold text-ink-2 text-center">{item.label}</span>
-                  </div>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {['Fast capture', 'Clear insights', 'Privacy first'].map((pill) => (
+                  <span key={pill} className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand-on">
+                    {pill}
+                  </span>
                 ))}
               </div>
-            </GlassCard>
+            </div>
           </motion.div>
 
           {/* ── Author ────────────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
             <SectionLabel>Author</SectionLabel>
-            <GlassCard className="overflow-hidden p-0">
+            <div className="card overflow-hidden p-0">
               <CardRow
-                icon={<CodeIcon size={18} weight="duotone" color={C.brandLight} />}
+                icon={<CodeIcon size={17} weight="duotone" color={C.brand} />}
                 label="Pavan Kumar Nauhwar"
                 sublabel="Developer · India"
                 href={LINKEDIN}
@@ -273,13 +180,14 @@ export default function About() {
                   </svg>
                 }
               />
-            </GlassCard>
+            </div>
           </motion.div>
 
           {/* ── What's New ────────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
             <SectionLabel>What's new</SectionLabel>
-            <GlassCard className="overflow-hidden p-0">
+            <div className="card overflow-hidden p-0">
+
               {CHANGELOG
                 .slice(0, showAllVersions ? CHANGELOG.length : 1)
                 .map((release, ri) => (
@@ -287,11 +195,9 @@ export default function About() {
                     {ri > 0 && <Divider />}
                     <div className="flex items-center justify-between px-4 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
-                          style={{ background: 'rgba(99,91,255,0.12)', border: '1px solid rgba(99,91,255,0.15)' }}
-                        >
-                          <StarIcon size={18} weight="duotone" color={C.brandLight} />
+                        <div className="w-9 h-9 rounded-chip bg-brand-container
+                              flex items-center justify-center shrink-0">
+                          <StarIcon size={17} weight="duotone" color={C.brand} />
                         </div>
                         <div>
                           <p className="text-[15px] font-semibold text-ink">
@@ -301,10 +207,8 @@ export default function About() {
                         </div>
                       </div>
                       {ri === 0 && (
-                        <span
-                          className="text-[11px] font-bold px-2.5 py-1 rounded-full"
-                          style={{ background: 'rgba(128,233,255,0.12)', color: C.accent }}
-                        >
+                        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
+                               bg-brand-container text-brand-on">
                           Latest
                         </span>
                       )}
@@ -313,10 +217,7 @@ export default function About() {
                     <div className="px-4 py-3.5 space-y-2.5">
                       {release.items.map((item, i) => (
                         <div key={i} className="flex items-start gap-2.5">
-                          <div
-                            className="w-1.5 h-1.5 rounded-full mt-[7px] shrink-0"
-                            style={{ background: C.accent }}
-                          />
+                          <div className="w-1.5 h-1.5 rounded-full bg-brand mt-[6px] shrink-0" />
                           <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
                         </div>
                       ))}
@@ -330,10 +231,9 @@ export default function About() {
                   <Divider />
                   <button
                     onClick={() => setShowAllVersions(v => !v)}
-                    className="w-full px-4 py-3 text-[13px] font-semibold text-center
-                               active:bg-kosha-surface-2 transition-colors
+                    className="w-full px-4 py-3 text-[13px] font-semibold text-brand
+                               text-center active:bg-kosha-surface-2 transition-colors
                                flex items-center justify-center gap-1.5"
-                    style={{ color: C.accent }}
                   >
                     {showAllVersions
                       ? <>Hide older versions <CaretUpIcon size={13} weight="bold" /></>
@@ -342,25 +242,19 @@ export default function About() {
                   </button>
                 </>
               )}
-            </GlassCard>
+            </div>
           </motion.div>
 
           {/* ── Built With ────────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
             <SectionLabel>Built with</SectionLabel>
-            <GlassCard className="overflow-hidden p-0">
-              <div className="px-4 py-4">
+            <div className="card overflow-hidden p-0">
+              <div className="px-4 py-3.5">
                 <div className="flex flex-wrap gap-2">
                   {['React 18', 'Supabase', 'Tailwind CSS', 'Vite', 'Framer Motion', 'Phosphor Icons'].map(tech => (
-                    <span
-                      key={tech}
-                      className="text-[12px] font-semibold px-3 py-1.5 rounded-full"
-                      style={{
-                        background: 'rgba(99,91,255,0.10)',
-                        color: C.brandLight,
-                        border: '1px solid rgba(99,91,255,0.15)',
-                      }}
-                    >
+                    <span key={tech}
+                      className="text-[12px] font-medium text-brand bg-brand-container
+                                 px-2.5 py-1 rounded-full">
                       {tech}
                     </span>
                   ))}
@@ -368,7 +262,7 @@ export default function About() {
               </div>
               <Divider />
               <CardRow
-                icon={<GithubLogoIcon size={18} weight="fill" color={C.ink} />}
+                icon={<GithubLogoIcon size={17} weight="fill" color={C.ink} />}
                 label="View on GitHub"
                 sublabel="pavannauhwar-git/kosha"
                 href={REPO_URL}
@@ -379,55 +273,53 @@ export default function About() {
                   </svg>
                 }
               />
-            </GlassCard>
+            </div>
           </motion.div>
 
           {/* ── Privacy ───────────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
             <SectionLabel>Privacy</SectionLabel>
-            <GlassCard className="overflow-hidden p-0">
-              <div className="flex items-start gap-3.5 px-4 py-4">
-                <div
-                  className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 mt-0.5"
-                  style={{ background: 'rgba(0,212,170,0.12)', border: '1px solid rgba(0,212,170,0.15)' }}
-                >
-                  <LockIcon size={18} weight="duotone" color={C.income} />
+            <div className="card overflow-hidden p-0">
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <div className="w-9 h-9 rounded-chip bg-brand-container
+                                flex items-center justify-center shrink-0 mt-0.5">
+                  <LockIcon size={17} weight="duotone" color={C.brand} />
                 </div>
-                <p className="text-[14px] text-ink-2 leading-relaxed flex-1 pt-0.5">
+                <p className="text-[13px] text-ink-2 leading-relaxed flex-1 pt-1">
                   Your data lives in your own Supabase instance, protected by
                   row-level security. No analytics, no tracking, no third-party sharing.
                 </p>
               </div>
-            </GlassCard>
+            </div>
           </motion.div>
 
           {/* ── Support ───────────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
             <SectionLabel>Support Kosha</SectionLabel>
-            <GlassCard className="overflow-hidden p-0">
+            <div className="card overflow-hidden p-0">
               <CardRow
-                icon={<CurrencyInrIcon size={18} weight="bold" color={C.accent} />}
+                icon={<CurrencyInrIcon size={17} weight="bold" color={C.brand} />}
                 label="Pay via UPI"
                 sublabel={UPI_ID}
                 onClick={copyUpi}
                 right={
                   copied
-                    ? <CheckIcon size={16} weight="bold" color={C.income} />
-                    : <CopyIcon size={16} color={C.inkMuted} />
+                    ? <CheckIcon size={15} weight="bold" color={C.income} />
+                    : <CopyIcon size={15} color={C.inkMuted} />
                 }
               />
-            </GlassCard>
+            </div>
           </motion.div>
 
           {/* ── Footer ────────────────────────────────────────────── */}
           <motion.div variants={fadeUp}
-            className="flex items-center justify-center gap-1.5 pt-1 pb-2"
+            className="flex items-center justify-center gap-1.5 pt-2 pb-2"
           >
-            <p className="text-[12px] text-ink-4">
+            <p className="text-caption text-ink-4">
               v{latestVersion} · Made with
             </p>
             <HeartIcon size={12} weight="fill" color={C.expense} />
-            <p className="text-[12px] text-ink-4">in India</p>
+            <p className="text-caption text-ink-4">in India</p>
           </motion.div>
 
         </motion.div>

@@ -36,7 +36,7 @@ const DashboardPaceCard = memo(function DashboardPaceCard({
             <span className="text-caption text-ink-3">Month elapsed</span>
             <span className="text-caption font-semibold text-ink">{dayPct}%</span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FF' }}>
             <motion.div className="h-full rounded-full bg-income"
               initial={{ width: 0 }}
               animate={{ width: `${dayPct}%` }}
@@ -54,7 +54,7 @@ const DashboardPaceCard = memo(function DashboardPaceCard({
               {spendPct}%
             </span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#EDE9FF' }}>
             <motion.div className="h-full rounded-full bg-expense"
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(spendPct, 100)}%` }}
