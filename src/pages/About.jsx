@@ -129,14 +129,15 @@ export default function About() {
             <div
               className="relative overflow-hidden rounded-hero p-6"
               style={{
-                background: '#0a2540',
-                boxShadow: '0 24px 64px rgba(10,37,64,0.20), 0 8px 24px rgba(0,0,0,0.08)',
+                background: '#ffffff',
+                boxShadow: '0 24px 64px rgba(10,37,64,0.08), 0 8px 24px rgba(0,0,0,0.04)',
+                border: '1px solid rgba(0,0,0,0.08)',
               }}
             >
               {/* Subtle brand glow */}
               <div
                 className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl pointer-events-none"
-                style={{ background: 'rgba(99,91,255,0.20)' }}
+                style={{ background: 'rgba(99,91,255,0.10)' }}
               />
 
               <div className="relative z-[1]">
@@ -145,13 +146,13 @@ export default function About() {
                   <div>
                     <p
                       className="text-[20px] font-bold leading-tight"
-                      style={{ color: '#f6f9fc' }}
+                      style={{ color: '#0a2540' }}
                     >
                       Kosha
                     </p>
                     <p
                       className="text-[13px] font-medium mt-0.5"
-                      style={{ color: 'rgba(255,255,255,0.75)' }}
+                      style={{ color: '#6b7c93' }}
                     >
                       Personal finance, simplified
                     </p>
@@ -160,7 +161,7 @@ export default function About() {
 
                 <p
                   className="text-[14px] leading-relaxed max-w-[440px] mb-5"
-                  style={{ color: 'rgba(255,255,255,0.70)' }}
+                  style={{ color: '#6b7c93' }}
                 >
                   Built for clarity and calm. Capture money movement fast, trust your numbers,
                   and make better decisions without noise.
@@ -177,14 +178,14 @@ export default function About() {
                       key={label}
                       className="rounded-[14px] px-3 py-2.5"
                       style={{
-                        background: 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.12)',
+                        background: 'rgba(99,91,255,0.06)',
+                        border: '1px solid rgba(99,91,255,0.12)',
                       }}
                     >
                       <p className="text-[10px] font-medium uppercase tracking-wider"
-                         style={{ color: 'rgba(255,255,255,0.65)' }}>{label}</p>
+                         style={{ color: '#6b7c93' }}>{label}</p>
                       <p className="text-[14px] font-bold mt-0.5"
-                         style={{ color: '#f6f9fc' }}>{value}</p>
+                         style={{ color: '#0a2540' }}>{value}</p>
                     </div>
                   ))}
                 </div>
@@ -211,9 +212,9 @@ export default function About() {
                     className="h-11 rounded-[12px] text-[13px] font-semibold inline-flex items-center
                                justify-center active:scale-[0.97] transition-all duration-100"
                     style={{
-                      background: 'rgba(255,255,255,0.20)',
-                      color: '#ffffff',
-                      border: '1px solid rgba(255,255,255,0.30)',
+                      background: 'rgba(10,37,64,0.06)',
+                      color: '#0a2540',
+                      border: '1px solid rgba(10,37,64,0.12)',
                     }}
                   >
                     View GitHub

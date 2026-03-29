@@ -50,13 +50,12 @@ function persistViewed(nextSet) {
   }
 }
 
-const CARD_MESH = {
-  dashboard: 'radial-gradient(ellipse at 90% 10%, rgba(244,114,182,0.18) 0%, transparent 55%), radial-gradient(ellipse at 10% 90%, rgba(168,85,247,0.14) 0%, transparent 55%), linear-gradient(135deg, rgba(249,168,212,0.10) 0%, rgba(253,186,116,0.08) 100%)',
-  transactions: 'radial-gradient(ellipse at 85% 15%, rgba(14,159,110,0.16) 0%, transparent 55%), radial-gradient(ellipse at 15% 85%, rgba(251,191,36,0.12) 0%, transparent 55%), linear-gradient(135deg, rgba(14,159,110,0.06) 0%, rgba(251,191,36,0.06) 100%)',
-  bills: 'radial-gradient(ellipse at 80% 20%, rgba(251,146,60,0.18) 0%, transparent 55%), radial-gradient(ellipse at 20% 80%, rgba(244,114,182,0.12) 0%, transparent 55%), linear-gradient(135deg, rgba(251,146,60,0.08) 0%, rgba(251,191,36,0.06) 100%)',
-  analytics: 'radial-gradient(ellipse at 85% 15%, rgba(139,92,246,0.16) 0%, transparent 55%), radial-gradient(ellipse at 15% 85%, rgba(244,114,182,0.14) 0%, transparent 55%), linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(251,191,36,0.06) 100%)',
-  monthly: 'radial-gradient(ellipse at 80% 20%, rgba(244,114,182,0.16) 0%, transparent 55%), radial-gradient(ellipse at 20% 80%, rgba(251,191,36,0.14) 0%, transparent 55%), linear-gradient(135deg, rgba(251,146,60,0.08) 0%, rgba(168,85,247,0.06) 100%)',
-  reconciliation: 'radial-gradient(ellipse at 80% 20%, rgba(99,91,255,0.16) 0%, transparent 55%), radial-gradient(ellipse at 20% 80%, rgba(14,159,110,0.12) 0%, transparent 55%), linear-gradient(135deg, rgba(99,91,255,0.08) 0%, rgba(14,159,110,0.06) 100%)',
+const CARD_ACCENT = {
+  dashboard:      '#635bff',
+  transactions:   '#0e9f6e',
+  bills:          '#f59e0b',
+  analytics:      '#7c3aed',
+  reconciliation: '#635bff',
 }
 
 const FEATURE_CARDS = [
@@ -362,34 +361,43 @@ export default function Guide() {
             {filteredCards.map((card) => {
               const Icon = card.icon
               const isViewed = viewed.has(card.id)
-              const mesh = CARD_MESH[card.id] || ''
+              const accentColor = CARD_ACCENT[card.id] || '#635bff'
               return (
                 <motion.button
                   key={card.id}
                   type="button"
-                  whileHover={{ y: -1 }}
+                  whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.985 }}
-                  transition={{ duration: 0.1 }}
+                  transition={{ duration: 0.12 }}
                   onClick={() => openFeature(card.id)}
-                  className="card p-4 text-left relative"
+                  className="card p-0 text-left relative overflow-hidden"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-body font-semibold text-ink truncate">{card.title}</p>
-                      <p className="text-[12px] text-ink-3 mt-0.5 truncate">{card.subtitle}</p>
+                  {/* Left accent border */}
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-card" style={{ background: accentColor }} />
+
+                  <div className="pl-5 pr-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2.5 mb-1">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ background: `${accentColor}12`, color: accentColor }}
+                          >
+                            <Icon size={15} weight="duotone" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-body font-semibold text-ink truncate">{card.title}</p>
+                            <p className="text-[11px] text-ink-4 truncate">{card.subtitle}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 mt-1 ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                        {isViewed ? 'Viewed' : 'New'}
+                      </span>
                     </div>
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${card.accent}`}>
-                      <Icon size={16} />
+                    <p className="text-label text-ink-3 mt-2">{card.summary}</p>
+                    <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold" style={{ color: accentColor }}>
+                      Open details <ArrowRight size={13} />
                     </div>
-                  </div>
-                  <div className="mt-2 inline-flex items-center gap-1">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                      {isViewed ? 'Viewed' : 'New'}
-                    </span>
-                  </div>
-                  <p className="text-label text-ink-3 mt-2.5">{card.summary}</p>
-                  <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
-                    Open details <ArrowRight size={13} />
                   </div>
                 </motion.button>
               )
