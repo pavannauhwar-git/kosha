@@ -12,14 +12,14 @@ export default {
         'kosha-border':        '#B8C4FF',
         'kosha-border-strong': '#4E63F0',
 
-        // ── Brand — Zaffre + Electric Lime ───────────────────────────────
+        // ── Brand — Zaffre + Natural Lime ────────────────────────────────
         'brand':           '#0014A8',
         'brand-dark':      '#000B73',
         'brand-mid':       '#1E36D8',
         'brand-bg':        '#EEF1FF',
         'brand-container': '#E2E7FF',
         'brand-on':        '#001171',
-        'brand-accent':    '#D9FF3D',
+        'brand-accent':    '#E2F58E',
 
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#059669',

@@ -1,16 +1,3 @@
-/**
- * Kosha palette — JS constants
- *
- * Single source of truth for every colour used in inline styles,
- * Framer Motion animate props, recharts fill/stroke props,
- * SVG attributes, and Phosphor Icon color props.
- *
- * To change the palette:
- *   1. Edit values here
- *   2. Update matching CSS variables in src/index.css  (:root block)
- *   3. Update matching tokens in tailwind.config.js
- */
-
 export const C = {
 
   // ── Brand — Zaffre ───────────────────────────────────────────────
@@ -20,12 +7,12 @@ export const C = {
   brandContainer:  '#E2E7FF',
   brandBorder:     '#B8C4FF',
 
-  // ── Accent — Electric Lime ───────────────────────────────────────
-  // Reserved for hero-card highlights over dark brand surfaces.
-  // Keep usage sparse to avoid visual noise.
-  accent:          '#CCFF00',
-  accentBg:        'rgba(204,255,0,0.16)',
-  accentFill:      'rgba(204,255,0,0.66)',
+  // ── Accent — Natural Lime ────────────────────────────────────────
+  // Hero-card contrast over dark brand surfaces.
+  // Vivid enough to pop, but less synthetic than electric lime.
+  accent:          '#C7E34F',
+  accentBg:        'rgba(199,227,79,0.24)',
+  accentFill:      'rgba(199,227,79,0.92)',
 
   // ── Income — Emerald H=174° ───────────────────────────────────────
   income:          '#059669',
@@ -48,10 +35,10 @@ export const C = {
   ink:             '#141B47',
   inkMuted:        '#5E6AA8',
 
-  // ── Hero card overlays (Electric Lime over deep brand) ───────────
-  heroAccent:      'rgba(204,255,0,0.66)',
-  heroAccentBg:    'rgba(204,255,0,0.16)',
-  heroAccentSolid: '#D9FF3D',
+  // ── Hero card overlays (Natural Lime over deep brand) ────────────
+  heroAccent:      '#D6EF72',
+  heroAccentBg:    'rgba(199,227,79,0.24)',
+  heroAccentSolid: '#E2F58E',
   heroLabel:       'rgba(255,255,255,0.64)', // labels and helper copy on hero
   heroDimmer:      'rgba(255,255,255,0.46)', // low-priority watermark/meta
   heroDivider:     'rgba(255,255,255,0.16)', // horizontal rule
