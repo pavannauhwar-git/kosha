@@ -1,7 +1,15 @@
 import { CATEGORIES } from '../lib/categories'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { CashFlowChart, NetSavingsChart } from '../components/dashboard/AnalyticsCharts'
+import {
+  CashFlowChart,
+  NetSavingsChart,
+  MoneyFlowComparisonChart,
+  SurplusTrajectoryChart,
+  WhatIfSimulatorCard,
+  RunwayCoverageChart,
+  VolatilityScoreCard,
+} from '../components/dashboard/AnalyticsCharts'
 import { useYearSummary } from '../hooks/useTransactions'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
 import { fmt } from '../lib/utils'
@@ -46,11 +54,13 @@ export default function Analytics() {
 
   const top5 = data?.top5 || []
 
-  const chartData = useMemo(() => (data?.monthly || [])
+  const flowTrendData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
       name: MONTH_SHORT[i],
       Income: Math.round(toFiniteNumber(m?.income)),
       Spent: Math.round(toFiniteNumber(m?.expense)),
+      Invested: Math.round(toFiniteNumber(m?.investment)),
+      Outflow: Math.round(toFiniteNumber(m?.expense) + toFiniteNumber(m?.investment)),
     })), [data?.monthly])
 
   const surplusData = useMemo(() => (data?.monthly || [])
@@ -75,6 +85,21 @@ export default function Analytics() {
     .sort((a, b) => b[1] - a[1]), [data?.byCategory])
   const catEntries = useMemo(() => allCatEntries.slice(0, 8), [allCatEntries])
   const categoryTotal = useMemo(() => allCatEntries.reduce((s, [, v]) => s + v, 0) || 1, [allCatEntries])
+
+  const scenarioCategories = useMemo(() => allCatEntries.map(([id, value]) => ({
+    id,
+    label: CATEGORIES.find((category) => category.id === id)?.label || id,
+    value: toFiniteNumber(value),
+  })), [allCatEntries])
+
+  const annualSurplus = useMemo(
+    () => Math.round(
+      toFiniteNumber(data?.totalIncome)
+      - toFiniteNumber(data?.totalExpense)
+      - toFiniteNumber(data?.totalInvestment)
+    ),
+    [data?.totalIncome, data?.totalExpense, data?.totalInvestment]
+  )
 
   const vehicleData = useMemo(
     () => Object.entries(data?.byVehicle || {})
@@ -115,6 +140,33 @@ export default function Analytics() {
     return items.slice(0, 3)
   }, [data, catEntries, categoryTotal])
 
+  const decisionSignals = useMemo(() => {
+    if (!flowTrendData.length || !surplusData.length) return []
+
+    const highestBurn = flowTrendData
+      .map((row) => ({
+        name: row.name,
+        burn: row.Income > 0 ? Math.round((row.Outflow / row.Income) * 100) : 0,
+      }))
+      .sort((a, b) => b.burn - a.burn)[0]
+
+    const strongestSurplus = [...surplusData].sort((a, b) => b.Net - a.Net)[0]
+    const deepestDip = [...surplusData].sort((a, b) => a.Net - b.Net)[0]
+    const heaviestDeploy = flowTrendData
+      .map((row) => ({
+        name: row.name,
+        share: row.Income > 0 ? Math.round((row.Invested / row.Income) * 100) : 0,
+      }))
+      .sort((a, b) => b.share - a.share)[0]
+
+    return [
+      `Highest cash burn month: ${highestBurn?.name || '—'} at ${highestBurn?.burn || 0}% outflow-to-income ratio.`,
+      `Strongest surplus month: ${strongestSurplus?.name || '—'} with ${fmt(strongestSurplus?.Net || 0)} leftover.`,
+      `Deepest monthly dip: ${deepestDip?.name || '—'} at ${fmt(Math.abs(deepestDip?.Net || 0))} below zero.`,
+      `Highest investment deployment: ${heaviestDeploy?.name || '—'} at ${heaviestDeploy?.share || 0}% of monthly income.`,
+    ]
+  }, [flowTrendData, surplusData])
+
   const hasYearData = useMemo(() => {
     return (
       Number(data?.totalIncome || 0) > 0 ||
@@ -135,8 +187,7 @@ export default function Analytics() {
 
   return (
     <div className="page">
-      <PageHeader title="Analytics" className="mb-1" />
-      <p className="text-[12px] text-ink-3 mb-3">Use this page for full-year decisions: where money went, what remained as surplus, and what to optimize next.</p>
+      <PageHeader title="Analytics" className="mb-3" />
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
       <PickerNavigator
@@ -171,13 +222,6 @@ export default function Analytics() {
         >
           {hasYearData ? (
             <>
-              {/* ── 1. Hero summary ──────────────────────────────────────── */}
-              <AnnualSummaryCard
-                data={data}
-                prevData={prevData}
-                year={year}
-              />
-
               {strategicRecommendations.length > 0 && (
                 <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
                   <SectionHeader
@@ -214,8 +258,19 @@ export default function Analytics() {
               )}
 
               {/* ── 3. Performance trends ─────────────────────────────── */}
+              <MoneyFlowComparisonChart flowData={flowTrendData} />
+
+              <SurplusTrajectoryChart netData={surplusData} />
+
+              <RunwayCoverageChart
+                flowData={flowTrendData}
+                annualSurplus={annualSurplus}
+              />
+
+              <VolatilityScoreCard flowData={flowTrendData} />
+
               <CashFlowChart
-                chartData={chartData}
+                chartData={flowTrendData}
                 totalIncome={data?.totalIncome}
               />
 
@@ -224,7 +279,35 @@ export default function Analytics() {
                 netAxisMax={netAxisMax}
               />
 
-              {/* ── 4. Spending intelligence ─────────────────────────── */}
+              <WhatIfSimulatorCard
+                categories={scenarioCategories}
+                totalIncome={data?.totalIncome}
+                totalExpense={data?.totalExpense}
+                totalInvestment={data?.totalInvestment}
+              />
+
+              {/* ── 4. Annual snapshot (non-hero) ───────────────────── */}
+              <AnnualSummaryCard
+                data={data}
+                prevData={prevData}
+                year={year}
+              />
+
+              {decisionSignals.length > 0 && (
+                <div className="card p-4">
+                  <SectionHeader title="Decision signals" rightText="What to act on" className="mb-2" />
+                  <div className="space-y-2">
+                    {decisionSignals.map((line, idx) => (
+                      <div key={`signal-${idx}`} className="flex items-start gap-2.5">
+                        <span className="w-5 h-5 rounded-pill bg-brand-container text-brand-on text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
+                        <p className="text-[12px] text-ink-2 leading-relaxed">{line}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── 5. Spending intelligence ─────────────────────────── */}
               {catEntries.length > 0 ? (
                 <CategorySpendingChart
                   entries={catEntries}
@@ -247,7 +330,7 @@ export default function Analytics() {
                 </div>
               )}
 
-              {/* ── 5. Portfolio composition ─────────────────────────── */}
+              {/* ── 6. Portfolio composition ─────────────────────────── */}
               {vehicleData.length > 0 && vehicleTotal > 0 ? (
                 <PortfolioAllocation vehicleData={vehicleData} />
               ) : (

@@ -304,8 +304,7 @@ export default function Reconciliation() {
 
   return (
     <div className="page">
-      <PageHeader title="Reconciliation" />
-      <p className="text-[12px] text-ink-3 mb-3">Use this page to clean transaction quality so Dashboard, Monthly, and Analytics numbers stay trustworthy.</p>
+      <PageHeader title="Reconciliation" className="mb-3" />
 
       <div className="card p-4 mb-6">
         <div className="flex items-start justify-between gap-4">

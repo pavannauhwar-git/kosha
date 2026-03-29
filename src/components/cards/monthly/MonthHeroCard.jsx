@@ -29,7 +29,7 @@ export default function MonthHeroCard({ month, year, data }) {
       </p>
 
       <div className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill border border-white/12" style={{ background: C.heroAccentBg }}>
-        <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
+        <span className="text-caption font-semibold" style={{ color: C.ink }}>
           {rate}% saved
         </span>
       </div>

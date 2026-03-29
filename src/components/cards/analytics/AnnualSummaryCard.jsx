@@ -16,11 +16,9 @@ function getDelta(current, previous) {
   }
 }
 
-function deltaClass(delta, inverse = false) {
-  if (delta?.pct == null || delta?.pct === 0) return 'text-ink-3'
-  const isPositive = delta.pct > 0
-  const isGood = inverse ? !isPositive : isPositive
-  return isGood ? 'text-income-text' : 'text-expense-text'
+function scaledWidth(value, maxValue) {
+  if (maxValue <= 0) return 8
+  return Math.max(8, Math.round((Math.abs(Number(value || 0)) / maxValue) * 100))
 }
 
 export default function AnnualSummaryCard({ data, prevData, year }) {
@@ -43,54 +41,45 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   const annualBalanceDelta = getDelta(annualBalance, previousAnnualBalance)
   const outflow = totalExpense + totalInvestment
 
-  const spendShare = totalIncome > 0 ? Math.round((totalExpense / totalIncome) * 100) : 0
-  const investShare = totalIncome > 0 ? Math.round((totalInvestment / totalIncome) * 100) : 0
-  const retainedShare = Math.max(0, 100 - spendShare - investShare)
-
-  const metricCards = [
+  const comparisonRows = [
     {
-      label: 'Earned',
-      value: totalIncome,
+      label: 'Income',
+      current: totalIncome,
+      previous: Number(prevData?.totalIncome || 0),
+      color: C.brand,
       delta: getDelta(totalIncome, prevData?.totalIncome),
-      tone: C.chartIncome,
-      inverse: false,
+      deltaTone: 'text-brand',
     },
     {
-      label: 'Spent',
-      value: totalExpense,
+      label: 'Expenses',
+      current: totalExpense,
+      previous: Number(prevData?.totalExpense || 0),
+      color: C.chartExpense,
       delta: getDelta(totalExpense, prevData?.totalExpense),
-      tone: C.chartExpense,
-      inverse: true,
+      deltaTone: 'text-expense-text',
     },
     {
-      label: 'Invested',
-      value: totalInvestment,
+      label: 'Investments',
+      current: totalInvestment,
+      previous: Number(prevData?.totalInvestment || 0),
+      color: C.invest,
       delta: getDelta(totalInvestment, prevData?.totalInvestment),
-      tone: C.heroAccentSolid,
-      inverse: false,
+      deltaTone: 'text-invest-text',
+    },
+    {
+      label: 'Surplus',
+      current: annualBalance,
+      previous: previousAnnualBalance,
+      color: C.brandMid,
+      delta: annualBalanceDelta,
+      deltaTone: annualBalance >= 0 ? 'text-brand' : 'text-warning-text',
     },
   ]
 
-  const allocationRows = [
-    {
-      label: 'Spent share',
-      pct: Math.max(0, Math.min(100, spendShare)),
-      value: totalExpense,
-      color: C.chartExpense,
-    },
-    {
-      label: 'Invested share',
-      pct: Math.max(0, Math.min(100, investShare)),
-      value: totalInvestment,
-      color: C.invest,
-    },
-    {
-      label: 'Retained share',
-      pct: Math.max(0, Math.min(100, retainedShare)),
-      value: Math.max(0, annualBalance),
-      color: C.chartIncome,
-    },
-  ]
+  const maxComparisonValue = comparisonRows.reduce(
+    (max, row) => Math.max(max, Math.abs(row.current), Math.abs(row.previous)),
+    1
+  )
 
   return (
     <div className="card p-4 md:p-5">
@@ -107,7 +96,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3.5">
         <div className="rounded-card bg-kosha-surface-2 p-2.5 border border-kosha-border">
           <p className="text-[10px] text-ink-3">Year surplus</p>
-          <p className={`text-[14px] font-bold tabular-nums ${annualBalance >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+          <p className={`text-[14px] font-bold tabular-nums ${annualBalance >= 0 ? 'text-brand' : 'text-warning-text'}`}>
             {annualBalance >= 0 ? '+' : '-'}{fmt(Math.abs(annualBalance))}
           </p>
         </div>
@@ -127,55 +116,51 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
 
       <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] font-semibold text-ink-3">Capital allocation</p>
-          <span className={`text-[11px] font-semibold ${deltaClass(annualBalanceDelta, false)}`}>{annualBalanceDelta.label}</span>
+          <p className="text-[11px] font-semibold text-ink-3">Year over year comparison</p>
+          <span className={`text-[11px] font-semibold ${annualBalance >= 0 ? 'text-brand' : 'text-warning-text'}`}>{annualBalanceDelta.label}</span>
         </div>
 
         <div className="space-y-2.5">
-          {allocationRows.map((item) => (
-            <div key={item.label}>
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[10px] text-ink-3">{item.label}</span>
-                <span className="text-[10px] font-semibold tabular-nums text-ink">{item.pct}% · {fmt(item.value)}</span>
+          {comparisonRows.map((row) => (
+            <div key={row.label} className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <span className="text-[10px] text-ink-3 font-semibold">{row.label}</span>
+                <span className={`text-[10px] font-semibold tabular-nums ${row.deltaTone}`}>{row.delta.label}</span>
               </div>
-              <div className="h-1.5 rounded-full bg-brand-container/45 overflow-hidden">
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{ background: item.color }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${item.pct}%` }}
-                  transition={{ duration: 0.6, ease: 'easeOut' }}
-                />
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-[10px] text-ink-3 mb-1">This year · {fmt(row.current)}</p>
+                  <div className="h-1.5 rounded-full bg-brand-container/40 overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ background: row.color }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${scaledWidth(row.current, maxComparisonValue)}%` }}
+                      transition={{ duration: 0.55, ease: 'easeOut' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] text-ink-3 mb-1">Last year · {fmt(row.previous)}</p>
+                  <div className="h-1.5 rounded-full bg-brand-container/40 overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full opacity-55"
+                      style={{ background: row.color }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${scaledWidth(row.previous, maxComparisonValue)}%` }}
+                      transition={{ duration: 0.55, ease: 'easeOut' }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        {metricCards.map((card) => (
-          <div key={card.label} className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] text-ink-3">{card.label}</p>
-              <p className={`text-[10px] font-semibold whitespace-nowrap ${deltaClass(card.delta, card.inverse)}`}>
-                {card.delta.label}
-              </p>
-            </div>
-
-            <p className="text-[14px] font-bold text-ink tabular-nums mt-1">{fmt(card.value)}</p>
-
-            <div className="mt-2 h-1.5 rounded-full bg-brand-container/45 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{ background: card.tone }}
-                initial={{ width: 0 }}
-                animate={{ width: `${card.delta.width}%` }}
-                transition={{ duration: 0.7, ease: 'easeOut' }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+      <p className="text-[11px] text-ink-3">Surplus and allocation are shown as comparisons so trend shifts are easier to decide on than raw totals alone.</p>
     </div>
   )
 }

@@ -244,8 +244,7 @@ export default function Bills() {
 
   return (
     <div className="page">
-      <PageHeader title="Bills & Dues" className="mb-1" />
-      <p className="text-[12px] text-ink-3 mb-3">Use this page to avoid missed dues: what is due soon, how urgent it is, and how much cash is committed.</p>
+      <PageHeader title="Bills & Dues" className="mb-3" />
 
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-2.5 flex items-center justify-between gap-3">
@@ -278,7 +277,7 @@ export default function Bills() {
           className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'pending'
               ? 'bg-warning text-white shadow-card'
-              : 'bg-warning/15 text-warning-text border border-warning/20'}`}
+              : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Pending ({visiblePending.length})
         </button>
@@ -287,7 +286,7 @@ export default function Bills() {
           className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'paid'
               ? 'bg-income-text text-white shadow-card'
-              : 'bg-income-bg text-income-text border border-income-border'}`}
+              : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Paid ({visiblePaid.length})
         </button>

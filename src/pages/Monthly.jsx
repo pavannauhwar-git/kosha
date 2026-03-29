@@ -33,6 +33,9 @@ export default function Monthly() {
   }, [])
 
   const { data, loading } = useMonthSummary(year, month)
+  const prevYear = month === 1 ? year - 1 : year
+  const prevMonth = month === 1 ? 12 : month - 1
+  const { data: prevMonthSummary } = useMonthSummary(prevYear, prevMonth, { enabled: heavyReady })
   const monthStartDate = `${year}-${String(month).padStart(2, '0')}-01`
   const monthEndDate = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
   const { data: txnRows = [] } = useTransactions({
@@ -98,6 +101,31 @@ export default function Monthly() {
     () => allCatEntries.filter(([id]) => budgets[id]).length,
     [allCatEntries, budgets]
   )
+
+  const investmentSnapshot = useMemo(() => {
+    const previousInvestment = Number(prevMonthSummary?.investment || 0)
+    const investmentDelta = invested - previousInvestment
+    const shareOfInflow = inflow > 0 ? Math.round((invested / inflow) * 100) : 0
+    const topVehicleEntry = vehicleEntries[0] || null
+
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+    const daysInTargetMonth = new Date(year, month, 0).getDate()
+    const daysElapsed = isCurrentMonth
+      ? Math.max(1, Math.min(now.getDate(), daysInTargetMonth))
+      : daysInTargetMonth
+    const projectedInvestment = isCurrentMonth
+      ? (daysElapsed > 0 ? (invested / daysElapsed) * daysInTargetMonth : invested)
+      : invested
+
+    return {
+      previousInvestment,
+      investmentDelta,
+      shareOfInflow,
+      projectedInvestment,
+      topVehicleName: topVehicleEntry?.[0] || 'No vehicle yet',
+      topVehicleAmount: Number(topVehicleEntry?.[1] || 0),
+    }
+  }, [prevMonthSummary?.investment, invested, inflow, vehicleEntries, year, month, now])
 
   const monthlyBillStatus = useMemo(() => {
     const total = pendingBills.length + paidBills.length
@@ -306,8 +334,7 @@ export default function Monthly() {
 
   return (
     <div className="page">
-      <PageHeader title="Monthly" className="mb-1" />
-      <p className="text-[12px] text-ink-3 mb-3">Use this page to close one month clearly: what happened, what is off-track, and what to fix before month-end.</p>
+      <PageHeader title="Monthly" className="mb-3" />
 
       <PickerNavigator
         className="mb-3"
@@ -409,6 +436,57 @@ export default function Monthly() {
 
           {heavyReady && (
             <BreakdownCard earned={inflow} spent={spent} invested={invested} totalLabel="Total inflow" />
+          )}
+
+          {heavyReady && (
+            <div className="card p-4">
+              <SectionHeader
+                className="mb-2"
+                title="Investment snapshot"
+                subtitle="Contribution pace, concentration, and month-end projection"
+                badge={{
+                  label: invested > 0 ? `${investmentSnapshot.shareOfInflow}% of inflow` : 'No deployment',
+                  className: invested > 0 ? 'bg-brand-container text-brand-on' : 'bg-kosha-surface-2 text-ink-3 border border-kosha-border',
+                }}
+              />
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">This month</p>
+                  <p className="text-base font-bold text-invest-text tabular-nums">{fmt(invested)}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Vs last month</p>
+                  <p className={`text-base font-bold tabular-nums ${investmentSnapshot.investmentDelta >= 0 ? 'text-brand' : 'text-warning-text'}`}>
+                    {investmentSnapshot.investmentDelta >= 0 ? '+' : '-'}{fmt(Math.abs(investmentSnapshot.investmentDelta))}
+                  </p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Projected close</p>
+                  <p className="text-base font-bold text-ink tabular-nums">{fmt(investmentSnapshot.projectedInvestment)}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3 truncate">Top vehicle</p>
+                  <p className="text-[12px] font-semibold text-ink truncate">{investmentSnapshot.topVehicleName}</p>
+                  <p className="text-[12px] font-bold text-invest-text tabular-nums mt-0.5">{fmt(investmentSnapshot.topVehicleAmount)}</p>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-ink-3">
+                {invested > 0
+                  ? `Investment deployment is ${investmentSnapshot.shareOfInflow}% of total inflow for this month.`
+                  : 'No investment entries yet. Add one to track deployment pace and concentration.'}
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <button type="button" onClick={() => navigate('/analytics')} className="btn-secondary h-10 px-3 text-[11px] justify-center">
+                  Open analytics
+                </button>
+                <button type="button" onClick={() => navigate('/transactions')} className="btn-primary h-10 px-3 text-[11px] justify-center">
+                  Log investment
+                </button>
+              </div>
+            </div>
           )}
 
           {heavyReady && (

@@ -12,14 +12,14 @@ export default {
         'kosha-border':        '#BBD9FF',
         'kosha-border-strong': '#69AFF6',
 
-        // ── Brand — Azure + Canary ───────────────────────────────────────
+        // ── Brand — Azure + Lemon ────────────────────────────────────────
         'brand':           '#0A67D8',
         'brand-dark':      '#0850AC',
         'brand-mid':       '#2A84EE',
         'brand-bg':        '#EEF6FF',
         'brand-container': '#E7F2FF',
         'brand-on':        '#0A4A9A',
-        'brand-accent':    '#F6EBAB',
+        'brand-accent':    '#FFF700',
 
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#0E9F6E',

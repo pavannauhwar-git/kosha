@@ -74,9 +74,9 @@
     --c-brand-mid-rgb: 42, 132, 238;
     /* used in rgba() calls */
 
-    /* Accent — Canary */
-    --c-accent: #F2D53C;
-    --c-accent-rgb: 242, 213, 60;
+    /* Accent — Signal Yellow */
+    --c-accent: #FFF700;
+    --c-accent-rgb: 255, 247, 0;
     /* used in rgba() calls */
 
     /* Semantics */
@@ -91,9 +91,9 @@
     --c-ink-muted: #5E6D8F;
 
     /* Hero card overlays */
-    --c-hero-accent: #F8E57D;
-    --c-hero-accent-bg: rgba(242, 213, 60, 0.22);
-    --c-hero-accent-fill: rgba(242, 213, 60, 0.95);
+    --c-hero-accent: #FFF700;
+    --c-hero-accent-bg: #FFF700;
+    --c-hero-accent-fill: #FFF700;
     --c-hero-label: rgba(255, 255, 255, 0.64);
     --c-hero-dimmer: rgba(255, 255, 255, 0.46);
     --c-hero-divider: rgba(255, 255, 255, 0.16);

@@ -421,8 +421,7 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <PageHeader title="Dashboard" className="mb-1" />
-      <p className="text-[12px] text-ink-3 mb-3">Use this page for today and this week: current position, daily variance, and short-horizon changes.</p>
+      <PageHeader title="Dashboard" className="mb-3" />
       <motion.div
         variants={stagger}
         initial="hidden"

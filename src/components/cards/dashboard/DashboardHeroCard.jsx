@@ -58,7 +58,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
 
       <div className="mt-2.5 mb-5 inline-flex items-center px-2.5 py-1 rounded-pill border border-white/12"
         style={{ background: C.heroAccentBg }}>
-        <span className="text-caption font-semibold" style={{ color: C.heroAccentSolid }}>
+        <span className="text-caption font-semibold" style={{ color: C.ink }}>
           {rate}% saved this month
         </span>
       </div>

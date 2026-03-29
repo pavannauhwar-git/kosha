@@ -7,11 +7,11 @@ export const C = {
   brandContainer:  '#E7F2FF',
   brandBorder:     '#BBD9FF',
 
-  // ── Contrast Accent — Canary ─────────────────────────────────────
+  // ── Contrast Accent — Signal Yellow ──────────────────────────────
   // Use sparingly for highlights and focused callouts.
-  accent:          '#F2D53C',
-  accentBg:        'rgba(242,213,60,0.22)',
-  accentFill:      'rgba(242,213,60,0.95)',
+  accent:          '#FFF700',
+  accentBg:        '#FFF700',
+  accentFill:      '#FFF700',
 
   // ── Income — Emerald H=174° ───────────────────────────────────────
   income:          '#0E9F6E',
@@ -27,17 +27,17 @@ export const C = {
 
   saved:           '#0A67D8',
 
-  // ── Bills — Deep Canary Gold ──────────────────────────────────────
+  // ── Bills — Deep Gold ─────────────────────────────────────────────
   bills:           '#9A7200',
 
   // ── Ink — blue neutrals ───────────────────────────────────────────
   ink:             '#10213F',
   inkMuted:        '#5E6D8F',
 
-  // ── Hero card overlays (canary over azure) ────────────────────────
-  heroAccent:      '#F8E57D',
-  heroAccentBg:    'rgba(242,213,60,0.22)',
-  heroAccentSolid: '#F6EBAB',
+  // ── Hero card overlays (full contrast) ────────────────────────────
+  heroAccent:      '#FFF700',
+  heroAccentBg:    '#FFF700',
+  heroAccentSolid: '#FFF700',
   heroLabel:       'rgba(255,255,255,0.64)', // labels and helper copy on hero
   heroDimmer:      'rgba(255,255,255,0.46)', // low-priority watermark/meta
   heroDivider:     'rgba(255,255,255,0.16)', // horizontal rule
