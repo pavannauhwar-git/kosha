@@ -33,14 +33,20 @@
   }
 
   html {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
     width: 100%;
     max-width: 100%;
     overflow-x: clip;
   }
 
   body {
-    @apply bg-kosha-bg text-ink font-sans;
+    background:
+      radial-gradient(circle at 15% 50%, rgba(245, 198, 165, 0.15) 0%, transparent 60%),
+      radial-gradient(circle at 85% 30%, rgba(196, 174, 242, 0.15) 0%, transparent 60%),
+      radial-gradient(circle at 50% 80%, rgba(216, 231, 209, 0.2) 0%, transparent 60%),
+      #FEFEFF;
+    background-attachment: fixed;
+    @apply text-ink font-sans;
     width: 100%;
     max-width: 100%;
     min-height: 100dvh;
@@ -122,8 +128,11 @@
   /* Single gradient layer (was 6) — dramatically cheaper on GPU.      */
   .card-hero {
     background:
-      radial-gradient(ellipse at 85% 15%, rgba(var(--c-accent-rgb), 0.18) 0%, transparent 55%),
-      linear-gradient(145deg, var(--c-brand) 0%, var(--c-brand-mid) 100%);
+      radial-gradient(circle at top left, #F2EBFA 0%, transparent 40%),
+      radial-gradient(circle at bottom right, #F7EBBC 0%, transparent 40%),
+      radial-gradient(ellipse at 80% 20%, #F5C6A5 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 80%, #C4AEF2 0%, transparent 50%),
+      radial-gradient(ellipse at center, #E6D2F5 0%, #D8E7D1 100%);
     @apply rounded-hero shadow-apple-card;
   }
 
