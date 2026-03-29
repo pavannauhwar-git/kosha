@@ -48,11 +48,11 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
               {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
             </p>
             <div className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
-              style={{ background: 'rgba(255,255,255,0.20)', color: '#ffffff' }}>
+              style={{ background: 'rgba(99,91,255,0.18)', color: '#ffffff' }}>
               Tap
             </div>
           </div>
-          <p className="text-[36px] sm:text-[42px] font-bold text-white leading-none tracking-tight tabular-nums"
+          <p className="text-[42px] font-bold text-white leading-none tracking-tight tabular-nums"
             style={{ fontFeatureSettings: '"tnum"' }}>
             {heroMode === 'balance'
               ? (runningBalance !== null ? fmt(runningBalance) : '—')
@@ -76,12 +76,12 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
             { label: 'Invested', val: invested },
           ].map(s => (
             <div key={s.label}
-              className="flex-1 min-w-0 px-2 sm:px-3 py-2.5 sm:py-3 rounded-2xl"
+              className="flex-1 min-w-0 px-3 py-3 rounded-2xl"
               style={{ background: C.heroStatBg }}
             >
               <p className="text-[11px] mb-1 truncate"
                 style={{ color: C.heroLabel }}>{s.label}</p>
-              <p className="text-[11px] sm:text-[13px] font-bold text-white tabular-nums truncate">
+              <p className="text-[13px] font-bold text-white tabular-nums truncate">
                 {fmt(s.val)}
               </p>
             </div>

@@ -199,6 +199,17 @@ export default function Login() {
             initial="hidden"
             animate="show"
           >
+            {/* ── Logo & branding ─────────────────────────────────────── */}
+            <motion.div variants={fadeUp} className="flex flex-col items-center mb-8">
+              <KoshaLogo size={60} />
+              <h2
+                className="mt-4 text-[13px] font-bold tracking-[0.2em] uppercase"
+                style={{ color: C.accent }}
+              >
+                Kosha
+              </h2>
+            </motion.div>
+
             {/* ── Glass card ──────────────────────────────────────────── */}
             <motion.div
               variants={fadeUp}
@@ -209,17 +220,6 @@ export default function Login() {
                 boxShadow: '0 24px 64px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
               }}
             >
-
-              {/* ── Logo & branding (inside card) ─────────────────────── */}
-              <div className="flex flex-col items-center mb-7">
-                <KoshaLogo size={52} />
-                <h2
-                  className="mt-3 text-[12px] font-bold tracking-[0.2em] uppercase"
-                  style={{ color: C.accent }}
-                >
-                  Kosha
-                </h2>
-              </div>
 
               {/* ── Heading ───────────────────────────────────────────── */}
               <div className="mb-6">

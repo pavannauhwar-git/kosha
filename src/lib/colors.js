@@ -53,7 +53,7 @@ export const C = {
   heroLabel:       'rgba(255,255,255,0.70)',
   heroDimmer:      'rgba(255,255,255,0.40)',
   heroDivider:     'rgba(255,255,255,0.18)',
-  heroStatBg:      'rgba(255,255,255,0.12)',
+  heroStatBg:      'rgba(255,255,255,0.15)',
 
   // ── Chart colours ────────────────────────────────────────────────
   chartIncome:     '#0e9f6e',

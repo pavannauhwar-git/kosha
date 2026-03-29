@@ -46,7 +46,7 @@ export default function MonthHeroCard({ month, year, data }) {
             <p className="text-[11px] sm:text-caption mb-0.5 truncate" style={{ color: C.heroLabel }}>
               {s.label}
             </p>
-            <p className="text-[11px] sm:text-label font-bold text-white tabular-nums truncate">{fmt(s.val)}</p>
+            <p className="text-[12px] sm:text-label font-bold text-white tabular-nums truncate">{fmt(s.val)}</p>
           </div>
         ))}
       </div>

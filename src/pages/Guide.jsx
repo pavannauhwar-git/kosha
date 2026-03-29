@@ -371,7 +371,7 @@ export default function Guide() {
                   whileTap={{ scale: 0.985 }}
                   transition={{ duration: 0.1 }}
                   onClick={() => openFeature(card.id)}
-                  className="card p-4 text-left relative"
+                  className="card p-4 text-left relative overflow-hidden"
                   style={mesh ? { background: `${mesh}, #ffffff` } : undefined}
                 >
                   <div className="flex items-start justify-between gap-3">

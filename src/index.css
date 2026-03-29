@@ -90,7 +90,7 @@
     --c-hero-label: rgba(255,255,255,0.60);
     --c-hero-dimmer: rgba(255,255,255,0.30);
     --c-hero-divider: rgba(255,255,255,0.10);
-    --c-hero-stat-bg: rgba(255,255,255,0.12);
+    --c-hero-stat-bg: rgba(255,255,255,0.08);
 
     --c-shimmer-1: rgba(0,0,0,0.04);
     --c-shimmer-2: rgba(0,0,0,0.08);
@@ -115,25 +115,34 @@
     color: #ffffff;
   }
 
-  /* Dashboard & Monthly — VISA-inspired silk gradient
-     Smooth diagonal flow: rose → lavender → mauve → peach → gold
-     Two subtle radial overlays add depth without blotchiness */
-  .card-hero-dashboard,
+  /* Dashboard — pink / lavender / peach (VISA card vibe) */
+  .card-hero-dashboard {
+    background:
+      radial-gradient(ellipse at 15% 55%, rgba(244,114,182,0.82) 0%, transparent 52%),
+      radial-gradient(ellipse at 85% 20%, rgba(251,191,36,0.48) 0%, transparent 46%),
+      radial-gradient(ellipse at 75% 80%, rgba(168,85,247,0.68) 0%, transparent 52%),
+      radial-gradient(ellipse at 45% 15%, rgba(251,146,60,0.42) 0%, transparent 46%),
+      linear-gradient(135deg, #f9a8d4 0%, #c084fc 50%, #fdba74 100%);
+  }
+
+  /* Monthly — pink / orange / gold (Apple Card vibe) */
   .card-hero-monthly {
     background:
-      radial-gradient(ellipse at 15% 40%, rgba(236,72,153,0.28) 0%, transparent 55%),
-      radial-gradient(ellipse at 85% 60%, rgba(251,146,60,0.22) 0%, transparent 55%),
-      linear-gradient(
-        135deg,
-        #ec4899 0%,
-        #d46aaf 16%,
-        #b88ad2 34%,
-        #a78bfa 48%,
-        #c8a0b8 60%,
-        #e0a880 74%,
-        #f0ba68 88%,
-        #fbbf24 100%
-      );
+      radial-gradient(ellipse at 10% 80%, rgba(168,85,247,0.55) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 45%, rgba(251,191,36,0.70) 0%, transparent 50%),
+      radial-gradient(ellipse at 55% 15%, rgba(244,114,182,0.60) 0%, transparent 50%),
+      radial-gradient(ellipse at 30% 55%, rgba(251,146,60,0.55) 0%, transparent 46%),
+      linear-gradient(135deg, #f472b6 0%, #fb923c 50%, #fbbf24 100%);
+  }
+
+  /* Analytics — purple / magenta / gold */
+  .card-hero-analytics {
+    background:
+      radial-gradient(ellipse at 18% 22%, rgba(139,92,246,0.72) 0%, transparent 50%),
+      radial-gradient(ellipse at 82% 78%, rgba(244,114,182,0.62) 0%, transparent 50%),
+      radial-gradient(ellipse at 72% 25%, rgba(251,191,36,0.50) 0%, transparent 46%),
+      radial-gradient(ellipse at 35% 80%, rgba(251,146,60,0.48) 0%, transparent 50%),
+      linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #f59e0b 100%);
   }
 
   /* -- Cards — clean white ──────────────────────────────────── */
@@ -557,15 +566,15 @@
     margin-right: auto;
   }
 
-  /* -- Progress bars — on hero gradient backgrounds ──────────────── */
+  /* -- Progress bars — glowing on dark ──────────────────────────────── */
   .bar-dark-track {
     @apply h-2 rounded-pill w-full relative overflow-hidden;
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.06);
   }
 
   .bar-dark-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0;
-    background: rgba(255, 255, 255, 0.70);
+    background: linear-gradient(90deg, #635bff, #7a73ff);
     transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
