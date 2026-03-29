@@ -63,13 +63,13 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
       </p>
       <p
         className="font-bold tabular-nums leading-[0.95] tracking-tight text-[28px] sm:text-[38px]"
-        style={{ color: annualBalance >= 0 ? C.accent : C.expense }}
+        style={{ color: annualBalance >= 0 ? C.brand : C.expense }}
       >
         {fmt(annualBalance)}
       </p>
 
       <div className="mt-2 mb-4 inline-flex items-center px-2.5 py-1 rounded-pill"
-        style={{ background: 'rgba(99,91,255,0.08)' }}
+        style={{ background: 'rgba(75,0,130,0.08)' }}
       >
         <span className="text-caption font-semibold" style={{ color: C.brand }}>
           {avgSavings}% avg savings rate

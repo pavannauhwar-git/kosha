@@ -50,7 +50,7 @@ function CardRow({ icon, label, sublabel, right, onClick, href }) {
     <>
       <div
         className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
-        style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.12)' }}
+        style={{ background: 'rgba(75,0,130,0.08)', border: '1px solid rgba(75,0,130,0.12)' }}
       >
         {icon}
       </div>
@@ -130,14 +130,14 @@ export default function About() {
               className="relative overflow-hidden rounded-hero p-6"
               style={{
                 background: '#ffffff',
-                boxShadow: '0 24px 64px rgba(10,37,64,0.08), 0 8px 24px rgba(0,0,0,0.04)',
+                boxShadow: '0 24px 64px rgba(26,10,46,0.08), 0 8px 24px rgba(0,0,0,0.04)',
                 border: '1px solid rgba(0,0,0,0.08)',
               }}
             >
               {/* Subtle brand glow */}
               <div
                 className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl pointer-events-none"
-                style={{ background: 'rgba(99,91,255,0.10)' }}
+                style={{ background: 'rgba(75,0,130,0.10)' }}
               />
 
               <div className="relative z-[1]">
@@ -146,13 +146,13 @@ export default function About() {
                   <div>
                     <p
                       className="text-[20px] font-bold leading-tight"
-                      style={{ color: '#0a2540' }}
+                      style={{ color: '#1a0a2e' }}
                     >
                       Kosha
                     </p>
                     <p
                       className="text-[13px] font-medium mt-0.5"
-                      style={{ color: '#6b7c93' }}
+                      style={{ color: '#5c5470' }}
                     >
                       Personal finance, simplified
                     </p>
@@ -161,7 +161,7 @@ export default function About() {
 
                 <p
                   className="text-[14px] leading-relaxed max-w-[440px] mb-5"
-                  style={{ color: '#6b7c93' }}
+                  style={{ color: '#5c5470' }}
                 >
                   Built for clarity and calm. Capture money movement fast, trust your numbers,
                   and make better decisions without noise.
@@ -178,14 +178,14 @@ export default function About() {
                       key={label}
                       className="rounded-[14px] px-3 py-2.5"
                       style={{
-                        background: 'rgba(99,91,255,0.06)',
-                        border: '1px solid rgba(99,91,255,0.12)',
+                        background: 'rgba(75,0,130,0.06)',
+                        border: '1px solid rgba(75,0,130,0.12)',
                       }}
                     >
                       <p className="text-[10px] font-medium uppercase tracking-wider"
                          style={{ color: '#6b7c93' }}>{label}</p>
                       <p className="text-[14px] font-bold mt-0.5"
-                         style={{ color: '#0a2540' }}>{value}</p>
+                         style={{ color: '#1a0a2e' }}>{value}</p>
                     </div>
                   ))}
                 </div>
@@ -198,9 +198,9 @@ export default function About() {
                     className="h-11 rounded-[12px] text-[13px] font-semibold
                                active:scale-[0.97] transition-all duration-100"
                     style={{
-                      background: 'linear-gradient(135deg, #635bff 0%, #7a73ff 100%)',
+                      background: 'linear-gradient(135deg, #4b0082 0%, #6a1b9a 100%)',
                       color: '#ffffff',
-                      boxShadow: '0 4px 16px rgba(99,91,255,0.35)',
+                      boxShadow: '0 4px 16px rgba(75,0,130,0.35)',
                     }}
                   >
                     Product guide
@@ -212,9 +212,9 @@ export default function About() {
                     className="h-11 rounded-[12px] text-[13px] font-semibold inline-flex items-center
                                justify-center active:scale-[0.97] transition-all duration-100"
                     style={{
-                      background: 'rgba(10,37,64,0.06)',
-                      color: '#0a2540',
-                      border: '1px solid rgba(10,37,64,0.12)',
+                      background: 'rgba(26,10,46,0.06)',
+                      color: '#1a0a2e',
+                      border: '1px solid rgba(26,10,46,0.12)',
                     }}
                   >
                     View GitHub
@@ -241,7 +241,7 @@ export default function About() {
                   <div
                     key={item.label}
                     className="flex flex-col items-center gap-2 rounded-[14px] py-3 px-2"
-                    style={{ background: 'rgba(99,91,255,0.06)', border: '1px solid rgba(99,91,255,0.10)' }}
+                    style={{ background: 'rgba(75,0,130,0.06)', border: '1px solid rgba(75,0,130,0.10)' }}
                   >
                     {item.icon}
                     <span className="text-[11px] font-semibold text-ink-2 text-center">{item.label}</span>
@@ -283,7 +283,7 @@ export default function About() {
                       <div className="flex items-center gap-3">
                         <div
                           className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
-                          style={{ background: 'rgba(99,91,255,0.12)', border: '1px solid rgba(99,91,255,0.15)' }}
+                          style={{ background: 'rgba(75,0,130,0.12)', border: '1px solid rgba(75,0,130,0.15)' }}
                         >
                           <StarIcon size={18} weight="duotone" color={C.brandLight} />
                         </div>
@@ -297,7 +297,7 @@ export default function About() {
                       {ri === 0 && (
                         <span
                           className="text-[11px] font-bold px-2.5 py-1 rounded-full"
-                          style={{ background: 'rgba(99,91,255,0.08)', color: C.brand }}
+                          style={{ background: 'rgba(75,0,130,0.08)', color: C.brand }}
                         >
                           Latest
                         </span>
@@ -350,9 +350,9 @@ export default function About() {
                       key={tech}
                       className="text-[12px] font-semibold px-3 py-1.5 rounded-full"
                       style={{
-                        background: 'rgba(99,91,255,0.06)',
+                        background: 'rgba(75,0,130,0.06)',
                         color: C.brandLight,
-                        border: '1px solid rgba(99,91,255,0.12)',
+                        border: '1px solid rgba(75,0,130,0.12)',
                       }}
                     >
                       {tech}

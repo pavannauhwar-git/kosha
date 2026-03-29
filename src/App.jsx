@@ -415,7 +415,7 @@ function DesktopSidebar() {
       <div className="flex items-center gap-2.5 px-2 pb-6 pt-2">
         <KoshaLogo size={32} />
         <div>
-          <p className="text-[15px] font-bold tracking-tight leading-none" style={{ color: '#0a2540' }}>Kosha</p>
+          <p className="text-[15px] font-bold tracking-tight leading-none" style={{ color: '#1a0a2e' }}>Kosha</p>
           <p className="text-[10px] font-medium tracking-widest uppercase mt-0.5" style={{ color: '#6b7c93' }}>Finance</p>
         </div>
       </div>
@@ -431,7 +431,7 @@ function DesktopSidebar() {
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-100 w-full text-left"
-              style={{ background: isActive ? 'rgba(99,91,255,0.08)' : 'transparent' }}
+              style={{ background: isActive ? 'rgba(75,0,130,0.08)' : 'transparent' }}
             >
               <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.brand : C.inkMuted} />
               <span className="text-[14px]" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
@@ -446,7 +446,7 @@ function DesktopSidebar() {
         <div className="flex items-center gap-2.5">
           <ProfileMenu dropUp />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold truncate" style={{ color: '#0a2540' }}>{displayName}</p>
+            <p className="text-[13px] font-semibold truncate" style={{ color: '#1a0a2e' }}>{displayName}</p>
           </div>
         </div>
       </div>

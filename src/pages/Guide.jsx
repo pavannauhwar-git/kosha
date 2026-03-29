@@ -51,11 +51,11 @@ function persistViewed(nextSet) {
 }
 
 const CARD_ACCENT = {
-  dashboard:      '#635bff',
+  dashboard:      '#4b0082',
   transactions:   '#0e9f6e',
   bills:          '#f59e0b',
   analytics:      '#7c3aed',
-  reconciliation: '#635bff',
+  reconciliation: '#4b0082',
 }
 
 const FEATURE_CARDS = [
@@ -361,7 +361,7 @@ export default function Guide() {
             {filteredCards.map((card) => {
               const Icon = card.icon
               const isViewed = viewed.has(card.id)
-              const accentColor = CARD_ACCENT[card.id] || '#635bff'
+              const accentColor = CARD_ACCENT[card.id] || '#4b0082'
               return (
                 <motion.button
                   key={card.id}

@@ -1,5 +1,5 @@
 /**
- * Kosha palette — Stripe-inspired light theme
+ * Kosha palette — Royal Indigo × Electric Lime
  *
  * Single source of truth for every colour used in inline styles,
  * Framer Motion animate props, recharts fill/stroke props,
@@ -13,17 +13,25 @@
 
 export const C = {
 
-  // ── Brand — Stripe Indigo ────────────────────────────────────────
-  brand:           '#635bff',
-  brandMid:        '#7a73ff',
-  brandLight:      '#635bff',
-  brandContainer:  'rgba(99,91,255,0.08)',
+  // ── Brand — Royal Indigo ─────────────────────────────────────────
+  brand:           '#4b0082',
+  brandMid:        '#6a1b9a',
+  brandLight:      '#7c4dff',
+  brandContainer:  'rgba(75,0,130,0.08)',
   brandBorder:     'rgba(0,0,0,0.08)',
 
-  // ── Accent — Dark navy ───────────────────────────────────────────
-  accent:          '#0a2540',
-  accentBg:        'rgba(10,37,64,0.06)',
-  accentFill:      '#0a2540',
+  // ── Accent — readable indigo for light surfaces ─────────────────
+  accent:          '#4b0082',
+  accentBg:        'rgba(75,0,130,0.10)',
+  accentFill:      '#4b0082',
+
+  // ── Electric lime highlight (use on dark/hero surfaces) ─────────
+  electric:        '#CCFF00',
+  electricBg:      'rgba(204,255,0,0.10)',
+
+  // ── Ink — deep indigo-black on light ─────────────────────────────
+  ink:             '#1a0a2e',
+  inkMuted:        '#6b7c93',
 
   // ── Income — Green ───────────────────────────────────────────────
   income:          '#0e9f6e',
@@ -37,23 +45,19 @@ export const C = {
   invest:          '#7c3aed',
   investText:      '#7c3aed',
 
-  saved:           '#635bff',
+  saved:           '#4b0082',
 
   // ── Bills — Amber ────────────────────────────────────────────────
   bills:           '#d97706',
 
-  // ── Ink — dark-on-light ──────────────────────────────────────────
-  ink:             '#0a2540',
-  inkMuted:        '#6b7c93',
-
-  // ── Hero card overlays (white text on vivid gradient) ────────────
-  heroAccent:      '#ffffff',
-  heroAccentBg:    'rgba(255,255,255,0.20)',
-  heroAccentSolid: '#ffffff',
+  // ── Hero card overlays (white/lime text on deep indigo gradient) ─
+  heroAccent:      '#CCFF00',
+  heroAccentBg:    'rgba(204,255,0,0.16)',
+  heroAccentSolid: '#CCFF00',
   heroLabel:       'rgba(255,255,255,0.70)',
   heroDimmer:      'rgba(255,255,255,0.40)',
   heroDivider:     'rgba(255,255,255,0.18)',
-  heroStatBg:      'rgba(255,255,255,0.14)',
+  heroStatBg:      'rgba(255,255,255,0.12)',
 
   // ── Chart colours ────────────────────────────────────────────────
   chartIncome:     '#0e9f6e',
@@ -64,8 +68,8 @@ export const C = {
 
   // ── Portfolio donut — vibrant family ─────────────────────────────
   portfolio: [
-    '#635bff',
-    '#7a73ff',
+    '#4b0082',
+    '#6a1b9a',
     '#0e9f6e',
     '#e8364e',
     '#7c3aed',
@@ -73,6 +77,6 @@ export const C = {
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#635bff',
-  logoHighlight: '#7a73ff',
+  logoBg:        '#4b0082',
+  logoHighlight: '#6a1b9a',
 }

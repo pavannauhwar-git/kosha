@@ -317,7 +317,7 @@ export const ConfidenceTrendChart = memo(function ConfidenceTrendChart({ trendDa
     >
       <div className="px-5 pt-5 pb-2 flex items-start justify-between">
         <div>
-          <p className="text-label font-semibold" style={{ color: '#0a2540' }}>
+          <p className="text-label font-semibold" style={{ color: '#1a0a2e' }}>
             Confidence Trend
           </p>
           <p style={{ fontSize: 11, color: '#6b7c93', marginTop: 2 }}>

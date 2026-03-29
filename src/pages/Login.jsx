@@ -173,7 +173,7 @@ export default function Login() {
           className="absolute rounded-full blur-3xl"
           style={{
             width: 480, height: 480, top: '-12%', left: '-14%',
-            background: 'radial-gradient(circle, rgba(99,91,255,0.25) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(75,0,130,0.25) 0%, transparent 70%)',
           }}
         />
         <div
@@ -215,7 +215,7 @@ export default function Login() {
                 <KoshaLogo size={52} />
                 <h2
                   className="mt-3 text-[12px] font-bold tracking-[0.2em] uppercase"
-                  style={{ color: C.accent }}
+                  style={{ color: C.brand }}
                 >
                   Kosha
                 </h2>
@@ -338,7 +338,7 @@ export default function Login() {
                         setNotice(null)
                       }}
                       className="text-[14px] font-semibold"
-                      style={{ color: C.accent }}
+                      style={{ color: C.brand }}
                     >
                       Forgot password?
                     </button>
@@ -366,7 +366,7 @@ export default function Login() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       className="flex items-start gap-2 rounded-[12px] px-3.5 py-3"
-                      style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.15)' }}
+                      style={{ background: 'rgba(75,0,130,0.08)', border: '1px solid rgba(75,0,130,0.15)' }}
                     >
                       <p className="text-[13px] font-medium" style={{ color: C.brandLight }}>
                         Redirecting to sign in in {resetCountdown}s...
@@ -403,8 +403,8 @@ export default function Login() {
                          active:scale-[0.98] transition-all duration-100
                          disabled:opacity-50"
                   style={{
-                    background: 'linear-gradient(135deg, #635bff 0%, #7a73ff 100%)',
-                    boxShadow: '0 4px 20px rgba(99,91,255,0.40), 0 0 0 1px rgba(99,91,255,0.50)',
+                    background: 'linear-gradient(135deg, #4b0082 0%, #6a1b9a 100%)',
+                    boxShadow: '0 4px 20px rgba(75,0,130,0.40), 0 0 0 1px rgba(75,0,130,0.50)',
                   }}
                 >
                   {loading
@@ -436,7 +436,7 @@ export default function Login() {
                       setNotice(null)
                     }}
                     className="font-semibold"
-                    style={{ color: C.accent }}
+                    style={{ color: C.brand }}
                   >
                     Sign in
                   </button>
@@ -451,7 +451,7 @@ export default function Login() {
                       setNotice(null)
                     }}
                     className="font-semibold"
-                    style={{ color: C.accent }}
+                    style={{ color: C.brand }}
                   >
                     Back to sign in
                   </button>
@@ -466,7 +466,7 @@ export default function Login() {
                       setNotice(null)
                     }}
                     className="font-semibold"
-                    style={{ color: C.accent }}
+                    style={{ color: C.brand }}
                   >
                     {mode === 'signin' ? 'Sign up' : 'Sign in'}
                   </button>

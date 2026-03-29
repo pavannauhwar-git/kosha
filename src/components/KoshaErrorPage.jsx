@@ -59,7 +59,7 @@ export default function KoshaErrorPage({
           style={{
             width: 420,
             height: 420,
-            background: 'radial-gradient(circle, rgba(99,91,255,0.20) 0%, transparent 65%)',
+            background: 'radial-gradient(circle, rgba(75,0,130,0.20) 0%, transparent 65%)',
           }}
         />
         <div
@@ -117,7 +117,7 @@ export default function KoshaErrorPage({
             className="rounded-[20px] p-4"
             style={{
               background:
-                'linear-gradient(145deg, rgba(99,91,255,0.06) 0%, rgba(0,0,0,0.01) 85%)',
+                'linear-gradient(145deg, rgba(75,0,130,0.06) 0%, rgba(0,0,0,0.01) 85%)',
               border: '1px solid rgba(0,0,0,0.06)',
             }}
           >
@@ -146,8 +146,8 @@ export default function KoshaErrorPage({
               onClick={onPrimary}
               className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-[14px] font-semibold text-white transition-all duration-100 active:scale-[0.97]"
               style={{
-                background: 'linear-gradient(135deg, #635bff 0%, #7a73ff 100%)',
-                boxShadow: '0 4px 16px rgba(99,91,255,0.35)',
+                background: 'linear-gradient(135deg, #4b0082 0%, #6a1b9a 100%)',
+                boxShadow: '0 4px 16px rgba(75,0,130,0.35)',
               }}
             >
               <PrimaryIcon size={16} />
