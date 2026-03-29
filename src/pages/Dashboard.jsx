@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat } from 'lucide-react'
+import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus } from 'lucide-react'
 import {
   useRecentTransactions,
   useTransactionDigest,
+  useTodayExpenses,
   useMonthSummary,
   useRunningBalance,
   removeTransactionMutation,
@@ -30,13 +31,6 @@ import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
-
-const QUICK_ACTIONS = [
-  { label: 'Income', Icon: TrendingUp, bg: 'bg-income-bg', color: 'var(--c-income)', type: 'income', strokeWidth: 2.4 },
-  { label: 'Expense', Icon: TrendingDown, bg: 'bg-expense-bg', color: 'var(--c-expense-bright)', type: 'expense', strokeWidth: 2.4 },
-  { label: 'Invest', Icon: Plus, bg: 'bg-invest-bg', color: 'var(--c-invest-text)', type: 'investment', strokeWidth: 2.6 },
-  { label: 'Bills', Icon: Repeat, bg: 'bg-repay-bg', color: 'var(--c-warning)', type: 'bills', strokeWidth: 2.4 },
-]
 
 function DashboardHeroSkeleton() {
   return (
@@ -178,6 +172,7 @@ export default function Dashboard() {
     fetching: recentFetching,
   } = useRecentTransactions(5)
   const { data: digestTxnRows = [] } = useTransactionDigest(14, 200, { enabled: heavyReady })
+  const { todaySpend, loading: todaySpendLoading } = useTodayExpenses({ enabled: heavyReady })
   const {
     data: summary,
     loading: summaryLoading,
@@ -306,6 +301,49 @@ export default function Dashboard() {
       hasSignals: inLast7.length > 0 || inPrev7.length > 0,
     }
   }, [digestTxnRows, now])
+
+  const dailyVariance = useMemo(() => {
+    const byDate = new Map()
+    for (const row of digestTxnRows) {
+      if (row?.type !== 'expense') continue
+      const key = String(row?.date || '').slice(0, 10)
+      if (!key) continue
+      byDate.set(key, (byDate.get(key) || 0) + Number(row?.amount || 0))
+    }
+
+    const baselineSeries = []
+    for (let i = 7; i >= 1; i -= 1) {
+      const d = new Date(now)
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      baselineSeries.push(byDate.get(key) || 0)
+    }
+
+    const baseline = baselineSeries.length
+      ? baselineSeries.reduce((sum, value) => sum + value, 0) / baselineSeries.length
+      : 0
+
+    const todayValue = Number(todaySpend || 0)
+    const variance = todayValue - baseline
+    const variancePct = baseline > 0 ? Math.round((variance / baseline) * 100) : null
+    const sparkValues = [...baselineSeries, todayValue]
+    const sparkMax = Math.max(...sparkValues, 1)
+
+    return {
+      baseline,
+      variance,
+      variancePct,
+      todayValue,
+      sparkValues,
+      sparkMax,
+    }
+  }, [digestTxnRows, now, todaySpend])
+
+  const investSharePct = earned > 0 ? Math.round((invested / earned) * 100) : 0
+  const projectedInvested = dayOfMonth > 0 ? (invested / dayOfMonth) * daysInMonth : invested
+  const projectedInvestDiff = projectedInvested - lastInvested
+  const projectedInvestUp = projectedInvestDiff > 0
 
   const todayFocus = useMemo(() => {
     if (dueSoonCount > 0) {
@@ -465,6 +503,70 @@ export default function Dashboard() {
           )}
         </motion.div>
 
+        {/* ── Daily variance ──────────────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <div className="card p-3.5">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="section-label">Daily variance</p>
+                <p className="text-caption text-ink-3 mt-0.5">Today vs trailing 7-day daily spend</p>
+              </div>
+              {!todaySpendLoading && (
+                <span className={`text-[11px] px-2 py-1 rounded-pill font-semibold ${dailyVariance.variance <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                  {dailyVariance.variance === 0
+                    ? 'On baseline'
+                    : dailyVariance.variance < 0
+                      ? `${fmt(Math.abs(dailyVariance.variance))} below`
+                      : `${fmt(Math.abs(dailyVariance.variance))} above`}
+                </span>
+              )}
+            </div>
+
+            {todaySpendLoading ? (
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-card h-14 shimmer opacity-80" />
+                  <div className="rounded-card h-14 shimmer opacity-80" />
+                </div>
+                <div className="h-2.5 w-full rounded-full shimmer opacity-70" />
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2 mb-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Today spend</p>
+                    <p className="text-[13px] font-bold text-expense-text tabular-nums">{fmt(dailyVariance.todayValue)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">7-day avg/day</p>
+                    <p className="text-[13px] font-bold text-ink tabular-nums">{fmt(dailyVariance.baseline)}</p>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-ink-3">
+                  {dailyVariance.variancePct == null
+                    ? 'No recent daily baseline yet. Keep logging daily expenses for variance trends.'
+                    : `Variance is ${dailyVariance.variancePct >= 0 ? '+' : ''}${dailyVariance.variancePct}% vs trailing daily average.`}
+                </p>
+
+                <div className="mt-2.5 grid grid-cols-8 gap-1">
+                  {dailyVariance.sparkValues.map((value, index) => {
+                    const heightPct = Math.max(12, Math.round((value / dailyVariance.sparkMax) * 100))
+                    return (
+                      <div key={`variance-bar-${index}`} className="h-10 rounded-pill bg-kosha-surface-2 overflow-hidden flex items-end">
+                        <div
+                          className={`w-full rounded-pill ${index === dailyVariance.sparkValues.length - 1 ? 'bg-brand' : 'bg-brand-container'}`}
+                          style={{ height: `${heightPct}%` }}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </motion.div>
+
         {/* ── Bill alert ────────────────────────────────────────────── */}
         {dueSoonCount > 0 && (
           <motion.div variants={fadeUp}>
@@ -533,24 +635,6 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* ── Quick-action strip ────────────────────────────────────── */}
-        <motion.div variants={fadeUp} className={`card ${denseMode ? 'py-3 px-2.5' : 'py-4 px-3'}`}>
-          <div className="flex justify-between gap-1.5">
-            {QUICK_ACTIONS.map(({ label, Icon, bg, color, type, strokeWidth }) => (
-              <button key={label}
-                onClick={() => type === 'bills' ? navigate('/bills') : openQuickAdd(type)}
-                className={`flex flex-col items-center ${denseMode ? 'gap-1' : 'gap-1.5'} active:scale-[0.98] transition-transform duration-100 min-w-[62px]`}
-              >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}
-                  style={{ color }}>
-                  <Icon size={20} strokeWidth={strokeWidth} />
-                </div>
-                <span className="text-[11px] font-semibold text-ink-3">{label}</span>
-              </button>
-            ))}
-          </div>
-        </motion.div>
-
         {/* ── Pace card — sub-component ────────────────────────────── */}
         <motion.div variants={fadeUp}>
           <DashboardPaceCard
@@ -591,11 +675,18 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {heavyReady && invested > 0 && (
+        {heavyReady && (
           <motion.div variants={fadeUp}>
             <div className="card p-3.5">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-caption text-ink-3 font-medium">Invested this month</p>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div>
+                  <p className="section-label">Investment momentum</p>
+                  <p className="text-caption text-ink-3 mt-0.5">
+                    {invested > 0
+                      ? 'Track contribution pace and compare month-end trajectory.'
+                      : 'No investments logged yet this month.'}
+                  </p>
+                </div>
                 <div className="flex items-center gap-1.5">
                   {investDiff === 0
                     ? <Minus size={12} className="text-ink-3" />
@@ -607,7 +698,40 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
-              <p className="text-[22px] md:text-[24px] font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
+
+              <div className="grid grid-cols-2 gap-2 mb-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3">This month</p>
+                  <p className="text-[15px] font-bold text-invest-text tabular-nums">{fmt(invested)}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3">Income share</p>
+                  <p className="text-[15px] font-bold text-ink tabular-nums">{earned > 0 ? `${investSharePct}%` : '—'}</p>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-ink-3">
+                Projected month-end: <span className="font-semibold text-ink-2 tabular-nums">{fmt(projectedInvested)}</span>
+                {' '}
+                ({projectedInvestUp ? '+' : ''}{fmt(projectedInvestDiff)} vs last month)
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => openQuickAdd('investment')}
+                  className="btn-primary h-10 px-3 text-[11px] justify-center"
+                >
+                  Add investment
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/analytics')}
+                  className="btn-secondary h-10 px-3 text-[11px] justify-center"
+                >
+                  Open insights
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

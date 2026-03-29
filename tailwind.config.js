@@ -6,25 +6,25 @@ export default {
       colors: {
         // ── App backgrounds ───────────────────────────────────────────────
         'kosha-bg':            '#FEFEFF',
-        'kosha-bg-2':          '#FAFBFF',
+        'kosha-bg-2':          '#F9FAFF',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F8FAFF',
-        'kosha-border':        '#B8C4FF',
-        'kosha-border-strong': '#4E63F0',
+        'kosha-surface-2':     '#F6F8FF',
+        'kosha-border':        '#C7D4FF',
+        'kosha-border-strong': '#6D87E8',
 
-        // ── Brand — Zaffre + Sport Lime ──────────────────────────────────
-        'brand':           '#0014A8',
-        'brand-dark':      '#000B73',
-        'brand-mid':       '#1E36D8',
-        'brand-bg':        '#EEF1FF',
-        'brand-container': '#E2E7FF',
-        'brand-on':        '#001171',
-        'brand-accent':    '#ECFF98',
+        // ── Brand — Royal Indigo + Warm Amber ────────────────────────────
+        'brand':           '#1E3A8A',
+        'brand-dark':      '#162B66',
+        'brand-mid':       '#3659C7',
+        'brand-bg':        '#F1F4FF',
+        'brand-container': '#E9EEFF',
+        'brand-on':        '#1A2E73',
+        'brand-accent':    '#FFE1B8',
 
         // ── Income ────────────────────────────────────────────────────────
-        'income':        '#059669',
-        'income-bg':     '#ECFDF5',
-        'income-text':   '#047857',
+        'income':        '#0E9F6E',
+        'income-bg':     '#EAFBF4',
+        'income-text':   '#0B7F5A',
         'income-border': '#A7F3D0',
 
         // ── Expense ───────────────────────────────────────────────────────
@@ -34,28 +34,28 @@ export default {
         'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#C026D3',
-        'invest-bg':     '#F9ECFB',
-        'invest-text':   '#7A1F84',
-        'invest-border': '#EEC5F5',
+        'invest':        '#7C3AED',
+        'invest-bg':     '#F3EEFF',
+        'invest-text':   '#5B21B6',
+        'invest-border': '#DDD0FF',
 
         // ── Repayment / Bills ─────────────────────────────────────────────
-        'repay':        '#A16207',
-        'repay-bg':     '#FEFCE8',
-        'repay-text':   '#854D0E',
-        'repay-border': '#FEF08A',
+        'repay':        '#B4691F',
+        'repay-bg':     '#FFF8EE',
+        'repay-text':   '#96571A',
+        'repay-border': '#F6D8AD',
 
         // ── Warning ───────────────────────────────────────────────────────
         'warning':        '#D97706',
-        'warning-bg':     '#FFFBEB',
-        'warning-border': '#FDE68A',
-        'warning-text':   '#B45309',
+        'warning-bg':     '#FFF8EC',
+        'warning-border': '#F5D3A1',
+        'warning-text':   '#B26010',
 
-        // ── Ink — indigo-tinted neutrals ──────────────────────────────────
-        'ink':   '#141B47',
-        'ink-2': '#26306D',
-        'ink-3': '#5E6AA8',
-        'ink-4': '#99A4D1',
+        // ── Ink — indigo neutrals ─────────────────────────────────────────
+        'ink':   '#172347',
+        'ink-2': '#243566',
+        'ink-3': '#6473A6',
+        'ink-4': '#A0ABD1',
 
         // ── Utility ───────────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',
@@ -91,8 +91,8 @@ export default {
         'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
-        'fab':        '0 4px 14px rgba(0,20,168,0.36)',
-        'focus':      '0 0 0 3px rgba(0,20,168,0.36)',
+        'fab':        '0 6px 18px rgba(30,58,138,0.32)',
+        'focus':      '0 0 0 3px rgba(30,58,138,0.30)',
         'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
         'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
       },
