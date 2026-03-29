@@ -27,14 +27,14 @@ export default function KoshaErrorPage({
   const badgeLabel = isNotFound ? '404' : 'System Error'
 
   const badgeStyle = isNotFound
-    ? { background: 'rgba(217,119,6,0.08)', color: '#d97706', border: '1px solid rgba(217,119,6,0.15)' }
-    : { background: 'rgba(232,54,78,0.08)', color: C.expense, border: `1px solid rgba(232,54,78,0.15)` }
+    ? { background: 'rgba(255,183,77,0.12)', color: '#ffb74d', border: '1px solid rgba(255,183,77,0.20)' }
+    : { background: 'rgba(255,92,131,0.12)', color: C.expense, border: `1px solid rgba(255,92,131,0.20)` }
 
   const alertIconBg = isNotFound
-    ? { background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.15)' }
-    : { background: 'rgba(232,54,78,0.08)', border: '1px solid rgba(232,54,78,0.15)' }
+    ? { background: 'rgba(255,183,77,0.14)', border: '1px solid rgba(255,183,77,0.22)' }
+    : { background: 'rgba(255,92,131,0.14)', border: '1px solid rgba(255,92,131,0.22)' }
 
-  const alertIconColor = isNotFound ? '#d97706' : C.expense
+  const alertIconColor = isNotFound ? '#ffb74d' : C.expense
 
   async function handleCopyDetail() {
     if (!normalizedDetail || !navigator.clipboard?.writeText) return
@@ -47,7 +47,7 @@ export default function KoshaErrorPage({
     <div
       className="fixed inset-0 z-[80] overflow-hidden"
       style={{
-        background: '#f6f9fc',
+        background: '#0a2540',
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
       }}
@@ -59,7 +59,7 @@ export default function KoshaErrorPage({
           style={{
             width: 420,
             height: 420,
-            background: 'radial-gradient(circle, rgba(99,91,255,0.20) 0%, transparent 65%)',
+            background: 'radial-gradient(circle, rgba(128,233,255,0.18) 0%, transparent 65%)',
           }}
         />
         <div
@@ -67,7 +67,7 @@ export default function KoshaErrorPage({
           style={{
             width: 380,
             height: 380,
-            background: 'radial-gradient(circle, rgba(14,159,110,0.15) 0%, transparent 65%)',
+            background: 'radial-gradient(circle, rgba(99,91,255,0.22) 0%, transparent 65%)',
           }}
         />
         <div
@@ -76,8 +76,8 @@ export default function KoshaErrorPage({
             width: 300,
             height: 300,
             background: isNotFound
-              ? 'radial-gradient(circle, rgba(217,119,6,0.14) 0%, transparent 65%)'
-              : 'radial-gradient(circle, rgba(232,54,78,0.14) 0%, transparent 65%)',
+              ? 'radial-gradient(circle, rgba(255,183,77,0.14) 0%, transparent 65%)'
+              : 'radial-gradient(circle, rgba(255,92,131,0.14) 0%, transparent 65%)',
           }}
         />
       </div>
@@ -89,9 +89,11 @@ export default function KoshaErrorPage({
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-[470px] max-h-full overflow-y-auto rounded-hero p-6"
           style={{
-            background: '#ffffff',
-            border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
+            background: 'rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04)',
           }}
         >
           {/* ── Header: logo + badge ───────────────────────────── */}
@@ -100,7 +102,7 @@ export default function KoshaErrorPage({
               <KoshaLogo size={42} />
               <div>
                 <p className="text-[11px] font-bold tracking-[0.18em]"
-                   style={{ color: C.brand }}>KOSHA</p>
+                   style={{ color: C.accent }}>KOSHA</p>
                 <p className="text-[12px] font-medium" style={{ color: C.inkMuted }}>Recovery mode</p>
               </div>
             </div>
@@ -117,8 +119,8 @@ export default function KoshaErrorPage({
             className="rounded-[20px] p-4"
             style={{
               background:
-                'linear-gradient(145deg, rgba(99,91,255,0.06) 0%, rgba(0,0,0,0.01) 85%)',
-              border: '1px solid rgba(0,0,0,0.06)',
+                'linear-gradient(145deg, rgba(99,91,255,0.10) 0%, rgba(255,255,255,0.02) 85%)',
+              border: '1px solid rgba(255,255,255,0.08)',
             }}
           >
             <div className="flex items-start gap-3">
@@ -132,7 +134,7 @@ export default function KoshaErrorPage({
                 <h1 className="text-[22px] font-bold leading-tight tracking-tight"
                     style={{ color: C.ink }}>{title}</h1>
                 <p className="mt-1.5 text-[14px] leading-relaxed"
-                   style={{ color: 'rgba(0,0,0,0.55)' }}>{description}</p>
+                   style={{ color: 'rgba(255,255,255,0.65)' }}>{description}</p>
               </div>
             </div>
           </div>
@@ -159,9 +161,9 @@ export default function KoshaErrorPage({
               onClick={onSecondary}
               className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-[14px] font-semibold transition-all duration-100 active:scale-[0.97]"
               style={{
-                background: '#ffffff',
+                background: 'rgba(255,255,255,0.07)',
                 color: C.ink,
-                border: '1px solid rgba(0,0,0,0.10)',
+                border: '1px solid rgba(255,255,255,0.12)',
               }}
             >
               <SecondaryIcon size={16} />
@@ -175,9 +177,9 @@ export default function KoshaErrorPage({
               onClick={onTertiary}
               className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-[14px] font-semibold transition-all duration-100 active:scale-[0.97]"
               style={{
-                background: '#f6f9fc',
-                color: C.brand,
-                border: '1px solid rgba(0,0,0,0.08)',
+                background: 'rgba(255,255,255,0.04)',
+                color: C.accent,
+                border: '1px solid rgba(255,255,255,0.08)',
               }}
             >
               <TertiaryIcon size={16} />
@@ -190,12 +192,12 @@ export default function KoshaErrorPage({
             <div
               className="mt-4 rounded-[16px] overflow-hidden"
               style={{
-                background: '#f6f9fc',
-                border: '1px solid rgba(0,0,0,0.06)',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
               }}
             >
               <div className="flex items-center justify-between gap-2 px-3.5 py-2.5">
-                <p className="text-[12px] font-semibold" style={{ color: 'rgba(0,0,0,0.50)' }}>
+                <p className="text-[12px] font-semibold" style={{ color: 'rgba(255,255,255,0.60)' }}>
                   Technical details
                 </p>
                 <button
@@ -203,9 +205,9 @@ export default function KoshaErrorPage({
                   onClick={handleCopyDetail}
                   className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors active:scale-[0.97]"
                   style={{
-                    background: 'rgba(0,0,0,0.04)',
-                    color: 'rgba(0,0,0,0.50)',
-                    border: '1px solid rgba(0,0,0,0.08)',
+                    background: 'rgba(255,255,255,0.06)',
+                    color: 'rgba(255,255,255,0.55)',
+                    border: '1px solid rgba(255,255,255,0.10)',
                   }}
                 >
                   {copied ? <Check size={12} /> : <Copy size={12} />}
@@ -216,8 +218,8 @@ export default function KoshaErrorPage({
               <pre
                 className="max-h-44 overflow-auto px-3.5 py-3 text-[11px] leading-relaxed whitespace-pre-wrap break-words"
                 style={{
-                  color: 'rgba(0,0,0,0.40)',
-                  borderTop: '1px solid rgba(0,0,0,0.06)',
+                  color: 'rgba(255,255,255,0.40)',
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
                 }}
               >
                 {normalizedDetail}

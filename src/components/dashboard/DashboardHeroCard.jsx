@@ -26,7 +26,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       {/* Mesh gradient orbs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-hero">
         <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full opacity-40"
-          style={{ background: 'radial-gradient(circle, #635bff 0%, transparent 70%)' }} />
+          style={{ background: 'radial-gradient(circle, #80e9ff 0%, transparent 70%)' }} />
         <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-full opacity-30"
           style={{ background: 'radial-gradient(circle, #a960ee 0%, transparent 70%)' }} />
         <div className="absolute top-10 right-20 w-40 h-40 rounded-full opacity-20"
@@ -52,7 +52,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
               {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
             </p>
             <div className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
-              style={{ background: 'rgba(99,91,255,0.18)', color: '#ffffff' }}>
+              style={{ background: 'rgba(128,233,255,0.12)', color: '#80e9ff' }}>
               Tap
             </div>
           </div>

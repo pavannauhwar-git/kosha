@@ -23,7 +23,7 @@ const LINKEDIN = 'https://www.linkedin.com/in/pavannauhwar/'
 function SectionLabel({ children }) {
   return (
     <p className="text-[11px] font-bold uppercase tracking-[0.10em] mb-3 px-1"
-       style={{ color: '#6b7c93' }}>
+       style={{ color: C.accent }}>
       {children}
     </p>
   )
@@ -34,9 +34,11 @@ function GlassCard({ children, className = '', style = {} }) {
     <div
       className={`rounded-[20px] ${className}`}
       style={{
-        background: '#ffffff',
-        border: '1px solid rgba(0,0,0,0.08)',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        background: 'rgba(255,255,255,0.04)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.20)',
         ...style,
       }}
     >
@@ -50,7 +52,7 @@ function CardRow({ icon, label, sublabel, right, onClick, href }) {
     <>
       <div
         className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
-        style={{ background: 'rgba(99,91,255,0.08)', border: '1px solid rgba(99,91,255,0.12)' }}
+        style={{ background: 'rgba(99,91,255,0.12)', border: '1px solid rgba(99,91,255,0.15)' }}
       >
         {icon}
       </div>
@@ -97,16 +99,16 @@ export default function About() {
   }
 
   return (
-    <div className="min-h-dvh" style={{ background: '#f6f9fc' }}>
+    <div className="min-h-dvh" style={{ background: '#0a2540' }}>
 
       {/* ── Sticky header ─────────────────────────────────────────── */}
       <div
         className="sticky top-0 z-20 px-4 py-3 flex items-center gap-3"
         style={{
-          background: 'rgba(255,255,255,0.92)',
+          background: 'rgba(10,37,64,0.88)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
           paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)',
           paddingBottom: '0.75rem',
         }}
@@ -114,7 +116,7 @@ export default function About() {
         <button
           onClick={() => navigate(-1)}
           className="w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-          style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)' }}
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
         >
           <ArrowLeftIcon size={16} color={C.ink} />
         </button>
@@ -130,18 +132,18 @@ export default function About() {
               className="relative overflow-hidden rounded-hero p-6"
               style={{
                 background:
-                  'radial-gradient(ellipse at 10% 20%, rgba(128,90,255,0.85) 0%, transparent 55%),' +
-                  'radial-gradient(ellipse at 90% 80%, rgba(0,209,178,0.70) 0%, transparent 55%),' +
-                  'radial-gradient(ellipse at 50% 50%, rgba(99,91,255,0.65) 0%, transparent 60%),' +
-                  'radial-gradient(ellipse at 80% 10%, rgba(255,182,72,0.45) 0%, transparent 40%),' +
-                  'linear-gradient(135deg, #635bff 0%, #0a2540 50%, #0e7490 100%)',
-                boxShadow: '0 24px 64px rgba(99,91,255,0.20), 0 8px 24px rgba(0,0,0,0.10)',
+                  'radial-gradient(ellipse at 15% 20%, rgba(128,233,255,0.25) 0%, transparent 50%),' +
+                  'radial-gradient(ellipse at 85% 75%, rgba(169,96,238,0.20) 0%, transparent 50%),' +
+                  'radial-gradient(ellipse at 50% 50%, rgba(99,91,255,0.18) 0%, transparent 55%),' +
+                  'linear-gradient(135deg, #0d2d4d 0%, #0a2540 50%, #11325a 100%)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.35), 0 0 80px rgba(128,233,255,0.06)',
               }}
             >
               {/* Animated glow orb */}
               <div
                 className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl pointer-events-none"
-                style={{ background: 'rgba(255,255,255,0.15)' }}
+                style={{ background: 'rgba(128,233,255,0.12)' }}
               />
 
               <div className="relative z-[1]">
@@ -156,7 +158,7 @@ export default function About() {
                     </p>
                     <p
                       className="text-[13px] font-medium mt-0.5"
-                      style={{ color: 'rgba(255,255,255,0.75)' }}
+                      style={{ color: C.accent }}
                     >
                       Personal finance, simplified
                     </p>
@@ -182,12 +184,12 @@ export default function About() {
                       key={label}
                       className="rounded-[14px] px-3 py-2.5"
                       style={{
-                        background: 'rgba(255,255,255,0.15)',
-                        border: '1px solid rgba(255,255,255,0.20)',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.08)',
                       }}
                     >
                       <p className="text-[10px] font-medium uppercase tracking-wider"
-                         style={{ color: 'rgba(255,255,255,0.65)' }}>{label}</p>
+                         style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</p>
                       <p className="text-[14px] font-bold mt-0.5"
                          style={{ color: '#f6f9fc' }}>{value}</p>
                     </div>
@@ -216,9 +218,9 @@ export default function About() {
                     className="h-11 rounded-[12px] text-[13px] font-semibold inline-flex items-center
                                justify-center active:scale-[0.97] transition-all duration-100"
                     style={{
-                      background: 'rgba(255,255,255,0.20)',
-                      color: '#ffffff',
-                      border: '1px solid rgba(255,255,255,0.30)',
+                      background: 'rgba(255,255,255,0.08)',
+                      color: '#f6f9fc',
+                      border: '1px solid rgba(255,255,255,0.12)',
                     }}
                   >
                     View GitHub
@@ -238,14 +240,14 @@ export default function About() {
               </p>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { icon: <RocketLaunchIcon size={18} weight="duotone" color={C.brand} />, label: 'Fast capture' },
-                  { icon: <LightningIcon size={18} weight="duotone" color={C.brand} />, label: 'Clear insights' },
-                  { icon: <ShieldCheckIcon size={18} weight="duotone" color={C.brand} />, label: 'Privacy first' },
+                  { icon: <RocketLaunchIcon size={18} weight="duotone" color={C.accent} />, label: 'Fast capture' },
+                  { icon: <LightningIcon size={18} weight="duotone" color={C.accent} />, label: 'Clear insights' },
+                  { icon: <ShieldCheckIcon size={18} weight="duotone" color={C.accent} />, label: 'Privacy first' },
                 ].map((item) => (
                   <div
                     key={item.label}
                     className="flex flex-col items-center gap-2 rounded-[14px] py-3 px-2"
-                    style={{ background: 'rgba(99,91,255,0.06)', border: '1px solid rgba(99,91,255,0.10)' }}
+                    style={{ background: 'rgba(128,233,255,0.06)', border: '1px solid rgba(128,233,255,0.10)' }}
                   >
                     {item.icon}
                     <span className="text-[11px] font-semibold text-ink-2 text-center">{item.label}</span>
@@ -301,7 +303,7 @@ export default function About() {
                       {ri === 0 && (
                         <span
                           className="text-[11px] font-bold px-2.5 py-1 rounded-full"
-                          style={{ background: 'rgba(99,91,255,0.08)', color: C.brand }}
+                          style={{ background: 'rgba(128,233,255,0.12)', color: C.accent }}
                         >
                           Latest
                         </span>
@@ -313,7 +315,7 @@ export default function About() {
                         <div key={i} className="flex items-start gap-2.5">
                           <div
                             className="w-1.5 h-1.5 rounded-full mt-[7px] shrink-0"
-                            style={{ background: C.brand }}
+                            style={{ background: C.accent }}
                           />
                           <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
                         </div>
@@ -331,7 +333,7 @@ export default function About() {
                     className="w-full px-4 py-3 text-[13px] font-semibold text-center
                                active:bg-kosha-surface-2 transition-colors
                                flex items-center justify-center gap-1.5"
-                    style={{ color: C.brand }}
+                    style={{ color: C.accent }}
                   >
                     {showAllVersions
                       ? <>Hide older versions <CaretUpIcon size={13} weight="bold" /></>
@@ -354,9 +356,9 @@ export default function About() {
                       key={tech}
                       className="text-[12px] font-semibold px-3 py-1.5 rounded-full"
                       style={{
-                        background: 'rgba(99,91,255,0.06)',
+                        background: 'rgba(99,91,255,0.10)',
                         color: C.brandLight,
-                        border: '1px solid rgba(99,91,255,0.12)',
+                        border: '1px solid rgba(99,91,255,0.15)',
                       }}
                     >
                       {tech}
@@ -387,7 +389,7 @@ export default function About() {
               <div className="flex items-start gap-3.5 px-4 py-4">
                 <div
                   className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 mt-0.5"
-                  style={{ background: 'rgba(14,159,110,0.08)', border: '1px solid rgba(14,159,110,0.12)' }}
+                  style={{ background: 'rgba(0,212,170,0.12)', border: '1px solid rgba(0,212,170,0.15)' }}
                 >
                   <LockIcon size={18} weight="duotone" color={C.income} />
                 </div>
@@ -404,7 +406,7 @@ export default function About() {
             <SectionLabel>Support Kosha</SectionLabel>
             <GlassCard className="overflow-hidden p-0">
               <CardRow
-                icon={<CurrencyInrIcon size={18} weight="bold" color={C.brand} />}
+                icon={<CurrencyInrIcon size={18} weight="bold" color={C.accent} />}
                 label="Pay via UPI"
                 sublabel={UPI_ID}
                 onClick={copyUpi}

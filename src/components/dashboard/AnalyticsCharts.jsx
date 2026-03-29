@@ -23,22 +23,22 @@ const DarkTooltip = ({ active, payload, label }) => {
   )
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.97)',
+      background: 'rgba(34,43,109,0.96)',
       borderRadius: 12,
       padding: '10px 14px',
-      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.08)',
+      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
       minWidth: 140,
-      border: '0.5px solid rgba(0,0,0,0.08)',
+      border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
       <p style={{
-        fontSize: 12, fontWeight: 600, color: '#6b7c93',
+        fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
         letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
       }}>
         {label}
       </p>
       {uniquePayload.map(p => (
         <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-          <span style={{ fontSize: 13, color: '#425466' }}>{p.name}</span>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>{p.name}</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: p.stroke || p.fill || p.color }}>
             {fmt(p.value)}
           </span>
@@ -55,21 +55,21 @@ const NetTooltip = ({ active, payload, label }) => {
   const valueColor = val >= 0 ? C.chartIncome : C.chartExpense
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.97)',
+      background: 'rgba(34,43,109,0.96)',
       borderRadius: 12,
       padding: '10px 14px',
-      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.08)',
+      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
       minWidth: 140,
-      border: '0.5px solid rgba(0,0,0,0.08)',
+      border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
       <p style={{
-        fontSize: 12, fontWeight: 600, color: '#6b7c93',
+        fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
         letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
       }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        <span style={{ fontSize: 13, color: '#425466' }}>Net</span>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.78)' }}>Net</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: valueColor }}>{fmt(val)}</span>
       </div>
     </div>
@@ -103,7 +103,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
           <p className="text-label font-semibold text-ink">
             Cash Flow Pulse
           </p>
-          <p style={{ fontSize: 11, color: '#6b7c93', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: '#8898aa', marginTop: 2 }}>
             Income trend vs monthly outflow
           </p>
         </div>
@@ -112,7 +112,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             style={{ fontSize: 15, color: C.chartIncome, letterSpacing: '-0.01em' }}>
             {fmt(totalIncome || 0, true)}
           </p>
-          <p style={{ fontSize: 10, color: '#6b7c93', marginTop: 1 }}>earned</p>
+          <p style={{ fontSize: 10, color: '#8898aa', marginTop: 1 }}>earned</p>
         </div>
       </div>
 
@@ -148,11 +148,11 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             </linearGradient>
           </defs>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: '#6b7c93', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: '#8898aa', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide />
-          <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(0,0,0,0.06)', strokeWidth: 1 }} />
+          <Tooltip content={<DarkTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
           <Area dataKey="Income" type="monotone"
             stroke={C.chartIncome} strokeWidth={3} fill="url(#gIncome)" dot={false}
             activeDot={{ r: 5, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
@@ -170,7 +170,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
         {[['Income', C.chartIncome], ['Spent', C.chartExpense]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: c }} />
-            <span style={{ fontSize: 11, color: '#6b7c93', fontWeight: 500 }}>{l}</span>
+            <span style={{ fontSize: 11, color: '#8898aa', fontWeight: 500 }}>{l}</span>
           </div>
         ))}
       </div>
@@ -210,7 +210,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           <p className="text-label font-semibold text-ink">
             Net Savings
           </p>
-          <p style={{ fontSize: 11, color: '#6b7c93', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: '#8898aa', marginTop: 2 }}>
             Monthly net with cumulative direction
           </p>
         </div>
@@ -222,7 +222,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           }}>
             {fmt(Math.abs(totalNet), true)}
           </p>
-          <p style={{ fontSize: 10, color: '#6b7c93', marginTop: 1 }}>
+          <p style={{ fontSize: 10, color: '#8898aa', marginTop: 1 }}>
             {totalNet >= 0 ? 'net saved' : 'net deficit'}
           </p>
         </div>
@@ -246,12 +246,12 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={safeData} margin={{ top: 4, right: 12, left: 12, bottom: 0 }}>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: '#6b7c93', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: '#8898aa', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide domain={[-safeAxisMax, safeAxisMax]} />
-          <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-          <ReferenceLine y={0} stroke="rgba(0,0,0,0.10)" strokeWidth={1} />
+          <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+          <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
           <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={26}>
             {safeData.map((entry, i) => (
               <Cell key={i}
@@ -268,35 +268,35 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
 })
 
 const TREND_CHART_BG =
-  'radial-gradient(circle at 85% 20%, rgba(99,91,255,0.10) 0%, rgba(99,91,255,0) 58%), linear-gradient(180deg, #f5f7fc 0%, #eef2f7 100%)'
+  'radial-gradient(circle at 85% 20%, rgba(36,59,175,0.22) 0%, rgba(36,59,175,0) 58%), linear-gradient(180deg, #172978 0%, #0D143F 100%)'
 
 const ConfidenceTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.97)',
+      background: 'rgba(34,43,109,0.96)',
       borderRadius: 12,
       padding: '10px 14px',
-      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.08)',
+      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
       minWidth: 140,
-      border: '0.5px solid rgba(0,0,0,0.08)',
+      border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
       <p style={{
-        fontSize: 12, fontWeight: 600, color: '#6b7c93',
+        fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
         letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
       }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 13, color: '#425466' }}>Confidence</span>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Confidence</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.chartIncome }}>
           {point?.confidence == null ? 'No data' : `${point.confidence}%`}
         </span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        <span style={{ fontSize: 12, color: '#6b7c93' }}>Signals</span>
-        <span style={{ fontSize: 12, color: '#425466' }}>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Signals</span>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.78)' }}>
           {point?.linked || 0} linked · {point?.rejected || 0} mismatch
         </span>
       </div>
@@ -313,14 +313,14 @@ export const ConfidenceTrendChart = memo(function ConfidenceTrendChart({ trendDa
   return (
     <div
       className="rounded-card overflow-hidden shadow-card-lg transition-transform duration-150 hover:-translate-y-0.5"
-      style={{ background: TREND_CHART_BG, border: '1px solid rgba(0,0,0,0.08)' }}
+      style={{ background: TREND_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
     >
       <div className="px-5 pt-5 pb-2 flex items-start justify-between">
         <div>
-          <p className="text-label font-semibold" style={{ color: '#0a2540' }}>
+          <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
             Confidence Trend
           </p>
-          <p style={{ fontSize: 11, color: '#6b7c93', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
             Daily linked vs mismatch quality (last 30 days)
           </p>
         </div>
@@ -332,7 +332,7 @@ export const ConfidenceTrendChart = memo(function ConfidenceTrendChart({ trendDa
           }}>
             {latestConfidence == null ? '—' : `${latestConfidence}%`}
           </p>
-          <p style={{ fontSize: 10, color: '#6b7c93', marginTop: 1 }}>latest day</p>
+          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>latest day</p>
         </div>
       </div>
 
@@ -340,15 +340,15 @@ export const ConfidenceTrendChart = memo(function ConfidenceTrendChart({ trendDa
         <LineChart data={trendData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
           <XAxis
             dataKey="dateShort"
-            tick={{ fontSize: 10, fill: '#6b7c93', fontWeight: 500 }}
+            tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.45)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval="preserveStartEnd"
             minTickGap={20}
           />
           <YAxis hide domain={[0, 100]} />
-          <Tooltip content={<ConfidenceTooltip />} cursor={{ stroke: 'rgba(0,0,0,0.06)', strokeWidth: 1 }} />
-          <ReferenceLine y={70} stroke="rgba(0,0,0,0.10)" strokeDasharray="3 3" />
+          <Tooltip content={<ConfidenceTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
+          <ReferenceLine y={70} stroke="rgba(255,255,255,0.18)" strokeDasharray="3 3" />
           <Line
             dataKey="confidence"
             type="monotone"
