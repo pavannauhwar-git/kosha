@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat, Activity } from 'lucide-react'
+import { Bell, ArrowRight, TrendingUp, TrendingDown, Minus, Plus, Repeat } from 'lucide-react'
 import {
   useRecentTransactions,
   useTransactionDigest,
@@ -157,7 +157,6 @@ export default function Dashboard() {
       return false
     }
   })
-  const [signalsTab, setSignalsTab] = useState('weekly')
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 50)
@@ -356,33 +355,6 @@ export default function Dashboard() {
     }
   }, [dueSoonCount, weeklyDigest, earned, rate])
 
-  const hasWeeklySignals = heavyReady && weeklyDigest.hasSignals
-  const hasInvestmentSignals = heavyReady && invested > 0
-
-  useEffect(() => {
-    if (signalsTab === 'weekly' && !hasWeeklySignals && hasInvestmentSignals) {
-      setSignalsTab('investments')
-      return
-    }
-    if (signalsTab === 'investments' && !hasInvestmentSignals && hasWeeklySignals) {
-      setSignalsTab('weekly')
-    }
-  }, [signalsTab, hasWeeklySignals, hasInvestmentSignals])
-
-  const showPaceCard = useMemo(() => {
-    const focusRisk = todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
-    const weeklyRisk = weeklyDigest.hasSignals && weeklyDigest.spendDelta > 0
-    return !paceOk || focusRisk || dueSoonCount > 0 || weeklyRisk
-  }, [paceOk, todayFocus.tone, weeklyDigest.hasSignals, weeklyDigest.spendDelta, dueSoonCount])
-
-  const recentFinancialEvents = useMemo(() => {
-    const cutoffMs = Date.now() - (48 * 60 * 60 * 1000)
-    return (financialEvents || []).filter((evt) => {
-      const ts = new Date(evt?.created_at || 0).getTime()
-      return Number.isFinite(ts) && ts >= cutoffMs
-    })
-  }, [financialEvents])
-
   useEffect(() => {
     const prefs = getReminderPrefs()
     if (!prefs.enabled) return
@@ -580,103 +552,62 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Pace card — sub-component ────────────────────────────── */}
-        {showPaceCard ? (
+        <motion.div variants={fadeUp}>
+          <DashboardPaceCard
+            dayOfMonth={dayOfMonth}
+            daysInMonth={daysInMonth}
+            earned={earned}
+            spent={spent}
+            paceOk={paceOk}
+          />
+        </motion.div>
+
+        {heavyReady && weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
-            <DashboardPaceCard
-              dayOfMonth={dayOfMonth}
-              daysInMonth={daysInMonth}
-              earned={earned}
-              spent={spent}
-              paceOk={paceOk}
-            />
-          </motion.div>
-        ) : (
-          <motion.div variants={fadeUp}>
-            <div className="card p-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[12px] text-ink-3">Pace confidence</p>
-                <span className="text-[11px] font-semibold text-income-text">On track</span>
+            <div className="card p-3.5">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div>
+                  <p className="section-label">What changed this week</p>
+                  <p className="text-caption text-ink-3 mt-0.5">7-day vs previous 7-day digest</p>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${weeklyDigest.spendDelta <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                  {weeklyDigest.spendDelta <= 0 ? 'Spending cooled' : 'Spending up'}
+                </span>
               </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-1">
+                <StatMini label="Spend (7d)" value={fmt(weeklyDigest.spendLast7)} tone="text-expense-text" />
+                <StatMini label="Spend delta" value={`${weeklyDigest.spendDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.spendDelta))}`} tone={weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'} />
+                <StatMini label="Income (7d)" value={fmt(weeklyDigest.incomeLast7)} tone="text-income-text" />
+                <StatMini label="Income delta" value={`${weeklyDigest.incomeDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.incomeDelta))}`} tone={weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'} />
+              </div>
+
+              {weeklyDigest.topCategory && (
+                <p className="text-[11px] text-ink-3 mt-2">
+                  Top spend category this week: <span className="font-semibold text-ink-2">{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
+                </p>
+              )}
             </div>
           </motion.div>
         )}
 
-        {heavyReady && (hasWeeklySignals || hasInvestmentSignals) && (
+        {heavyReady && invested > 0 && (
           <motion.div variants={fadeUp}>
-            <div className={`card ${denseMode ? 'p-3' : 'p-3.5'}`}>
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div>
-                  <p className="section-label">Financial signals</p>
-                  {!denseMode && (
-                    <p className="text-caption text-ink-3 mt-0.5">What changed recently and where to focus</p>
-                  )}
-                </div>
-
-                {hasWeeklySignals && hasInvestmentSignals && (
-                  <div className="inline-flex rounded-pill border border-kosha-border bg-kosha-surface-2 p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setSignalsTab('weekly')}
-                      className={`px-2.5 py-1 text-[10px] font-semibold rounded-pill ${signalsTab === 'weekly' ? 'bg-brand-container text-brand-on' : 'text-ink-3'}`}
-                    >
-                      Weekly
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSignalsTab('investments')}
-                      className={`px-2.5 py-1 text-[10px] font-semibold rounded-pill ${signalsTab === 'investments' ? 'bg-brand-container text-brand-on' : 'text-ink-3'}`}
-                    >
-                      Investments
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {(signalsTab === 'weekly' || !hasInvestmentSignals) && hasWeeklySignals && (
-                <>
-                  <span className={`inline-flex text-xs px-2 py-1 rounded-full font-semibold mb-2 ${weeklyDigest.spendDelta <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-                    {weeklyDigest.spendDelta <= 0 ? 'Spend trend: cooling' : 'Spend trend: rising'}
+            <div className="card p-3.5">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-caption text-ink-3 font-medium">Invested this month</p>
+                <div className="flex items-center gap-1.5">
+                  {investDiff === 0
+                    ? <Minus size={12} className="text-ink-3" />
+                    : investUp
+                      ? <TrendingUp size={12} className="text-income-text" />
+                      : <TrendingDown size={12} className="text-expense-text" />}
+                  <span className={`text-caption font-semibold ${investDiff === 0 ? 'text-ink-3' : investUp ? 'text-income-text' : 'text-expense-text'}`}>
+                    {investDiff === 0 ? 'Same as last month' : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
                   </span>
-
-                  <div className={`grid ${denseMode ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} gap-1.5 mb-1`}>
-                    <StatMini label="Spend 7d" value={fmt(weeklyDigest.spendLast7)} tone="text-expense-text" />
-                    <StatMini label="Spend vs prev 7d" value={`${weeklyDigest.spendDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.spendDelta))}`} tone={weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'} />
-                    {!denseMode && <StatMini label="Income 7d" value={fmt(weeklyDigest.incomeLast7)} tone="text-income-text" />}
-                    {!denseMode && <StatMini label="Income vs prev 7d" value={`${weeklyDigest.incomeDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.incomeDelta))}`} tone={weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'} />}
-                  </div>
-
-                  {weeklyDigest.topCategory && (
-                    <p className="text-[11px] text-ink-3 mt-2">
-                      Highest spend category (7d): <span className="font-semibold text-ink-2">{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
-                    </p>
-                  )}
-                </>
-              )}
-
-              {(signalsTab === 'investments' || !hasWeeklySignals) && hasInvestmentSignals && (
-                <div className="rounded-card bg-kosha-surface-2 p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-caption text-ink-3 font-medium">Investments this month</p>
-                    <div className="flex items-center gap-1.5">
-                      {investDiff === 0
-                        ? <Minus size={12} className="text-ink-3" />
-                        : investUp
-                          ? <TrendingUp size={12} className="text-income-text" />
-                          : <TrendingDown size={12} className="text-expense-text" />}
-                      <span className={`text-caption font-semibold ${investDiff === 0 ? 'text-ink-3' : investUp ? 'text-income-text' : 'text-expense-text'}`}>
-                        {investDiff === 0 ? 'Flat vs last month' : `${investUp ? '+' : ''}${fmt(Math.abs(investDiff))} vs last month`}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-[22px] md:text-[24px] font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
-                  {!denseMode && (
-                    <p className="text-[11px] text-ink-3 mt-1">
-                      Last month: <span className="font-semibold text-ink-2">{fmt(lastInvested)}</span>
-                    </p>
-                  )}
                 </div>
-              )}
+              </div>
+              <p className="text-[22px] md:text-[24px] font-bold text-invest-text tabular-nums leading-[0.98] tracking-tight">{fmt(invested)}</p>
             </div>
           </motion.div>
         )}
@@ -696,30 +627,7 @@ export default function Dashboard() {
         {/* ── Financial activity feed ─────────────────────────────── */}
         {heavyReady && (
           <motion.div variants={fadeUp}>
-            {recentFinancialEvents.length > 0 ? (
-              <DashboardActivityFeed events={recentFinancialEvents} />
-            ) : (
-              <div className={`card ${denseMode ? 'p-3' : 'p-3.5'}`}>
-                <div className="flex items-start gap-2.5">
-                  <div className="h-7 w-7 rounded-pill bg-kosha-surface-2 border border-kosha-border flex items-center justify-center mt-0.5">
-                    <Activity size={14} className="text-ink-3" />
-                  </div>
-                  <div>
-                    <p className="section-label">Recent activity</p>
-                    <p className="text-caption text-ink-3 mt-0.5">No meaningful financial activity in the last 48 hours.</p>
-                  </div>
-                </div>
-                {!denseMode && (
-                  <button
-                    type="button"
-                    onClick={() => navigate('/transactions')}
-                    className="mt-3 px-3 py-1.5 text-[11px] rounded-pill bg-kosha-surface-2 border border-kosha-border text-ink-2 hover:bg-kosha-surface-3"
-                  >
-                    Open transactions
-                  </button>
-                )}
-              </div>
-            )}
+            <DashboardActivityFeed events={financialEvents} />
           </motion.div>
         )}
 

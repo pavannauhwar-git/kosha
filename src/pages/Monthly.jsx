@@ -407,38 +407,40 @@ export default function Monthly() {
           </div>
 
           {heavyReady && (
-          <div className="card p-4">
-            <SectionHeader
-              className="mb-2"
-              title="Month-close checklist"
-              subtitle="Resolve these to trust month-end outcomes."
-              badge={{ label: 'Action plan', className: 'bg-brand-container text-brand-on' }}
-            />
-
-            <div className="space-y-2.5">
-              {[monthlyChecklist.reconciliation, monthlyChecklist.bills, monthlyChecklist.budgets].map((item) => (
-                <div key={item.cta} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
-                  <div className="flex items-center justify-between gap-2.5">
-                    <div className="min-w-0 flex items-center gap-2.5">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-pill font-semibold shrink-0 ${item.done ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-                        {item.done ? 'Complete' : 'Attention'}
-                      </span>
-                      <p className="text-[12px] text-ink-2 truncate">{item.label}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => navigate(item.route)}
-                      className="btn-secondary-sm shrink-0"
-                    >
-                      {item.cta}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
             <BreakdownCard earned={inflow} spent={spent} invested={invested} totalLabel="Total inflow" />
-          </div>
+          )}
+
+          {heavyReady && (
+            <div className="card p-4">
+              <SectionHeader
+                className="mb-2"
+                title="Month-close checklist"
+                subtitle="Resolve these to trust month-end outcomes."
+                badge={{ label: 'Action plan', className: 'bg-brand-container text-brand-on' }}
+              />
+
+              <div className="space-y-2.5">
+                {[monthlyChecklist.reconciliation, monthlyChecklist.bills, monthlyChecklist.budgets].map((item) => (
+                  <div key={item.cta} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
+                    <div className="flex items-center justify-between gap-2.5">
+                      <div className="min-w-0 flex items-center gap-2.5">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-pill font-semibold shrink-0 ${item.done ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                          {item.done ? 'Complete' : 'Attention'}
+                        </span>
+                        <p className="text-[12px] text-ink-2 truncate">{item.label}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate(item.route)}
+                        className="btn-secondary-sm shrink-0"
+                      >
+                        {item.cta}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {heavyReady && budgetVariance.hasBudgets && (
