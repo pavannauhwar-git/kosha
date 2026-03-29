@@ -41,18 +41,10 @@ export default function YearlyInsightsCard({ data, catEntries }) {
     <div
       className="card p-4 overflow-hidden relative"
       style={{
-        background: `linear-gradient(135deg, ${C.brandContainer} 0%, #F8FAFF 100%)`,
+        background: C.brandContainer,
         border: `1px solid ${C.brandBorder}`,
       }}
     >
-      <div
-        className="absolute top-0 right-0 w-28 h-28 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at 70% 30%, ${C.heroAccentBg} 0%, transparent 72%)`,
-          borderRadius: '50%',
-          transform: 'translate(20%, -20%)',
-        }}
-      />
       <div className="flex items-center gap-2 mb-2 relative">
         <div className="w-6 h-6 rounded-lg bg-brand flex items-center justify-center shrink-0">
           <Sparkle size={12} className="text-white" weight="fill" />

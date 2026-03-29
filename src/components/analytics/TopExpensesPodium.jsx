@@ -7,27 +7,27 @@ const DESKTOP_PODIUM_ORDER = [4, 2, 1, 3, 5]
 const PODIUM_META = {
   1: {
     platformH: 92,
-    grad: `linear-gradient(170deg,${C.brandLight},${C.brand})`,
+    bg: C.brand,
     rankColor: '#FFFFFF',
   },
   2: {
     platformH: 78,
-    grad: `linear-gradient(170deg,${C.brandContainer},${C.brandLight})`,
+    bg: C.brandLight,
     rankColor: C.brand,
   },
   3: {
     platformH: 64,
-    grad: `linear-gradient(170deg,#F7F5FF,${C.brandBorder})`,
+    bg: C.brandBorder,
     rankColor: C.brandMid,
   },
   4: {
     platformH: 54,
-    grad: `linear-gradient(170deg,#F8FAFF,#DCE5FF)`,
+    bg: '#EAF4FF',
     rankColor: C.brand,
   },
   5: {
     platformH: 46,
-    grad: `linear-gradient(170deg,#F9FBFF,#E7EDFF)`,
+    bg: '#F2F8FF',
     rankColor: C.brand,
   },
 }
@@ -71,7 +71,7 @@ export default function TopExpensesPodium({ top5, year }) {
                   <span className={`w-7 h-7 rounded-pill text-[11px] font-bold flex items-center justify-center shrink-0 ${rankTone}`}>
                     #{rank}
                   </span>
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(184,196,255,0.35)' }}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(10,103,216,0.16)' }}>
                     <CategoryIcon categoryId={item.category} size={14} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -89,10 +89,10 @@ export default function TopExpensesPodium({ top5, year }) {
         </div>
 
         <div className="hidden md:flex items-end justify-center gap-2.5 pt-2">
-          {desktopSlots.map(({ rank, platformH, grad, rankColor, item }) => (
+          {desktopSlots.map(({ rank, platformH, bg, rankColor, item }) => (
             <div key={rank} className="flex flex-col items-center w-[120px]">
               <div className="w-full rounded-card border border-kosha-border bg-kosha-surface-2 px-2 py-2.5 mb-1.5">
-                <div className="w-7 h-7 rounded-full mx-auto flex items-center justify-center" style={{ background: 'rgba(184,196,255,0.35)' }}>
+                <div className="w-7 h-7 rounded-full mx-auto flex items-center justify-center" style={{ background: 'rgba(10,103,216,0.16)' }}>
                   <CategoryIcon categoryId={item.category} size={14} />
                 </div>
                 <p className="text-[11px] font-medium text-ink text-center mt-1.5 leading-tight line-clamp-2 min-h-[30px]">{item.description}</p>
@@ -100,7 +100,7 @@ export default function TopExpensesPodium({ top5, year }) {
                 <p className="text-[10px] text-ink-3 text-center mt-0.5">{fmtDate(item.date)}</p>
               </div>
 
-              <div className="w-full rounded-t-xl flex items-center justify-center" style={{ height: platformH, background: grad }}>
+              <div className="w-full rounded-t-xl flex items-center justify-center" style={{ height: platformH, background: bg }}>
                 <span className="text-[13px] font-extrabold" style={{ color: rankColor }}>#{rank}</span>
               </div>
             </div>

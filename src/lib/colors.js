@@ -1,17 +1,17 @@
 export const C = {
 
-  // ── Brand — Royal Indigo (balanced over Zaffre) ──────────────────
-  brand:           '#1E3A8A',
-  brandMid:        '#3659C7',
-  brandLight:      '#6D87E8',
-  brandContainer:  '#E9EEFF',
-  brandBorder:     '#C7D4FF',
+  // ── Brand — Azure ────────────────────────────────────────────────
+  brand:           '#0A67D8',
+  brandMid:        '#2A84EE',
+  brandLight:      '#69AFF6',
+  brandContainer:  '#E7F2FF',
+  brandBorder:     '#BBD9FF',
 
-  // ── Contrast Accent — Warm Amber ─────────────────────────────────
-  // Complements blue family without overpowering content surfaces.
-  accent:          '#F59E42',
-  accentBg:        'rgba(245,158,66,0.24)',
-  accentFill:      'rgba(245,158,66,0.92)',
+  // ── Contrast Accent — Canary ─────────────────────────────────────
+  // Use sparingly for highlights and focused callouts.
+  accent:          '#F2D53C',
+  accentBg:        'rgba(242,213,60,0.22)',
+  accentFill:      'rgba(242,213,60,0.95)',
 
   // ── Income — Emerald H=174° ───────────────────────────────────────
   income:          '#0E9F6E',
@@ -25,42 +25,42 @@ export const C = {
   invest:          '#7C3AED',
   investText:      '#5B21B6',
 
-  saved:           '#1E3A8A',
+  saved:           '#0A67D8',
 
-  // ── Bills — Amber H=84° ───────────────────────────────────────────
-  bills:           '#B4691F',
+  // ── Bills — Deep Canary Gold ──────────────────────────────────────
+  bills:           '#9A7200',
 
-  // ── Ink — indigo neutrals ─────────────────────────────────────────
-  ink:             '#172347',
-  inkMuted:        '#6473A6',
+  // ── Ink — blue neutrals ───────────────────────────────────────────
+  ink:             '#10213F',
+  inkMuted:        '#5E6D8F',
 
-  // ── Hero card overlays (amber over indigo) ───────────────────────
-  heroAccent:      '#FFD08A',
-  heroAccentBg:    'rgba(245,158,66,0.24)',
-  heroAccentSolid: '#FFE1B8',
+  // ── Hero card overlays (canary over azure) ────────────────────────
+  heroAccent:      '#F8E57D',
+  heroAccentBg:    'rgba(242,213,60,0.22)',
+  heroAccentSolid: '#F6EBAB',
   heroLabel:       'rgba(255,255,255,0.64)', // labels and helper copy on hero
   heroDimmer:      'rgba(255,255,255,0.46)', // low-priority watermark/meta
   heroDivider:     'rgba(255,255,255,0.16)', // horizontal rule
   heroStatBg:      'rgba(255,255,255,0.12)', // stat chips on hero
 
-  // ── Chart glow colours ─────────────────────────────────────────────
-  chartIncome:     '#34D399',   // bright emerald glow on dark
-  chartExpense:    '#FB7185',   // bright rose glow on dark
-  chartDark:       '#102A72',
+  // ── Chart colours ──────────────────────────────────────────────────
+  chartIncome:     '#22C58B',
+  chartExpense:    '#F5637E',
+  chartDark:       '#0C3C8A',
   chartGrid:       'rgba(255,255,255,0.06)', // grid lines on dark card
   chartCursor:     'rgba(255,255,255,0.06)', // tooltip cursor on dark card
 
-  // ── Portfolio donut — indigo family, darkest → lightest ───────────
+  // ── Portfolio donut — azure family, darkest → lightest ────────────
   portfolio: [
-    '#172347',
-    '#1E3A8A',
-    '#3659C7',
-    '#6D87E8',
-    '#E9EEFF',
-    '#C7D4FF',
+    '#10213F',
+    '#0A67D8',
+    '#2A84EE',
+    '#69AFF6',
+    '#E7F2FF',
+    '#BBD9FF',
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#1E3A8A',
+  logoBg:        '#0A67D8',
   logoHighlight: '#FFFFFF',
 }

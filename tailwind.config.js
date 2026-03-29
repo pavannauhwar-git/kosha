@@ -5,21 +5,21 @@ export default {
     extend: {
       colors: {
         // ── App backgrounds ───────────────────────────────────────────────
-        'kosha-bg':            '#FEFEFF',
-        'kosha-bg-2':          '#F9FAFF',
+        'kosha-bg':            '#FFFEFC',
+        'kosha-bg-2':          '#FFFCF7',
         'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F6F8FF',
-        'kosha-border':        '#C7D4FF',
-        'kosha-border-strong': '#6D87E8',
+        'kosha-surface-2':     '#F7FAFF',
+        'kosha-border':        '#BBD9FF',
+        'kosha-border-strong': '#69AFF6',
 
-        // ── Brand — Royal Indigo + Warm Amber ────────────────────────────
-        'brand':           '#1E3A8A',
-        'brand-dark':      '#162B66',
-        'brand-mid':       '#3659C7',
-        'brand-bg':        '#F1F4FF',
-        'brand-container': '#E9EEFF',
-        'brand-on':        '#1A2E73',
-        'brand-accent':    '#FFE1B8',
+        // ── Brand — Azure + Canary ───────────────────────────────────────
+        'brand':           '#0A67D8',
+        'brand-dark':      '#0850AC',
+        'brand-mid':       '#2A84EE',
+        'brand-bg':        '#EEF6FF',
+        'brand-container': '#E7F2FF',
+        'brand-on':        '#0A4A9A',
+        'brand-accent':    '#F6EBAB',
 
         // ── Income ────────────────────────────────────────────────────────
         'income':        '#0E9F6E',
@@ -40,22 +40,22 @@ export default {
         'invest-border': '#DDD0FF',
 
         // ── Repayment / Bills ─────────────────────────────────────────────
-        'repay':        '#B4691F',
-        'repay-bg':     '#FFF8EE',
-        'repay-text':   '#96571A',
-        'repay-border': '#F6D8AD',
+        'repay':        '#9A7200',
+        'repay-bg':     '#FFFBE6',
+        'repay-text':   '#7D5C00',
+        'repay-border': '#F4E4A2',
 
         // ── Warning ───────────────────────────────────────────────────────
-        'warning':        '#D97706',
-        'warning-bg':     '#FFF8EC',
-        'warning-border': '#F5D3A1',
-        'warning-text':   '#B26010',
+        'warning':        '#A37700',
+        'warning-bg':     '#FFFBE6',
+        'warning-border': '#F4E4A2',
+        'warning-text':   '#7D5C00',
 
-        // ── Ink — indigo neutrals ─────────────────────────────────────────
-        'ink':   '#172347',
-        'ink-2': '#243566',
-        'ink-3': '#6473A6',
-        'ink-4': '#A0ABD1',
+        // ── Ink — blue neutrals ───────────────────────────────────────────
+        'ink':   '#10213F',
+        'ink-2': '#1D355F',
+        'ink-3': '#5E6D8F',
+        'ink-4': '#96A5C6',
 
         // ── Utility ───────────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',
@@ -91,8 +91,8 @@ export default {
         'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
-        'fab':        '0 6px 18px rgba(30,58,138,0.32)',
-        'focus':      '0 0 0 3px rgba(30,58,138,0.30)',
+        'fab':        '0 6px 18px rgba(10,103,216,0.32)',
+        'focus':      '0 0 0 3px rgba(10,103,216,0.30)',
         'urgent':     '0 2px 8px rgba(225,29,72,0.20), 0 0 0 0.5px rgba(225,29,72,0.15)',
         'warn':       '0 2px 8px rgba(202,138,4,0.20), 0 0 0 0.5px rgba(202,138,4,0.15)',
       },

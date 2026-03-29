@@ -5,8 +5,8 @@ import os
 SIZES = [180, 192, 512]
 OUT_DIR = os.path.join(os.path.dirname(__file__), '..', 'public', 'icons')
 
-# Current brand colour: Zaffre #0014A8
-BRAND = (0x00, 0x14, 0xA8)
+# Current brand colour: Azure #0A67D8
+BRAND = (0x0A, 0x67, 0xD8)
 
 def generate_icon(size):
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
