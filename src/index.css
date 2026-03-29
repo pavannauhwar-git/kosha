@@ -168,16 +168,14 @@
   /* -- Skeleton loader ──────────────────────────────────────────────── */
   .skeleton {
     @apply rounded-card;
-    background: rgba(255,255,255,0.06);
+    background: rgba(0,0,0,0.06);
     animation: skeleton-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
   /* -- List card ───────────────────────────────────────────────────── */
   .list-card {
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
     @apply rounded-card shadow-card overflow-hidden;
   }
 
@@ -187,11 +185,11 @@
   }
 
   .list-row:hover {
-    background: rgba(255,255,255,0.04);
+    background: rgba(0,0,0,0.03);
   }
 
   .list-row+.list-row {
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid rgba(0,0,0,0.06);
   }
 
   /* -- Section label ───────────────────────────────────────────────── */
