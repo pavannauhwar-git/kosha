@@ -180,7 +180,7 @@
 
   /* -- Section label ───────────────────────────────────────────────── */
   .section-label {
-    @apply text-[10.5px] font-semibold text-ink-3 tracking-tight leading-none;
+    @apply text-[11px] font-semibold text-ink-3 tracking-tight leading-none;
   }
 
   .card-title {
@@ -395,7 +395,7 @@
   .nav-label {
     font-size: 10.5px;
     line-height: 1;
-    font-family: 'Roboto', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     /* color + fontWeight animated by Framer */
     white-space: nowrap;
     user-select: none;
@@ -561,7 +561,7 @@
   }
 
   .section-label {
-    font-size: 10.5px;
+    font-size: 11px;
   }
 
   .card-title {

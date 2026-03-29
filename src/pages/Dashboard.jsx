@@ -610,7 +610,7 @@ export default function Dashboard() {
         variants={stagger}
         initial="hidden"
         animate="show"
-        className="space-y-4 md:space-y-5 pt-0"
+        className="page-stack pt-0"
       >
 
         {/* ── Greeting ──────────────────────────────────────────────── */}
