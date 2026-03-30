@@ -4,12 +4,14 @@ import { motion } from 'framer-motion'
 import {
   CashFlowChart,
   MoneyFlowComparisonChart,
+  CashflowWaterfallChart,
+  MonthlyCompositionAreaChart,
   SurplusTrajectoryChart,
   WhatIfSimulatorCard,
   RunwayCoverageChart,
   VolatilityScoreCard,
 } from '../components/dashboard/AnalyticsCharts'
-import { useYearSummary } from '../hooks/useTransactions'
+import { useYearSummary, useTransactions } from '../hooks/useTransactions'
 import { fmt } from '../lib/utils'
 import PageHeader from '../components/layout/PageHeader'
 import { MONTH_SHORT } from '../lib/constants'
@@ -22,6 +24,16 @@ import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
 import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
 import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ReferenceLine,
+} from 'recharts'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
@@ -31,6 +43,25 @@ function toFiniteNumber(value) {
   return Number.isFinite(n) ? n : 0
 }
 
+function ConcentrationTrendTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="text-ink-3">Top-3 share</span>
+        <span className="font-semibold tabular-nums text-warning-text">{Math.round(Number(row.share || 0))}%</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
+        <span className="text-ink-3">Expense base</span>
+        <span className="font-semibold tabular-nums text-ink">{fmt(Number(row.total || 0))}</span>
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
   const navigate = useNavigate()
@@ -38,6 +69,7 @@ export default function Analytics() {
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
   const [yoyRange, setYoyRange] = useState(3)
+  const [chartMode, setChartMode] = useState('advanced')
   const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
 
@@ -48,6 +80,13 @@ export default function Analytics() {
 
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
+  const { data: yearCategoryRows = [] } = useTransactions({
+    startDate: `${year}-01-01`,
+    endDate: `${year}-12-31`,
+    limit: 2600,
+    enabled: heavyReady,
+    columns: 'id,date,type,amount,category',
+  })
 
   const flowTrendData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
@@ -117,17 +156,52 @@ export default function Analytics() {
       }
     }
 
-      if (catEntries.length > 0) {
-        const [topCat, topValue] = catEntries[0]
-        const concentrationPct = Math.round((Number(topValue || 0) / categoryTotal) * 100)
-        if (concentrationPct >= 35) {
-          const catLabel = categoryLabelById.get(topCat) || topCat
-          items.push(`${catLabel} contributes ${concentrationPct}% of expense concentration. Add a monthly cap and monitor variance.`)
-        }
-      }
-
     return items.slice(0, 3)
-  }, [data, catEntries, categoryTotal, categoryLabelById])
+  }, [data])
+
+  const concentrationRiskTrend = useMemo(() => {
+    const monthCategoryMaps = Array.from({ length: 12 }, () => new Map())
+
+    for (const row of (Array.isArray(yearCategoryRows) ? yearCategoryRows : [])) {
+      if (row?.type !== 'expense') continue
+
+      const amount = Number(row?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+
+      const monthNum = Number(String(row?.date || '').slice(5, 7))
+      const monthIndex = monthNum - 1
+      if (monthIndex < 0 || monthIndex > 11) continue
+
+      const category = row?.category || 'other'
+      const categoryMap = monthCategoryMaps[monthIndex]
+      categoryMap.set(category, (categoryMap.get(category) || 0) + amount)
+    }
+
+    const series = monthCategoryMaps.map((categoryMap, index) => {
+      const totals = [...categoryMap.values()].sort((a, b) => b - a)
+      const total = totals.reduce((sum, value) => sum + value, 0)
+      const top3 = totals.slice(0, 3).reduce((sum, value) => sum + value, 0)
+      const share = total > 0 ? Math.round((top3 / total) * 100) : 0
+
+      return {
+        month: MONTH_SHORT[index],
+        share,
+        total,
+      }
+    })
+
+    const activeSeries = series.filter((row) => row.total > 0)
+    const avgShare = activeSeries.length
+      ? Math.round(activeSeries.reduce((sum, row) => sum + row.share, 0) / activeSeries.length)
+      : 0
+
+    return {
+      hasData: activeSeries.length > 0,
+      series,
+      avgShare,
+      highRiskMonths: activeSeries.filter((row) => row.share >= 65).length,
+    }
+  }, [yearCategoryRows])
 
   const decisionSignals = useMemo(() => {
     if (!flowTrendData.length || !surplusData.length) return []
@@ -239,6 +313,29 @@ export default function Analytics() {
 
             <div className="space-y-4">
 
+              <div className="flex items-center justify-between gap-2 px-1">
+                <p className="text-[11px] font-semibold text-ink-3">Chart mode</p>
+                <div className="inline-flex rounded-pill border border-kosha-border bg-kosha-surface p-0.5">
+                  {[
+                    { id: 'core', label: 'Core' },
+                    { id: 'advanced', label: 'Advanced' },
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setChartMode(mode.id)}
+                      className={`h-7 px-3 rounded-pill text-[11px] font-semibold transition-colors ${
+                        chartMode === mode.id
+                          ? 'bg-brand text-white'
+                          : 'text-ink-2 hover:bg-kosha-surface-2'
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* ── 2. Year-over-year context ───────────────────────── */}
               {heavyReady ? (
                 <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} onRangeChange={setYoyRange} />
@@ -253,9 +350,26 @@ export default function Analytics() {
               )}
 
               {/* ── 3. Performance trends ─────────────────────────────── */}
-              <MoneyFlowComparisonChart flowData={flowTrendData} />
-
-              <SurplusTrajectoryChart netData={surplusData} />
+              {chartMode === 'core' ? (
+                <>
+                  <MoneyFlowComparisonChart flowData={flowTrendData} />
+                  <CashFlowChart
+                    chartData={flowTrendData}
+                    totalIncome={data?.totalIncome}
+                  />
+                </>
+              ) : (
+                <>
+                  <MonthlyCompositionAreaChart flowData={flowTrendData} />
+                  <CashflowWaterfallChart
+                    flowData={flowTrendData}
+                    totalIncome={data?.totalIncome}
+                    totalExpense={data?.totalExpense}
+                    totalInvestment={data?.totalInvestment}
+                  />
+                  <SurplusTrajectoryChart netData={surplusData} />
+                </>
+              )}
 
               <RunwayCoverageChart
                 flowData={flowTrendData}
@@ -264,10 +378,56 @@ export default function Analytics() {
 
               <VolatilityScoreCard flowData={flowTrendData} />
 
-              <CashFlowChart
-                chartData={flowTrendData}
-                totalIncome={data?.totalIncome}
-              />
+              {concentrationRiskTrend.hasData && (
+                <div className="card p-4">
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-label font-semibold text-ink">Category concentration risk</p>
+                      <p className="text-[11px] text-ink-3 mt-0.5">Top-3 category share of monthly expense across the selected year.</p>
+                    </div>
+                    <span className={`text-[11px] px-2 py-1 rounded-pill font-semibold ${concentrationRiskTrend.avgShare >= 65 ? 'bg-warning-bg text-warning-text' : 'bg-income-bg text-income-text'}`}>
+                      Avg {concentrationRiskTrend.avgShare}%
+                    </span>
+                  </div>
+
+                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                    <ResponsiveContainer width="100%" height={196}>
+                      <LineChart data={concentrationRiskTrend.series} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval={0}
+                        />
+                        <YAxis
+                          domain={[0, 100]}
+                          tickFormatter={(value) => `${value}%`}
+                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={30}
+                        />
+                        <RechartsTooltip content={<ConcentrationTrendTooltip />} />
+                        <ReferenceLine y={65} stroke="rgba(154,114,0,0.65)" strokeDasharray="4 4" />
+                        <Line
+                          type="monotone"
+                          dataKey="share"
+                          stroke="#9A7200"
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 4, fill: '#9A7200', stroke: '#fff', strokeWidth: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <p className="text-[11px] text-ink-3 mt-2">
+                    {concentrationRiskTrend.highRiskMonths} month{concentrationRiskTrend.highRiskMonths === 1 ? '' : 's'} crossed the 65% concentration risk threshold.
+                  </p>
+                </div>
+              )}
 
               <WhatIfSimulatorCard
                 categories={scenarioCategories}

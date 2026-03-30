@@ -27,6 +27,18 @@ import {
   setReviewedReconciliationIds,
 } from '../lib/reconciliation'
 import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases, calculateAliasQuality, identifyMerchantsInCooldown } from '../lib/reconciliationMetrics'
+import {
+  ResponsiveContainer,
+  FunnelChart,
+  Funnel,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  LabelList,
+  Tooltip as RechartsTooltip,
+} from 'recharts'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -40,6 +52,36 @@ const REVIEW_STATE_FILTERS = [
   { id: 'linked', label: 'Linked' },
   { id: 'reviewed', label: 'Reviewed' },
 ]
+
+function ReconciliationFunnelTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+      <p className="text-[11px] font-semibold text-ink mb-1">{row?.name || 'Stage'}</p>
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="text-ink-3">Transactions</span>
+        <span className="font-semibold text-brand tabular-nums">{row?.value || 0}</span>
+      </div>
+    </div>
+  )
+}
+
+function TurnaroundTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="text-ink-3">Resolved items</span>
+        <span className="font-semibold tabular-nums text-brand">{row?.count || 0}</span>
+      </div>
+    </div>
+  )
+}
 
 export default function Reconciliation() {
   const navigate = useNavigate()
@@ -205,6 +247,70 @@ export default function Reconciliation() {
 
     return { total, resolved, queue, pct }
   }, [insights.candidates, linkedIdSet, effectiveReviewedIds])
+
+  const reconciliationFunnel = useMemo(() => {
+    const candidates = insights.candidates.length
+    const reviewedOrLinked = reviewProgress.resolved
+    const linked = reviewCounts.linked
+
+    return [
+      { name: 'Candidates', value: candidates, fill: '#2A84EE' },
+      { name: 'Reviewed', value: reviewedOrLinked, fill: '#22C58B' },
+      { name: 'Linked', value: linked, fill: '#0A67D8' },
+    ]
+  }, [insights.candidates.length, reviewProgress.resolved, reviewCounts.linked])
+
+  const linkedConversion = useMemo(() => {
+    const candidates = reconciliationFunnel[0]?.value || 0
+    const linked = reconciliationFunnel[2]?.value || 0
+    if (candidates <= 0) return 0
+    return Math.round((linked / candidates) * 100)
+  }, [reconciliationFunnel])
+
+  const turnaroundDistribution = useMemo(() => {
+    const txnById = new Map((Array.isArray(data) ? data : []).map((txn) => [txn?.id, txn]))
+
+    const buckets = [
+      { id: '0-1', label: '0-1d', min: 0, max: 1, count: 0 },
+      { id: '2-3', label: '2-3d', min: 2, max: 3, count: 0 },
+      { id: '4-7', label: '4-7d', min: 4, max: 7, count: 0 },
+      { id: '8-14', label: '8-14d', min: 8, max: 14, count: 0 },
+      { id: '15+', label: '15+d', min: 15, max: Number.POSITIVE_INFINITY, count: 0 },
+    ]
+
+    const dayMs = 24 * 60 * 60 * 1000
+    const leadTimes = []
+
+    for (const row of (Array.isArray(reviewRows) ? reviewRows : [])) {
+      if (!['reviewed', 'linked'].includes(row?.status)) continue
+
+      const txn = txnById.get(row?.transaction_id)
+      const resolvedAt = new Date(row?.updated_at || row?.created_at || 0).getTime()
+      const txnAt = new Date(txn?.date || txn?.created_at || row?.created_at || 0).getTime()
+
+      if (!Number.isFinite(resolvedAt) || !Number.isFinite(txnAt)) continue
+
+      const daysToResolve = Math.max(0, Math.floor((resolvedAt - txnAt) / dayMs))
+      leadTimes.push(daysToResolve)
+
+      const bucket = buckets.find((item) => daysToResolve >= item.min && daysToResolve <= item.max)
+      if (bucket) bucket.count += 1
+    }
+
+    const sortedLeadTimes = [...leadTimes].sort((a, b) => a - b)
+    const middleIndex = Math.floor(sortedLeadTimes.length / 2)
+    const medianDays = sortedLeadTimes.length
+      ? (sortedLeadTimes.length % 2 === 0
+          ? (sortedLeadTimes[middleIndex - 1] + sortedLeadTimes[middleIndex]) / 2
+          : sortedLeadTimes[middleIndex])
+      : 0
+
+    return {
+      buckets,
+      totalResolved: leadTimes.length,
+      medianDays: Math.round(medianDays * 10) / 10,
+    }
+  }, [reviewRows, data])
 
   const hasTransactions = (data || []).length > 0
   const hasActiveFilters = reviewStateFilter !== 'queue' || filter !== 'all'
@@ -379,7 +485,7 @@ export default function Reconciliation() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
           <Metric label="In queue" value={insights.counts.queue} tone="text-brand" />
-          <Metric label="Reviewed" value={insights.counts.reviewed} tone="text-income-text" />
+          <Metric label="Linked" value={reviewCounts.linked} tone="text-income-text" />
           <Metric label="Missing category" value={insights.counts.missingCategory} tone="text-warning-text" />
           <Metric label="Duplicates" value={insights.counts.potentialDuplicate} tone="text-expense-text" />
         </div>
@@ -403,6 +509,57 @@ export default function Reconciliation() {
               : 'Queue clear. Reconciliation quality looks healthy.'}
           </p>
         </div>
+
+        {reconciliationFunnel[0]?.value > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <p className="text-[11px] font-semibold text-ink-3">Resolution funnel</p>
+              <p className="text-[11px] text-ink-3 tabular-nums">{linkedConversion}% linked</p>
+            </div>
+
+            <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+              <ResponsiveContainer width="100%" height={168}>
+                <FunnelChart>
+                  <RechartsTooltip content={<ReconciliationFunnelTooltip />} />
+                  <Funnel dataKey="value" data={reconciliationFunnel} isAnimationActive>
+                    <LabelList
+                      position="right"
+                      fill="#5E6D8F"
+                      stroke="none"
+                      dataKey={(entry) => `${entry.name}: ${entry.value}`}
+                    />
+                  </Funnel>
+                </FunnelChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {turnaroundDistribution.totalResolved > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <p className="text-[11px] font-semibold text-ink-3">Turnaround quality</p>
+              <p className="text-[11px] text-ink-3 tabular-nums">Median {turnaroundDistribution.medianDays}d</p>
+            </div>
+
+            <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+              <ResponsiveContainer width="100%" height={172}>
+                <BarChart data={turnaroundDistribution.buckets} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis hide allowDecimals={false} />
+                  <RechartsTooltip content={<TurnaroundTooltip />} />
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#0A67D8" maxBarSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="sticky-toolbar">

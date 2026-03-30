@@ -15,6 +15,16 @@ import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { createFadeUp, createStagger } from '../lib/animations'
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ReferenceLine,
+} from 'recharts'
 
 // FIX (defect 4.3): Extracted sub-components. Each renders independently —
 // a transaction list refetch no longer re-renders the hero card or pace card,
@@ -48,6 +58,43 @@ const CONTROLLABLE_CATEGORY_IDS = new Set([
   'home',
   'other',
 ])
+
+function quantile(sortedValues, p) {
+  if (!sortedValues.length) return 0
+  const index = (sortedValues.length - 1) * p
+  const lowerIndex = Math.floor(index)
+  const upperIndex = Math.ceil(index)
+
+  if (lowerIndex === upperIndex) return sortedValues[lowerIndex]
+
+  const weight = index - lowerIndex
+  return (sortedValues[lowerIndex] * (1 - weight)) + (sortedValues[upperIndex] * weight)
+}
+
+function DuePressureTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="text-ink-3">Cum due</span>
+        <span className="font-semibold tabular-nums text-warning-text">{fmt(row.cumulativeDue || 0)}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
+        <span className="text-ink-3">Cum inflow</span>
+        <span className="font-semibold tabular-nums text-income-text">{fmt(row.cumulativeInflow || 0)}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
+        <span className="text-ink-3">Gap</span>
+        <span className={`font-semibold tabular-nums ${(row.gap || 0) >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+          {(row.gap || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(row.gap || 0))}
+        </span>
+      </div>
+    </div>
+  )
+}
 
 function DashboardHeroSkeleton() {
   return (
@@ -172,6 +219,7 @@ export default function Dashboard() {
   const [toast, setToast] = useState(null)
   const [heavyReady, setHeavyReady] = useState(false)
   const [opportunityCutPct, setOpportunityCutPct] = useState(12)
+  const [heatmapScale, setHeatmapScale] = useState('quantile')
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 50)
@@ -184,7 +232,7 @@ export default function Dashboard() {
     loading: recentLoading,
     fetching: recentFetching,
   } = useRecentTransactions(5)
-  const { data: digestTxnRows = [] } = useTransactionDigest(42, 500, { enabled: heavyReady })
+  const { data: digestTxnRows = [] } = useTransactionDigest(70, 900, { enabled: heavyReady })
   const { todaySpend, loading: todaySpendLoading } = useTodayExpenses({ enabled: heavyReady })
   const {
     data: summary,
@@ -339,6 +387,36 @@ export default function Dashboard() {
     const sparkValues = [...baselineSeries, todayValue]
     const sparkMax = Math.max(...sparkValues, 1)
 
+    const heatmapDays = []
+    for (let i = 55; i >= 0; i -= 1) {
+      const d = new Date(now)
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const value = byDate.get(key) || 0
+      heatmapDays.push({
+        key,
+        value,
+        label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+      })
+    }
+
+    const heatmapMax = Math.max(...heatmapDays.map((row) => row.value), 1)
+    const nonZeroHeatmapValues = heatmapDays
+      .map((row) => row.value)
+      .filter((value) => value > 0)
+      .sort((a, b) => a - b)
+    const heatmapQuantiles = {
+      q25: quantile(nonZeroHeatmapValues, 0.25),
+      q50: quantile(nonZeroHeatmapValues, 0.5),
+      q75: quantile(nonZeroHeatmapValues, 0.75),
+      q90: quantile(nonZeroHeatmapValues, 0.9),
+    }
+    const heatmapWeeks = []
+    for (let i = 0; i < heatmapDays.length; i += 7) {
+      heatmapWeeks.push(heatmapDays.slice(i, i + 7))
+    }
+
     return {
       baseline,
       variance,
@@ -346,17 +424,29 @@ export default function Dashboard() {
       todayValue,
       sparkValues,
       sparkMax,
+      heatmapWeeks,
+      heatmapMax,
+      heatmapQuantiles,
+      heatmapRange: `${heatmapDays[0]?.label || ''} - ${heatmapDays[heatmapDays.length - 1]?.label || ''}`,
     }
   }, [digestTxnRows, now, todaySpend])
 
   const cashRiskRadar = useMemo(() => {
     const current = now.getTime()
     const dayMs = 24 * 60 * 60 * 1000
-    const horizonEnd = current + (14 * dayMs)
+    const riskHorizonDays = 14
+    const timelineHorizonDays = 30
+    const riskHorizonEnd = current + (riskHorizonDays * dayMs)
+    const timelineHorizonEnd = current + (timelineHorizonDays * dayMs)
 
     const upcomingDueRows = (Array.isArray(bills) ? bills : []).filter((bill) => {
       const ts = new Date(bill?.due_date || 0).getTime()
-      return Number.isFinite(ts) && ts <= horizonEnd
+      return Number.isFinite(ts) && ts <= riskHorizonEnd
+    })
+
+    const timelineDueRows = (Array.isArray(bills) ? bills : []).filter((bill) => {
+      const ts = new Date(bill?.due_date || 0).getTime()
+      return Number.isFinite(ts) && ts <= timelineHorizonEnd
     })
 
     const obligations14 = upcomingDueRows.reduce((sum, bill) => sum + Number(bill?.amount || 0), 0)
@@ -372,6 +462,7 @@ export default function Dashboard() {
     const projectedInflow14 = income28 > 0
       ? (income28 / 28) * 14
       : (earned > 0 ? (earned / Math.max(dayOfMonth, 1)) * 14 : 0)
+    const projectedDailyInflow = projectedInflow14 > 0 ? projectedInflow14 / 14 : 0
 
     const coverageRatio = projectedInflow14 > 0
       ? obligations14 / projectedInflow14
@@ -381,8 +472,39 @@ export default function Dashboard() {
     if (coverageRatio > 0.85) risk = 'High'
     else if (coverageRatio > 0.45) risk = 'Medium'
 
-    const meterPct = Math.max(6, Math.min(100, Math.round(coverageRatio * 100)))
     const buffer = projectedInflow14 - obligations14
+
+    const dueByDate = new Map()
+    for (const bill of timelineDueRows) {
+      const key = String(bill?.due_date || '').slice(0, 10)
+      if (!key) continue
+      dueByDate.set(key, (dueByDate.get(key) || 0) + Number(bill?.amount || 0))
+    }
+
+    let cumulativeDue = 0
+    let cumulativeInflow = 0
+    const timelineSeries = Array.from({ length: timelineHorizonDays }, (_, index) => {
+      const d = new Date(now)
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() + index)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const due = dueByDate.get(key) || 0
+
+      cumulativeDue += due
+      cumulativeInflow += projectedDailyInflow
+
+      return {
+        day: index + 1,
+        label: index % 5 === 0
+          ? d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+          : '',
+        cumulativeDue,
+        cumulativeInflow,
+        gap: cumulativeInflow - cumulativeDue,
+      }
+    })
+
+    const worstGap = Math.min(...timelineSeries.map((row) => row.gap), buffer)
 
     let action = {
       label: 'Open monthly plan',
@@ -409,8 +531,9 @@ export default function Dashboard() {
       projectedInflow14,
       buffer,
       risk,
-      meterPct,
       dueCount: upcomingDueRows.length,
+      timelineSeries,
+      worstGap,
       action,
     }
   }, [bills, digestTxnRows, earned, dayOfMonth, now])
@@ -439,47 +562,71 @@ export default function Dashboard() {
     const driftAmount = thisWeekSpend - avg4WeekSpend
     const driftPct = avg4WeekSpend > 0 ? Math.round((driftAmount / avg4WeekSpend) * 100) : null
 
-    const thisWeekByCategory = new Map()
-    for (const row of thisWeekRows) {
-      const key = String(row?.category || 'other')
-      thisWeekByCategory.set(key, (thisWeekByCategory.get(key) || 0) + Number(row?.amount || 0))
+    const spendByDate = new Map()
+    for (const row of (Array.isArray(digestTxnRows) ? digestTxnRows : [])) {
+      if (row?.type !== 'expense') continue
+      const key = String(row?.date || '').slice(0, 10)
+      if (!key) continue
+      spendByDate.set(key, (spendByDate.get(key) || 0) + Number(row?.amount || 0))
     }
 
-    const prior4ByCategory = new Map()
-    for (const row of prior4WeekRows) {
-      const key = String(row?.category || 'other')
-      prior4ByCategory.set(key, (prior4ByCategory.get(key) || 0) + Number(row?.amount || 0))
-    }
+    const nowStart = new Date(now)
+    nowStart.setHours(0, 0, 0, 0)
+    const daysSinceMonday = (nowStart.getDay() + 6) % 7
+    const currentWeekMonday = new Date(nowStart)
+    currentWeekMonday.setDate(nowStart.getDate() - daysSinceMonday)
 
-    const categoryKeys = new Set([...thisWeekByCategory.keys(), ...prior4ByCategory.keys()])
-    const topDrivers = [...categoryKeys]
-      .map((key) => {
-        const thisWeekValue = thisWeekByCategory.get(key) || 0
-        const baselineWeekly = (prior4ByCategory.get(key) || 0) / 4
-        const delta = thisWeekValue - baselineWeekly
-        return {
+    const seasonalityWeeks = []
+    for (let weekOffset = 7; weekOffset >= 0; weekOffset -= 1) {
+      const weekStart = new Date(currentWeekMonday)
+      weekStart.setDate(currentWeekMonday.getDate() - (weekOffset * 7))
+
+      const days = []
+      for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
+        const d = new Date(weekStart)
+        d.setDate(weekStart.getDate() + dayOffset)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        const isFuture = d.getTime() > nowStart.getTime()
+        const value = isFuture ? 0 : (spendByDate.get(key) || 0)
+
+        days.push({
           key,
-          label: categoryLabelMap.get(key) || key,
-          thisWeekValue,
-          delta,
-        }
-      })
-      .filter((row) => row.delta > 0)
-      .sort((a, b) => b.delta - a.delta)
-      .slice(0, 2)
+          value,
+          isFuture,
+          label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+        })
+      }
 
-    const maxDriverDelta = Math.max(...topDrivers.map((row) => row.delta), 1)
+      seasonalityWeeks.push({
+        label: weekStart.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+        days,
+      })
+    }
+
+    const seasonalityValues = seasonalityWeeks
+      .flatMap((week) => week.days)
+      .filter((day) => !day.isFuture && day.value > 0)
+      .map((day) => day.value)
+      .sort((a, b) => a - b)
+
+    const seasonalityQuantiles = {
+      q25: quantile(seasonalityValues, 0.25),
+      q50: quantile(seasonalityValues, 0.5),
+      q75: quantile(seasonalityValues, 0.75),
+      q90: quantile(seasonalityValues, 0.9),
+    }
 
     return {
       thisWeekSpend,
       avg4WeekSpend,
       driftAmount,
       driftPct,
-      topDrivers,
-      maxDriverDelta,
+      seasonalityWeeks,
+      seasonalityQuantiles,
+      weekdayLabels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
       hasData: thisWeekRows.length > 0 || prior4WeekRows.length > 0,
     }
-  }, [digestTxnRows, now, categoryLabelMap])
+  }, [digestTxnRows, now])
 
   const opportunityWallet = useMemo(() => {
     const categoryRows = Object.entries(summary?.byCategory || {})
@@ -676,6 +823,76 @@ export default function Dashboard() {
                     )
                   })}
                 </div>
+
+                <div className="mt-3 border-t border-kosha-border pt-2.5">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <p className="text-[11px] text-ink-3">8-week spend heatmap</p>
+                    <div className="inline-flex rounded-pill border border-kosha-border bg-kosha-surface p-0.5">
+                      {[
+                        { id: 'quantile', label: 'Quantile' },
+                        { id: 'linear', label: 'Linear' },
+                      ].map((mode) => (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setHeatmapScale(mode.id)}
+                          className={`h-6 px-2 rounded-pill text-[10px] font-semibold transition-colors ${
+                            heatmapScale === mode.id
+                              ? 'bg-brand text-white'
+                              : 'text-ink-2 hover:bg-kosha-surface-2'
+                          }`}
+                        >
+                          {mode.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-ink-3 mb-1.5">
+                    {heatmapScale === 'quantile'
+                      ? 'Quantile scale spreads dense spending days for better pattern readability.'
+                      : 'Linear scale maps raw spend directly to cell intensity.'}
+                  </p>
+
+                  <div className="space-y-1">
+                    {dailyVariance.heatmapWeeks.map((week, weekIndex) => (
+                      <div key={`heatmap-week-${weekIndex}`} className="grid grid-cols-7 gap-1">
+                        {week.map((day) => {
+                          let alpha = 0.08
+                          if (day.value > 0) {
+                            if (heatmapScale === 'linear') {
+                              const intensity = day.value / dailyVariance.heatmapMax
+                              alpha = Math.min(0.9, 0.18 + (intensity * 0.68))
+                            } else {
+                              const { q25, q50, q75, q90 } = dailyVariance.heatmapQuantiles
+                              if (day.value <= q25) alpha = 0.28
+                              else if (day.value <= q50) alpha = 0.42
+                              else if (day.value <= q75) alpha = 0.58
+                              else if (day.value <= q90) alpha = 0.74
+                              else alpha = 0.9
+                            }
+                          }
+
+                          const cellColor = day.value <= 0
+                            ? 'rgba(16, 33, 63, 0.08)'
+                            : `rgba(10, 103, 216, ${alpha})`
+
+                          return (
+                            <div
+                              key={day.key}
+                              title={`${day.label}: ${fmt(day.value)}`}
+                              aria-label={`${day.label} spend ${fmt(day.value)}`}
+                              className="h-3 rounded-[3px]"
+                              style={{ background: cellColor }}
+                            />
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-[10px] text-ink-3 mt-1.5">{dailyVariance.heatmapRange}</p>
+                </div>
               </>
             )}
           </div>
@@ -721,14 +938,48 @@ export default function Dashboard() {
             </div>
 
             <div className="h-2 rounded-pill bg-kosha-surface-2 overflow-hidden">
-              <div
-                className={`${cashRiskRadar.risk === 'Low' ? 'bg-income' : cashRiskRadar.risk === 'Medium' ? 'bg-warning' : 'bg-expense'} h-full rounded-pill`}
-                style={{ width: `${cashRiskRadar.meterPct}%` }}
-              />
+              <div className="h-full rounded-pill bg-kosha-border" />
+            </div>
+
+            <div className="mt-2.5 rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={cashRiskRadar.timelineSeries} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={0}
+                  />
+                  <YAxis hide />
+                  <RechartsTooltip content={<DuePressureTooltip />} />
+                  <ReferenceLine y={0} stroke="rgba(16,33,63,0.18)" />
+                  <Line
+                    type="monotone"
+                    dataKey="cumulativeDue"
+                    stroke="#E11D48"
+                    strokeWidth={2.1}
+                    dot={false}
+                    activeDot={{ r: 4, fill: '#E11D48', stroke: '#fff', strokeWidth: 2 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="cumulativeInflow"
+                    stroke="#0E9F6E"
+                    strokeWidth={2.1}
+                    dot={false}
+                    activeDot={{ r: 4, fill: '#0E9F6E', stroke: '#fff', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
 
             <p className="text-[11px] text-ink-3 mt-2">
               {cashRiskRadar.dueCount} bill{cashRiskRadar.dueCount !== 1 ? 's' : ''} fall in the next 14 days. {cashRiskRadar.action.note}
+            </p>
+            <p className="text-[11px] text-ink-3 mt-1">
+              30-day projected worst cash gap: {cashRiskRadar.worstGap >= 0 ? '+' : '-'}{fmt(Math.abs(cashRiskRadar.worstGap))}.
             </p>
 
             <button
@@ -777,24 +1028,51 @@ export default function Dashboard() {
                     : `Weekly drift is ${spendingDrift.driftPct >= 0 ? '+' : ''}${spendingDrift.driftPct}% against your 4-week baseline.`}
                 </p>
 
-                {spendingDrift.topDrivers.length > 0 && (
-                  <div className="space-y-2">
-                    {spendingDrift.topDrivers.map((driver) => (
-                      <div key={driver.key}>
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-[11px] text-ink-2 truncate">{driver.label}</span>
-                          <span className="text-[11px] font-semibold text-warning-text tabular-nums">+{fmt(driver.delta)}</span>
-                        </div>
-                        <div className="h-1.5 rounded-pill bg-kosha-surface-2 overflow-hidden">
-                          <div
-                            className="h-full rounded-pill bg-warning"
-                            style={{ width: `${Math.max(8, Math.round((driver.delta / spendingDrift.maxDriverDelta) * 100))}%` }}
-                          />
-                        </div>
+                <div className="mt-2 border-t border-kosha-border pt-2">
+                  <div className="grid grid-cols-8 gap-1 mb-1">
+                    <span className="text-[9px] text-ink-3" />
+                    {spendingDrift.weekdayLabels.map((label, idx) => (
+                      <span key={`weekday-${idx}`} className="text-[9px] text-ink-3 text-center">{label}</span>
+                    ))}
+                  </div>
+
+                  <div className="space-y-1">
+                    {spendingDrift.seasonalityWeeks.map((week) => (
+                      <div key={week.label} className="grid grid-cols-8 gap-1 items-center">
+                        <span className="text-[9px] text-ink-3 tabular-nums">{week.label}</span>
+                        {week.days.map((day) => {
+                          let alpha = 0.08
+                          if (!day.isFuture && day.value > 0) {
+                            const { q25, q50, q75, q90 } = spendingDrift.seasonalityQuantiles
+                            if (day.value <= q25) alpha = 0.28
+                            else if (day.value <= q50) alpha = 0.42
+                            else if (day.value <= q75) alpha = 0.58
+                            else if (day.value <= q90) alpha = 0.74
+                            else alpha = 0.9
+                          }
+
+                          const background = day.isFuture
+                            ? 'rgba(16, 33, 63, 0.05)'
+                            : day.value > 0
+                              ? `rgba(154, 114, 0, ${alpha})`
+                              : 'rgba(16, 33, 63, 0.08)'
+
+                          return (
+                            <div
+                              key={day.key}
+                              title={`${day.label}: ${fmt(day.value)}`}
+                              aria-label={`${day.label} expense ${fmt(day.value)}`}
+                              className="h-3 rounded-[3px]"
+                              style={{ background }}
+                            />
+                          )
+                        })}
                       </div>
                     ))}
                   </div>
-                )}
+
+                  <p className="text-[10px] text-ink-3 mt-1">Week-over-week weekday spend seasonality. Darker cells indicate heavier spend days.</p>
+                </div>
               </>
             ) : (
               <p className="text-[11px] text-ink-3">No enough weekly spend history yet. Keep logging transactions to unlock drift drivers.</p>

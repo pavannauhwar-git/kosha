@@ -18,6 +18,65 @@ import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
 import BreakdownCard from '../components/cards/monthly/BreakdownCard'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ReferenceLine,
+  Cell,
+} from 'recharts'
+
+function toFiniteNumber(value) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
+function BudgetVarianceTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+  const variance = toFiniteNumber(row?.displayVariance)
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+      <p className="text-[11px] font-semibold text-ink mb-1">{row?.fullLabel || label || 'Category'}</p>
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="text-ink-3">Budget impact</span>
+        <span className={`font-semibold tabular-nums ${variance >= 0 ? 'text-expense-text' : 'text-income-text'}`}>
+          {variance >= 0 ? '+' : '-'}{fmt(Math.abs(variance))}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
+        <span className="text-ink-3">Running variance</span>
+        <span className="font-semibold tabular-nums text-ink">{fmt(toFiniteNumber(row?.end))}</span>
+      </div>
+    </div>
+  )
+}
+
+function AllocationDriftTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload?.[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="text-ink-3">Actual share</span>
+        <span className="font-semibold tabular-nums text-brand">{Math.round(toFiniteNumber(row?.actualShare))}%</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
+        <span className="text-ink-3">Target share</span>
+        <span className="font-semibold tabular-nums text-ink">{Math.round(toFiniteNumber(row?.targetShare))}%</span>
+      </div>
+    </div>
+  )
+}
 
 export default function Monthly() {
   const navigate = useNavigate()
@@ -35,12 +94,21 @@ export default function Monthly() {
   const { data, loading } = useMonthSummary(year, month)
   const monthStartDate = `${year}-${String(month).padStart(2, '0')}-01`
   const monthEndDate = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
+  const yearStartDate = `${year}-01-01`
+  const yearEndDate = `${year}-12-31`
   const { data: txnRows = [] } = useTransactions({
     startDate: monthStartDate,
     endDate: monthEndDate,
     limit: 250,
     enabled: heavyReady,
     columns: TRANSACTION_INSIGHTS_COLUMNS,
+  })
+  const { data: yearTxnRows = [] } = useTransactions({
+    startDate: yearStartDate,
+    endDate: yearEndDate,
+    limit: 2400,
+    enabled: heavyReady,
+    columns: 'id,date,type,amount,investment_vehicle',
   })
   const { budgets, setBudget, removeBudget } = useBudgets({ enabled: heavyReady })
   const { rows: monthBills = [], pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
@@ -187,6 +255,70 @@ export default function Monthly() {
       rows: scoredRows,
     }
   }, [allCatEntries, budgets, categoryById])
+
+  const budgetVarianceWaterfall = useMemo(() => {
+    if (!budgetAccuracy.hasBudgets) {
+      return {
+        rows: [],
+        chartRows: [],
+        totalVariance: 0,
+        chartLimit: 1000,
+      }
+    }
+
+    const rows = [...budgetAccuracy.rows]
+      .sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))
+      .slice(0, 8)
+
+    let running = 0
+    const chartRows = rows.map((row) => {
+      const start = running
+      const end = running + row.variance
+      running = end
+
+      return {
+        key: row.id,
+        name: row.label.length > 12 ? `${row.label.slice(0, 12)}…` : row.label,
+        fullLabel: row.label,
+        offset: Math.min(start, end),
+        height: Math.abs(row.variance),
+        start,
+        end,
+        displayVariance: row.variance,
+        color: row.variance >= 0 ? '#F5637E' : '#22C58B',
+      }
+    })
+
+    chartRows.push({
+      key: 'total',
+      name: 'Total',
+      fullLabel: 'Total variance',
+      offset: Math.min(0, running),
+      height: Math.abs(running),
+      start: 0,
+      end: running,
+      displayVariance: running,
+      color: running >= 0 ? '#E11D48' : '#0E9F6E',
+    })
+
+    const chartLimit = Math.max(
+      1200,
+      Math.ceil(
+        Math.max(
+          ...chartRows.map((row) => Math.abs(toFiniteNumber(row?.start))),
+          ...chartRows.map((row) => Math.abs(toFiniteNumber(row?.end))),
+          0
+        ) * 1.15
+      )
+    )
+
+    return {
+      rows,
+      chartRows,
+      totalVariance: running,
+      chartLimit,
+    }
+  }, [budgetAccuracy])
 
   const autopilotHealth = useMemo(() => {
     const recurringBills = monthBills.filter((bill) => !!bill?.is_recurring)
@@ -420,16 +552,8 @@ export default function Monthly() {
     if (total <= 0) {
       actions.push('No tagged vehicle allocation yet. Add investment entries with a vehicle label to unlock mix intelligence.')
       actions.push('Start with one core vehicle this month, then diversify once cadence is consistent.')
-      actions.push('After logging the first investment, review concentration to plan the second one.')
+      actions.push('After logging the first investment, define a second vehicle to establish diversification.')
     } else {
-      if (topPct >= 55 && second) {
-        actions.push(`Concentration alert: ${top.name} is ${topPct}% of this month. Next top-up in ${second.name} can reduce risk.`)
-      } else if (topPct >= 55) {
-        actions.push(`Concentration alert: ${top.name} is ${topPct}% of this month. Add another vehicle category for balance.`)
-      } else {
-        actions.push(`Concentration is manageable. Largest holding is ${topPct}% of this month's investments.`)
-      }
-
       if (rows.length < 3) {
         actions.push('Diversification opportunity: add at least one new vehicle category in the next investment.')
       } else {
@@ -449,9 +573,6 @@ export default function Monthly() {
       if (total <= 0) {
         return 'Log your first investment for this month to activate allocation tracking.'
       }
-      if (topPct >= 55 && second) {
-        return `Log the next investment in ${second.name} to rebalance concentration.`
-      }
       if (rows.length < 3) {
         return 'Log the next investment into a new vehicle category for diversification.'
       }
@@ -469,6 +590,73 @@ export default function Monthly() {
       nextAction,
     }
   }, [vehicleEntries, inflow, invested])
+
+  const allocationDrift = useMemo(() => {
+    const investmentRows = (Array.isArray(yearTxnRows) ? yearTxnRows : [])
+      .filter((row) => row?.type === 'investment' && Number(row?.amount || 0) > 0)
+
+    if (!investmentRows.length) {
+      return {
+        hasData: false,
+        primaryVehicle: '—',
+        targetShare: 0,
+        currentShare: 0,
+        maxDrift: 0,
+        series: [],
+      }
+    }
+
+    const annualVehicleTotals = new Map()
+    const monthlyTotals = Array.from({ length: 12 }, () => ({ total: 0, byVehicle: new Map() }))
+
+    for (const row of investmentRows) {
+      const amount = Number(row?.amount || 0)
+      if (amount <= 0) continue
+
+      const vehicle = row?.investment_vehicle || 'Other'
+      annualVehicleTotals.set(vehicle, (annualVehicleTotals.get(vehicle) || 0) + amount)
+
+      const monthNum = Number(String(row?.date || '').slice(5, 7))
+      const monthIndex = Number.isFinite(monthNum) ? monthNum - 1 : -1
+      if (monthIndex < 0 || monthIndex > 11) continue
+
+      const monthRow = monthlyTotals[monthIndex]
+      monthRow.total += amount
+      monthRow.byVehicle.set(vehicle, (monthRow.byVehicle.get(vehicle) || 0) + amount)
+    }
+
+    const sortedVehicles = [...annualVehicleTotals.entries()].sort((a, b) => b[1] - a[1])
+    const primaryVehicle = sortedVehicles[0]?.[0] || 'Other'
+    const annualTotal = sortedVehicles.reduce((sum, [, value]) => sum + value, 0)
+    const targetShare = annualTotal > 0
+      ? Math.round((Number(sortedVehicles[0]?.[1] || 0) / annualTotal) * 100)
+      : 0
+
+    const series = monthlyTotals.map((monthRow, index) => {
+      const actualShare = monthRow.total > 0
+        ? Math.round(((monthRow.byVehicle.get(primaryVehicle) || 0) / monthRow.total) * 100)
+        : 0
+
+      return {
+        month: MONTH_NAMES[index].slice(0, 3),
+        actualShare,
+        targetShare,
+        drift: actualShare - targetShare,
+      }
+    })
+
+    const currentShare = series[month - 1]?.actualShare || 0
+    const maxDrift = Math.max(...series.map((row) => Math.abs(row.drift)), 0)
+
+    return {
+      hasData: true,
+      primaryVehicle,
+      targetShare,
+      currentShare,
+      maxDrift,
+      series,
+    }
+  }, [yearTxnRows, month])
 
   const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
 
@@ -583,7 +771,7 @@ export default function Monthly() {
               <SectionHeader
                 className="mb-2"
                 title="Portfolio snapshot"
-                subtitle="Where this month's investments are concentrated"
+                subtitle="Target vs actual allocation drift"
                 badge={{
                   label: monthlyPortfolioSnapshot.total > 0 ? fmt(monthlyPortfolioSnapshot.total, true) : 'No allocation',
                   className: 'bg-invest-bg text-invest-text',
@@ -592,21 +780,70 @@ export default function Monthly() {
 
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Top vehicle</p>
-                  <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
-                  <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">{monthlyPortfolioSnapshot.top ? fmt(monthlyPortfolioSnapshot.top.value) : '—'}</p>
+                  <p className="text-caption text-ink-3">Primary vehicle</p>
+                  <p className="text-[12px] font-bold text-ink truncate">{allocationDrift.primaryVehicle}</p>
+                  <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">current focus</p>
                 </div>
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Concentration</p>
-                  <p className={`text-[12px] font-bold tabular-nums ${monthlyPortfolioSnapshot.topPct >= 55 ? 'text-warning-text' : 'text-brand'}`}>
-                    {monthlyPortfolioSnapshot.topPct}%
+                  <p className="text-caption text-ink-3">Target share</p>
+                  <p className="text-[12px] font-bold tabular-nums text-brand">{allocationDrift.targetShare}%</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Current drift</p>
+                  <p className={`text-[12px] font-bold tabular-nums ${Math.abs(allocationDrift.currentShare - allocationDrift.targetShare) <= 8 ? 'text-income-text' : 'text-warning-text'}`}>
+                    {allocationDrift.currentShare >= allocationDrift.targetShare ? '+' : '-'}{Math.abs(allocationDrift.currentShare - allocationDrift.targetShare)}%
                   </p>
                 </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Deploy rate</p>
-                  <p className="text-[12px] font-bold tabular-nums text-invest-text">{monthlyPortfolioSnapshot.deployRate}%</p>
-                </div>
               </div>
+
+              {allocationDrift.hasData && (
+                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 mb-3">
+                  <ResponsiveContainer width="100%" height={206}>
+                    <LineChart data={allocationDrift.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                      <XAxis
+                        dataKey="month"
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval={0}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        tickFormatter={(value) => `${value}%`}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={30}
+                      />
+                      <RechartsTooltip content={<AllocationDriftTooltip />} />
+                      <ReferenceLine y={allocationDrift.targetShare} stroke="rgba(16,33,63,0.24)" strokeDasharray="4 4" />
+                      <Line
+                        type="monotone"
+                        dataKey="actualShare"
+                        stroke="#0A67D8"
+                        strokeWidth={2.4}
+                        dot={false}
+                        activeDot={{ r: 4, fill: '#0A67D8', stroke: '#fff', strokeWidth: 2 }}
+                        name="Actual"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="targetShare"
+                        stroke="#10213F"
+                        strokeDasharray="4 4"
+                        strokeWidth={1.8}
+                        dot={false}
+                        name="Target"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+
+                  <p className="text-[10px] text-ink-3 mt-1">
+                    Drift range this year: {allocationDrift.maxDrift}% around target for {allocationDrift.primaryVehicle}.
+                  </p>
+                </div>
+              )}
 
               {monthlyPortfolioSnapshot.rows.length > 0 ? (
                 <div className="space-y-2 mb-2">
@@ -661,7 +898,7 @@ export default function Monthly() {
               <SectionHeader
                 className="mb-2"
                 title="Budget accuracy"
-                subtitle="Planned vs actual with variance bands"
+                subtitle="Category variance impact waterfall"
                 badge={{
                   label: budgetAccuracy.hasBudgets ? `${budgetAccuracy.accuracyScore}/100` : 'No budgets',
                   className: budgetAccuracy.hasBudgets && budgetAccuracy.accuracyScore >= 75
@@ -685,30 +922,47 @@ export default function Monthly() {
                     </div>
                   </div>
 
+                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 mb-3">
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart data={budgetVarianceWaterfall.chartRows} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval={0}
+                        />
+                        <YAxis hide domain={[-budgetVarianceWaterfall.chartLimit, budgetVarianceWaterfall.chartLimit]} />
+                        <RechartsTooltip content={<BudgetVarianceTooltip />} />
+                        <ReferenceLine y={0} stroke="rgba(16,33,63,0.24)" strokeWidth={1} />
+                        <Bar dataKey="offset" stackId="variance" fill="transparent" isAnimationActive={false} />
+                        <Bar dataKey="height" stackId="variance" radius={[7, 7, 7, 7]} maxBarSize={34}>
+                          {budgetVarianceWaterfall.chartRows.map((row) => (
+                            <Cell key={row.key} fill={row.color} fillOpacity={0.9} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
                   <div className="space-y-2">
-                    {budgetAccuracy.rows.slice(0, 6).map((row) => (
-                      <div key={row.id} className="rounded-card bg-kosha-surface-2 p-2.5">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <p className="text-[12px] font-semibold text-ink truncate">{row.label}</p>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-pill shrink-0 ${row.bandClass}`}>{row.band}</span>
+                    {budgetVarianceWaterfall.rows.slice(0, 5).map((row) => (
+                      <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold text-ink truncate">{row.label}</p>
+                          <p className="text-[10px] text-ink-3 tabular-nums">Planned {fmt(row.budget)} · Actual {fmt(row.spent)}</p>
                         </div>
-
-                        <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden mb-1.5">
-                          <div
-                            className={`h-full rounded-pill ${row.variance > 0 ? 'bg-warning' : 'bg-income'}`}
-                            style={{ width: `${Math.max(6, row.ratioPct)}%` }}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2 text-[10px] text-ink-3 tabular-nums">
-                          <span>Planned {fmt(row.budget)} · Actual {fmt(row.spent)}</span>
-                          <span className={row.variance > 0 ? 'text-expense-text' : 'text-income-text'}>
-                            {row.variance > 0 ? '+' : '-'}{fmt(Math.abs(row.variance))}
-                          </span>
-                        </div>
+                        <span className={`text-[11px] font-semibold tabular-nums shrink-0 ${row.variance >= 0 ? 'text-expense-text' : 'text-income-text'}`}>
+                          {row.variance >= 0 ? '+' : '-'}{fmt(Math.abs(row.variance))}
+                        </span>
                       </div>
                     ))}
                   </div>
+
+                  <p className="text-[11px] text-ink-3 mt-2">
+                    Net budget variance: {budgetVarianceWaterfall.totalVariance >= 0 ? '+' : '-'}{fmt(Math.abs(budgetVarianceWaterfall.totalVariance))}.
+                  </p>
                 </>
               ) : (
                 <p className="text-[12px] text-ink-3">Set budgets on category rows below to unlock budget accuracy scoring.</p>

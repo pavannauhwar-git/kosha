@@ -1,7 +1,9 @@
 import { memo, useEffect, useMemo, useState } from 'react'
 import {
   BarChart, Bar,
+  AreaChart, Area,
   LineChart, Line,
+  CartesianGrid,
   XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, Cell,
 } from 'recharts'
@@ -504,6 +506,326 @@ export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({
 
       <div className="flex justify-center gap-6 pt-1">
         {[['Income', C.brand], ['Expense', C.chartExpense], ['Investment', C.invest]].map(([label, color]) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ background: color }} />
+            <span className="text-[11px] text-ink-3">{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+})
+
+const WaterfallTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+  const value = toFiniteNumber(row?.displayValue)
+
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      borderRadius: 12,
+      padding: '10px 12px',
+      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      border: '1px solid rgba(187,217,255,0.85)',
+      minWidth: 170,
+    }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+        {label}
+      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Movement</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: value >= 0 ? C.brand : C.chartExpense }}>
+          {value >= 0 ? '+' : '-'}{fmt(Math.abs(value))}
+        </span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Running level</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#1D355F' }}>{fmt(row?.end || 0)}</span>
+      </div>
+    </div>
+  )
+}
+
+export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
+  flowData,
+  totalIncome,
+  totalExpense,
+  totalInvestment,
+}) {
+  const safeData = Array.isArray(flowData) ? flowData : []
+
+  const income = toFiniteNumber(totalIncome) || safeData.reduce((sum, row) => sum + toFiniteNumber(row?.Income), 0)
+  const expense = toFiniteNumber(totalExpense) || safeData.reduce((sum, row) => sum + toFiniteNumber(row?.Spent), 0)
+  const investment = toFiniteNumber(totalInvestment) || safeData.reduce((sum, row) => sum + toFiniteNumber(row?.Invested), 0)
+
+  if (income <= 0 && expense <= 0 && investment <= 0) return null
+
+  const steps = [
+    {
+      key: 'income',
+      name: 'Income',
+      type: 'total',
+      value: income,
+      color: C.brand,
+    },
+    {
+      key: 'expense',
+      name: 'Expenses',
+      type: 'delta',
+      value: -expense,
+      color: C.chartExpense,
+    },
+    {
+      key: 'investment',
+      name: 'Investments',
+      type: 'delta',
+      value: -investment,
+      color: C.invest,
+    },
+  ]
+
+  let running = 0
+  const waterfallRows = steps.map((step) => {
+    if (step.type === 'total') {
+      const start = 0
+      const end = step.value
+      running = end
+      return {
+        ...step,
+        start,
+        end,
+        offset: Math.min(start, end),
+        height: Math.abs(end - start),
+        displayValue: step.value,
+      }
+    }
+
+    const start = running
+    const end = running + step.value
+    running = end
+
+    return {
+      ...step,
+      start,
+      end,
+      offset: Math.min(start, end),
+      height: Math.abs(step.value),
+      displayValue: step.value,
+    }
+  })
+
+  const net = running
+  waterfallRows.push({
+    key: 'net',
+    name: 'Net',
+    type: 'total',
+    value: net,
+    start: 0,
+    end: net,
+    offset: Math.min(0, net),
+    height: Math.abs(net),
+    displayValue: net,
+    color: net >= 0 ? C.brandMid : C.expenseBright,
+  })
+
+  const chartLimit = Math.max(
+    1200,
+    Math.ceil(
+      Math.max(
+        ...waterfallRows.map((row) => Math.abs(toFiniteNumber(row?.start))),
+        ...waterfallRows.map((row) => Math.abs(toFiniteNumber(row?.end))),
+        0
+      ) * 1.15
+    )
+  )
+
+  const outflow = expense + investment
+  const burnRate = income > 0 ? Math.round((outflow / income) * 100) : 0
+  const investShare = income > 0 ? Math.round((investment / income) * 100) : 0
+
+  return (
+    <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-label font-semibold text-ink">Net movement waterfall</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">Shows how income gets absorbed by expense and investments into final net.</p>
+        </div>
+        <span className={`text-[12px] font-bold tabular-nums ${net >= 0 ? 'text-brand' : 'text-warning-text'}`}>
+          {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Outflow burn</p>
+          <p className={`text-[12px] font-bold tabular-nums ${burnRate <= 85 ? 'text-income-text' : 'text-warning-text'}`}>{burnRate}%</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Invest share</p>
+          <p className="text-[12px] font-bold tabular-nums text-invest-text">{investShare}%</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Net outcome</p>
+          <p className={`text-[12px] font-bold tabular-nums ${net >= 0 ? 'text-brand' : 'text-warning-text'}`}>
+            {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
+          </p>
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={waterfallRows} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 11, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+            axisLine={false}
+            tickLine={false}
+            interval={0}
+          />
+          <YAxis hide domain={[-chartLimit, chartLimit]} />
+          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(10,103,216,0.05)' }} />
+          <ReferenceLine y={0} stroke="rgba(16,33,63,0.24)" strokeWidth={1} />
+          <Bar dataKey="offset" stackId="waterfall" fill="transparent" isAnimationActive={false} />
+          <Bar dataKey="height" stackId="waterfall" radius={[8, 8, 8, 8]} maxBarSize={40}>
+            {waterfallRows.map((row) => (
+              <Cell key={row.key} fill={row.color} fillOpacity={0.9} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+
+      <p className="text-[11px] text-ink-3 pt-2">Use this to pinpoint whether deficit pressure is coming from expense drift or aggressive deployment.</p>
+    </div>
+  )
+})
+
+const CompositionTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div style={{
+      background: '#FFFFFF',
+      borderRadius: 12,
+      padding: '10px 12px',
+      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      border: '1px solid rgba(187,217,255,0.85)',
+      minWidth: 182,
+    }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+        {label}
+      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Expense</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.chartExpense }}>{fmt(row?.Spent || 0)}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Investment</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.invest }}>{fmt(row?.Invested || 0)}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Outflow</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#1D355F' }}>{fmt(row?.Outflow || 0)}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Income</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.brand }}>{fmt(row?.Income || 0)}</span>
+      </div>
+    </div>
+  )
+}
+
+export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaChart({ flowData }) {
+  const safeData = (Array.isArray(flowData) ? flowData : []).map((row) => {
+    const expense = toFiniteNumber(row?.Spent)
+    const investment = toFiniteNumber(row?.Invested)
+    return {
+      name: row?.name || '-',
+      Income: toFiniteNumber(row?.Income),
+      Spent: expense,
+      Invested: investment,
+      Outflow: expense + investment,
+      InvestShare: expense + investment > 0 ? Math.round((investment / (expense + investment)) * 100) : 0,
+    }
+  })
+
+  if (!safeData.length) return null
+
+  const highestOutflow = safeData.reduce((best, row) => (best == null || row.Outflow > best.Outflow ? row : best), null)
+  const avgOutflow = Math.round(mean(safeData.map((row) => row.Outflow)))
+  const avgInvestShare = Math.round(mean(safeData.map((row) => row.InvestShare)))
+
+  return (
+    <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-label font-semibold text-ink">Outflow composition trend</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">Stacked monthly outflow split into expense and investment, with income trend on top.</p>
+        </div>
+        <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-brand-container text-brand-on">
+          Avg invest share {avgInvestShare}%
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Peak outflow</p>
+          <p className="text-[12px] font-bold tabular-nums text-warning-text">{highestOutflow?.name || '—'}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Avg outflow</p>
+          <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(avgOutflow, true)}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Peak amount</p>
+          <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(highestOutflow?.Outflow || 0, true)}</p>
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={228}>
+        <AreaChart data={safeData} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 11, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+            axisLine={false}
+            tickLine={false}
+            interval={0}
+          />
+          <YAxis hide />
+          <Tooltip content={<CompositionTooltip />} cursor={{ stroke: 'rgba(10,103,216,0.15)', strokeWidth: 1 }} />
+          <Area
+            type="monotone"
+            dataKey="Spent"
+            stackId="outflow"
+            stroke={C.chartExpense}
+            fill={C.chartExpense}
+            fillOpacity={0.42}
+            strokeWidth={1.8}
+          />
+          <Area
+            type="monotone"
+            dataKey="Invested"
+            stackId="outflow"
+            stroke={C.invest}
+            fill={C.invest}
+            fillOpacity={0.5}
+            strokeWidth={1.8}
+          />
+          <Line
+            type="monotone"
+            dataKey="Income"
+            stroke={C.brand}
+            strokeWidth={2.3}
+            dot={false}
+            activeDot={{ r: 4, fill: C.brand, stroke: '#fff', strokeWidth: 2 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+
+      <div className="flex justify-center gap-6 pt-1">
+        {[['Expense', C.chartExpense], ['Investment', C.invest], ['Income', C.brand]].map(([label, color]) => (
           <div key={label} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: color }} />
             <span className="text-[11px] text-ink-3">{label}</span>
