@@ -1,25 +1,11 @@
-/**
- * useBudgets.js — Strict Server-Truth Architecture
- *
- * Follows the same mutation contract as useTransactions.js:
- *   1. await Supabase DB operation
- *   2. await invalidateCache() — waits for full refetch cycle
- *
- * NO setQueryData. NO cache injection. Server truth only.
- */
-
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { invalidateQueryFamilies } from '../lib/queryClient'
+import { queryClient, invalidateQueryFamilies } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 
 export const BUDGET_INVALIDATION_KEYS = [['budgets']]
 
-/**
- * Invalidates all budget queries and awaits the full refetch cycle.
- * Always await this inside mutations.
- */
 async function invalidateBudgetCache() {
   await invalidateQueryFamilies(BUDGET_INVALIDATION_KEYS)
 }
@@ -45,16 +31,6 @@ export function useBudgets(options = {}) {
     },
   })
 
-  /**
-   * Set or update a budget for a category.
-   *
-   * Strict Await Chain:
-   *   1. await Supabase upsert
-   *   2. await invalidateBudgetCache() — active queries refetch before resolve
-   *
-   * The calling component must await this and keep isSaving=true until it
-   * resolves to ensure the UI reflects the confirmed server state.
-   */
   const setBudget = useCallback(async (category, amount) => {
     try {
       const userId = getAuthUserId()
@@ -72,12 +48,15 @@ export function useBudgets(options = {}) {
     }
   }, [])
 
-  /**
-   * Remove a budget for a category.
-   *
-   * Same strict await contract.
-   */
   const removeBudget = useCallback(async (category) => {
+    const prevBudgets = queryClient.getQueryData(['budgets'])
+    if (prevBudgets && category in prevBudgets) {
+      const next = { ...prevBudgets }
+      delete next[category]
+      // Optimistically update the cache to remove the budget immediately.
+      queryClient.setQueryData(['budgets'], next)
+    }
+
     try {
       const userId = getAuthUserId()
       const { error } = await supabase
@@ -89,6 +68,10 @@ export function useBudgets(options = {}) {
 
       await invalidateBudgetCache()
     } catch (err) {
+      if (prevBudgets) {
+        // Rollback the optimistic update on error.
+        queryClient.setQueryData(['budgets'], prevBudgets)
+      }
       console.error('[Kosha] removeBudget failed', err)
       throw err
     }

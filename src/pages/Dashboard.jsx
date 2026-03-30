@@ -588,6 +588,7 @@ export default function Dashboard() {
 
   const handleTap = useCallback((t) => {
     setEditTxn(t)
+    setDuplicateTxn(null)
     setAddType(t.type)
     setShowAdd(true)
   }, [])
@@ -1036,7 +1037,7 @@ export default function Dashboard() {
       <AddTransactionSheet
         open={showAdd}
         duplicateTxn={duplicateTxn}
-        onClose={() => { setShowAdd(false); setEditTxn(null); setDuplicateTxn(null) }}
+        onClose={() => { setShowAdd(false); setDuplicateTxn(null) }}
         editTxn={editTxn}
         initialType={addType}
       />

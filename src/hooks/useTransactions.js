@@ -360,7 +360,6 @@ export function useMonthSummary(year, month, options = {}) {
         throw err
       }
     },
-    placeholderData: (previousData) => previousData,
   })
 
   return { data, loading: isLoading, fetching: isFetching, error }
@@ -441,7 +440,6 @@ export function useYearSummary(year, options = {}) {
         throw err
       }
     },
-    placeholderData: (previousData) => previousData,
   })
 
   return { data, loading: isLoading, error }
@@ -733,6 +731,7 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
   const snapshot = snapshotCacheFamilies([
     ['transactions'],
     ['transactionsRecent'],
+    ['todayExpenses'],
   ])
 
   suppress('transactions')
@@ -758,6 +757,21 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
       date: payload?.date || nowIso.slice(0, 10),
       __optimistic: true,
     })
+  }
+
+  const todayISO = new Date().toISOString().slice(0, 10)
+  if (payload?.type === 'expense' && payload?.date === todayISO) {
+    const todayEntries = queryClient.getQueriesData({ queryKey: ['todayExpenses'] })
+    for (const [key, currentTotal] of todayEntries) {
+      if (typeof currentTotal !== 'number') continue
+      if (id) {
+        const existing = getTransactionFromCacheById(id)
+        const oldAmt = (existing?.type === 'expense' && existing?.date === todayISO) ? Number(existing.amount || 0) : 0
+        queryClient.setQueryData(key, currentTotal - oldAmt + Number(payload.amount || 0))
+      } else {
+        queryClient.setQueryData(key, currentTotal + Number(payload.amount || 0))
+      }
+    }
   }
 
   try {
