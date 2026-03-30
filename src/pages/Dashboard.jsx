@@ -25,7 +25,6 @@ import DashboardRecentTransactions from '../components/dashboard/DashboardRecent
 import DashboardActivityFeed from '../components/dashboard/DashboardActivityFeed'
 import PageHeader from '../components/layout/PageHeader'
 import AppToast from '../components/common/AppToast'
-import StatMini from '../components/common/StatMini'
 import { useFinancialEvents } from '../hooks/useFinancialEvents'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 import { CATEGORIES } from '../lib/categories'
@@ -107,6 +106,16 @@ function DashboardRecentSkeleton() {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+function DigestMetricCard({ label, value, tone = 'text-ink', caption }) {
+  return (
+    <div className="rounded-card border border-brand-border bg-kosha-surface px-3 py-2.5">
+      <p className="text-[10px] text-ink-3 mb-1">{label}</p>
+      <p className={`text-[19px] leading-none font-bold tabular-nums ${tone}`}>{value}</p>
+      {caption && <p className="text-[10px] text-ink-3 mt-1">{caption}</p>}
     </div>
   )
 }
@@ -548,6 +557,12 @@ export default function Dashboard() {
     }
   }, [dueSoonCount, weeklyDigest, earned, rate])
 
+  const weeklyTopCategoryLabel = useMemo(() => {
+    if (!weeklyDigest.topCategory) return null
+    const raw = String(weeklyDigest.topCategory[0] || '')
+    return categoryLabelMap.get(raw) || raw.replace(/_/g, ' ')
+  }, [weeklyDigest.topCategory, categoryLabelMap])
+
   useEffect(() => {
     const prefs = getReminderPrefs()
     if (!prefs.enabled) return
@@ -932,32 +947,48 @@ export default function Dashboard() {
               <div className="h-2.5 w-full rounded-full shimmer opacity-70" />
             </div>
           ) : (
-            <div className="card p-3.5">
-              <div className="flex items-center justify-between gap-3 mb-0.5">
-                <p className="section-label">Today focus</p>
-                <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
+            <div className="card p-4 border border-kosha-border bg-kosha-surface">
+              <div className="flex items-start justify-between gap-3 mb-2.5">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
                     ? 'bg-warning-bg text-warning-text'
                     : todayFocus.tone === 'good'
                       ? 'bg-income-bg text-income-text'
                       : 'bg-brand-container text-brand-on'
+                    }`}>
+                    {todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
+                      ? <ShieldAlert size={16} />
+                      : <TrendingUp size={16} />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="section-label mb-0.5">Today focus</p>
+                    <p className="text-[31px] max-[640px]:text-[26px] leading-tight font-semibold text-ink truncate">{todayFocus.title}</p>
+                  </div>
+                </div>
+                <span className={`text-[11px] px-2.5 py-1 rounded-pill font-semibold shrink-0 ${todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
+                  ? 'bg-warning-bg text-warning-text border border-warning-border'
+                  : todayFocus.tone === 'good'
+                    ? 'bg-income-bg text-income-text border border-income-border'
+                    : 'bg-brand-container text-brand-on border border-brand-border'
                   }`}>
                   Priority
                 </span>
               </div>
-              <p className="card-title">{todayFocus.title}</p>
-              <p className="text-[12px] text-ink-3 mt-1">{todayFocus.detail}</p>
-              <div className="grid grid-cols-2 gap-2 mt-2.5">
+
+              <p className="text-[13px] text-ink-3 leading-relaxed">{todayFocus.detail}</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
                 <button
                   type="button"
                   onClick={() => navigate(todayFocus.primaryRoute)}
-                  className="btn-primary h-12 px-4 text-[12px] justify-center"
+                  className="h-12 px-4 rounded-[999px] bg-brand text-white text-[13px] font-semibold inline-flex items-center justify-center gap-1.5 shadow-card hover:brightness-[0.98]"
                 >
-                  {todayFocus.primaryLabel}
+                  {todayFocus.primaryLabel} <ArrowRight size={14} />
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate(todayFocus.secondaryRoute)}
-                  className="btn-secondary h-12 px-4 text-[12px] justify-center"
+                  className="h-12 px-4 rounded-[999px] border border-brand-border bg-kosha-surface text-ink-2 text-[13px] font-semibold inline-flex items-center justify-center"
                 >
                   {todayFocus.secondaryLabel}
                 </button>
@@ -979,28 +1010,52 @@ export default function Dashboard() {
 
         {heavyReady && weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
-            <div className="card p-3.5">
-              <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="card p-4 border border-kosha-border bg-kosha-surface">
+              <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <p className="section-label">What changed this week</p>
                   <p className="text-caption text-ink-3 mt-0.5">7-day vs previous 7-day digest</p>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${weeklyDigest.spendDelta <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                <span className={`text-[11px] px-2.5 py-1 rounded-pill font-semibold border ${weeklyDigest.spendDelta <= 0 ? 'bg-income-bg text-income-text border-income-border' : 'bg-warning-bg text-warning-text border-warning-border'}`}>
                   {weeklyDigest.spendDelta <= 0 ? 'Spending cooled' : 'Spending up'}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-1">
-                <StatMini label="Spend (7d)" value={fmt(weeklyDigest.spendLast7)} tone="text-expense-text" />
-                <StatMini label="Spend delta" value={`${weeklyDigest.spendDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.spendDelta))}`} tone={weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'} />
-                <StatMini label="Income (7d)" value={fmt(weeklyDigest.incomeLast7)} tone="text-income-text" />
-                <StatMini label="Income delta" value={`${weeklyDigest.incomeDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.incomeDelta))}`} tone={weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'} />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+                <DigestMetricCard
+                  label="Spend (7d)"
+                  value={fmt(weeklyDigest.spendLast7)}
+                  tone="text-expense-text"
+                  caption="Current window"
+                />
+                <DigestMetricCard
+                  label="Spend delta"
+                  value={`${weeklyDigest.spendDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.spendDelta))}`}
+                  tone={weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'}
+                  caption={weeklyDigest.spendDelta <= 0 ? 'Lower vs previous week' : 'Higher vs previous week'}
+                />
+                <DigestMetricCard
+                  label="Income (7d)"
+                  value={fmt(weeklyDigest.incomeLast7)}
+                  tone="text-income-text"
+                  caption="Current window"
+                />
+                <DigestMetricCard
+                  label="Income delta"
+                  value={`${weeklyDigest.incomeDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.incomeDelta))}`}
+                  tone={weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'}
+                  caption={weeklyDigest.incomeDelta >= 0 ? 'Higher vs previous week' : 'Lower vs previous week'}
+                />
               </div>
 
-              {weeklyDigest.topCategory && (
-                <p className="text-[11px] text-ink-3 mt-2">
-                  Top spend category this week: <span className="font-semibold text-ink-2">{weeklyDigest.topCategory[0]}</span> ({fmt(weeklyDigest.topCategory[1])})
-                </p>
+              {weeklyDigest.topCategory && weeklyTopCategoryLabel && (
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5 mt-1">
+                  <p className="text-[10px] text-ink-3 mb-0.5">Top spend category this week</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[12px] font-semibold text-ink-2 truncate">{weeklyTopCategoryLabel}</p>
+                    <p className="text-[12px] font-semibold text-expense-text tabular-nums shrink-0">{fmt(weeklyDigest.topCategory[1])}</p>
+                  </div>
+                </div>
               )}
             </div>
           </motion.div>

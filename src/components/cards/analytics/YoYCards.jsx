@@ -43,12 +43,17 @@ function metricDelta(current, previous) {
   const c = Number(current || 0)
   const p = Number(previous || 0)
 
-  if (p === 0) {
-    if (c === 0) return 0
-    return 100
-  }
+  if (p === 0) return null
 
   return Math.round(((c - p) / p) * 100)
+}
+
+function yAxisTickFormatter(value) {
+  const n = Number(value || 0)
+  const abs = Math.abs(n)
+  if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
+  if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
+  return `${Math.round(n)}`
 }
 
 function YoYTooltip({ active, payload, label }) {
@@ -197,7 +202,7 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
 
       <div className="h-[230px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 8, right: 8, left: -4, bottom: 2 }}>
+          <LineChart data={points} margin={{ top: 8, right: 10, left: 18, bottom: 2 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(88, 94, 114, 0.18)" />
             <XAxis
               dataKey="year"
@@ -206,10 +211,12 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
               tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
             />
             <YAxis
-              tickFormatter={(v) => `${Math.round(v / 1000)}k`}
+              tickFormatter={yAxisTickFormatter}
               tickLine={false}
               axisLine={false}
-              width={38}
+              allowDecimals={false}
+              width={58}
+              tickMargin={6}
               tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
             />
             <Tooltip content={<YoYTooltip />} />

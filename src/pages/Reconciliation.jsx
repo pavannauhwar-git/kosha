@@ -309,9 +309,13 @@ export default function Reconciliation() {
       <div className="card p-4 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-ink">Data quality control</p>
+            <p className="text-sm font-semibold text-ink">What reconciliation does</p>
             <p className="text-caption text-ink-3 mt-1">
-              Fix missing categories, duplicates, and statement mismatches before month close.
+              This workflow improves data trust before month-close by fixing uncategorized records,
+              removing duplicates, and linking statement lines to real transactions.
+            </p>
+            <p className="text-[11px] text-ink-4 mt-1">
+              Scope: quality checks and match confirmation only. It does not auto-import bank statements.
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-brand-container text-brand flex items-center justify-center shrink-0">

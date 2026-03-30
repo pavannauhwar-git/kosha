@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, UserPlus, LogOut, Bug, Info, BookOpen } from 'lucide-react'
+import { Settings, LogOut, Bug, Info, BookOpen } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 
 function MenuRow({ icon, label, onClick, destructive = false, disabled = false }) {
   return (
@@ -33,8 +32,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [inviteLoading, setInviteLoading] = useState(false)
-  const [inviteMsg, setInviteMsg] = useState('')
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
@@ -42,36 +39,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
 
   function close() {
     setOpen(false)
-    setInviteMsg('')
-  }
-
-  async function handleInvite() {
-    if (!user || inviteLoading) return
-    setInviteMsg('')
-    setInviteLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('invites')
-        .insert({ created_by: user.id })
-        .select('token')
-        .single()
-
-      if (error) throw error
-      const joinUrl = `${window.location.origin}/join/${data.token}`
-
-      if (navigator.share) {
-        await navigator.share({ title: 'Join me on Kosha', url: joinUrl }).catch(() => {})
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(joinUrl)
-        setInviteMsg('Invite link copied!')
-      } else {
-        window.prompt('Copy invite link:', joinUrl)
-      }
-    } catch (e) {
-      setInviteMsg('Could not create invite. Try again.')
-    } finally {
-      setInviteLoading(false)
-    }
   }
 
   return (
@@ -131,15 +98,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                 label="Account Settings"
                 onClick={() => { close(); navigate('/settings') }}
               />
-              <MenuRow
-                icon={<UserPlus size={15} />}
-                label={inviteLoading ? 'Creating invite…' : 'Invite Friends'}
-                onClick={handleInvite}
-                disabled={inviteLoading}
-              />
-              {inviteMsg && (
-                <p className="text-[11px] px-3 pb-1 text-brand">{inviteMsg}</p>
-              )}
 
               <MenuDivider />
 
