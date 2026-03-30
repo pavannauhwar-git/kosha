@@ -162,7 +162,7 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
   ]
 
   return (
-    <div className="card p-4">
+    <div className="card p-4 w-full transition-transform duration-150 hover:-translate-y-0.5">
       <div className="flex items-center justify-between mb-2">
         <p className="section-label">Year over year trends</p>
         {onRangeChange ? (
@@ -200,13 +200,14 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
         ))}
       </div>
 
-      <div className="h-[220px] sm:h-[230px] w-full">
+      <div className="h-[228px] sm:h-[238px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 8, right: 12, left: 12, bottom: 2 }}>
+          <LineChart data={points} margin={{ top: 10, right: 14, left: 6, bottom: 2 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(88, 94, 114, 0.18)" />
             <XAxis
               dataKey="year"
-              padding={{ left: 6, right: 6 }}
+              padding={{ left: 12, right: 12 }}
+              interval="preserveStartEnd"
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
@@ -216,8 +217,9 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
               tickLine={false}
               axisLine={false}
               allowDecimals={false}
-              width={48}
+              width={42}
               tickMargin={4}
+              tickCount={5}
               tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
             />
             <Tooltip content={<YoYTooltip />} />

@@ -50,10 +50,13 @@ export default function Monthly() {
     () => (reviewTableUnavailable ? getReviewedReconciliationIds() : serverReviewedIds),
     [reviewTableUnavailable, serverReviewedIds]
   )
+  const reconciliationInsights = useMemo(
+    () => buildReconciliationInsights(txnRows, reviewedIds),
+    [txnRows, reviewedIds]
+  )
   const reconcileQueueCount = useMemo(() => {
-    const insights = buildReconciliationInsights(txnRows, reviewedIds)
-    return insights.counts.queue
-  }, [txnRows, reviewedIds])
+    return reconciliationInsights.counts.queue
+  }, [reconciliationInsights])
 
   const [budgetCat, setBudgetCat] = useState(null)
 
@@ -223,8 +226,15 @@ export default function Monthly() {
   }, [monthBills, txnRows])
 
   const monthCloseReadiness = useMemo(() => {
+    const queueRows = reconciliationInsights.queue
+      .map((item) => item?.txn)
+      .filter(Boolean)
+    const firstQueueTxnId = queueRows[0]?.id || null
+
     const categorizedRows = txnRows.filter((row) => row?.type === 'expense' || row?.type === 'investment')
-    const missingCategoryCount = categorizedRows.filter((row) => !row?.category || row?.category === 'other').length
+    const missingCategoryRows = categorizedRows.filter((row) => !row?.category || row?.category === 'other')
+    const missingCategoryCount = missingCategoryRows.length
+    const firstMissingCategoryTxnId = missingCategoryRows[0]?.id || null
     const categoryCompletenessPct = categorizedRows.length > 0
       ? Math.round(((categorizedRows.length - missingCategoryCount) / categorizedRows.length) * 100)
       : 100
@@ -245,7 +255,19 @@ export default function Monthly() {
     const unusualRows = txnRows.filter((row) => (
       row?.type === 'expense' && Number(row?.amount || 0) >= unusualThreshold
     ))
-    const reviewedUnusualCount = unusualRows.filter((row) => reviewedIds.has(row?.id)).length
+    const unresolvedUnusualRows = unusualRows.filter((row) => !reviewedIds.has(row?.id))
+    const reviewedUnusualCount = unusualRows.length - unresolvedUnusualRows.length
+    const firstUnusualTxnId = unresolvedUnusualRows[0]?.id || unusualRows[0]?.id || null
+
+    const reconciliationRoute = firstQueueTxnId
+      ? `/reconciliation?view=queue&quality=all&focus=${encodeURIComponent(firstQueueTxnId)}`
+      : '/reconciliation?view=queue&quality=all'
+    const missingCategoryRoute = firstMissingCategoryTxnId
+      ? `/transactions?focus=${encodeURIComponent(firstMissingCategoryTxnId)}`
+      : '/transactions'
+    const unusualRoute = firstUnusualTxnId
+      ? `/transactions?focus=${encodeURIComponent(firstUnusualTxnId)}`
+      : '/transactions'
 
     const items = [
       {
@@ -255,7 +277,7 @@ export default function Monthly() {
           ? 'Reconciliation queue is clear.'
           : `${reconcileQueueCount} reconciliation item${reconcileQueueCount > 1 ? 's' : ''} pending.`,
         cta: 'Open reconciliation',
-        route: '/reconciliation',
+        route: reconciliationRoute,
       },
       {
         key: 'categories',
@@ -263,8 +285,8 @@ export default function Monthly() {
         label: missingCategoryCount === 0
           ? 'Category completeness is clean.'
           : `${missingCategoryCount} transaction${missingCategoryCount > 1 ? 's are' : ' is'} still uncategorized.`,
-        cta: 'Open transactions',
-        route: '/transactions',
+        cta: missingCategoryCount > 0 ? 'Fix first issue' : 'Open transactions',
+        route: missingCategoryRoute,
       },
       {
         key: 'unusual',
@@ -272,8 +294,8 @@ export default function Monthly() {
         label: unusualRows.length === 0
           ? 'No unusual spend spikes found this month.'
           : `${reviewedUnusualCount}/${unusualRows.length} unusual transaction${unusualRows.length > 1 ? 's' : ''} reviewed.`,
-        cta: 'Review unusual',
-        route: '/reconciliation',
+        cta: unusualRows.length > 0 ? 'Review in transactions' : 'Open transactions',
+        route: unusualRoute,
       },
     ]
 
@@ -287,7 +309,7 @@ export default function Monthly() {
       unusualCount: unusualRows.length,
       reviewedUnusualCount,
     }
-  }, [txnRows, reviewedIds, reconcileQueueCount])
+  }, [txnRows, reviewedIds, reconcileQueueCount, reconciliationInsights])
 
   const hasMonthData = useMemo(() => {
     const totalsPresent = inflow > 0 || spent > 0 || invested > 0
@@ -521,7 +543,7 @@ export default function Monthly() {
             <MonthHeroCard month={month} year={year} data={data} />
           </div>
 
-          <div className="card p-4">
+          <div className="card p-4 border-0">
             <SectionHeader
               className="mb-2"
               title="Month close summary"
@@ -557,7 +579,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && (monthlyPortfolioSnapshot.rows.length > 0 || invested > 0) && (
-            <div className="card p-4">
+            <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
                 title="Portfolio snapshot"
@@ -635,7 +657,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && (
-            <div className="card p-4">
+            <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
                 title="Budget accuracy"
@@ -695,7 +717,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && (
-            <div className="card p-4">
+            <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
                 title="Autopilot health"
@@ -755,7 +777,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && (
-            <div className="card p-4">
+            <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
                 title="Month-close readiness"
@@ -774,7 +796,7 @@ export default function Monthly() {
 
               <div className="space-y-2.5">
                 {monthCloseReadiness.items.map((item) => (
-                  <div key={item.key} className="rounded-card border border-kosha-border bg-kosha-surface p-3">
+                  <div key={item.key} className="rounded-card bg-kosha-surface p-3">
                     <div className="flex items-center justify-between gap-2.5">
                       <div className="min-w-0 flex items-center gap-2.5">
                         <span className={`text-[10px] px-2 py-0.5 rounded-pill font-semibold shrink-0 ${item.done ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>

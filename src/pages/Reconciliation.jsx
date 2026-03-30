@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, ArrowRight, CheckCircle2, History, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/layout/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
@@ -43,6 +43,7 @@ const REVIEW_STATE_FILTERS = [
 
 export default function Reconciliation() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [filter, setFilter] = useState('all')
   const [reviewStateFilter, setReviewStateFilter] = useState('queue')
   const [localReviewedIds, setLocalReviewedIds] = useState(() => getReviewedReconciliationIds())
@@ -50,6 +51,7 @@ export default function Reconciliation() {
   const [resettingAliases, setResettingAliases] = useState(false)
   const [toast, setToast] = useState(null)
   const [statementInput, setStatementInput] = useState('')
+  const [highlightedTxnId, setHighlightedTxnId] = useState(null)
 
   const { data, loading } = useTransactions({
     limit: 250,
@@ -206,6 +208,58 @@ export default function Reconciliation() {
 
   const hasTransactions = (data || []).length > 0
   const hasActiveFilters = reviewStateFilter !== 'queue' || filter !== 'all'
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams)
+    let shouldReplace = false
+
+    const view = searchParams.get('view') || searchParams.get('state')
+    if (view && REVIEW_STATE_FILTERS.some((item) => item.id === view)) {
+      setReviewStateFilter(view)
+      next.delete('view')
+      next.delete('state')
+      shouldReplace = true
+    }
+
+    const quality = searchParams.get('quality') || searchParams.get('filter')
+    if (quality && FILTERS.some((item) => item.id === quality)) {
+      setFilter(quality)
+      next.delete('quality')
+      next.delete('filter')
+      shouldReplace = true
+    }
+
+    if (shouldReplace) {
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
+
+  const focusTxnId = searchParams.get('focus')
+
+  useEffect(() => {
+    if (!focusTxnId) return
+
+    const found = visibleItems.find((item) => item?.txn?.id === focusTxnId)
+    if (!found) return
+
+    setHighlightedTxnId(focusTxnId)
+
+    const scrollTimer = setTimeout(() => {
+      const el = document.getElementById(`recon-item-${focusTxnId}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 40)
+
+    const clearTimer = setTimeout(() => setHighlightedTxnId(null), 2400)
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('focus')
+    setSearchParams(next, { replace: true })
+
+    return () => {
+      clearTimeout(scrollTimer)
+      clearTimeout(clearTimer)
+    }
+  }, [focusTxnId, visibleItems, searchParams, setSearchParams])
 
   const markReviewedLocal = useCallback((id) => {
     if (!id) return
@@ -365,11 +419,10 @@ export default function Reconciliation() {
                 key={chip.id}
                 type="button"
                 onClick={() => setReviewStateFilter(chip.id)}
-                whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.12 }}
                 aria-pressed={active}
-                className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
+                className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
               >
                 {chip.label}
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
@@ -389,11 +442,10 @@ export default function Reconciliation() {
                 key={chip.id}
                 type="button"
                 onClick={() => setFilter(chip.id)}
-                whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.12 }}
                 aria-pressed={active}
-                className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
+                className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
               >
                 {chip.label}
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
@@ -630,12 +682,13 @@ export default function Reconciliation() {
             return (
               <motion.div
                 key={txn.id}
+                id={`recon-item-${txn.id}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8, scale: 0.99 }}
                 whileHover={{ y: -1 }}
                 transition={{ duration: 0.2 }}
-                className="card p-4"
+                className={`card p-4 ${highlightedTxnId === txn.id ? 'txn-focus-highlight' : ''}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

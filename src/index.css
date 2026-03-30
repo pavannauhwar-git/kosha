@@ -130,7 +130,6 @@
   /* -- Cards ───────────────────────────────────────────────────────── */
   .card {
     @apply bg-kosha-surface rounded-card shadow-card;
-    border: 0.5px solid rgba(18, 28, 74, 0.06);
   }
 
   .page-stack {
@@ -138,9 +137,10 @@
   }
 
   .sticky-toolbar {
-    @apply sticky z-10 -mx-1 px-1 py-2 bg-kosha-bg/95 backdrop-blur-sm border-y border-kosha-border;
+    @apply sticky z-10 px-0.5 py-2 bg-kosha-bg;
     top: var(--sticky-top-offset);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 0 rgba(18, 28, 74, 0.08);
   }
 
   .card-md {

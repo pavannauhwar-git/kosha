@@ -112,7 +112,7 @@ function DashboardRecentSkeleton() {
 
 function DigestMetricCard({ label, value, tone = 'text-ink', caption }) {
   return (
-    <div className="rounded-card border border-brand-border bg-kosha-surface px-3 py-2.5">
+    <div className="rounded-card bg-kosha-surface px-3 py-2.5">
       <p className="text-[10px] text-ink-3 mb-1">{label}</p>
       <p className={`text-[19px] leading-none font-bold tabular-nums ${tone}`}>{value}</p>
       {caption && <p className="text-[10px] text-ink-3 mt-1">{caption}</p>}
@@ -509,54 +509,6 @@ export default function Dashboard() {
     }
   }, [summary?.byCategory, categoryLabelMap, opportunityCutPct, earned, spent, invested])
 
-  const todayFocus = useMemo(() => {
-    if (dueSoonCount > 0) {
-      return {
-        title: 'Bills need attention today',
-        detail: `${dueSoonCount} due soon. Clear dues first so monthly pace stays reliable.`,
-        primaryLabel: 'Review bills',
-        primaryRoute: '/bills',
-        secondaryLabel: 'Open monthly',
-        secondaryRoute: '/monthly',
-        tone: 'warning',
-      }
-    }
-
-    if (weeklyDigest.hasSignals && weeklyDigest.spendDelta > 0) {
-      return {
-        title: 'Spending is up vs last week',
-        detail: `Weekly spend increased by ${fmt(Math.abs(weeklyDigest.spendDelta))}. Review recent transactions and trim leakage.`,
-        primaryLabel: 'Review activity',
-        primaryRoute: '/transactions',
-        secondaryLabel: 'Open analytics',
-        secondaryRoute: '/analytics',
-        tone: 'risk',
-      }
-    }
-
-    if (earned > 0 && rate < 15) {
-      return {
-        title: 'Savings pace can improve',
-        detail: `Current savings rate is ${rate}%. A small spend reduction today can lift month-end confidence.`,
-        primaryLabel: 'Open monthly',
-        primaryRoute: '/monthly',
-        secondaryLabel: 'Log expense',
-        secondaryRoute: '/transactions',
-        tone: 'neutral',
-      }
-    }
-
-    return {
-      title: 'You are on track today',
-      detail: 'Keep entries clean and reconcile once this week to preserve dashboard trust.',
-      primaryLabel: 'Run reconciliation',
-      primaryRoute: '/reconciliation',
-      secondaryLabel: 'Open activity',
-      secondaryRoute: '/transactions',
-      tone: 'good',
-    }
-  }, [dueSoonCount, weeklyDigest, earned, rate])
-
   const weeklyTopCategoryLabel = useMemo(() => {
     if (!weeklyDigest.topCategory) return null
     const raw = String(weeklyDigest.topCategory[0] || '')
@@ -661,7 +613,7 @@ export default function Dashboard() {
 
         {/* ── Daily variance ──────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <div className="card p-4">
+          <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div>
                 <p className="section-label">Daily variance</p>
@@ -705,15 +657,21 @@ export default function Dashboard() {
                     : `Variance is ${dailyVariance.variancePct >= 0 ? '+' : ''}${dailyVariance.variancePct}% vs trailing daily average.`}
                 </p>
 
-                <div className="mt-2.5 grid grid-cols-8 gap-1">
+                <div className="mt-2.5 space-y-1.5">
                   {dailyVariance.sparkValues.map((value, index) => {
-                    const heightPct = Math.max(12, Math.round((value / dailyVariance.sparkMax) * 100))
+                    const widthPct = Math.max(10, Math.round((value / dailyVariance.sparkMax) * 100))
+                    const isToday = index === dailyVariance.sparkValues.length - 1
                     return (
-                      <div key={`variance-bar-${index}`} className="h-10 rounded-pill bg-kosha-surface-2 overflow-hidden flex items-end">
-                        <div
-                          className={`w-full rounded-pill ${index === dailyVariance.sparkValues.length - 1 ? 'bg-brand' : 'bg-brand-container'}`}
-                          style={{ height: `${heightPct}%` }}
-                        />
+                      <div key={`variance-bar-${index}`} className="flex items-center gap-2">
+                        <span className="w-10 shrink-0 text-[10px] text-ink-3 tabular-nums">
+                          {isToday ? 'Today' : `D-${dailyVariance.sparkValues.length - index - 1}`}
+                        </span>
+                        <div className="h-2 w-full rounded-pill bg-kosha-surface-2 overflow-hidden">
+                          <div
+                            className={`h-full rounded-pill ${isToday ? 'bg-brand' : 'bg-brand-container'}`}
+                            style={{ width: `${widthPct}%` }}
+                          />
+                        </div>
                       </div>
                     )
                   })}
@@ -724,7 +682,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="card p-4">
+          <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-warning-bg flex items-center justify-center shrink-0">
@@ -784,7 +742,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="card p-4">
+          <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
@@ -845,7 +803,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="card p-4">
+          <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
@@ -936,67 +894,6 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        <motion.div variants={fadeUp}>
-          {summaryLoading ? (
-            <div className="card p-4">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="h-3 w-20 rounded-full shimmer opacity-80" />
-                <div className="h-5 w-14 rounded-full shimmer opacity-70" />
-              </div>
-              <div className="h-4 w-44 rounded-full shimmer opacity-85 mb-2" />
-              <div className="h-2.5 w-full rounded-full shimmer opacity-70" />
-            </div>
-          ) : (
-            <div className="card p-4 border border-kosha-border bg-kosha-surface">
-              <div className="flex items-start justify-between gap-3 mb-2.5">
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
-                    ? 'bg-warning-bg text-warning-text'
-                    : todayFocus.tone === 'good'
-                      ? 'bg-income-bg text-income-text'
-                      : 'bg-brand-container text-brand-on'
-                    }`}>
-                    {todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
-                      ? <ShieldAlert size={16} />
-                      : <TrendingUp size={16} />}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="section-label mb-0.5">Today focus</p>
-                    <p className="text-[31px] max-[640px]:text-[26px] leading-tight font-semibold text-ink truncate">{todayFocus.title}</p>
-                  </div>
-                </div>
-                <span className={`text-[11px] px-2.5 py-1 rounded-pill font-semibold shrink-0 ${todayFocus.tone === 'warning' || todayFocus.tone === 'risk'
-                  ? 'bg-warning-bg text-warning-text border border-warning-border'
-                  : todayFocus.tone === 'good'
-                    ? 'bg-income-bg text-income-text border border-income-border'
-                    : 'bg-brand-container text-brand-on border border-brand-border'
-                  }`}>
-                  Priority
-                </span>
-              </div>
-
-              <p className="text-[13px] text-ink-3 leading-relaxed">{todayFocus.detail}</p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-                <button
-                  type="button"
-                  onClick={() => navigate(todayFocus.primaryRoute)}
-                  className="h-12 px-4 rounded-[999px] bg-brand text-white text-[13px] font-semibold inline-flex items-center justify-center gap-1.5 shadow-card hover:brightness-[0.98]"
-                >
-                  {todayFocus.primaryLabel} <ArrowRight size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate(todayFocus.secondaryRoute)}
-                  className="h-12 px-4 rounded-[999px] border border-brand-border bg-kosha-surface text-ink-2 text-[13px] font-semibold inline-flex items-center justify-center"
-                >
-                  {todayFocus.secondaryLabel}
-                </button>
-              </div>
-            </div>
-          )}
-        </motion.div>
-
         {/* ── Pace card — sub-component ────────────────────────────── */}
         <motion.div variants={fadeUp}>
           <DashboardPaceCard
@@ -1010,7 +907,7 @@ export default function Dashboard() {
 
         {heavyReady && weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
-            <div className="card p-4 border border-kosha-border bg-kosha-surface">
+            <div className="card p-4 bg-kosha-surface border-0">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <p className="section-label">What changed this week</p>
@@ -1049,7 +946,7 @@ export default function Dashboard() {
               </div>
 
               {weeklyDigest.topCategory && weeklyTopCategoryLabel && (
-                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5 mt-1">
+                <div className="rounded-card bg-kosha-surface-2 px-3 py-2.5 mt-1">
                   <p className="text-[10px] text-ink-3 mb-0.5">Top spend category this week</p>
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[12px] font-semibold text-ink-2 truncate">{weeklyTopCategoryLabel}</p>
