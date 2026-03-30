@@ -74,9 +74,9 @@
     --c-brand-mid-rgb: 42, 132, 238;
     /* used in rgba() calls */
 
-    /* Accent — Electric Lime */
-    --c-accent: #C6FF00;
-    --c-accent-rgb: 198, 255, 0;
+    /* Accent — Soft Lemon */
+    --c-accent: #FFFF99;
+    --c-accent-rgb: 255, 255, 153;
     /* used in rgba() calls */
 
     /* Semantics */
@@ -91,9 +91,9 @@
     --c-ink-muted: #5E6D8F;
 
     /* Hero card overlays */
-    --c-hero-accent: #C6FF00;
-    --c-hero-accent-bg: #C6FF00;
-    --c-hero-accent-fill: #C6FF00;
+    --c-hero-accent: #FFFF99;
+    --c-hero-accent-bg: #FFFF99;
+    --c-hero-accent-fill: #FFFF99;
     --c-hero-label: rgba(255, 255, 255, 0.64);
     --c-hero-dimmer: rgba(255, 255, 255, 0.46);
     --c-hero-divider: rgba(255, 255, 255, 0.16);

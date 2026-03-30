@@ -10,7 +10,7 @@ export default function MonthHeroCard({ month, year, data }) {
   const balance = data?.balance || 0
   const rate = savingsRate(earned, spent)
   const heroAccentStrong = C.heroAccent
-  const heroBadgeBg = 'linear-gradient(135deg, rgba(198, 255, 0, 0.92) 0%, rgba(228, 255, 112, 0.88) 100%)'
+  const heroBadgeBg = 'linear-gradient(135deg, rgba(255, 255, 153, 0.94) 0%, rgba(255, 255, 184, 0.90) 100%)'
   const heroBadgeText = '#16376A'
 
   return (
