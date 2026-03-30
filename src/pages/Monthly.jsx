@@ -90,6 +90,9 @@ export default function Monthly() {
     () => allCatEntries.reduce((s, [, v]) => s + v, 0) || 1,
     [allCatEntries]
   )
+  const categoryById = useMemo(() => {
+    return new Map(CATEGORIES.map((category) => [category.id, category]))
+  }, [])
   const vehicleEntries = useMemo(
     () => Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1]),
     [data?.byVehicle]
@@ -140,7 +143,7 @@ export default function Monthly() {
         const variancePct = row.budget > 0 ? (variance / row.budget) * 100 : 0
         const absVariancePct = Math.abs(variancePct)
         const score = Math.max(0, Math.round(100 - Math.min(absVariancePct, 100)))
-        const cat = CATEGORIES.find((item) => item.id === row.id)
+        const cat = categoryById.get(row.id)
 
         let band = 'On track'
         let bandClass = 'bg-income-bg text-income-text'
@@ -180,7 +183,7 @@ export default function Monthly() {
       totalSpent,
       rows: scoredRows,
     }
-  }, [allCatEntries, budgets])
+  }, [allCatEntries, budgets, categoryById])
 
   const autopilotHealth = useMemo(() => {
     const recurringBills = monthBills.filter((bill) => !!bill?.is_recurring)

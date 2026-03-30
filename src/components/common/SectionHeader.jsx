@@ -9,15 +9,15 @@ export default function SectionHeader({
     <div className={`flex items-start justify-between gap-2 ${className}`.trim()}>
       <div className="min-w-0">
         <p className="section-label">{title}</p>
-        {subtitle ? <p className="text-[10.5px] text-ink-3 leading-tight mt-px">{subtitle}</p> : null}
+        {subtitle ? <p className="text-caption text-ink-3 leading-tight mt-px">{subtitle}</p> : null}
       </div>
 
       {badge ? (
-        <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-semibold self-start shrink-0 whitespace-nowrap ${badge.className || ''}`.trim()}>
+        <span className={`text-caption px-1.5 py-0.5 rounded-full font-semibold self-start shrink-0 whitespace-nowrap ${badge.className || ''}`.trim()}>
           {badge.label}
         </span>
       ) : rightText ? (
-        <span className="text-[11px] text-ink-4 self-start shrink-0">{rightText}</span>
+        <span className="text-caption text-ink-4 self-start shrink-0">{rightText}</span>
       ) : null}
     </div>
   )

@@ -167,12 +167,12 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
         <p className="section-label">Year over year trends</p>
         {onRangeChange ? (
           <div className="inline-flex rounded-full border border-kosha-border bg-kosha-surface p-0.5">
-            {[3, 6, 9, 12].map((value) => (
+            {[3, 5, 7, 9, 11].map((value) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => onRangeChange(value)}
-                className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-full transition-colors ${
+                className={`h-7 min-w-[2rem] px-2 text-[10px] sm:text-[10.5px] font-semibold rounded-full transition-colors ${
                   value === rangeYears
                     ? 'bg-brand text-white'
                     : 'text-ink-2 hover:bg-kosha-surface-2'
@@ -200,12 +200,13 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
         ))}
       </div>
 
-      <div className="h-[230px] w-full">
+      <div className="h-[220px] sm:h-[230px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 8, right: 10, left: 18, bottom: 2 }}>
+          <LineChart data={points} margin={{ top: 8, right: 12, left: 12, bottom: 2 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(88, 94, 114, 0.18)" />
             <XAxis
               dataKey="year"
+              padding={{ left: 6, right: 6 }}
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
@@ -215,8 +216,8 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
               tickLine={false}
               axisLine={false}
               allowDecimals={false}
-              width={58}
-              tickMargin={6}
+              width={48}
+              tickMargin={4}
               tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
             />
             <Tooltip content={<YoYTooltip />} />

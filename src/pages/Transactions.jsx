@@ -299,7 +299,7 @@ export default function Transactions() {
 
   return (
     <div className="page">
-      <PageHeader title="Transactions" className="mb-1" />
+      <PageHeader title="Transactions" className="mb-3" />
 
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <div>

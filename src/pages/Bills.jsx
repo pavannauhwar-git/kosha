@@ -279,16 +279,16 @@ export default function Bills() {
       <div className="mb-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => setTab('pending')}
-          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'pending'
-              ? 'bg-warning text-white border border-warning shadow-warn'
+              ? 'bg-brand text-white border border-brand shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Pending ({visiblePending.length})
         </button>
         <button
           onClick={() => setTab('paid')}
-          className={`h-10 w-full rounded-card text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
             ${tab === 'paid'
               ? 'bg-income text-white border border-income shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
@@ -299,7 +299,7 @@ export default function Bills() {
 
       {/* ── Summary card ─────────────────────────────────────────────── */}
       {tab === 'pending' && visiblePending.length > 0 && (
-        <div className="card mb-4 p-4 border border-kosha-border bg-kosha-surface">
+        <div className="card mb-4 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
           <div className="flex items-start justify-between gap-3 pb-4 border-b border-kosha-border">
             <div>
               <p className="section-label mb-0.5">Total pending</p>
@@ -346,7 +346,7 @@ export default function Bills() {
       )}
 
       {showGuideHint && (
-        <div className="card mb-6 p-4 border border-kosha-border bg-kosha-surface">
+        <div className="card mb-6 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 flex items-center justify-center shrink-0 border border-kosha-border">
               <BookOpen size={16} className="text-brand" />
@@ -428,7 +428,7 @@ export default function Bills() {
                 )}
                 <div
                   id={`bill-${bill.id}`}
-                  className={`${shadow} p-3.5 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
+                  className={`${shadow} p-3 sm:p-3.5 ${highlightedBillId === bill.id ? 'txn-focus-highlight' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -436,26 +436,26 @@ export default function Bills() {
                         {bill.is_recurring && (
                           <Repeat size={12} className="text-ink-3 shrink-0" />
                         )}
-                        <p className="text-sm font-semibold text-ink truncate">
+                        <p className="text-[13px] sm:text-sm font-semibold text-ink truncate">
                           {bill.description}
                         </p>
                       </div>
-                      <p className="text-lg font-bold amt-expense mb-2">{fmt(+bill.amount)}</p>
+                      <p className="text-[17px] sm:text-lg font-bold amt-expense mb-2">{fmt(+bill.amount)}</p>
                       <div className="flex items-center gap-2 flex-wrap">
                         {tab === 'pending' ? (
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
+                          <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
                             {dueLabel(days)}
                           </span>
                         ) : (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
+                          <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
                             Paid {fmtDate(bill.due_date)}
                           </span>
                         )}
                         {bill.is_recurring && (
-                          <span className="text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
+                          <span className="text-[10px] sm:text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
                         )}
                         {(bill.__optimistic || String(bill.id || '').startsWith('optimistic-')) && (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
+                          <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
                             Syncing...
                           </span>
                         )}
@@ -467,8 +467,8 @@ export default function Bills() {
                         <button
                           onClick={() => handleMarkPaid(bill)}
                           disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-card
-                                     bg-income-bg text-income-text text-xs font-semibold
+                          className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
+                                     bg-income-bg text-income-text text-[11px] font-semibold
                                      border border-income-border active:scale-[0.98] transition-all duration-100
                                      disabled:opacity-60"
                         >
@@ -479,8 +479,8 @@ export default function Bills() {
                       <button
                         onClick={() => handleDelete(bill.id)}
                         disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                        className="flex items-center justify-center px-3 py-2 rounded-card
-                                   bg-expense-bg text-expense-text text-xs font-semibold
+                        className="h-8 w-8 flex items-center justify-center rounded-card
+                                   bg-expense-bg text-expense-text text-[11px] font-semibold
                                    border border-expense-border active:scale-[0.98] transition-all duration-100
                                    disabled:opacity-60"
                       >
@@ -594,7 +594,7 @@ export default function Bills() {
 
       {/* FAB */}
       <button className="fab-bills" onClick={() => setShowAdd(true)}>
-        <Plus size={28} weight="bold" color="white" />
+        <Plus size={24} className="text-white" />
       </button>
 
       <AppToast message={errToast} onDismiss={() => setErrToast(null)} />

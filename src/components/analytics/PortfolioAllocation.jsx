@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 
 const PORTFOLIO_COLORS = C.portfolio
 
-export default function PortfolioAllocation({ vehicleData }) {
+const PortfolioAllocation = memo(function PortfolioAllocation({ vehicleData }) {
   const total = vehicleData.reduce((s, [, v]) => s + (Number(v) || 0), 0)
   if (!vehicleData.length || total === 0) return null
 
@@ -81,4 +82,6 @@ export default function PortfolioAllocation({ vehicleData }) {
       </div>
     </div>
   )
-}
+})
+
+export default PortfolioAllocation

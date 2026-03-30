@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createFadeUp, createStagger } from '../lib/animations'
+import PageBackHeader from '../components/layout/PageBackHeader'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -244,18 +245,7 @@ export default function Guide() {
 
   return (
     <div className="min-h-dvh bg-kosha-bg">
-      <div
-        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center active:bg-kosha-surface-2"
-        >
-          <ArrowLeft size={16} className="text-ink-2" />
-        </button>
-        <h1 className="text-[17px] font-bold text-ink tracking-tight">Guide</h1>
-      </div>
+      <PageBackHeader title="Guide" onBack={() => navigate(-1)} />
 
       <div className="px-4 pt-6 pb-24 max-w-[860px] mx-auto">
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5 max-w-[760px] mx-auto">

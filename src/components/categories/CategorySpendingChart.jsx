@@ -65,6 +65,10 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
     return safeEntries.slice(0, safeInitialVisibleCount)
   }, [safeEntries, expanded, hasOverflow, safeInitialVisibleCount])
 
+  const categoryById = useMemo(() => {
+    return new Map(CATEGORIES.map((category) => [category.id, category]))
+  }, [])
+
   const safeTotal = total > 0 ? total : 1
   const budgetedCount = safeEntries.filter(([catId]) => Number(budgets?.[catId] || 0) > 0).length
 
@@ -96,7 +100,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
 
       <div className="space-y-2.5">
         {visibleEntries.map(([catId, amt]) => {
-          const cat = CATEGORIES.find(c => c.id === catId)
+          const cat = categoryById.get(catId)
           const budget = budgets[catId] || 0
           const hasBudget = budget > 0
           const sharePct = Math.round((amt / safeTotal) * 100)

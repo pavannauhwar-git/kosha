@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, Link2, Copy } from 'lucide-react'
+import { Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, Link2, Copy } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/dialogs/EditProfileNameDialog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
+import PageBackHeader from '../components/layout/PageBackHeader'
 import {
   getReminderPrefs,
   setReminderPrefs,
@@ -194,21 +195,7 @@ export default function Settings() {
 
   return (
     <div className="min-h-dvh bg-kosha-bg">
-      {/* ── Header ────────────────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md
-                   px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                     flex items-center justify-center active:bg-kosha-surface-2"
-        >
-          <ArrowLeft size={16} className="text-ink-2" />
-        </button>
-        <h1 className="text-[17px] font-bold text-ink tracking-tight">Account Settings</h1>
-      </div>
+      <PageBackHeader title="Account Settings" onBack={() => navigate(-1)} />
 
       <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">

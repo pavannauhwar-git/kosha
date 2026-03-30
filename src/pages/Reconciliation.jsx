@@ -622,21 +622,20 @@ export default function Reconciliation() {
             : () => navigate('/transactions')}
         />
       ) : (
-        <motion.div layout className="space-y-2.5">
-          <AnimatePresence initial={false} mode="popLayout">
+        <motion.div className="space-y-2.5">
+          <AnimatePresence initial={false} mode="sync">
             {visibleItems.map((item) => {
             const txn = item.txn
             const disabled = savingId === txn.id
             return (
               <motion.div
-                layout
                 key={txn.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8, scale: 0.99 }}
                 whileHover={{ y: -1 }}
                 transition={{ duration: 0.2 }}
-                className="card p-3.5"
+                className="card p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -732,7 +731,6 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
 
   return (
     <motion.div
-      layout
       whileHover={{ y: -1 }}
       transition={{ duration: 0.14 }}
       className={`rounded-card border border-kosha-border border-l-4 ${borderColor} bg-kosha-surface p-3`}

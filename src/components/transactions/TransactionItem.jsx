@@ -154,7 +154,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
       <motion.div
         className={`${compact
           ? 'flex items-center gap-3 px-4 py-3 bg-kosha-surface active:bg-kosha-surface-2'
-          : 'list-row active:bg-kosha-surface-2'
+          : 'list-row py-3 sm:py-3.5 active:bg-kosha-surface-2'
           }`}
         style={{ x }}
         drag={isOptimistic ? false : 'x'}
@@ -182,7 +182,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className={`${compact ? 'text-[13px]' : 'text-[14px]'} font-semibold text-ink truncate leading-snug`}>
+          <p className={`${compact ? 'text-[13px]' : 'text-[13px] sm:text-[14px]'} font-semibold text-ink truncate leading-snug`}>
             {txn.description}
           </p>
           {compact ? (
@@ -192,8 +192,8 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           ) : (
             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
               {showDate
-                ? <span className="text-[11px] text-ink-3">{fmtDate(txn.date)}</span>
-                : <span className="text-[11px] text-ink-3">{rowLabel}</span>
+                ? <span className="text-[10px] sm:text-[11px] text-ink-3">{fmtDate(txn.date)}</span>
+                : <span className="text-[10px] sm:text-[11px] text-ink-3">{rowLabel}</span>
               }
               {mode && (
                 <span className="text-[10px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
@@ -224,7 +224,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           )}
         </div>
 
-        <span className={`${compact ? 'text-[13px]' : 'text-[14px]'} shrink-0 tabular-nums font-semibold ${amtCls}`}>
+        <span className={`${compact ? 'text-[13px]' : 'text-[13px] sm:text-[14px]'} shrink-0 tabular-nums font-semibold ${amtCls}`}>
           {prefix}{fmt(txn.amount)}
         </span>
       </motion.div>

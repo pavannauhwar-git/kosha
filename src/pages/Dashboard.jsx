@@ -661,7 +661,7 @@ export default function Dashboard() {
 
         {/* ── Daily variance ──────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <div className="card p-3.5">
+          <div className="card p-4">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div>
                 <p className="section-label">Daily variance</p>
@@ -724,7 +724,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="card p-3.5">
+          <div className="card p-4">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-warning-bg flex items-center justify-center shrink-0">
@@ -784,7 +784,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="card p-3.5">
+          <div className="card p-4">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
@@ -845,7 +845,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="card p-3.5">
+          <div className="card p-4">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
@@ -938,7 +938,7 @@ export default function Dashboard() {
 
         <motion.div variants={fadeUp}>
           {summaryLoading ? (
-            <div className="card p-3.5">
+            <div className="card p-4">
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="h-3 w-20 rounded-full shimmer opacity-80" />
                 <div className="h-5 w-14 rounded-full shimmer opacity-70" />

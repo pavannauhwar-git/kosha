@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { fmt, savingsRate } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 import { MONTH_NAMES } from '../../../lib/constants'
 
-export default function MonthHeroCard({ month, year, data }) {
+const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
   const earned = data?.earned || 0
   const spent = data?.expense || 0
   const invested = data?.investment || 0
@@ -67,10 +68,12 @@ export default function MonthHeroCard({ month, year, data }) {
             className="bar-dark-fill"
             initial={{ width: 0 }}
             animate={{ width: `${rate}%` }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
+            transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
           />
         </div>
       </div>
     </div>
   )
-}
+})
+
+export default MonthHeroCard

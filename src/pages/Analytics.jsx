@@ -73,14 +73,17 @@ export default function Analytics() {
     .map(([key, value]) => [key, toFiniteNumber(value)])
     .filter(([, value]) => value > 0)
     .sort((a, b) => b[1] - a[1]), [data?.byCategory])
+  const categoryLabelById = useMemo(() => {
+    return new Map(CATEGORIES.map((category) => [category.id, category.label]))
+  }, [])
   const catEntries = useMemo(() => allCatEntries.slice(0, 8), [allCatEntries])
   const categoryTotal = useMemo(() => allCatEntries.reduce((s, [, v]) => s + v, 0) || 1, [allCatEntries])
 
   const scenarioCategories = useMemo(() => allCatEntries.map(([id, value]) => ({
     id,
-    label: CATEGORIES.find((category) => category.id === id)?.label || id,
+    label: categoryLabelById.get(id) || id,
     value: toFiniteNumber(value),
-  })), [allCatEntries])
+  })), [allCatEntries, categoryLabelById])
 
   const annualSurplus = useMemo(
     () => Math.round(
@@ -118,13 +121,13 @@ export default function Analytics() {
         const [topCat, topValue] = catEntries[0]
         const concentrationPct = Math.round((Number(topValue || 0) / categoryTotal) * 100)
         if (concentrationPct >= 35) {
-          const catLabel = CATEGORIES.find(c => c.id === topCat)?.label || topCat
+          const catLabel = categoryLabelById.get(topCat) || topCat
           items.push(`${catLabel} contributes ${concentrationPct}% of expense concentration. Add a monthly cap and monitor variance.`)
         }
       }
 
     return items.slice(0, 3)
-  }, [data, catEntries, categoryTotal])
+  }, [data, catEntries, categoryTotal, categoryLabelById])
 
   const decisionSignals = useMemo(() => {
     if (!flowTrendData.length || !surplusData.length) return []

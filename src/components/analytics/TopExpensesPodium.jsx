@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import CategoryIcon from '../categories/CategoryIcon'
 import { fmt, fmtDate } from '../../lib/utils'
 import { C } from '../../lib/colors'
@@ -32,7 +33,7 @@ const PODIUM_META = {
   },
 }
 
-export default function TopExpensesPodium({ top5, year }) {
+const TopExpensesPodium = memo(function TopExpensesPodium({ top5, year }) {
   if (!top5?.length) return null
 
   const rankedItems = top5.slice(0, 5)
@@ -109,4 +110,6 @@ export default function TopExpensesPodium({ top5, year }) {
       </div>
     </div>
   )
-}
+})
+
+export default TopExpensesPodium

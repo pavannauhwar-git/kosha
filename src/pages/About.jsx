@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeftIcon,
   HeartIcon, CodeIcon, CurrencyInrIcon, CopyIcon, CheckIcon,
   GithubLogoIcon, LockIcon, StarIcon, CaretDownIcon, CaretUpIcon,
 } from '@phosphor-icons/react'
@@ -11,6 +10,7 @@ import KoshaLogo from '../components/brand/KoshaLogo'
 import { CHANGELOG } from '../lib/changelog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
+import PageBackHeader from '../components/layout/PageBackHeader'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.06, 0.04)
@@ -78,19 +78,7 @@ export default function About() {
   return (
     <div className="min-h-dvh bg-kosha-bg">
 
-      {/* ── Sticky header ─────────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md px-4 py-3 flex items-center gap-3 border-b border-kosha-border"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center active:bg-kosha-surface-2"
-        >
-          <ArrowLeftIcon size={16} className="text-ink-2" />
-        </button>
-        <h1 className="text-[17px] font-bold text-ink tracking-tight">About</h1>
-      </div>
+      <PageBackHeader title="About" onBack={() => navigate(-1)} />
 
       <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Bug, Check, Copy, Home, LogIn } from 'lucide-react'
+import { Bug, Check, Copy, Home, LogIn } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import PageBackHeader from '../components/layout/PageBackHeader'
 import {
   buildFingerprint,
   parseTags,
@@ -228,32 +229,20 @@ export default function ReportBug() {
       className="min-h-dvh bg-kosha-bg"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}
     >
-      {/* ── Sticky header — full width ─────────────────────────────── */}
-      <div
-        className="sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md border-b border-kosha-border px-4 flex items-center justify-between"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
-      >
-        <button type="button" onClick={handleBack} className="close-btn">
-          <ArrowLeft size={16} className="text-ink-3" />
-        </button>
-
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-chip bg-brand-container flex items-center justify-center">
-            <Bug size={14} className="text-brand" />
-          </div>
-          <h1 className="text-[17px] font-bold text-ink tracking-tight">Report Bug</h1>
-        </div>
-
-        <button
-          type="button"
-          onClick={goDashboard}
-          className="w-9 h-9 rounded-pill flex items-center justify-center
-                     bg-kosha-surface-2 active:bg-kosha-border"
-          aria-label="Go to dashboard"
-        >
-          <Home size={16} className="text-ink-3" />
-        </button>
-      </div>
+      <PageBackHeader
+        title="Report Bug"
+        onBack={handleBack}
+        rightSlot={(
+          <button
+            type="button"
+            onClick={goDashboard}
+            className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
+            aria-label="Go to dashboard"
+          >
+            <Home size={16} className="text-ink-3" />
+          </button>
+        )}
+      />
 
       {/* ── Content — constrained ──────────────────────────────────── */}
       <div className="mx-auto max-w-[560px]">
