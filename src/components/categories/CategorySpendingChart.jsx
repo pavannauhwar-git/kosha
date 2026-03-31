@@ -36,8 +36,10 @@ function TreemapTooltip({ active, payload, total }) {
 }
 
 function TreemapCell(props) {
-  const { depth, x, y, width, height, payload } = props
-  if (depth !== 1) return null
+  const { x, y, width, height, payload } = props
+  // Treemap may not always provide a stable `depth` prop across versions.
+  // Render only leaf nodes by skipping internal nodes that have children.
+  if (Array.isArray(payload?.children) && payload.children.length > 0) return null
   if (!Number.isFinite(x) || !Number.isFinite(y) || width <= 0 || height <= 0 || !payload) return null
 
   const showLabel = width > 74 && height > 32

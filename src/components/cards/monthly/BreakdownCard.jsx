@@ -1,4 +1,76 @@
 import { fmt } from '../../../lib/utils'
+import {
+  ResponsiveContainer,
+  Sankey,
+  Tooltip as RechartsTooltip,
+} from 'recharts'
+
+function MoneyRoutingTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+
+  const row = payload[0]?.payload || payload[0] || {}
+  const sourceName = row?.source?.name || row?.source?.payload?.name || ''
+  const targetName = row?.target?.name || row?.target?.payload?.name || ''
+  const flowLabel = sourceName && targetName
+    ? `${sourceName} -> ${targetName}`
+    : (row?.name || 'Flow node')
+  const amount = Number(row?.value || row?.payload?.value || 0)
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{flowLabel}</p>
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="text-ink-3">Amount</span>
+        <span className="font-semibold tabular-nums text-ink">{fmt(amount)}</span>
+      </div>
+    </div>
+  )
+}
+
+function SankeyNode(props) {
+  const {
+    x,
+    y,
+    width,
+    height,
+    payload,
+    containerWidth,
+  } = props
+
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(width) || !Number.isFinite(height)) return null
+
+  const label = String(payload?.name || '')
+  const fill = payload?.color || '#0A67D8'
+  const safeContainerWidth = Number(containerWidth || 560)
+  const rightSide = x > safeContainerWidth * 0.58
+  const textX = rightSide ? x - 6 : (x + width + 6)
+
+  return (
+    <g>
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        rx={3}
+        ry={3}
+        fill={fill}
+        fillOpacity={0.88}
+      />
+      <text
+        x={textX}
+        y={y + (height / 2)}
+        dy="0.35em"
+        textAnchor={rightSide ? 'end' : 'start'}
+        fontSize={10}
+        fontWeight={600}
+        fill="#10213F"
+      >
+        {label}
+      </text>
+    </g>
+  )
+}
 
 export default function BreakdownCard({ earned, spent, invested, totalLabel = 'Total income' }) {
   const inflow = Number(earned || 0)
@@ -46,6 +118,39 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
 
   const allocationSegments = primaryRows.filter((row) => row.pct > 0)
 
+  const sankeyNodes = [
+    { name: 'Inflow', color: '#0E9F6E' },
+    ...(deficit > 0 ? [{ name: 'Deficit cover', color: '#9A7200' }] : []),
+    { name: 'Outflow', color: '#10213F' },
+    { name: 'Spent', color: '#E11D48' },
+    { name: 'Invested', color: '#7C3AED' },
+    ...(saved > 0 ? [{ name: 'Leftover', color: '#0E9F6E' }] : []),
+  ]
+
+  const nodeIndexByName = new Map(sankeyNodes.map((node, index) => [node.name, index]))
+  const nodeAt = (name) => nodeIndexByName.get(name)
+
+  const sankeyLinks = [
+    {
+      source: nodeAt('Inflow'),
+      target: nodeAt('Outflow'),
+      value: Math.max(0, Math.min(inflow, outflow)),
+    },
+    ...(deficit > 0
+      ? [{ source: nodeAt('Deficit cover'), target: nodeAt('Outflow'), value: deficit }]
+      : []),
+    { source: nodeAt('Outflow'), target: nodeAt('Spent'), value: expense },
+    { source: nodeAt('Outflow'), target: nodeAt('Invested'), value: investment },
+    ...(saved > 0
+      ? [{ source: nodeAt('Inflow'), target: nodeAt('Leftover'), value: saved }]
+      : []),
+  ].filter((link) => Number.isFinite(link.source) && Number.isFinite(link.target) && Number(link.value || 0) > 0)
+
+  const sankeyData = {
+    nodes: sankeyNodes,
+    links: sankeyLinks,
+  }
+
   const actionNote = (() => {
     if (net < 0) {
       return `Deficit warning: outflow exceeded inflow by ${fmt(deficit)} this month. Prioritize discretionary cuts and defer optional deployments.`
@@ -66,7 +171,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
       <div className="flex items-start justify-between gap-3 mb-2.5">
         <div>
           <p className="section-label">Cashflow breakdown</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Allocation tree from inflow into spend, investment, and month-end buffer</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">Sankey routing from inflow into spending, investing, and month-end balance</p>
         </div>
         <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${net >= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
           {net >= 0 ? 'Net positive' : 'Net deficit'}
@@ -101,21 +206,25 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
           ))}
         </div>
 
-        <div className="mt-2 rounded-card border border-kosha-border bg-kosha-surface px-3 py-2" role="treeitem" aria-level={1}>
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-[11px] font-semibold text-ink">Inflow root</p>
-              <p className="text-[10px] text-ink-3">{fmt(inflow)} distributed across three branches</p>
-            </div>
-            <p className="text-[11px] font-bold tabular-nums text-income-text">100%</p>
-          </div>
+        <div className="mt-2 rounded-card border border-kosha-border bg-kosha-surface p-2">
+          <ResponsiveContainer width="100%" height={208}>
+            <Sankey
+              data={sankeyData}
+              node={<SankeyNode />}
+              nodePadding={18}
+              nodeWidth={14}
+              margin={{ top: 8, right: 30, bottom: 8, left: 30 }}
+              link={{ stroke: 'rgba(16,33,63,0.18)', strokeOpacity: 0.45 }}
+              linkCurvature={0.42}
+            >
+              <RechartsTooltip content={<MoneyRoutingTooltip />} />
+            </Sankey>
+          </ResponsiveContainer>
         </div>
 
-        <div role="group" className="ml-2 mt-2 pl-3 border-l border-kosha-border space-y-1.5">
+        <div className="mt-2 space-y-1.5">
           {primaryRows.map((row) => (
-            <div key={row.key} role="treeitem" aria-level={2} className="relative rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
-              <span className="absolute -left-[13px] top-1/2 -translate-y-1/2 h-px w-3 bg-kosha-border" />
-
+            <div key={row.key} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <div>
                   <p className="text-[11px] font-semibold text-ink">{row.label}</p>
