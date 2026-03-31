@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, Plus, ShieldAlert, TrendingUp, WalletCards } from 'lucide-react'
+import { Bell, ArrowRight, Plus, ShieldAlert, TrendingUp } from 'lucide-react'
 import {
   useRecentTransactions,
   useTransactionDigest,
@@ -21,9 +21,6 @@ import {
   Bar,
   LineChart,
   Line,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -45,23 +42,6 @@ import { CATEGORIES } from '../lib/categories'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
-
-const CONTROLLABLE_CATEGORY_IDS = new Set([
-  'food',
-  'groceries',
-  'entertainment',
-  'shopping',
-  'dining_out',
-  'travel',
-  'personal',
-  'subscription',
-  'salon',
-  'gym',
-  'pets',
-  'electronics',
-  'home',
-  'other',
-])
 
 function DuePressureTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -108,45 +88,12 @@ function quantile(sortedValues, p) {
   return (sortedValues[lowerIndex] * (1 - weight)) + (sortedValues[upperIndex] * weight)
 }
 
-function hourWindowLabel(hour) {
-  const safeHour = Number(hour)
-  const endHour = (safeHour + 1) % 24
-  const formatter = (h) => {
-    if (h === 0) return '12 AM'
-    if (h < 12) return `${h} AM`
-    if (h === 12) return '12 PM'
-    return `${h - 12} PM`
-  }
-  return `${formatter(safeHour)} - ${formatter(endHour)}`
-}
-
 function resolveTxnTimestamp(row) {
   const rawDate = String(row?.date || '')
   const dateHasTime = rawDate.includes('T') || /\d{2}:\d{2}/.test(rawDate)
   const source = dateHasTime ? row?.date : (row?.created_at || row?.date)
   const ts = new Date(source || 0).getTime()
   return Number.isFinite(ts) ? ts : null
-}
-
-function IntradayClockTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[178px]">
-      <p className="text-[11px] font-semibold text-ink mb-1">{row?.hourLabel || 'Hour'}</p>
-      <div className="space-y-0.5 text-[11px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Discretionary spend</span>
-          <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row?.spend || 0))}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Txn count</span>
-          <span className="font-semibold tabular-nums text-ink">{Math.round(Number(row?.txnCount || 0))}</span>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 function NetControlTooltip({ active, payload, label }) {
@@ -398,7 +345,6 @@ export default function Dashboard() {
   const [heroMode, setHeroMode] = useState('balance')
   const [toast, setToast] = useState(null)
   const [heavyReady, setHeavyReady] = useState(false)
-  const [opportunityCutPct, setOpportunityCutPct] = useState(12)
   const [activeVarianceDay, setActiveVarianceDay] = useState(null)
 
   useEffect(() => {
@@ -580,102 +526,66 @@ export default function Dashboard() {
     const byDate = new Map()
     for (const row of digestTxnRows) {
       if (row?.type !== 'expense') continue
-      const key = String(row?.date || '').slice(0, 10)
+      const ts = resolveTxnTimestamp(row)
+      if (!Number.isFinite(ts)) continue
+
+      const d = new Date(ts)
+      d.setHours(0, 0, 0, 0)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       if (!key) continue
       byDate.set(key, (byDate.get(key) || 0) + Number(row?.amount || 0))
     }
 
+    const lookbackDays = 42
     const heatmapDays = []
-    for (let i = 55; i >= 0; i -= 1) {
+    for (let i = lookbackDays - 1; i >= 0; i -= 1) {
       const d = new Date(now)
       d.setHours(0, 0, 0, 0)
       d.setDate(d.getDate() - i)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       const value = byDate.get(key) || 0
+      const weekdayIndex = (d.getDay() + 6) % 7
       heatmapDays.push({
         key,
         value,
         label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+        weekdayIndex,
       })
     }
 
     const heatmapMax = Math.max(...heatmapDays.map((row) => row.value), 1)
-    const trackedDays = heatmapDays.filter((row) => row.value > 0)
+    const bubbleRows = heatmapDays.map((day) => {
+      const intensity = day.value > 0 ? (day.value / heatmapMax) : 0
+      const bubbleSize = day.value <= 0 ? 8 : Math.round(8 + (intensity * 16))
+      const bubbleFill = day.value <= 0
+        ? 'rgba(16,33,63,0.10)'
+        : `rgba(10,103,216,${Math.min(0.96, 0.20 + (intensity * 0.70))})`
+
+      return {
+        ...day,
+        bubbleSize,
+        bubbleFill,
+      }
+    })
+
+    const trackedDays = bubbleRows.filter((row) => row.value > 0)
+    const firstWeekdayIndex = bubbleRows[0]?.weekdayIndex || 0
+    const paddedRows = [...Array(firstWeekdayIndex).fill(null), ...bubbleRows]
+    while (paddedRows.length % 7 !== 0) paddedRows.push(null)
+
     const heatmapWeeks = []
-    for (let i = 0; i < heatmapDays.length; i += 7) {
-      heatmapWeeks.push(heatmapDays.slice(i, i + 7))
+    for (let i = 0; i < paddedRows.length; i += 7) {
+      heatmapWeeks.push(paddedRows.slice(i, i + 7))
     }
 
     return {
+      lookbackDays,
+      weekdayLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       heatmapWeeks,
       heatmapMax,
       activeDays: trackedDays.length,
       trackedTotal: trackedDays.reduce((sum, row) => sum + row.value, 0),
       heatmapRange: `${heatmapDays[0]?.label || ''} - ${heatmapDays[heatmapDays.length - 1]?.label || ''}`,
-    }
-  }, [digestTxnRows, now])
-
-  const intradayClock = useMemo(() => {
-    const dayMs = 24 * 60 * 60 * 1000
-    const nowTs = now.getTime()
-    const startTs = nowTs - (56 * dayMs)
-
-    const hourlyRows = Array.from({ length: 24 }, (_, hourIndex) => ({
-      hour: hourIndex,
-      hourLabel: hourWindowLabel(hourIndex),
-      spend: 0,
-      txnCount: 0,
-      value: 1,
-      fill: 'rgba(16,33,63,0.08)',
-      sharePct: 0,
-    }))
-
-    let totalSpend = 0
-    let totalTxn = 0
-    let fallbackRows = 0
-
-    for (const row of (Array.isArray(digestTxnRows) ? digestTxnRows : [])) {
-      if (row?.type !== 'expense') continue
-      if (!CONTROLLABLE_CATEGORY_IDS.has(String(row?.category || 'other'))) continue
-
-      const amount = Number(row?.amount || 0)
-      if (!Number.isFinite(amount) || amount <= 0) continue
-
-      const rawDate = String(row?.date || '')
-      const usedFallback = !(rawDate.includes('T') || /\d{2}:\d{2}/.test(rawDate))
-      const ts = resolveTxnTimestamp(row)
-      if (!Number.isFinite(ts) || ts < startTs || ts > nowTs) continue
-
-      const hour = new Date(ts).getHours()
-      hourlyRows[hour].spend += amount
-      hourlyRows[hour].txnCount += 1
-      totalSpend += amount
-      totalTxn += 1
-      if (usedFallback) fallbackRows += 1
-    }
-
-    const maxSpend = Math.max(...hourlyRows.map((row) => row.spend), 1)
-    for (const row of hourlyRows) {
-      const intensity = row.spend > 0 ? (row.spend / maxSpend) : 0
-      row.fill = row.spend <= 0
-        ? 'rgba(16,33,63,0.08)'
-        : `rgba(10, 103, 216, ${Math.min(0.95, 0.20 + (intensity * 0.72))})`
-      row.sharePct = totalSpend > 0 ? Math.round((row.spend / totalSpend) * 100) : 0
-    }
-
-    const peakRow = [...hourlyRows].sort((a, b) => b.spend - a.spend)[0]
-    const quietPositiveRow = [...hourlyRows]
-      .filter((row) => row.spend > 0)
-      .sort((a, b) => a.spend - b.spend)[0] || null
-
-    return {
-      rows: hourlyRows,
-      totalSpend,
-      totalTxn,
-      peakRow,
-      quietPositiveRow,
-      fallbackRows,
-      hasData: totalTxn > 0,
     }
   }, [digestTxnRows, now])
 
@@ -1123,34 +1033,6 @@ export default function Dashboard() {
     }
   }, [digestTxnRows, now])
 
-  const opportunityWallet = useMemo(() => {
-    const categoryRows = Object.entries(summary?.byCategory || {})
-      .map(([id, amount]) => ({
-        id,
-        label: categoryLabelMap.get(id) || id,
-        amount: Number(amount || 0),
-      }))
-      .filter((row) => row.amount > 0 && CONTROLLABLE_CATEGORY_IDS.has(row.id))
-      .sort((a, b) => b.amount - a.amount)
-
-    const selectedRows = categoryRows.slice(0, 3).map((row) => ({
-      ...row,
-      targetCut: (row.amount * opportunityCutPct) / 100,
-    }))
-
-    const recoverable = selectedRows.reduce((sum, row) => sum + row.targetCut, 0)
-    const monthNet = earned - spent - invested
-    const projectedNet = monthNet + recoverable
-
-    return {
-      hasData: selectedRows.length > 0,
-      rows: selectedRows,
-      recoverable,
-      monthNet,
-      projectedNet,
-    }
-  }, [summary?.byCategory, categoryLabelMap, opportunityCutPct, earned, spent, invested])
-
   useEffect(() => {
     const prefs = getReminderPrefs()
     if (!prefs.enabled) return
@@ -1247,13 +1129,13 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* ── Daily variance ──────────────────────────────────────── */}
+        {/* ── Daily spend bubble map ─────────────────────────────── */}
         <motion.div variants={fadeUp}>
           <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div>
-                <p className="section-label">Daily spending habit</p>
-                <p className="text-caption text-ink-3 mt-0.5">Absolute spend intensity across the last 8 weeks</p>
+                <p className="section-label">Daily spend bubble map</p>
+                <p className="text-caption text-ink-3 mt-0.5">Each bubble represents one day across the last {dailyVariance.lookbackDays} days</p>
               </div>
               <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
                 {dailyVariance.activeDays} active day{dailyVariance.activeDays === 1 ? '' : 's'}
@@ -1263,24 +1145,26 @@ export default function Dashboard() {
             <p className="text-[10px] text-ink-3 mb-1.5">
               {activeVarianceDay
                 ? `${activeVarianceDay.label}: ${fmt(activeVarianceDay.value)}`
-                : 'Hover a day tile to see exact spend for that date.'}
+                : 'Hover a bubble to see exact spend for that day.'}
             </p>
 
             <p className="text-[10px] text-ink-3 mb-1.5">
               Absolute range: 0 to {fmt(dailyVariance.heatmapMax)} over {dailyVariance.heatmapRange}.
             </p>
 
-            <div className="space-y-1" onMouseLeave={() => setActiveVarianceDay(null)}>
+            <div className="grid grid-cols-7 gap-1.5 mb-1">
+              {dailyVariance.weekdayLabels.map((label) => (
+                <p key={`bubble-header-${label}`} className="text-[9px] text-ink-3 text-center">{label}</p>
+              ))}
+            </div>
+
+            <div className="space-y-1.5" onMouseLeave={() => setActiveVarianceDay(null)}>
               {dailyVariance.heatmapWeeks.map((week, weekIndex) => (
-                <div key={`heatmap-week-${weekIndex}`} className="grid grid-cols-7 gap-1">
-                  {week.map((day) => {
-                    const intensity = day.value > 0 ? day.value / dailyVariance.heatmapMax : 0
-                    const alpha = day.value > 0
-                      ? Math.min(0.92, 0.18 + (intensity * 0.72))
-                      : 0.08
-                    const cellColor = day.value <= 0
-                      ? 'rgba(16, 33, 63, 0.08)'
-                      : `rgba(10, 103, 216, ${alpha})`
+                <div key={`heatmap-week-${weekIndex}`} className="grid grid-cols-7 gap-1.5">
+                  {week.map((day, dayIndex) => {
+                    if (!day) {
+                      return <div key={`heatmap-empty-${weekIndex}-${dayIndex}`} className="h-8 rounded-card bg-transparent" aria-hidden="true" />
+                    }
 
                     return (
                       <button
@@ -1290,9 +1174,17 @@ export default function Dashboard() {
                         aria-label={`${day.label} spend ${fmt(day.value)}`}
                         onMouseEnter={() => setActiveVarianceDay(day)}
                         onFocus={() => setActiveVarianceDay(day)}
-                        className="h-3 rounded-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-                        style={{ background: cellColor }}
-                      />
+                        className="h-8 rounded-card bg-kosha-surface-2 border border-kosha-border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                      >
+                        <span
+                          className="rounded-full border border-white/70"
+                          style={{
+                            width: `${day.bubbleSize}px`,
+                            height: `${day.bubbleSize}px`,
+                            background: day.bubbleFill,
+                          }}
+                        />
+                      </button>
                     )
                   })}
                 </div>
@@ -1300,94 +1192,8 @@ export default function Dashboard() {
             </div>
 
             <p className="text-[10px] text-ink-3 mt-1.5">
-              Tracked spend in this window: {fmt(dailyVariance.trackedTotal)}.
+              Bubble size and shade both scale with spend magnitude. Tracked spend in this window: {fmt(dailyVariance.trackedTotal)}.
             </p>
-          </div>
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <div className="card p-4 border-0">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div>
-                <p className="section-label">Intraday spend clock</p>
-                <p className="text-caption text-ink-3 mt-0.5">Discretionary spend hotspots by hour across the last 8 weeks</p>
-              </div>
-              <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-brand-container text-brand-on">
-                {intradayClock.totalTxn} txns
-              </span>
-            </div>
-
-            {intradayClock.hasData ? (
-              <>
-                <div className="grid grid-cols-3 gap-2 mb-2.5">
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Discretionary spend</p>
-                    <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(intradayClock.totalSpend)}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Peak hour</p>
-                    <p className="text-[12px] font-bold tabular-nums text-brand">{intradayClock.peakRow?.hourLabel || '—'}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Quiet positive hour</p>
-                    <p className="text-[12px] font-bold tabular-nums text-ink">{intradayClock.quietPositiveRow?.hourLabel || '—'}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
-                  <div className="grid md:grid-cols-[0.95fr_1.05fr] gap-2.5 items-center">
-                    <div className="relative h-[206px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={intradayClock.rows}
-                            dataKey="value"
-                            nameKey="hourLabel"
-                            innerRadius={58}
-                            outerRadius={92}
-                            paddingAngle={1.2}
-                            stroke="rgba(255,255,255,0.92)"
-                            strokeWidth={1.2}
-                          >
-                            {intradayClock.rows.map((row) => (
-                              <Cell key={`intraday-hour-${row.hour}`} fill={row.fill} />
-                            ))}
-                          </Pie>
-                          <RechartsTooltip content={<IntradayClockTooltip />} />
-                        </PieChart>
-                      </ResponsiveContainer>
-
-                      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                        <p className="text-[10px] text-ink-3">Peak share</p>
-                        <p className="text-[16px] font-bold tabular-nums text-ink">{intradayClock.peakRow?.sharePct || 0}%</p>
-                        <p className="text-[10px] text-ink-3">of discretionary spend</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      {[...intradayClock.rows]
-                        .sort((a, b) => b.spend - a.spend)
-                        .slice(0, 4)
-                        .map((row) => (
-                          <div key={`intraday-top-${row.hour}`} className="flex items-center justify-between rounded-card bg-kosha-surface px-2.5 py-2 border border-kosha-border">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.fill }} />
-                              <p className="text-[11px] text-ink-2 truncate">{row.hourLabel}</p>
-                            </div>
-                            <p className="text-[11px] font-semibold tabular-nums text-ink shrink-0">{fmt(row.spend)}</p>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-[10px] text-ink-3 mt-1.5">
-                  Darker sectors indicate higher discretionary spend concentration by hour. Use this to schedule guardrails before high-risk windows.
-                </p>
-              </>
-            ) : (
-              <p className="text-[11px] text-ink-3">Not enough timestamped discretionary spend yet to build intraday hotspots.</p>
-            )}
           </div>
         </motion.div>
 
@@ -1691,77 +1497,6 @@ export default function Dashboard() {
               </>
             ) : (
               <p className="text-[11px] text-ink-3">No enough spend points in the last 8 weeks to estimate weekday spread.</p>
-            )}
-          </div>
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <div className="card p-4 border-0">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div className="flex items-start gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
-                  <WalletCards size={15} className="text-brand" />
-                </div>
-                <div>
-                  <p className="section-label">Opportunity Wallet</p>
-                  <p className="text-caption text-ink-3 mt-0.5">Recoverable surplus from controllable categories</p>
-                </div>
-              </div>
-              <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-brand-container text-brand-on">
-                {opportunityCutPct}% cut mode
-              </span>
-            </div>
-
-            {opportunityWallet.hasData ? (
-              <>
-                <div className="flex items-center gap-1.5 mb-2.5">
-                  {[8, 12, 15].map((pct) => (
-                    <button
-                      key={`cut-${pct}`}
-                      type="button"
-                      onClick={() => setOpportunityCutPct(pct)}
-                      className={`chip-control chip-control-sm ${opportunityCutPct === pct
-                        ? 'bg-brand-container text-brand-on border-brand-container'
-                        : 'chip-control-muted'
-                        }`}
-                    >
-                      {pct}%
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mb-2.5">
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Recoverable</p>
-                    <p className="text-[12px] font-bold text-brand tabular-nums">+{fmt(opportunityWallet.recoverable)}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Projected net</p>
-                    <p className={`text-[12px] font-bold tabular-nums ${opportunityWallet.projectedNet >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-                      {opportunityWallet.projectedNet >= 0 ? '+' : '-'}{fmt(Math.abs(opportunityWallet.projectedNet))}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {opportunityWallet.rows.map((row) => (
-                    <div key={`wallet-${row.id}`} className="flex items-center justify-between rounded-card bg-kosha-surface-2 px-2.5 py-2">
-                      <p className="text-[11px] text-ink-2 truncate">{row.label}</p>
-                      <p className="text-[11px] font-semibold text-brand tabular-nums shrink-0">+{fmt(row.targetCut)}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => navigate('/monthly')}
-                  className="btn-secondary h-9 px-3 text-[11px] mt-2"
-                >
-                  Apply target cuts
-                </button>
-              </>
-            ) : (
-              <p className="text-[11px] text-ink-3">Add spending entries in controllable categories to calculate recoverable surplus opportunities.</p>
             )}
           </div>
         </motion.div>

@@ -229,7 +229,6 @@ export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
-  const [yoyRange, setYoyRange] = useState(3)
   const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
 
@@ -264,9 +263,10 @@ export default function Analytics() {
     })), [data?.monthly])
 
   const yoyYears = useMemo(() => {
-    return Array.from({ length: yoyRange }, (_, i) => year - (yoyRange - 1) + i)
-      .filter((y) => y >= MIN_NAV_YEAR && y <= MAX_NAV_YEAR)
-  }, [year, yoyRange])
+    const startYear = Math.max(MIN_NAV_YEAR, year - 7)
+    return Array.from({ length: year - startYear + 1 }, (_, index) => startYear + index)
+      .filter((value) => value >= MIN_NAV_YEAR && value <= MAX_NAV_YEAR)
+  }, [year])
 
   const allCatEntries = useMemo(() => Object.entries(data?.byCategory || {})
     .map(([key, value]) => [key, toFiniteNumber(value)])
@@ -640,7 +640,7 @@ export default function Analytics() {
             <div className="space-y-4">
               {/* ── 2. Year-over-year context ───────────────────────── */}
               {heavyReady ? (
-                <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} onRangeChange={setYoyRange} />
+                <YoYCards years={yoyYears} currentYear={year} enabled />
               ) : (
                 <div className="card p-4">
                   <div className="flex items-center justify-between mb-2">

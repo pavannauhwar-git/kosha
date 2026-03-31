@@ -6,7 +6,7 @@ import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
 import { CATEGORIES } from '../lib/categories'
 import { C } from '../lib/colors'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
-import { fmt, daysUntil } from '../lib/utils'
+import { fmt } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
 import PageHeader from '../components/layout/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
@@ -31,9 +31,6 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceLine,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts'
 
 function quantile(sortedValues, p) {
@@ -135,29 +132,6 @@ function CategoryBehaviorTooltip({ active, payload }) {
   )
 }
 
-function PortfolioMixTooltip({ active, payload, total }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-  const value = Number(row?.value || 0)
-  const pct = total > 0 ? Math.round((value / total) * 100) : 0
-
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[170px]">
-      <p className="text-[11px] font-semibold text-ink mb-1">{row?.name || 'Vehicle'}</p>
-      <div className="space-y-0.5 text-[11px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Allocated</span>
-          <span className="font-semibold tabular-nums text-invest-text">{fmt(value)}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Share</span>
-          <span className="font-semibold tabular-nums text-ink">{pct}%</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default function Monthly() {
   const navigate = useNavigate()
   const now = new Date()
@@ -181,7 +155,7 @@ export default function Monthly() {
     enabled: heavyReady,
     columns: TRANSACTION_INSIGHTS_COLUMNS,
   })
-  const { rows: monthBills = [], pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
+  const { pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
   const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews({ enabled: heavyReady })
 
   const reviewedIds = useMemo(
@@ -248,129 +222,6 @@ export default function Monthly() {
       paidPct,
     }
   }, [pendingBills, paidBills])
-
-  const autopilotHealth = useMemo(() => {
-    const recurringBills = monthBills.filter((bill) => !!bill?.is_recurring)
-    const recurringBillsPaid = recurringBills.filter((bill) => !!bill?.paid)
-    const overdueRecurringBills = recurringBills.filter((bill) => !bill?.paid && daysUntil(bill?.due_date) < 0)
-
-    const recurringInvestments = txnRows.filter((row) => row?.type === 'investment' && !!row?.is_recurring)
-    const autoRecurringInvestments = recurringInvestments.filter((row) => !!row?.is_auto_generated)
-    const manualRecurringInvestments = recurringInvestments.filter((row) => !row?.is_auto_generated)
-
-    const billAutomationPct = recurringBills.length > 0
-      ? Math.round((recurringBillsPaid.length / recurringBills.length) * 100)
-      : 100
-    const investmentAutomationPct = recurringInvestments.length > 0
-      ? Math.round((autoRecurringInvestments.length / recurringInvestments.length) * 100)
-      : 100
-
-    const missedAutomations = overdueRecurringBills.length + manualRecurringInvestments.length
-    const healthScore = Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round((billAutomationPct * 0.55) + (investmentAutomationPct * 0.45) - (missedAutomations * 8))
-      )
-    )
-
-    return {
-      healthScore,
-      recurringBillsCount: recurringBills.length,
-      recurringBillsPaidCount: recurringBillsPaid.length,
-      recurringInvestmentCount: recurringInvestments.length,
-      autoRecurringInvestmentCount: autoRecurringInvestments.length,
-      overdueRecurringBills,
-      manualRecurringInvestments,
-      missedAutomations,
-    }
-  }, [monthBills, txnRows])
-
-  const monthCloseReadiness = useMemo(() => {
-    const queueRows = reconciliationInsights.queue
-      .map((item) => item?.txn)
-      .filter(Boolean)
-    const firstQueueTxnId = queueRows[0]?.id || null
-
-    const categorizedRows = txnRows.filter((row) => row?.type === 'expense' || row?.type === 'investment')
-    const missingCategoryRows = categorizedRows.filter((row) => !row?.category || row?.category === 'other')
-    const missingCategoryCount = missingCategoryRows.length
-    const firstMissingCategoryTxnId = missingCategoryRows[0]?.id || null
-    const categoryCompletenessPct = categorizedRows.length > 0
-      ? Math.round(((categorizedRows.length - missingCategoryCount) / categorizedRows.length) * 100)
-      : 100
-
-    const expenseAmounts = txnRows
-      .filter((row) => row?.type === 'expense')
-      .map((row) => Number(row?.amount || 0))
-      .filter((value) => value > 0)
-      .sort((a, b) => a - b)
-    const midIndex = Math.floor(expenseAmounts.length / 2)
-    const medianExpense = expenseAmounts.length
-      ? (expenseAmounts.length % 2 === 0
-          ? (expenseAmounts[midIndex - 1] + expenseAmounts[midIndex]) / 2
-          : expenseAmounts[midIndex])
-      : 0
-    const unusualThreshold = Math.max(2500, medianExpense * 2)
-
-    const unusualRows = txnRows.filter((row) => (
-      row?.type === 'expense' && Number(row?.amount || 0) >= unusualThreshold
-    ))
-    const unresolvedUnusualRows = unusualRows.filter((row) => !reviewedIds.has(row?.id))
-    const reviewedUnusualCount = unusualRows.length - unresolvedUnusualRows.length
-    const firstUnusualTxnId = unresolvedUnusualRows[0]?.id || unusualRows[0]?.id || null
-
-    const reconciliationRoute = firstQueueTxnId
-      ? `/reconciliation?view=queue&quality=all&focus=${encodeURIComponent(firstQueueTxnId)}`
-      : '/reconciliation?view=queue&quality=all'
-    const missingCategoryRoute = firstMissingCategoryTxnId
-      ? `/transactions?focus=${encodeURIComponent(firstMissingCategoryTxnId)}`
-      : '/transactions'
-    const unusualRoute = firstUnusualTxnId
-      ? `/transactions?focus=${encodeURIComponent(firstUnusualTxnId)}`
-      : '/transactions'
-
-    const items = [
-      {
-        key: 'reconciliation',
-        done: reconcileQueueCount === 0,
-        label: reconcileQueueCount === 0
-          ? 'Reconciliation queue is clear.'
-          : `${reconcileQueueCount} reconciliation item${reconcileQueueCount > 1 ? 's' : ''} pending.`,
-        cta: 'Open reconciliation',
-        route: reconciliationRoute,
-      },
-      {
-        key: 'categories',
-        done: missingCategoryCount === 0,
-        label: missingCategoryCount === 0
-          ? 'Category completeness is clean.'
-          : `${missingCategoryCount} transaction${missingCategoryCount > 1 ? 's are' : ' is'} still uncategorized.`,
-        cta: missingCategoryCount > 0 ? 'Fix first issue' : 'Open transactions',
-        route: missingCategoryRoute,
-      },
-      {
-        key: 'unusual',
-        done: unusualRows.length === 0 || reviewedUnusualCount === unusualRows.length,
-        label: unusualRows.length === 0
-          ? 'No unusual spend spikes found this month.'
-          : `${reviewedUnusualCount}/${unusualRows.length} unusual transaction${unusualRows.length > 1 ? 's' : ''} reviewed.`,
-        cta: unusualRows.length > 0 ? 'Review in transactions' : 'Open transactions',
-        route: unusualRoute,
-      },
-    ]
-
-    const completedCount = items.filter((item) => item.done).length
-    const completionPct = Math.round((completedCount / items.length) * 100)
-
-    return {
-      items,
-      completionPct,
-      categoryCompletenessPct,
-      unusualCount: unusualRows.length,
-      reviewedUnusualCount,
-    }
-  }, [txnRows, reviewedIds, reconcileQueueCount, reconciliationInsights])
 
   const hasMonthData = useMemo(() => {
     const totalsPresent = inflow > 0 || spent > 0 || invested > 0
@@ -1013,105 +864,65 @@ export default function Monthly() {
               <SectionHeader
                 className="mb-2"
                 title="Portfolio snapshot"
-                subtitle="Current month allocation and deployment cues"
+                subtitle="Allocation ladder, concentration checks, and next action"
                 badge={{
-                  label: monthlyPortfolioSnapshot.total > 0 ? fmt(monthlyPortfolioSnapshot.total, true) : 'No allocation',
-                  className: 'bg-invest-bg text-invest-text',
+                  label: `${monthlyPortfolioSnapshot.deployRate}% deploy rate`,
+                  className: monthlyPortfolioSnapshot.deployRate >= 12 && monthlyPortfolioSnapshot.deployRate <= 35
+                    ? 'bg-income-bg text-income-text'
+                    : 'bg-warning-bg text-warning-text',
                 }}
               />
 
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                  <p className="text-caption text-ink-3">Allocated</p>
+                  <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
+                </div>
+                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                  <p className="text-caption text-ink-3">Top holding</p>
+                  <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.topPct >= 55 ? 'text-warning-text' : 'text-brand'}`}>
+                    {monthlyPortfolioSnapshot.topPct}%
+                  </p>
+                </div>
+                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                  <p className="text-caption text-ink-3">Diversification</p>
+                  <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.diversificationScore >= 70 ? 'text-income-text' : monthlyPortfolioSnapshot.diversificationScore >= 50 ? 'text-brand' : 'text-warning-text'}`}>
+                    {monthlyPortfolioSnapshot.diversificationScore}/100
+                  </p>
+                </div>
+                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                  <p className="text-caption text-ink-3">Primary vehicle</p>
+                  <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
+                </div>
+              </div>
+
               <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
-                <div className="grid md:grid-cols-[1.05fr_0.95fr] gap-3">
-                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-                    {monthlyPortfolioSnapshot.mixRows.length > 0 ? (
-                      <div className="relative h-[196px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={monthlyPortfolioSnapshot.mixRows}
-                              dataKey="value"
-                              nameKey="name"
-                              innerRadius={52}
-                              outerRadius={82}
-                              paddingAngle={2}
-                              stroke="#FFFFFF"
-                              strokeWidth={2}
-                            >
-                              {monthlyPortfolioSnapshot.mixRows.map((row) => (
-                                <Cell key={`monthly-vehicle-slice-${row.name}`} fill={row.color} />
-                              ))}
-                            </Pie>
-                            <RechartsTooltip content={<PortfolioMixTooltip total={monthlyPortfolioSnapshot.total} />} />
-                          </PieChart>
-                        </ResponsiveContainer>
+                <p className="text-[10px] text-ink-3 mb-1.5">Allocation ladder</p>
+                <div className="h-3 rounded-pill bg-kosha-border overflow-hidden flex mb-2.5">
+                  {monthlyPortfolioSnapshot.mixRows.map((row) => (
+                    <div
+                      key={`monthly-allocation-segment-${row.name}`}
+                      title={`${row.name}: ${row.pct}%`}
+                      style={{ width: `${Math.max(4, row.pct)}%`, background: row.color }}
+                    />
+                  ))}
+                </div>
 
-                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                          <p className="text-[10px] text-ink-3">Allocated</p>
-                          <p className="text-[16px] font-bold tabular-nums text-ink">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
-                          <p className="text-[10px] text-ink-3">{monthlyPortfolioSnapshot.rows.length} vehicle{monthlyPortfolioSnapshot.rows.length === 1 ? '' : 's'}</p>
+                <div className="space-y-2">
+                  {monthlyPortfolioSnapshot.mixRows.map((row) => (
+                    <div key={`monthly-allocation-row-${row.name}`}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
+                          <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
                         </div>
+                        <p className="text-[11px] tabular-nums text-ink shrink-0">{row.pct}% · {fmt(row.value, true)}</p>
                       </div>
-                    ) : (
-                      <div className="h-[196px] flex items-center justify-center">
-                        <p className="text-[11px] text-ink-3 text-center max-w-[220px]">Investments are logged, but no vehicle tags are present yet. Add a vehicle tag to unlock allocation intelligence.</p>
-                      </div>
-                    )}
-
-                    {monthlyPortfolioSnapshot.top && (
-                      <p className="text-[11px] text-ink-3 mt-1">
-                        Largest vehicle is <span className="font-semibold text-ink">{monthlyPortfolioSnapshot.top.name}</span> at <span className="font-semibold text-ink">{monthlyPortfolioSnapshot.topPct}%</span>.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
-                        <p className="text-caption text-ink-3">Deploy rate</p>
-                        <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.deployRate >= 12 && monthlyPortfolioSnapshot.deployRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>
-                          {monthlyPortfolioSnapshot.deployRate}%
-                        </p>
-                      </div>
-                      <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
-                        <p className="text-caption text-ink-3">Concentration</p>
-                        <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.topPct >= 55 ? 'text-warning-text' : 'text-brand'}`}>
-                          {monthlyPortfolioSnapshot.topPct}%
-                        </p>
-                        <p className="text-[10px] text-ink-3 mt-0.5">{monthlyPortfolioSnapshot.concentrationBand}</p>
-                      </div>
-                      <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
-                        <p className="text-caption text-ink-3">Diversification</p>
-                        <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.diversificationScore >= 70 ? 'text-income-text' : monthlyPortfolioSnapshot.diversificationScore >= 50 ? 'text-brand' : 'text-warning-text'}`}>
-                          {monthlyPortfolioSnapshot.diversificationScore}/100
-                        </p>
-                      </div>
-                      <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
-                        <p className="text-caption text-ink-3">Primary vehicle</p>
-                        <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
+                      <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                        <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.color }} />
                       </div>
                     </div>
-
-                    {monthlyPortfolioSnapshot.rows.length > 0 && (
-                      <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 space-y-1.5">
-                        {monthlyPortfolioSnapshot.rows.slice(0, 3).map((row) => {
-                          const pct = monthlyPortfolioSnapshot.total > 0
-                            ? Math.round((row.value / monthlyPortfolioSnapshot.total) * 100)
-                            : 0
-                          const color = monthlyPortfolioSnapshot.mixRows.find((slice) => slice.name === row.name)?.color || C.brand
-
-                          return (
-                            <div key={`monthly-portfolio-row-${row.name}`} className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                                <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
-                              </div>
-                              <p className="text-[11px] tabular-nums text-ink shrink-0">{pct}% · {fmt(row.value, true)}</p>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -1137,115 +948,13 @@ export default function Monthly() {
             </div>
           )}
 
-          {heavyReady && (
-            <div className="card p-4 border-0">
-              <SectionHeader
-                className="mb-2"
-                title="Autopilot health"
-                subtitle="Recurring bills and recurring investments reliability"
-                badge={{
-                  label: `${autopilotHealth.healthScore}/100`,
-                  className: autopilotHealth.healthScore >= 75
-                    ? 'bg-income-bg text-income-text'
-                    : autopilotHealth.healthScore >= 50
-                      ? 'bg-warning-bg text-warning-text'
-                      : 'bg-expense-bg text-expense-text',
-                }}
-              />
-
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Recurring bills</p>
-                  <p className="text-base font-bold text-ink tabular-nums">{autopilotHealth.recurringBillsPaidCount}/{autopilotHealth.recurringBillsCount}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Auto investments</p>
-                  <p className="text-base font-bold text-brand tabular-nums">{autopilotHealth.autoRecurringInvestmentCount}/{autopilotHealth.recurringInvestmentCount}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Missed automations</p>
-                  <p className={`text-base font-bold tabular-nums ${autopilotHealth.missedAutomations === 0 ? 'text-income-text' : 'text-warning-text'}`}>
-                    {autopilotHealth.missedAutomations}
-                  </p>
-                </div>
-              </div>
-
-              {autopilotHealth.missedAutomations > 0 ? (
-                <div className="space-y-2">
-                  {autopilotHealth.overdueRecurringBills.length > 0 && (
-                    <p className="text-[11px] text-warning-text">
-                      {autopilotHealth.overdueRecurringBills.length} recurring bill{autopilotHealth.overdueRecurringBills.length > 1 ? 's are' : ' is'} overdue.
-                    </p>
-                  )}
-                  {autopilotHealth.manualRecurringInvestments.length > 0 && (
-                    <p className="text-[11px] text-warning-text">
-                      {autopilotHealth.manualRecurringInvestments.length} recurring investment entr{autopilotHealth.manualRecurringInvestments.length > 1 ? 'ies were' : 'y was'} logged manually (automation missed).
-                    </p>
-                  )}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button type="button" onClick={() => navigate('/bills')} className="btn-secondary h-9 px-3 text-[11px] justify-center">
-                      Fix bills
-                    </button>
-                    <button type="button" onClick={() => navigate('/transactions')} className="btn-primary h-9 px-3 text-[11px] justify-center">
-                      Fix investments
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[11px] text-ink-3">Autopilot routines are healthy. No broken recurring cycles detected this month.</p>
-              )}
-            </div>
-          )}
-
-          {heavyReady && (
-            <div className="card p-4 border-0">
-              <SectionHeader
-                className="mb-2"
-                title="Month-close readiness"
-                subtitle="Checklist for reconciliation quality and close confidence"
-                badge={{
-                  label: `${monthCloseReadiness.completionPct}% complete`,
-                  className: monthCloseReadiness.completionPct >= 80
-                    ? 'bg-income-bg text-income-text'
-                    : 'bg-warning-bg text-warning-text',
-                }}
-              />
-
-              <div className="h-2 rounded-pill bg-kosha-border overflow-hidden mb-3">
-                <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(6, monthCloseReadiness.completionPct)}%` }} />
-              </div>
-
-              <div className="space-y-2.5">
-                {monthCloseReadiness.items.map((item) => (
-                  <div key={item.key} className="rounded-card bg-kosha-surface p-3">
-                    <div className="flex items-center justify-between gap-2.5">
-                      <div className="min-w-0 flex items-center gap-2.5">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-pill font-semibold shrink-0 ${item.done ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-                          {item.done ? 'Complete' : 'Attention'}
-                        </span>
-                        <p className="text-[12px] text-ink-2 truncate">{item.label}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => navigate(item.route)}
-                        className="btn-secondary-sm shrink-0"
-                      >
-                        {item.cta}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {heavyReady && allCatEntries.length > 0 && (
             <CategorySpendingChart
               entries={allCatEntries}
               total={categoryTotal}
               month={month}
               year={year}
-              subtitle="Treemap view with exact category spend values"
+              subtitle="Ranked category share with exact spend values"
             />
           )}
 

@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import TransactionItem from '../transactions/TransactionItem'
-import EmptyState from '../common/EmptyState'
+import { fmt } from '../../lib/utils'
 
 /**
  * DashboardRecentTransactions
@@ -23,30 +23,49 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
 }) {
   const navigate = useNavigate()
   const visibleRecent = useMemo(() => (recent || []).slice(0, 5), [recent])
+  const summary = useMemo(() => {
+    return visibleRecent.reduce((acc, txn) => {
+      const amount = Number(txn?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) return acc
+
+      if (txn?.type === 'income' && !txn?.is_repayment) {
+        acc.inflow += amount
+      } else if (txn?.type === 'expense' || txn?.type === 'investment') {
+        acc.outflow += amount
+      }
+
+      return acc
+    }, { inflow: 0, outflow: 0 })
+  }, [visibleRecent])
   const lastIndex = visibleRecent.length - 1
 
   if (visibleRecent.length === 0) {
     return (
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <p className="section-label">Latest</p>
+      <div className="card p-4 border-0">
+        <div className="flex items-center justify-between mb-2.5">
+          <p className="section-label">Latest transactions</p>
         </div>
-        <EmptyState
-          className="py-8"
-          icon={<CheckCircle2 size={24} className="text-brand" />}
-          title="No transactions yet"
-          description="Your latest activity will appear here after you add your first transaction."
-          actionLabel="Go to transactions"
-          onAction={() => navigate('/transactions')}
-        />
+
+        <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 p-6 text-center">
+          <CheckCircle2 size={22} className="mx-auto text-brand mb-2" />
+          <p className="text-[13px] font-semibold text-ink">No transactions yet</p>
+          <p className="text-[11px] text-ink-3 mt-1">Your latest activity will appear here after you add your first transaction.</p>
+          <button
+            type="button"
+            onClick={() => navigate('/transactions')}
+            className="btn-secondary h-9 px-3 text-[11px] mt-3"
+          >
+            Go to transactions
+          </button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <p className="section-label">Latest</p>
+    <div className="card p-4 border-0">
+      <div className="flex items-center justify-between mb-2.5">
+        <p className="section-label">Latest transactions</p>
         <button
           onClick={() => navigate('/transactions')}
           className="flex items-center gap-1 text-label font-medium text-brand"
@@ -55,7 +74,22 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
         </button>
       </div>
 
-      <div className="list-card">
+      <div className="grid grid-cols-3 gap-2 mb-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
+          <p className="text-[10px] text-ink-3">Rows</p>
+          <p className="text-[12px] font-bold text-ink tabular-nums">{visibleRecent.length}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
+          <p className="text-[10px] text-ink-3">Inflow</p>
+          <p className="text-[12px] font-bold text-income-text tabular-nums">{fmt(summary.inflow)}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
+          <p className="text-[10px] text-ink-3">Outflow</p>
+          <p className="text-[12px] font-bold text-expense-text tabular-nums">{fmt(summary.outflow)}</p>
+        </div>
+      </div>
+
+      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 overflow-hidden">
         {visibleRecent.map((t, i) => (
           <TransactionItem
             key={t.id}
