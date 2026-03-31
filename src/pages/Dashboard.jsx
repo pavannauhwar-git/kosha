@@ -59,18 +59,6 @@ const CONTROLLABLE_CATEGORY_IDS = new Set([
   'other',
 ])
 
-function quantile(sortedValues, p) {
-  if (!sortedValues.length) return 0
-  const index = (sortedValues.length - 1) * p
-  const lowerIndex = Math.floor(index)
-  const upperIndex = Math.ceil(index)
-
-  if (lowerIndex === upperIndex) return sortedValues[lowerIndex]
-
-  const weight = index - lowerIndex
-  return (sortedValues[lowerIndex] * (1 - weight)) + (sortedValues[upperIndex] * weight)
-}
-
 function DuePressureTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload || {}
@@ -124,6 +112,33 @@ function WeeklyDigestTooltip({ active, payload, label }) {
         <span className={`font-semibold tabular-nums ${(Number(row.delta || 0) <= 0 && row.metric === 'Spend') || (Number(row.delta || 0) >= 0 && row.metric !== 'Spend') ? 'text-income-text' : 'text-warning-text'}`}>
           {Number(row.delta || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.delta || 0)))}
         </span>
+      </div>
+    </div>
+  )
+}
+
+function WeekdayDriftTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">This week</span>
+          <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row.current || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">4w baseline</span>
+          <span className="font-semibold tabular-nums text-ink">{fmt(Number(row.baseline || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Delta</span>
+          <span className={`font-semibold tabular-nums ${Number(row.delta || 0) <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+            {Number(row.delta || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.delta || 0)))}
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -589,68 +604,58 @@ export default function Dashboard() {
     const driftAmount = thisWeekSpend - avg4WeekSpend
     const driftPct = avg4WeekSpend > 0 ? Math.round((driftAmount / avg4WeekSpend) * 100) : null
 
-    const spendByDate = new Map()
-    for (const row of (Array.isArray(digestTxnRows) ? digestTxnRows : [])) {
-      if (row?.type !== 'expense') continue
-      const key = String(row?.date || '').slice(0, 10)
-      if (!key) continue
-      spendByDate.set(key, (spendByDate.get(key) || 0) + Number(row?.amount || 0))
+    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const thisWeekByWeekday = Array.from({ length: 7 }, () => 0)
+    const baselineByWeekday = Array.from({ length: 7 }, () => 0)
+
+    function toWeekdayIndex(dateValue) {
+      const d = new Date(dateValue || 0)
+      if (Number.isNaN(d.getTime())) return null
+      return (d.getDay() + 6) % 7
     }
 
-    const nowStart = new Date(now)
-    nowStart.setHours(0, 0, 0, 0)
-    const daysSinceMonday = (nowStart.getDay() + 6) % 7
-    const currentWeekMonday = new Date(nowStart)
-    currentWeekMonday.setDate(nowStart.getDate() - daysSinceMonday)
+    for (const row of thisWeekRows) {
+      const idx = toWeekdayIndex(row?.date || row?.created_at)
+      if (idx == null) continue
+      thisWeekByWeekday[idx] += Number(row?.amount || 0)
+    }
 
-    const seasonalityWeeks = []
-    for (let weekOffset = 7; weekOffset >= 0; weekOffset -= 1) {
-      const weekStart = new Date(currentWeekMonday)
-      weekStart.setDate(currentWeekMonday.getDate() - (weekOffset * 7))
+    for (const row of prior4WeekRows) {
+      const idx = toWeekdayIndex(row?.date || row?.created_at)
+      if (idx == null) continue
+      baselineByWeekday[idx] += Number(row?.amount || 0)
+    }
 
-      const days = []
-      for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
-        const d = new Date(weekStart)
-        d.setDate(weekStart.getDate() + dayOffset)
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        const isFuture = d.getTime() > nowStart.getTime()
-        const value = isFuture ? 0 : (spendByDate.get(key) || 0)
+    const weekdaySeries = weekdayLabels.map((day, idx) => {
+      const currentValue = thisWeekByWeekday[idx]
+      const baseline = baselineByWeekday[idx] / 4
+      const delta = currentValue - baseline
+      const deltaPct = baseline > 0
+        ? Math.round((delta / baseline) * 100)
+        : (currentValue > 0 ? 100 : 0)
 
-        days.push({
-          key,
-          value,
-          isFuture,
-          label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-        })
+      return {
+        day,
+        current: currentValue,
+        baseline,
+        delta,
+        deltaPct,
       }
+    })
 
-      seasonalityWeeks.push({
-        label: weekStart.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-        days,
-      })
-    }
-
-    const seasonalityValues = seasonalityWeeks
-      .flatMap((week) => week.days)
-      .filter((day) => !day.isFuture && day.value > 0)
-      .map((day) => day.value)
-      .sort((a, b) => a - b)
-
-    const seasonalityQuantiles = {
-      q25: quantile(seasonalityValues, 0.25),
-      q50: quantile(seasonalityValues, 0.5),
-      q75: quantile(seasonalityValues, 0.75),
-      q90: quantile(seasonalityValues, 0.9),
-    }
+    const overBaselineDays = weekdaySeries.filter((row) => row.delta > 0).length
+    const topDriftDay = [...weekdaySeries].sort((a, b) => b.delta - a.delta)[0]
+    const coolingDay = [...weekdaySeries].sort((a, b) => a.delta - b.delta)[0]
 
     return {
       thisWeekSpend,
       avg4WeekSpend,
       driftAmount,
       driftPct,
-      seasonalityWeeks,
-      seasonalityQuantiles,
-      weekdayLabels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+      weekdaySeries,
+      overBaselineDays,
+      topDriftDay,
+      coolingDay,
       hasData: thisWeekRows.length > 0 || prior4WeekRows.length > 0,
     }
   }, [digestTxnRows, now])
@@ -950,7 +955,7 @@ export default function Dashboard() {
 
             {spendingDrift.hasData ? (
               <>
-                <div className="grid grid-cols-2 gap-2 mb-2.5">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
                   <div className="rounded-card bg-kosha-surface-2 p-2.5">
                     <p className="text-[10px] text-ink-3">This week</p>
                     <p className="text-[12px] font-bold text-expense-text tabular-nums">{fmt(spendingDrift.thisWeekSpend)}</p>
@@ -958,6 +963,14 @@ export default function Dashboard() {
                   <div className="rounded-card bg-kosha-surface-2 p-2.5">
                     <p className="text-[10px] text-ink-3">4w avg/week</p>
                     <p className="text-[12px] font-bold text-ink tabular-nums">{fmt(spendingDrift.avg4WeekSpend)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Over baseline days</p>
+                    <p className="text-[12px] font-bold text-warning-text tabular-nums">{spendingDrift.overBaselineDays}/7</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Peak drift day</p>
+                    <p className="text-[12px] font-bold text-ink tabular-nums">{spendingDrift.topDriftDay?.day || '—'}</p>
                   </div>
                 </div>
 
@@ -967,51 +980,34 @@ export default function Dashboard() {
                     : `Weekly drift is ${spendingDrift.driftPct >= 0 ? '+' : ''}${spendingDrift.driftPct}% against your 4-week baseline.`}
                 </p>
 
-                <div className="mt-2 border-t border-kosha-border pt-2">
-                  <div className="grid grid-cols-8 gap-1 mb-1">
-                    <span className="text-[9px] text-ink-3" />
-                    {spendingDrift.weekdayLabels.map((label, idx) => (
-                      <span key={`weekday-${idx}`} className="text-[9px] text-ink-3 text-center">{label}</span>
-                    ))}
-                  </div>
-
-                  <div className="space-y-1">
-                    {spendingDrift.seasonalityWeeks.map((week) => (
-                      <div key={week.label} className="grid grid-cols-8 gap-1 items-center">
-                        <span className="text-[9px] text-ink-3 tabular-nums">{week.label}</span>
-                        {week.days.map((day) => {
-                          let alpha = 0.08
-                          if (!day.isFuture && day.value > 0) {
-                            const { q25, q50, q75, q90 } = spendingDrift.seasonalityQuantiles
-                            if (day.value <= q25) alpha = 0.28
-                            else if (day.value <= q50) alpha = 0.42
-                            else if (day.value <= q75) alpha = 0.58
-                            else if (day.value <= q90) alpha = 0.74
-                            else alpha = 0.9
-                          }
-
-                          const background = day.isFuture
-                            ? 'rgba(16, 33, 63, 0.05)'
-                            : day.value > 0
-                              ? `rgba(154, 114, 0, ${alpha})`
-                              : 'rgba(16, 33, 63, 0.08)'
-
-                          return (
-                            <div
-                              key={day.key}
-                              title={`${day.label}: ${fmt(day.value)}`}
-                              aria-label={`${day.label} expense ${fmt(day.value)}`}
-                              className="h-3 rounded-[3px]"
-                              style={{ background }}
-                            />
-                          )
-                        })}
-                      </div>
-                    ))}
-                  </div>
-
-                  <p className="text-[10px] text-ink-3 mt-1">Week-over-week weekday spend seasonality. Darker cells indicate heavier spend days.</p>
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mt-2">
+                  <ResponsiveContainer width="100%" height={188}>
+                    <BarChart data={spendingDrift.weekdaySeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                      <XAxis
+                        dataKey="day"
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tickFormatter={compactTick}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={34}
+                      />
+                      <RechartsTooltip content={<WeekdayDriftTooltip />} />
+                      <Bar dataKey="current" name="This week" fill="#9A7200" radius={[6, 6, 0, 0]} maxBarSize={20} />
+                      <Bar dataKey="baseline" name="4w baseline" fill="rgba(154, 114, 0, 0.35)" radius={[6, 6, 0, 0]} maxBarSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
+
+                <p className="text-[10px] text-ink-3 mt-1.5">
+                  Biggest upward pressure: {spendingDrift.topDriftDay?.day || '—'} ({fmt(Math.abs(spendingDrift.topDriftDay?.delta || 0))}).
+                  Cooling signal: {spendingDrift.coolingDay?.day || '—'} ({fmt(Math.abs(spendingDrift.coolingDay?.delta || 0))}).
+                </p>
               </>
             ) : (
               <p className="text-[11px] text-ink-3">No enough weekly spend history yet. Keep logging transactions to unlock drift drivers.</p>

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
+import { CATEGORIES } from '../lib/categories'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
 import { fmt, daysUntil } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
@@ -17,8 +18,13 @@ import { buildReconciliationInsights, getReviewedReconciliationIds } from '../li
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
 import {
   ResponsiveContainer,
-  LineChart,
+  ComposedChart,
+  BarChart,
+  Bar,
   Line,
+  ScatterChart,
+  Scatter,
+  ZAxis,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -26,25 +32,100 @@ import {
   ReferenceLine,
 } from 'recharts'
 
-function toFiniteNumber(value) {
-  const n = Number(value)
-  return Number.isFinite(n) ? n : 0
+function quantile(sortedValues, p) {
+  if (!sortedValues.length) return 0
+  const index = (sortedValues.length - 1) * p
+  const lowerIndex = Math.floor(index)
+  const upperIndex = Math.ceil(index)
+
+  if (lowerIndex === upperIndex) return sortedValues[lowerIndex]
+
+  const weight = index - lowerIndex
+  return (sortedValues[lowerIndex] * (1 - weight)) + (sortedValues[upperIndex] * weight)
 }
 
-function AllocationDriftTooltip({ active, payload, label }) {
+function compactTick(value) {
+  const n = Number(value || 0)
+  const abs = Math.abs(n)
+  if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
+  if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
+  return `${Math.round(n)}`
+}
+
+function shortLabel(label, maxLength = 12) {
+  const txt = String(label || '')
+  if (txt.length <= maxLength) return txt
+  return `${txt.slice(0, maxLength)}...`
+}
+
+function WeeklyCadenceTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
-  const row = payload?.[0]?.payload || {}
+  const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
-      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
-      <div className="flex items-center justify-between gap-3 text-[11px]">
-        <span className="text-ink-3">Actual share</span>
-        <span className="font-semibold tabular-nums text-brand">{Math.round(toFiniteNumber(row?.actualShare))}%</span>
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label} ({row.weekRange})</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Inflow</span>
+          <span className="font-semibold tabular-nums text-income-text">{fmt(Number(row.Inflow || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Outflow</span>
+          <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row.Outflow || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Net</span>
+          <span className={`font-semibold tabular-nums ${Number(row.Net || 0) >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+            {Number(row.Net || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.Net || 0)))}
+          </span>
+        </div>
       </div>
-      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
-        <span className="text-ink-3">Target share</span>
-        <span className="font-semibold tabular-nums text-ink">{Math.round(toFiniteNumber(row?.targetShare))}%</span>
+    </div>
+  )
+}
+
+function DistributionTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[188px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{row?.label || 'Range'}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Transactions</span>
+          <span className="font-semibold tabular-nums text-ink">{Math.round(Number(row?.count || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Spend in bucket</span>
+          <span className="font-semibold tabular-nums text-warning-text">{fmt(Number(row?.totalAmount || 0))}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CategoryBehaviorTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{row?.label || 'Category'}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Share of spend</span>
+          <span className="font-semibold tabular-nums text-warning-text">{Math.round(Number(row?.sharePct || 0))}%</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Avg ticket</span>
+          <span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.avgTicket || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Txn count</span>
+          <span className="font-semibold tabular-nums text-brand">{Number(row?.count || 0)}</span>
+        </div>
       </div>
     </div>
   )
@@ -66,21 +147,12 @@ export default function Monthly() {
   const { data, loading } = useMonthSummary(year, month)
   const monthStartDate = `${year}-${String(month).padStart(2, '0')}-01`
   const monthEndDate = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
-  const yearStartDate = `${year}-01-01`
-  const yearEndDate = `${year}-12-31`
   const { data: txnRows = [] } = useTransactions({
     startDate: monthStartDate,
     endDate: monthEndDate,
     limit: 250,
     enabled: heavyReady,
     columns: TRANSACTION_INSIGHTS_COLUMNS,
-  })
-  const { data: yearTxnRows = [] } = useTransactions({
-    startDate: yearStartDate,
-    endDate: yearEndDate,
-    limit: 2400,
-    enabled: heavyReady,
-    columns: 'id,date,type,amount,investment_vehicle',
   })
   const { rows: monthBills = [], pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
   const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews({ enabled: heavyReady })
@@ -124,6 +196,10 @@ export default function Monthly() {
   const allCatEntries = useMemo(
     () => Object.entries(data?.byCategory || {}).sort((a, b) => b[1] - a[1]),
     [data?.byCategory]
+  )
+  const categoryLabelMap = useMemo(
+    () => new Map(CATEGORIES.map((category) => [category.id, category.label])),
+    []
   )
   const categoryTotal = useMemo(
     () => allCatEntries.reduce((s, [, v]) => s + v, 0) || 1,
@@ -417,72 +493,192 @@ export default function Monthly() {
     }
   }, [vehicleEntries, inflow, invested])
 
-  const allocationDrift = useMemo(() => {
-    const investmentRows = (Array.isArray(yearTxnRows) ? yearTxnRows : [])
-      .filter((row) => row?.type === 'investment' && Number(row?.amount || 0) > 0)
+  const weeklyFlowDiagnostics = useMemo(() => {
+    const daysInSelectedMonth = new Date(year, month, 0).getDate()
+    const bucketCount = Math.ceil(daysInSelectedMonth / 7)
+    const currentMonthNow = new Date()
+    const isCurrentMonth = year === currentMonthNow.getFullYear() && month === (currentMonthNow.getMonth() + 1)
+    const currentDay = currentMonthNow.getDate()
 
-    if (!investmentRows.length) {
+    const weekBuckets = Array.from({ length: bucketCount }, (_, index) => {
+      const startDay = (index * 7) + 1
+      const endDay = Math.min(daysInSelectedMonth, startDay + 6)
       return {
-        hasData: false,
-        primaryVehicle: '—',
-        targetShare: 0,
-        currentShare: 0,
-        maxDrift: 0,
-        series: [],
-      }
-    }
-
-    const annualVehicleTotals = new Map()
-    const monthlyTotals = Array.from({ length: 12 }, () => ({ total: 0, byVehicle: new Map() }))
-
-    for (const row of investmentRows) {
-      const amount = Number(row?.amount || 0)
-      if (amount <= 0) continue
-
-      const vehicle = row?.investment_vehicle || 'Other'
-      annualVehicleTotals.set(vehicle, (annualVehicleTotals.get(vehicle) || 0) + amount)
-
-      const monthNum = Number(String(row?.date || '').slice(5, 7))
-      const monthIndex = Number.isFinite(monthNum) ? monthNum - 1 : -1
-      if (monthIndex < 0 || monthIndex > 11) continue
-
-      const monthRow = monthlyTotals[monthIndex]
-      monthRow.total += amount
-      monthRow.byVehicle.set(vehicle, (monthRow.byVehicle.get(vehicle) || 0) + amount)
-    }
-
-    const sortedVehicles = [...annualVehicleTotals.entries()].sort((a, b) => b[1] - a[1])
-    const primaryVehicle = sortedVehicles[0]?.[0] || 'Other'
-    const annualTotal = sortedVehicles.reduce((sum, [, value]) => sum + value, 0)
-    const targetShare = annualTotal > 0
-      ? Math.round((Number(sortedVehicles[0]?.[1] || 0) / annualTotal) * 100)
-      : 0
-
-    const series = monthlyTotals.map((monthRow, index) => {
-      const actualShare = monthRow.total > 0
-        ? Math.round(((monthRow.byVehicle.get(primaryVehicle) || 0) / monthRow.total) * 100)
-        : 0
-
-      return {
-        month: MONTH_NAMES[index].slice(0, 3),
-        actualShare,
-        targetShare,
-        drift: actualShare - targetShare,
+        week: `W${index + 1}`,
+        weekRange: `${String(startDay).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`,
+        index,
+        isFuture: isCurrentMonth && startDay > currentDay,
+        Inflow: 0,
+        Outflow: 0,
+        Invested: 0,
       }
     })
 
-    const currentShare = series[month - 1]?.actualShare || 0
-    const maxDrift = Math.max(...series.map((row) => Math.abs(row.drift)), 0)
+    for (const row of (Array.isArray(txnRows) ? txnRows : [])) {
+      const amount = Number(row?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+
+      const day = Number(String(row?.date || '').slice(8, 10))
+      if (!Number.isFinite(day) || day < 1 || day > daysInSelectedMonth) continue
+
+      const weekIndex = Math.floor((day - 1) / 7)
+      const bucket = weekBuckets[weekIndex]
+      if (!bucket) continue
+
+      if (row?.type === 'income' && !row?.is_repayment) {
+        bucket.Inflow += amount
+      } else if (row?.type === 'expense') {
+        bucket.Outflow += amount
+      } else if (row?.type === 'investment') {
+        bucket.Outflow += amount
+        bucket.Invested += amount
+      }
+    }
+
+    const series = weekBuckets
+      .map((row) => ({
+        ...row,
+        Net: row.Inflow - row.Outflow,
+      }))
+      .filter((row) => !row.isFuture)
+
+    const activeSeries = series.filter((row) => (row.Inflow + row.Outflow) > 0)
+    if (!activeSeries.length) {
+      return {
+        hasData: false,
+        series,
+        positiveWeeks: 0,
+        bestWeek: null,
+        stressWeek: null,
+      }
+    }
+
+    const positiveWeeks = activeSeries.filter((row) => row.Net >= 0).length
+    const bestWeek = [...activeSeries].sort((a, b) => b.Net - a.Net)[0]
+    const stressWeek = [...activeSeries].sort((a, b) => a.Net - b.Net)[0]
 
     return {
       hasData: true,
-      primaryVehicle,
-      targetShare,
-      currentShare,
-      maxDrift,
       series,
+      positiveWeeks,
+      bestWeek,
+      stressWeek,
     }
-  }, [yearTxnRows, month])
+  }, [txnRows, year, month])
+
+  const expenseDistribution = useMemo(() => {
+    const expenses = (Array.isArray(txnRows) ? txnRows : [])
+      .filter((row) => row?.type === 'expense')
+      .map((row) => Number(row?.amount || 0))
+      .filter((amount) => Number.isFinite(amount) && amount > 0)
+      .sort((a, b) => a - b)
+
+    if (expenses.length < 4) {
+      return {
+        hasData: false,
+        bins: [],
+        p50: 0,
+        p90: 0,
+      }
+    }
+
+    const min = expenses[0]
+    const max = expenses[expenses.length - 1]
+    const binCount = Math.max(5, Math.min(8, Math.round(Math.sqrt(expenses.length))))
+    const width = Math.max(1, (max - min) / binCount)
+
+    const bins = Array.from({ length: binCount }, (_, index) => {
+      const from = min + (index * width)
+      const to = index === binCount - 1 ? max : min + ((index + 1) * width)
+      return {
+        from,
+        to,
+        label: `${compactTick(from)}-${compactTick(to)}`,
+        count: 0,
+        totalAmount: 0,
+      }
+    })
+
+    for (const amount of expenses) {
+      const idx = Math.min(binCount - 1, Math.floor((amount - min) / width))
+      const bucket = bins[idx]
+      bucket.count += 1
+      bucket.totalAmount += amount
+    }
+
+    const p50 = quantile(expenses, 0.5)
+    const p90 = quantile(expenses, 0.9)
+    const highTicketCount = expenses.filter((amount) => amount >= p90).length
+
+    return {
+      hasData: true,
+      bins,
+      p50,
+      p90,
+      highTicketCount,
+    }
+  }, [txnRows])
+
+  const categoryBehaviorMap = useMemo(() => {
+    const expenseRows = (Array.isArray(txnRows) ? txnRows : [])
+      .filter((row) => row?.type === 'expense' && Number(row?.amount || 0) > 0)
+
+    if (!expenseRows.length) {
+      return {
+        hasData: false,
+        points: [],
+        shareMedian: 0,
+        avgTicketMedian: 0,
+      }
+    }
+
+    const grouped = new Map()
+    let totalExpense = 0
+
+    for (const row of expenseRows) {
+      const id = row?.category || 'other'
+      const amount = Number(row?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+
+      totalExpense += amount
+
+      const existing = grouped.get(id) || { id, total: 0, count: 0 }
+      existing.total += amount
+      existing.count += 1
+      grouped.set(id, existing)
+    }
+
+    const points = [...grouped.values()]
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 9)
+      .map((row) => {
+        const label = categoryLabelMap.get(row.id) || String(row.id).replace(/_/g, ' ')
+        const avgTicket = row.count > 0 ? row.total / row.count : 0
+        const sharePct = totalExpense > 0 ? (row.total / totalExpense) * 100 : 0
+        return {
+          ...row,
+          label,
+          shortLabel: shortLabel(label, 12),
+          avgTicket,
+          sharePct,
+          bubbleSize: Math.max(18, Math.min(120, (sharePct * 2.4) + 14)),
+        }
+      })
+
+    const sortedShare = points.map((point) => point.sharePct).sort((a, b) => a - b)
+    const sortedAvgTicket = points.map((point) => point.avgTicket).sort((a, b) => a - b)
+    const shareMedian = quantile(sortedShare, 0.5)
+    const avgTicketMedian = quantile(sortedAvgTicket, 0.5)
+    const topLever = points[0] || null
+
+    return {
+      hasData: points.length > 0,
+      points,
+      shareMedian,
+      avgTicketMedian,
+      topLever,
+    }
+  }, [txnRows, categoryLabelMap])
 
   return (
     <div className="page">
@@ -590,12 +786,173 @@ export default function Monthly() {
             <BreakdownCard earned={inflow} spent={spent} invested={invested} totalLabel="Total inflow" />
           )}
 
+          {heavyReady && weeklyFlowDiagnostics.hasData && (
+            <div className="card p-4 border-0">
+              <SectionHeader
+                className="mb-2"
+                title="Weekly cashflow cadence"
+                subtitle="Grouped inflow/outflow with week-level net trend"
+                badge={{
+                  label: `${weeklyFlowDiagnostics.positiveWeeks}/${weeklyFlowDiagnostics.series.length} positive week${weeklyFlowDiagnostics.series.length === 1 ? '' : 's'}`,
+                  className: weeklyFlowDiagnostics.positiveWeeks === weeklyFlowDiagnostics.series.length
+                    ? 'bg-income-bg text-income-text'
+                    : 'bg-warning-bg text-warning-text',
+                }}
+              />
+
+              <div className="grid grid-cols-3 gap-2 mb-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Best week</p>
+                  <p className="text-[12px] font-bold text-income-text">{weeklyFlowDiagnostics.bestWeek?.week || '—'}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Stress week</p>
+                  <p className="text-[12px] font-bold text-warning-text">{weeklyFlowDiagnostics.stressWeek?.week || '—'}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Net swing</p>
+                  <p className="text-[12px] font-bold tabular-nums text-ink">
+                    {fmt(Math.abs((weeklyFlowDiagnostics.bestWeek?.Net || 0) - (weeklyFlowDiagnostics.stressWeek?.Net || 0)))}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                <ResponsiveContainer width="100%" height={218}>
+                  <ComposedChart data={weeklyFlowDiagnostics.series} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                    <XAxis
+                      dataKey="week"
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      yAxisId="amount"
+                      tickFormatter={compactTick}
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={34}
+                    />
+                    <YAxis yAxisId="net" hide />
+                    <RechartsTooltip content={<WeeklyCadenceTooltip />} />
+                    <Bar yAxisId="amount" dataKey="Inflow" fill="#0E9F6E" radius={[6, 6, 0, 0]} maxBarSize={24} />
+                    <Bar yAxisId="amount" dataKey="Outflow" fill="#E11D48" radius={[6, 6, 0, 0]} maxBarSize={24} />
+                    <Line yAxisId="net" type="monotone" dataKey="Net" stroke="#0A67D8" strokeWidth={2.3} dot={{ r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+
+              <p className="text-[10px] text-ink-3 mt-1.5">Bars compare weekly flow magnitude; line tracks weekly net regime shift across the month.</p>
+            </div>
+          )}
+
+          {heavyReady && expenseDistribution.hasData && (
+            <div className="card p-4 border-0">
+              <SectionHeader
+                className="mb-2"
+                title="Expense distribution"
+                subtitle="Histogram to reveal spending size concentration and high-ticket risk"
+                badge={{
+                  label: `P90 ${fmt(expenseDistribution.p90)}`,
+                  className: 'bg-warning-bg text-warning-text',
+                }}
+              />
+
+              <div className="grid grid-cols-3 gap-2 mb-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">Median ticket</p>
+                  <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(expenseDistribution.p50)}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">P90 ticket</p>
+                  <p className="text-[12px] font-bold tabular-nums text-warning-text">{fmt(expenseDistribution.p90)}</p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-caption text-ink-3">High-ticket txns</p>
+                  <p className="text-[12px] font-bold tabular-nums text-brand">{expenseDistribution.highTicketCount}</p>
+                </div>
+              </div>
+
+              <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                <ResponsiveContainer width="100%" height={198}>
+                  <BarChart data={expenseDistribution.bins} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={24}
+                    />
+                    <RechartsTooltip content={<DistributionTooltip />} />
+                    <Bar dataKey="count" fill="#9A7200" radius={[6, 6, 0, 0]} maxBarSize={26} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {heavyReady && categoryBehaviorMap.hasData && (
+            <div className="card p-4 border-0">
+              <SectionHeader
+                className="mb-2"
+                title="Category behavior map"
+                subtitle="Bubble scatter for impact levers: share vs average ticket"
+                badge={{
+                  label: categoryBehaviorMap.topLever ? `${categoryBehaviorMap.topLever.shortLabel} leads` : 'No category lead',
+                  className: 'bg-brand-container text-brand-on',
+                }}
+              />
+
+              <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                <ResponsiveContainer width="100%" height={216}>
+                  <ScatterChart margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                    <XAxis
+                      type="number"
+                      dataKey="avgTicket"
+                      tickFormatter={compactTick}
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      type="number"
+                      dataKey="sharePct"
+                      domain={[0, 'dataMax + 6']}
+                      tickFormatter={(value) => `${Math.round(value)}%`}
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={34}
+                    />
+                    <ZAxis type="number" dataKey="bubbleSize" range={[70, 340]} />
+                    <RechartsTooltip content={<CategoryBehaviorTooltip />} />
+                    <ReferenceLine x={categoryBehaviorMap.avgTicketMedian} stroke="rgba(10,103,216,0.48)" strokeDasharray="4 4" />
+                    <ReferenceLine y={categoryBehaviorMap.shareMedian} stroke="rgba(154,114,0,0.56)" strokeDasharray="4 4" />
+                    <Scatter data={categoryBehaviorMap.points} fill="#0A67D8" fillOpacity={0.72} />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+
+              <p className="text-[10px] text-ink-3 mt-1.5">Top-right quadrant categories are the strongest improvement levers this month.</p>
+            </div>
+          )}
+
           {heavyReady && (monthlyPortfolioSnapshot.rows.length > 0 || invested > 0) && (
             <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
                 title="Portfolio snapshot"
-                subtitle="Target vs actual allocation drift"
+                subtitle="Current month allocation and deployment cues"
                 badge={{
                   label: monthlyPortfolioSnapshot.total > 0 ? fmt(monthlyPortfolioSnapshot.total, true) : 'No allocation',
                   className: 'bg-invest-bg text-invest-text',
@@ -605,69 +962,20 @@ export default function Monthly() {
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Primary vehicle</p>
-                  <p className="text-[12px] font-bold text-ink truncate">{allocationDrift.primaryVehicle}</p>
+                  <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
                   <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">current focus</p>
                 </div>
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Target share</p>
-                  <p className="text-[12px] font-bold tabular-nums text-brand">{allocationDrift.targetShare}%</p>
+                  <p className="text-caption text-ink-3">Top share</p>
+                  <p className="text-[12px] font-bold tabular-nums text-brand">{monthlyPortfolioSnapshot.topPct}%</p>
                 </div>
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Current drift</p>
-                  <p className={`text-[12px] font-bold tabular-nums ${Math.abs(allocationDrift.currentShare - allocationDrift.targetShare) <= 8 ? 'text-income-text' : 'text-warning-text'}`}>
-                    {allocationDrift.currentShare >= allocationDrift.targetShare ? '+' : '-'}{Math.abs(allocationDrift.currentShare - allocationDrift.targetShare)}%
+                  <p className="text-caption text-ink-3">Deploy rate</p>
+                  <p className={`text-[12px] font-bold tabular-nums ${monthlyPortfolioSnapshot.deployRate >= 12 && monthlyPortfolioSnapshot.deployRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>
+                    {monthlyPortfolioSnapshot.deployRate}%
                   </p>
                 </div>
               </div>
-
-              {allocationDrift.hasData && (
-                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 mb-3">
-                  <ResponsiveContainer width="100%" height={206}>
-                    <LineChart data={allocationDrift.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
-                      <XAxis
-                        dataKey="month"
-                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                        interval={0}
-                      />
-                      <YAxis
-                        domain={[0, 100]}
-                        tickFormatter={(value) => `${value}%`}
-                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={30}
-                      />
-                      <RechartsTooltip content={<AllocationDriftTooltip />} />
-                      <ReferenceLine y={allocationDrift.targetShare} stroke="rgba(16,33,63,0.24)" strokeDasharray="4 4" />
-                      <Line
-                        type="monotone"
-                        dataKey="actualShare"
-                        stroke="#0A67D8"
-                        strokeWidth={2.4}
-                        dot={false}
-                        activeDot={{ r: 4, fill: '#0A67D8', stroke: '#fff', strokeWidth: 2 }}
-                        name="Actual"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="targetShare"
-                        stroke="#10213F"
-                        strokeDasharray="4 4"
-                        strokeWidth={1.8}
-                        dot={false}
-                        name="Target"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-
-                  <p className="text-[10px] text-ink-3 mt-1">
-                    Drift range this year: {allocationDrift.maxDrift}% around target for {allocationDrift.primaryVehicle}.
-                  </p>
-                </div>
-              )}
 
               {monthlyPortfolioSnapshot.rows.length > 0 ? (
                 <div className="space-y-2 mb-2">
