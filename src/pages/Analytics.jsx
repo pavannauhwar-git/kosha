@@ -3,8 +3,6 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   CashFlowChart,
-  CashflowWaterfallChart,
-  MonthlyCompositionAreaChart,
   SurplusTrajectoryChart,
   WhatIfSimulatorCard,
   RunwayCoverageChart,
@@ -21,17 +19,13 @@ import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
 import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
 import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
+import useCompactViewport from '../hooks/useCompactViewport'
 import {
   ResponsiveContainer,
   ComposedChart,
   Bar,
   ScatterChart,
   Scatter,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
   LineChart,
   Line,
   XAxis,
@@ -208,21 +202,6 @@ function SurplusControlTooltip({ active, payload, label }) {
   )
 }
 
-function HabitRadarTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[168px]">
-      <p className="text-[11px] font-semibold text-ink mb-1">{row?.metric || 'Metric'}</p>
-      <div className="flex items-center justify-between gap-3 text-[11px]">
-        <span className="text-ink-3">Score</span>
-        <span className="font-semibold tabular-nums text-brand">{Math.round(Number(row?.score || 0))}/100</span>
-      </div>
-    </div>
-  )
-}
-
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
   const navigate = useNavigate()
@@ -232,6 +211,8 @@ export default function Analytics() {
   const [yoyRange, setYoyRange] = useState(3)
   const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
+  const isCompact = useCompactViewport()
+  const isTiny = useCompactViewport(360)
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 260)
@@ -484,63 +465,6 @@ export default function Analytics() {
     }
   }, [surplusData])
 
-  const habitProfile = useMemo(() => {
-    const activeMonths = flowTrendData.filter((row) => {
-      const income = toFiniteNumber(row.Income)
-      const outflow = toFiniteNumber(row.Outflow)
-      return income > 0 || outflow > 0
-    })
-
-    if (!activeMonths.length) {
-      return {
-        hasData: false,
-        rows: [],
-        overall: 0,
-      }
-    }
-
-    const spendRatios = activeMonths.map((row) => {
-      const income = toFiniteNumber(row.Income)
-      return income > 0 ? (toFiniteNumber(row.Spent) / income) * 100 : 0
-    })
-    const investRatios = activeMonths.map((row) => {
-      const income = toFiniteNumber(row.Income)
-      return income > 0 ? (toFiniteNumber(row.Invested) / income) * 100 : 0
-    })
-    const netRatios = activeMonths.map((row) => {
-      const income = toFiniteNumber(row.Income)
-      return income > 0 ? ((income - toFiniteNumber(row.Outflow)) / income) * 100 : 0
-    })
-
-    const spendDiscipline = clampNumber(Math.round(100 - mean(spendRatios)), 0, 100)
-    const investConsistency = clampNumber(
-      Math.round((activeMonths.filter((row) => toFiniteNumber(row.Invested) > 0).length / activeMonths.length) * 100),
-      0,
-      100
-    )
-    const surplusStrength = clampNumber(Math.round((mean(netRatios) + 20) * 2.4), 0, 100)
-    const surplusStability = clampNumber(
-      Math.round(100 - (standardDeviation(netRatios, mean(netRatios)) * 2.2)),
-      0,
-      100
-    )
-    const categoryDiversity = clampNumber(Math.round(100 - toFiniteNumber(concentrationRiskTrend.avgShare)), 0, 100)
-
-    const rows = [
-      { metric: 'Spend control', score: spendDiscipline },
-      { metric: 'Invest consistency', score: investConsistency },
-      { metric: 'Surplus strength', score: surplusStrength },
-      { metric: 'Surplus stability', score: surplusStability },
-      { metric: 'Category diversity', score: categoryDiversity },
-    ]
-
-    return {
-      hasData: true,
-      rows,
-      overall: Math.round(mean(rows.map((row) => row.score))),
-    }
-  }, [flowTrendData, concentrationRiskTrend.avgShare])
-
   const decisionSignals = useMemo(() => {
     if (!flowTrendData.length || !surplusData.length) return []
 
@@ -656,15 +580,7 @@ export default function Analytics() {
                 chartData={flowTrendData}
                 totalIncome={data?.totalIncome}
               />
-              <MonthlyCompositionAreaChart flowData={flowTrendData} />
-              <CashflowWaterfallChart
-                flowData={flowTrendData}
-                totalIncome={data?.totalIncome}
-                totalExpense={data?.totalExpense}
-                totalInvestment={data?.totalInvestment}
-              />
               <SurplusTrajectoryChart netData={surplusData} />
-
               <RunwayCoverageChart
                 flowData={flowTrendData}
                 annualSurplus={annualSurplus}
@@ -698,27 +614,29 @@ export default function Analytics() {
                   </div>
 
                   <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-                    <ResponsiveContainer width="100%" height={214}>
-                      <ScatterChart margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                    <ResponsiveContainer width="100%" height={isTiny ? 186 : isCompact ? 198 : 214}>
+                      <ScatterChart margin={{ top: 8, right: isTiny ? 12 : isCompact ? 18 : 10, left: isTiny ? 2 : isCompact ? 6 : 0, bottom: isTiny ? 4 : isCompact ? 8 : 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
                         <XAxis
                           type="number"
                           dataKey="spendRatio"
                           domain={[0, 'dataMax + 10']}
                           tickFormatter={(value) => `${Math.round(value)}%`}
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                          tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
                           axisLine={false}
                           tickLine={false}
+                          tickMargin={isTiny ? 2 : isCompact ? 6 : 4}
                         />
                         <YAxis
                           type="number"
                           dataKey="investRatio"
                           domain={[0, 'dataMax + 8']}
                           tickFormatter={(value) => `${Math.round(value)}%`}
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                          tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)' }}
                           axisLine={false}
                           tickLine={false}
-                          width={34}
+                          width={isTiny ? 34 : isCompact ? 40 : 34}
+                          tickMargin={isTiny ? 2 : isCompact ? 4 : 2}
                         />
                         <RechartsTooltip content={<BehaviorScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
                         <ReferenceLine x={behaviorScatter.spendMedian} stroke="rgba(226,59,92,0.55)" strokeDasharray="4 4" />
@@ -765,37 +683,41 @@ export default function Analytics() {
                   </div>
 
                   <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-                    <ResponsiveContainer width="100%" height={228}>
-                      <ComposedChart data={categoryPareto.rows} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                    <ResponsiveContainer width="100%" height={isTiny ? 236 : isCompact ? 252 : 228}>
+                      <ComposedChart data={categoryPareto.rows} margin={{ top: 8, right: isTiny ? 6 : 10, left: 0, bottom: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
                         <XAxis
                           dataKey="shortLabel"
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                          tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
                           axisLine={false}
                           tickLine={false}
                           interval={0}
+                          angle={isTiny ? -32 : isCompact ? -24 : 0}
+                          textAnchor={isCompact ? 'end' : 'middle'}
+                          height={isTiny ? 54 : isCompact ? 46 : 30}
+                          tickMargin={isTiny ? 5 : isCompact ? 7 : 4}
                         />
                         <YAxis
                           yAxisId="amount"
                           tickFormatter={compactTick}
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                          tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)' }}
                           axisLine={false}
                           tickLine={false}
-                          width={34}
+                          width={isTiny ? 28 : 34}
                         />
                         <YAxis
                           yAxisId="pct"
                           orientation="right"
                           domain={[0, 100]}
                           tickFormatter={(value) => `${Math.round(value)}%`}
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                          tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)' }}
                           axisLine={false}
                           tickLine={false}
-                          width={34}
+                          width={isTiny ? 28 : 34}
                         />
                         <RechartsTooltip content={<ParetoTooltip />} />
                         <ReferenceLine yAxisId="pct" y={80} stroke="rgba(154,114,0,0.65)" strokeDasharray="4 4" />
-                        <Bar yAxisId="amount" dataKey="amount" fill={C.brand} radius={[6, 6, 0, 0]} maxBarSize={22} />
+                        <Bar yAxisId="amount" dataKey="amount" fill={C.brand} radius={[6, 6, 0, 0]} maxBarSize={isTiny ? 18 : 22} />
                         <Line yAxisId="pct" type="monotone" dataKey="cumulativePct" stroke={C.bills} strokeWidth={2.4} dot={{ r: 3 }} />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -833,22 +755,22 @@ export default function Analytics() {
                   </div>
 
                   <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-                    <ResponsiveContainer width="100%" height={214}>
-                      <LineChart data={surplusControl.series} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                    <ResponsiveContainer width="100%" height={isTiny ? 182 : isCompact ? 196 : 214}>
+                      <LineChart data={surplusControl.series} margin={{ top: 8, right: isTiny ? 6 : 10, left: 0, bottom: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
                         <XAxis
                           dataKey="name"
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                          tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
                           axisLine={false}
                           tickLine={false}
-                          interval={0}
+                          interval={isTiny ? 2 : isCompact ? 1 : 0}
                         />
                         <YAxis
                           tickFormatter={compactTick}
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                          tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)' }}
                           axisLine={false}
                           tickLine={false}
-                          width={34}
+                          width={isTiny ? 28 : 34}
                         />
                         <RechartsTooltip content={<SurplusControlTooltip />} />
                         <ReferenceLine y={surplusControl.meanNet} stroke="rgba(10,103,216,0.55)" strokeDasharray="4 4" />
@@ -859,7 +781,7 @@ export default function Analytics() {
                           dataKey="Net"
                           stroke={C.brand}
                           strokeWidth={2.4}
-                          dot={{ r: 3 }}
+                          dot={{ r: isTiny ? 2.4 : 3 }}
                           activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
                         />
                         <Line
@@ -872,46 +794,6 @@ export default function Analytics() {
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {habitProfile.hasData && (
-                <div className="card p-4">
-                  <div className="mb-2 flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-label font-semibold text-ink">Financial habit profile</p>
-                      <p className="text-[11px] text-ink-3 mt-0.5">Radar summary of spending habits, investment habits, surplus quality, and category diversification.</p>
-                    </div>
-                    <span className={`text-[11px] px-2 py-1 rounded-pill font-semibold ${habitProfile.overall >= 70 ? 'bg-income-bg text-income-text' : habitProfile.overall >= 50 ? 'bg-warning-bg text-warning-text' : 'bg-expense-bg text-expense-text'}`}>
-                      Composite {habitProfile.overall}/100
-                    </span>
-                  </div>
-
-                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 mb-2.5">
-                    <ResponsiveContainer width="100%" height={232}>
-                      <RadarChart data={habitProfile.rows}>
-                        <PolarGrid stroke="rgba(16,33,63,0.14)" />
-                        <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }} />
-                        <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                        <RechartsTooltip content={<HabitRadarTooltip />} />
-                        <Radar dataKey="score" stroke={C.brand} fill={C.brand} fillOpacity={0.28} strokeWidth={2.2} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    {habitProfile.rows.map((row) => (
-                      <div key={row.metric} className="rounded-card bg-kosha-surface px-2.5 py-2">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <p className="text-[11px] font-semibold text-ink-2 truncate">{row.metric}</p>
-                          <p className="text-[11px] font-semibold text-brand tabular-nums shrink-0">{row.score}/100</p>
-                        </div>
-                        <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                          <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(6, row.score)}%` }} />
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
               )}
@@ -929,23 +811,23 @@ export default function Analytics() {
                   </div>
 
                   <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-                    <ResponsiveContainer width="100%" height={196}>
-                      <LineChart data={concentrationRiskTrend.series} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                    <ResponsiveContainer width="100%" height={isTiny ? 170 : isCompact ? 184 : 196}>
+                      <LineChart data={concentrationRiskTrend.series} margin={{ top: 8, right: isTiny ? 6 : 10, left: 0, bottom: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
                         <XAxis
                           dataKey="month"
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                          tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
                           axisLine={false}
                           tickLine={false}
-                          interval={0}
+                          interval={isTiny ? 2 : isCompact ? 1 : 0}
                         />
                         <YAxis
                           domain={[0, 100]}
                           tickFormatter={(value) => `${value}%`}
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                          tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)' }}
                           axisLine={false}
                           tickLine={false}
-                          width={30}
+                          width={isTiny ? 26 : 30}
                         />
                         <RechartsTooltip content={<ConcentrationTrendTooltip />} />
                         <ReferenceLine y={65} stroke="rgba(154,114,0,0.65)" strokeDasharray="4 4" />

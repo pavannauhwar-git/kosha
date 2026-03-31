@@ -9,6 +9,7 @@ import {
 } from 'recharts'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
+import useCompactViewport from '../../hooks/useCompactViewport'
 
 function toFiniteNumber(value) {
   const n = Number(value)
@@ -176,6 +177,8 @@ const NetTooltip = ({ active, payload, label }) => {
 // ── CashFlow chart ─────────────────────────────────────────────────────────
 
 export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncome }) {
+  const isCompact = useCompactViewport()
+  const isTiny = useCompactViewport(360)
   const safeData = (Array.isArray(chartData) ? chartData : []).map((point) => ({
     name: point?.name || '-',
     Income: toFiniteNumber(point?.Income),
@@ -187,7 +190,9 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 
   if (!safeData.length) return null
 
-  const chartH = safeData.length <= 4 ? 190 : 230
+  const chartH = safeData.length <= 4
+    ? (isTiny ? 170 : isCompact ? 182 : 190)
+    : (isTiny ? 194 : isCompact ? 210 : 230)
   const totalIncomeSafe = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Income), 0)
   const totalSpent = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Spent), 0)
   const totalInvested = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Invested), 0)
@@ -260,15 +265,15 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
       </div>
 
       <ResponsiveContainer width="100%" height={chartH}>
-        <BarChart data={safeData} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
+        <BarChart data={safeData} margin={{ top: 8, right: isTiny ? 2 : isCompact ? 6 : 12, left: isTiny ? 0 : isCompact ? 4 : 12, bottom: 0 }}>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
-            axisLine={false} tickLine={false} interval={0}
+            tick={{ fontSize: isTiny ? 9 : 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
+            axisLine={false} tickLine={false} interval={isTiny ? 2 : isCompact ? 1 : 0}
           />
           <YAxis hide domain={[-pulseAxisMax, pulseAxisMax]} />
           <Tooltip content={<PulseTooltip />} cursor={{ fill: 'rgba(31,37,95,0.06)' }} />
           <ReferenceLine y={0} stroke="rgba(31,37,95,0.24)" strokeWidth={1} />
-          <Bar dataKey="Pulse" radius={[8, 8, 8, 8]} maxBarSize={28}>
+          <Bar dataKey="Pulse" radius={[8, 8, 8, 8]} maxBarSize={isTiny ? 16 : isCompact ? 22 : 28}>
             {safeData.map((entry, i) => (
               <Cell
                 key={i}
@@ -293,7 +298,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
         {[['Surplus pulse', C.brandMid], ['Deficit pulse', C.accent]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: c }} />
-            <span style={{ fontSize: 11, color: 'rgba(49,58,134,0.60)', fontWeight: 500 }}>{l}</span>
+            <span style={{ fontSize: isTiny ? 10 : 11, color: 'rgba(49,58,134,0.60)', fontWeight: 500 }}>{l}</span>
           </div>
         ))}
       </div>
@@ -865,6 +870,8 @@ const SurplusTrajectoryTooltip = ({ active, payload, label }) => {
 }
 
 export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ netData }) {
+  const isCompact = useCompactViewport()
+  const isTiny = useCompactViewport(360)
   const safeData = (Array.isArray(netData) ? netData : []).map((row) => ({
     name: row?.name || '-',
     Net: toFiniteNumber(row?.Net),
@@ -915,14 +922,14 @@ export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ net
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={190}>
-        <LineChart data={cumulativeData} margin={{ top: 6, right: 12, left: 12, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={isTiny ? 166 : isCompact ? 178 : 190}>
+        <LineChart data={cumulativeData} margin={{ top: 6, right: isTiny ? 2 : isCompact ? 6 : 12, left: isTiny ? 0 : isCompact ? 4 : 12, bottom: 0 }}>
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+            tick={{ fontSize: isTiny ? 9 : 11, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
             axisLine={false}
             tickLine={false}
-            interval={0}
+            interval={isTiny ? 2 : isCompact ? 1 : 0}
           />
           <YAxis hide domain={[-axisMax, axisMax]} />
           <Tooltip content={<SurplusTrajectoryTooltip />} cursor={{ stroke: 'rgba(10,103,216,0.16)', strokeWidth: 1 }} />
@@ -938,7 +945,7 @@ export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ net
         </LineChart>
       </ResponsiveContainer>
 
-      <p className="text-[11px] text-ink-3 pt-2">Use this trend to decide when to cut outflow or increase deployment discipline.</p>
+      <p className={isTiny ? 'text-[10px] text-ink-3 pt-2' : 'text-[11px] text-ink-3 pt-2'}>Use this trend to decide when to cut outflow or increase deployment discipline.</p>
     </div>
   )
 })

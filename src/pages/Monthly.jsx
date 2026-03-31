@@ -6,7 +6,7 @@ import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
 import { CATEGORIES } from '../lib/categories'
 import { C } from '../lib/colors'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
-import { fmt, daysUntil } from '../lib/utils'
+import { fmt } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
 import PageHeader from '../components/layout/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
@@ -17,36 +17,20 @@ import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
 import BreakdownCard from '../components/cards/monthly/BreakdownCard'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
+import useCompactViewport from '../hooks/useCompactViewport'
 import {
   ResponsiveContainer,
   ComposedChart,
-  BarChart,
   Bar,
   Line,
-  ScatterChart,
-  Scatter,
-  ZAxis,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  ReferenceLine,
   PieChart,
   Pie,
   Cell,
 } from 'recharts'
-
-function quantile(sortedValues, p) {
-  if (!sortedValues.length) return 0
-  const index = (sortedValues.length - 1) * p
-  const lowerIndex = Math.floor(index)
-  const upperIndex = Math.ceil(index)
-
-  if (lowerIndex === upperIndex) return sortedValues[lowerIndex]
-
-  const weight = index - lowerIndex
-  return (sortedValues[lowerIndex] * (1 - weight)) + (sortedValues[upperIndex] * weight)
-}
 
 function compactTick(value) {
   const n = Number(value || 0)
@@ -54,12 +38,6 @@ function compactTick(value) {
   if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
   if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
   return `${Math.round(n)}`
-}
-
-function shortLabel(label, maxLength = 12) {
-  const txt = String(label || '')
-  if (txt.length <= maxLength) return txt
-  return `${txt.slice(0, maxLength)}...`
 }
 
 function WeeklyCadenceTooltip({ active, payload, label }) {
@@ -83,52 +61,6 @@ function WeeklyCadenceTooltip({ active, payload, label }) {
           <span className={`font-semibold tabular-nums ${Number(row.Net || 0) >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
             {Number(row.Net || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.Net || 0)))}
           </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function DistributionTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[188px]">
-      <p className="text-[11px] font-semibold text-ink mb-1">{row?.label || 'Range'}</p>
-      <div className="space-y-0.5 text-[11px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Transactions</span>
-          <span className="font-semibold tabular-nums text-ink">{Math.round(Number(row?.count || 0))}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Spend in bucket</span>
-          <span className="font-semibold tabular-nums text-warning-text">{fmt(Number(row?.totalAmount || 0))}</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function CategoryBehaviorTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
-      <p className="text-[11px] font-semibold text-ink mb-1">{row?.label || 'Category'}</p>
-      <div className="space-y-0.5 text-[11px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Share of spend</span>
-          <span className="font-semibold tabular-nums text-warning-text">{Math.round(Number(row?.sharePct || 0))}%</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Avg ticket</span>
-          <span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.avgTicket || 0))}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Txn count</span>
-          <span className="font-semibold tabular-nums text-brand">{Number(row?.count || 0)}</span>
         </div>
       </div>
     </div>
@@ -164,6 +96,8 @@ export default function Monthly() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [heavyReady, setHeavyReady] = useState(false)
+  const isCompact = useCompactViewport()
+  const isTiny = useCompactViewport(360)
   const monthRef = useRef(null)
 
   useEffect(() => {
@@ -181,7 +115,7 @@ export default function Monthly() {
     enabled: heavyReady,
     columns: TRANSACTION_INSIGHTS_COLUMNS,
   })
-  const { rows: monthBills = [], pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
+  const { pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
   const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews({ enabled: heavyReady })
 
   const reviewedIds = useMemo(
@@ -248,43 +182,6 @@ export default function Monthly() {
       paidPct,
     }
   }, [pendingBills, paidBills])
-
-  const autopilotHealth = useMemo(() => {
-    const recurringBills = monthBills.filter((bill) => !!bill?.is_recurring)
-    const recurringBillsPaid = recurringBills.filter((bill) => !!bill?.paid)
-    const overdueRecurringBills = recurringBills.filter((bill) => !bill?.paid && daysUntil(bill?.due_date) < 0)
-
-    const recurringInvestments = txnRows.filter((row) => row?.type === 'investment' && !!row?.is_recurring)
-    const autoRecurringInvestments = recurringInvestments.filter((row) => !!row?.is_auto_generated)
-    const manualRecurringInvestments = recurringInvestments.filter((row) => !row?.is_auto_generated)
-
-    const billAutomationPct = recurringBills.length > 0
-      ? Math.round((recurringBillsPaid.length / recurringBills.length) * 100)
-      : 100
-    const investmentAutomationPct = recurringInvestments.length > 0
-      ? Math.round((autoRecurringInvestments.length / recurringInvestments.length) * 100)
-      : 100
-
-    const missedAutomations = overdueRecurringBills.length + manualRecurringInvestments.length
-    const healthScore = Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round((billAutomationPct * 0.55) + (investmentAutomationPct * 0.45) - (missedAutomations * 8))
-      )
-    )
-
-    return {
-      healthScore,
-      recurringBillsCount: recurringBills.length,
-      recurringBillsPaidCount: recurringBillsPaid.length,
-      recurringInvestmentCount: recurringInvestments.length,
-      autoRecurringInvestmentCount: autoRecurringInvestments.length,
-      overdueRecurringBills,
-      manualRecurringInvestments,
-      missedAutomations,
-    }
-  }, [monthBills, txnRows])
 
   const monthCloseReadiness = useMemo(() => {
     const queueRows = reconciliationInsights.queue
@@ -627,120 +524,6 @@ export default function Monthly() {
     }
   }, [txnRows, year, month])
 
-  const expenseDistribution = useMemo(() => {
-    const expenses = (Array.isArray(txnRows) ? txnRows : [])
-      .filter((row) => row?.type === 'expense')
-      .map((row) => Number(row?.amount || 0))
-      .filter((amount) => Number.isFinite(amount) && amount > 0)
-      .sort((a, b) => a - b)
-
-    if (expenses.length < 4) {
-      return {
-        hasData: false,
-        bins: [],
-        p50: 0,
-        p90: 0,
-      }
-    }
-
-    const min = expenses[0]
-    const max = expenses[expenses.length - 1]
-    const binCount = Math.max(5, Math.min(8, Math.round(Math.sqrt(expenses.length))))
-    const width = Math.max(1, (max - min) / binCount)
-
-    const bins = Array.from({ length: binCount }, (_, index) => {
-      const from = min + (index * width)
-      const to = index === binCount - 1 ? max : min + ((index + 1) * width)
-      return {
-        from,
-        to,
-        label: `${compactTick(from)}-${compactTick(to)}`,
-        count: 0,
-        totalAmount: 0,
-      }
-    })
-
-    for (const amount of expenses) {
-      const idx = Math.min(binCount - 1, Math.floor((amount - min) / width))
-      const bucket = bins[idx]
-      bucket.count += 1
-      bucket.totalAmount += amount
-    }
-
-    const p50 = quantile(expenses, 0.5)
-    const p90 = quantile(expenses, 0.9)
-    const highTicketCount = expenses.filter((amount) => amount >= p90).length
-
-    return {
-      hasData: true,
-      bins,
-      p50,
-      p90,
-      highTicketCount,
-    }
-  }, [txnRows])
-
-  const categoryBehaviorMap = useMemo(() => {
-    const expenseRows = (Array.isArray(txnRows) ? txnRows : [])
-      .filter((row) => row?.type === 'expense' && Number(row?.amount || 0) > 0)
-
-    if (!expenseRows.length) {
-      return {
-        hasData: false,
-        points: [],
-        shareMedian: 0,
-        avgTicketMedian: 0,
-      }
-    }
-
-    const grouped = new Map()
-    let totalExpense = 0
-
-    for (const row of expenseRows) {
-      const id = row?.category || 'other'
-      const amount = Number(row?.amount || 0)
-      if (!Number.isFinite(amount) || amount <= 0) continue
-
-      totalExpense += amount
-
-      const existing = grouped.get(id) || { id, total: 0, count: 0 }
-      existing.total += amount
-      existing.count += 1
-      grouped.set(id, existing)
-    }
-
-    const points = [...grouped.values()]
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 9)
-      .map((row) => {
-        const label = categoryLabelMap.get(row.id) || String(row.id).replace(/_/g, ' ')
-        const avgTicket = row.count > 0 ? row.total / row.count : 0
-        const sharePct = totalExpense > 0 ? (row.total / totalExpense) * 100 : 0
-        return {
-          ...row,
-          label,
-          shortLabel: shortLabel(label, 12),
-          avgTicket,
-          sharePct,
-          bubbleSize: Math.max(18, Math.min(120, (sharePct * 2.4) + 14)),
-        }
-      })
-
-    const sortedShare = points.map((point) => point.sharePct).sort((a, b) => a - b)
-    const sortedAvgTicket = points.map((point) => point.avgTicket).sort((a, b) => a - b)
-    const shareMedian = quantile(sortedShare, 0.5)
-    const avgTicketMedian = quantile(sortedAvgTicket, 0.5)
-    const topLever = points[0] || null
-
-    return {
-      hasData: points.length > 0,
-      points,
-      shareMedian,
-      avgTicketMedian,
-      topLever,
-    }
-  }, [txnRows, categoryLabelMap])
-
   return (
     <div className="page">
       <PageHeader title="Monthly" className="mb-3" />
@@ -879,132 +662,34 @@ export default function Monthly() {
               </div>
 
               <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-                <ResponsiveContainer width="100%" height={218}>
-                  <ComposedChart data={weeklyFlowDiagnostics.series} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height={isTiny ? 184 : isCompact ? 196 : 218}>
+                  <ComposedChart data={weeklyFlowDiagnostics.series} margin={{ top: 8, right: isTiny ? 2 : isCompact ? 4 : 10, left: 0, bottom: 0 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
                     <XAxis
                       dataKey="week"
-                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                      tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
                       axisLine={false}
                       tickLine={false}
+                      interval={isTiny ? 2 : isCompact ? 1 : 0}
                     />
                     <YAxis
                       yAxisId="amount"
                       tickFormatter={compactTick}
-                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                      tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)' }}
                       axisLine={false}
                       tickLine={false}
-                      width={34}
+                      width={isTiny ? 24 : isCompact ? 28 : 34}
                     />
                     <YAxis yAxisId="net" hide />
                     <RechartsTooltip content={<WeeklyCadenceTooltip />} />
-                    <Bar yAxisId="amount" dataKey="Inflow" fill="#0E9F6E" radius={[6, 6, 0, 0]} maxBarSize={24} />
-                    <Bar yAxisId="amount" dataKey="Outflow" fill="#E11D48" radius={[6, 6, 0, 0]} maxBarSize={24} />
-                    <Line yAxisId="net" type="monotone" dataKey="Net" stroke="#0A67D8" strokeWidth={2.3} dot={{ r: 3 }} />
+                    <Bar yAxisId="amount" dataKey="Inflow" fill="#0E9F6E" radius={[6, 6, 0, 0]} maxBarSize={isTiny ? 18 : 24} />
+                    <Bar yAxisId="amount" dataKey="Outflow" fill="#E11D48" radius={[6, 6, 0, 0]} maxBarSize={isTiny ? 18 : 24} />
+                    <Line yAxisId="net" type="monotone" dataKey="Net" stroke="#0A67D8" strokeWidth={2.3} dot={{ r: isTiny ? 2.2 : 3 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
 
               <p className="text-[10px] text-ink-3 mt-1.5">Bars compare weekly flow magnitude; line tracks weekly net regime shift across the month.</p>
-            </div>
-          )}
-
-          {heavyReady && expenseDistribution.hasData && (
-            <div className="card p-4 border-0">
-              <SectionHeader
-                className="mb-2"
-                title="Expense distribution"
-                subtitle="Histogram to reveal spending size concentration and high-ticket risk"
-                badge={{
-                  label: `P90 ${fmt(expenseDistribution.p90)}`,
-                  className: 'bg-warning-bg text-warning-text',
-                }}
-              />
-
-              <div className="grid grid-cols-3 gap-2 mb-2.5">
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Median ticket</p>
-                  <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(expenseDistribution.p50)}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">P90 ticket</p>
-                  <p className="text-[12px] font-bold tabular-nums text-warning-text">{fmt(expenseDistribution.p90)}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">High-ticket txns</p>
-                  <p className="text-[12px] font-bold tabular-nums text-brand">{expenseDistribution.highTicketCount}</p>
-                </div>
-              </div>
-
-              <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-                <ResponsiveContainer width="100%" height={198}>
-                  <BarChart data={expenseDistribution.bins} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
-                      axisLine={false}
-                      tickLine={false}
-                      interval={0}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={24}
-                    />
-                    <RechartsTooltip content={<DistributionTooltip />} />
-                    <Bar dataKey="count" fill="#9A7200" radius={[6, 6, 0, 0]} maxBarSize={26} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {heavyReady && categoryBehaviorMap.hasData && (
-            <div className="card p-4 border-0">
-              <SectionHeader
-                className="mb-2"
-                title="Category behavior map"
-                subtitle="Bubble scatter for impact levers: share vs average ticket"
-                badge={{
-                  label: categoryBehaviorMap.topLever ? `${categoryBehaviorMap.topLever.shortLabel} leads` : 'No category lead',
-                  className: 'bg-brand-container text-brand-on',
-                }}
-              />
-
-              <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-                <ResponsiveContainer width="100%" height={216}>
-                  <ScatterChart margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
-                    <XAxis
-                      type="number"
-                      dataKey="avgTicket"
-                      tickFormatter={compactTick}
-                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      type="number"
-                      dataKey="sharePct"
-                      domain={[0, 'dataMax + 6']}
-                      tickFormatter={(value) => `${Math.round(value)}%`}
-                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={34}
-                    />
-                    <ZAxis type="number" dataKey="bubbleSize" range={[70, 340]} />
-                    <RechartsTooltip content={<CategoryBehaviorTooltip />} />
-                    <ReferenceLine x={categoryBehaviorMap.avgTicketMedian} stroke="rgba(10,103,216,0.48)" strokeDasharray="4 4" />
-                    <ReferenceLine y={categoryBehaviorMap.shareMedian} stroke="rgba(154,114,0,0.56)" strokeDasharray="4 4" />
-                    <Scatter data={categoryBehaviorMap.points} fill="#0A67D8" fillOpacity={0.72} />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </div>
-
-              <p className="text-[10px] text-ink-3 mt-1.5">Top-right quadrant categories are the strongest improvement levers this month.</p>
             </div>
           )}
 
@@ -1024,15 +709,15 @@ export default function Monthly() {
                 <div className="grid md:grid-cols-[1.05fr_0.95fr] gap-3">
                   <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
                     {monthlyPortfolioSnapshot.mixRows.length > 0 ? (
-                      <div className="relative h-[196px]">
+                      <div className={`relative ${isTiny ? 'h-[164px]' : isCompact ? 'h-[176px]' : 'h-[196px]'}`}>
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
                               data={monthlyPortfolioSnapshot.mixRows}
                               dataKey="value"
                               nameKey="name"
-                              innerRadius={52}
-                              outerRadius={82}
+                              innerRadius={isTiny ? 38 : isCompact ? 44 : 52}
+                              outerRadius={isTiny ? 62 : isCompact ? 72 : 82}
                               paddingAngle={2}
                               stroke="#FFFFFF"
                               strokeWidth={2}
@@ -1046,9 +731,9 @@ export default function Monthly() {
                         </ResponsiveContainer>
 
                         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                          <p className="text-[10px] text-ink-3">Allocated</p>
-                          <p className="text-[16px] font-bold tabular-nums text-ink">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
-                          <p className="text-[10px] text-ink-3">{monthlyPortfolioSnapshot.rows.length} vehicle{monthlyPortfolioSnapshot.rows.length === 1 ? '' : 's'}</p>
+                          <p className={isTiny ? 'text-[9px] text-ink-3' : 'text-[10px] text-ink-3'}>Allocated</p>
+                          <p className={isTiny ? 'text-[14px] font-bold tabular-nums text-ink' : 'text-[16px] font-bold tabular-nums text-ink'}>{fmt(monthlyPortfolioSnapshot.total, true)}</p>
+                          <p className={isTiny ? 'text-[9px] text-ink-3' : 'text-[10px] text-ink-3'}>{monthlyPortfolioSnapshot.rows.length} vehicle{monthlyPortfolioSnapshot.rows.length === 1 ? '' : 's'}</p>
                         </div>
                       </div>
                     ) : (
@@ -1134,66 +819,6 @@ export default function Monthly() {
                   Log investment
                 </button>
               </div>
-            </div>
-          )}
-
-          {heavyReady && (
-            <div className="card p-4 border-0">
-              <SectionHeader
-                className="mb-2"
-                title="Autopilot health"
-                subtitle="Recurring bills and recurring investments reliability"
-                badge={{
-                  label: `${autopilotHealth.healthScore}/100`,
-                  className: autopilotHealth.healthScore >= 75
-                    ? 'bg-income-bg text-income-text'
-                    : autopilotHealth.healthScore >= 50
-                      ? 'bg-warning-bg text-warning-text'
-                      : 'bg-expense-bg text-expense-text',
-                }}
-              />
-
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Recurring bills</p>
-                  <p className="text-base font-bold text-ink tabular-nums">{autopilotHealth.recurringBillsPaidCount}/{autopilotHealth.recurringBillsCount}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Auto investments</p>
-                  <p className="text-base font-bold text-brand tabular-nums">{autopilotHealth.autoRecurringInvestmentCount}/{autopilotHealth.recurringInvestmentCount}</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Missed automations</p>
-                  <p className={`text-base font-bold tabular-nums ${autopilotHealth.missedAutomations === 0 ? 'text-income-text' : 'text-warning-text'}`}>
-                    {autopilotHealth.missedAutomations}
-                  </p>
-                </div>
-              </div>
-
-              {autopilotHealth.missedAutomations > 0 ? (
-                <div className="space-y-2">
-                  {autopilotHealth.overdueRecurringBills.length > 0 && (
-                    <p className="text-[11px] text-warning-text">
-                      {autopilotHealth.overdueRecurringBills.length} recurring bill{autopilotHealth.overdueRecurringBills.length > 1 ? 's are' : ' is'} overdue.
-                    </p>
-                  )}
-                  {autopilotHealth.manualRecurringInvestments.length > 0 && (
-                    <p className="text-[11px] text-warning-text">
-                      {autopilotHealth.manualRecurringInvestments.length} recurring investment entr{autopilotHealth.manualRecurringInvestments.length > 1 ? 'ies were' : 'y was'} logged manually (automation missed).
-                    </p>
-                  )}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button type="button" onClick={() => navigate('/bills')} className="btn-secondary h-9 px-3 text-[11px] justify-center">
-                      Fix bills
-                    </button>
-                    <button type="button" onClick={() => navigate('/transactions')} className="btn-primary h-9 px-3 text-[11px] justify-center">
-                      Fix investments
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[11px] text-ink-3">Autopilot routines are healthy. No broken recurring cycles detected this month.</p>
-              )}
             </div>
           )}
 

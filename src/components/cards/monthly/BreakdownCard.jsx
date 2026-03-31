@@ -92,31 +92,20 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
       label: 'Spent',
       amount: expense,
       pct: Math.max(0, spentPct),
-      tone: 'text-expense-text',
-      bar: '#E11D48',
-      hint: 'Operations and lifestyle outflow',
     },
     {
       key: 'invested',
       label: 'Invested',
       amount: investment,
       pct: Math.max(0, investedPct),
-      tone: 'text-invest-text',
-      bar: '#7C3AED',
-      hint: 'Future allocation and wealth build',
     },
     {
       key: saved > 0 ? 'leftover' : 'deficit',
       label: saved > 0 ? 'Leftover' : 'Deficit',
       amount: saved > 0 ? saved : deficit,
       pct: Math.max(0, saved > 0 ? savedPct : deficitPct),
-      tone: saved > 0 ? 'text-income-text' : 'text-warning-text',
-      bar: saved > 0 ? '#0E9F6E' : '#9A7200',
-      hint: saved > 0 ? 'Available month-end buffer' : 'Outflow exceeded inflow',
     },
   ]
-
-  const allocationSegments = primaryRows.filter((row) => row.pct > 0)
 
   const sankeyNodes = [
     { name: 'Inflow', color: '#0E9F6E' },
@@ -164,6 +153,10 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
     return 'Allocation looks balanced for this month. Continue current pacing and keep the leftover buffer protected.'
   })()
 
+  const routingSummary = primaryRows
+    .map((row) => `${row.label} ${row.pct}% (${fmt(row.amount)})`)
+    .join(' · ')
+
   if (earned === 0) return null
 
   return (
@@ -196,17 +189,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
       </div>
 
       <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
-        <div className="h-2.5 rounded-pill bg-kosha-border overflow-hidden flex">
-          {allocationSegments.map((segment) => (
-            <div
-              key={`allocation-segment-${segment.key}`}
-              className="h-full"
-              style={{ width: `${Math.max(4, segment.pct)}%`, background: segment.bar }}
-            />
-          ))}
-        </div>
-
-        <div className="mt-2 rounded-card border border-kosha-border bg-kosha-surface p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
           <ResponsiveContainer width="100%" height={208}>
             <Sankey
               data={sankeyData}
@@ -222,26 +205,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
           </ResponsiveContainer>
         </div>
 
-        <div className="mt-2 space-y-1.5">
-          {primaryRows.map((row) => (
-            <div key={row.key} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <div>
-                  <p className="text-[11px] font-semibold text-ink">{row.label}</p>
-                  <p className="text-[10px] text-ink-3">{row.hint}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className={`text-[11px] font-semibold tabular-nums ${row.tone}`}>{fmt(row.amount)}</p>
-                  <p className="text-[10px] text-ink-3 tabular-nums">{row.pct}% of inflow</p>
-                </div>
-              </div>
-
-              <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.bar }} />
-              </div>
-            </div>
-          ))}
-        </div>
+        <p className="text-[10px] text-ink-3 mt-2">Routing split: {routingSummary}.</p>
       </div>
 
       <div className="pt-2 border-t border-kosha-border">
