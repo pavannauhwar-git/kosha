@@ -1,9 +1,9 @@
 import { memo, useMemo } from 'react'
 import { ResponsiveContainer, Treemap, Tooltip as RechartsTooltip } from 'recharts'
+import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 import { CATEGORIES } from '../../lib/categories'
-import useCompactViewport from '../../hooks/useCompactViewport'
 
 function compactAmount(value) {
   const n = Number(value || 0)
@@ -47,7 +47,6 @@ function TreemapCell(props) {
     amountShort,
     tileColor,
     accentColor,
-    isTiny = false,
   } = props
 
   // Recharts Treemap passes node fields directly to custom `content`.
@@ -55,13 +54,11 @@ function TreemapCell(props) {
   if (Array.isArray(children) && children.length > 0) return null
   if (!Number.isFinite(x) || !Number.isFinite(y) || width <= 0 || height <= 0) return null
 
-  const showLabel = width > (isTiny ? 66 : 74) && height > (isTiny ? 28 : 32)
-  const showMeta = width > (isTiny ? 128 : 112) && height > (isTiny ? 60 : 52)
-  const labelPanelWidth = Math.max(0, Math.min(width - 12, isTiny ? 136 : 150))
-  const labelFontFamily = "'Plus Jakarta Sans', system-ui, sans-serif"
+  const showLabel = width > 74 && height > 32
+  const showMeta = width > 110 && height > 52
 
   return (
-    <g shapeRendering="geometricPrecision">
+    <g>
       <rect
         x={x}
         y={y}
@@ -85,38 +82,12 @@ function TreemapCell(props) {
       />
 
       {showLabel && (
-        <>
-          <rect
-            x={x + 6}
-            y={y + 8}
-            width={labelPanelWidth}
-            height={showMeta ? (isTiny ? 30 : 34) : (isTiny ? 16 : 18)}
-            rx={6}
-            ry={6}
-            fill="rgba(255,255,255,0.72)"
-          />
-          <text
-            x={x + 11}
-            y={y + (isTiny ? 19 : 21)}
-            fill="#10213F"
-            fontSize={isTiny ? 10 : 11}
-            fontWeight={700}
-            fontFamily={labelFontFamily}
-            style={{ paintOrder: 'stroke', stroke: 'rgba(255,255,255,0.92)', strokeWidth: 0.6, strokeLinejoin: 'round' }}
-          >
-            {name}
-          </text>
-        </>
+        <text x={x + 7} y={y + 18} fill="#1F2B5D" fontSize={11} fontWeight={700}>
+          {name}
+        </text>
       )}
       {showMeta && (
-        <text
-          x={x + 11}
-          y={y + (isTiny ? 33 : 37)}
-          fill="rgba(16,33,63,0.85)"
-          fontSize={isTiny ? 9 : 10}
-          fontWeight={600}
-          fontFamily={labelFontFamily}
-        >
+        <text x={x + 7} y={y + 34} fill="rgba(31,43,93,0.72)" fontSize={10} fontWeight={600}>
           {sharePct}% · {amountShort}
         </text>
       )}
@@ -129,10 +100,8 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   total,
   title = 'Spent by Category',
   subtitle,
+  maxRows = 8,
 }) {
-  const isCompact = useCompactViewport()
-  const isTiny = useCompactViewport(360)
-
   const safeEntries = Array.isArray(entries)
     ? entries
       .filter(([, value]) => Number(value || 0) > 0)
@@ -165,6 +134,10 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   }), [safeEntries, safeTotal, categoryById])
 
   const dominant = treemapRows[0] || null
+  const shownRows = treemapRows.slice(0, maxRows)
+  const shownShare = shownRows.reduce((sum, row) => sum + row.sharePct, 0)
+  const hiddenCount = Math.max(0, treemapRows.length - shownRows.length)
+  const peakAmount = Math.max(...treemapRows.map((row) => row.amount), 1)
 
   if (!treemapRows.length) return null
 
@@ -187,13 +160,13 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
 
       <div className="space-y-2.5">
         <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
-          <ResponsiveContainer width="100%" height={isTiny ? 272 : isCompact ? 256 : 232}>
+          <ResponsiveContainer width="100%" height={232}>
             <Treemap
               data={treemapRows}
               dataKey="value"
               nameKey="name"
               stroke="rgba(255,255,255,0.9)"
-              content={<TreemapCell isTiny={isTiny} />}
+              content={<TreemapCell />}
               isAnimationActive={false}
             >
               <RechartsTooltip content={<TreemapTooltip total={safeTotal} />} />
@@ -201,8 +174,35 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
           </ResponsiveContainer>
         </div>
 
+        <div className="space-y-1.5">
+          {shownRows.map((row) => (
+            <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-full border border-kosha-border flex items-center justify-center" style={{ background: row.tileColor }}>
+                    <CategoryIcon categoryId={row.id} size={12} />
+                  </div>
+                  <p className="text-[11px] font-semibold text-ink truncate">{row.name}</p>
+                </div>
+                <p className="text-[11px] font-semibold tabular-nums text-expense-text shrink-0">{row.amountLabel}</p>
+              </div>
+              <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                <div
+                  className="h-full rounded-pill"
+                  style={{ width: `${Math.max(8, Math.round((row.amount / peakAmount) * 100))}%`, background: row.accentColor }}
+                />
+              </div>
+              <p className="text-[10px] text-ink-3 mt-1 tabular-nums">{row.sharePct}% of total</p>
+            </div>
+          ))}
+
+          {hiddenCount > 0 && (
+            <p className="text-[10px] text-ink-3">+ {hiddenCount} more category branch{hiddenCount === 1 ? '' : 'es'} not listed ({Math.max(0, 100 - shownShare)}% of total).</p>
+          )}
+        </div>
+
         {dominant && (
-          <p className={isTiny ? 'text-[10px] text-ink-3' : 'text-[11px] text-ink-3'}>
+          <p className="text-[11px] text-ink-3">
             Dominant bucket: {dominant.name} at {dominant.sharePct}% ({dominant.amountLabel}).
           </p>
         )}

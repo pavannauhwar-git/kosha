@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, Plus, ShieldAlert, WalletCards } from 'lucide-react'
+import { Bell, ArrowRight, Plus, ShieldAlert, TrendingUp, WalletCards } from 'lucide-react'
 import {
   useRecentTransactions,
   useTransactionDigest,
@@ -14,10 +14,10 @@ import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { createFadeUp, createStagger } from '../lib/animations'
-import useCompactViewport from '../hooks/useCompactViewport'
 import {
   ResponsiveContainer,
   BarChart,
+  ComposedChart,
   Bar,
   LineChart,
   Line,
@@ -96,6 +96,18 @@ function compactTick(value) {
   return `${Math.round(n)}`
 }
 
+function quantile(sortedValues, p) {
+  if (!sortedValues.length) return 0
+  const index = (sortedValues.length - 1) * p
+  const lowerIndex = Math.floor(index)
+  const upperIndex = Math.ceil(index)
+
+  if (lowerIndex === upperIndex) return sortedValues[lowerIndex]
+
+  const weight = index - lowerIndex
+  return (sortedValues[lowerIndex] * (1 - weight)) + (sortedValues[upperIndex] * weight)
+}
+
 function hourWindowLabel(hour) {
   const safeHour = Number(hour)
   const endHour = (safeHour + 1) % 24
@@ -167,6 +179,45 @@ function NetControlTooltip({ active, payload, label }) {
   )
 }
 
+function WeekdaySpreadTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Min</span><span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.min || 0))}</span></div>
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Q1</span><span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.q1 || 0))}</span></div>
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Median</span><span className="font-semibold tabular-nums text-brand">{fmt(Number(row?.median || 0))}</span></div>
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Q3</span><span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.q3 || 0))}</span></div>
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Max</span><span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row?.max || 0))}</span></div>
+      </div>
+    </div>
+  )
+}
+
+function DuePipelineTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[172px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Bills</span>
+          <span className="font-semibold tabular-nums text-ink">{Math.round(Number(row?.count || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Amount</span>
+          <span className="font-semibold tabular-nums text-warning-text">{fmt(Number(row?.amount || 0))}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function NetSignalDot(props) {
   const { cx, cy, payload } = props
   if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null
@@ -180,6 +231,58 @@ function NetSignalDot(props) {
       stroke="#FFFFFF"
       strokeWidth={payload?.isSignal ? 1.8 : 1.2}
     />
+  )
+}
+
+function WeeklyDigestTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="text-ink-3">Current 7d</span>
+        <span className="font-semibold tabular-nums text-brand">{fmt(Number(row.current || 0))}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
+        <span className="text-ink-3">Previous 7d</span>
+        <span className="font-semibold tabular-nums text-ink">{fmt(Number(row.previous || 0))}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
+        <span className="text-ink-3">Delta</span>
+        <span className={`font-semibold tabular-nums ${(Number(row.delta || 0) <= 0 && row.metric === 'Spend') || (Number(row.delta || 0) >= 0 && row.metric !== 'Spend') ? 'text-income-text' : 'text-warning-text'}`}>
+          {Number(row.delta || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.delta || 0)))}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function WeekdayDriftTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">This week</span>
+          <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row.current || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">4w baseline</span>
+          <span className="font-semibold tabular-nums text-ink">{fmt(Number(row.baseline || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Delta</span>
+          <span className={`font-semibold tabular-nums ${Number(row.delta || 0) <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+            {Number(row.delta || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.delta || 0)))}
+          </span>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -296,8 +399,7 @@ export default function Dashboard() {
   const [toast, setToast] = useState(null)
   const [heavyReady, setHeavyReady] = useState(false)
   const [opportunityCutPct, setOpportunityCutPct] = useState(12)
-  const isCompact = useCompactViewport()
-  const isTiny = useCompactViewport(360)
+  const [activeVarianceDay, setActiveVarianceDay] = useState(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 50)
@@ -384,6 +486,134 @@ export default function Dashboard() {
       dueSoonDescs: descs.join(' · '),
     }
   }, [bills])
+
+  const weeklyDigest = useMemo(() => {
+    const current = now.getTime()
+    const dayMs = 24 * 60 * 60 * 1000
+    const last7Start = current - (7 * dayMs)
+    const prev7Start = current - (14 * dayMs)
+
+    const inLast7 = digestTxnRows.filter((row) => {
+      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      return Number.isFinite(ts) && ts >= last7Start && ts <= current
+    })
+    const inPrev7 = digestTxnRows.filter((row) => {
+      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      return Number.isFinite(ts) && ts >= prev7Start && ts < last7Start
+    })
+
+    const spendLast7 = inLast7
+      .filter((row) => row?.type === 'expense')
+      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+    const spendPrev7 = inPrev7
+      .filter((row) => row?.type === 'expense')
+      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+
+    const incomeLast7 = inLast7
+      .filter((row) => row?.type === 'income' && !row?.is_repayment)
+      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+    const incomePrev7 = inPrev7
+      .filter((row) => row?.type === 'income' && !row?.is_repayment)
+      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+
+    const categoryTotals = new Map()
+    for (const row of inLast7) {
+      if (row?.type !== 'expense') continue
+      const key = String(row?.category || 'other')
+      categoryTotals.set(key, (categoryTotals.get(key) || 0) + Number(row?.amount || 0))
+    }
+
+    const spendDelta = spendLast7 - spendPrev7
+    const incomeDelta = incomeLast7 - incomePrev7
+    const netLast7 = incomeLast7 - spendLast7
+    const netPrev7 = incomePrev7 - spendPrev7
+    const netDelta = netLast7 - netPrev7
+
+    const comparisonSeries = [
+      {
+        metric: 'Spend',
+        current: spendLast7,
+        previous: spendPrev7,
+        delta: spendDelta,
+      },
+      {
+        metric: 'Income',
+        current: incomeLast7,
+        previous: incomePrev7,
+        delta: incomeDelta,
+      },
+      {
+        metric: 'Net',
+        current: netLast7,
+        previous: netPrev7,
+        delta: netDelta,
+      },
+    ]
+
+    const topCategories = [...categoryTotals.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, value]) => ({
+        id,
+        label: categoryLabelMap.get(id) || id.replace(/_/g, ' '),
+        value,
+        sharePct: spendLast7 > 0 ? Math.round((value / spendLast7) * 100) : 0,
+      }))
+
+    return {
+      spendLast7,
+      spendPrev7,
+      incomeLast7,
+      incomePrev7,
+      spendDelta,
+      incomeDelta,
+      netLast7,
+      netPrev7,
+      netDelta,
+      comparisonSeries,
+      topCategories,
+      hasSignals: inLast7.length > 0 || inPrev7.length > 0,
+    }
+  }, [digestTxnRows, now, categoryLabelMap])
+
+  const dailyVariance = useMemo(() => {
+    const byDate = new Map()
+    for (const row of digestTxnRows) {
+      if (row?.type !== 'expense') continue
+      const key = String(row?.date || '').slice(0, 10)
+      if (!key) continue
+      byDate.set(key, (byDate.get(key) || 0) + Number(row?.amount || 0))
+    }
+
+    const heatmapDays = []
+    for (let i = 55; i >= 0; i -= 1) {
+      const d = new Date(now)
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const value = byDate.get(key) || 0
+      heatmapDays.push({
+        key,
+        value,
+        label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+      })
+    }
+
+    const heatmapMax = Math.max(...heatmapDays.map((row) => row.value), 1)
+    const trackedDays = heatmapDays.filter((row) => row.value > 0)
+    const heatmapWeeks = []
+    for (let i = 0; i < heatmapDays.length; i += 7) {
+      heatmapWeeks.push(heatmapDays.slice(i, i + 7))
+    }
+
+    return {
+      heatmapWeeks,
+      heatmapMax,
+      activeDays: trackedDays.length,
+      trackedTotal: trackedDays.reduce((sum, row) => sum + row.value, 0),
+      heatmapRange: `${heatmapDays[0]?.label || ''} - ${heatmapDays[heatmapDays.length - 1]?.label || ''}`,
+    }
+  }, [digestTxnRows, now])
 
   const intradayClock = useMemo(() => {
     const dayMs = 24 * 60 * 60 * 1000
@@ -543,6 +773,75 @@ export default function Dashboard() {
       signalCount,
       last7Average,
       hasData: controlRows.some((row) => row.income > 0 || row.outflow > 0),
+    }
+  }, [digestTxnRows, now])
+
+  const weekdaySpread = useMemo(() => {
+    const dayMs = 24 * 60 * 60 * 1000
+    const lookbackDays = 56
+    const nowTs = now.getTime()
+    const startTs = nowTs - ((lookbackDays - 1) * dayMs)
+
+    const dailyExpenseByDate = new Map()
+    for (const row of (Array.isArray(digestTxnRows) ? digestTxnRows : [])) {
+      if (row?.type !== 'expense') continue
+      const amount = Number(row?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+
+      const ts = resolveTxnTimestamp(row)
+      if (!Number.isFinite(ts) || ts < startTs || ts > nowTs) continue
+
+      const d = new Date(ts)
+      d.setHours(0, 0, 0, 0)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      dailyExpenseByDate.set(key, (dailyExpenseByDate.get(key) || 0) + amount)
+    }
+
+    const weekdayBuckets = Array.from({ length: 7 }, () => [])
+    for (let i = lookbackDays - 1; i >= 0; i -= 1) {
+      const d = new Date(now)
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const weekdayIndex = (d.getDay() + 6) % 7
+      weekdayBuckets[weekdayIndex].push(Number(dailyExpenseByDate.get(key) || 0))
+    }
+
+    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const rows = weekdayLabels.map((day, index) => {
+      const values = [...weekdayBuckets[index]].sort((a, b) => a - b)
+      const min = values[0] || 0
+      const q1 = quantile(values, 0.25)
+      const median = quantile(values, 0.50)
+      const q3 = quantile(values, 0.75)
+      const max = values[values.length - 1] || 0
+      const iqr = Math.max(0, q3 - q1)
+      const whiskerRange = Math.max(0, max - min)
+
+      return {
+        day,
+        min,
+        q1,
+        median,
+        q3,
+        max,
+        iqr,
+        sampleCount: values.length,
+        whiskerBase: min,
+        whiskerRange,
+        boxBase: q1,
+        boxHeight: iqr,
+      }
+    })
+
+    const widestSpreadDay = [...rows].sort((a, b) => b.iqr - a.iqr)[0]
+    const steadiestDay = [...rows].sort((a, b) => a.iqr - b.iqr)[0]
+
+    return {
+      rows,
+      widestSpreadDay,
+      steadiestDay,
+      hasData: rows.some((row) => row.max > 0),
     }
   }, [digestTxnRows, now])
 
@@ -744,6 +1043,86 @@ export default function Dashboard() {
     }
   }, [bills, digestTxnRows, earned, dayOfMonth, now])
 
+  const spendingDrift = useMemo(() => {
+    const current = now.getTime()
+    const dayMs = 24 * 60 * 60 * 1000
+    const thisWeekStart = current - (7 * dayMs)
+    const prior4WeekStart = thisWeekStart - (28 * dayMs)
+
+    const thisWeekRows = (Array.isArray(digestTxnRows) ? digestTxnRows : []).filter((row) => {
+      if (row?.type !== 'expense') return false
+      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      return Number.isFinite(ts) && ts >= thisWeekStart && ts <= current
+    })
+
+    const prior4WeekRows = (Array.isArray(digestTxnRows) ? digestTxnRows : []).filter((row) => {
+      if (row?.type !== 'expense') return false
+      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      return Number.isFinite(ts) && ts >= prior4WeekStart && ts < thisWeekStart
+    })
+
+    const thisWeekSpend = thisWeekRows.reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+    const prior4WeekSpend = prior4WeekRows.reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+    const avg4WeekSpend = prior4WeekSpend / 4
+    const driftAmount = thisWeekSpend - avg4WeekSpend
+    const driftPct = avg4WeekSpend > 0 ? Math.round((driftAmount / avg4WeekSpend) * 100) : null
+
+    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const thisWeekByWeekday = Array.from({ length: 7 }, () => 0)
+    const baselineByWeekday = Array.from({ length: 7 }, () => 0)
+
+    function toWeekdayIndex(dateValue) {
+      const d = new Date(dateValue || 0)
+      if (Number.isNaN(d.getTime())) return null
+      return (d.getDay() + 6) % 7
+    }
+
+    for (const row of thisWeekRows) {
+      const idx = toWeekdayIndex(row?.date || row?.created_at)
+      if (idx == null) continue
+      thisWeekByWeekday[idx] += Number(row?.amount || 0)
+    }
+
+    for (const row of prior4WeekRows) {
+      const idx = toWeekdayIndex(row?.date || row?.created_at)
+      if (idx == null) continue
+      baselineByWeekday[idx] += Number(row?.amount || 0)
+    }
+
+    const weekdaySeries = weekdayLabels.map((day, idx) => {
+      const currentValue = thisWeekByWeekday[idx]
+      const baseline = baselineByWeekday[idx] / 4
+      const delta = currentValue - baseline
+      const deltaPct = baseline > 0
+        ? Math.round((delta / baseline) * 100)
+        : (currentValue > 0 ? 100 : 0)
+
+      return {
+        day,
+        current: currentValue,
+        baseline,
+        delta,
+        deltaPct,
+      }
+    })
+
+    const overBaselineDays = weekdaySeries.filter((row) => row.delta > 0).length
+    const topDriftDay = [...weekdaySeries].sort((a, b) => b.delta - a.delta)[0]
+    const coolingDay = [...weekdaySeries].sort((a, b) => a.delta - b.delta)[0]
+
+    return {
+      thisWeekSpend,
+      avg4WeekSpend,
+      driftAmount,
+      driftPct,
+      weekdaySeries,
+      overBaselineDays,
+      topDriftDay,
+      coolingDay,
+      hasData: thisWeekRows.length > 0 || prior4WeekRows.length > 0,
+    }
+  }, [digestTxnRows, now])
+
   const opportunityWallet = useMemo(() => {
     const categoryRows = Object.entries(summary?.byCategory || {})
       .map(([id, amount]) => ({
@@ -868,6 +1247,64 @@ export default function Dashboard() {
           )}
         </motion.div>
 
+        {/* ── Daily variance ──────────────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <div className="card p-4 border-0">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="section-label">Daily spending habit</p>
+                <p className="text-caption text-ink-3 mt-0.5">Absolute spend intensity across the last 8 weeks</p>
+              </div>
+              <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
+                {dailyVariance.activeDays} active day{dailyVariance.activeDays === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            <p className="text-[10px] text-ink-3 mb-1.5">
+              {activeVarianceDay
+                ? `${activeVarianceDay.label}: ${fmt(activeVarianceDay.value)}`
+                : 'Hover a day tile to see exact spend for that date.'}
+            </p>
+
+            <p className="text-[10px] text-ink-3 mb-1.5">
+              Absolute range: 0 to {fmt(dailyVariance.heatmapMax)} over {dailyVariance.heatmapRange}.
+            </p>
+
+            <div className="space-y-1" onMouseLeave={() => setActiveVarianceDay(null)}>
+              {dailyVariance.heatmapWeeks.map((week, weekIndex) => (
+                <div key={`heatmap-week-${weekIndex}`} className="grid grid-cols-7 gap-1">
+                  {week.map((day) => {
+                    const intensity = day.value > 0 ? day.value / dailyVariance.heatmapMax : 0
+                    const alpha = day.value > 0
+                      ? Math.min(0.92, 0.18 + (intensity * 0.72))
+                      : 0.08
+                    const cellColor = day.value <= 0
+                      ? 'rgba(16, 33, 63, 0.08)'
+                      : `rgba(10, 103, 216, ${alpha})`
+
+                    return (
+                      <button
+                        key={day.key}
+                        type="button"
+                        title={`${day.label}: ${fmt(day.value)}`}
+                        aria-label={`${day.label} spend ${fmt(day.value)}`}
+                        onMouseEnter={() => setActiveVarianceDay(day)}
+                        onFocus={() => setActiveVarianceDay(day)}
+                        className="h-3 rounded-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                        style={{ background: cellColor }}
+                      />
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+
+            <p className="text-[10px] text-ink-3 mt-1.5">
+              Tracked spend in this window: {fmt(dailyVariance.trackedTotal)}.
+            </p>
+          </div>
+        </motion.div>
+
         <motion.div variants={fadeUp}>
           <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
@@ -947,12 +1384,6 @@ export default function Dashboard() {
                 <p className="text-[10px] text-ink-3 mt-1.5">
                   Darker sectors indicate higher discretionary spend concentration by hour. Use this to schedule guardrails before high-risk windows.
                 </p>
-
-                {intradayClock.fallbackRows > 0 && (
-                  <p className="text-[10px] text-ink-3 mt-1">
-                    {intradayClock.fallbackRows} txn{intradayClock.fallbackRows === 1 ? '' : 's'} used date-level fallback timestamps, so hour precision may be approximate.
-                  </p>
-                )}
               </>
             ) : (
               <p className="text-[11px] text-ink-3">Not enough timestamped discretionary spend yet to build intraday hotspots.</p>
@@ -1004,15 +1435,15 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-2.5 rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
-              <ResponsiveContainer width="100%" height={isTiny ? 154 : isCompact ? 164 : 180}>
-                <LineChart data={cashRiskRadar.timelineSeries} margin={{ top: 8, right: isTiny ? 2 : isCompact ? 4 : 8, left: isCompact ? 0 : 4, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={cashRiskRadar.timelineSeries} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)' }}
+                    tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
                     axisLine={false}
                     tickLine={false}
-                    interval={isTiny ? 3 : isCompact ? 2 : 0}
+                    interval={0}
                   />
                   <YAxis hide />
                   <RechartsTooltip content={<DuePressureTooltip />} />
@@ -1084,22 +1515,22 @@ export default function Dashboard() {
                 </div>
 
                 <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
-                  <ResponsiveContainer width="100%" height={isTiny ? 166 : isCompact ? 178 : 194}>
-                    <LineChart data={rollingNetControl.rows} margin={{ top: 8, right: isTiny ? 4 : 8, left: 0, bottom: 0 }}>
+                  <ResponsiveContainer width="100%" height={194}>
+                    <LineChart data={rollingNetControl.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
                       <XAxis
                         dataKey="label"
-                        tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)' }}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
                         axisLine={false}
                         tickLine={false}
-                        interval={isTiny ? 8 : isCompact ? 6 : 4}
+                        interval={4}
                       />
                       <YAxis
                         tickFormatter={compactTick}
-                        tick={{ fontSize: isTiny ? 9 : 10, fill: 'rgba(94,109,143,0.95)' }}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
                         axisLine={false}
                         tickLine={false}
-                        width={isTiny ? 28 : 34}
+                        width={34}
                       />
                       <ReferenceLine y={rollingNetControl.mean} stroke="rgba(10,103,216,0.42)" strokeDasharray="4 4" />
                       <ReferenceLine y={rollingNetControl.ucl} stroke="rgba(154,114,0,0.6)" strokeDasharray="4 4" />
@@ -1116,7 +1547,150 @@ export default function Dashboard() {
                 </p>
               </>
             ) : (
-              <p className="text-[11px] text-ink-3">Not enough daily net history yet to estimate control limits.</p>
+              <p className="text-[11px] text-ink-3">No enough daily net history yet to estimate control limits.</p>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-4 border-0">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
+                  <TrendingUp size={15} className="text-brand" />
+                </div>
+                <div>
+                  <p className="section-label">Spending Drift</p>
+                  <p className="text-caption text-ink-3 mt-0.5">This week vs 4-week average weekly spend</p>
+                </div>
+              </div>
+              <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${spendingDrift.driftAmount <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                {spendingDrift.driftAmount <= 0 ? 'Stable' : 'Drifting'}
+              </span>
+            </div>
+
+            {spendingDrift.hasData ? (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">This week</p>
+                    <p className="text-[12px] font-bold text-expense-text tabular-nums">{fmt(spendingDrift.thisWeekSpend)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">4w avg/week</p>
+                    <p className="text-[12px] font-bold text-ink tabular-nums">{fmt(spendingDrift.avg4WeekSpend)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Over baseline days</p>
+                    <p className="text-[12px] font-bold text-warning-text tabular-nums">{spendingDrift.overBaselineDays}/7</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Peak drift day</p>
+                    <p className="text-[12px] font-bold text-ink tabular-nums">{spendingDrift.topDriftDay?.day || '—'}</p>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-ink-3 mb-2">
+                  {spendingDrift.driftPct == null
+                    ? 'Not enough historical data yet for drift percentage.'
+                    : `Weekly drift is ${spendingDrift.driftPct >= 0 ? '+' : ''}${spendingDrift.driftPct}% against your 4-week baseline.`}
+                </p>
+
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mt-2">
+                  <ResponsiveContainer width="100%" height={188}>
+                    <BarChart data={spendingDrift.weekdaySeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                      <XAxis
+                        dataKey="day"
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tickFormatter={compactTick}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={34}
+                      />
+                      <RechartsTooltip content={<WeekdayDriftTooltip />} />
+                      <Bar dataKey="current" name="This week" fill="#9A7200" radius={[6, 6, 0, 0]} maxBarSize={20} />
+                      <Bar dataKey="baseline" name="4w baseline" fill="rgba(154, 114, 0, 0.35)" radius={[6, 6, 0, 0]} maxBarSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <p className="text-[10px] text-ink-3 mt-1.5">
+                  Biggest upward pressure: {spendingDrift.topDriftDay?.day || '—'} ({fmt(Math.abs(spendingDrift.topDriftDay?.delta || 0))}).
+                  Cooling signal: {spendingDrift.coolingDay?.day || '—'} ({fmt(Math.abs(spendingDrift.coolingDay?.delta || 0))}).
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-ink-3">No enough weekly spend history yet. Keep logging transactions to unlock drift drivers.</p>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-4 border-0">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="section-label">Weekday spend spread</p>
+                <p className="text-caption text-ink-3 mt-0.5">Box-plot style spread by weekday using the last 8 weeks</p>
+              </div>
+              <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
+                8-week window
+              </span>
+            </div>
+
+            {weekdaySpread.hasData ? (
+              <>
+                <div className="grid grid-cols-2 gap-2 mb-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Widest spread</p>
+                    <p className="text-[12px] font-bold tabular-nums text-warning-text">{weekdaySpread.widestSpreadDay?.day || '—'}</p>
+                    <p className="text-[10px] text-ink-3 mt-0.5">IQR {fmt(weekdaySpread.widestSpreadDay?.iqr || 0)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Steadiest day</p>
+                    <p className="text-[12px] font-bold tabular-nums text-income-text">{weekdaySpread.steadiestDay?.day || '—'}</p>
+                    <p className="text-[10px] text-ink-3 mt-0.5">IQR {fmt(weekdaySpread.steadiestDay?.iqr || 0)}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                  <ResponsiveContainer width="100%" height={206}>
+                    <ComposedChart data={weekdaySpread.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                      <XAxis
+                        dataKey="day"
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tickFormatter={compactTick}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={34}
+                      />
+                      <RechartsTooltip content={<WeekdaySpreadTooltip />} />
+                      <Bar dataKey="whiskerBase" stackId="whisker" fill="transparent" barSize={6} />
+                      <Bar dataKey="whiskerRange" stackId="whisker" fill="rgba(10, 103, 216, 0.25)" barSize={6} radius={[4, 4, 4, 4]} />
+                      <Bar dataKey="boxBase" stackId="box" fill="transparent" barSize={14} />
+                      <Bar dataKey="boxHeight" stackId="box" fill="rgba(10, 103, 216, 0.65)" barSize={14} radius={[4, 4, 4, 4]} />
+                      <Line type="monotone" dataKey="median" stroke="#10213F" strokeWidth={1.8} dot={false} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <p className="text-[10px] text-ink-3 mt-1.5">
+                  Narrow boxes imply consistent spend behavior. Wide boxes and whiskers indicate high weekday variability and planning risk.
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-ink-3">No enough spend points in the last 8 weeks to estimate weekday spread.</p>
             )}
           </div>
         </motion.div>
@@ -1223,16 +1797,41 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5 mb-2.5">
-                  {duePipeline.stageRows.map((stage) => (
-                    <div key={`pipeline-${stage.stage}`} className="rounded-card bg-kosha-surface-2 px-2.5 py-2 flex items-center justify-between gap-2">
-                      <p className="text-[11px] text-ink-2">{stage.stage}</p>
-                      <p className="text-[11px] font-semibold text-ink tabular-nums">{stage.count} • {fmt(stage.amount)}</p>
-                    </div>
-                  ))}
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                  <ResponsiveContainer width="100%" height={198}>
+                    <BarChart data={duePipeline.stageRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                      <XAxis
+                        dataKey="stage"
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        allowDecimals={false}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={28}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tickFormatter={compactTick}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={34}
+                      />
+                      <RechartsTooltip content={<DuePipelineTooltip />} />
+                      <Bar yAxisId="left" dataKey="count" name="Bills" fill="#0A67D8" radius={[6, 6, 0, 0]} maxBarSize={18} />
+                      <Bar yAxisId="right" dataKey="amount" name="Amount" fill="rgba(154, 114, 0, 0.72)" radius={[6, 6, 0, 0]} maxBarSize={18} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
 
-                <p className="text-[11px] text-ink-3">{duePipeline.action.note}</p>
+                <p className="text-[11px] text-ink-3 mt-2">{duePipeline.action.note}</p>
 
                 <button
                   type="button"
@@ -1249,7 +1848,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Bill alert ────────────────────────────────────────────── */}
-        {dueSoonCount > 0 && cashRiskRadar.risk !== 'Low' && (
+        {dueSoonCount > 0 && (
           <motion.div variants={fadeUp}>
             <button onClick={() => navigate('/bills')}
               className="card-warn w-full flex items-center justify-between px-4 py-4 text-left">
@@ -1266,6 +1865,86 @@ export default function Dashboard() {
               </div>
               <ArrowRight size={15} className="text-ink-4 shrink-0" />
             </button>
+          </motion.div>
+        )}
+
+        {heavyReady && weeklyDigest.hasSignals && (
+          <motion.div variants={fadeUp}>
+            <div className="card p-4 bg-kosha-surface border-0">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <p className="section-label">What changed this week</p>
+                  <p className="text-caption text-ink-3 mt-0.5">7-day vs previous 7-day digest</p>
+                </div>
+                <span className={`text-[11px] px-2.5 py-1 rounded-pill font-semibold border ${weeklyDigest.spendDelta <= 0 ? 'bg-income-bg text-income-text border-income-border' : 'bg-warning-bg text-warning-text border-warning-border'}`}>
+                  {weeklyDigest.spendDelta <= 0 ? 'Spending cooled' : 'Spending up'}
+                </span>
+              </div>
+
+              <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
+                <ResponsiveContainer width="100%" height={214}>
+                  <BarChart data={weeklyDigest.comparisonSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                    <XAxis
+                      dataKey="metric"
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tickFormatter={compactTick}
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={34}
+                    />
+                    <RechartsTooltip content={<WeeklyDigestTooltip />} />
+                    <Bar dataKey="current" name="Current 7d" fill="#0A67D8" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="previous" name="Previous 7d" fill="rgba(10, 103, 216, 0.34)" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mb-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3">Spend delta</p>
+                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                    {weeklyDigest.spendDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.spendDelta))}
+                  </p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3">Income delta</p>
+                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                    {weeklyDigest.incomeDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.incomeDelta))}
+                  </p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3">Net delta</p>
+                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.netDelta >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                    {weeklyDigest.netDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.netDelta))}
+                  </p>
+                </div>
+              </div>
+
+              {weeklyDigest.topCategories.length > 0 && (() => {
+                const row = weeklyDigest.topCategories[0]
+                return (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] text-ink-3">Top spend category this week</p>
+                    <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <p className="text-[11px] font-semibold text-ink-2 truncate">{row.label}</p>
+                        <p className="text-[11px] font-semibold text-expense-text tabular-nums shrink-0">{fmt(row.value)}</p>
+                      </div>
+                      <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                        <div className="h-full rounded-pill bg-warning-text" style={{ width: `${Math.max(8, row.sharePct)}%` }} />
+                      </div>
+                      <p className="text-[10px] text-ink-3 tabular-nums mt-1">{row.sharePct}% of current-week spend</p>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
           </motion.div>
         )}
 
