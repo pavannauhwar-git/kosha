@@ -119,3 +119,7 @@ All data cards should follow:
 - Every metric card must point to a related action.
 - Weekly data appears only on weekly/daily surfaces.
 - Yearly surfaces avoid short-window noise unless explicitly labeled.
+
+## Chart Strategy Source of Truth
+- Strict chart inventory matrix and redundancy decisions: see `docs/CHART_INVENTORY_ROADMAP.md`.
+- Final locked 36-chart roadmap with execution order: see `docs/CHART_INVENTORY_ROADMAP.md`.

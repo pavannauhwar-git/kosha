@@ -39,6 +39,10 @@ function TreemapCell(props) {
   const { x, y, width, height, payload } = props
   if (!Number.isFinite(x) || !Number.isFinite(y) || width <= 0 || height <= 0 || !payload) return null
 
+  // Recharts invokes custom content for internal/root nodes too.
+  // Skip non-leaf nodes so they do not paint over child tiles.
+  if (Array.isArray(payload.children) && payload.children.length > 0) return null
+
   const showLabel = width > 72 && height > 34
   const showAmount = width > 102 && height > 54
 
@@ -139,9 +143,10 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
             <Treemap
               data={treemapRows}
               dataKey="value"
+              nameKey="name"
               stroke="rgba(255,255,255,0.9)"
               content={<TreemapCell />}
-              isAnimationActive
+              isAnimationActive={false}
             >
               <RechartsTooltip content={<TreemapTooltip total={safeTotal} />} />
             </Treemap>
@@ -149,7 +154,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         </div>
 
         <div className="space-y-1.5">
-          {treemapRows.slice(0, 6).map((row) => (
+          {treemapRows.slice(0, 3).map((row) => (
             <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2 min-w-0">

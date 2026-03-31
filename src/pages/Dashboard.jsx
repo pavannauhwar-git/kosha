@@ -1165,10 +1165,11 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {weeklyDigest.topCategories.length > 0 && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-ink-3">Top spend categories this week</p>
-                  {weeklyDigest.topCategories.map((row) => (
+              {weeklyDigest.topCategories.length > 0 && (() => {
+                const row = weeklyDigest.topCategories[0]
+                return (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] text-ink-3">Top spend category this week</p>
                     <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <p className="text-[11px] font-semibold text-ink-2 truncate">{row.label}</p>
@@ -1179,9 +1180,9 @@ export default function Dashboard() {
                       </div>
                       <p className="text-[10px] text-ink-3 tabular-nums mt-1">{row.sharePct}% of current-week spend</p>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                )
+              })()}
             </div>
           </motion.div>
         )}

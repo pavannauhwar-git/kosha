@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
 import { CATEGORIES } from '../lib/categories'
+import { C } from '../lib/colors'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
 import { fmt, daysUntil } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
@@ -30,6 +31,9 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceLine,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts'
 
 function quantile(sortedValues, p) {
@@ -125,6 +129,29 @@ function CategoryBehaviorTooltip({ active, payload }) {
         <div className="flex items-center justify-between gap-3">
           <span className="text-ink-3">Txn count</span>
           <span className="font-semibold tabular-nums text-brand">{Number(row?.count || 0)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PortfolioMixTooltip({ active, payload, total }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+  const value = Number(row?.value || 0)
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[170px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{row?.name || 'Vehicle'}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Allocated</span>
+          <span className="font-semibold tabular-nums text-invest-text">{fmt(value)}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Share</span>
+          <span className="font-semibold tabular-nums text-ink">{pct}%</span>
         </div>
       </div>
     </div>
@@ -446,9 +473,41 @@ export default function Monthly() {
 
     const total = rows.reduce((sum, row) => sum + row.value, 0)
     const top = rows[0] || null
-    const second = rows[1] || null
     const topPct = top && total > 0 ? Math.round((top.value / total) * 100) : 0
     const deployRate = inflow > 0 ? Math.round((invested / inflow) * 100) : 0
+
+    const palette = [C.brand, C.brandMid, C.brandLight, C.ink, C.invest, C.brandBorder]
+    const maxSlices = 5
+    const visibleRows = rows.slice(0, maxSlices)
+    const visibleTotal = visibleRows.reduce((sum, row) => sum + row.value, 0)
+
+    const mixRows = visibleRows.map((row, index) => ({
+      ...row,
+      pct: total > 0 ? Math.round((row.value / total) * 100) : 0,
+      color: palette[index % palette.length],
+    }))
+
+    if (rows.length > maxSlices && total > visibleTotal) {
+      const otherValue = total - visibleTotal
+      mixRows.push({
+        name: 'Other',
+        value: otherValue,
+        pct: total > 0 ? Math.round((otherValue / total) * 100) : 0,
+        color: C.brandBorder,
+      })
+    }
+
+    const diversityFromCount = Math.min(40, rows.length * 12)
+    const concentrationPenalty = Math.max(0, topPct - 35)
+    const diversificationScore = total > 0
+      ? Math.max(0, Math.min(100, Math.round(60 + diversityFromCount - (concentrationPenalty * 1.4))))
+      : 0
+
+    const concentrationBand = topPct >= 60
+      ? 'High concentration'
+      : topPct >= 45
+        ? 'Moderate concentration'
+        : 'Balanced concentration'
 
     const actions = []
     if (total <= 0) {
@@ -485,9 +544,11 @@ export default function Monthly() {
       rows,
       total,
       top,
-      second,
       topPct,
       deployRate,
+      mixRows,
+      diversificationScore,
+      concentrationBand,
       actions,
       nextAction,
     }
@@ -959,56 +1020,107 @@ export default function Monthly() {
                 }}
               />
 
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Primary vehicle</p>
-                  <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
-                  <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">current focus</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Top share</p>
-                  <p className="text-[12px] font-bold tabular-nums text-brand">{monthlyPortfolioSnapshot.topPct}%</p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-caption text-ink-3">Deploy rate</p>
-                  <p className={`text-[12px] font-bold tabular-nums ${monthlyPortfolioSnapshot.deployRate >= 12 && monthlyPortfolioSnapshot.deployRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>
-                    {monthlyPortfolioSnapshot.deployRate}%
-                  </p>
+              <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
+                <div className="grid md:grid-cols-[1.05fr_0.95fr] gap-3">
+                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                    {monthlyPortfolioSnapshot.mixRows.length > 0 ? (
+                      <div className="relative h-[196px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={monthlyPortfolioSnapshot.mixRows}
+                              dataKey="value"
+                              nameKey="name"
+                              innerRadius={52}
+                              outerRadius={82}
+                              paddingAngle={2}
+                              stroke="#FFFFFF"
+                              strokeWidth={2}
+                            >
+                              {monthlyPortfolioSnapshot.mixRows.map((row) => (
+                                <Cell key={`monthly-vehicle-slice-${row.name}`} fill={row.color} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip content={<PortfolioMixTooltip total={monthlyPortfolioSnapshot.total} />} />
+                          </PieChart>
+                        </ResponsiveContainer>
+
+                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                          <p className="text-[10px] text-ink-3">Allocated</p>
+                          <p className="text-[16px] font-bold tabular-nums text-ink">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
+                          <p className="text-[10px] text-ink-3">{monthlyPortfolioSnapshot.rows.length} vehicle{monthlyPortfolioSnapshot.rows.length === 1 ? '' : 's'}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-[196px] flex items-center justify-center">
+                        <p className="text-[11px] text-ink-3 text-center max-w-[220px]">Investments are logged, but no vehicle tags are present yet. Add a vehicle tag to unlock allocation intelligence.</p>
+                      </div>
+                    )}
+
+                    {monthlyPortfolioSnapshot.top && (
+                      <p className="text-[11px] text-ink-3 mt-1">
+                        Largest vehicle is <span className="font-semibold text-ink">{monthlyPortfolioSnapshot.top.name}</span> at <span className="font-semibold text-ink">{monthlyPortfolioSnapshot.topPct}%</span>.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                        <p className="text-caption text-ink-3">Deploy rate</p>
+                        <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.deployRate >= 12 && monthlyPortfolioSnapshot.deployRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>
+                          {monthlyPortfolioSnapshot.deployRate}%
+                        </p>
+                      </div>
+                      <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                        <p className="text-caption text-ink-3">Concentration</p>
+                        <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.topPct >= 55 ? 'text-warning-text' : 'text-brand'}`}>
+                          {monthlyPortfolioSnapshot.topPct}%
+                        </p>
+                        <p className="text-[10px] text-ink-3 mt-0.5">{monthlyPortfolioSnapshot.concentrationBand}</p>
+                      </div>
+                      <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                        <p className="text-caption text-ink-3">Diversification</p>
+                        <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.diversificationScore >= 70 ? 'text-income-text' : monthlyPortfolioSnapshot.diversificationScore >= 50 ? 'text-brand' : 'text-warning-text'}`}>
+                          {monthlyPortfolioSnapshot.diversificationScore}/100
+                        </p>
+                      </div>
+                      <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+                        <p className="text-caption text-ink-3">Primary vehicle</p>
+                        <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
+                      </div>
+                    </div>
+
+                    {monthlyPortfolioSnapshot.rows.length > 0 && (
+                      <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 space-y-1.5">
+                        {monthlyPortfolioSnapshot.rows.slice(0, 3).map((row) => {
+                          const pct = monthlyPortfolioSnapshot.total > 0
+                            ? Math.round((row.value / monthlyPortfolioSnapshot.total) * 100)
+                            : 0
+                          const color = monthlyPortfolioSnapshot.mixRows.find((slice) => slice.name === row.name)?.color || C.brand
+
+                          return (
+                            <div key={`monthly-portfolio-row-${row.name}`} className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                                <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
+                              </div>
+                              <p className="text-[11px] tabular-nums text-ink shrink-0">{pct}% · {fmt(row.value, true)}</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {monthlyPortfolioSnapshot.rows.length > 0 ? (
-                <div className="space-y-2 mb-2">
-                  {monthlyPortfolioSnapshot.rows.slice(0, 4).map((row) => {
-                    const pct = monthlyPortfolioSnapshot.total > 0
-                      ? Math.round((row.value / monthlyPortfolioSnapshot.total) * 100)
-                      : 0
-
-                    return (
-                      <div key={row.name}>
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-[11px] text-ink-2 truncate">{row.name}</span>
-                          <div className="text-right shrink-0">
-                            <p className="text-[11px] text-ink-2 tabular-nums leading-tight">{fmt(row.value)}</p>
-                            <p className="text-[10px] text-ink-3 tabular-nums leading-tight">{pct}%</p>
-                          </div>
-                        </div>
-                        <div className="h-1.5 rounded-pill bg-brand-container/55 overflow-hidden">
-                          <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(8, pct)}%` }} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className="text-[11px] text-ink-3 mb-2">Investment entries exist but vehicle allocation is not tagged yet.</p>
-              )}
-
-              <div className="space-y-1.5 mb-3">
+              <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 space-y-1.5 mb-3">
                 {monthlyPortfolioSnapshot.actions.slice(0, 3).map((line, index) => (
-                  <p key={`monthly-portfolio-action-${index}`} className="text-[11px] text-ink-3">
-                    {index + 1}. {line}
-                  </p>
+                  <div key={`monthly-portfolio-action-${index}`} className="flex items-start gap-2">
+                    <span className="w-4 text-right text-[11px] font-bold text-brand shrink-0">{index + 1}</span>
+                    <p className="text-[11px] text-ink-3 leading-relaxed">{line}</p>
+                  </div>
                 ))}
               </div>
 
