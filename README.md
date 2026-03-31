@@ -1,6 +1,6 @@
 # Kosha
 
-Kosha is a personal finance Progressive Web App (PWA) for tracking transactions, bills, monthly budgets, and financial insights.
+Kosha is a personal finance Progressive Web App (PWA) for tracking transactions, bills, monthly performance, and financial insights.
 
 ## Table of contents
 
@@ -52,9 +52,9 @@ Kosha is designed as a mobile-first finance app with:
    - Status: complete
    - Completed: recurring transaction engine (schema, generation RPC, UI wiring, export visibility), reminders, and undo flows
 
-3. Phase 3 (2 weeks): Reconciliation + advanced budget model
+3. Phase 3 (2 weeks): Reconciliation + advanced monthly intelligence
    - Status: complete
-   - Completed: reconciliation workspace with review queue, quick category fixes, statement-style matching, linked/reviewed queue filtering, confidence drift/trend analytics, monthly entry point, budget variance intelligence, server-backed review persistence, and deterministic reconciliation-focused automated tests
+   - Completed: reconciliation workspace with review queue, quick category fixes, statement-style matching, linked/reviewed queue filtering, confidence drift/trend analytics, monthly entry point, server-backed review persistence, and deterministic reconciliation-focused automated tests
 
 4. Phase 4 (ongoing): Shared wallets, localization, deep analytics
    - Status: complete
@@ -67,7 +67,7 @@ Release 1.2.0: Adoption and Guidance
 - New in-app Guide / Features hub
 - "Getting Started in 3 minutes" walkthrough
 - Feature map: Dashboard, Transactions, Bills, Analytics, Exports, Recurring
-- "How to use" recipes (monthly budget setup, bill routine, recurring setup)
+- "How to use" recipes (monthly close review, bill routine, recurring setup)
 - Contextual first-use hints (dismissible)
 
 Release 1.3.0: Focused Dashboard UX

@@ -13,7 +13,7 @@ Kosha should help users:
 Purpose: Daily command center.
 Success signal: User identifies one clear next action in under 5 seconds.
 Key blocks:
-- Hero balance and month pace.
+- Hero balance and near-term cash risk pulse.
 - Today focus and action CTAs.
 - Weekly change digest.
 - Recent activity and financial event feed.
@@ -35,11 +35,11 @@ Key blocks:
 - Mark paid and delete with explicit progress state.
 
 ### Monthly
-Purpose: Month performance and budget control.
+Purpose: Month performance and cashflow control.
 Success signal: User knows if month is on-track and what to correct.
 Key blocks:
 - Month hero.
-- Budget variance and close projection.
+- Close projection and quality checkpoints.
 - Reconciliation entry point.
 
 ### Analytics

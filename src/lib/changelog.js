@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.1.11',
+    date: 'March 2026',
+    items: [
+      'Temporarily removed budget module from active app surfaces for a full redesign and improved data contract',
+      'Simplified YoY analytics card by removing anomaly and confidence-band controls',
+      'Refocused Dashboard daily variance into a single absolute heatmap with per-day hover spend details',
+      'Redesigned Dashboard weekly digest with comparison charts and clearer top-category distribution visuals',
+      'Standardized spent-by-category visualization to treemap-first with explicit numeric values',
+    ],
+  },
+  {
     version: '1.1.10',
     date: 'March 2026',
     items: [
@@ -39,7 +50,7 @@ export const CHANGELOG = [
       'Extended deploy-readiness verification to explicitly check reconciliation_reviews table availability',
       'Added reconciliation flow runtime verification (persist + alias-reset path) with migration-aware skip behavior for environments not yet updated, and included it in release-candidate checks',
       'Added Monthly entry card that surfaces pending reconciliation count and deep-links into the review workspace',
-      'Added advanced Monthly budget variance panel with projected month-end delta and category risk buckets',
+      'Added advanced Monthly variance panel with projected month-end delta and category risk buckets',
       'Reduced Dashboard guide prompt intensity to a lighter helper card to avoid first-screen pressure',
       'Added optional dev-only query timing traces via localStorage flag kosha:trace-queries=1',
     ],
