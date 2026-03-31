@@ -36,11 +36,23 @@ function TreemapTooltip({ active, payload, total }) {
 }
 
 function TreemapCell(props) {
-  const { x, y, width, height, payload } = props
-  // Treemap may not always provide a stable `depth` prop across versions.
-  // Render only leaf nodes by skipping internal nodes that have children.
-  if (Array.isArray(payload?.children) && payload.children.length > 0) return null
-  if (!Number.isFinite(x) || !Number.isFinite(y) || width <= 0 || height <= 0 || !payload) return null
+  const {
+    x,
+    y,
+    width,
+    height,
+    children,
+    name,
+    sharePct,
+    amountShort,
+    tileColor,
+    accentColor,
+  } = props
+
+  // Recharts Treemap passes node fields directly to custom `content`.
+  // Skip only internal nodes; leaf nodes must always paint.
+  if (Array.isArray(children) && children.length > 0) return null
+  if (!Number.isFinite(x) || !Number.isFinite(y) || width <= 0 || height <= 0) return null
 
   const showLabel = width > 74 && height > 32
   const showMeta = width > 110 && height > 52
@@ -54,7 +66,7 @@ function TreemapCell(props) {
         height={height}
         rx={8}
         ry={8}
-        fill={payload.tileColor || '#E7F2FF'}
+        fill={tileColor || '#E7F2FF'}
         stroke="rgba(255,255,255,0.95)"
         strokeWidth={1}
       />
@@ -65,18 +77,18 @@ function TreemapCell(props) {
         height={4}
         rx={2}
         ry={2}
-        fill={payload.accentColor || C.brand}
+        fill={accentColor || C.brand}
         fillOpacity={0.92}
       />
 
       {showLabel && (
         <text x={x + 7} y={y + 18} fill="#1F2B5D" fontSize={11} fontWeight={700}>
-          {payload.name}
+          {name}
         </text>
       )}
       {showMeta && (
         <text x={x + 7} y={y + 34} fill="rgba(31,43,93,0.72)" fontSize={10} fontWeight={600}>
-          {payload.sharePct}% · {payload.amountShort}
+          {sharePct}% · {amountShort}
         </text>
       )}
     </g>
