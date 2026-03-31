@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
-import SectionHeader from '../components/common/SectionHeader'
 import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
 import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
@@ -628,25 +627,13 @@ export default function Analytics() {
                 year={year}
               />
 
-              {strategicRecommendations.length > 0 && (
-                <motion.div whileHover={{ y: -1 }} transition={{ duration: 0.14 }} className="card p-4">
-                  <SectionHeader
-                    className="mb-1"
-                    title="So what now?"
-                    rightText="Actionable next steps"
-                  />
-                  <div className="space-y-2.5">
-                    {strategicRecommendations.map((line, i) => (
-                      <div key={line} className="flex items-start gap-2.5">
-                        <span className="text-[11px] font-bold text-brand mt-0.5 shrink-0 w-4 text-right">{i + 1}</span>
-                        <p className="text-[12px] text-ink-2 leading-relaxed">{line}</p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              <YearlyInsightsCard data={data} catEntries={catEntries} />
+              <YearlyInsightsCard
+                year={year}
+                data={data}
+                catEntries={catEntries}
+                strategicRecommendations={strategicRecommendations}
+                decisionSignals={decisionSignals}
+              />
 
               <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
 
@@ -986,20 +973,6 @@ export default function Analytics() {
                 totalExpense={data?.totalExpense}
                 totalInvestment={data?.totalInvestment}
               />
-
-              {decisionSignals.length > 0 && (
-                <div className="card p-4">
-                  <SectionHeader title="Decision signals" rightText="What to act on" className="mb-2" />
-                  <div className="space-y-2">
-                    {decisionSignals.map((line, idx) => (
-                      <div key={`signal-${idx}`} className="flex items-start gap-2.5">
-                        <span className="w-5 h-5 rounded-pill bg-brand-container text-brand-on text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
-                        <p className="text-[12px] text-ink-2 leading-relaxed">{line}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Spent-by-category section intentionally removed; yearly portfolio lives in the snapshot card above. */}
             </div>

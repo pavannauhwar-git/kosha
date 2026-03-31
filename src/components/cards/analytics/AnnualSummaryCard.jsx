@@ -205,54 +205,48 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
 
   return (
     <div className="card p-4 md:p-5 overflow-hidden">
-      <div
-        className="rounded-card border p-3.5 mb-3.5"
-        style={{
-          borderColor: C.brandBorder,
-          background: 'linear-gradient(135deg, rgba(231,242,255,0.92) 0%, rgba(255,255,255,0.98) 64%, rgba(235,245,255,0.78) 100%)',
-        }}
-      >
+      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3.5 mb-3.5">
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div>
             <p className="section-label">Annual command center</p>
             <p className="text-[12px] text-ink-3 mt-0.5">Strategic readout for {year}: balance health, deployment rhythm, and momentum.</p>
           </div>
-          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill border border-white/80 bg-white/65 text-ink-2">
+          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill border border-kosha-border bg-kosha-surface text-ink-2">
             {year}
           </span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-2.5">
-          <div className="rounded-card bg-white/75 border border-white/80 p-2.5">
+          <div className="rounded-card bg-kosha-surface border border-kosha-border p-2.5">
             <p className="text-[10px] text-ink-3">Year surplus</p>
             <p className={`text-[14px] font-bold tabular-nums ${annualBalance >= 0 ? 'text-brand' : 'text-warning-text'}`}>
               {annualBalance >= 0 ? '+' : '-'}{fmt(Math.abs(annualBalance))}
             </p>
           </div>
-          <div className="rounded-card bg-white/75 border border-white/80 p-2.5">
+          <div className="rounded-card bg-kosha-surface border border-kosha-border p-2.5">
             <p className="text-[10px] text-ink-3">Avg surplus</p>
             <p className="text-[14px] font-bold tabular-nums text-ink">{avgSurplusRate}%</p>
           </div>
-          <div className="rounded-card bg-white/75 border border-white/80 p-2.5">
+          <div className="rounded-card bg-kosha-surface border border-kosha-border p-2.5">
             <p className="text-[10px] text-ink-3">Deploy rate</p>
             <p className={`text-[14px] font-bold tabular-nums ${deploymentRate >= 12 && deploymentRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>
               {deploymentRate}%
             </p>
           </div>
-          <div className="rounded-card bg-white/75 border border-white/80 p-2.5">
+          <div className="rounded-card bg-kosha-surface border border-kosha-border p-2.5">
             <p className="text-[10px] text-ink-3">Positive months</p>
             <p className="text-[14px] font-bold tabular-nums text-ink">{positiveMonths}/12</p>
           </div>
         </div>
 
-        <div className="rounded-card bg-white/78 border border-white/80 p-2.5">
+        <div className="rounded-card bg-kosha-surface border border-kosha-border p-2.5">
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <p className="text-[11px] font-semibold text-ink-2">Flow structure</p>
             <span className={`text-[11px] font-semibold ${annualBalance >= 0 ? 'text-brand' : 'text-warning-text'}`}>
               {annualBalanceDelta.label}
             </span>
           </div>
-          <div className="h-2.5 rounded-pill bg-white/90 overflow-hidden border border-white/80 flex">
+          <div className="h-2.5 rounded-pill bg-kosha-border overflow-hidden border border-kosha-border flex">
             {flowMixRows.map((row) => (
               <motion.div
                 key={row.key}
@@ -266,7 +260,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
           </div>
           <div className="mt-1.5 grid grid-cols-2 md:grid-cols-3 gap-1.5">
             {flowMixRows.map((row) => (
-              <div key={`mix-${row.key}`} className="flex items-center justify-between gap-2 rounded-card bg-white/65 px-2 py-1 border border-white/80">
+              <div key={`mix-${row.key}`} className="flex items-center justify-between gap-2 rounded-card bg-kosha-surface-2 px-2 py-1 border border-kosha-border">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
                   <span className="text-[10px] text-ink-2 truncate">{row.label}</span>

@@ -17,9 +17,13 @@ import { createFadeUp, createStagger } from '../lib/animations'
 import {
   ResponsiveContainer,
   BarChart,
+  ComposedChart,
   Bar,
   LineChart,
   Line,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -90,6 +94,144 @@ function compactTick(value) {
   if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
   if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
   return `${Math.round(n)}`
+}
+
+function quantile(sortedValues, p) {
+  if (!sortedValues.length) return 0
+  const index = (sortedValues.length - 1) * p
+  const lowerIndex = Math.floor(index)
+  const upperIndex = Math.ceil(index)
+
+  if (lowerIndex === upperIndex) return sortedValues[lowerIndex]
+
+  const weight = index - lowerIndex
+  return (sortedValues[lowerIndex] * (1 - weight)) + (sortedValues[upperIndex] * weight)
+}
+
+function hourWindowLabel(hour) {
+  const safeHour = Number(hour)
+  const endHour = (safeHour + 1) % 24
+  const formatter = (h) => {
+    if (h === 0) return '12 AM'
+    if (h < 12) return `${h} AM`
+    if (h === 12) return '12 PM'
+    return `${h - 12} PM`
+  }
+  return `${formatter(safeHour)} - ${formatter(endHour)}`
+}
+
+function resolveTxnTimestamp(row) {
+  const rawDate = String(row?.date || '')
+  const dateHasTime = rawDate.includes('T') || /\d{2}:\d{2}/.test(rawDate)
+  const source = dateHasTime ? row?.date : (row?.created_at || row?.date)
+  const ts = new Date(source || 0).getTime()
+  return Number.isFinite(ts) ? ts : null
+}
+
+function IntradayClockTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[178px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{row?.hourLabel || 'Hour'}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Discretionary spend</span>
+          <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row?.spend || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Txn count</span>
+          <span className="font-semibold tabular-nums text-ink">{Math.round(Number(row?.txnCount || 0))}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function NetControlTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+  const net = Number(row?.net || 0)
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[188px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Daily net</span>
+          <span className={`font-semibold tabular-nums ${net >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+            {net >= 0 ? '+' : '-'}{fmt(Math.abs(net))}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Rolling 7d</span>
+          <span className="font-semibold tabular-nums text-brand">{fmt(Number(row?.rolling7 || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Control signal</span>
+          <span className={`font-semibold ${row?.isSignal ? 'text-warning-text' : 'text-income-text'}`}>
+            {row?.isSignal ? 'Out-of-band' : 'Normal'}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function WeekdaySpreadTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Min</span><span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.min || 0))}</span></div>
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Q1</span><span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.q1 || 0))}</span></div>
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Median</span><span className="font-semibold tabular-nums text-brand">{fmt(Number(row?.median || 0))}</span></div>
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Q3</span><span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.q3 || 0))}</span></div>
+        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Max</span><span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row?.max || 0))}</span></div>
+      </div>
+    </div>
+  )
+}
+
+function DuePipelineTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[172px]">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Bills</span>
+          <span className="font-semibold tabular-nums text-ink">{Math.round(Number(row?.count || 0))}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Amount</span>
+          <span className="font-semibold tabular-nums text-warning-text">{fmt(Number(row?.amount || 0))}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function NetSignalDot(props) {
+  const { cx, cy, payload } = props
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null
+
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={payload?.isSignal ? 3.6 : 2.5}
+      fill={payload?.isSignal ? '#E11D48' : '#0A67D8'}
+      stroke="#FFFFFF"
+      strokeWidth={payload?.isSignal ? 1.8 : 1.2}
+    />
+  )
 }
 
 function WeeklyDigestTooltip({ active, payload, label }) {
@@ -288,7 +430,7 @@ export default function Dashboard() {
     balanceHorizonDate.getFullYear(),
     balanceHorizonDate.getMonth() + 1
   )
-  const { pending: bills = [] } = useLiabilities({ includePaid: false, enabled: heavyReady })
+  const { pending: bills = [], paid: paidBills = [] } = useLiabilities({ includePaid: true, enabled: heavyReady })
   const { data: financialEvents = [] } = useFinancialEvents(3, { enabled: heavyReady })
 
   const heroLoading = summaryLoading || runningBalanceLoading
@@ -472,6 +614,327 @@ export default function Dashboard() {
       heatmapRange: `${heatmapDays[0]?.label || ''} - ${heatmapDays[heatmapDays.length - 1]?.label || ''}`,
     }
   }, [digestTxnRows, now])
+
+  const intradayClock = useMemo(() => {
+    const dayMs = 24 * 60 * 60 * 1000
+    const nowTs = now.getTime()
+    const startTs = nowTs - (56 * dayMs)
+
+    const hourlyRows = Array.from({ length: 24 }, (_, hourIndex) => ({
+      hour: hourIndex,
+      hourLabel: hourWindowLabel(hourIndex),
+      spend: 0,
+      txnCount: 0,
+      value: 1,
+      fill: 'rgba(16,33,63,0.08)',
+      sharePct: 0,
+    }))
+
+    let totalSpend = 0
+    let totalTxn = 0
+    let fallbackRows = 0
+
+    for (const row of (Array.isArray(digestTxnRows) ? digestTxnRows : [])) {
+      if (row?.type !== 'expense') continue
+      if (!CONTROLLABLE_CATEGORY_IDS.has(String(row?.category || 'other'))) continue
+
+      const amount = Number(row?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+
+      const rawDate = String(row?.date || '')
+      const usedFallback = !(rawDate.includes('T') || /\d{2}:\d{2}/.test(rawDate))
+      const ts = resolveTxnTimestamp(row)
+      if (!Number.isFinite(ts) || ts < startTs || ts > nowTs) continue
+
+      const hour = new Date(ts).getHours()
+      hourlyRows[hour].spend += amount
+      hourlyRows[hour].txnCount += 1
+      totalSpend += amount
+      totalTxn += 1
+      if (usedFallback) fallbackRows += 1
+    }
+
+    const maxSpend = Math.max(...hourlyRows.map((row) => row.spend), 1)
+    for (const row of hourlyRows) {
+      const intensity = row.spend > 0 ? (row.spend / maxSpend) : 0
+      row.fill = row.spend <= 0
+        ? 'rgba(16,33,63,0.08)'
+        : `rgba(10, 103, 216, ${Math.min(0.95, 0.20 + (intensity * 0.72))})`
+      row.sharePct = totalSpend > 0 ? Math.round((row.spend / totalSpend) * 100) : 0
+    }
+
+    const peakRow = [...hourlyRows].sort((a, b) => b.spend - a.spend)[0]
+    const quietPositiveRow = [...hourlyRows]
+      .filter((row) => row.spend > 0)
+      .sort((a, b) => a.spend - b.spend)[0] || null
+
+    return {
+      rows: hourlyRows,
+      totalSpend,
+      totalTxn,
+      peakRow,
+      quietPositiveRow,
+      fallbackRows,
+      hasData: totalTxn > 0,
+    }
+  }, [digestTxnRows, now])
+
+  const rollingNetControl = useMemo(() => {
+    const dayMs = 24 * 60 * 60 * 1000
+    const lookbackDays = 30
+    const nowTs = now.getTime()
+    const startTs = nowTs - ((lookbackDays - 1) * dayMs)
+
+    const byDate = new Map()
+    for (let i = lookbackDays - 1; i >= 0; i -= 1) {
+      const d = new Date(now)
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      byDate.set(key, {
+        key,
+        label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+        income: 0,
+        expense: 0,
+        investment: 0,
+      })
+    }
+
+    for (const row of (Array.isArray(digestTxnRows) ? digestTxnRows : [])) {
+      const ts = resolveTxnTimestamp(row)
+      if (!Number.isFinite(ts) || ts < startTs || ts > nowTs) continue
+
+      const d = new Date(ts)
+      d.setHours(0, 0, 0, 0)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const bucket = byDate.get(key)
+      if (!bucket) continue
+
+      const amount = Number(row?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+
+      if (row?.type === 'income' && !row?.is_repayment) {
+        bucket.income += amount
+      } else if (row?.type === 'expense') {
+        bucket.expense += amount
+      } else if (row?.type === 'investment') {
+        bucket.investment += amount
+      }
+    }
+
+    const baseRows = [...byDate.values()].map((row) => {
+      const outflow = row.expense + row.investment
+      return {
+        ...row,
+        outflow,
+        net: row.income - outflow,
+      }
+    })
+
+    const rows = baseRows.map((row, index) => {
+      const windowStart = Math.max(0, index - 6)
+      const windowRows = baseRows.slice(windowStart, index + 1)
+      const rolling7 = windowRows.length
+        ? Math.round(windowRows.reduce((sum, item) => sum + item.net, 0) / windowRows.length)
+        : row.net
+      return {
+        ...row,
+        rolling7,
+      }
+    })
+
+    const netValues = rows.map((row) => row.net)
+    const mean = netValues.length
+      ? netValues.reduce((sum, value) => sum + value, 0) / netValues.length
+      : 0
+    const variance = netValues.length
+      ? netValues.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / netValues.length
+      : 0
+    const stdDev = Math.sqrt(variance)
+    const ucl = mean + (2 * stdDev)
+    const lcl = mean - (2 * stdDev)
+
+    const controlRows = rows.map((row) => ({
+      ...row,
+      mean,
+      ucl,
+      lcl,
+      isSignal: row.net > ucl || row.net < lcl,
+    }))
+
+    const signalCount = controlRows.filter((row) => row.isSignal).length
+    const last7Average = controlRows.slice(-7).reduce((sum, row) => sum + row.net, 0) / Math.max(1, Math.min(7, controlRows.length))
+
+    return {
+      rows: controlRows,
+      mean,
+      ucl,
+      lcl,
+      signalCount,
+      last7Average,
+      hasData: controlRows.some((row) => row.income > 0 || row.outflow > 0),
+    }
+  }, [digestTxnRows, now])
+
+  const weekdaySpread = useMemo(() => {
+    const dayMs = 24 * 60 * 60 * 1000
+    const lookbackDays = 56
+    const nowTs = now.getTime()
+    const startTs = nowTs - ((lookbackDays - 1) * dayMs)
+
+    const dailyExpenseByDate = new Map()
+    for (const row of (Array.isArray(digestTxnRows) ? digestTxnRows : [])) {
+      if (row?.type !== 'expense') continue
+      const amount = Number(row?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+
+      const ts = resolveTxnTimestamp(row)
+      if (!Number.isFinite(ts) || ts < startTs || ts > nowTs) continue
+
+      const d = new Date(ts)
+      d.setHours(0, 0, 0, 0)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      dailyExpenseByDate.set(key, (dailyExpenseByDate.get(key) || 0) + amount)
+    }
+
+    const weekdayBuckets = Array.from({ length: 7 }, () => [])
+    for (let i = lookbackDays - 1; i >= 0; i -= 1) {
+      const d = new Date(now)
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const weekdayIndex = (d.getDay() + 6) % 7
+      weekdayBuckets[weekdayIndex].push(Number(dailyExpenseByDate.get(key) || 0))
+    }
+
+    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const rows = weekdayLabels.map((day, index) => {
+      const values = [...weekdayBuckets[index]].sort((a, b) => a - b)
+      const min = values[0] || 0
+      const q1 = quantile(values, 0.25)
+      const median = quantile(values, 0.50)
+      const q3 = quantile(values, 0.75)
+      const max = values[values.length - 1] || 0
+      const iqr = Math.max(0, q3 - q1)
+      const whiskerRange = Math.max(0, max - min)
+
+      return {
+        day,
+        min,
+        q1,
+        median,
+        q3,
+        max,
+        iqr,
+        sampleCount: values.length,
+        whiskerBase: min,
+        whiskerRange,
+        boxBase: q1,
+        boxHeight: iqr,
+      }
+    })
+
+    const widestSpreadDay = [...rows].sort((a, b) => b.iqr - a.iqr)[0]
+    const steadiestDay = [...rows].sort((a, b) => a.iqr - b.iqr)[0]
+
+    return {
+      rows,
+      widestSpreadDay,
+      steadiestDay,
+      hasData: rows.some((row) => row.max > 0),
+    }
+  }, [digestTxnRows, now])
+
+  const duePipeline = useMemo(() => {
+    const pendingRows = Array.isArray(bills) ? bills : []
+    const paidRows = Array.isArray(paidBills) ? paidBills : []
+
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    monthStart.setHours(0, 0, 0, 0)
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    monthEnd.setHours(23, 59, 59, 999)
+
+    const inMonth = [...pendingRows, ...paidRows].filter((row) => {
+      const ts = new Date(row?.due_date || 0).getTime()
+      return Number.isFinite(ts) && ts >= monthStart.getTime() && ts <= monthEnd.getTime()
+    })
+
+    const pendingInMonth = inMonth.filter((row) => !row?.paid)
+    const paidInMonth = inMonth.filter((row) => !!row?.paid)
+    const overdueRows = pendingInMonth.filter((row) => daysUntil(row?.due_date) < 0)
+    const dueSoonRows = pendingInMonth.filter((row) => {
+      const d = daysUntil(row?.due_date)
+      return d >= 0 && d <= 7
+    })
+    const upcomingRows = pendingInMonth.filter((row) => daysUntil(row?.due_date) > 7)
+
+    const amountOf = (rows) => rows.reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+
+    const stageRows = [
+      {
+        stage: 'Planned',
+        count: inMonth.length,
+        amount: amountOf(inMonth),
+      },
+      {
+        stage: 'Paid',
+        count: paidInMonth.length,
+        amount: amountOf(paidInMonth),
+      },
+      {
+        stage: 'Due soon',
+        count: dueSoonRows.length,
+        amount: amountOf(dueSoonRows),
+      },
+      {
+        stage: 'Overdue',
+        count: overdueRows.length,
+        amount: amountOf(overdueRows),
+      },
+      {
+        stage: 'Upcoming',
+        count: upcomingRows.length,
+        amount: amountOf(upcomingRows),
+      },
+    ]
+
+    const plannedCount = stageRows[0].count
+    const paidCount = stageRows[1].count
+    const overdueCount = stageRows[3].count
+    const completionPct = plannedCount > 0 ? Math.round((paidCount / plannedCount) * 100) : 100
+    const leakagePct = plannedCount > 0 ? Math.round((overdueCount / plannedCount) * 100) : 0
+
+    let action = {
+      label: 'Open bills',
+      route: '/bills',
+      note: 'Pipeline is healthy. Keep paying bills before they slide into overdue.',
+    }
+
+    if (overdueCount > 0) {
+      action = {
+        label: 'Fix overdue first',
+        route: '/bills',
+        note: `${overdueCount} bill${overdueCount > 1 ? 's are' : ' is'} overdue. Clear these first to reduce leakage in the due pipeline.`,
+      }
+    } else if (dueSoonRows.length > 0) {
+      action = {
+        label: 'Prepare due-soon bills',
+        route: '/bills',
+        note: `${dueSoonRows.length} bill${dueSoonRows.length > 1 ? 's are' : ' is'} due in the next 7 days. Queue payment now to preserve conversion.`,
+      }
+    }
+
+    return {
+      stageRows,
+      completionPct,
+      leakagePct,
+      plannedCount,
+      paidCount,
+      overdueCount,
+      action,
+      hasData: stageRows.some((row) => row.count > 0),
+    }
+  }, [bills, paidBills, now])
 
   const cashRiskRadar = useMemo(() => {
     const current = now.getTime()
@@ -845,6 +1308,92 @@ export default function Dashboard() {
         <motion.div variants={fadeUp}>
           <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="section-label">Intraday spend clock</p>
+                <p className="text-caption text-ink-3 mt-0.5">Discretionary spend hotspots by hour across the last 8 weeks</p>
+              </div>
+              <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-brand-container text-brand-on">
+                {intradayClock.totalTxn} txns
+              </span>
+            </div>
+
+            {intradayClock.hasData ? (
+              <>
+                <div className="grid grid-cols-3 gap-2 mb-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Discretionary spend</p>
+                    <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(intradayClock.totalSpend)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Peak hour</p>
+                    <p className="text-[12px] font-bold tabular-nums text-brand">{intradayClock.peakRow?.hourLabel || '—'}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Quiet positive hour</p>
+                    <p className="text-[12px] font-bold tabular-nums text-ink">{intradayClock.quietPositiveRow?.hourLabel || '—'}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                  <div className="grid md:grid-cols-[0.95fr_1.05fr] gap-2.5 items-center">
+                    <div className="relative h-[206px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={intradayClock.rows}
+                            dataKey="value"
+                            nameKey="hourLabel"
+                            innerRadius={58}
+                            outerRadius={92}
+                            paddingAngle={1.2}
+                            stroke="rgba(255,255,255,0.92)"
+                            strokeWidth={1.2}
+                          >
+                            {intradayClock.rows.map((row) => (
+                              <Cell key={`intraday-hour-${row.hour}`} fill={row.fill} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip content={<IntradayClockTooltip />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+
+                      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                        <p className="text-[10px] text-ink-3">Peak share</p>
+                        <p className="text-[16px] font-bold tabular-nums text-ink">{intradayClock.peakRow?.sharePct || 0}%</p>
+                        <p className="text-[10px] text-ink-3">of discretionary spend</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {[...intradayClock.rows]
+                        .sort((a, b) => b.spend - a.spend)
+                        .slice(0, 4)
+                        .map((row) => (
+                          <div key={`intraday-top-${row.hour}`} className="flex items-center justify-between rounded-card bg-kosha-surface px-2.5 py-2 border border-kosha-border">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.fill }} />
+                              <p className="text-[11px] text-ink-2 truncate">{row.hourLabel}</p>
+                            </div>
+                            <p className="text-[11px] font-semibold tabular-nums text-ink shrink-0">{fmt(row.spend)}</p>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-ink-3 mt-1.5">
+                  Darker sectors indicate higher discretionary spend concentration by hour. Use this to schedule guardrails before high-risk windows.
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-ink-3">Not enough timestamped discretionary spend yet to build intraday hotspots.</p>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-4 border-0">
+            <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-warning-bg flex items-center justify-center shrink-0">
                   <ShieldAlert size={15} className="text-warning-text" />
@@ -939,6 +1488,73 @@ export default function Dashboard() {
         <motion.div variants={fadeUp}>
           <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="section-label">Rolling net control chart</p>
+                <p className="text-caption text-ink-3 mt-0.5">30-day daily net stability with control-band signals</p>
+              </div>
+              <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${rollingNetControl.signalCount > 0 ? 'bg-warning-bg text-warning-text' : 'bg-income-bg text-income-text'}`}>
+                {rollingNetControl.signalCount} signal{rollingNetControl.signalCount === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            {rollingNetControl.hasData ? (
+              <>
+                <div className="grid grid-cols-3 gap-2 mb-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Control center</p>
+                    <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(rollingNetControl.mean)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Upper band</p>
+                    <p className="text-[12px] font-bold tabular-nums text-income-text">+{fmt(Math.abs(rollingNetControl.ucl))}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Lower band</p>
+                    <p className="text-[12px] font-bold tabular-nums text-warning-text">-{fmt(Math.abs(rollingNetControl.lcl))}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                  <ResponsiveContainer width="100%" height={194}>
+                    <LineChart data={rollingNetControl.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval={4}
+                      />
+                      <YAxis
+                        tickFormatter={compactTick}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={34}
+                      />
+                      <ReferenceLine y={rollingNetControl.mean} stroke="rgba(10,103,216,0.42)" strokeDasharray="4 4" />
+                      <ReferenceLine y={rollingNetControl.ucl} stroke="rgba(154,114,0,0.6)" strokeDasharray="4 4" />
+                      <ReferenceLine y={rollingNetControl.lcl} stroke="rgba(154,114,0,0.6)" strokeDasharray="4 4" />
+                      <RechartsTooltip content={<NetControlTooltip />} />
+                      <Line type="monotone" dataKey="rolling7" stroke="rgba(10,103,216,0.48)" strokeWidth={1.7} dot={false} strokeDasharray="5 4" />
+                      <Line type="monotone" dataKey="net" stroke="#0A67D8" strokeWidth={2.2} dot={(props) => <NetSignalDot {...props} />} activeDot={{ r: 4.2, fill: '#0A67D8', stroke: '#fff', strokeWidth: 1.8 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <p className="text-[10px] text-ink-3 mt-1.5">
+                  Out-of-band points indicate unstable net behavior. Last 7-day average net is {rollingNetControl.last7Average >= 0 ? '+' : '-'}{fmt(Math.abs(rollingNetControl.last7Average))}.
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-ink-3">No enough daily net history yet to estimate control limits.</p>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-4 border-0">
+            <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
                   <TrendingUp size={15} className="text-brand" />
@@ -1018,6 +1634,70 @@ export default function Dashboard() {
         <motion.div variants={fadeUp}>
           <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="section-label">Weekday spend spread</p>
+                <p className="text-caption text-ink-3 mt-0.5">Box-plot style spread by weekday using the last 8 weeks</p>
+              </div>
+              <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
+                8-week window
+              </span>
+            </div>
+
+            {weekdaySpread.hasData ? (
+              <>
+                <div className="grid grid-cols-2 gap-2 mb-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Widest spread</p>
+                    <p className="text-[12px] font-bold tabular-nums text-warning-text">{weekdaySpread.widestSpreadDay?.day || '—'}</p>
+                    <p className="text-[10px] text-ink-3 mt-0.5">IQR {fmt(weekdaySpread.widestSpreadDay?.iqr || 0)}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Steadiest day</p>
+                    <p className="text-[12px] font-bold tabular-nums text-income-text">{weekdaySpread.steadiestDay?.day || '—'}</p>
+                    <p className="text-[10px] text-ink-3 mt-0.5">IQR {fmt(weekdaySpread.steadiestDay?.iqr || 0)}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                  <ResponsiveContainer width="100%" height={206}>
+                    <ComposedChart data={weekdaySpread.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                      <XAxis
+                        dataKey="day"
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tickFormatter={compactTick}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={34}
+                      />
+                      <RechartsTooltip content={<WeekdaySpreadTooltip />} />
+                      <Bar dataKey="whiskerBase" stackId="whisker" fill="transparent" barSize={6} />
+                      <Bar dataKey="whiskerRange" stackId="whisker" fill="rgba(10, 103, 216, 0.25)" barSize={6} radius={[4, 4, 4, 4]} />
+                      <Bar dataKey="boxBase" stackId="box" fill="transparent" barSize={14} />
+                      <Bar dataKey="boxHeight" stackId="box" fill="rgba(10, 103, 216, 0.65)" barSize={14} radius={[4, 4, 4, 4]} />
+                      <Line type="monotone" dataKey="median" stroke="#10213F" strokeWidth={1.8} dot={false} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <p className="text-[10px] text-ink-3 mt-1.5">
+                  Narrow boxes imply consistent spend behavior. Wide boxes and whiskers indicate high weekday variability and planning risk.
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-ink-3">No enough spend points in the last 8 weeks to estimate weekday spread.</p>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-4 border-0">
+            <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
                   <WalletCards size={15} className="text-brand" />
@@ -1082,6 +1762,87 @@ export default function Dashboard() {
               </>
             ) : (
               <p className="text-[11px] text-ink-3">Add spending entries in controllable categories to calculate recoverable surplus opportunities.</p>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <div className="card p-4 border-0">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="section-label">Due pipeline conversion</p>
+                <p className="text-caption text-ink-3 mt-0.5">Lifecycle conversion for this month: planned, paid, due soon, overdue</p>
+              </div>
+              <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${duePipeline.leakagePct > 0 ? 'bg-warning-bg text-warning-text' : 'bg-income-bg text-income-text'}`}>
+                {duePipeline.completionPct}% converted
+              </span>
+            </div>
+
+            {duePipeline.hasData ? (
+              <>
+                <div className="grid grid-cols-3 gap-2 mb-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Planned bills</p>
+                    <p className="text-[12px] font-bold tabular-nums text-ink">{duePipeline.plannedCount}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Paid bills</p>
+                    <p className="text-[12px] font-bold tabular-nums text-income-text">{duePipeline.paidCount}</p>
+                  </div>
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                    <p className="text-[10px] text-ink-3">Leakage</p>
+                    <p className={`text-[12px] font-bold tabular-nums ${duePipeline.overdueCount > 0 ? 'text-warning-text' : 'text-income-text'}`}>
+                      {duePipeline.leakagePct}%
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                  <ResponsiveContainer width="100%" height={198}>
+                    <BarChart data={duePipeline.stageRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                      <XAxis
+                        dataKey="stage"
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        allowDecimals={false}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={28}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tickFormatter={compactTick}
+                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={34}
+                      />
+                      <RechartsTooltip content={<DuePipelineTooltip />} />
+                      <Bar yAxisId="left" dataKey="count" name="Bills" fill="#0A67D8" radius={[6, 6, 0, 0]} maxBarSize={18} />
+                      <Bar yAxisId="right" dataKey="amount" name="Amount" fill="rgba(154, 114, 0, 0.72)" radius={[6, 6, 0, 0]} maxBarSize={18} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <p className="text-[11px] text-ink-3 mt-2">{duePipeline.action.note}</p>
+
+                <button
+                  type="button"
+                  onClick={() => navigate(duePipeline.action.route)}
+                  className="btn-secondary h-9 px-3 text-[11px] mt-2"
+                >
+                  {duePipeline.action.label}
+                </button>
+              </>
+            ) : (
+              <p className="text-[11px] text-ink-3">No bills in this month yet. Add due items to start pipeline tracking.</p>
             )}
           </div>
         </motion.div>

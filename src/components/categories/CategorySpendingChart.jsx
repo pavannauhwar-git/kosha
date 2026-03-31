@@ -16,7 +16,7 @@ function compactAmount(value) {
 function TreemapTooltip({ active, payload, total }) {
   if (!active || !payload?.length) return null
 
-  const row = payload[0]?.payload || {}
+  const row = payload[0]?.payload || payload[0] || {}
   const amount = Number(row?.amount || row?.value || 0)
   const share = total > 0 ? Math.round((amount / total) * 100) : 0
 
@@ -36,15 +36,12 @@ function TreemapTooltip({ active, payload, total }) {
 }
 
 function TreemapCell(props) {
-  const { x, y, width, height, payload } = props
+  const { depth, x, y, width, height, payload } = props
+  if (depth !== 1) return null
   if (!Number.isFinite(x) || !Number.isFinite(y) || width <= 0 || height <= 0 || !payload) return null
 
-  // Recharts invokes custom content for internal/root nodes too.
-  // Skip non-leaf nodes so they do not paint over child tiles.
-  if (Array.isArray(payload.children) && payload.children.length > 0) return null
-
-  const showLabel = width > 72 && height > 34
-  const showAmount = width > 102 && height > 54
+  const showLabel = width > 74 && height > 32
+  const showMeta = width > 110 && height > 52
 
   return (
     <g>
@@ -67,15 +64,16 @@ function TreemapCell(props) {
         rx={2}
         ry={2}
         fill={payload.accentColor || C.brand}
-        fillOpacity={0.9}
+        fillOpacity={0.92}
       />
+
       {showLabel && (
         <text x={x + 7} y={y + 18} fill="#1F2B5D" fontSize={11} fontWeight={700}>
           {payload.name}
         </text>
       )}
-      {showAmount && (
-        <text x={x + 7} y={y + 34} fill="rgba(31,43,93,0.7)" fontSize={10} fontWeight={600}>
+      {showMeta && (
+        <text x={x + 7} y={y + 34} fill="rgba(31,43,93,0.72)" fontSize={10} fontWeight={600}>
           {payload.sharePct}% · {payload.amountShort}
         </text>
       )}
@@ -88,8 +86,13 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   total,
   title = 'Spent by Category',
   subtitle,
+  maxRows = 8,
 }) {
-  const safeEntries = Array.isArray(entries) ? entries.filter(([, value]) => Number(value || 0) > 0) : []
+  const safeEntries = Array.isArray(entries)
+    ? entries
+      .filter(([, value]) => Number(value || 0) > 0)
+      .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
+    : []
 
   const categoryById = useMemo(() => {
     return new Map(CATEGORIES.map((category) => [category.id, category]))
@@ -102,6 +105,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   const treemapRows = useMemo(() => safeEntries.map(([catId, amt]) => {
     const cat = categoryById.get(catId)
     const amount = Number(amt || 0)
+
     return {
       id: catId,
       name: cat?.label || catId,
@@ -116,19 +120,22 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   }), [safeEntries, safeTotal, categoryById])
 
   const dominant = treemapRows[0] || null
+  const shownRows = treemapRows.slice(0, maxRows)
+  const shownShare = shownRows.reduce((sum, row) => sum + row.sharePct, 0)
+  const hiddenCount = Math.max(0, treemapRows.length - shownRows.length)
   const peakAmount = Math.max(...treemapRows.map((row) => row.amount), 1)
 
   if (!treemapRows.length) return null
 
   return (
-    <div className="card p-4 border border-kosha-border bg-kosha-surface">
+    <div className="card p-4 border-0">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="section-label">{title}</p>
           {subtitle ? (
             <p className="text-[10px] text-ink-3 mt-0.5">{subtitle}</p>
           ) : (
-            <p className="text-[10px] text-ink-3 mt-0.5">Largest spend buckets in this month</p>
+            <p className="text-[10px] text-ink-3 mt-0.5">Treemap view of this month&apos;s spend hierarchy</p>
           )}
         </div>
         <div className="text-right shrink-0">
@@ -154,7 +161,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         </div>
 
         <div className="space-y-1.5">
-          {treemapRows.slice(0, 3).map((row) => (
+          {shownRows.map((row) => (
             <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2 min-w-0">
@@ -174,11 +181,15 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
               <p className="text-[10px] text-ink-3 mt-1 tabular-nums">{row.sharePct}% of total</p>
             </div>
           ))}
+
+          {hiddenCount > 0 && (
+            <p className="text-[10px] text-ink-3">+ {hiddenCount} more category branch{hiddenCount === 1 ? '' : 'es'} not listed ({Math.max(0, 100 - shownShare)}% of total).</p>
+          )}
         </div>
 
         {dominant && (
           <p className="text-[11px] text-ink-3">
-            Largest bucket: {dominant.name} at {dominant.sharePct}% ({dominant.amountLabel}).
+            Dominant bucket: {dominant.name} at {dominant.sharePct}% ({dominant.amountLabel}).
           </p>
         )}
       </div>
