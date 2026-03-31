@@ -279,7 +279,7 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
   ]
 
   return (
-    <div className="card p-4 w-full transition-transform duration-150 hover:-translate-y-0.5">
+    <div className="card px-3 py-3.5 w-full transition-transform duration-150 hover:-translate-y-0.5">
       <div className="flex items-center justify-between mb-2">
         <p className="section-label">Year over year trends</p>
         {onRangeChange ? (
@@ -341,9 +341,9 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
         {deltas.map((row) => (
-          <div key={row.label} className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+          <div key={row.label} className="rounded-card border border-kosha-border bg-kosha-surface p-1.5">
             <p className="text-[10px] text-ink-3">{row.label}</p>
-            <p className={`text-[12px] font-bold tabular-nums ${row.tone}`}>
+            <p className={`text-[11px] font-bold tabular-nums ${row.tone}`}>
               {row.delta === null
                 ? '—'
                 : `${row.delta > 0 ? '+' : ''}${row.delta}%`}
@@ -354,28 +354,28 @@ export default function YoYCards({ years, currentYear, enabled = true, rangeYear
 
       <div className="h-[228px] sm:h-[238px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartPoints} margin={{ top: 10, right: 14, left: 6, bottom: 2 }}>
+          <LineChart data={chartPoints} margin={{ top: 10, right: 8, left: 8, bottom: 2 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(88, 94, 114, 0.18)" />
             <XAxis
               dataKey="year"
-              padding={{ left: 12, right: 12 }}
+              padding={{ left: 10, right: 10 }}
               interval="preserveStartEnd"
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
+              tick={{ fontSize: 10, fill: 'var(--c-text-secondary)' }}
             />
             <YAxis
               tickFormatter={yAxisTickFormatter}
               tickLine={false}
               axisLine={false}
               allowDecimals={false}
-              width={42}
+              width={36}
               tickMargin={4}
               tickCount={5}
-              tick={{ fontSize: 11, fill: 'var(--c-text-secondary)' }}
+              tick={{ fontSize: 10, fill: 'var(--c-text-secondary)' }}
             />
             <Tooltip content={<YoYTooltip />} />
-            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: 6 }} />
+            <Legend wrapperStyle={{ fontSize: '10px', paddingTop: 6 }} />
 
             {showConfidenceBand && (
               <>

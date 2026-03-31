@@ -829,8 +829,8 @@ export default function Dashboard() {
                     <p className="text-[11px] text-ink-3">8-week spend heatmap</p>
                     <div className="inline-flex rounded-pill border border-kosha-border bg-kosha-surface p-0.5">
                       {[
-                        { id: 'quantile', label: 'Quantile' },
-                        { id: 'linear', label: 'Linear' },
+                        { id: 'quantile', label: 'Relative' },
+                        { id: 'linear', label: 'Absolute' },
                       ].map((mode) => (
                         <button
                           key={mode.id}
@@ -850,8 +850,16 @@ export default function Dashboard() {
 
                   <p className="text-[10px] text-ink-3 mb-1.5">
                     {heatmapScale === 'quantile'
-                      ? 'Quantile scale spreads dense spending days for better pattern readability.'
-                      : 'Linear scale maps raw spend directly to cell intensity.'}
+                      ? 'Relative mode ranks each day into percentile bands, so you can compare pattern intensity even when spend values are tightly clustered.'
+                      : 'Absolute mode maps raw spend directly to color intensity, so the darkest cell is the highest-spend day in this range.'}
+                  </p>
+
+                  <p className="text-[10px] text-ink-3 mb-1.5">
+                    {heatmapScale === 'quantile'
+                      ? (dailyVariance.heatmapQuantiles.q90 > 0
+                          ? `Relative bands: Q25 ${fmt(dailyVariance.heatmapQuantiles.q25)} · Q50 ${fmt(dailyVariance.heatmapQuantiles.q50)} · Q75 ${fmt(dailyVariance.heatmapQuantiles.q75)} · Q90 ${fmt(dailyVariance.heatmapQuantiles.q90)}.`
+                          : 'Relative bands will appear after a few non-zero spend days are available.')
+                      : `Absolute range: 0 to ${fmt(dailyVariance.heatmapMax)} across the last 8 weeks.`}
                   </p>
 
                   <div className="space-y-1">

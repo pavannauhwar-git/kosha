@@ -320,6 +320,30 @@ export default function Monthly() {
     }
   }, [budgetAccuracy])
 
+  const budgetVarianceSummary = useMemo(() => {
+    if (!budgetAccuracy.hasBudgets) {
+      return {
+        overrunCount: 0,
+        onTrackCount: 0,
+        underCount: 0,
+        largestVariance: null,
+      }
+    }
+
+    const rows = budgetAccuracy.rows
+    const overrunCount = rows.filter((row) => row.variancePct > 8).length
+    const underCount = rows.filter((row) => row.variancePct < -10).length
+    const onTrackCount = rows.length - overrunCount - underCount
+    const largestVariance = [...rows].sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))[0] || null
+
+    return {
+      overrunCount,
+      onTrackCount,
+      underCount,
+      largestVariance,
+    }
+  }, [budgetAccuracy])
+
   const autopilotHealth = useMemo(() => {
     const recurringBills = monthBills.filter((bill) => !!bill?.is_recurring)
     const recurringBillsPaid = recurringBills.filter((bill) => !!bill?.paid)
@@ -922,6 +946,21 @@ export default function Monthly() {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div className="rounded-card bg-expense-bg/40 p-2.5">
+                      <p className="text-caption text-ink-3">Overrun</p>
+                      <p className="text-[13px] font-bold text-expense-text tabular-nums">{budgetVarianceSummary.overrunCount}</p>
+                    </div>
+                    <div className="rounded-card bg-income-bg/45 p-2.5">
+                      <p className="text-caption text-ink-3">On track</p>
+                      <p className="text-[13px] font-bold text-income-text tabular-nums">{budgetVarianceSummary.onTrackCount}</p>
+                    </div>
+                    <div className="rounded-card bg-brand-container/55 p-2.5">
+                      <p className="text-caption text-ink-3">Under</p>
+                      <p className="text-[13px] font-bold text-brand tabular-nums">{budgetVarianceSummary.underCount}</p>
+                    </div>
+                  </div>
+
                   <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 mb-3">
                     <ResponsiveContainer width="100%" height={220}>
                       <BarChart data={budgetVarianceWaterfall.chartRows} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
@@ -951,11 +990,16 @@ export default function Monthly() {
                       <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-[11px] font-semibold text-ink truncate">{row.label}</p>
-                          <p className="text-[10px] text-ink-3 tabular-nums">Planned {fmt(row.budget)} · Actual {fmt(row.spent)}</p>
+                          <p className="text-[10px] text-ink-3 tabular-nums">
+                            Planned {fmt(row.budget)} · Actual {fmt(row.spent)} · {row.variancePct >= 0 ? '+' : ''}{Math.round(row.variancePct)}%
+                          </p>
                         </div>
-                        <span className={`text-[11px] font-semibold tabular-nums shrink-0 ${row.variance >= 0 ? 'text-expense-text' : 'text-income-text'}`}>
-                          {row.variance >= 0 ? '+' : '-'}{fmt(Math.abs(row.variance))}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-pill font-semibold ${row.bandClass}`}>{row.band}</span>
+                          <span className={`text-[11px] font-semibold tabular-nums ${row.variance >= 0 ? 'text-expense-text' : 'text-income-text'}`}>
+                            {row.variance >= 0 ? '+' : '-'}{fmt(Math.abs(row.variance))}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -963,6 +1007,11 @@ export default function Monthly() {
                   <p className="text-[11px] text-ink-3 mt-2">
                     Net budget variance: {budgetVarianceWaterfall.totalVariance >= 0 ? '+' : '-'}{fmt(Math.abs(budgetVarianceWaterfall.totalVariance))}.
                   </p>
+                  {budgetVarianceSummary.largestVariance && (
+                    <p className="text-[11px] text-ink-3 mt-1">
+                      Biggest deviation: {budgetVarianceSummary.largestVariance.label} at {budgetVarianceSummary.largestVariance.variance >= 0 ? '+' : '-'}{fmt(Math.abs(budgetVarianceSummary.largestVariance.variance))} ({budgetVarianceSummary.largestVariance.variancePct >= 0 ? '+' : ''}{Math.round(budgetVarianceSummary.largestVariance.variancePct)}%).
+                    </p>
+                  )}
                 </>
               ) : (
                 <p className="text-[12px] text-ink-3">Set budgets on category rows below to unlock budget accuracy scoring.</p>

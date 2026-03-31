@@ -69,7 +69,6 @@ export default function Analytics() {
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
   const [yoyRange, setYoyRange] = useState(3)
-  const [chartMode, setChartMode] = useState('advanced')
   const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
 
@@ -312,30 +311,6 @@ export default function Analytics() {
               <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
 
             <div className="space-y-4">
-
-              <div className="flex items-center justify-between gap-2 px-1">
-                <p className="text-[11px] font-semibold text-ink-3">Chart mode</p>
-                <div className="inline-flex rounded-pill border border-kosha-border bg-kosha-surface p-0.5">
-                  {[
-                    { id: 'core', label: 'Core' },
-                    { id: 'advanced', label: 'Advanced' },
-                  ].map((mode) => (
-                    <button
-                      key={mode.id}
-                      type="button"
-                      onClick={() => setChartMode(mode.id)}
-                      className={`h-7 px-3 rounded-pill text-[11px] font-semibold transition-colors ${
-                        chartMode === mode.id
-                          ? 'bg-brand text-white'
-                          : 'text-ink-2 hover:bg-kosha-surface-2'
-                      }`}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* ── 2. Year-over-year context ───────────────────────── */}
               {heavyReady ? (
                 <YoYCards years={yoyYears} currentYear={year} enabled rangeYears={yoyRange} onRangeChange={setYoyRange} />
@@ -350,26 +325,19 @@ export default function Analytics() {
               )}
 
               {/* ── 3. Performance trends ─────────────────────────────── */}
-              {chartMode === 'core' ? (
-                <>
-                  <MoneyFlowComparisonChart flowData={flowTrendData} />
-                  <CashFlowChart
-                    chartData={flowTrendData}
-                    totalIncome={data?.totalIncome}
-                  />
-                </>
-              ) : (
-                <>
-                  <MonthlyCompositionAreaChart flowData={flowTrendData} />
-                  <CashflowWaterfallChart
-                    flowData={flowTrendData}
-                    totalIncome={data?.totalIncome}
-                    totalExpense={data?.totalExpense}
-                    totalInvestment={data?.totalInvestment}
-                  />
-                  <SurplusTrajectoryChart netData={surplusData} />
-                </>
-              )}
+              <MoneyFlowComparisonChart flowData={flowTrendData} />
+              <CashFlowChart
+                chartData={flowTrendData}
+                totalIncome={data?.totalIncome}
+              />
+              <MonthlyCompositionAreaChart flowData={flowTrendData} />
+              <CashflowWaterfallChart
+                flowData={flowTrendData}
+                totalIncome={data?.totalIncome}
+                totalExpense={data?.totalExpense}
+                totalInvestment={data?.totalInvestment}
+              />
+              <SurplusTrajectoryChart netData={surplusData} />
 
               <RunwayCoverageChart
                 flowData={flowTrendData}
