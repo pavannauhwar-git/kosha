@@ -1,27 +1,22 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
-import { useBudgets } from '../hooks/useBudgets'
 import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
 import { fmt, daysUntil } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
-import { CATEGORIES } from '../lib/categories'
 import PageHeader from '../components/layout/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
-import BudgetSheet from '../components/monthly/BudgetSheet'
 import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
 import BreakdownCard from '../components/cards/monthly/BreakdownCard'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
   LineChart,
   Line,
   XAxis,
@@ -29,34 +24,11 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceLine,
-  Cell,
 } from 'recharts'
 
 function toFiniteNumber(value) {
   const n = Number(value)
   return Number.isFinite(n) ? n : 0
-}
-
-function BudgetVarianceTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-  const variance = toFiniteNumber(row?.displayVariance)
-
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
-      <p className="text-[11px] font-semibold text-ink mb-1">{row?.fullLabel || label || 'Category'}</p>
-      <div className="flex items-center justify-between gap-3 text-[11px]">
-        <span className="text-ink-3">Budget impact</span>
-        <span className={`font-semibold tabular-nums ${variance >= 0 ? 'text-expense-text' : 'text-income-text'}`}>
-          {variance >= 0 ? '+' : '-'}{fmt(Math.abs(variance))}
-        </span>
-      </div>
-      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
-        <span className="text-ink-3">Running variance</span>
-        <span className="font-semibold tabular-nums text-ink">{fmt(toFiniteNumber(row?.end))}</span>
-      </div>
-    </div>
-  )
 }
 
 function AllocationDriftTooltip({ active, payload, label }) {
@@ -110,7 +82,6 @@ export default function Monthly() {
     enabled: heavyReady,
     columns: 'id,date,type,amount,investment_vehicle',
   })
-  const { budgets, setBudget, removeBudget } = useBudgets({ enabled: heavyReady })
   const { rows: monthBills = [], pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
   const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews({ enabled: heavyReady })
 
@@ -125,8 +96,6 @@ export default function Monthly() {
   const reconcileQueueCount = useMemo(() => {
     return reconciliationInsights.counts.queue
   }, [reconciliationInsights])
-
-  const [budgetCat, setBudgetCat] = useState(null)
 
   function prev() {
     if (month === 1) {
@@ -156,21 +125,13 @@ export default function Monthly() {
     () => Object.entries(data?.byCategory || {}).sort((a, b) => b[1] - a[1]),
     [data?.byCategory]
   )
-  const catEntries = useMemo(() => allCatEntries.slice(0, 8), [allCatEntries])
   const categoryTotal = useMemo(
     () => allCatEntries.reduce((s, [, v]) => s + v, 0) || 1,
     [allCatEntries]
   )
-  const categoryById = useMemo(() => {
-    return new Map(CATEGORIES.map((category) => [category.id, category]))
-  }, [])
   const vehicleEntries = useMemo(
     () => Object.entries(data?.byVehicle || {}).sort((a, b) => b[1] - a[1]),
     [data?.byVehicle]
-  )
-  const budgetCount = useMemo(
-    () => allCatEntries.filter(([id]) => budgets[id]).length,
-    [allCatEntries, budgets]
   )
 
   const monthlyBillStatus = useMemo(() => {
@@ -184,165 +145,6 @@ export default function Monthly() {
       paidPct,
     }
   }, [pendingBills, paidBills])
-
-  const budgetAccuracy = useMemo(() => {
-    const rows = allCatEntries
-      .map(([id, spent]) => ({
-        id,
-        spent: Number(spent || 0),
-        budget: Number(budgets[id] || 0),
-      }))
-      .filter((row) => row.budget > 0)
-
-    if (!rows.length) {
-      return {
-        hasBudgets: false,
-        accuracyScore: 0,
-        totalBudget: 0,
-        totalSpent: 0,
-        rows: [],
-      }
-    }
-
-    const totalBudget = rows.reduce((sum, row) => sum + row.budget, 0)
-    const totalSpent = rows.reduce((sum, row) => sum + row.spent, 0)
-
-    const scoredRows = rows
-      .map((row) => {
-        const ratio = row.budget > 0 ? row.spent / row.budget : 0
-        const variance = row.spent - row.budget
-        const variancePct = row.budget > 0 ? (variance / row.budget) * 100 : 0
-        const absVariancePct = Math.abs(variancePct)
-        const score = Math.max(0, Math.round(100 - Math.min(absVariancePct, 100)))
-        const cat = categoryById.get(row.id)
-
-        let band = 'On track'
-        let bandClass = 'bg-income-bg text-income-text'
-        if (variancePct > 20) {
-          band = 'Overrun'
-          bandClass = 'bg-expense-bg text-expense-text'
-        } else if (variancePct > 8) {
-          band = 'Watch'
-          bandClass = 'bg-warning-bg text-warning-text'
-        } else if (variancePct < -10) {
-          band = 'Under'
-          bandClass = 'bg-brand-container text-brand-on'
-        }
-
-        return {
-          ...row,
-          label: cat?.label || row.id,
-          ratio,
-          variance,
-          variancePct,
-          score,
-          band,
-          bandClass,
-          ratioPct: Math.max(0, Math.min(100, Math.round(ratio * 100))),
-        }
-      })
-      .sort((a, b) => Math.abs(b.variancePct) - Math.abs(a.variancePct))
-
-    const accuracyScore = Math.round(
-      scoredRows.reduce((sum, row) => sum + row.score, 0) / scoredRows.length
-    )
-
-    return {
-      hasBudgets: true,
-      accuracyScore,
-      totalBudget,
-      totalSpent,
-      rows: scoredRows,
-    }
-  }, [allCatEntries, budgets, categoryById])
-
-  const budgetVarianceWaterfall = useMemo(() => {
-    if (!budgetAccuracy.hasBudgets) {
-      return {
-        rows: [],
-        chartRows: [],
-        totalVariance: 0,
-        chartLimit: 1000,
-      }
-    }
-
-    const rows = [...budgetAccuracy.rows]
-      .sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))
-      .slice(0, 8)
-
-    let running = 0
-    const chartRows = rows.map((row) => {
-      const start = running
-      const end = running + row.variance
-      running = end
-
-      return {
-        key: row.id,
-        name: row.label.length > 12 ? `${row.label.slice(0, 12)}…` : row.label,
-        fullLabel: row.label,
-        offset: Math.min(start, end),
-        height: Math.abs(row.variance),
-        start,
-        end,
-        displayVariance: row.variance,
-        color: row.variance >= 0 ? '#F5637E' : '#22C58B',
-      }
-    })
-
-    chartRows.push({
-      key: 'total',
-      name: 'Total',
-      fullLabel: 'Total variance',
-      offset: Math.min(0, running),
-      height: Math.abs(running),
-      start: 0,
-      end: running,
-      displayVariance: running,
-      color: running >= 0 ? '#E11D48' : '#0E9F6E',
-    })
-
-    const chartLimit = Math.max(
-      1200,
-      Math.ceil(
-        Math.max(
-          ...chartRows.map((row) => Math.abs(toFiniteNumber(row?.start))),
-          ...chartRows.map((row) => Math.abs(toFiniteNumber(row?.end))),
-          0
-        ) * 1.15
-      )
-    )
-
-    return {
-      rows,
-      chartRows,
-      totalVariance: running,
-      chartLimit,
-    }
-  }, [budgetAccuracy])
-
-  const budgetVarianceSummary = useMemo(() => {
-    if (!budgetAccuracy.hasBudgets) {
-      return {
-        overrunCount: 0,
-        onTrackCount: 0,
-        underCount: 0,
-        largestVariance: null,
-      }
-    }
-
-    const rows = budgetAccuracy.rows
-    const overrunCount = rows.filter((row) => row.variancePct > 8).length
-    const underCount = rows.filter((row) => row.variancePct < -10).length
-    const onTrackCount = rows.length - overrunCount - underCount
-    const largestVariance = [...rows].sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))[0] || null
-
-    return {
-      overrunCount,
-      onTrackCount,
-      underCount,
-      largestVariance,
-    }
-  }, [budgetAccuracy])
 
   const autopilotHealth = useMemo(() => {
     const recurringBills = monthBills.filter((bill) => !!bill?.is_recurring)
@@ -682,8 +484,6 @@ export default function Monthly() {
     }
   }, [yearTxnRows, month])
 
-  const openBudgetSheet = useCallback((cat) => setBudgetCat(cat), [])
-
   return (
     <div className="page">
       <PageHeader title="Monthly" className="mb-3" />
@@ -724,7 +524,7 @@ export default function Monthly() {
           {!hasMonthData ? (
             <EmptyState
               title="No data for this month"
-              description="This month is empty right now. Add transactions to unlock month-close insights, budgets, and reconciliation cues."
+              description="This month is empty right now. Add transactions to unlock month-close insights and reconciliation cues."
               actionLabel={
                 year === now.getFullYear() && month === now.getMonth() + 1
                   ? 'Add transaction'
@@ -921,108 +721,6 @@ export default function Monthly() {
             <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
-                title="Budget accuracy"
-                subtitle="Category variance impact waterfall"
-                badge={{
-                  label: budgetAccuracy.hasBudgets ? `${budgetAccuracy.accuracyScore}/100` : 'No budgets',
-                  className: budgetAccuracy.hasBudgets && budgetAccuracy.accuracyScore >= 75
-                    ? 'bg-income-bg text-income-text'
-                    : budgetAccuracy.hasBudgets
-                      ? 'bg-warning-bg text-warning-text'
-                      : 'bg-kosha-surface-2 text-ink-3 border border-kosha-border',
-                }}
-              />
-
-              {budgetAccuracy.hasBudgets ? (
-                <>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                      <p className="text-caption text-ink-3">Planned</p>
-                      <p className="text-base font-bold text-ink tabular-nums">{fmt(budgetAccuracy.totalBudget)}</p>
-                    </div>
-                    <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                      <p className="text-caption text-ink-3">Actual</p>
-                      <p className="text-base font-bold text-expense-text tabular-nums">{fmt(budgetAccuracy.totalSpent)}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    <div className="rounded-card bg-expense-bg/40 p-2.5">
-                      <p className="text-caption text-ink-3">Overrun</p>
-                      <p className="text-[13px] font-bold text-expense-text tabular-nums">{budgetVarianceSummary.overrunCount}</p>
-                    </div>
-                    <div className="rounded-card bg-income-bg/45 p-2.5">
-                      <p className="text-caption text-ink-3">On track</p>
-                      <p className="text-[13px] font-bold text-income-text tabular-nums">{budgetVarianceSummary.onTrackCount}</p>
-                    </div>
-                    <div className="rounded-card bg-brand-container/55 p-2.5">
-                      <p className="text-caption text-ink-3">Under</p>
-                      <p className="text-[13px] font-bold text-brand tabular-nums">{budgetVarianceSummary.underCount}</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 mb-3">
-                    <ResponsiveContainer width="100%" height={220}>
-                      <BarChart data={budgetVarianceWaterfall.chartRows} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
-                        <XAxis
-                          dataKey="name"
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
-                          axisLine={false}
-                          tickLine={false}
-                          interval={0}
-                        />
-                        <YAxis hide domain={[-budgetVarianceWaterfall.chartLimit, budgetVarianceWaterfall.chartLimit]} />
-                        <RechartsTooltip content={<BudgetVarianceTooltip />} />
-                        <ReferenceLine y={0} stroke="rgba(16,33,63,0.24)" strokeWidth={1} />
-                        <Bar dataKey="offset" stackId="variance" fill="transparent" isAnimationActive={false} />
-                        <Bar dataKey="height" stackId="variance" radius={[7, 7, 7, 7]} maxBarSize={34}>
-                          {budgetVarianceWaterfall.chartRows.map((row) => (
-                            <Cell key={row.key} fill={row.color} fillOpacity={0.9} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="space-y-2">
-                    {budgetVarianceWaterfall.rows.slice(0, 5).map((row) => (
-                      <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2 flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-semibold text-ink truncate">{row.label}</p>
-                          <p className="text-[10px] text-ink-3 tabular-nums">
-                            Planned {fmt(row.budget)} · Actual {fmt(row.spent)} · {row.variancePct >= 0 ? '+' : ''}{Math.round(row.variancePct)}%
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-pill font-semibold ${row.bandClass}`}>{row.band}</span>
-                          <span className={`text-[11px] font-semibold tabular-nums ${row.variance >= 0 ? 'text-expense-text' : 'text-income-text'}`}>
-                            {row.variance >= 0 ? '+' : '-'}{fmt(Math.abs(row.variance))}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <p className="text-[11px] text-ink-3 mt-2">
-                    Net budget variance: {budgetVarianceWaterfall.totalVariance >= 0 ? '+' : '-'}{fmt(Math.abs(budgetVarianceWaterfall.totalVariance))}.
-                  </p>
-                  {budgetVarianceSummary.largestVariance && (
-                    <p className="text-[11px] text-ink-3 mt-1">
-                      Biggest deviation: {budgetVarianceSummary.largestVariance.label} at {budgetVarianceSummary.largestVariance.variance >= 0 ? '+' : '-'}{fmt(Math.abs(budgetVarianceSummary.largestVariance.variance))} ({budgetVarianceSummary.largestVariance.variancePct >= 0 ? '+' : ''}{Math.round(budgetVarianceSummary.largestVariance.variancePct)}%).
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="text-[12px] text-ink-3">Set budgets on category rows below to unlock budget accuracy scoring.</p>
-              )}
-            </div>
-          )}
-
-          {heavyReady && (
-            <div className="card p-4 border-0">
-              <SectionHeader
-                className="mb-2"
                 title="Autopilot health"
                 subtitle="Recurring bills and recurring investments reliability"
                 badge={{
@@ -1121,21 +819,13 @@ export default function Monthly() {
             </div>
           )}
 
-          {heavyReady && catEntries.length > 0 && (
+          {heavyReady && allCatEntries.length > 0 && (
             <CategorySpendingChart
-              entries={catEntries}
+              entries={allCatEntries}
               total={categoryTotal}
-              initialVisibleCount={4}
-              collapseKey={`${year}-${month}`}
-              budgets={budgets}
               month={month}
               year={year}
-              subtitle={
-                budgetCount > 0
-                  ? `${budgetCount} budget${budgetCount > 1 ? 's' : ''} set · tap to edit`
-                  : 'tap a row to set budget'
-              }
-              onCategoryClick={openBudgetSheet}
+              subtitle="Treemap view with exact category spend values"
             />
           )}
 
@@ -1144,17 +834,6 @@ export default function Monthly() {
         </motion.div>
       )}
 
-      <AnimatePresence>
-        {budgetCat && (
-          <BudgetSheet
-            cat={budgetCat}
-            current={budgets[budgetCat.id] || 0}
-            onSave={setBudget}
-            onRemove={removeBudget}
-            onClose={() => setBudgetCat(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   )
 }

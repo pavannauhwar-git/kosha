@@ -997,7 +997,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="text-label font-semibold text-ink">What-if Surplus Simulator</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Test how category reductions affect year-end surplus before changing budgets.</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">Test how category reductions affect year-end surplus before changing your spending plan.</p>
         </div>
         <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-brand-container text-brand-on">
           Scenario lab

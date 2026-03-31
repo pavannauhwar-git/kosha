@@ -4,7 +4,6 @@ import { Bell, ArrowRight, Plus, ShieldAlert, TrendingUp, WalletCards } from 'lu
 import {
   useRecentTransactions,
   useTransactionDigest,
-  useTodayExpenses,
   useMonthSummary,
   useRunningBalance,
   removeTransactionMutation,
@@ -17,6 +16,8 @@ import { useNavigate } from 'react-router-dom'
 import { createFadeUp, createStagger } from '../lib/animations'
 import {
   ResponsiveContainer,
+  BarChart,
+  Bar,
   LineChart,
   Line,
   XAxis,
@@ -27,10 +28,9 @@ import {
 } from 'recharts'
 
 // FIX (defect 4.3): Extracted sub-components. Each renders independently —
-// a transaction list refetch no longer re-renders the hero card or pace card,
+// a transaction list refetch no longer re-renders the hero card,
 // and a balance update no longer re-renders the transaction list.
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
-import DashboardPaceCard from '../components/cards/dashboard/DashboardPaceCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
 import DashboardActivityFeed from '../components/dashboard/DashboardActivityFeed'
 import PageHeader from '../components/layout/PageHeader'
@@ -90,6 +90,39 @@ function DuePressureTooltip({ active, payload, label }) {
         <span className="text-ink-3">Gap</span>
         <span className={`font-semibold tabular-nums ${(row.gap || 0) >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
           {(row.gap || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(row.gap || 0))}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function compactTick(value) {
+  const n = Number(value || 0)
+  const abs = Math.abs(n)
+  if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
+  if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
+  return `${Math.round(n)}`
+}
+
+function WeeklyDigestTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const row = payload[0]?.payload || {}
+
+  return (
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
+      <div className="flex items-center justify-between gap-3 text-[11px]">
+        <span className="text-ink-3">Current 7d</span>
+        <span className="font-semibold tabular-nums text-brand">{fmt(Number(row.current || 0))}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
+        <span className="text-ink-3">Previous 7d</span>
+        <span className="font-semibold tabular-nums text-ink">{fmt(Number(row.previous || 0))}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
+        <span className="text-ink-3">Delta</span>
+        <span className={`font-semibold tabular-nums ${(Number(row.delta || 0) <= 0 && row.metric === 'Spend') || (Number(row.delta || 0) >= 0 && row.metric !== 'Spend') ? 'text-income-text' : 'text-warning-text'}`}>
+          {Number(row.delta || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.delta || 0)))}
         </span>
       </div>
     </div>
@@ -157,16 +190,6 @@ function DashboardRecentSkeleton() {
   )
 }
 
-function DigestMetricCard({ label, value, tone = 'text-ink', caption }) {
-  return (
-    <div className="rounded-card bg-kosha-surface px-3 py-2.5">
-      <p className="text-[10px] text-ink-3 mb-1">{label}</p>
-      <p className={`text-[19px] leading-none font-bold tabular-nums ${tone}`}>{value}</p>
-      {caption && <p className="text-[10px] text-ink-3 mt-1">{caption}</p>}
-    </div>
-  )
-}
-
 export default function Dashboard() {
   const navigate = useNavigate()
   const [now, setNow] = useState(() => new Date())
@@ -219,7 +242,7 @@ export default function Dashboard() {
   const [toast, setToast] = useState(null)
   const [heavyReady, setHeavyReady] = useState(false)
   const [opportunityCutPct, setOpportunityCutPct] = useState(12)
-  const [heatmapScale, setHeatmapScale] = useState('quantile')
+  const [activeVarianceDay, setActiveVarianceDay] = useState(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 50)
@@ -233,7 +256,6 @@ export default function Dashboard() {
     fetching: recentFetching,
   } = useRecentTransactions(5)
   const { data: digestTxnRows = [] } = useTransactionDigest(70, 900, { enabled: heavyReady })
-  const { todaySpend, loading: todaySpendLoading } = useTodayExpenses({ enabled: heavyReady })
   const {
     data: summary,
     loading: summaryLoading,
@@ -281,7 +303,6 @@ export default function Dashboard() {
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const dayOfMonth = now.getDate()
-  const paceOk = earned === 0 || spent / earned <= dayOfMonth / daysInMonth + 0.05
 
   // FIX (defect 5.3): The old code derived dueSoon and insight from `bills`
   // directly. When the liabilities query refetched (even with identical data),
@@ -345,19 +366,58 @@ export default function Dashboard() {
       categoryTotals.set(key, (categoryTotals.get(key) || 0) + Number(row?.amount || 0))
     }
 
-    const topCategory = [...categoryTotals.entries()].sort((a, b) => b[1] - a[1])[0] || null
     const spendDelta = spendLast7 - spendPrev7
     const incomeDelta = incomeLast7 - incomePrev7
+    const netLast7 = incomeLast7 - spendLast7
+    const netPrev7 = incomePrev7 - spendPrev7
+    const netDelta = netLast7 - netPrev7
+
+    const comparisonSeries = [
+      {
+        metric: 'Spend',
+        current: spendLast7,
+        previous: spendPrev7,
+        delta: spendDelta,
+      },
+      {
+        metric: 'Income',
+        current: incomeLast7,
+        previous: incomePrev7,
+        delta: incomeDelta,
+      },
+      {
+        metric: 'Net',
+        current: netLast7,
+        previous: netPrev7,
+        delta: netDelta,
+      },
+    ]
+
+    const topCategories = [...categoryTotals.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, value]) => ({
+        id,
+        label: categoryLabelMap.get(id) || id.replace(/_/g, ' '),
+        value,
+        sharePct: spendLast7 > 0 ? Math.round((value / spendLast7) * 100) : 0,
+      }))
 
     return {
       spendLast7,
+      spendPrev7,
       incomeLast7,
+      incomePrev7,
       spendDelta,
       incomeDelta,
-      topCategory,
+      netLast7,
+      netPrev7,
+      netDelta,
+      comparisonSeries,
+      topCategories,
       hasSignals: inLast7.length > 0 || inPrev7.length > 0,
     }
-  }, [digestTxnRows, now])
+  }, [digestTxnRows, now, categoryLabelMap])
 
   const dailyVariance = useMemo(() => {
     const byDate = new Map()
@@ -367,25 +427,6 @@ export default function Dashboard() {
       if (!key) continue
       byDate.set(key, (byDate.get(key) || 0) + Number(row?.amount || 0))
     }
-
-    const baselineSeries = []
-    for (let i = 7; i >= 1; i -= 1) {
-      const d = new Date(now)
-      d.setHours(0, 0, 0, 0)
-      d.setDate(d.getDate() - i)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      baselineSeries.push(byDate.get(key) || 0)
-    }
-
-    const baseline = baselineSeries.length
-      ? baselineSeries.reduce((sum, value) => sum + value, 0) / baselineSeries.length
-      : 0
-
-    const todayValue = Number(todaySpend || 0)
-    const variance = todayValue - baseline
-    const variancePct = baseline > 0 ? Math.round((variance / baseline) * 100) : null
-    const sparkValues = [...baselineSeries, todayValue]
-    const sparkMax = Math.max(...sparkValues, 1)
 
     const heatmapDays = []
     for (let i = 55; i >= 0; i -= 1) {
@@ -402,34 +443,20 @@ export default function Dashboard() {
     }
 
     const heatmapMax = Math.max(...heatmapDays.map((row) => row.value), 1)
-    const nonZeroHeatmapValues = heatmapDays
-      .map((row) => row.value)
-      .filter((value) => value > 0)
-      .sort((a, b) => a - b)
-    const heatmapQuantiles = {
-      q25: quantile(nonZeroHeatmapValues, 0.25),
-      q50: quantile(nonZeroHeatmapValues, 0.5),
-      q75: quantile(nonZeroHeatmapValues, 0.75),
-      q90: quantile(nonZeroHeatmapValues, 0.9),
-    }
+    const trackedDays = heatmapDays.filter((row) => row.value > 0)
     const heatmapWeeks = []
     for (let i = 0; i < heatmapDays.length; i += 7) {
       heatmapWeeks.push(heatmapDays.slice(i, i + 7))
     }
 
     return {
-      baseline,
-      variance,
-      variancePct,
-      todayValue,
-      sparkValues,
-      sparkMax,
       heatmapWeeks,
       heatmapMax,
-      heatmapQuantiles,
+      activeDays: trackedDays.length,
+      trackedTotal: trackedDays.reduce((sum, row) => sum + row.value, 0),
       heatmapRange: `${heatmapDays[0]?.label || ''} - ${heatmapDays[heatmapDays.length - 1]?.label || ''}`,
     }
-  }, [digestTxnRows, now, todaySpend])
+  }, [digestTxnRows, now])
 
   const cashRiskRadar = useMemo(() => {
     const current = now.getTime()
@@ -656,12 +683,6 @@ export default function Dashboard() {
     }
   }, [summary?.byCategory, categoryLabelMap, opportunityCutPct, earned, spent, invested])
 
-  const weeklyTopCategoryLabel = useMemo(() => {
-    if (!weeklyDigest.topCategory) return null
-    const raw = String(weeklyDigest.topCategory[0] || '')
-    return categoryLabelMap.get(raw) || raw.replace(/_/g, ' ')
-  }, [weeklyDigest.topCategory, categoryLabelMap])
-
   useEffect(() => {
     const prefs = getReminderPrefs()
     if (!prefs.enabled) return
@@ -763,146 +784,56 @@ export default function Dashboard() {
           <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div>
-                <p className="section-label">Daily variance</p>
-                <p className="text-caption text-ink-3 mt-0.5">Today vs trailing 7-day daily spend</p>
+                <p className="section-label">Daily spending habit</p>
+                <p className="text-caption text-ink-3 mt-0.5">Absolute spend intensity across the last 8 weeks</p>
               </div>
-              {!todaySpendLoading && (
-                <span className={`text-[11px] px-2 py-1 rounded-pill font-semibold ${dailyVariance.variance <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-                  {dailyVariance.variance === 0
-                    ? 'On baseline'
-                    : dailyVariance.variance < 0
-                      ? `${fmt(Math.abs(dailyVariance.variance))} below`
-                      : `${fmt(Math.abs(dailyVariance.variance))} above`}
-                </span>
-              )}
+              <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
+                {dailyVariance.activeDays} active day{dailyVariance.activeDays === 1 ? '' : 's'}
+              </span>
             </div>
 
-            {todaySpendLoading ? (
-              <div className="space-y-2.5">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-card h-14 shimmer opacity-80" />
-                  <div className="rounded-card h-14 shimmer opacity-80" />
-                </div>
-                <div className="h-2.5 w-full rounded-full shimmer opacity-70" />
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-2 mb-2.5">
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Today spend</p>
-                    <p className="text-[13px] font-bold text-expense-text tabular-nums">{fmt(dailyVariance.todayValue)}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">7-day avg/day</p>
-                    <p className="text-[13px] font-bold text-ink tabular-nums">{fmt(dailyVariance.baseline)}</p>
-                  </div>
-                </div>
+            <p className="text-[10px] text-ink-3 mb-1.5">
+              {activeVarianceDay
+                ? `${activeVarianceDay.label}: ${fmt(activeVarianceDay.value)}`
+                : 'Hover a day tile to see exact spend for that date.'}
+            </p>
 
-                <p className="text-[11px] text-ink-3">
-                  {dailyVariance.variancePct == null
-                    ? 'No recent daily baseline yet. Keep logging daily expenses for variance trends.'
-                    : `Variance is ${dailyVariance.variancePct >= 0 ? '+' : ''}${dailyVariance.variancePct}% vs trailing daily average.`}
-                </p>
+            <p className="text-[10px] text-ink-3 mb-1.5">
+              Absolute range: 0 to {fmt(dailyVariance.heatmapMax)} over {dailyVariance.heatmapRange}.
+            </p>
 
-                <div className="mt-2.5 space-y-1.5">
-                  {dailyVariance.sparkValues.map((value, index) => {
-                    const widthPct = Math.max(10, Math.round((value / dailyVariance.sparkMax) * 100))
-                    const isToday = index === dailyVariance.sparkValues.length - 1
+            <div className="space-y-1" onMouseLeave={() => setActiveVarianceDay(null)}>
+              {dailyVariance.heatmapWeeks.map((week, weekIndex) => (
+                <div key={`heatmap-week-${weekIndex}`} className="grid grid-cols-7 gap-1">
+                  {week.map((day) => {
+                    const intensity = day.value > 0 ? day.value / dailyVariance.heatmapMax : 0
+                    const alpha = day.value > 0
+                      ? Math.min(0.92, 0.18 + (intensity * 0.72))
+                      : 0.08
+                    const cellColor = day.value <= 0
+                      ? 'rgba(16, 33, 63, 0.08)'
+                      : `rgba(10, 103, 216, ${alpha})`
+
                     return (
-                      <div key={`variance-bar-${index}`} className="flex items-center gap-2">
-                        <span className="w-10 shrink-0 text-[10px] text-ink-3 tabular-nums">
-                          {isToday ? 'Today' : `D-${dailyVariance.sparkValues.length - index - 1}`}
-                        </span>
-                        <div className="h-2 w-full rounded-pill bg-kosha-surface-2 overflow-hidden">
-                          <div
-                            className={`h-full rounded-pill ${isToday ? 'bg-brand' : 'bg-brand-container'}`}
-                            style={{ width: `${widthPct}%` }}
-                          />
-                        </div>
-                      </div>
+                      <button
+                        key={day.key}
+                        type="button"
+                        title={`${day.label}: ${fmt(day.value)}`}
+                        aria-label={`${day.label} spend ${fmt(day.value)}`}
+                        onMouseEnter={() => setActiveVarianceDay(day)}
+                        onFocus={() => setActiveVarianceDay(day)}
+                        className="h-3 rounded-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                        style={{ background: cellColor }}
+                      />
                     )
                   })}
                 </div>
+              ))}
+            </div>
 
-                <div className="mt-3 border-t border-kosha-border pt-2.5">
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <p className="text-[11px] text-ink-3">8-week spend heatmap</p>
-                    <div className="inline-flex rounded-pill border border-kosha-border bg-kosha-surface p-0.5">
-                      {[
-                        { id: 'quantile', label: 'Relative' },
-                        { id: 'linear', label: 'Absolute' },
-                      ].map((mode) => (
-                        <button
-                          key={mode.id}
-                          type="button"
-                          onClick={() => setHeatmapScale(mode.id)}
-                          className={`h-6 px-2 rounded-pill text-[10px] font-semibold transition-colors ${
-                            heatmapScale === mode.id
-                              ? 'bg-brand text-white'
-                              : 'text-ink-2 hover:bg-kosha-surface-2'
-                          }`}
-                        >
-                          {mode.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <p className="text-[10px] text-ink-3 mb-1.5">
-                    {heatmapScale === 'quantile'
-                      ? 'Relative mode ranks each day into percentile bands, so you can compare pattern intensity even when spend values are tightly clustered.'
-                      : 'Absolute mode maps raw spend directly to color intensity, so the darkest cell is the highest-spend day in this range.'}
-                  </p>
-
-                  <p className="text-[10px] text-ink-3 mb-1.5">
-                    {heatmapScale === 'quantile'
-                      ? (dailyVariance.heatmapQuantiles.q90 > 0
-                          ? `Relative bands: Q25 ${fmt(dailyVariance.heatmapQuantiles.q25)} · Q50 ${fmt(dailyVariance.heatmapQuantiles.q50)} · Q75 ${fmt(dailyVariance.heatmapQuantiles.q75)} · Q90 ${fmt(dailyVariance.heatmapQuantiles.q90)}.`
-                          : 'Relative bands will appear after a few non-zero spend days are available.')
-                      : `Absolute range: 0 to ${fmt(dailyVariance.heatmapMax)} across the last 8 weeks.`}
-                  </p>
-
-                  <div className="space-y-1">
-                    {dailyVariance.heatmapWeeks.map((week, weekIndex) => (
-                      <div key={`heatmap-week-${weekIndex}`} className="grid grid-cols-7 gap-1">
-                        {week.map((day) => {
-                          let alpha = 0.08
-                          if (day.value > 0) {
-                            if (heatmapScale === 'linear') {
-                              const intensity = day.value / dailyVariance.heatmapMax
-                              alpha = Math.min(0.9, 0.18 + (intensity * 0.68))
-                            } else {
-                              const { q25, q50, q75, q90 } = dailyVariance.heatmapQuantiles
-                              if (day.value <= q25) alpha = 0.28
-                              else if (day.value <= q50) alpha = 0.42
-                              else if (day.value <= q75) alpha = 0.58
-                              else if (day.value <= q90) alpha = 0.74
-                              else alpha = 0.9
-                            }
-                          }
-
-                          const cellColor = day.value <= 0
-                            ? 'rgba(16, 33, 63, 0.08)'
-                            : `rgba(10, 103, 216, ${alpha})`
-
-                          return (
-                            <div
-                              key={day.key}
-                              title={`${day.label}: ${fmt(day.value)}`}
-                              aria-label={`${day.label} spend ${fmt(day.value)}`}
-                              className="h-3 rounded-[3px]"
-                              style={{ background: cellColor }}
-                            />
-                          )
-                        })}
-                      </div>
-                    ))}
-                  </div>
-
-                  <p className="text-[10px] text-ink-3 mt-1.5">{dailyVariance.heatmapRange}</p>
-                </div>
-              </>
-            )}
+            <p className="text-[10px] text-ink-3 mt-1.5">
+              Tracked spend in this window: {fmt(dailyVariance.trackedTotal)}.
+            </p>
           </div>
         </motion.div>
 
@@ -1180,17 +1111,6 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* ── Pace card — sub-component ────────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          <DashboardPaceCard
-            dayOfMonth={dayOfMonth}
-            daysInMonth={daysInMonth}
-            earned={earned}
-            spent={spent}
-            paceOk={paceOk}
-          />
-        </motion.div>
-
         {heavyReady && weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
             <div className="card p-4 bg-kosha-surface border-0">
@@ -1204,40 +1124,66 @@ export default function Dashboard() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-                <DigestMetricCard
-                  label="Spend (7d)"
-                  value={fmt(weeklyDigest.spendLast7)}
-                  tone="text-expense-text"
-                  caption="Current window"
-                />
-                <DigestMetricCard
-                  label="Spend delta"
-                  value={`${weeklyDigest.spendDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.spendDelta))}`}
-                  tone={weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'}
-                  caption={weeklyDigest.spendDelta <= 0 ? 'Lower vs previous week' : 'Higher vs previous week'}
-                />
-                <DigestMetricCard
-                  label="Income (7d)"
-                  value={fmt(weeklyDigest.incomeLast7)}
-                  tone="text-income-text"
-                  caption="Current window"
-                />
-                <DigestMetricCard
-                  label="Income delta"
-                  value={`${weeklyDigest.incomeDelta >= 0 ? '+' : '-'}${fmt(Math.abs(weeklyDigest.incomeDelta))}`}
-                  tone={weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'}
-                  caption={weeklyDigest.incomeDelta >= 0 ? 'Higher vs previous week' : 'Lower vs previous week'}
-                />
+              <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
+                <ResponsiveContainer width="100%" height={214}>
+                  <BarChart data={weeklyDigest.comparisonSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                    <XAxis
+                      dataKey="metric"
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tickFormatter={compactTick}
+                      tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={34}
+                    />
+                    <RechartsTooltip content={<WeeklyDigestTooltip />} />
+                    <Bar dataKey="current" name="Current 7d" fill="#0A67D8" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="previous" name="Previous 7d" fill="rgba(10, 103, 216, 0.34)" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
 
-              {weeklyDigest.topCategory && weeklyTopCategoryLabel && (
-                <div className="rounded-card bg-kosha-surface-2 px-3 py-2.5 mt-1">
-                  <p className="text-[10px] text-ink-3 mb-0.5">Top spend category this week</p>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[12px] font-semibold text-ink-2 truncate">{weeklyTopCategoryLabel}</p>
-                    <p className="text-[12px] font-semibold text-expense-text tabular-nums shrink-0">{fmt(weeklyDigest.topCategory[1])}</p>
-                  </div>
+              <div className="grid grid-cols-3 gap-2 mb-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3">Spend delta</p>
+                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                    {weeklyDigest.spendDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.spendDelta))}
+                  </p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3">Income delta</p>
+                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                    {weeklyDigest.incomeDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.incomeDelta))}
+                  </p>
+                </div>
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3">Net delta</p>
+                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.netDelta >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                    {weeklyDigest.netDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.netDelta))}
+                  </p>
+                </div>
+              </div>
+
+              {weeklyDigest.topCategories.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-ink-3">Top spend categories this week</p>
+                  {weeklyDigest.topCategories.map((row) => (
+                    <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <p className="text-[11px] font-semibold text-ink-2 truncate">{row.label}</p>
+                        <p className="text-[11px] font-semibold text-expense-text tabular-nums shrink-0">{fmt(row.value)}</p>
+                      </div>
+                      <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                        <div className="h-full rounded-pill bg-warning-text" style={{ width: `${Math.max(8, row.sharePct)}%` }} />
+                      </div>
+                      <p className="text-[10px] text-ink-3 tabular-nums mt-1">{row.sharePct}% of current-week spend</p>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
