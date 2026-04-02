@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, Plus, ShieldAlert, TrendingUp } from 'lucide-react'
+import { Bell, ArrowRight, Plus, ShieldAlert } from 'lucide-react'
 import {
   useRecentTransactions,
   useTransactionDigest,
@@ -18,7 +18,6 @@ import { createFadeUp, createStagger } from '../lib/animations'
 import {
   ResponsiveContainer,
   BarChart,
-  ComposedChart,
   Bar,
   LineChart,
   Line,
@@ -34,12 +33,9 @@ import {
 // and a balance update no longer re-renders the transaction list.
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
-import DashboardActivityFeed from '../components/dashboard/DashboardActivityFeed'
 import DailySpendBubbleMap from '../components/dashboard/DailySpendBubbleMap'
-import InsightDensityToggle from '../components/common/InsightDensityToggle'
 import PageHeader from '../components/layout/PageHeader'
 import AppToast from '../components/common/AppToast'
-import { useFinancialEvents } from '../hooks/useFinancialEvents'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 import { CATEGORIES } from '../lib/categories'
 
@@ -47,11 +43,6 @@ const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
 const VARIANCE_WINDOW_STORAGE_KEY = 'dashboardVarianceWindowDays'
 const VARIANCE_WINDOW_MAX_DAYS = 14
-const DASHBOARD_INSIGHTS_MODE_KEY = 'dashboardInsightsMode'
-
-function normalizeInsightsMode(rawValue) {
-  return rawValue === 'deep' ? 'deep' : 'focus'
-}
 
 function normalizeVarianceWindowDays(rawValue) {
   const parsed = Number(rawValue)
@@ -92,18 +83,6 @@ function compactTick(value) {
   return `${Math.round(n)}`
 }
 
-function quantile(sortedValues, p) {
-  if (!sortedValues.length) return 0
-  const index = (sortedValues.length - 1) * p
-  const lowerIndex = Math.floor(index)
-  const upperIndex = Math.ceil(index)
-
-  if (lowerIndex === upperIndex) return sortedValues[lowerIndex]
-
-  const weight = index - lowerIndex
-  return (sortedValues[lowerIndex] * (1 - weight)) + (sortedValues[upperIndex] * weight)
-}
-
 function resolveTxnTimestamp(row) {
   const rawDate = String(row?.date || '').trim()
   if (rawDate) {
@@ -132,54 +111,6 @@ function resolveTxnTimestamp(row) {
   return Number.isFinite(createdTs) ? createdTs : null
 }
 
-function NetControlTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-  const net = Number(row?.net || 0)
-
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[188px]">
-      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
-      <div className="space-y-0.5 text-[11px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Daily net</span>
-          <span className={`font-semibold tabular-nums ${net >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-            {net >= 0 ? '+' : '-'}{fmt(Math.abs(net))}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Rolling 7d</span>
-          <span className="font-semibold tabular-nums text-brand">{fmt(Number(row?.rolling7 || 0))}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Control signal</span>
-          <span className={`font-semibold ${row?.isSignal ? 'text-warning-text' : 'text-income-text'}`}>
-            {row?.isSignal ? 'Out-of-band' : 'Normal'}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function WeekdaySpreadTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
-      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
-      <div className="space-y-0.5 text-[11px]">
-        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Min</span><span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.min || 0))}</span></div>
-        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Q1</span><span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.q1 || 0))}</span></div>
-        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Median</span><span className="font-semibold tabular-nums text-brand">{fmt(Number(row?.median || 0))}</span></div>
-        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Q3</span><span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.q3 || 0))}</span></div>
-        <div className="flex items-center justify-between gap-3"><span className="text-ink-3">Max</span><span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row?.max || 0))}</span></div>
-      </div>
-    </div>
-  )
-}
-
 function DuePipelineTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload || {}
@@ -198,22 +129,6 @@ function DuePipelineTooltip({ active, payload, label }) {
         </div>
       </div>
     </div>
-  )
-}
-
-function NetSignalDot(props) {
-  const { cx, cy, payload } = props
-  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null
-
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={payload?.isSignal ? 3.6 : 2.5}
-      fill={payload?.isSignal ? '#E11D48' : '#0A67D8'}
-      stroke="#FFFFFF"
-      strokeWidth={payload?.isSignal ? 1.8 : 1.2}
-    />
   )
 }
 
@@ -237,33 +152,6 @@ function WeeklyDigestTooltip({ active, payload, label }) {
         <span className={`font-semibold tabular-nums ${(Number(row.delta || 0) <= 0 && row.metric === 'Spend') || (Number(row.delta || 0) >= 0 && row.metric !== 'Spend') ? 'text-income-text' : 'text-warning-text'}`}>
           {Number(row.delta || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.delta || 0)))}
         </span>
-      </div>
-    </div>
-  )
-}
-
-function WeekdayDriftTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
-      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
-      <div className="space-y-0.5 text-[11px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">This week</span>
-          <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row.current || 0))}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">4w baseline</span>
-          <span className="font-semibold tabular-nums text-ink">{fmt(Number(row.baseline || 0))}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Delta</span>
-          <span className={`font-semibold tabular-nums ${Number(row.delta || 0) <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-            {Number(row.delta || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.delta || 0)))}
-          </span>
-        </div>
       </div>
     </div>
   )
@@ -381,10 +269,6 @@ export default function Dashboard() {
   const [heroMode, setHeroMode] = useState('balance')
   const [toast, setToast] = useState(null)
   const [heavyReady, setHeavyReady] = useState(false)
-  const [insightsMode, setInsightsMode] = useState(() => {
-    if (typeof window === 'undefined') return 'focus'
-    return normalizeInsightsMode(window.localStorage.getItem(DASHBOARD_INSIGHTS_MODE_KEY))
-  })
   const [varianceWindowDays, setVarianceWindowDays] = useState(() => {
     if (typeof window === 'undefined') return VARIANCE_WINDOW_MAX_DAYS
     return normalizeVarianceWindowDays(window.localStorage.getItem(VARIANCE_WINDOW_STORAGE_KEY))
@@ -399,13 +283,6 @@ export default function Dashboard() {
     if (typeof window === 'undefined') return
     window.localStorage.setItem(VARIANCE_WINDOW_STORAGE_KEY, String(varianceWindowDays))
   }, [varianceWindowDays])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem(DASHBOARD_INSIGHTS_MODE_KEY, insightsMode)
-  }, [insightsMode])
-
-  const showAdvancedInsights = insightsMode === 'deep'
 
   // ── Data fetching ─────────────────────────────────────────────────────
   const {
@@ -433,7 +310,6 @@ export default function Dashboard() {
     balanceHorizonDate.getMonth() + 1
   )
   const { pending: bills = [], paid: paidBills = [] } = useLiabilities({ includePaid: true, enabled: heavyReady })
-  const { data: financialEvents = [] } = useFinancialEvents(3, { enabled: heavyReady })
 
   const heroLoading = summaryLoading || runningBalanceLoading
   const isBackgroundFetching = (!summaryLoading && summaryFetching) || (!runningBalanceLoading && runningBalanceFetching) || (!recentLoading && recentFetching)
@@ -633,193 +509,6 @@ export default function Dashboard() {
     }
   }, [dailyExpenseTotals, now, varianceWindowDays])
 
-  const rollingNetControl = useMemo(() => {
-    if (!showAdvancedInsights) {
-      return {
-        rows: [],
-        mean: 0,
-        ucl: 0,
-        lcl: 0,
-        signalCount: 0,
-        last7Average: 0,
-        hasData: false,
-      }
-    }
-
-    const dayMs = 24 * 60 * 60 * 1000
-    const lookbackDays = 30
-    const nowTs = now.getTime()
-    const startTs = nowTs - ((lookbackDays - 1) * dayMs)
-
-    const byDate = new Map()
-    for (let i = lookbackDays - 1; i >= 0; i -= 1) {
-      const d = new Date(now)
-      d.setHours(0, 0, 0, 0)
-      d.setDate(d.getDate() - i)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      byDate.set(key, {
-        key,
-        label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-        income: 0,
-        expense: 0,
-        investment: 0,
-      })
-    }
-
-    for (const row of (Array.isArray(digestTxnRows) ? digestTxnRows : [])) {
-      const ts = resolveTxnTimestamp(row)
-      if (!Number.isFinite(ts) || ts < startTs || ts > nowTs) continue
-
-      const d = new Date(ts)
-      d.setHours(0, 0, 0, 0)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      const bucket = byDate.get(key)
-      if (!bucket) continue
-
-      const amount = Number(row?.amount || 0)
-      if (!Number.isFinite(amount) || amount <= 0) continue
-
-      if (row?.type === 'income' && !row?.is_repayment) {
-        bucket.income += amount
-      } else if (row?.type === 'expense') {
-        bucket.expense += amount
-      } else if (row?.type === 'investment') {
-        bucket.investment += amount
-      }
-    }
-
-    const baseRows = [...byDate.values()].map((row) => {
-      const outflow = row.expense + row.investment
-      return {
-        ...row,
-        outflow,
-        net: row.income - outflow,
-      }
-    })
-
-    const rows = baseRows.map((row, index) => {
-      const windowStart = Math.max(0, index - 6)
-      const windowRows = baseRows.slice(windowStart, index + 1)
-      const rolling7 = windowRows.length
-        ? Math.round(windowRows.reduce((sum, item) => sum + item.net, 0) / windowRows.length)
-        : row.net
-      return {
-        ...row,
-        rolling7,
-      }
-    })
-
-    const netValues = rows.map((row) => row.net)
-    const mean = netValues.length
-      ? netValues.reduce((sum, value) => sum + value, 0) / netValues.length
-      : 0
-    const variance = netValues.length
-      ? netValues.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / netValues.length
-      : 0
-    const stdDev = Math.sqrt(variance)
-    const ucl = mean + (2 * stdDev)
-    const lcl = mean - (2 * stdDev)
-
-    const controlRows = rows.map((row) => ({
-      ...row,
-      mean,
-      ucl,
-      lcl,
-      isSignal: row.net > ucl || row.net < lcl,
-    }))
-
-    const signalCount = controlRows.filter((row) => row.isSignal).length
-    const last7Average = controlRows.slice(-7).reduce((sum, row) => sum + row.net, 0) / Math.max(1, Math.min(7, controlRows.length))
-
-    return {
-      rows: controlRows,
-      mean,
-      ucl,
-      lcl,
-      signalCount,
-      last7Average,
-      hasData: controlRows.some((row) => row.income > 0 || row.outflow > 0),
-    }
-  }, [digestTxnRows, now, showAdvancedInsights])
-
-  const weekdaySpread = useMemo(() => {
-    if (!showAdvancedInsights) {
-      return {
-        rows: [],
-        widestSpreadDay: null,
-        steadiestDay: null,
-        hasData: false,
-      }
-    }
-
-    const dayMs = 24 * 60 * 60 * 1000
-    const lookbackDays = 56
-    const nowTs = now.getTime()
-    const startTs = nowTs - ((lookbackDays - 1) * dayMs)
-
-    const dailyExpenseByDate = new Map()
-    for (const row of (Array.isArray(digestTxnRows) ? digestTxnRows : [])) {
-      if (row?.type !== 'expense') continue
-      const amount = Number(row?.amount || 0)
-      if (!Number.isFinite(amount) || amount <= 0) continue
-
-      const ts = resolveTxnTimestamp(row)
-      if (!Number.isFinite(ts) || ts < startTs || ts > nowTs) continue
-
-      const d = new Date(ts)
-      d.setHours(0, 0, 0, 0)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      dailyExpenseByDate.set(key, (dailyExpenseByDate.get(key) || 0) + amount)
-    }
-
-    const weekdayBuckets = Array.from({ length: 7 }, () => [])
-    for (let i = lookbackDays - 1; i >= 0; i -= 1) {
-      const d = new Date(now)
-      d.setHours(0, 0, 0, 0)
-      d.setDate(d.getDate() - i)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      const weekdayIndex = (d.getDay() + 6) % 7
-      weekdayBuckets[weekdayIndex].push(Number(dailyExpenseByDate.get(key) || 0))
-    }
-
-    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    const rows = weekdayLabels.map((day, index) => {
-      const values = [...weekdayBuckets[index]].sort((a, b) => a - b)
-      const min = values[0] || 0
-      const q1 = quantile(values, 0.25)
-      const median = quantile(values, 0.50)
-      const q3 = quantile(values, 0.75)
-      const max = values[values.length - 1] || 0
-      const iqr = Math.max(0, q3 - q1)
-      const whiskerRange = Math.max(0, max - min)
-
-      return {
-        day,
-        min,
-        q1,
-        median,
-        q3,
-        max,
-        iqr,
-        sampleCount: values.length,
-        whiskerBase: min,
-        whiskerRange,
-        boxBase: q1,
-        boxHeight: iqr,
-      }
-    })
-
-    const widestSpreadDay = [...rows].sort((a, b) => b.iqr - a.iqr)[0]
-    const steadiestDay = [...rows].sort((a, b) => a.iqr - b.iqr)[0]
-
-    return {
-      rows,
-      widestSpreadDay,
-      steadiestDay,
-      hasData: rows.some((row) => row.max > 0),
-    }
-  }, [digestTxnRows, now, showAdvancedInsights])
-
   const duePipeline = useMemo(() => {
     const pendingRows = Array.isArray(bills) ? bills : []
     const paidRows = Array.isArray(paidBills) ? paidBills : []
@@ -1018,101 +707,6 @@ export default function Dashboard() {
     }
   }, [bills, digestTxnRows, earned, dayOfMonth, now])
 
-  const spendingDrift = useMemo(() => {
-    if (!showAdvancedInsights) {
-      return {
-        thisWeekSpend: 0,
-        avg4WeekSpend: 0,
-        driftAmount: 0,
-        driftPct: null,
-        weekdaySeries: [],
-        overBaselineDays: 0,
-        topDriftDay: null,
-        coolingDay: null,
-        hasData: false,
-      }
-    }
-
-    const current = now.getTime()
-    const dayMs = 24 * 60 * 60 * 1000
-    const thisWeekStart = current - (7 * dayMs)
-    const prior4WeekStart = thisWeekStart - (28 * dayMs)
-
-    const thisWeekRows = (Array.isArray(digestTxnRows) ? digestTxnRows : []).filter((row) => {
-      if (row?.type !== 'expense') return false
-      const ts = resolveTxnTimestamp(row)
-      return Number.isFinite(ts) && ts >= thisWeekStart && ts <= current
-    })
-
-    const prior4WeekRows = (Array.isArray(digestTxnRows) ? digestTxnRows : []).filter((row) => {
-      if (row?.type !== 'expense') return false
-      const ts = resolveTxnTimestamp(row)
-      return Number.isFinite(ts) && ts >= prior4WeekStart && ts < thisWeekStart
-    })
-
-    const thisWeekSpend = thisWeekRows.reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-    const prior4WeekSpend = prior4WeekRows.reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-    const avg4WeekSpend = prior4WeekSpend / 4
-    const driftAmount = thisWeekSpend - avg4WeekSpend
-    const driftPct = avg4WeekSpend > 0 ? Math.round((driftAmount / avg4WeekSpend) * 100) : null
-
-    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    const thisWeekByWeekday = Array.from({ length: 7 }, () => 0)
-    const baselineByWeekday = Array.from({ length: 7 }, () => 0)
-
-    function toWeekdayIndex(row) {
-      const ts = resolveTxnTimestamp(row)
-      if (!Number.isFinite(ts)) return null
-      const d = new Date(ts)
-      return (d.getDay() + 6) % 7
-    }
-
-    for (const row of thisWeekRows) {
-      const idx = toWeekdayIndex(row)
-      if (idx == null) continue
-      thisWeekByWeekday[idx] += Number(row?.amount || 0)
-    }
-
-    for (const row of prior4WeekRows) {
-      const idx = toWeekdayIndex(row)
-      if (idx == null) continue
-      baselineByWeekday[idx] += Number(row?.amount || 0)
-    }
-
-    const weekdaySeries = weekdayLabels.map((day, idx) => {
-      const currentValue = thisWeekByWeekday[idx]
-      const baseline = baselineByWeekday[idx] / 4
-      const delta = currentValue - baseline
-      const deltaPct = baseline > 0
-        ? Math.round((delta / baseline) * 100)
-        : (currentValue > 0 ? 100 : 0)
-
-      return {
-        day,
-        current: currentValue,
-        baseline,
-        delta,
-        deltaPct,
-      }
-    })
-
-    const overBaselineDays = weekdaySeries.filter((row) => row.delta > 0).length
-    const topDriftDay = [...weekdaySeries].sort((a, b) => b.delta - a.delta)[0]
-    const coolingDay = [...weekdaySeries].sort((a, b) => a.delta - b.delta)[0]
-
-    return {
-      thisWeekSpend,
-      avg4WeekSpend,
-      driftAmount,
-      driftPct,
-      weekdaySeries,
-      overBaselineDays,
-      topDriftDay,
-      coolingDay,
-      hasData: thisWeekRows.length > 0 || prior4WeekRows.length > 0,
-    }
-  }, [digestTxnRows, now, showAdvancedInsights])
-
   useEffect(() => {
     const prefs = getReminderPrefs()
     if (!prefs.enabled) return
@@ -1226,16 +820,6 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <InsightDensityToggle
-            mode={insightsMode}
-            onModeChange={setInsightsMode}
-            subtitle="Focus keeps action-first cards. Deep includes volatility and control diagnostics."
-          />
-        </motion.div>
-
-        {showAdvancedInsights && (
-          <>
-        <motion.div variants={fadeUp}>
           <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
@@ -1326,218 +910,6 @@ export default function Dashboard() {
             >
               {cashRiskRadar.action.label}
             </button>
-          </div>
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <div className="card p-4 border-0">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div>
-                <p className="section-label">Rolling net control chart</p>
-                <p className="text-caption text-ink-3 mt-0.5">30-day daily net stability with control-band signals</p>
-              </div>
-              <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${rollingNetControl.signalCount > 0 ? 'bg-warning-bg text-warning-text' : 'bg-income-bg text-income-text'}`}>
-                {rollingNetControl.signalCount} signal{rollingNetControl.signalCount === 1 ? '' : 's'}
-              </span>
-            </div>
-
-            {rollingNetControl.hasData ? (
-              <>
-                <div className="grid grid-cols-3 gap-2 mb-2.5">
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Control center</p>
-                    <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(rollingNetControl.mean)}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Upper band</p>
-                    <p className="text-[12px] font-bold tabular-nums text-income-text">+{fmt(Math.abs(rollingNetControl.ucl))}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Lower band</p>
-                    <p className="text-[12px] font-bold tabular-nums text-warning-text">-{fmt(Math.abs(rollingNetControl.lcl))}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
-                  <ResponsiveContainer width="100%" height={194}>
-                    <LineChart data={rollingNetControl.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
-                        axisLine={false}
-                        tickLine={false}
-                        interval={4}
-                      />
-                      <YAxis
-                        tickFormatter={compactTick}
-                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={34}
-                      />
-                      <ReferenceLine y={rollingNetControl.mean} stroke="rgba(10,103,216,0.42)" strokeDasharray="4 4" />
-                      <ReferenceLine y={rollingNetControl.ucl} stroke="rgba(154,114,0,0.6)" strokeDasharray="4 4" />
-                      <ReferenceLine y={rollingNetControl.lcl} stroke="rgba(154,114,0,0.6)" strokeDasharray="4 4" />
-                      <RechartsTooltip content={<NetControlTooltip />} />
-                      <Line type="monotone" dataKey="rolling7" stroke="rgba(10,103,216,0.48)" strokeWidth={1.7} dot={false} strokeDasharray="5 4" />
-                      <Line type="monotone" dataKey="net" stroke="#0A67D8" strokeWidth={2.2} dot={(props) => <NetSignalDot {...props} />} activeDot={{ r: 4.2, fill: '#0A67D8', stroke: '#fff', strokeWidth: 1.8 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <p className="text-[10px] text-ink-3 mt-1.5">
-                  Out-of-band points indicate unstable net behavior. Last 7-day average net is {rollingNetControl.last7Average >= 0 ? '+' : '-'}{fmt(Math.abs(rollingNetControl.last7Average))}.
-                </p>
-              </>
-            ) : (
-              <p className="text-[11px] text-ink-3">No enough daily net history yet to estimate control limits.</p>
-            )}
-          </div>
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <div className="card p-4 border-0">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div className="flex items-start gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
-                  <TrendingUp size={15} className="text-brand" />
-                </div>
-                <div>
-                  <p className="section-label">Spending Drift</p>
-                  <p className="text-caption text-ink-3 mt-0.5">This week vs 4-week average weekly spend</p>
-                </div>
-              </div>
-              <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${spendingDrift.driftAmount <= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-                {spendingDrift.driftAmount <= 0 ? 'Stable' : 'Drifting'}
-              </span>
-            </div>
-
-            {spendingDrift.hasData ? (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">This week</p>
-                    <p className="text-[12px] font-bold text-expense-text tabular-nums">{fmt(spendingDrift.thisWeekSpend)}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">4w avg/week</p>
-                    <p className="text-[12px] font-bold text-ink tabular-nums">{fmt(spendingDrift.avg4WeekSpend)}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Over baseline days</p>
-                    <p className="text-[12px] font-bold text-warning-text tabular-nums">{spendingDrift.overBaselineDays}/7</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Peak drift day</p>
-                    <p className="text-[12px] font-bold text-ink tabular-nums">{spendingDrift.topDriftDay?.day || '—'}</p>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-ink-3 mb-2">
-                  {spendingDrift.driftPct == null
-                    ? 'Not enough historical data yet for drift percentage.'
-                    : `Weekly drift is ${spendingDrift.driftPct >= 0 ? '+' : ''}${spendingDrift.driftPct}% against your 4-week baseline.`}
-                </p>
-
-                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mt-2">
-                  <ResponsiveContainer width="100%" height={188}>
-                    <BarChart data={spendingDrift.weekdaySeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
-                      <XAxis
-                        dataKey="day"
-                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tickFormatter={compactTick}
-                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={34}
-                      />
-                      <RechartsTooltip content={<WeekdayDriftTooltip />} />
-                      <Bar dataKey="current" name="This week" fill="#9A7200" radius={[6, 6, 0, 0]} maxBarSize={20} />
-                      <Bar dataKey="baseline" name="4w baseline" fill="rgba(154, 114, 0, 0.35)" radius={[6, 6, 0, 0]} maxBarSize={20} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <p className="text-[10px] text-ink-3 mt-1.5">
-                  Biggest upward pressure: {spendingDrift.topDriftDay?.day || '—'} ({fmt(Math.abs(spendingDrift.topDriftDay?.delta || 0))}).
-                  Cooling signal: {spendingDrift.coolingDay?.day || '—'} ({fmt(Math.abs(spendingDrift.coolingDay?.delta || 0))}).
-                </p>
-              </>
-            ) : (
-              <p className="text-[11px] text-ink-3">No enough weekly spend history yet. Keep logging transactions to unlock drift drivers.</p>
-            )}
-          </div>
-        </motion.div>
-          </>
-        )}
-
-        <motion.div variants={fadeUp}>
-          <div className="card p-4 border-0">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div>
-                <p className="section-label">Weekday spend spread</p>
-                <p className="text-caption text-ink-3 mt-0.5">Box-plot style spread by weekday using the last 8 weeks</p>
-              </div>
-              <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
-                8-week window
-              </span>
-            </div>
-
-            {weekdaySpread.hasData ? (
-              <>
-                <div className="grid grid-cols-2 gap-2 mb-2.5">
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Widest spread</p>
-                    <p className="text-[12px] font-bold tabular-nums text-warning-text">{weekdaySpread.widestSpreadDay?.day || '—'}</p>
-                    <p className="text-[10px] text-ink-3 mt-0.5">IQR {fmt(weekdaySpread.widestSpreadDay?.iqr || 0)}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3">Steadiest day</p>
-                    <p className="text-[12px] font-bold tabular-nums text-income-text">{weekdaySpread.steadiestDay?.day || '—'}</p>
-                    <p className="text-[10px] text-ink-3 mt-0.5">IQR {fmt(weekdaySpread.steadiestDay?.iqr || 0)}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
-                  <ResponsiveContainer width="100%" height={206}>
-                    <ComposedChart data={weekdaySpread.rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
-                      <XAxis
-                        dataKey="day"
-                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tickFormatter={compactTick}
-                        tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={34}
-                      />
-                      <RechartsTooltip content={<WeekdaySpreadTooltip />} />
-                      <Bar dataKey="whiskerBase" stackId="whisker" fill="transparent" barSize={6} />
-                      <Bar dataKey="whiskerRange" stackId="whisker" fill="rgba(10, 103, 216, 0.25)" barSize={6} radius={[4, 4, 4, 4]} />
-                      <Bar dataKey="boxBase" stackId="box" fill="transparent" barSize={14} />
-                      <Bar dataKey="boxHeight" stackId="box" fill="rgba(10, 103, 216, 0.65)" barSize={14} radius={[4, 4, 4, 4]} />
-                      <Line type="monotone" dataKey="median" stroke="#10213F" strokeWidth={1.8} dot={false} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <p className="text-[10px] text-ink-3 mt-1.5">
-                  Narrow boxes imply consistent spend behavior. Wide boxes and whiskers indicate high weekday variability and planning risk.
-                </p>
-              </>
-            ) : (
-              <p className="text-[11px] text-ink-3">No enough spend points in the last 8 weeks to estimate weekday spread.</p>
-            )}
           </div>
         </motion.div>
 
@@ -1734,13 +1106,6 @@ export default function Dashboard() {
             />
           )}
         </motion.div>
-
-        {/* ── Financial activity feed ─────────────────────────────── */}
-        {heavyReady && showAdvancedInsights && (
-          <motion.div variants={fadeUp}>
-            <DashboardActivityFeed events={financialEvents} />
-          </motion.div>
-        )}
 
       </motion.div>
 
