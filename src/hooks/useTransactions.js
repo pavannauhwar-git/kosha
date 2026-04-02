@@ -16,6 +16,7 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactions'],
   ['transactionsRecent'],
   ['transactionsDigest'],
+  ['dailyExpenseTotals'],
   ['txnCount'],
   ['month'],
   ['year'],
@@ -74,6 +75,7 @@ function getRecurringSyncPromise(userId) {
       queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
       queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
       queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
       queryClient.invalidateQueries({ queryKey: ['month'], refetchType: 'active' }),
       queryClient.invalidateQueries({ queryKey: ['year'], refetchType: 'active' }),
       queryClient.invalidateQueries({ queryKey: ['balance'], refetchType: 'active' }),
@@ -116,6 +118,7 @@ export async function invalidateCache() {
   suppress('transactions')
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
@@ -223,6 +226,7 @@ export function useTransactions({ type, category, search, limit, startDate, endD
 
 const RECENT_TXN_COLUMNS = 'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode'
 const DIGEST_TXN_COLUMNS = 'id, date, created_at, type, amount, category, is_repayment'
+const DAILY_EXPENSE_TOTAL_COLUMNS = 'date, amount'
 
 export function useRecentTransactions(limit = 5) {
   const safeLimit = Math.max(1, Number(limit) || 5)
@@ -276,6 +280,56 @@ export function useTransactionDigest(days = 14, limit = 200, options = {}) {
   })
 
   return { data: data || [], loading: isLoading, error }
+}
+
+export function useDailyExpenseTotals(days = 42, options = {}) {
+  const { enabled = true } = options
+  const safeDays = Math.max(1, Number(days) || 42)
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  start.setDate(start.getDate() - (safeDays - 1))
+  const startISO = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['dailyExpenseTotals', safeDays, startISO],
+    enabled,
+    queryFn: () => traceQuery('transactions:daily-expense-totals', async () => {
+      const userId = getAuthUserId()
+      const pageSize = 1000
+      const totalsByDate = {}
+
+      for (let from = 0; ; from += pageSize) {
+        const to = from + pageSize - 1
+
+        const { data: rows, error: qError } = await supabase
+          .from('transactions')
+          .select(DAILY_EXPENSE_TOTAL_COLUMNS)
+          .eq('user_id', userId)
+          .eq('type', 'expense')
+          .gte('date', startISO)
+          .order('date', { ascending: false })
+          .range(from, to)
+
+        if (qError) throw qError
+
+        const batch = rows || []
+        for (const row of batch) {
+          const key = String(row?.date || '').slice(0, 10)
+          if (!key) continue
+          const amount = Number(row?.amount || 0)
+          if (!Number.isFinite(amount)) continue
+          totalsByDate[key] = (totalsByDate[key] || 0) + amount
+        }
+
+        if (batch.length < pageSize) break
+      }
+
+      return totalsByDate
+    }),
+    gcTime: 5 * 60 * 1000,
+  })
+
+  return { data: data || {}, loading: isLoading, error }
 }
 
 export function useTodayExpenses(options = {}) {

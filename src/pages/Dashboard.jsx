@@ -4,6 +4,7 @@ import { Bell, ArrowRight, Plus, ShieldAlert, TrendingUp } from 'lucide-react'
 import {
   useRecentTransactions,
   useTransactionDigest,
+  useDailyExpenseTotals,
   useMonthSummary,
   useRunningBalance,
   removeTransactionMutation,
@@ -34,6 +35,7 @@ import {
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
 import DashboardActivityFeed from '../components/dashboard/DashboardActivityFeed'
+import DailySpendBubbleMap from '../components/dashboard/DailySpendBubbleMap'
 import PageHeader from '../components/layout/PageHeader'
 import AppToast from '../components/common/AppToast'
 import { useFinancialEvents } from '../hooks/useFinancialEvents'
@@ -42,6 +44,14 @@ import { CATEGORIES } from '../lib/categories'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
+const VARIANCE_WINDOW_STORAGE_KEY = 'dashboardVarianceWindowDays'
+const VARIANCE_WINDOW_MAX_DAYS = 14
+
+function normalizeVarianceWindowDays(rawValue) {
+  const parsed = Number(rawValue)
+  if (parsed === 7 || parsed === 14) return parsed
+  return VARIANCE_WINDOW_MAX_DAYS
+}
 
 function DuePressureTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -89,11 +99,31 @@ function quantile(sortedValues, p) {
 }
 
 function resolveTxnTimestamp(row) {
-  const rawDate = String(row?.date || '')
-  const dateHasTime = rawDate.includes('T') || /\d{2}:\d{2}/.test(rawDate)
-  const source = dateHasTime ? row?.date : (row?.created_at || row?.date)
-  const ts = new Date(source || 0).getTime()
-  return Number.isFinite(ts) ? ts : null
+  const rawDate = String(row?.date || '').trim()
+  if (rawDate) {
+    const dateOnlyMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    if (dateOnlyMatch) {
+      const ts = new Date(
+        Number(dateOnlyMatch[1]),
+        Number(dateOnlyMatch[2]) - 1,
+        Number(dateOnlyMatch[3]),
+        12,
+        0,
+        0,
+        0,
+      ).getTime()
+      if (Number.isFinite(ts)) return ts
+    }
+
+    const dateTs = new Date(rawDate).getTime()
+    if (Number.isFinite(dateTs)) return dateTs
+  }
+
+  const createdRaw = String(row?.created_at || '').trim()
+  if (!createdRaw) return null
+
+  const createdTs = new Date(createdRaw).getTime()
+  return Number.isFinite(createdTs) ? createdTs : null
 }
 
 function NetControlTooltip({ active, payload, label }) {
@@ -345,12 +375,20 @@ export default function Dashboard() {
   const [heroMode, setHeroMode] = useState('balance')
   const [toast, setToast] = useState(null)
   const [heavyReady, setHeavyReady] = useState(false)
-  const [activeVarianceDay, setActiveVarianceDay] = useState(null)
+  const [varianceWindowDays, setVarianceWindowDays] = useState(() => {
+    if (typeof window === 'undefined') return VARIANCE_WINDOW_MAX_DAYS
+    return normalizeVarianceWindowDays(window.localStorage.getItem(VARIANCE_WINDOW_STORAGE_KEY))
+  })
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 50)
     return () => clearTimeout(timer)
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(VARIANCE_WINDOW_STORAGE_KEY, String(varianceWindowDays))
+  }, [varianceWindowDays])
 
   // ── Data fetching ─────────────────────────────────────────────────────
   const {
@@ -359,6 +397,7 @@ export default function Dashboard() {
     fetching: recentFetching,
   } = useRecentTransactions(5)
   const { data: digestTxnRows = [] } = useTransactionDigest(70, 900, { enabled: heavyReady })
+  const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(VARIANCE_WINDOW_MAX_DAYS, { enabled: heavyReady })
   const {
     data: summary,
     loading: summaryLoading,
@@ -440,11 +479,11 @@ export default function Dashboard() {
     const prev7Start = current - (14 * dayMs)
 
     const inLast7 = digestTxnRows.filter((row) => {
-      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      const ts = resolveTxnTimestamp(row)
       return Number.isFinite(ts) && ts >= last7Start && ts <= current
     })
     const inPrev7 = digestTxnRows.filter((row) => {
-      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      const ts = resolveTxnTimestamp(row)
       return Number.isFinite(ts) && ts >= prev7Start && ts < last7Start
     })
 
@@ -523,27 +562,15 @@ export default function Dashboard() {
   }, [digestTxnRows, now, categoryLabelMap])
 
   const dailyVariance = useMemo(() => {
-    const byDate = new Map()
-    for (const row of digestTxnRows) {
-      if (row?.type !== 'expense') continue
-      const ts = resolveTxnTimestamp(row)
-      if (!Number.isFinite(ts)) continue
-
-      const d = new Date(ts)
-      d.setHours(0, 0, 0, 0)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      if (!key) continue
-      byDate.set(key, (byDate.get(key) || 0) + Number(row?.amount || 0))
-    }
-
-    const lookbackDays = 42
+    const lookbackDays = varianceWindowDays
     const heatmapDays = []
     for (let i = lookbackDays - 1; i >= 0; i -= 1) {
       const d = new Date(now)
       d.setHours(0, 0, 0, 0)
       d.setDate(d.getDate() - i)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      const value = byDate.get(key) || 0
+      const rawValue = Number(dailyExpenseTotals[key] || 0)
+      const value = Number.isFinite(rawValue) ? rawValue : 0
       const weekdayIndex = (d.getDay() + 6) % 7
       heatmapDays.push({
         key,
@@ -587,7 +614,7 @@ export default function Dashboard() {
       trackedTotal: trackedDays.reduce((sum, row) => sum + row.value, 0),
       heatmapRange: `${heatmapDays[0]?.label || ''} - ${heatmapDays[heatmapDays.length - 1]?.label || ''}`,
     }
-  }, [digestTxnRows, now])
+  }, [dailyExpenseTotals, now, varianceWindowDays])
 
   const rollingNetControl = useMemo(() => {
     const dayMs = 24 * 60 * 60 * 1000
@@ -869,7 +896,7 @@ export default function Dashboard() {
     const income28 = (Array.isArray(digestTxnRows) ? digestTxnRows : [])
       .filter((row) => {
         if (row?.type !== 'income' || row?.is_repayment) return false
-        const ts = new Date(row?.date || row?.created_at || 0).getTime()
+        const ts = resolveTxnTimestamp(row)
         return Number.isFinite(ts) && ts >= (current - (28 * dayMs)) && ts <= current
       })
       .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
@@ -961,13 +988,13 @@ export default function Dashboard() {
 
     const thisWeekRows = (Array.isArray(digestTxnRows) ? digestTxnRows : []).filter((row) => {
       if (row?.type !== 'expense') return false
-      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      const ts = resolveTxnTimestamp(row)
       return Number.isFinite(ts) && ts >= thisWeekStart && ts <= current
     })
 
     const prior4WeekRows = (Array.isArray(digestTxnRows) ? digestTxnRows : []).filter((row) => {
       if (row?.type !== 'expense') return false
-      const ts = new Date(row?.date || row?.created_at || 0).getTime()
+      const ts = resolveTxnTimestamp(row)
       return Number.isFinite(ts) && ts >= prior4WeekStart && ts < thisWeekStart
     })
 
@@ -981,20 +1008,21 @@ export default function Dashboard() {
     const thisWeekByWeekday = Array.from({ length: 7 }, () => 0)
     const baselineByWeekday = Array.from({ length: 7 }, () => 0)
 
-    function toWeekdayIndex(dateValue) {
-      const d = new Date(dateValue || 0)
-      if (Number.isNaN(d.getTime())) return null
+    function toWeekdayIndex(row) {
+      const ts = resolveTxnTimestamp(row)
+      if (!Number.isFinite(ts)) return null
+      const d = new Date(ts)
       return (d.getDay() + 6) % 7
     }
 
     for (const row of thisWeekRows) {
-      const idx = toWeekdayIndex(row?.date || row?.created_at)
+      const idx = toWeekdayIndex(row)
       if (idx == null) continue
       thisWeekByWeekday[idx] += Number(row?.amount || 0)
     }
 
     for (const row of prior4WeekRows) {
-      const idx = toWeekdayIndex(row?.date || row?.created_at)
+      const idx = toWeekdayIndex(row)
       if (idx == null) continue
       baselineByWeekday[idx] += Number(row?.amount || 0)
     }
@@ -1089,6 +1117,13 @@ export default function Dashboard() {
     setHeroMode(m => m === 'balance' ? 'safe' : 'balance')
   }, [])
 
+  const handleVarianceWindowChange = useCallback((nextDays) => {
+    setVarianceWindowDays((prev) => {
+      const normalized = normalizeVarianceWindowDays(nextDays)
+      return prev === normalized ? prev : normalized
+    })
+  }, [])
+
   return (
     <div className="page">
       <PageHeader title="Dashboard" className="mb-3" />
@@ -1131,70 +1166,11 @@ export default function Dashboard() {
 
         {/* ── Daily spend bubble map ─────────────────────────────── */}
         <motion.div variants={fadeUp}>
-          <div className="card p-4 border-0">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div>
-                <p className="section-label">Daily spend bubble map</p>
-                <p className="text-caption text-ink-3 mt-0.5">Each bubble represents one day across the last {dailyVariance.lookbackDays} days</p>
-              </div>
-              <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
-                {dailyVariance.activeDays} active day{dailyVariance.activeDays === 1 ? '' : 's'}
-              </span>
-            </div>
-
-            <p className="text-[10px] text-ink-3 mb-1.5">
-              {activeVarianceDay
-                ? `${activeVarianceDay.label}: ${fmt(activeVarianceDay.value)}`
-                : 'Hover a bubble to see exact spend for that day.'}
-            </p>
-
-            <p className="text-[10px] text-ink-3 mb-1.5">
-              Absolute range: 0 to {fmt(dailyVariance.heatmapMax)} over {dailyVariance.heatmapRange}.
-            </p>
-
-            <div className="grid grid-cols-7 gap-1.5 mb-1">
-              {dailyVariance.weekdayLabels.map((label) => (
-                <p key={`bubble-header-${label}`} className="text-[9px] text-ink-3 text-center">{label}</p>
-              ))}
-            </div>
-
-            <div className="space-y-1.5" onMouseLeave={() => setActiveVarianceDay(null)}>
-              {dailyVariance.heatmapWeeks.map((week, weekIndex) => (
-                <div key={`heatmap-week-${weekIndex}`} className="grid grid-cols-7 gap-1.5">
-                  {week.map((day, dayIndex) => {
-                    if (!day) {
-                      return <div key={`heatmap-empty-${weekIndex}-${dayIndex}`} className="h-8 rounded-card bg-transparent" aria-hidden="true" />
-                    }
-
-                    return (
-                      <button
-                        key={day.key}
-                        type="button"
-                        title={`${day.label}: ${fmt(day.value)}`}
-                        aria-label={`${day.label} spend ${fmt(day.value)}`}
-                        onMouseEnter={() => setActiveVarianceDay(day)}
-                        onFocus={() => setActiveVarianceDay(day)}
-                        className="h-8 rounded-card bg-kosha-surface-2 border border-kosha-border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-                      >
-                        <span
-                          className="rounded-full border border-white/70"
-                          style={{
-                            width: `${day.bubbleSize}px`,
-                            height: `${day.bubbleSize}px`,
-                            background: day.bubbleFill,
-                          }}
-                        />
-                      </button>
-                    )
-                  })}
-                </div>
-              ))}
-            </div>
-
-            <p className="text-[10px] text-ink-3 mt-1.5">
-              Bubble size and shade both scale with spend magnitude. Tracked spend in this window: {fmt(dailyVariance.trackedTotal)}.
-            </p>
-          </div>
+          <DailySpendBubbleMap
+            dailyVariance={dailyVariance}
+            selectedWindowDays={varianceWindowDays}
+            onWindowDaysChange={handleVarianceWindowChange}
+          />
         </motion.div>
 
         <motion.div variants={fadeUp}>
