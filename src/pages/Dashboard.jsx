@@ -36,6 +36,7 @@ import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
 import DashboardActivityFeed from '../components/dashboard/DashboardActivityFeed'
 import DailySpendBubbleMap from '../components/dashboard/DailySpendBubbleMap'
+import InsightDensityToggle from '../components/common/InsightDensityToggle'
 import PageHeader from '../components/layout/PageHeader'
 import AppToast from '../components/common/AppToast'
 import { useFinancialEvents } from '../hooks/useFinancialEvents'
@@ -46,6 +47,11 @@ const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
 const VARIANCE_WINDOW_STORAGE_KEY = 'dashboardVarianceWindowDays'
 const VARIANCE_WINDOW_MAX_DAYS = 14
+const DASHBOARD_INSIGHTS_MODE_KEY = 'dashboardInsightsMode'
+
+function normalizeInsightsMode(rawValue) {
+  return rawValue === 'deep' ? 'deep' : 'focus'
+}
 
 function normalizeVarianceWindowDays(rawValue) {
   const parsed = Number(rawValue)
@@ -375,6 +381,10 @@ export default function Dashboard() {
   const [heroMode, setHeroMode] = useState('balance')
   const [toast, setToast] = useState(null)
   const [heavyReady, setHeavyReady] = useState(false)
+  const [insightsMode, setInsightsMode] = useState(() => {
+    if (typeof window === 'undefined') return 'focus'
+    return normalizeInsightsMode(window.localStorage.getItem(DASHBOARD_INSIGHTS_MODE_KEY))
+  })
   const [varianceWindowDays, setVarianceWindowDays] = useState(() => {
     if (typeof window === 'undefined') return VARIANCE_WINDOW_MAX_DAYS
     return normalizeVarianceWindowDays(window.localStorage.getItem(VARIANCE_WINDOW_STORAGE_KEY))
@@ -389,6 +399,13 @@ export default function Dashboard() {
     if (typeof window === 'undefined') return
     window.localStorage.setItem(VARIANCE_WINDOW_STORAGE_KEY, String(varianceWindowDays))
   }, [varianceWindowDays])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(DASHBOARD_INSIGHTS_MODE_KEY, insightsMode)
+  }, [insightsMode])
+
+  const showAdvancedInsights = insightsMode === 'deep'
 
   // ── Data fetching ─────────────────────────────────────────────────────
   const {
@@ -617,6 +634,18 @@ export default function Dashboard() {
   }, [dailyExpenseTotals, now, varianceWindowDays])
 
   const rollingNetControl = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        rows: [],
+        mean: 0,
+        ucl: 0,
+        lcl: 0,
+        signalCount: 0,
+        last7Average: 0,
+        hasData: false,
+      }
+    }
+
     const dayMs = 24 * 60 * 60 * 1000
     const lookbackDays = 30
     const nowTs = now.getTime()
@@ -711,9 +740,18 @@ export default function Dashboard() {
       last7Average,
       hasData: controlRows.some((row) => row.income > 0 || row.outflow > 0),
     }
-  }, [digestTxnRows, now])
+  }, [digestTxnRows, now, showAdvancedInsights])
 
   const weekdaySpread = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        rows: [],
+        widestSpreadDay: null,
+        steadiestDay: null,
+        hasData: false,
+      }
+    }
+
     const dayMs = 24 * 60 * 60 * 1000
     const lookbackDays = 56
     const nowTs = now.getTime()
@@ -780,7 +818,7 @@ export default function Dashboard() {
       steadiestDay,
       hasData: rows.some((row) => row.max > 0),
     }
-  }, [digestTxnRows, now])
+  }, [digestTxnRows, now, showAdvancedInsights])
 
   const duePipeline = useMemo(() => {
     const pendingRows = Array.isArray(bills) ? bills : []
@@ -981,6 +1019,20 @@ export default function Dashboard() {
   }, [bills, digestTxnRows, earned, dayOfMonth, now])
 
   const spendingDrift = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        thisWeekSpend: 0,
+        avg4WeekSpend: 0,
+        driftAmount: 0,
+        driftPct: null,
+        weekdaySeries: [],
+        overBaselineDays: 0,
+        topDriftDay: null,
+        coolingDay: null,
+        hasData: false,
+      }
+    }
+
     const current = now.getTime()
     const dayMs = 24 * 60 * 60 * 1000
     const thisWeekStart = current - (7 * dayMs)
@@ -1059,7 +1111,7 @@ export default function Dashboard() {
       coolingDay,
       hasData: thisWeekRows.length > 0 || prior4WeekRows.length > 0,
     }
-  }, [digestTxnRows, now])
+  }, [digestTxnRows, now, showAdvancedInsights])
 
   useEffect(() => {
     const prefs = getReminderPrefs()
@@ -1173,6 +1225,16 @@ export default function Dashboard() {
           />
         </motion.div>
 
+        <motion.div variants={fadeUp}>
+          <InsightDensityToggle
+            mode={insightsMode}
+            onModeChange={setInsightsMode}
+            subtitle="Focus keeps action-first cards. Deep includes volatility and control diagnostics."
+          />
+        </motion.div>
+
+        {showAdvancedInsights && (
+          <>
         <motion.div variants={fadeUp}>
           <div className="card p-4 border-0">
             <div className="flex items-start justify-between gap-3 mb-2">
@@ -1412,6 +1474,8 @@ export default function Dashboard() {
             )}
           </div>
         </motion.div>
+          </>
+        )}
 
         <motion.div variants={fadeUp}>
           <div className="card p-4 border-0">
@@ -1672,7 +1736,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Financial activity feed ─────────────────────────────── */}
-        {heavyReady && (
+        {heavyReady && showAdvancedInsights && (
           <motion.div variants={fadeUp}>
             <DashboardActivityFeed events={financialEvents} />
           </motion.div>

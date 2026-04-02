@@ -13,6 +13,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
+import InsightDensityToggle from '../components/common/InsightDensityToggle'
 import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
 import BreakdownCard from '../components/cards/monthly/BreakdownCard'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
@@ -57,6 +58,12 @@ function shortLabel(label, maxLength = 12) {
   const txt = String(label || '')
   if (txt.length <= maxLength) return txt
   return `${txt.slice(0, maxLength)}...`
+}
+
+const MONTHLY_INSIGHTS_MODE_KEY = 'monthlyInsightsMode'
+
+function normalizeMonthlyInsightsMode(rawValue) {
+  return rawValue === 'deep' ? 'deep' : 'focus'
 }
 
 function WeeklyCadenceTooltip({ active, payload, label }) {
@@ -138,12 +145,22 @@ export default function Monthly() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [heavyReady, setHeavyReady] = useState(false)
+  const [insightsMode, setInsightsMode] = useState(() => {
+    if (typeof window === 'undefined') return 'focus'
+    return normalizeMonthlyInsightsMode(window.localStorage.getItem(MONTHLY_INSIGHTS_MODE_KEY))
+  })
   const monthRef = useRef(null)
+  const showAdvancedInsights = insightsMode === 'deep'
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 260)
     return () => clearTimeout(timer)
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(MONTHLY_INSIGHTS_MODE_KEY, insightsMode)
+  }, [insightsMode])
 
   const { data, loading } = useMonthSummary(year, month)
   const monthStartDate = `${year}-${String(month).padStart(2, '0')}-01`
@@ -406,6 +423,16 @@ export default function Monthly() {
   }, [vehicleEntries, inflow, invested])
 
   const weeklyFlowDiagnostics = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        hasData: false,
+        series: [],
+        positiveWeeks: 0,
+        bestWeek: null,
+        stressWeek: null,
+      }
+    }
+
     const daysInSelectedMonth = new Date(year, month, 0).getDate()
     const bucketCount = Math.ceil(daysInSelectedMonth / 7)
     const currentMonthNow = new Date()
@@ -476,9 +503,19 @@ export default function Monthly() {
       bestWeek,
       stressWeek,
     }
-  }, [txnRows, year, month])
+  }, [txnRows, year, month, showAdvancedInsights])
 
   const expenseDistribution = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        hasData: false,
+        bins: [],
+        p50: 0,
+        p90: 0,
+        highTicketCount: 0,
+      }
+    }
+
     const expenses = (Array.isArray(txnRows) ? txnRows : [])
       .filter((row) => row?.type === 'expense')
       .map((row) => Number(row?.amount || 0))
@@ -529,9 +566,19 @@ export default function Monthly() {
       p90,
       highTicketCount,
     }
-  }, [txnRows])
+  }, [txnRows, showAdvancedInsights])
 
   const categoryBehaviorMap = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        hasData: false,
+        points: [],
+        shareMedian: 0,
+        avgTicketMedian: 0,
+        topLever: null,
+      }
+    }
+
     const expenseRows = (Array.isArray(txnRows) ? txnRows : [])
       .filter((row) => row?.type === 'expense' && Number(row?.amount || 0) > 0)
 
@@ -590,7 +637,7 @@ export default function Monthly() {
       avgTicketMedian,
       topLever,
     }
-  }, [txnRows, categoryLabelMap])
+  }, [txnRows, categoryLabelMap, showAdvancedInsights])
 
   return (
     <div className="page">
@@ -663,6 +710,12 @@ export default function Monthly() {
             <MonthHeroCard month={month} year={year} data={data} />
           </div>
 
+          <InsightDensityToggle
+            mode={insightsMode}
+            onModeChange={setInsightsMode}
+            subtitle="Focus keeps month-close and allocation cards. Deep includes weekly and distribution diagnostics."
+          />
+
           <div className="card p-4 border-0">
             <SectionHeader
               className="mb-2"
@@ -698,7 +751,7 @@ export default function Monthly() {
             <BreakdownCard earned={inflow} spent={spent} invested={invested} totalLabel="Total inflow" />
           )}
 
-          {heavyReady && weeklyFlowDiagnostics.hasData && (
+          {heavyReady && showAdvancedInsights && weeklyFlowDiagnostics.hasData && (
             <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
@@ -760,7 +813,7 @@ export default function Monthly() {
             </div>
           )}
 
-          {heavyReady && expenseDistribution.hasData && (
+          {heavyReady && showAdvancedInsights && expenseDistribution.hasData && (
             <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
@@ -812,7 +865,7 @@ export default function Monthly() {
             </div>
           )}
 
-          {heavyReady && categoryBehaviorMap.hasData && (
+          {heavyReady && showAdvancedInsights && categoryBehaviorMap.hasData && (
             <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
@@ -948,7 +1001,7 @@ export default function Monthly() {
             </div>
           )}
 
-          {heavyReady && allCatEntries.length > 0 && (
+          {heavyReady && showAdvancedInsights && allCatEntries.length > 0 && (
             <CategorySpendingChart
               entries={allCatEntries}
               total={categoryTotal}

@@ -16,6 +16,7 @@ import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
 import PageHeader from '../components/layout/PageHeader'
+import SectionHeader from '../components/common/SectionHeader'
 import { getAuthUserId } from '../lib/authStore'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
@@ -139,6 +140,25 @@ export default function Transactions() {
   const hasMore = useMemo(() => total > data.length, [total, data.length])
   const focusTxnId = searchParams.get('focus')
   const hasActiveFilters = typeFilter !== 'all' || !!catFilter || datePreset !== 'all' || !!debouncedSearch
+  const activeDatePresetLabel = useMemo(
+    () => DATE_PRESETS.find((preset) => preset.id === datePreset)?.label || 'All time',
+    [datePreset]
+  )
+  const visibleSummary = useMemo(() => {
+    return data.reduce((acc, txn) => {
+      const amount = Number(txn?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) return acc
+
+      if (txn.type === 'income') {
+        acc.income += amount
+        acc.net += amount
+      } else {
+        acc.outflow += amount
+        acc.net -= amount
+      }
+      return acc
+    }, { income: 0, outflow: 0, net: 0 })
+  }, [data])
 
   useEffect(() => {
     try {
@@ -286,6 +306,15 @@ export default function Transactions() {
     }
   }, [])
 
+  const clearAllFilters = useCallback(() => {
+    setTypeFilter('all')
+    setCatFilter('')
+    setDatePreset('all')
+    setSearch('')
+    setShowCats(false)
+    setDisplayCount(50)
+  }, [])
+
   useEffect(() => {
     if (!location.state?.openAddInvestment) return
 
@@ -301,117 +330,185 @@ export default function Transactions() {
     <div className="page">
       <PageHeader title="Transactions" className="mb-3" />
 
-      <div className="mb-2.5 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-caption text-ink-3 mt-0.5">
-            {total > 0 ? `${total} transaction${total !== 1 ? 's' : ''}` : 'No results'}
-            {(typeFilter !== 'all' || catFilter || datePreset !== 'all') ? ' (filtered)' : ''}
-          </p>
-        </div>
-        {total > 0 ? (
-          <button onClick={exportCSV} title="Export CSV"
-            className="close-btn border border-kosha-border shrink-0">
-            <Download size={16} className="text-ink-2" />
-          </button>
-        ) : null}
-      </div>
-
-      {/* Search */}
-      <div className="relative mb-2.5 md:mb-3">
-        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
-        <input
-          className="input pl-8 pr-8 py-2 md:py-2.5 text-[14px]"
-          placeholder="Search transactions…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+      <div className="card p-4 border-0 mb-3">
+        <SectionHeader
+          title="Transaction workspace"
+          subtitle="Track timeline health, then drill into rows with filters."
+          badge={{
+            label: hasActiveFilters ? 'Filtered view' : 'Full timeline',
+            className: hasActiveFilters ? 'bg-brand-container text-brand-on' : 'bg-kosha-surface-2 text-ink-2',
+          }}
         />
-        {search && (
-          <button onClick={() => setSearch('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3">
-            <X size={13} />
-          </button>
-        )}
-      </div>
 
-      {/* Date filter chips */}
-      <FilterRow className="mb-2 md:mb-2.5">
-        {DATE_PRESETS.map((preset) => (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
+          <div className="rounded-card bg-kosha-surface-2 p-3">
+            <p className="text-caption text-ink-3">Results</p>
+            <p className="text-sm font-bold tabular-nums text-ink-2">
+              {data.length}/{total}
+            </p>
+            <p className="text-[10px] text-ink-3 mt-0.5">Loaded rows / matching rows</p>
+          </div>
+          <div className="rounded-card bg-kosha-surface-2 p-3">
+            <p className="text-caption text-ink-3">Date window</p>
+            <p className="text-sm font-bold tabular-nums text-ink-2">{activeDatePresetLabel}</p>
+            <p className="text-[10px] text-ink-3 mt-0.5">Current timeline range</p>
+          </div>
+          <div className="rounded-card bg-kosha-surface-2 p-3">
+            <p className="text-caption text-ink-3">Loaded net flow</p>
+            <p className={`text-sm font-bold tabular-nums ${visibleSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+              {visibleSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(visibleSummary.net))}
+            </p>
+            <p className="text-[10px] text-ink-3 mt-0.5">Income {fmt(visibleSummary.income)} | Outflow {fmt(visibleSummary.outflow)}</p>
+          </div>
+        </div>
+
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <button
-            key={preset.id}
             type="button"
             onClick={() => {
-              setDatePreset(preset.id)
-              setDisplayCount(50)
+              setEditTxn(null)
+              setDuplicateTxn(null)
+              setAddType('expense')
+              setShowAdd(true)
             }}
-            className={`chip-control chip-control-sm ${
-              datePreset === preset.id
-                ? 'bg-brand-container text-brand-on border-brand-container'
-                : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'
-            }`}
+            className="btn-secondary h-9 px-3 text-[11px]"
           >
-            {preset.label}
+            <Plus size={14} className="mr-1" />
+            Add transaction
           </button>
-        ))}
-      </FilterRow>
 
-      {/* Type and category filter chips */}
-      <FilterRow className="mb-2.5 md:mb-3">
-        {TYPES.map(t => (
-          <button key={t.id}
-            onClick={() => handleTypeFilter(t.id)}
-            className={`chip-control chip-control-sm ${typeFilter === t.id
-              ? TYPE_CHIP[t.id]
-              : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-
-        <button
-          onClick={() => setShowCats(v => !v)}
-            className={`chip-control chip-control-sm
-                      ${catFilter
-            ? 'bg-brand-container text-brand-on border-brand-container'
-            : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
-        >
-          <SlidersHorizontal size={11} />
-          {catFilter ? CATEGORIES.find(c => c.id === catFilter)?.label || 'Category' : 'Category'}
-          {catFilter && (
+          {total > 0 ? (
             <button
               type="button"
-              aria-label="Clear category filter"
-              onClick={e => { e.stopPropagation(); handleCatFilter('') }}
+              onClick={exportCSV}
+              className="btn-secondary h-9 px-3 text-[11px]"
             >
-              <X size={10} />
+              <Download size={14} className="mr-1" />
+              Export CSV
+            </button>
+          ) : null}
+
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+            >
+              Clear filters
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="card p-4 border-0 mb-3">
+        <SectionHeader
+          title="Find and filter"
+          subtitle="Search by description, then narrow by date, type, and category."
+        />
+
+        <div className="relative mt-2.5">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+          <input
+            className="input pl-8 pr-8 py-2 md:py-2.5 text-[14px]"
+            placeholder="Search transactions..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3"
+            >
+              <X size={13} />
             </button>
           )}
-        </button>
-      </FilterRow>
+        </div>
 
-      {/* Category picker */}
-      <AnimatePresence>
-        {showCats && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.15 }}
-            className="card mb-3.5 p-3 flex flex-wrap gap-2"
-          >
-            {filterCategories.map(c => (
-              <button key={c.id}
-                onClick={() => { handleCatFilter(catFilter === c.id ? '' : c.id); setShowCats(false) }}
-                className={`chip-control chip-control-sm
-                            ${catFilter === c.id
+        <FilterRow className="mt-2.5">
+          {DATE_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => {
+                setDatePreset(preset.id)
+                setDisplayCount(50)
+              }}
+              className={`chip-control chip-control-sm ${
+                datePreset === preset.id
                   ? 'bg-brand-container text-brand-on border-brand-container'
-                              : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
-              >
-                {c.label}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </FilterRow>
+
+        <FilterRow className="mt-2.5">
+          {TYPES.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => handleTypeFilter(t.id)}
+              className={`chip-control chip-control-sm ${typeFilter === t.id
+                ? TYPE_CHIP[t.id]
+                : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => setShowCats(v => !v)}
+            className={`chip-control chip-control-sm ${catFilter
+              ? 'bg-brand-container text-brand-on border-brand-container'
+              : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
+          >
+            <SlidersHorizontal size={11} />
+            {catFilter ? CATEGORIES.find(c => c.id === catFilter)?.label || 'Category' : 'Category'}
+          </button>
+
+          {catFilter ? (
+            <button
+              type="button"
+              onClick={() => handleCatFilter('')}
+              className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+            >
+              Clear category
+            </button>
+          ) : null}
+        </FilterRow>
+
+        <AnimatePresence>
+          {showCats && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+              className="mt-2.5 rounded-card border border-kosha-border bg-kosha-surface p-2.5 flex flex-wrap gap-2"
+            >
+              {filterCategories.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    handleCatFilter(catFilter === c.id ? '' : c.id)
+                    setShowCats(false)
+                  }}
+                  className={`chip-control chip-control-sm ${catFilter === c.id
+                    ? 'bg-brand-container text-brand-on border-brand-container'
+                    : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {showGuideHint && (
         <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
@@ -436,6 +533,14 @@ export default function Transactions() {
         </div>
       )}
 
+      <div className="mb-2.5">
+        <SectionHeader
+          title="Timeline"
+          subtitle={hasActiveFilters ? 'Filtered rows grouped by date.' : 'Latest activity grouped by date.'}
+          rightText={`${data.length} loaded`}
+        />
+      </div>
+
       {/* Transaction groups */}
       {txnLoading && data.length === 0 ? (
         <SkeletonLayout
@@ -457,13 +562,7 @@ export default function Transactions() {
           }
           actionLabel={hasActiveFilters ? 'Clear filters' : 'Add transaction'}
           onAction={hasActiveFilters
-            ? () => {
-                setTypeFilter('all')
-                setCatFilter('')
-                setDatePreset('all')
-                setSearch('')
-                setDisplayCount(50)
-              }
+            ? clearAllFilters
             : () => {
                 setEditTxn(null)
                 setAddType('expense')

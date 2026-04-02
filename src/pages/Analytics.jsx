@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
+import InsightDensityToggle from '../components/common/InsightDensityToggle'
 import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
 import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
@@ -44,6 +45,11 @@ import { C } from '../lib/colors'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
+const ANALYTICS_INSIGHTS_MODE_KEY = 'analyticsInsightsMode'
+
+function normalizeAnalyticsInsightsMode(rawValue) {
+  return rawValue === 'deep' ? 'deep' : 'focus'
+}
 
 function toFiniteNumber(value) {
   const n = Number(value)
@@ -231,11 +237,21 @@ export default function Analytics() {
   const [year, setYear] = useState(currentYear)
   const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
+  const [insightsMode, setInsightsMode] = useState(() => {
+    if (typeof window === 'undefined') return 'focus'
+    return normalizeAnalyticsInsightsMode(window.localStorage.getItem(ANALYTICS_INSIGHTS_MODE_KEY))
+  })
+  const showAdvancedInsights = insightsMode === 'deep'
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 260)
     return () => clearTimeout(timer)
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(ANALYTICS_INSIGHTS_MODE_KEY, insightsMode)
+  }, [insightsMode])
 
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
@@ -243,7 +259,7 @@ export default function Analytics() {
     startDate: `${year}-01-01`,
     endDate: `${year}-12-31`,
     limit: 2600,
-    enabled: heavyReady,
+    enabled: heavyReady && showAdvancedInsights,
     columns: 'id,date,type,amount,category',
   })
 
@@ -320,6 +336,15 @@ export default function Analytics() {
   }, [data])
 
   const concentrationRiskTrend = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        hasData: false,
+        series: [],
+        avgShare: 0,
+        highRiskMonths: 0,
+      }
+    }
+
     const monthCategoryMaps = Array.from({ length: 12 }, () => new Map())
 
     for (const row of (Array.isArray(yearCategoryRows) ? yearCategoryRows : [])) {
@@ -361,9 +386,21 @@ export default function Analytics() {
       avgShare,
       highRiskMonths: activeSeries.filter((row) => row.share >= 65).length,
     }
-  }, [yearCategoryRows])
+  }, [yearCategoryRows, showAdvancedInsights])
 
   const behaviorScatter = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        hasData: false,
+        points: [],
+        spendMedian: 0,
+        investMedian: 0,
+        avgSpendRatio: 0,
+        avgInvestRatio: 0,
+        stressMonths: 0,
+      }
+    }
+
     const points = flowTrendData
       .filter((row) => toFiniteNumber(row.Income) > 0 || toFiniteNumber(row.Outflow) > 0)
       .map((row) => {
@@ -395,9 +432,18 @@ export default function Analytics() {
       avgInvestRatio: Math.round(mean(points.map((point) => point.investRatio))),
       stressMonths: points.filter((point) => point.surplusRatio < 0).length,
     }
-  }, [flowTrendData])
+  }, [flowTrendData, showAdvancedInsights])
 
   const categoryPareto = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        hasData: false,
+        rows: [],
+        topShare: 0,
+        categoriesFor80Pct: 0,
+      }
+    }
+
     if (!allCatEntries.length) {
       return {
         hasData: false,
@@ -435,9 +481,21 @@ export default function Analytics() {
       topShare: Math.round(((rows[0]?.amount || 0) / categoryTotal) * 100),
       categoriesFor80Pct: index80 >= 0 ? index80 + 1 : rows.length,
     }
-  }, [allCatEntries, categoryLabelById, categoryTotal])
+  }, [allCatEntries, categoryLabelById, categoryTotal, showAdvancedInsights])
 
   const surplusControl = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        hasData: false,
+        series: [],
+        meanNet: 0,
+        upperBand: 0,
+        lowerBand: 0,
+        signalMonths: [],
+        variationPct: null,
+      }
+    }
+
     if (!surplusData.length) {
       return {
         hasData: false,
@@ -482,9 +540,17 @@ export default function Analytics() {
       signalMonths,
       variationPct,
     }
-  }, [surplusData])
+  }, [surplusData, showAdvancedInsights])
 
   const habitProfile = useMemo(() => {
+    if (!showAdvancedInsights) {
+      return {
+        hasData: false,
+        rows: [],
+        overall: 0,
+      }
+    }
+
     const activeMonths = flowTrendData.filter((row) => {
       const income = toFiniteNumber(row.Income)
       const outflow = toFiniteNumber(row.Outflow)
@@ -539,7 +605,7 @@ export default function Analytics() {
       rows,
       overall: Math.round(mean(rows.map((row) => row.score))),
     }
-  }, [flowTrendData, concentrationRiskTrend.avgShare])
+  }, [flowTrendData, concentrationRiskTrend.avgShare, showAdvancedInsights])
 
   const decisionSignals = useMemo(() => {
     if (!flowTrendData.length || !surplusData.length) return []
@@ -637,6 +703,12 @@ export default function Analytics() {
 
               <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
 
+              <InsightDensityToggle
+                mode={insightsMode}
+                onModeChange={setInsightsMode}
+                subtitle="Focus keeps annual outcomes, YoY context, the core cashflow trend, and the simulator. Deep adds behavior and concentration diagnostics."
+              />
+
             <div className="space-y-4">
               {/* ── 2. Year-over-year context ───────────────────────── */}
               {heavyReady ? (
@@ -656,21 +728,23 @@ export default function Analytics() {
                 chartData={flowTrendData}
                 totalIncome={data?.totalIncome}
               />
-              <MonthlyCompositionAreaChart flowData={flowTrendData} />
-              <CashflowWaterfallChart
-                flowData={flowTrendData}
-                totalIncome={data?.totalIncome}
-                totalExpense={data?.totalExpense}
-                totalInvestment={data?.totalInvestment}
-              />
-              <SurplusTrajectoryChart netData={surplusData} />
+              {showAdvancedInsights && (
+                <>
+                  <MonthlyCompositionAreaChart flowData={flowTrendData} />
+                  <CashflowWaterfallChart
+                    flowData={flowTrendData}
+                    totalIncome={data?.totalIncome}
+                    totalExpense={data?.totalExpense}
+                    totalInvestment={data?.totalInvestment}
+                  />
+                  <SurplusTrajectoryChart netData={surplusData} />
 
-              <RunwayCoverageChart
-                flowData={flowTrendData}
-                annualSurplus={annualSurplus}
-              />
+                  <RunwayCoverageChart
+                    flowData={flowTrendData}
+                    annualSurplus={annualSurplus}
+                  />
 
-              {behaviorScatter.hasData && (
+                  {behaviorScatter.hasData && (
                 <div className="card p-4">
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <div>
@@ -741,7 +815,7 @@ export default function Analytics() {
                 </div>
               )}
 
-              {categoryPareto.hasData && (
+                  {categoryPareto.hasData && (
                 <div className="card p-4">
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <div>
@@ -803,7 +877,7 @@ export default function Analytics() {
                 </div>
               )}
 
-              {surplusControl.hasData && (
+                  {surplusControl.hasData && (
                 <div className="card p-4">
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <div>
@@ -876,7 +950,7 @@ export default function Analytics() {
                 </div>
               )}
 
-              {habitProfile.hasData && (
+                  {habitProfile.hasData && (
                 <div className="card p-4">
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <div>
@@ -916,7 +990,7 @@ export default function Analytics() {
                 </div>
               )}
 
-              {concentrationRiskTrend.hasData && (
+                  {concentrationRiskTrend.hasData && (
                 <div className="card p-4">
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <div>
@@ -965,6 +1039,8 @@ export default function Analytics() {
                     {concentrationRiskTrend.highRiskMonths} month{concentrationRiskTrend.highRiskMonths === 1 ? '' : 's'} crossed the 65% concentration risk threshold.
                   </p>
                 </div>
+              )}
+                </>
               )}
 
               <WhatIfSimulatorCard
