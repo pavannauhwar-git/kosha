@@ -11,6 +11,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   title = 'Spent by Category',
   subtitle,
   maxRows = 8,
+  budgetMap,
 }) {
   const safeEntries = Array.isArray(entries)
     ? entries
@@ -31,6 +32,9 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
       const amount = Number(amt || 0)
       const category = categoryById.get(catId)
       const sharePct = safeTotal > 0 ? Math.round((amount / safeTotal) * 100) : 0
+      const budget = budgetMap?.get?.(catId)
+      const budgetLimit = budget ? Number(budget.monthly_limit || 0) : 0
+      const budgetPct = budgetLimit > 0 ? Math.round((amount / budgetLimit) * 100) : 0
 
       return {
         id: catId,
@@ -40,9 +44,11 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         sharePct,
         barColor: BAR_PALETTE[index % BAR_PALETTE.length],
         iconBg: category?.bg || '#E7F2FF',
+        budgetLimit,
+        budgetPct,
       }
     })
-  }, [safeEntries, safeTotal, categoryById])
+  }, [safeEntries, safeTotal, categoryById, budgetMap])
 
   if (!rows.length) return null
 
@@ -102,7 +108,24 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
               />
             </div>
 
-            <p className="text-[10px] text-ink-3 mt-1 tabular-nums">{row.sharePct}% of total spend</p>
+            {row.budgetLimit > 0 ? (
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-[10px] text-ink-3 tabular-nums">
+                  {row.budgetPct}% of {fmt(row.budgetLimit)} budget
+                </p>
+                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
+                  row.budgetPct >= 100
+                    ? 'bg-expense-bg text-expense-text'
+                    : row.budgetPct >= 80
+                      ? 'bg-warning-bg text-warning-text'
+                      : 'bg-income-bg text-income-text'
+                }`}>
+                  {row.budgetPct >= 100 ? 'Over' : row.budgetPct >= 80 ? 'Near limit' : 'On track'}
+                </span>
+              </div>
+            ) : (
+              <p className="text-[10px] text-ink-3 mt-1 tabular-nums">{row.sharePct}% of total spend</p>
+            )}
           </div>
         ))}
 

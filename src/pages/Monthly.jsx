@@ -3,9 +3,11 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
+import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 import { CATEGORIES } from '../lib/categories'
 import { C } from '../lib/colors'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
+import BudgetSheet from '../components/categories/BudgetSheet'
 import { fmt } from '../lib/utils'
 import { MONTH_NAMES } from '../lib/constants'
 import PageHeader from '../components/layout/PageHeader'
@@ -48,6 +50,9 @@ export default function Monthly() {
     columns: TRANSACTION_INSIGHTS_COLUMNS,
   })
   const { pending: pendingBills, paid: paidBills } = useLiabilitiesByMonth(year, month, { enabled: heavyReady })
+  const { budgets } = useBudgets({ enabled: heavyReady })
+  const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
+  const [showBudgetSheet, setShowBudgetSheet] = useState(false)
   const { reviewedIdSet: serverReviewedIds, unavailable: reviewTableUnavailable } = useReconciliationReviews({ enabled: heavyReady })
 
   const reviewedIds = useMemo(
@@ -509,13 +514,25 @@ export default function Monthly() {
           )}
 
           {heavyReady && allCatEntries.length > 0 && (
+            <>
             <CategorySpendingChart
               entries={allCatEntries}
               total={categoryTotal}
               month={month}
               year={year}
               subtitle="Ranked category share with exact spend values"
+              budgetMap={bMap}
             />
+            <div className="flex justify-end -mt-1 mb-1">
+              <button
+                type="button"
+                onClick={() => setShowBudgetSheet(true)}
+                className="btn-secondary-sm text-[11px]"
+              >
+                Manage budgets
+              </button>
+            </div>
+            </>
           )}
 
           {heavyReady && (
@@ -536,6 +553,12 @@ export default function Monthly() {
         </motion.div>
       )}
 
+      <BudgetSheet
+        open={showBudgetSheet}
+        onClose={() => setShowBudgetSheet(false)}
+        budgets={budgets}
+        byCategory={data?.byCategory || {}}
+      />
     </div>
   )
 }

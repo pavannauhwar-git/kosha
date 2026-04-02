@@ -130,7 +130,7 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
       <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
         <div className="flex items-end gap-1 h-16">
           {analysis.bars.map((bar) => (
-            <div key={bar.label} className="flex-1 flex flex-col items-center gap-0.5">
+            <div key={bar.label} className="flex-1 h-full flex flex-col items-center justify-end gap-0.5">
               <div
                 className={`w-full rounded-t-sm ${bar.invested ? 'bg-invest' : 'bg-kosha-border'}`}
                 style={{

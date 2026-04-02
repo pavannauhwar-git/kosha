@@ -10,6 +10,7 @@ import {
   removeTransactionMutation,
 } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
+import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
@@ -312,6 +313,8 @@ export default function Dashboard() {
     balanceHorizonDate.getMonth() + 1
   )
   const { pending: bills = [], paid: paidBills = [] } = useLiabilities({ includePaid: true, enabled: heavyReady })
+  const { budgets } = useBudgets({ enabled: heavyReady })
+  const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
 
   const heroLoading = summaryLoading || runningBalanceLoading
   const isBackgroundFetching = (!summaryLoading && summaryFetching) || (!runningBalanceLoading && runningBalanceFetching) || (!recentLoading && recentFetching)
@@ -846,6 +849,8 @@ export default function Dashboard() {
               dueSoonCount={dueSoonCount}
               dueSoonAmount={dueSoonAmount}
               weeklyDigest={weeklyDigest}
+              budgetMap={bMap}
+              byCategory={summary?.byCategory}
             />
           </motion.div>
         )}

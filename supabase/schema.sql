@@ -1073,3 +1073,56 @@ drop policy if exists "reconciliation_reviews: delete own" on public.reconciliat
 create policy "reconciliation_reviews: delete own" on public.reconciliation_reviews
   for delete
   using (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Category Budgets — per-category monthly spending limits
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create table if not exists category_budgets (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null,
+  category       text not null,
+  monthly_limit  numeric(12,2) not null check (monthly_limit > 0),
+  created_at     timestamptz not null default now()
+);
+
+create unique index if not exists idx_budgets_user_category
+  on category_budgets(user_id, category);
+create index if not exists idx_budgets_user
+  on category_budgets(user_id);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'category_budgets_user_id_fkey'
+      and conrelid = 'category_budgets'::regclass
+  ) then
+    alter table category_budgets
+      add constraint category_budgets_user_id_fkey
+      foreign key (user_id) references auth.users(id);
+  end if;
+end $$;
+
+alter table category_budgets enable row level security;
+
+drop policy if exists "category_budgets: select own" on category_budgets;
+create policy "category_budgets: select own" on category_budgets
+  for select to public
+  using (auth.uid() = user_id);
+
+drop policy if exists "category_budgets: insert own" on category_budgets;
+create policy "category_budgets: insert own" on category_budgets
+  for insert to public
+  with check (auth.uid() = user_id);
+
+drop policy if exists "category_budgets: update own" on category_budgets;
+create policy "category_budgets: update own" on category_budgets
+  for update to public
+  using (auth.uid() = user_id);
+
+drop policy if exists "category_budgets: delete own" on category_budgets;
+create policy "category_budgets: delete own" on category_budgets
+  for delete to public
+  using (auth.uid() = user_id);

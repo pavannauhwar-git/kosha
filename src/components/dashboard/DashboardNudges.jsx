@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react'
 import { Lightbulb } from 'lucide-react'
 import { fmt } from '../../lib/utils'
+import { CATEGORY_MAP } from '../../lib/categories'
 
 /**
  * Synthesizes the top 2-3 actionable nudges from current financial state.
@@ -16,6 +17,8 @@ export default memo(function DashboardNudges({
   dueSoonCount,
   dueSoonAmount,
   weeklyDigest,
+  budgetMap,
+  byCategory,
 }) {
   const nudges = useMemo(() => {
     const items = []
@@ -95,9 +98,56 @@ export default memo(function DashboardNudges({
       }
     }
 
+    // 6. Budget breach nudges
+    if (budgetMap && budgetMap.size > 0 && byCategory && typeof byCategory === 'object') {
+      const breaches = []
+      for (const [catId, budget] of budgetMap) {
+        const limit = Number(budget.monthly_limit || 0)
+        if (limit <= 0) continue
+        const catSpent = Number(byCategory[catId] || 0)
+        if (catSpent <= 0) continue
+        const pct = Math.round((catSpent / limit) * 100)
+        if (pct >= 80) {
+          const label = CATEGORY_MAP[catId]?.label || catId
+          breaches.push({ catId, label, catSpent, limit, pct })
+        }
+      }
+
+      breaches.sort((a, b) => b.pct - a.pct)
+      const topBreach = breaches[0]
+      if (topBreach) {
+        const remaining = topBreach.limit - topBreach.catSpent
+        if (topBreach.pct >= 100) {
+          items.push({
+            key: `budget-${topBreach.catId}`,
+            priority: 3,
+            text: `${topBreach.label} is ${fmt(Math.round(topBreach.catSpent - topBreach.limit))} over its ${fmt(topBreach.limit)} budget. Pause or reallocate.`,
+            tone: 'warning',
+          })
+        } else {
+          items.push({
+            key: `budget-${topBreach.catId}`,
+            priority: 2,
+            text: `${topBreach.label} is at ${topBreach.pct}% of its ${fmt(topBreach.limit)} budget — ${fmt(Math.round(remaining))} left.`,
+            tone: 'warning',
+          })
+        }
+
+        if (breaches.length > 1) {
+          const otherCount = breaches.length - 1
+          items.push({
+            key: 'budget-others',
+            priority: 1,
+            text: `${otherCount} other categor${otherCount > 1 ? 'ies are' : 'y is'} also near budget limit. Check Monthly for details.`,
+            tone: 'info',
+          })
+        }
+      }
+    }
+
     // Sort by priority (higher = more urgent) and take top 3
     return items.sort((a, b) => b.priority - a.priority).slice(0, 3)
-  }, [earned, spent, invested, dayOfMonth, daysInMonth, dailyExpenseTotals, dueSoonCount, dueSoonAmount, weeklyDigest])
+  }, [earned, spent, invested, dayOfMonth, daysInMonth, dailyExpenseTotals, dueSoonCount, dueSoonAmount, weeklyDigest, budgetMap, byCategory])
 
   if (nudges.length === 0) return null
 

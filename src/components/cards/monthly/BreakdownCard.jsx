@@ -14,176 +14,117 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
   const savedPct = inflow > 0 ? Math.round((saved / inflow) * 100) : 0
   const deficitPct = inflow > 0 ? Math.round((deficit / inflow) * 100) : 0
 
-  const flowRows = [
+  const segments = [
     {
       key: 'spent',
       label: 'Spent',
       amount: expense,
-      pct: Math.max(0, spentPct),
+      pct: spentPct,
+      color: '#E11D48',
       tone: 'text-expense-text',
-      bar: '#E11D48',
       bg: 'bg-expense-bg',
-      hint: 'Operations and lifestyle',
     },
     {
       key: 'invested',
       label: 'Invested',
       amount: investment,
-      pct: Math.max(0, investedPct),
+      pct: investedPct,
+      color: '#7C3AED',
       tone: 'text-invest-text',
-      bar: '#7C3AED',
-      bg: 'bg-[rgba(124,58,237,0.10)]',
-      hint: 'Wealth building allocation',
+      bg: 'bg-invest-bg',
     },
-    {
-      key: saved > 0 ? 'leftover' : 'deficit',
-      label: saved > 0 ? 'Leftover' : 'Deficit',
-      amount: saved > 0 ? saved : deficit,
-      pct: Math.max(0, saved > 0 ? savedPct : deficitPct),
-      tone: saved > 0 ? 'text-income-text' : 'text-warning-text',
-      bar: saved > 0 ? '#0E9F6E' : '#9A7200',
-      bg: saved > 0 ? 'bg-income-bg' : 'bg-warning-bg',
-      hint: saved > 0 ? 'Month-end buffer' : 'Outflow exceeded inflow',
-    },
+    saved > 0
+      ? {
+          key: 'leftover',
+          label: 'Leftover',
+          amount: saved,
+          pct: savedPct,
+          color: '#0E9F6E',
+          tone: 'text-income-text',
+          bg: 'bg-income-bg',
+        }
+      : {
+          key: 'deficit',
+          label: 'Deficit',
+          amount: deficit,
+          pct: deficitPct,
+          color: '#9A7200',
+          tone: 'text-warning-text',
+          bg: 'bg-warning-bg',
+        },
   ]
 
-  const allocationSegments = flowRows.filter((row) => row.pct > 0)
+  const visibleSegments = segments.filter((s) => s.pct > 0)
 
-  const actionNote = (() => {
-    if (net < 0) {
-      return `Deficit warning: outflow exceeded inflow by ${fmt(deficit)} this month. Prioritize discretionary cuts and defer optional deployments.`
-    }
-    if (savedPct < 10) {
-      return `Only ${savedPct}% of inflow is left after spending and investments. Aim for at least a 10-15% monthly buffer.`
-    }
-    if (investedPct < 8) {
-      return `Investment share is ${investedPct}% of inflow. A small planned top-up can improve long-horizon consistency.`
-    }
-    return 'Allocation looks balanced for this month. Continue current pacing and keep the leftover buffer protected.'
+  const insight = (() => {
+    if (net < 0)
+      return `Outflow exceeded inflow by ${fmt(deficit)}. Cut discretionary spend or defer optional deployments.`
+    if (savedPct < 10)
+      return `Only ${savedPct}% of inflow is left. Aim for 10–15% buffer.`
+    if (investedPct < 8)
+      return `Investment share is just ${investedPct}%. A small planned top-up improves long-term consistency.`
+    return 'Allocation is balanced this month. Keep the leftover buffer protected.'
   })()
 
-  if (earned === 0) return null
+  if (inflow === 0) return null
 
   return (
     <div className="card p-4 border-0">
-      <div className="flex items-start justify-between gap-3 mb-2.5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="section-label">Cashflow breakdown</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">How your inflow was routed this month</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">Where your inflow went this month</p>
         </div>
-        <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${net >= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-          {net >= 0 ? 'Net positive' : 'Net deficit'}
+        <span
+          className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${
+            net >= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'
+          }`}
+        >
+          {net >= 0 ? '+' : '-'}{fmt(Math.abs(net))}
         </span>
       </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+      {/* Central stacked bar */}
+      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
+        <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] text-ink-3">{totalLabel}</p>
           <p className="text-[12px] font-bold tabular-nums text-income-text">{fmt(inflow)}</p>
         </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Outflow</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(outflow)}</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Net</p>
-          <p className={`text-[12px] font-bold tabular-nums ${net >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-            {net >= 0 ? '+' : '-'}{fmt(Math.abs(net))}
-          </p>
-        </div>
-      </div>
-
-      {/* Allocation bar */}
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
-        <p className="text-[10px] text-ink-3 mb-1.5">Allocation split</p>
-        <div className="h-3 rounded-pill bg-kosha-border overflow-hidden flex">
-          {allocationSegments.map((segment) => (
+        <div className="h-4 rounded-pill bg-kosha-border overflow-hidden flex">
+          {visibleSegments.map((seg) => (
             <div
-              key={`alloc-${segment.key}`}
-              className="h-full first:rounded-l-pill last:rounded-r-pill"
-              style={{ width: `${Math.max(4, segment.pct)}%`, background: segment.bar }}
+              key={seg.key}
+              className="h-full first:rounded-l-pill last:rounded-r-pill transition-all duration-500"
+              style={{ width: `${Math.max(4, seg.pct)}%`, background: seg.color }}
             />
           ))}
         </div>
-        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-          {allocationSegments.map((segment) => (
-            <div key={`legend-${segment.key}`} className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: segment.bar }} />
-              <span className="text-[10px] text-ink-3">{segment.label} {segment.pct}%</span>
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
+          {visibleSegments.map((seg) => (
+            <div key={`legend-${seg.key}`} className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: seg.color }} />
+              <span className="text-[10px] text-ink-3">{seg.label} {seg.pct}%</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Flow waterfall — source → destinations */}
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-2.5">
-        {/* Source node */}
-        <div className="flex items-center gap-2.5 mb-1">
-          <div className="w-3 h-3 rounded-full bg-income-text shrink-0" />
-          <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-ink">Inflow</p>
-            <p className="text-[12px] font-bold tabular-nums text-income-text">{fmt(inflow)}</p>
+      {/* Destination cards */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        {segments.map((seg) => (
+          <div key={seg.key} className={`rounded-card ${seg.bg} p-2.5`}>
+            <p className="text-[10px] text-ink-3">{seg.label}</p>
+            <p className={`text-[13px] font-bold tabular-nums ${seg.tone}`}>
+              {fmt(seg.amount)}
+            </p>
+            <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">{seg.pct}%</p>
           </div>
-        </div>
-
-        {/* Connector */}
-        <div className="ml-[5px] w-0.5 h-3 bg-kosha-border" />
-
-        {/* Destination rows with flowing connectors */}
-        <div className="space-y-0">
-          {flowRows.map((row, idx) => (
-            <div key={row.key}>
-              {/* Connector arm */}
-              <div className="flex items-stretch">
-                <div className="ml-[5px] w-0.5 bg-kosha-border shrink-0" />
-                <div className="w-3 h-0.5 bg-kosha-border self-center" />
-                <div className="flex-1 min-w-0">
-                  <div className={`rounded-card ${row.bg} px-2.5 py-2`}>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-semibold text-ink">{row.label}</p>
-                        <p className="text-[10px] text-ink-3">{row.hint}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className={`text-[12px] font-bold tabular-nums ${row.tone}`}>{fmt(row.amount)}</p>
-                        <p className="text-[10px] text-ink-3 tabular-nums">{row.pct}%</p>
-                      </div>
-                    </div>
-                    <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                      <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.bar }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Vertical connector between rows */}
-              {idx < flowRows.length - 1 && (
-                <div className="ml-[5px] w-0.5 h-1.5 bg-kosha-border" />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Deficit source node (only if deficit) */}
-        {deficit > 0 && (
-          <div className="mt-2 pt-2 border-t border-kosha-border">
-            <div className="flex items-center gap-2.5">
-              <div className="w-3 h-3 rounded-full bg-warning-text shrink-0" />
-              <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
-                <div>
-                  <p className="text-[11px] font-semibold text-warning-text">Deficit cover needed</p>
-                  <p className="text-[10px] text-ink-3">Outflow exceeded inflow</p>
-                </div>
-                <p className="text-[12px] font-bold tabular-nums text-warning-text">{fmt(deficit)}</p>
-              </div>
-            </div>
-          </div>
-        )}
+        ))}
       </div>
 
-      <div className="pt-2 border-t border-kosha-border">
-        <p className="text-[11px] text-ink-3 leading-relaxed">{actionNote}</p>
-      </div>
+      {/* Action insight */}
+      <p className="text-[11px] text-ink-3 leading-relaxed">{insight}</p>
     </div>
   )
 }
