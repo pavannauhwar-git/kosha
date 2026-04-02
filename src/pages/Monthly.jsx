@@ -16,6 +16,10 @@ import SectionHeader from '../components/common/SectionHeader'
 import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
 import BreakdownCard from '../components/cards/monthly/BreakdownCard'
 import DailySpendTrend from '../components/cards/monthly/DailySpendTrend'
+import FixedVsVariableCard from '../components/cards/monthly/FixedVsVariableCard'
+import PaymentModeCard from '../components/cards/monthly/PaymentModeCard'
+import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
+import MonthCloseChecklist from '../components/cards/monthly/MonthCloseChecklist'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
 
@@ -492,6 +496,18 @@ export default function Monthly() {
             </div>
           )}
 
+          {heavyReady && txnRows.length > 0 && (
+            <FixedVsVariableCard txnRows={txnRows} earned={inflow} />
+          )}
+
+          {heavyReady && txnRows.length > 0 && (
+            <PaymentModeCard txnRows={txnRows} />
+          )}
+
+          {heavyReady && txnRows.length > 0 && (
+            <MerchantIntelCard txnRows={txnRows} />
+          )}
+
           {heavyReady && allCatEntries.length > 0 && (
             <CategorySpendingChart
               entries={allCatEntries}
@@ -499,6 +515,19 @@ export default function Monthly() {
               month={month}
               year={year}
               subtitle="Ranked category share with exact spend values"
+            />
+          )}
+
+          {heavyReady && (
+            <MonthCloseChecklist
+              earned={inflow}
+              spent={spent}
+              pendingBills={pendingBills}
+              paidBills={paidBills}
+              reconcileQueueCount={reconcileQueueCount}
+              txnRows={txnRows}
+              year={year}
+              month={month}
             />
           )}
 

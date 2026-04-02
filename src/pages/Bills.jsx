@@ -16,6 +16,7 @@ import PageHeader from '../components/layout/PageHeader'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import AppToast from '../components/common/AppToast'
+import BillPaymentInsights from '../components/cards/bills/BillPaymentInsights'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
@@ -391,6 +392,10 @@ export default function Bills() {
               actionLabel="Add a bill"
               onAction={() => setShowAdd(true)}
             />
+          )}
+
+          {tab === 'paid' && !paidLoading && visiblePaid.length > 0 && (
+            <BillPaymentInsights paidBills={visiblePaid} pendingBills={visiblePending} />
           )}
 
           {tab === 'paid' && paidLoading && visiblePaid.length === 0 && (

@@ -35,6 +35,7 @@ import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
 import DailySpendBubbleMap from '../components/dashboard/DailySpendBubbleMap'
 import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
+import DashboardNudges from '../components/dashboard/DashboardNudges'
 import PageHeader from '../components/layout/PageHeader'
 import AppToast from '../components/common/AppToast'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
@@ -349,13 +350,15 @@ export default function Dashboard() {
   // Fix: derive stable primitive values from bills ONCE, then use those
   // primitives as memo deps. Array reference changes that don't change the
   // derived values no longer trigger downstream recalculations.
-  const { dueSoonCount, dueSoonDescs } = useMemo(() => {
+  const { dueSoonCount, dueSoonDescs, dueSoonAmount } = useMemo(() => {
     let count = 0
+    let amount = 0
     const descs = []
 
     for (const b of bills) {
       if (daysUntil(b.due_date) <= 7) {
         count += 1
+        amount += Number(b.amount || 0)
         if (descs.length < 2) descs.push(b.description)
       }
     }
@@ -363,6 +366,7 @@ export default function Dashboard() {
     return {
       dueSoonCount: count,
       dueSoonDescs: descs.join(' · '),
+      dueSoonAmount: amount,
     }
   }, [bills])
 
@@ -733,7 +737,25 @@ export default function Dashboard() {
         })
       }
     }
-  }, [dueSoonCount, earned, spent, dayOfMonth, daysInMonth])
+
+    // Daily spend spike alert (yesterday > 2x average)
+    if (prefs.spending_pace && dailyExpenseTotals && typeof dailyExpenseTotals === 'object') {
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+      const ySpend = Number(dailyExpenseTotals[yKey] || 0)
+      const vals = Object.values(dailyExpenseTotals).map(Number).filter(v => Number.isFinite(v) && v > 0)
+      const avg = vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0
+      if (ySpend > 0 && avg > 0 && ySpend > avg * 2) {
+        maybeNotify({
+          id: 'daily-spike',
+          title: 'Kosha: unusual spend spike',
+          body: `Yesterday\'s spend was ${Math.round(ySpend / avg)}× your daily average.`,
+          cooldownMs: 24 * 60 * 60 * 1000,
+        })
+      }
+    }
+  }, [dueSoonCount, earned, spent, dayOfMonth, daysInMonth, dailyExpenseTotals])
 
   // ── Stable callbacks — useCallback deps are all stable primitives ──────
   const handleDelete = useCallback(async (id) => {
@@ -810,6 +832,23 @@ export default function Dashboard() {
             />
           )}
         </motion.div>
+
+        {/* ── Actionable nudges ─────────────────────────────────── */}
+        {heavyReady && (earned > 0 || dueSoonCount > 0) && (
+          <motion.div variants={fadeUp}>
+            <DashboardNudges
+              earned={earned}
+              spent={spent}
+              invested={invested}
+              dayOfMonth={dayOfMonth}
+              daysInMonth={daysInMonth}
+              dailyExpenseTotals={dailyExpenseTotals}
+              dueSoonCount={dueSoonCount}
+              dueSoonAmount={dueSoonAmount}
+              weeklyDigest={weeklyDigest}
+            />
+          </motion.div>
+        )}
 
         {/* ── Daily spend bubble map ─────────────────────────────── */}
         <motion.div variants={fadeUp}>
