@@ -21,6 +21,7 @@ import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
 import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
 import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
+import SavingsRateTrend from '../components/dashboard/SavingsRateTrend'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -330,6 +331,8 @@ export default function Analytics() {
                 totalInvestment={data?.totalInvestment}
               />
               <SurplusTrajectoryChart netData={surplusData} />
+
+              <SavingsRateTrend flowTrendData={flowTrendData} monthLabels={MONTH_SHORT} />
 
               <RunwayCoverageChart
                 flowData={flowTrendData}

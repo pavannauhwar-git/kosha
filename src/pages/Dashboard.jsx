@@ -34,6 +34,7 @@ import {
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
 import DailySpendBubbleMap from '../components/dashboard/DailySpendBubbleMap'
+import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
 import PageHeader from '../components/layout/PageHeader'
 import AppToast from '../components/common/AppToast'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
@@ -818,6 +819,18 @@ export default function Dashboard() {
             onWindowDaysChange={handleVarianceWindowChange}
           />
         </motion.div>
+
+        {/* ── Spending pace tracker ──────────────────────────────── */}
+        {heavyReady && earned > 0 && (
+          <motion.div variants={fadeUp}>
+            <SpendingPaceTracker
+              dailyExpenseTotals={dailyExpenseTotals}
+              now={now}
+              earned={earned}
+              spent={spent}
+            />
+          </motion.div>
+        )}
 
         <motion.div variants={fadeUp}>
           <div className="card p-4 border-0">

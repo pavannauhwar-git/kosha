@@ -15,6 +15,7 @@ import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
 import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
 import BreakdownCard from '../components/cards/monthly/BreakdownCard'
+import DailySpendTrend from '../components/cards/monthly/DailySpendTrend'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
 
@@ -396,6 +397,10 @@ export default function Monthly() {
 
           {heavyReady && (
             <BreakdownCard earned={inflow} spent={spent} invested={invested} totalLabel="Total inflow" />
+          )}
+
+          {heavyReady && txnRows.length > 0 && (
+            <DailySpendTrend txnRows={txnRows} year={year} month={month} />
           )}
 
           {heavyReady && (monthlyPortfolioSnapshot.rows.length > 0 || invested > 0) && (
