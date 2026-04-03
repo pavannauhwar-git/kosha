@@ -14,7 +14,6 @@ import { supabase } from '../../../lib/supabase'
 import { getAuthUserId } from '../../../lib/authStore'
 import { queryClient } from '../../../lib/queryClient'
 import { fmt } from '../../../lib/utils'
-import { C } from '../../../lib/colors'
 
 function toTotals(payload) {
   return {
@@ -94,7 +93,7 @@ function NetTooltip({ active, payload, label }) {
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Net</span>
-        <span className={`font-semibold tabular-nums ${Number(row.net || 0) >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+        <span className={`font-semibold tabular-nums ${Number(row.net || 0) >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
           {Number(row.net || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.net || 0)), true)}
         </span>
       </div>
@@ -209,7 +208,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
       label: 'Net',
       current: currentPoint.net,
       compare: comparePoint.net,
-      tone: currentPoint.net >= 0 ? 'text-income-text' : 'text-expense-text',
+      tone: currentPoint.net >= 0 ? 'text-income-text' : 'text-warning-text',
     },
   ]
 
@@ -222,9 +221,9 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
   const trendRows = points.map((row) => ({
     ...row,
     barColor: row.year === currentYear
-      ? C.brand
+      ? '#0A67D8'
       : row.year === compareYear
-        ? C.contrast
+        ? '#9A7200'
         : 'rgba(16,33,63,0.22)',
   }))
 
@@ -284,16 +283,8 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
               width={34}
             />
             <Tooltip content={<MetricTooltip />} />
-            <Bar
-              dataKey="compare"
-              name={String(compareYear)}
-              fill={C.contrast}
-              stroke={C.brand}
-              strokeWidth={1}
-              radius={[6, 6, 0, 0]}
-              maxBarSize={20}
-            />
-            <Bar dataKey="current" name={String(currentYear)} fill={C.brand} radius={[6, 6, 0, 0]} maxBarSize={20} />
+            <Bar dataKey="compare" name={String(compareYear)} fill="#9A7200" radius={[6, 6, 0, 0]} maxBarSize={20} />
+            <Bar dataKey="current" name={String(currentYear)} fill="#0A67D8" radius={[6, 6, 0, 0]} maxBarSize={20} />
           </BarChart>
         </ResponsiveContainer>
       </div>

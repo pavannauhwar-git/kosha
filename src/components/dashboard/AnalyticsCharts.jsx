@@ -90,28 +90,6 @@ function scoreTone(score) {
   }
 }
 
-const TOOLTIP_BOX_STYLE = {
-  background: C.tooltipBg,
-  borderRadius: 12,
-  padding: '10px 12px',
-  boxShadow: C.tooltipShadow,
-  border: `1px solid ${C.tooltipBorder}`,
-}
-
-const TOOLTIP_TITLE_STYLE = {
-  fontSize: 11,
-  fontWeight: 700,
-  color: C.tooltipTitle,
-  marginBottom: 6,
-  textTransform: 'uppercase',
-  letterSpacing: '0.03em',
-}
-
-const TOOLTIP_LABEL_STYLE = {
-  fontSize: 12,
-  color: C.tooltipLabel,
-}
-
 // ── Tooltips ──────────────────────────────────────────────────────────────
 
 const PulseTooltip = ({ active, payload, label }) => {
@@ -425,24 +403,31 @@ const FlowCompareTooltip = ({ active, payload, label }) => {
   const point = payload[0]?.payload || {}
 
   return (
-    <div style={{ ...TOOLTIP_BOX_STYLE, minWidth: 170 }}>
-      <p style={TOOLTIP_TITLE_STYLE}>
+    <div style={{
+      background: '#FFFFFF',
+      borderRadius: 12,
+      padding: '10px 12px',
+      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      minWidth: 170,
+      border: '1px solid rgba(187,217,255,0.85)',
+    }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginBottom: 3 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Income</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Income</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.brand }}>{fmt(point?.Income || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginBottom: 3 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Expense</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Expense</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.chartExpense }}>{fmt(point?.Spent || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginBottom: 3 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Investment</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Investment</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.invest }}>{fmt(point?.Invested || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Outflow</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Outflow</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.ink }}>{fmt(point?.Outflow || 0)}</span>
       </div>
     </div>
@@ -537,19 +522,26 @@ const WaterfallTooltip = ({ active, payload, label }) => {
   const value = toFiniteNumber(row?.displayValue)
 
   return (
-    <div style={{ ...TOOLTIP_BOX_STYLE, minWidth: 170 }}>
-      <p style={TOOLTIP_TITLE_STYLE}>
+    <div style={{
+      background: '#FFFFFF',
+      borderRadius: 12,
+      padding: '10px 12px',
+      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      border: '1px solid rgba(187,217,255,0.85)',
+      minWidth: 170,
+    }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Movement</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Movement</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: value >= 0 ? C.brand : C.chartExpense }}>
           {value >= 0 ? '+' : '-'}{fmt(Math.abs(value))}
         </span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Running level</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.tooltipTitle }}>{fmt(row?.end || 0)}</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Running level</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#1D355F' }}>{fmt(row?.end || 0)}</span>
       </div>
     </div>
   )
@@ -713,24 +705,31 @@ const CompositionTooltip = ({ active, payload, label }) => {
   const row = payload[0]?.payload || {}
 
   return (
-    <div style={{ ...TOOLTIP_BOX_STYLE, minWidth: 182 }}>
-      <p style={TOOLTIP_TITLE_STYLE}>
+    <div style={{
+      background: '#FFFFFF',
+      borderRadius: 12,
+      padding: '10px 12px',
+      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      border: '1px solid rgba(187,217,255,0.85)',
+      minWidth: 182,
+    }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Expense</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Expense</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.chartExpense }}>{fmt(row?.Spent || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Investment</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Investment</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.invest }}>{fmt(row?.Invested || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Outflow</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.tooltipTitle }}>{fmt(row?.Outflow || 0)}</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Outflow</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#1D355F' }}>{fmt(row?.Outflow || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Income</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Income</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.brand }}>{fmt(row?.Income || 0)}</span>
       </div>
     </div>
@@ -820,7 +819,7 @@ export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaC
             stroke={C.brand}
             strokeWidth={2.3}
             dot={false}
-            activeDot={{ r: 4, fill: C.brand, stroke: C.chartDotStroke, strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: C.brand, stroke: '#fff', strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -842,16 +841,23 @@ const SurplusTrajectoryTooltip = ({ active, payload, label }) => {
   const row = payload[0]?.payload || {}
 
   return (
-    <div style={{ ...TOOLTIP_BOX_STYLE, minWidth: 168 }}>
-      <p style={TOOLTIP_TITLE_STYLE}>
+    <div style={{
+      background: '#FFFFFF',
+      borderRadius: 12,
+      padding: '10px 12px',
+      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      minWidth: 168,
+      border: '1px solid rgba(187,217,255,0.85)',
+    }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Monthly surplus</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Monthly surplus</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: row?.Net >= 0 ? C.brandMid : C.bills }}>{fmt(row?.Net || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <span style={TOOLTIP_LABEL_STYLE}>Cumulative</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Cumulative</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: row?.Cumulative >= 0 ? C.brand : C.bills }}>{fmt(row?.Cumulative || 0)}</span>
       </div>
     </div>
@@ -927,7 +933,7 @@ export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ net
             stroke={C.brand}
             strokeWidth={2.5}
             dot={false}
-            activeDot={{ r: 4, fill: C.brand, stroke: C.chartDotStroke, strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: C.brand, stroke: '#fff', strokeWidth: 2 }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -1122,11 +1128,18 @@ const RunwayTooltip = ({ active, payload, label }) => {
   const months = toFiniteNumber(payload[0]?.value)
 
   return (
-    <div style={{ ...TOOLTIP_BOX_STYLE, minWidth: 148 }}>
-      <p style={{ ...TOOLTIP_TITLE_STYLE, marginBottom: 4 }}>
+    <div style={{
+      background: '#FFFFFF',
+      borderRadius: 12,
+      padding: '10px 12px',
+      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      border: '1px solid rgba(187,217,255,0.85)',
+      minWidth: 148,
+    }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
-      <p style={TOOLTIP_LABEL_STYLE}>Coverage</p>
+      <p style={{ fontSize: 12, color: '#5E6D8F' }}>Coverage</p>
       <p style={{ fontSize: 13, fontWeight: 700, color: C.brand }}>{months.toFixed(1)} months</p>
     </div>
   )
@@ -1362,7 +1375,7 @@ export const VolatilityScoreCard = memo(function VolatilityScoreCard({ flowData 
   )
 })
 
-const TREND_CHART_BG = C.chartDark
+const TREND_CHART_BG = '#0C3C8A'
 
 const ConfidenceTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -1450,7 +1463,7 @@ export const ConfidenceTrendChart = memo(function ConfidenceTrendChart({ trendDa
             strokeWidth={2.5}
             dot={false}
             connectNulls={false}
-            activeDot={{ r: 4, fill: C.chartIncome, stroke: C.chartDotStroke, strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
           />
         </LineChart>
       </ResponsiveContainer>
