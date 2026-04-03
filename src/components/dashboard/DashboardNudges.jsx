@@ -164,10 +164,10 @@ export default memo(function DashboardNudges({
         {nudges.map((nudge, index) => (
           <div
             key={nudge.key}
-            className={`rounded-card border p-2.5 flex items-start gap-2.5 ${
+            className={`mini-panel p-2.5 flex items-start gap-2.5 ${
               nudge.tone === 'warning'
                 ? 'border-warning-border bg-warning-bg/30'
-                : 'border-kosha-border bg-kosha-surface-2'
+                : ''
             }`}
           >
             <span className="w-4 text-right text-[11px] font-bold text-brand shrink-0 mt-0.5">

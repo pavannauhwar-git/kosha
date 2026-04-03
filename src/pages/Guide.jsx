@@ -478,7 +478,7 @@ export default function Guide() {
                   </div>
                 </div>
 
-                <div className="rounded-card bg-kosha-surface-2 p-3 mb-3">
+                <div className="mini-panel p-3 mb-3">
                   <p className="text-[12px] text-ink-2">{selectedFeature.summary}</p>
                   <p className="text-[11px] text-ink-3 mt-1">{selectedFeature.whenToUse}</p>
                 </div>

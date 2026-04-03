@@ -18,7 +18,7 @@ function PaceTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[172px]">
+    <div className="mini-panel p-2.5 min-w-[172px]">
       <p className="text-[11px] font-semibold text-ink mb-1">Day {label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -115,23 +115,23 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, earn
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Spent so far</p>
           <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(spent || 0)}</p>
         </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Projected end</p>
           <p className={`text-[12px] font-bold tabular-nums ${paceData.projectedOvershoot <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
             {fmt(paceData.projectedTotal)}
           </p>
         </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Days left</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{paceData.daysLeft}</p>
         </div>
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+      <div className="mini-panel p-2.5">
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={paceData.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>

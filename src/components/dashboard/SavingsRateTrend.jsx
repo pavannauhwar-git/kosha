@@ -16,7 +16,7 @@ function SavingsRateTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[168px]">
+    <div className="mini-panel p-2.5 min-w-[168px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -104,23 +104,23 @@ export default memo(function SavingsRateTrend({ flowTrendData, monthLabels }) {
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Avg savings rate</p>
           <p className={`text-[12px] font-bold tabular-nums ${trendData.avgRate >= 20 ? 'text-income-text' : trendData.avgRate >= 0 ? 'text-warning-text' : 'text-expense-text'}`}>
             {trendData.avgRate}%
           </p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Avg invest rate</p>
           <p className="text-[12px] font-bold tabular-nums text-invest-text">{trendData.avgInvestRate}%</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Positive months</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{trendData.positiveMonths}/{trendData.totalActiveMonths}</p>
         </div>
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+      <div className="mini-panel p-2.5">
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={trendData.series} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
             <defs>

@@ -3,7 +3,14 @@ import { fmt } from '../../../lib/utils'
 import { useNavigate } from 'react-router-dom'
 import PortfolioMixDonut from '../../common/PortfolioMixDonut'
 
-const ALLOCATION_PALETTE = [C.brand, C.invest, C.income, C.bills, C.brandMid, C.brandLight]
+const BRAND_ALLOCATION_PALETTE = [
+  C.brand,
+  C.brandMid,
+  '#4F97EE',
+  C.brandLight,
+  '#8EC2F8',
+  C.brandBorder,
+]
 
 export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) {
   const navigate = useNavigate()
@@ -32,7 +39,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
   const mixRows = visibleRows.map((row, index) => ({
     ...row,
     pct: totalPortfolio > 0 ? Math.round((row.value / totalPortfolio) * 100) : 0,
-    color: ALLOCATION_PALETTE[index % ALLOCATION_PALETTE.length],
+    color: BRAND_ALLOCATION_PALETTE[index % BRAND_ALLOCATION_PALETTE.length],
   }))
 
   if (safeVehicleData.length > 6 && totalPortfolio > visibleTotal) {
@@ -41,7 +48,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
       name: 'Other',
       value: otherValue,
       pct: totalPortfolio > 0 ? Math.round((otherValue / totalPortfolio) * 100) : 0,
-      color: C.brandBorder,
+      color: C.brandContainer,
     })
   }
 
@@ -56,9 +63,6 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
       : 'Balanced concentration'
 
   const rebalanceTarget = safeVehicleData[1]?.name || null
-  const deployTone = deploymentRate >= 12 && deploymentRate <= 35
-    ? 'text-income-text'
-    : 'text-warning-text'
 
   const concentrationSignal = totalPortfolio <= 0
     ? 'No allocation yet. Start with one core vehicle and build allocation history.'
@@ -93,16 +97,16 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         <div className="mini-panel p-2.5">
-          <p className="text-[10px] text-ink-3">Allocated</p>
+          <p className="text-[10px] text-ink-3">Actual invested</p>
+          <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
+        </div>
+        <div className="mini-panel p-2.5">
+          <p className="text-[10px] text-ink-3">Tagged allocation</p>
           <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(totalPortfolio, true)}</p>
         </div>
         <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Top holding</p>
           <p className={`text-[13px] font-bold tabular-nums ${topHoldingPct >= 55 ? 'text-warning-text' : 'text-brand'}`}>{topHoldingPct}%</p>
-        </div>
-        <div className="mini-panel p-2.5">
-          <p className="text-[10px] text-ink-3">Deploy rate</p>
-          <p className={`text-[13px] font-bold tabular-nums ${deployTone}`}>{deploymentRate}%</p>
         </div>
         <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Diversification</p>
@@ -113,16 +117,16 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
       </div>
 
       {totalPortfolio > 0 ? (
-        <div className="mini-panel p-3 mb-3">
-          <div className="grid md:grid-cols-[168px_1fr] gap-3 items-center">
+        <div className="mini-panel p-2.5 mb-3">
+          <div className="grid md:grid-cols-[148px_1fr] gap-2.5 items-center">
             <div className="flex justify-center md:justify-start">
               <PortfolioMixDonut
                 rows={mixRows}
                 centerTop="Yearly"
                 centerValue={fmt(totalPortfolio, true)}
-                centerBottom={`${safeVehicleData.length} vehicles`}
-                ringSize={120}
-                innerInset={17}
+                centerBottom={`Invested ${fmt(totalInvestment, true)}`}
+                ringSize={104}
+                innerInset={15}
               />
             </div>
 
@@ -145,7 +149,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
           </div>
         </div>
       ) : (
-        <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 p-3 mb-3">
+          <div className="mini-panel border-dashed p-3 mb-3">
           <p className="text-[11px] text-ink-3">No yearly vehicle allocation is tagged yet. Add vehicle labels to investment transactions to unlock this view.</p>
         </div>
       )}
