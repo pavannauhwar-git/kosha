@@ -9,9 +9,9 @@ export default function KoshaLogo({ size = 64 }) {
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily="'InterVariable', 'Inter', system-ui, sans-serif"
-        fontSize={18}
+        fontSize={16}
         fontWeight="900"
-        letterSpacing="2.5"
+        letterSpacing="1.5"
         fill="#FFFFFF"
       >
         KOSHA
