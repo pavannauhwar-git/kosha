@@ -430,11 +430,11 @@ export default function Monthly() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
                 <div className="mini-panel p-2.5">
                   <p className="text-caption text-ink-3">Actual invested</p>
-                  <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(invested, true)}</p>
+                  <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(invested)}</p>
                 </div>
                 <div className="mini-panel p-2.5">
                   <p className="text-caption text-ink-3">Tagged allocation</p>
-                  <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
+                  <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(monthlyPortfolioSnapshot.total)}</p>
                 </div>
                 <div className="mini-panel p-2.5">
                   <p className="text-caption text-ink-3">Top holding</p>
@@ -458,9 +458,9 @@ export default function Monthly() {
                         rows={monthlyPortfolioSnapshot.mixRows}
                         centerTop="Monthly"
                         centerValue={fmt(monthlyPortfolioSnapshot.total, true)}
-                        centerBottom={`Invested ${fmt(invested, true)}`}
+                        centerBottom={fmt(invested)}
                         ringSize={104}
-                        innerInset={15}
+                        innerInset={12}
                       />
                     </div>
 
