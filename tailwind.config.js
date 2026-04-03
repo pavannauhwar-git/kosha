@@ -65,8 +65,8 @@ export default {
       },
 
       fontFamily: {
-        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        sans:    ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        display: ['Roboto', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans:    ['Roboto', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
 
       fontSize: {

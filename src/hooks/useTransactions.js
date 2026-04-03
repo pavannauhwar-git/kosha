@@ -375,7 +375,9 @@ export function useYearDailyExpenseTotals(year, options = {}) {
 
       return totalsByDate
     }),
+    staleTime: 15 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 
   return { data: data || {}, loading: isLoading, error }
@@ -463,6 +465,8 @@ export function useMonthSummary(year, month, options = {}) {
         throw err
       }
     },
+    staleTime: 2 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 
   return { data, loading: isLoading, fetching: isFetching, error }
@@ -543,6 +547,8 @@ export function useYearSummary(year, options = {}) {
         throw err
       }
     },
+    staleTime: 10 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 
   return { data, loading: isLoading, error }
@@ -619,6 +625,7 @@ export function useRunningBalance(year, month) {
         throw err
       }
     },
+    staleTime: 60 * 1000,
     placeholderData: (previousData) => previousData,
   })
 

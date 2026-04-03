@@ -12,9 +12,23 @@ import {
 } from 'recharts'
 import { supabase } from '../../../lib/supabase'
 import { getAuthUserId } from '../../../lib/authStore'
+import { queryClient } from '../../../lib/queryClient'
 import { fmt } from '../../../lib/utils'
 
+function toTotals(payload) {
+  return {
+    totalIncome: Number(payload?.totalIncome || 0),
+    totalExpense: Number(payload?.totalExpense || 0),
+    totalInvestment: Number(payload?.totalInvestment || 0),
+  }
+}
+
 async function fetchYearSummary(year) {
+  const cached = queryClient.getQueryData(['year', year])
+  if (cached && typeof cached === 'object') {
+    return toTotals(cached)
+  }
+
   const userId = getAuthUserId()
 
   const { data: result, error } = await supabase
@@ -32,11 +46,11 @@ async function fetchYearSummary(year) {
 
   const totals = result.totals || {}
 
-  return {
-    totalIncome: Number(totals.income || 0),
-    totalExpense: Number(totals.expense || 0),
-    totalInvestment: Number(totals.investment || 0),
-  }
+  return toTotals({
+    totalIncome: totals.income,
+    totalExpense: totals.expense,
+    totalInvestment: totals.investment,
+  })
 }
 
 function tickCompact(value) {
@@ -92,8 +106,9 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
     queries: years.map((year) => ({
       queryKey: ['yearYoy', year],
       queryFn: () => fetchYearSummary(year),
-      enabled,
-      staleTime: 5 * 60 * 1000,
+      enabled: enabled && years.length > 0,
+      staleTime: 10 * 60 * 1000,
+      placeholderData: (previousData) => previousData,
     })),
   })
 

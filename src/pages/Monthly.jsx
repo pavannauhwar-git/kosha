@@ -35,7 +35,7 @@ export default function Monthly() {
   const monthRef = useRef(null)
 
   useEffect(() => {
-    const timer = setTimeout(() => setHeavyReady(true), 260)
+    const timer = setTimeout(() => setHeavyReady(true), 90)
     return () => clearTimeout(timer)
   }, [])
 
