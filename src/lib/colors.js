@@ -2,29 +2,28 @@ export const C = {
 
   // ── Brand — Azure ────────────────────────────────────────────────
   brand:           '#0A67D8',
-  brandMid:        '#2B84EC',
-  brandLight:      '#67AEF5',
+  brandMid:        '#2A84EE',
+  brandLight:      '#69AFF6',
   brandContainer:  '#E7F2FF',
-  brandBorder:     '#B9D7FF',
+  brandBorder:     '#BBD9FF',
 
   // ── Contrast Accent — Soft Lemon ─────────────────────────────────
-  // Intentionally kept unchanged.
-  contrast:        '#FFFF99',
+  // Use sparingly for highlights and focused callouts.
   accent:          '#FFFF99',
   accentBg:        '#FFFF99',
   accentFill:      '#FFFF99',
 
-  // ── Income — Emerald ──────────────────────────────────────────────
-  income:          '#12966C',
-  incomeText:      '#0B7656',
+  // ── Income — Emerald H=174° ───────────────────────────────────────
+  income:          '#0E9F6E',
+  incomeText:      '#0B7F5A',
 
-  // ── Expense — Rose ────────────────────────────────────────────────
-  expense:         '#DF3E62',
-  expenseBright:   '#F26688',
+  // ── Expense — Rose H=354° ─────────────────────────────────────────
+  expense:         '#E11D48',
+  expenseBright:   '#F43F5E',
 
-  // ── Investment — Indigo ───────────────────────────────────────────
-  invest:          '#4D6BEE',
-  investText:      '#374CC0',
+  // ── Investment — Violet ───────────────────────────────────────────
+  invest:          '#7C3AED',
+  investText:      '#5B21B6',
 
   saved:           '#0A67D8',
 
@@ -33,7 +32,7 @@ export const C = {
 
   // ── Ink — blue neutrals ───────────────────────────────────────────
   ink:             '#10213F',
-  inkMuted:        '#5D6D8F',
+  inkMuted:        '#5E6D8F',
 
   // ── Hero card overlays (soft lemon over azure) ───────────────────
   heroAccent:      '#FFFF99',
@@ -45,9 +44,9 @@ export const C = {
   heroStatBg:      'rgba(255,255,255,0.12)', // stat chips on hero
 
   // ── Chart colours ──────────────────────────────────────────────────
-  chartIncome:     '#23C28A',
-  chartExpense:    '#F26A86',
-  chartDark:       '#0D3E8C',
+  chartIncome:     '#22C58B',
+  chartExpense:    '#F5637E',
+  chartDark:       '#0C3C8A',
   chartGrid:       'rgba(255,255,255,0.06)', // grid lines on dark card
   chartCursor:     'rgba(255,255,255,0.06)', // tooltip cursor on dark card
 
@@ -55,10 +54,10 @@ export const C = {
   portfolio: [
     '#10213F',
     '#0A67D8',
-    '#2B84EC',
-    '#67AEF5',
+    '#2A84EE',
+    '#69AFF6',
     '#E7F2FF',
-    '#B9D7FF',
+    '#BBD9FF',
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────

@@ -9,59 +9,59 @@ export default {
         'kosha-bg-2':          '#FFFCF7',
         'kosha-surface':       '#FFFFFF',
         'kosha-surface-2':     '#F7FAFF',
-        'kosha-border':        '#B9D7FF',
-        'kosha-border-strong': '#67AEF5',
+        'kosha-border':        '#BBD9FF',
+        'kosha-border-strong': '#69AFF6',
 
         // ── Brand — Azure + Soft Lemon ──────────────────────────────────
         'brand':           '#0A67D8',
         'brand-dark':      '#0850AC',
-        'brand-mid':       '#2B84EC',
-        'brand-bg':        '#EDF5FF',
+        'brand-mid':       '#2A84EE',
+        'brand-bg':        '#EEF6FF',
         'brand-container': '#E7F2FF',
         'brand-on':        '#0A4A9A',
         'brand-accent':    '#FFFF99',
 
         // ── Income ────────────────────────────────────────────────────────
-        'income':        '#12966C',
-        'income-bg':     '#E8F8F1',
-        'income-text':   '#0B7656',
-        'income-border': '#A5E9CE',
+        'income':        '#0E9F6E',
+        'income-bg':     '#EAFBF4',
+        'income-text':   '#0B7F5A',
+        'income-border': '#A7F3D0',
 
         // ── Expense ───────────────────────────────────────────────────────
-        'expense':        '#DF3E62',
-        'expense-bg':     '#FFF1F5',
-        'expense-text':   '#B42C4D',
-        'expense-border': '#F9C8D6',
+        'expense':        '#E11D48',
+        'expense-bg':     '#FFF1F2',
+        'expense-text':   '#BE123C',
+        'expense-border': '#FECDD3',
 
         // ── Investment ────────────────────────────────────────────────────
-        'invest':        '#4D6BEE',
-        'invest-bg':     '#EEF2FF',
-        'invest-text':   '#374CC0',
-        'invest-border': '#CDD8FF',
+        'invest':        '#7C3AED',
+        'invest-bg':     '#F3EEFF',
+        'invest-text':   '#5B21B6',
+        'invest-border': '#DDD0FF',
 
         // ── Repayment / Bills ─────────────────────────────────────────────
         'repay':        '#9A7200',
-        'repay-bg':     '#FFF9DD',
-        'repay-text':   '#7C5A00',
-        'repay-border': '#F2DD9E',
+        'repay-bg':     '#FFFBE6',
+        'repay-text':   '#7D5C00',
+        'repay-border': '#F4E4A2',
 
         // ── Warning ───────────────────────────────────────────────────────
         'warning':        '#A37700',
-        'warning-bg':     '#FFF9DD',
-        'warning-border': '#F2DD9E',
-        'warning-text':   '#7C5A00',
+        'warning-bg':     '#FFFBE6',
+        'warning-border': '#F4E4A2',
+        'warning-text':   '#7D5C00',
 
         // ── Ink — blue neutrals ───────────────────────────────────────────
         'ink':   '#10213F',
         'ink-2': '#1D355F',
-        'ink-3': '#5D6D8F',
+        'ink-3': '#5E6D8F',
         'ink-4': '#96A5C6',
 
         // ── Utility ───────────────────────────────────────────────────────
         'on-grad':   '#FFFFFF',
         'on-grad-2': '#FFFFFFBF',
-        'success':   '#12966C',
-        'danger':    '#DF3E62',
+        'success':   '#059669',
+        'danger':    '#E11D48',
       },
 
       fontFamily: {
@@ -87,7 +87,7 @@ export default {
       },
 
       boxShadow: {
-        'card':       '0 3px 10px rgba(18,28,74,0.06), 0 0 0 1px rgba(187,217,255,0.72), inset 0 1px 0 rgba(255,255,255,0.78)',
+        'card':       '0 2px 7px rgba(18,28,74,0.06), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',

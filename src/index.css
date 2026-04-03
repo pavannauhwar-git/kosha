@@ -66,12 +66,12 @@
 
     /* Brand — Azure */
     --c-brand: #0A67D8;
-    --c-brand-mid: #2B84EC;
+    --c-brand-mid: #2A84EE;
     --c-brand-container: #E7F2FF;
-    --c-brand-border: #B9D7FF;
+    --c-brand-border: #BBD9FF;
     --c-brand-rgb: 10, 103, 216;
     /* used in rgba() calls */
-    --c-brand-mid-rgb: 43, 132, 236;
+    --c-brand-mid-rgb: 42, 132, 238;
     /* used in rgba() calls */
 
     /* Accent — Soft Lemon */
@@ -80,15 +80,15 @@
     /* used in rgba() calls */
 
     /* Semantics */
-    --c-income: #12966C;
-    --c-invest-text: #374CC0;
+    --c-income: #0E9F6E;
+    --c-invest-text: #5B21B6;
     /* text on invest-bg */
-    --c-expense: #DF3E62;
-    --c-expense-bright: #F26688;
+    --c-expense: #E11D48;
+    --c-expense-bright: #F43F5E;
     --c-warning: #9A7200;
 
     /* Ink */
-    --c-ink-muted: #5D6D8F;
+    --c-ink-muted: #5E6D8F;
 
     /* Hero card overlays */
     --c-hero-accent: #FFFF99;
@@ -128,17 +128,8 @@
   }
 
   /* -- Cards ───────────────────────────────────────────────────────── */
-  .card,
-  .card-md,
-  .card-inset,
-  .card-urgent,
-  .card-warn,
-  .list-card {
-    @apply bg-kosha-surface rounded-card;
-    box-shadow:
-      0 3px 10px rgba(18, 28, 74, 0.06),
-      0 0 0 1px rgba(187, 217, 255, 0.72),
-      inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  .card {
+    @apply bg-kosha-surface rounded-card shadow-card;
   }
 
   .page-stack {
@@ -162,6 +153,22 @@
     box-shadow: 0 1px 0 rgba(18, 28, 74, 0.08);
   }
 
+  .card-md {
+    @apply bg-kosha-surface rounded-card shadow-card-md;
+  }
+
+  .card-inset {
+    @apply bg-kosha-surface-2 rounded-card;
+  }
+
+  .card-urgent {
+    @apply bg-kosha-surface rounded-card shadow-urgent;
+  }
+
+  .card-warn {
+    @apply bg-kosha-surface rounded-card shadow-warn;
+  }
+
   /* -- Skeleton loader ──────────────────────────────────────────────── */
   .skeleton {
     @apply rounded-card bg-kosha-border;
@@ -170,7 +177,7 @@
 
   /* -- List card ───────────────────────────────────────────────────── */
   .list-card {
-    @apply overflow-hidden;
+    @apply bg-kosha-surface rounded-card shadow-card overflow-hidden;
   }
 
   .list-row {
