@@ -101,7 +101,7 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
 
   if (visibleEvents.length === 0) {
     return (
-      <div className="card p-4 border-0">
+      <div className="card p-4">
         <div className="flex items-center justify-between mb-2.5">
           <p className="section-label">Recent activity</p>
         </div>
@@ -115,7 +115,7 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
   }
 
   return (
-    <div className="card p-4 border-0">
+    <div className="card p-4">
       <div className="flex items-center justify-between mb-2.5">
         <p className="section-label">Recent activity</p>
       </div>

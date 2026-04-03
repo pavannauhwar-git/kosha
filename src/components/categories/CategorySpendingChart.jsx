@@ -59,7 +59,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   const dominant = rows[0]
 
   return (
-    <div className="card p-4 border-0">
+    <div className="card p-4">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="section-label">{title}</p>

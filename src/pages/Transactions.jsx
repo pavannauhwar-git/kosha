@@ -330,7 +330,7 @@ export default function Transactions() {
     <div className="page">
       <PageHeader title="Transactions" className="mb-3" />
 
-      <div className="card p-4 border-0 mb-3">
+      <div className="card p-4 mb-3">
         <SectionHeader
           title="Transaction workspace"
           subtitle="Track timeline health, then drill into rows with filters."
@@ -400,7 +400,7 @@ export default function Transactions() {
         </div>
       </div>
 
-      <div className="card p-4 border-0 mb-3">
+      <div className="card p-4 mb-3">
         <SectionHeader
           title="Find and filter"
           subtitle="Search by description, then narrow by date, type, and category."

@@ -80,7 +80,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
   })()
 
   return (
-    <div className="card p-4 border-0">
+    <div className="card p-4">
       <div className="flex items-start justify-between gap-3 mb-2.5">
         <div>
           <p className="text-label font-semibold text-ink">Yearly portfolio snapshot</p>

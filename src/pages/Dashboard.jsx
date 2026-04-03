@@ -877,7 +877,7 @@ export default function Dashboard() {
         )}
 
         <motion.div variants={fadeUp}>
-          <div className="card p-4 border-0">
+          <div className="card p-4">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-warning-bg flex items-center justify-center shrink-0">
@@ -971,7 +971,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <div className="card p-4 border-0">
+          <div className="card p-4">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div>
                 <p className="section-label">Due pipeline conversion</p>
@@ -1074,7 +1074,7 @@ export default function Dashboard() {
 
         {heavyReady && weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
-            <div className="card p-4 bg-kosha-surface border-0">
+            <div className="card p-4 bg-kosha-surface">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <p className="section-label">What changed this week</p>
