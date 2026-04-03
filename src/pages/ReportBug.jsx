@@ -226,7 +226,7 @@ export default function ReportBug() {
 
   return (
     <div
-      className="min-h-dvh bg-kosha-bg"
+      className="page-shell"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}
     >
       <PageBackHeader
@@ -245,8 +245,8 @@ export default function ReportBug() {
       />
 
       {/* ── Content — constrained ──────────────────────────────────── */}
-      <div className="mx-auto max-w-[560px]">
-        <div className="px-4 pt-4 pb-36 space-y-4">
+      <div className="page-content page-content-narrow page-content-back">
+        <div className="space-y-4 pb-20">
           {submitted ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -451,7 +451,7 @@ export default function ReportBug() {
       {!submitted && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-kosha-border bg-kosha-bg/95 backdrop-blur-md">
           <div
-            className="mx-auto max-w-[560px] px-4 pt-3 grid grid-cols-2 gap-2"
+            className="page-content page-content-narrow pt-3 grid grid-cols-2 gap-2"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
           >
             <button

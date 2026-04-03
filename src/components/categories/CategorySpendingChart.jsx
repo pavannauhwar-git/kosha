@@ -2,8 +2,16 @@ import { memo, useMemo } from 'react'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
 import { CATEGORIES } from '../../lib/categories'
+import { C } from '../../lib/colors'
 
-const BAR_PALETTE = ['#0A67D8', '#2F7AD9', '#629CE6', '#8CB7ED', '#B5D0F2', '#D6E6F8']
+const BAR_PALETTE = [
+  C.brand,
+  C.brandMid,
+  C.brandLight,
+  C.brandBorder,
+  C.brandContainer,
+  'rgba(10,103,216,0.24)',
+]
 
 const CategorySpendingChart = memo(function CategorySpendingChart({
   entries,
@@ -43,7 +51,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         amountLabel: fmt(amount),
         sharePct,
         barColor: BAR_PALETTE[index % BAR_PALETTE.length],
-        iconBg: category?.bg || '#E7F2FF',
+        iconBg: category?.bg || C.brandContainer,
         budgetLimit,
         budgetPct,
       }
