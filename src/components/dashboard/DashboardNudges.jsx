@@ -152,7 +152,7 @@ export default memo(function DashboardNudges({
   if (nudges.length === 0) return null
 
   return (
-    <div className="card p-4">
+    <div className="card p-4 border-0">
       <div className="flex items-center gap-2 mb-2.5">
         <div className="w-7 h-7 rounded-lg bg-warning-bg flex items-center justify-center shrink-0">
           <Lightbulb size={14} className="text-warning-text" />

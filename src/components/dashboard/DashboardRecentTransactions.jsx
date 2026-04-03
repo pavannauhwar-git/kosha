@@ -41,7 +41,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
 
   if (visibleRecent.length === 0) {
     return (
-      <div className="card p-4">
+      <div className="card p-4 border-0">
         <div className="flex items-center justify-between mb-2.5">
           <p className="section-label">Latest transactions</p>
         </div>
@@ -63,7 +63,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
   }
 
   return (
-    <div className="card p-4">
+    <div className="card p-4 border-0">
       <div className="flex items-center justify-between mb-2.5">
         <p className="section-label">Latest transactions</p>
         <button

@@ -163,7 +163,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
 
   if (isLoading && !currentPoint) {
     return (
-      <div className="card p-4">
+      <div className="card p-4 border-0">
         <div className="flex items-center justify-between mb-2">
           <p className="section-label">Year over year trends</p>
           <span className="text-caption text-ink-3">Loading</span>
@@ -175,7 +175,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
 
   if (!currentPoint || !comparePoint) {
     return (
-      <div className="card p-4">
+      <div className="card p-4 border-0">
         <div className="flex items-center justify-between mb-2">
           <p className="section-label">Year over year trends</p>
           <span className="text-caption text-ink-3">No history</span>
@@ -228,7 +228,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
   }))
 
   return (
-    <div className="card p-4">
+    <div className="card p-4 border-0">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
         <div>
           <p className="section-label">Year over year trends</p>

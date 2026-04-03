@@ -365,7 +365,7 @@ export default function Monthly() {
             <MonthHeroCard month={month} year={year} data={data} />
           </div>
 
-          <div className="card p-4">
+          <div className="card p-4 border-0">
             <SectionHeader
               className="mb-2"
               title="Month close summary"
@@ -405,7 +405,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && (monthlyPortfolioSnapshot.rows.length > 0 || invested > 0) && (
-            <div className="card p-4">
+            <div className="card p-4 border-0">
               <SectionHeader
                 className="mb-2"
                 title="Portfolio snapshot"

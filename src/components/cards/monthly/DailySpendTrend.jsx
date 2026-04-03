@@ -80,7 +80,7 @@ export default memo(function DailySpendTrend({ txnRows, year, month }) {
   const zeroDays = daysInMonth - spendDays
 
   return (
-    <div className="card p-4">
+    <div className="card p-4 border-0">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
           <p className="section-label">Daily spend pattern</p>
