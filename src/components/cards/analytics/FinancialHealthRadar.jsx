@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { C } from '../../../lib/colors'
 import { fmt } from '../../../lib/utils'
+import { transitionEmphasis } from '../../../lib/animations'
 
 const AXES = [
   { key: 'savings', label: 'Savings rate' },
@@ -190,7 +191,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
             strokeWidth="2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            transition={transitionEmphasis}
           />
 
           {/* Data points */}
@@ -242,7 +243,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
                     style={{ background: axisColor(axis.key) }}
                     initial={{ width: 0 }}
                     animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.5, delay: i * 0.06 }}
+                    transition={{ ...transitionEmphasis, delay: i * 0.04 }}
                   />
                 </div>
                 <span className="text-[10px] font-bold tabular-nums text-ink shrink-0">{pct}</span>

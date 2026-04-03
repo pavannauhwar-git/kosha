@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { fmt } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
+import { transitionEmphasis } from '../../../lib/animations'
 
 const DashboardHeroCard = memo(function DashboardHeroCard({
   now,
@@ -94,7 +95,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
         <div className="bar-dark-track">
           <motion.div className="bar-dark-fill"
             initial={{ width: 0 }} animate={{ width: `${rate}%` }}
-            transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
+            transition={{ ...transitionEmphasis, delay: 0.1 }}
           />
         </div>
       </div>

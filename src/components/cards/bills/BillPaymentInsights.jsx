@@ -118,9 +118,9 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
           <p className="text-[10px] text-ink-3">On time</p>
           <p className="text-[12px] font-bold text-brand tabular-nums">{insights.onTimeCount}</p>
         </div>
-        <div className={`rounded-card p-2 ${insights.lateEstimate > 0 ? 'bg-warning-bg/30 border border-warning-border' : 'bg-kosha-surface-2 border border-kosha-border'}`}>
+        <div className={`rounded-card p-2 ${insights.lateEstimate > 0 ? 'bg-expense-bg/30 border border-expense-border' : 'bg-kosha-surface-2 border border-kosha-border'}`}>
           <p className="text-[10px] text-ink-3">Late (est)</p>
-          <p className={`text-[12px] font-bold tabular-nums ${insights.lateEstimate > 0 ? 'text-warning-text' : 'text-ink'}`}>
+          <p className={`text-[12px] font-bold tabular-nums ${insights.lateEstimate > 0 ? 'text-expense-text' : 'text-ink'}`}>
             {insights.lateEstimate}
           </p>
         </div>
@@ -144,7 +144,7 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
             )}
             {insights.lateEstimate > 0 && (
               <div
-                className="h-full bg-warning-text"
+                className="h-full bg-expense-text"
                 style={{ width: `${Math.round((insights.lateEstimate / insights.total) * 100)}%` }}
               />
             )}
@@ -154,11 +154,11 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
       <div className="flex items-center gap-3 text-[10px] text-ink-3">
         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-income-text" /> Early</span>
         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-brand" /> On time</span>
-        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-warning-text" /> Late</span>
+        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-expense-text" /> Late</span>
       </div>
 
       {insights.overdueNow > 0 && (
-        <p className="text-[11px] text-warning-text mt-2">
+        <p className="text-[11px] text-expense-text mt-2">
           {insights.overdueNow} bill{insights.overdueNow > 1 ? 's are' : ' is'} currently overdue — clearing them preserves your on-time streak.
         </p>
       )}

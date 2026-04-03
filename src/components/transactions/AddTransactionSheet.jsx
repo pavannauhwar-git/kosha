@@ -20,6 +20,7 @@ import {
   normalizeCategoryForType,
 } from '../../lib/categories'
 import { parseTransactionSmart } from '../../lib/nlp'
+import { sheetEnterTransition, sheetExitTransition, transitionBase } from '../../lib/animations'
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -135,8 +136,8 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
       />
       <motion.div className="sheet-panel"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
-        exit={{ y: '100%', transition: { duration: 0.2 } }}
+        animate={{ y: 0, transition: sheetEnterTransition }}
+        exit={{ y: '100%', transition: sheetExitTransition }}
       >
         <div className="sheet-handle" />
         <div className="px-4 pb-2">
@@ -178,8 +179,8 @@ function ModePicker({ selected, onSelect, onClose }) {
       />
       <motion.div className="sheet-panel"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
-        exit={{ y: '100%', transition: { duration: 0.2 } }}
+        animate={{ y: 0, transition: sheetEnterTransition }}
+        exit={{ y: '100%', transition: sheetExitTransition }}
       >
         <div className="sheet-handle" />
         <div className="px-4 pb-2">
@@ -226,8 +227,8 @@ function VehiclePicker({ selected, onSelect, onClose }) {
       />
       <motion.div className="sheet-panel"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
-        exit={{ y: '100%', transition: { duration: 0.2 } }}
+        animate={{ y: 0, transition: sheetEnterTransition }}
+        exit={{ y: '100%', transition: sheetExitTransition }}
       >
         <div className="sheet-handle" />
         <div className="px-4 pb-2">
@@ -368,8 +369,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       <motion.div
         className="sheet-panel"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
-        exit={{ y: '100%', transition: { duration: 0.22 } }}
+        animate={{ y: 0, transition: sheetEnterTransition }}
+        exit={{ y: '100%', transition: sheetExitTransition }}
         onAnimationComplete={() => amountRef.current?.focus()}
       >
         <div className="sheet-handle" />
@@ -618,7 +619,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  transition={transitionBase}
                   style={{ overflow: 'hidden' }}
                 >
                   <div className="px-4 pb-3 pt-1">

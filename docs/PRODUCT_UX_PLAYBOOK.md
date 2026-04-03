@@ -123,3 +123,7 @@ All data cards should follow:
 ## Chart Strategy Source of Truth
 - Strict chart inventory matrix and redundancy decisions: see `docs/CHART_INVENTORY_ROADMAP.md`.
 - Final locked 36-chart roadmap with execution order: see `docs/CHART_INVENTORY_ROADMAP.md`.
+
+## Premium UI Source of Truth
+- Apple + Material Expressive hybrid system, role colors, elevation, navigation, and chart rules: see `docs/PREMIUM_UI_SPEC_V1.md`.
+- Screenshot QA matrix and pass/fail checklist for Dashboard/Analytics/Monthly: see `docs/PREMIUM_VISUAL_REGRESSION_CHECKLIST.md`.

@@ -11,6 +11,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import { fmt } from '../../lib/utils'
+import { C } from '../../lib/colors'
 
 function PaceTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -135,8 +136,8 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, earn
           <AreaChart data={paceData.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="spendAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#E11D48" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#E11D48" stopOpacity={0.02} />
+                <stop offset="5%" stopColor={C.chartExpense} stopOpacity={0.18} />
+                <stop offset="95%" stopColor={C.chartExpense} stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
@@ -158,16 +159,16 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, earn
             <Area
               type="monotone"
               dataKey="actual"
-              stroke="#E11D48"
+              stroke={C.chartExpense}
               fill="url(#spendAreaGrad)"
               strokeWidth={2.2}
               dot={false}
-              activeDot={{ r: 4, fill: '#E11D48', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
             />
             <Line
               type="monotone"
               dataKey="pace"
-              stroke="rgba(16,33,63,0.35)"
+              stroke="rgba(16,33,63,0.32)"
               strokeWidth={1.8}
               strokeDasharray="5 4"
               dot={false}

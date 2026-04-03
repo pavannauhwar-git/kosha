@@ -216,7 +216,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
                 </span>
               )}
               {isOptimistic && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-warning-bg text-warning-text font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand-on font-medium">
                   Syncing...
                 </span>
               )}

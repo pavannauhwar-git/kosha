@@ -15,6 +15,7 @@ import { useScrollDirection } from './hooks/useScrollDirection'
 import KoshaLogo from './components/brand/KoshaLogo'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
+import { MOTION, transitionBase } from './lib/animations'
 
 const DASHBOARD_RECENT_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode'
@@ -406,25 +407,26 @@ function DesktopSidebar() {
         position: 'fixed',
         top: 0, left: 0, bottom: 0,
         width: 220,
-        background: 'rgba(255,255,255,0.94)',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(248,251,255,0.95) 100%)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
-        borderRight: `1px solid ${C.brandBorder}`,
+        borderRight: '1px solid rgba(16,33,63,0.08)',
+        boxShadow: '10px 0 24px rgba(16,33,63,0.06), inset -1px 0 0 rgba(255,255,255,0.52)',
         zIndex: 30,
         padding: '0 12px',
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
       }}
     >
-      <div className="flex items-center gap-2.5 px-2 pb-6 pt-2">
+      <div className="flex items-center gap-2.5 px-2 pb-5 pt-2">
         <KoshaLogo size={32} />
         <div>
           <p className="text-[15px] font-bold text-ink tracking-tight leading-none">Kosha</p>
-          <p className="text-[10px] text-ink-3 font-medium tracking-widest uppercase mt-0.5">Finance</p>
+          <p className="text-[10px] text-ink-3 font-semibold tracking-[0.12em] uppercase mt-0.5">Finance</p>
         </div>
       </div>
 
-      <nav className="flex flex-col gap-1 flex-1">
+      <nav className="flex flex-col gap-1.5 flex-1">
         {NAV.map((item, i) => {
           const isActive = i === active
           return (
@@ -434,11 +436,25 @@ function DesktopSidebar() {
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-100 w-full text-left"
-              style={{ background: isActive ? C.brandContainer : 'transparent' }}
+              className="group relative flex items-center gap-3 w-full text-left pl-4 pr-3 py-2.5 rounded-2xl transition-all duration-150"
+              style={{
+                background: isActive
+                  ? 'linear-gradient(180deg, rgba(231,242,255,0.95) 0%, rgba(238,246,255,0.95) 100%)'
+                  : 'transparent',
+                boxShadow: isActive
+                  ? '0 8px 18px rgba(10,103,216,0.14), inset 0 1px 0 rgba(255,255,255,0.86)'
+                  : 'none',
+              }}
             >
-              <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.brand : C.inkMuted} />
-              <span className="text-[14px]" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
+              <span
+                className={`absolute left-1 top-2.5 bottom-2.5 w-1 rounded-pill transition-all duration-150 ${isActive ? 'bg-brand opacity-100' : 'opacity-0'}`}
+                aria-hidden
+              />
+              <item.Icon size={19} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.brand : C.inkMuted} />
+              <span
+                className="text-[14px] tracking-[0.01em]"
+                style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 560 }}
+              >
                 {item.label}
               </span>
             </button>
@@ -446,11 +462,12 @@ function DesktopSidebar() {
         })}
       </nav>
 
-      <div className="px-2 pt-4" style={{ borderTop: `1px solid ${C.brandBorder}` }}>
+      <div className="px-2 pt-4" style={{ borderTop: '1px solid rgba(16,33,63,0.08)' }}>
         <div className="flex items-center gap-2.5">
           <ProfileMenu dropUp />
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-semibold text-ink truncate">{displayName}</p>
+            <p className="text-[10px] text-ink-3 truncate">Manage account</p>
           </div>
         </div>
       </div>
@@ -490,26 +507,26 @@ function BottomNav() {
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 600, damping: 28 }}
+              whileTap={{ scale: MOTION.tapScale }}
+              transition={MOTION.spring.navTap}
             >
               <div className="nav-icon-wrap">
                 {isActive && (layoutReady ? (
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
-                    transition={{ type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }} />
+                    transition={MOTION.spring.nav} />
                 ) : (
                   <div className="nav-icon-bg" />
                 ))}
-                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.15 }}>
+                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={transitionBase}>
                   <item.Icon size={22} weight="fill" color={C.brand} />
                 </motion.span>
-                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 0 : 1 }} transition={{ duration: 0.15 }}>
+                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 0 : 1 }} transition={transitionBase}>
                   <item.Icon size={22} weight="regular" color={C.inkMuted} />
                 </motion.span>
               </div>
               <motion.span className="nav-label"
                 animate={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500, opacity: isActive ? 1 : 0.86 }}
-                transition={{ duration: 0.15 }}>
+                transition={transitionBase}>
                 {item.label}
               </motion.span>
             </motion.button>

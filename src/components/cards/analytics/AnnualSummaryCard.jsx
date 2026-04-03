@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { fmt } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 import { MONTH_SHORT } from '../../../lib/constants'
+import { transitionEmphasis } from '../../../lib/animations'
 
 function getDelta(current, previous) {
   const prev = Number(previous || 0)
@@ -53,7 +54,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
     { key: 'investment', label: 'Investments', value: totalInvestment, color: C.invest },
     annualBalance >= 0
       ? { key: 'surplus', label: 'Surplus', value: Math.max(annualBalance, 0), color: C.chartIncome }
-      : { key: 'deficit', label: 'Deficit', value: Math.abs(annualBalance), color: C.bills },
+      : { key: 'deficit', label: 'Deficit', value: Math.abs(annualBalance), color: C.chartExpense },
   ].map((row) => ({
     ...row,
     pct: Math.round((Math.max(0, Number(row.value || 0)) / flowMixBase) * 100),
@@ -119,14 +120,14 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
           <p className="text-[11px] text-ink-3 tabular-nums">Income {fmt(totalIncome)}</p>
         </div>
         <div className="h-3 rounded-pill bg-kosha-border overflow-hidden border border-kosha-border flex">
-          {flowMixRows.map((row) => (
+          {flowMixRows.map((row, index) => (
             <motion.div
               key={row.key}
               className="h-full"
               style={{ background: row.color }}
               initial={{ width: 0 }}
               animate={{ width: `${Math.max(4, row.pct)}%` }}
-              transition={{ duration: 0.55, ease: 'easeOut' }}
+              transition={{ ...transitionEmphasis, delay: index * 0.04 }}
             />
           ))}
         </div>

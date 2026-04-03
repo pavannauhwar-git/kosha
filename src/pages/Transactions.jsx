@@ -20,6 +20,7 @@ import SectionHeader from '../components/common/SectionHeader'
 import { getAuthUserId } from '../lib/authStore'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
+import { transitionBase } from '../lib/animations'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 
@@ -487,8 +488,8 @@ export default function Transactions() {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.15 }}
-              className="mt-2.5 rounded-card border border-kosha-border bg-kosha-surface p-2.5 flex flex-wrap gap-2"
+              transition={transitionBase}
+              className="mt-2.5 rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 flex flex-wrap gap-2"
             >
               {filterCategories.map(c => (
                 <button
