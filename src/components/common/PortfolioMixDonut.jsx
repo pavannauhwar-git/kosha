@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 function buildConicGradient(rows) {
   const safeRows = (Array.isArray(rows) ? rows : []).filter((row) => Number(row?.value || 0) > 0)
-  if (!safeRows.length) return 'conic-gradient(rgba(16,33,63,0.08) 0% 100%)'
+  if (!safeRows.length) return 'conic-gradient(rgba(26,26,46,0.05) 0% 100%)'
 
   const total = safeRows.reduce((sum, row) => sum + Number(row.value || 0), 0) || 1
   let cursor = 0
@@ -16,7 +16,7 @@ function buildConicGradient(rows) {
   })
 
   if (cursor < 100) {
-    segments.push(`rgba(16,33,63,0.08) ${cursor.toFixed(2)}% 100%`)
+    segments.push(`rgba(26,26,46,0.05) ${cursor.toFixed(2)}% 100%`)
   }
 
   return `conic-gradient(${segments.join(', ')})`
@@ -53,7 +53,7 @@ export default function PortfolioMixDonut({
         }}
       >
         <p className="text-[9px] text-ink-3">{centerTop}</p>
-        <p className="text-[11px] font-bold tabular-nums text-ink leading-tight px-1">{centerValue}</p>
+        <p className="text-[11px] font-semibold tabular-nums text-ink leading-tight px-1">{centerValue}</p>
         <p className="text-[8px] text-ink-3">{centerBottom}</p>
       </div>
     </div>

@@ -38,7 +38,7 @@ const DATE_PRESETS = [
 ]
 
 const TYPE_CHIP = {
-  all:        'bg-brand-container text-brand-on border-brand-container',
+  all:        'bg-ink text-white border-ink',
   expense:    'bg-expense-bg text-expense-text border-expense-border',
   income:     'bg-income-bg text-income-text border-income-border',
   investment: 'bg-invest-bg text-invest-text border-invest-border',
@@ -336,26 +336,26 @@ export default function Transactions() {
           subtitle="Track timeline health, then drill into rows with filters."
           badge={{
             label: hasActiveFilters ? 'Filtered view' : 'Full timeline',
-            className: hasActiveFilters ? 'bg-brand-container text-brand-on' : 'bg-kosha-surface-2 text-ink-2',
+            className: hasActiveFilters ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-2',
           }}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
-          <div className="rounded-card bg-kosha-surface-2 p-3">
+          <div className="rounded-card bg-kosha-surface-2 p-2.5">
             <p className="text-caption text-ink-3">Results</p>
-            <p className="text-sm font-bold tabular-nums text-ink-2">
+            <p className="text-sm font-semibold tabular-nums text-ink-2">
               {data.length}/{total}
             </p>
             <p className="text-[10px] text-ink-3 mt-0.5">Loaded rows / matching rows</p>
           </div>
-          <div className="rounded-card bg-kosha-surface-2 p-3">
+          <div className="rounded-card bg-kosha-surface-2 p-2.5">
             <p className="text-caption text-ink-3">Date window</p>
-            <p className="text-sm font-bold tabular-nums text-ink-2">{activeDatePresetLabel}</p>
+            <p className="text-sm font-semibold tabular-nums text-ink-2">{activeDatePresetLabel}</p>
             <p className="text-[10px] text-ink-3 mt-0.5">Current timeline range</p>
           </div>
-          <div className="rounded-card bg-kosha-surface-2 p-3">
+          <div className="rounded-card bg-kosha-surface-2 p-2.5">
             <p className="text-caption text-ink-3">Loaded net flow</p>
-            <p className={`text-sm font-bold tabular-nums ${visibleSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+            <p className={`text-sm font-semibold tabular-nums ${visibleSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
               {visibleSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(visibleSummary.net))}
             </p>
             <p className="text-[10px] text-ink-3 mt-0.5">Income {fmt(visibleSummary.income)} | Outflow {fmt(visibleSummary.outflow)}</p>
@@ -436,7 +436,7 @@ export default function Transactions() {
               }}
               className={`chip-control chip-control-sm ${
                 datePreset === preset.id
-                  ? 'bg-brand-container text-brand-on border-brand-container'
+                  ? 'bg-ink text-white border-ink'
                   : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'
               }`}
             >
@@ -463,7 +463,7 @@ export default function Transactions() {
             type="button"
             onClick={() => setShowCats(v => !v)}
             className={`chip-control chip-control-sm ${catFilter
-              ? 'bg-brand-container text-brand-on border-brand-container'
+              ? 'bg-ink text-white border-ink'
               : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
           >
             <SlidersHorizontal size={11} />
@@ -488,7 +488,7 @@ export default function Transactions() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.15 }}
-              className="mt-2.5 rounded-card border border-kosha-border bg-kosha-surface p-2.5 flex flex-wrap gap-2"
+              className="mt-2.5 rounded-card bg-kosha-surface-2 p-3 flex flex-wrap gap-2"
             >
               {filterCategories.map(c => (
                 <button
@@ -499,7 +499,7 @@ export default function Transactions() {
                     setShowCats(false)
                   }}
                   className={`chip-control chip-control-sm ${catFilter === c.id
-                    ? 'bg-brand-container text-brand-on border-brand-container'
+                    ? 'bg-ink text-white border-ink'
                     : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
                 >
                   {c.label}
@@ -514,14 +514,14 @@ export default function Transactions() {
         <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
-              <BookOpen size={16} className="text-brand" />
+              <BookOpen size={16} className="text-accent" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-body font-semibold text-ink">Transactions tips</p>
               <p className="text-label text-ink-3 mt-0.5">Use consistent categories and recurring labels for cleaner analytics.</p>
               <button
                 onClick={() => navigate('/guide')}
-                className="text-label font-semibold text-brand mt-2 inline-flex items-center gap-1"
+                className="text-label font-semibold text-accent mt-2 inline-flex items-center gap-1"
               >
                 Open guide <ArrowRight size={13} />
               </button>
@@ -553,7 +553,7 @@ export default function Transactions() {
         />
       ) : groups.length === 0 ? (
         <EmptyState
-          icon={<CheckCircle2 size={24} className="text-brand" />}
+          icon={<CheckCircle2 size={24} className="text-accent" />}
           title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
           description={
             hasActiveFilters
@@ -601,7 +601,7 @@ export default function Transactions() {
       {hasMore && (
         <button
           onClick={() => setDisplayCount(n => n + 50)}
-          className="w-full py-3.5 text-label font-semibold text-brand text-center
+          className="w-full py-3.5 text-label font-semibold text-accent text-center
                      bg-kosha-surface border border-kosha-border rounded-card mt-4"
         >
           Show more ({total - data.length} remaining)

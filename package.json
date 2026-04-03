@@ -23,6 +23,7 @@
     "test:reconciliation-schema-live": "node scripts/tests/test_reconciliation_schema_live.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
     "@fontsource/roboto": "^5.2.10",
     "@phosphor-icons/react": "^2.1.7",
     "@radix-ui/react-dialog": "^1.0.5",

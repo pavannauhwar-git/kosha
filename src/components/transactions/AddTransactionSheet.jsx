@@ -156,10 +156,10 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
                   style={{ background: cat.bg }}>
                   <CategoryIcon categoryId={cat.id} size={16} />
                 </div>
-                <span className={`flex-1 text-[15px] ${selected === cat.id ? 'text-brand font-medium' : 'text-ink'}`}>
+                <span className={`flex-1 text-[15px] ${selected === cat.id ? 'text-accent font-medium' : 'text-ink'}`}>
                   {cat.label}
                 </span>
-                <span className={`text-lg w-5 text-right ${selected === cat.id ? 'text-brand' : 'invisible'}`}>✓</span>
+                <span className={`text-lg w-5 text-right ${selected === cat.id ? 'text-ink' : 'invisible'}`}>✓</span>
               </button>
             ))}
           </div>
@@ -203,10 +203,10 @@ function ModePicker({ selected, onSelect, onClose }) {
                       <Icon size={16} weight="duotone" color={m.color} />
                     </div>
                   )}
-                  <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>
+                  <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-accent font-medium' : 'text-ink'}`}>
                     {m.label}
                   </span>
-                  <span className={`text-lg w-5 text-right ${selected === m.id ? 'text-brand' : 'invisible'}`}>✓</span>
+                  <span className={`text-lg w-5 text-right ${selected === m.id ? 'text-ink' : 'invisible'}`}>✓</span>
                 </button>
               )
             })}
@@ -251,10 +251,10 @@ function VehiclePicker({ selected, onSelect, onClose }) {
                       <Icon size={16} weight="duotone" color={v.color} />
                     </div>
                   )}
-                  <span className={`flex-1 text-[15px] ${selected === v.label ? 'text-brand font-medium' : 'text-ink'}`}>
+                  <span className={`flex-1 text-[15px] ${selected === v.label ? 'text-accent font-medium' : 'text-ink'}`}>
                     {v.label}
                   </span>
-                  <span className={`text-lg w-5 text-right ${selected === v.label ? 'text-brand' : 'invisible'}`}>✓</span>
+                  <span className={`text-lg w-5 text-right ${selected === v.label ? 'text-ink' : 'invisible'}`}>✓</span>
                 </button>
               )
             })}
@@ -416,9 +416,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   value={smartText}
                   onChange={e => handleSmartTextChange(e.target.value)}
                   disabled={isSaving}
-                  className="w-full bg-brand/5 border border-brand/20 text-brand font-medium
+                  className="w-full bg-ink/[0.04] border border-ink/[0.12] text-ink font-medium
                              rounded-2xl p-4 min-h-[100px] outline-none focus:ring-2
-                             ring-brand/50 resize-none shadow-inner disabled:opacity-50"
+                             ring-ink/30 resize-none shadow-inner disabled:opacity-50"
                 />
                 <p className="text-[11px] text-ink-4 mt-2 px-2 flex items-center gap-1">
                   <Sparkle size={12} /> Auto-fills amount, description, category, and mode.
@@ -446,14 +446,14 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
           {/* Amount */}
           <div className="bg-kosha-surface-2 rounded-card px-4 py-3 mb-4 flex items-center gap-2 overflow-hidden">
-            <span className={`font-display text-2xl font-bold ${activeType?.color}`}>₹</span>
+            <span className={`text-2xl font-bold ${activeType?.color}`}>₹</span>
             <input
               ref={amountRef}
               type="number" inputMode="decimal" placeholder="0.00"
               value={amount}
               onChange={e => set('amount', e.target.value)}
               disabled={isSaving}
-              className="min-w-0 flex-1 bg-transparent font-display text-3xl font-bold text-ink
+              className="min-w-0 flex-1 bg-transparent text-3xl font-bold text-ink
                          outline-none tabular-nums placeholder-ink-4 disabled:opacity-50"
             />
           </div>
@@ -472,7 +472,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             {/* Date */}
             <label className={`list-row w-full cursor-pointer ${isSaving ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
-                <span className="text-brand text-xs font-bold">📅</span>
+                <span className="text-ink text-xs font-semibold">📅</span>
               </div>
               <span className="flex-1 text-[15px] text-ink">Date</span>
               <input type="date" value={date} onChange={e => set('date', e.target.value)}
@@ -540,7 +540,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   </div>
                 ) : (
                   <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
-                    <span className="text-brand text-xs font-bold">₹</span>
+                    <span className="text-ink text-xs font-semibold">₹</span>
                   </div>
                 )
               })()}
@@ -583,7 +583,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                       disabled={isSaving}
                       className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
                         ${recurrence === option
-                          ? 'bg-brand-container text-brand-on border-brand-container'
+                          ? 'bg-ink text-white border-ink'
                           : 'bg-kosha-surface text-ink-2 border-kosha-border'}
                         ${isSaving ? 'opacity-50' : ''}`}
                     >

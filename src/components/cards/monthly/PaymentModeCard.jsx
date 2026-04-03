@@ -66,7 +66,7 @@ export default memo(function PaymentModeCard({ txnRows }) {
       </div>
 
       {/* Stacked bar */}
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
+      <div className="rounded-card bg-kosha-surface-2 p-3 mb-2.5">
         <div className="h-3 rounded-pill overflow-hidden flex">
           {analysis.rows.map((row) => (
             <div

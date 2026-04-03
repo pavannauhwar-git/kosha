@@ -85,51 +85,51 @@ export default function YearlyInsightsCard({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Annual net</p>
-          <p className={`text-[12px] font-bold tabular-nums ${annualNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+          <p className={`text-[13px] font-semibold tabular-nums ${annualNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
             {annualNet >= 0 ? '+' : '-'}{fmt(Math.abs(annualNet), true)}
           </p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Invested</p>
-          <p className="text-[12px] font-bold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Deploy rate</p>
-          <p className={`text-[12px] font-bold tabular-nums ${deployRate >= 12 && deployRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>{deployRate}%</p>
+          <p className={`text-[13px] font-semibold tabular-nums ${deployRate >= 12 && deployRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>{deployRate}%</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Top category</p>
-          <p className="text-[11px] font-bold text-brand truncate" title={topCategory?.label || '—'}>{topCategory?.label || '—'}</p>
+          <p className="text-[11px] font-semibold text-ink truncate" title={topCategory?.label || '—'}>{topCategory?.label || '—'}</p>
           <p className="text-[10px] tabular-nums text-ink-3 mt-0.5">{topCategory ? `${fmt(topCategory.amount, true)} · ${topCategory.share}%` : '—'}</p>
         </div>
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
+      <div className="rounded-card bg-kosha-surface-2 p-2.5 mb-2.5">
         <p className="text-[11px] font-semibold text-ink-2 mb-1">Year in plain words</p>
         <p className="text-[12px] text-ink-2 leading-relaxed">{plainWords}</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-2.5">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[11px] font-semibold text-ink-2 mb-1.5">Decision signals</p>
           <div className="space-y-1.5">
             {signalRows.map((line, index) => (
               <div key={`insight-signal-${index}`} className="flex items-start gap-2">
-                <span className="w-4 text-right text-[11px] font-bold text-brand shrink-0">{index + 1}</span>
+                <span className="w-4 text-right text-[11px] font-semibold text-accent shrink-0">{index + 1}</span>
                 <p className="text-[11px] text-ink-3 leading-relaxed">{line}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[11px] font-semibold text-ink-2 mb-1.5">So what now</p>
           <div className="space-y-1.5">
             {actionRows.map((line, index) => (
               <div key={`insight-action-${index}`} className="flex items-start gap-2">
-                <span className="w-4 text-right text-[11px] font-bold text-brand shrink-0">{index + 1}</span>
+                <span className="w-4 text-right text-[11px] font-semibold text-accent shrink-0">{index + 1}</span>
                 <p className="text-[11px] text-ink-3 leading-relaxed">{line}</p>
               </div>
             ))}

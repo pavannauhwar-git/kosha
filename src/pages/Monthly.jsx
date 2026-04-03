@@ -224,7 +224,7 @@ export default function Monthly() {
     const topPct = top && total > 0 ? Math.round((top.value / total) * 100) : 0
     const deployRate = inflow > 0 ? Math.round((invested / inflow) * 100) : 0
 
-    const palette = [C.brand, C.invest, C.income, C.bills, C.brandMid, C.brandLight]
+    const palette = C.portfolio
     const maxSlices = 5
     const visibleRows = rows.slice(0, maxSlices)
     const visibleTotal = visibleRows.reduce((sum, row) => sum + row.value, 0)
@@ -376,20 +376,20 @@ export default function Monthly() {
               }}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
-              <div className="rounded-card bg-kosha-surface-2 p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2.5">
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
                 <p className="text-caption text-ink-3">Net close</p>
-                <p className={`text-sm font-bold tabular-nums ${monthCloseSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                <p className={`text-sm font-semibold tabular-nums ${monthCloseSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                   {monthCloseSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(monthCloseSummary.net))}
                 </p>
               </div>
-              <div className="rounded-card bg-kosha-surface-2 p-3">
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
                 <p className="text-caption text-ink-3">Outflow</p>
-                <p className="text-sm font-bold tabular-nums text-ink-2">{fmt(monthCloseSummary.totalOutflow)}</p>
+                <p className="text-sm font-semibold tabular-nums text-ink-2">{fmt(monthCloseSummary.totalOutflow)}</p>
               </div>
-              <div className="rounded-card bg-kosha-surface-2 p-3">
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
                 <p className="text-caption text-ink-3">{monthCloseSummary.timelineLabel}</p>
-                <p className="text-sm font-bold tabular-nums text-ink-2">{monthCloseSummary.timelineValue}</p>
+                <p className="text-sm font-semibold tabular-nums text-ink-2">{monthCloseSummary.timelineValue}</p>
               </div>
             </div>
 
@@ -419,30 +419,30 @@ export default function Monthly() {
               />
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Allocated</p>
-                  <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
+                  <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
                 </div>
-                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Top holding</p>
-                  <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.topPct >= 55 ? 'text-warning-text' : 'text-brand'}`}>
+                  <p className={`text-[13px] font-semibold tabular-nums ${monthlyPortfolioSnapshot.topPct >= 55 ? 'text-warning-text' : 'text-ink'}`}>
                     {monthlyPortfolioSnapshot.topPct}%
                   </p>
                 </div>
-                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Diversification</p>
-                  <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.diversificationScore >= 70 ? 'text-income-text' : monthlyPortfolioSnapshot.diversificationScore >= 50 ? 'text-brand' : 'text-warning-text'}`}>
+                  <p className={`text-[13px] font-semibold tabular-nums ${monthlyPortfolioSnapshot.diversificationScore >= 70 ? 'text-income-text' : monthlyPortfolioSnapshot.diversificationScore >= 50 ? 'text-income-text' : 'text-warning-text'}`}>
                     {monthlyPortfolioSnapshot.diversificationScore}/100
                   </p>
                 </div>
-                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Primary vehicle</p>
-                  <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
+                  <p className="text-[13px] font-semibold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
                 </div>
               </div>
 
               {monthlyPortfolioSnapshot.total > 0 ? (
-                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5 mb-2.5">
                   <div className="grid md:grid-cols-[168px_1fr] gap-3 items-center">
                     <div className="flex justify-center md:justify-start">
                       <PortfolioMixDonut
@@ -474,17 +474,17 @@ export default function Monthly() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 p-3 mb-3">
+                <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
                   <p className="text-[11px] text-ink-3">No monthly portfolio allocation is tagged yet. Add vehicle labels to investment entries to unlock this view.</p>
                 </div>
               )}
 
               <div className="grid md:grid-cols-2 gap-2 mb-3">
-                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3 mb-1">Concentration signal · {monthlyPortfolioSnapshot.concentrationBand}</p>
                   <p className="text-[11px] text-ink-2 leading-relaxed">{monthlyPortfolioSnapshot.concentrationSignal}</p>
                 </div>
-                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3 mb-1">Deployment signal</p>
                   <p className="text-[11px] text-ink-2 leading-relaxed">{monthlyPortfolioSnapshot.deploymentSignal}</p>
                 </div>

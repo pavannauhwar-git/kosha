@@ -16,7 +16,7 @@ function SavingsRateTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[168px]">
+    <div className="rounded-card bg-kosha-surface p-3 shadow-card min-w-[168px]" style={{ border: '1px solid rgba(26,26,46,0.06)' }}>
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -93,9 +93,9 @@ export default memo(function SavingsRateTrend({ flowTrendData, monthLabels }) {
 
   return (
     <div className="card p-4">
-      <div className="flex items-start justify-between gap-3 mb-2">
+      <div className="flex items-start justify-between gap-3 mb-3">
         <div>
-          <p className="text-label font-semibold text-ink">Savings rate trend</p>
+          <p className="section-label">Savings rate trend</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Monthly net savings as percentage of income — the single most important wealth metric.</p>
         </div>
         <span className={`text-[11px] px-2 py-1 rounded-pill font-semibold ${trendData.avgRate >= 20 ? 'bg-income-bg text-income-text' : trendData.avgRate >= 0 ? 'bg-warning-bg text-warning-text' : 'bg-expense-bg text-expense-text'}`}>
@@ -104,23 +104,23 @@ export default memo(function SavingsRateTrend({ flowTrendData, monthLabels }) {
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Avg savings rate</p>
-          <p className={`text-[12px] font-bold tabular-nums ${trendData.avgRate >= 20 ? 'text-income-text' : trendData.avgRate >= 0 ? 'text-warning-text' : 'text-expense-text'}`}>
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+          <p className="text-[10px] tracking-wide text-ink-3">Avg savings rate</p>
+          <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${trendData.avgRate >= 20 ? 'text-income-text' : trendData.avgRate >= 0 ? 'text-warning-text' : 'text-expense-text'}`}>
             {trendData.avgRate}%
           </p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Avg invest rate</p>
-          <p className="text-[12px] font-bold tabular-nums text-invest-text">{trendData.avgInvestRate}%</p>
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+          <p className="text-[10px] tracking-wide text-ink-3">Avg invest rate</p>
+          <p className="text-[13px] font-semibold tabular-nums text-invest-text mt-0.5">{trendData.avgInvestRate}%</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Positive months</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">{trendData.positiveMonths}/{trendData.totalActiveMonths}</p>
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+          <p className="text-[10px] tracking-wide text-ink-3">Positive months</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink mt-0.5">{trendData.positiveMonths}/{trendData.totalActiveMonths}</p>
         </div>
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+      <div className="rounded-card bg-kosha-surface-2 p-2.5">
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={trendData.series} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
             <defs>
@@ -129,10 +129,10 @@ export default memo(function SavingsRateTrend({ flowTrendData, monthLabels }) {
                 <stop offset="95%" stopColor={C.brand} stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
               interval={0}
@@ -140,13 +140,13 @@ export default memo(function SavingsRateTrend({ flowTrendData, monthLabels }) {
             <YAxis
               domain={['dataMin - 10', 'dataMax + 10']}
               tickFormatter={(value) => `${Math.round(value)}%`}
-              tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
               axisLine={false}
               tickLine={false}
               width={34}
             />
             <Tooltip content={<SavingsRateTooltip />} />
-            <ReferenceLine y={0} stroke="rgba(16,33,63,0.25)" strokeDasharray="4 4" />
+            <ReferenceLine y={0} stroke="rgba(26,26,46,0.25)" strokeDasharray="4 4" />
             <ReferenceLine y={20} stroke="rgba(14,159,110,0.35)" strokeDasharray="4 4" />
             <Area
               type="monotone"

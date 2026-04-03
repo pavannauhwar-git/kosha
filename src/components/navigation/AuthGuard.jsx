@@ -9,7 +9,7 @@ function S({ className }) {
 // ── Per-route skeletons ───────────────────────────────────────────────────
 function DashboardSkeleton() {
   return (
-    <div className="px-5 pt-10 pb-36 space-y-6">
+    <div className="px-5 pt-10 pb-36 space-y-3.5">
       {/* Hero balance card */}
       <S className="h-44 w-full" />
       {/* Stats row */}
@@ -63,7 +63,7 @@ function TransactionsSkeleton() {
 
 function MonthlySkeleton() {
   return (
-    <div className="px-5 pt-10 pb-36 space-y-6">
+    <div className="px-5 pt-10 pb-36 space-y-3.5">
       {/* Month navigator */}
       <div className="flex items-center justify-between">
         <S className="h-8 w-8" />
@@ -93,7 +93,7 @@ function MonthlySkeleton() {
 
 function AnalyticsSkeleton() {
   return (
-    <div className="px-5 pt-10 pb-36 space-y-6">
+    <div className="px-5 pt-10 pb-36 space-y-3.5">
       {/* Year selector */}
       <S className="h-10 w-28 mx-auto" />
       {/* KPI cards */}

@@ -17,8 +17,8 @@
 
 @keyframes txn-focus-pulse {
   0% {
-    box-shadow: inset 0 0 0 2px rgba(var(--c-brand-rgb), 0.38);
-    background-color: rgba(var(--c-brand-rgb), 0.08);
+    box-shadow: inset 0 0 0 2px rgba(var(--c-brand-rgb), 0.25);
+    background-color: rgba(var(--c-brand-rgb), 0.04);
   }
   100% {
     box-shadow: inset 0 0 0 0 rgba(var(--c-brand-rgb), 0);
@@ -33,10 +33,13 @@
   }
 
   html {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'InterVariable', 'Inter', system-ui, sans-serif;
     width: 100%;
     max-width: 100%;
     overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
@@ -60,56 +63,52 @@
     --nav-height: calc(88px + env(safe-area-inset-bottom, 0px));
     --sticky-top-offset: calc(var(--safe-top) + 64px);
 
-    /* ── Palette CSS variables ──────────────────────────────────────
+    /* ── Palette CSS variables — CRED light theme ──────────────────
        Keep in sync with src/lib/colors.js and tailwind.config.js
     ───────────────────────────────────────────────────────────────── */
 
-    /* Brand — Azure */
-    --c-brand: #0A67D8;
-    --c-brand-mid: #2A84EE;
-    --c-brand-container: #E7F2FF;
-    --c-brand-border: #BBD9FF;
-    --c-brand-rgb: 10, 103, 216;
-    /* used in rgba() calls */
-    --c-brand-mid-rgb: 42, 132, 238;
-    /* used in rgba() calls */
+    /* Brand — Deep charcoal */
+    --c-brand: #1A1A2E;
+    --c-brand-mid: #2D2D44;
+    --c-brand-container: #EFECE6;
+    --c-brand-border: rgba(26,26,46,0.08);
+    --c-brand-rgb: 26, 26, 46;
+    --c-brand-mid-rgb: 45, 45, 68;
 
-    /* Accent — Soft Lemon */
-    --c-accent: #FFFF99;
-    --c-accent-rgb: 255, 255, 153;
-    /* used in rgba() calls */
+    /* Accent — Warm gold */
+    --c-accent: #C9A96E;
+    --c-accent-rgb: 201, 169, 110;
 
     /* Semantics */
-    --c-income: #0E9F6E;
-    --c-invest-text: #5B21B6;
-    /* text on invest-bg */
-    --c-expense: #E11D48;
-    --c-expense-bright: #F43F5E;
-    --c-warning: #9A7200;
+    --c-income: #2D8B6F;
+    --c-invest-text: #4A2F9A;
+    --c-expense: #C4384A;
+    --c-expense-bright: #D84A5C;
+    --c-warning: #8B7230;
 
     /* Ink */
-    --c-ink-muted: #5E6D8F;
+    --c-ink-muted: #6B6B80;
 
-    /* Hero card overlays */
-    --c-hero-accent: #FFFF99;
-    --c-hero-accent-bg: #FFFF99;
-    --c-hero-accent-fill: #FFFF99;
-    --c-hero-label: rgba(255, 255, 255, 0.64);
-    --c-hero-dimmer: rgba(255, 255, 255, 0.46);
-    --c-hero-divider: rgba(255, 255, 255, 0.16);
-    --c-hero-stat-bg: rgba(255, 255, 255, 0.12);
+    /* Hero card overlays (light text on dark hero) */
+    --c-hero-accent: #C9A96E;
+    --c-hero-accent-bg: rgba(201,169,110,0.15);
+    --c-hero-accent-fill: #C9A96E;
+    --c-hero-label: rgba(255, 255, 255, 0.60);
+    --c-hero-dimmer: rgba(255, 255, 255, 0.35);
+    --c-hero-divider: rgba(255, 255, 255, 0.10);
+    --c-hero-stat-bg: rgba(255, 255, 255, 0.08);
 
-    /* Shimmer animation colors */
-    --c-shimmer-1: #F7FAFF;
-    --c-shimmer-2: #ECF5FF;
+    /* Shimmer */
+    --c-shimmer-1: #F5F3EE;
+    --c-shimmer-2: #EFECE6;
 
-    /* Motion timing scale */
-    --motion-fast: 90ms;
-    --motion-base: 140ms;
-    --motion-slow: 220ms;
+    /* Motion timing scale — slightly slower for premium feel */
+    --motion-fast: 100ms;
+    --motion-base: 180ms;
+    --motion-slow: 280ms;
   }
 
-  /* GPU layer on interactive elements — eliminates tap lag */
+  /* GPU layer on interactive elements */
   button,
   [role="button"] {
     -webkit-tap-highlight-color: transparent;
@@ -118,33 +117,48 @@
 
 @layer components {
 
-  /* -- Hero card ───────────────────────────────────────────────────── */
+  /* -- Hero card — dark premium slab ──────────────────────────────── */
   .card-hero {
-    background: var(--c-brand);
+    background: linear-gradient(145deg, #1A1A2E 0%, #16162B 50%, #0F0F1A 100%);
     @apply rounded-hero;
     box-shadow:
-      0 14px 30px rgba(var(--c-brand-rgb), 0.18),
-      0 6px 16px rgba(16, 33, 63, 0.10);
+      0 20px 60px rgba(26,26,46,0.25),
+      0 8px 20px rgba(26,26,46,0.15);
+    position: relative;
+    overflow: hidden;
   }
 
-  /* -- Cards ───────────────────────────────────────────────────────── */
+  .card-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 60%;
+    height: 120%;
+    background: radial-gradient(ellipse, rgba(201,169,110,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* -- Cards — borderless, soft depth ─────────────────────────────── */
   .card {
     @apply bg-kosha-surface rounded-card shadow-card;
+    border: none;
   }
 
   .page-stack {
-    @apply space-y-5 md:space-y-6;
+    @apply space-y-3.5 md:space-y-4;
   }
 
   .sticky-toolbar {
     @apply sticky z-10 px-0.5 py-2 bg-kosha-bg;
     top: var(--sticky-top-offset);
     margin-bottom: 1rem;
-    box-shadow: 0 1px 0 rgba(18, 28, 74, 0.08);
+    border-bottom: 1px solid rgba(26,26,46,0.06);
   }
 
   .card-md {
     @apply bg-kosha-surface rounded-card shadow-card-md;
+    border: none;
   }
 
   .card-inset {
@@ -159,65 +173,78 @@
     @apply bg-kosha-surface rounded-card shadow-warn;
   }
 
+  /* -- Mini panel — neutral nested containers ────────────────────── */
+  .mini-panel {
+    @apply rounded-card bg-kosha-surface-2;
+    border: 1px solid rgba(26,26,46,0.04);
+  }
+
   /* -- Skeleton loader ──────────────────────────────────────────────── */
   .skeleton {
-    @apply rounded-card bg-kosha-border;
-    animation: skeleton-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    @apply rounded-card;
+    background: rgba(26,26,46,0.06);
+    animation: skeleton-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
   /* -- List card ───────────────────────────────────────────────────── */
   .list-card {
     @apply bg-kosha-surface rounded-card shadow-card overflow-hidden;
+    border: none;
   }
 
   .list-row {
-    @apply flex items-center gap-3 px-4 py-3.5 bg-kosha-surface transition-colors duration-150 cursor-pointer hover:bg-kosha-surface-2/60;
+    @apply flex items-center gap-3 px-5 py-4 bg-kosha-surface transition-colors duration-200 cursor-pointer hover:bg-kosha-surface-2/80;
   }
 
   .list-row+.list-row {
-    border-top: 0.5px solid var(--c-brand-border);
+    border-top: 1px solid rgba(26,26,46,0.05);
   }
 
-  /* -- Section label ───────────────────────────────────────────────── */
+  /* -- Section label — CRED-style uppercase tracking ──────────────── */
   .section-label {
-    @apply text-[11px] font-semibold text-ink-3 tracking-tight leading-none;
+    @apply text-[10px] font-semibold text-ink-3 leading-none;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .card-title {
-    @apply text-[13px] font-semibold text-ink;
+    @apply text-[14px] font-semibold text-ink;
+    letter-spacing: -0.01em;
   }
 
   /* -- Type chips ──────────────────────────────────────────────────── */
   .chip-income {
-    @apply bg-income-bg text-income-text text-xs font-semibold px-2.5 py-1 rounded-pill;
+    @apply bg-income-bg text-income-text text-[11px] font-semibold px-3 py-1 rounded-pill;
   }
 
   .chip-expense {
-    @apply bg-expense-bg text-expense-text text-xs font-semibold px-2.5 py-1 rounded-pill;
+    @apply bg-expense-bg text-expense-text text-[11px] font-semibold px-3 py-1 rounded-pill;
   }
 
   .chip-invest {
-    @apply bg-invest-bg text-invest-text text-xs font-semibold px-2.5 py-1 rounded-pill;
+    @apply bg-invest-bg text-invest-text text-[11px] font-semibold px-3 py-1 rounded-pill;
   }
 
   .chip-repay {
-    @apply bg-repay-bg text-repay-text text-xs font-semibold px-2.5 py-1 rounded-pill;
+    @apply bg-repay-bg text-repay-text text-[11px] font-semibold px-3 py-1 rounded-pill;
   }
 
   .chip-neutral {
-    @apply bg-brand-container text-brand-on text-xs font-semibold px-2.5 py-1 rounded-pill;
+    @apply bg-ink/[0.06] text-ink text-[11px] font-semibold px-3 py-1 rounded-pill;
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3 rounded-pill text-[11px] font-semibold border transition-all duration-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35;
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/10;
   }
 
   .chip-control-muted {
-    @apply chip-control bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2;
+    @apply chip-control bg-kosha-surface text-ink-3 hover:bg-kosha-surface-2;
+    border-color: rgba(26,26,46,0.08);
   }
 
   .chip-control-active {
-    @apply chip-control bg-brand-container text-brand-on border-brand-container;
+    @apply chip-control bg-ink text-white;
+    border-color: transparent;
   }
 
   .chip-control-sm {
@@ -241,39 +268,36 @@
     @apply text-repay-text font-semibold;
   }
 
-  /* -- Buttons ─────────────────────────────────────────────────────── */
+  /* -- Buttons — premium, minimal ─────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all duration-150 active:scale-[0.99] select-none cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all duration-200 active:scale-[0.98] select-none cursor-pointer;
     letter-spacing: 0.01em;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
   }
 
   .btn-primary {
-    @apply btn text-white px-6 py-3 border border-transparent;
-    background: linear-gradient(180deg, #2A84EE 0%, #0A67D8 100%);
-    box-shadow:
-      0 10px 20px rgba(var(--c-brand-rgb), 0.26),
-      inset 0 1px 0 rgba(255, 255, 255, 0.34);
+    @apply btn text-white px-7 py-3.5 border border-transparent;
+    background: #1A1A2E;
+    box-shadow: 0 8px 24px rgba(26,26,46,0.20);
   }
 
   .btn-primary:hover {
-    background: linear-gradient(180deg, #3390F1 0%, #0A67D8 100%);
-    filter: none;
+    background: #2D2D44;
   }
 
   .btn-tonal {
-    @apply btn bg-brand-container text-brand-on border border-kosha-border px-6 py-3;
+    @apply btn bg-ink/[0.06] text-ink px-7 py-3.5;
+    border: 1px solid rgba(26,26,46,0.06);
   }
 
   .btn-ghost {
-    @apply btn text-brand px-4 py-2 border border-kosha-border bg-kosha-surface-2 hover:bg-brand-container/45;
+    @apply btn text-ink px-5 py-2.5 bg-transparent hover:bg-kosha-surface-2;
+    border: 1px solid rgba(26,26,46,0.10);
   }
 
   .btn-secondary {
-    @apply btn bg-kosha-surface text-ink-2 border border-kosha-border px-4 py-2 hover:bg-brand-bg/65 hover:border-brand-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30;
-    box-shadow:
-      0 4px 12px rgba(18, 28, 74, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    @apply btn bg-kosha-surface text-ink-2 px-5 py-2.5 hover:bg-kosha-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/10;
+    border: 1px solid rgba(26,26,46,0.08);
+    box-shadow: 0 2px 6px rgba(26,26,46,0.04);
   }
 
   .btn-secondary-sm {
@@ -281,33 +305,27 @@
   }
 
   .btn-danger {
-    @apply btn bg-expense-bg text-expense-text px-6 py-3 border border-expense-border;
+    @apply btn bg-expense-bg text-expense-text px-7 py-3.5 border border-expense-border;
   }
 
-  /* -- FAB ─────────────────────────────────────────────────────────── */
+  /* -- FAB — dark, premium ────────────────────────────────────────── */
   .fab {
-    @apply fixed w-14 h-14 bg-brand text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 bg-ink text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
   }
 
-  /* Bills page FAB — aligned with primary brand action colour */
   .fab-bills {
-    @apply fixed w-14 h-14 bg-brand text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-75 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 bg-ink text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
   }
 
-  /* -- Floating nav ────────────────────────────────────────────────── */
-    /* ── Floating nav — premium dock style ─────────────────────────────
-     Fixed dimensions — never resizes on scroll.
-     Icon + label always visible.
-     Background pill springs between tabs via Framer layoutId.
-  ─────────────────────────────────────────────────────────────────── */
+  /* -- Floating nav — premium glass dock ──────────────────────────── */
   .nav-float-wrap {
     position: fixed;
     bottom: 0;
@@ -319,7 +337,7 @@
     padding-bottom: calc(0.78rem + var(--safe-bottom));
     pointer-events: none;
     transform: translateY(0);
-    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
     will-change: transform;
   }
 
@@ -331,21 +349,19 @@
     display: flex;
     align-items: center;
     gap: 0;
-    padding: 9px 12px;
-    border-radius: 30px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    padding: 10px 14px;
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
     box-shadow:
-      0 14px 28px rgba(23, 35, 71, 0.16),
-      0 4px 10px rgba(23, 35, 71, 0.08),
-      inset 0 0.5px 0 rgba(255, 255, 255, 0.90),
-      0 0 0 1px rgba(130, 149, 214, 0.22);
+      0 16px 36px rgba(26,26,46,0.12),
+      0 4px 10px rgba(26,26,46,0.06),
+      inset 0 0.5px 0 rgba(255,255,255,0.80),
+      0 0 0 1px rgba(26,26,46,0.06);
     pointer-events: auto;
-    /* No transition here — Framer controls all animation */
   }
 
-  /* Each tab button: icon on top, label below */
   .nav-float-item {
     display: flex;
     flex-direction: column;
@@ -357,13 +373,11 @@
     background: none;
     border: none;
     cursor: pointer;
-    /* Tap handled by Framer whileTap — no CSS active needed */
     -webkit-tap-highlight-color: transparent;
     will-change: transform;
     transform: translateZ(0);
   }
 
-  /* Icon area — fixed 48x32, pill bg positions relative to this */
   .nav-icon-wrap {
     position: relative;
     width: 46px;
@@ -373,30 +387,25 @@
     justify-content: center;
   }
 
-  /* The sliding green pill background */
   .nav-icon-bg {
     position: absolute;
     inset: 0;
     border-radius: 9999px;
-    background: rgba(var(--c-brand-rgb), 0.17);
-    box-shadow: inset 0 0 0 1px rgba(var(--c-brand-rgb), 0.10);
+    background: rgba(26,26,46,0.08);
   }
 
-  /* Both icon layers sit on top of the pill, stacked in same spot */
   .nav-icon-layer {
     position: absolute;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* opacity animated by Framer */
   }
 
-  /* Label beneath icon */
   .nav-label {
-    font-size: 10.5px;
+    font-size: 10px;
     line-height: 1;
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    /* color + fontWeight animated by Framer */
+    font-family: 'InterVariable', 'Inter', system-ui, sans-serif;
+    letter-spacing: 0.02em;
     white-space: nowrap;
     user-select: none;
   }
@@ -404,21 +413,23 @@
 
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
-    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-base border border-transparent focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-150;
+    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-[15px] focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-200;
+    border: 1px solid rgba(26,26,46,0.06);
     min-width: 0;
     will-change: transform;
     transform: translateZ(0);
   }
 
+  .input:focus {
+    border-color: rgba(26,26,46,0.15);
+  }
+
   /* -- Bottom sheet ────────────────────────────────────────────────── */
   .sheet-backdrop {
     @apply fixed inset-0 z-40;
-    background: rgba(0, 0, 0, 0.50);
-    /* animate-fade-in removed: it uses `animation-fill-mode: forwards`
-       which permanently locks opacity:1 via CSS, preventing Framer
-       Motion's exit animation (opacity→0) from working. Framer Motion
-       drives opacity entirely via its initial/animate/exit props.
-       backdrop-filter also removed — see previous note on ghost blur.  */
+    background: rgba(26, 26, 46, 0.40);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   .sheet-panel {
@@ -429,9 +440,8 @@
     margin-left: auto;
     margin-right: auto;
     max-width: 560px;
-    box-shadow: 0 -4px 28px rgba(18, 28, 74, 0.14);
-    border-top: 0.5px solid rgba(18, 28, 74, 0.08);
-    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 40px rgba(26,26,46,0.12);
+    border-radius: 24px 24px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     max-height: calc(100dvh - var(--safe-top) - 0.5rem);
     overflow-y: auto;
@@ -451,19 +461,19 @@
     margin-bottom: -14px;
     z-index: 2;
     pointer-events: none;
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.95);
   }
 
   .sheet-handle {
-    @apply w-9 h-1 rounded-pill mx-auto mt-3 mb-5;
-    background: #C7C7CC;
+    @apply w-10 h-1 rounded-pill mx-auto mt-3 mb-6;
+    background: rgba(26,26,46,0.12);
   }
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
   .page {
-    @apply min-h-dvh px-4 md:px-5;
+    @apply min-h-dvh px-5 md:px-6;
     padding-top: 0.6rem;
-    padding-bottom: calc(var(--nav-height) + 1.1rem);
+    padding-bottom: calc(var(--nav-height) + 1.5rem);
     max-width: 640px;
     margin-left: auto;
     margin-right: auto;
@@ -471,25 +481,25 @@
 
   /* -- Progress bars ───────────────────────────────────────────────── */
   .bar-dark-track {
-    @apply h-2 rounded-pill w-full relative overflow-hidden;
-    background: rgba(255, 255, 255, 0.20);
+    @apply h-1.5 rounded-pill w-full relative overflow-hidden;
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .bar-dark-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0;
     background: var(--c-hero-accent-fill);
-    transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .bar-light-track {
-    @apply h-2 rounded-pill w-full relative overflow-hidden;
-    background: var(--c-brand-border);
+    @apply h-1.5 rounded-pill w-full relative overflow-hidden;
+    background: rgba(26,26,46,0.06);
   }
 
   .bar-light-fill {
     @apply h-full rounded-pill absolute inset-y-0 left-0;
     background: var(--c-income);
-    transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .savings-track {
@@ -502,13 +512,13 @@
 
   /* -- Close button ────────────────────────────────────────────────── */
   .close-btn {
-    @apply w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border transition-all duration-100 cursor-pointer;
+    @apply w-9 h-9 rounded-full flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-bg transition-all duration-150 cursor-pointer;
     will-change: transform;
     transform: translateZ(0);
   }
 
   .close-btn:active {
-    transform: scale(0.96);
+    transform: scale(0.95);
   }
 }
 
@@ -547,25 +557,27 @@
 
 .shimmer {
   background: var(--c-shimmer-1);
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
 }
 
 @media (max-width: 390px) {
   .page {
     padding-top: 0.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
     padding-bottom: calc(var(--nav-height) + 0.9rem);
   }
 
   .page-stack {
-    row-gap: 0.9rem;
+    row-gap: 0.75rem;
   }
 
   .section-label {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .card-title {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .chip-control {
@@ -579,21 +591,21 @@
   .input {
     padding-top: 0.6rem;
     padding-bottom: 0.6rem;
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .list-row {
-    padding-top: 0.68rem;
-    padding-bottom: 0.68rem;
-    gap: 0.6rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    gap: 0.65rem;
   }
 
   .card.p-4 {
-    padding: 0.82rem;
+    padding: 0.9rem;
   }
 
   .card.p-5 {
-    padding: 1rem;
+    padding: 1.1rem;
   }
 
   .card.mb-5 {
@@ -627,13 +639,11 @@
   }
 }
 
-/* Add these three blocks at the end of index.css */
-
 @media (min-width: 768px) {
   .page {
     max-width: 920px;
-    padding-left: 2rem;
-    padding-right: 2rem;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
     padding-top: 0.7rem;
     padding-bottom: 3.5rem;
   }

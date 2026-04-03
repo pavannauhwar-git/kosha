@@ -5,8 +5,8 @@ import os
 SIZES = [180, 192, 512]
 OUT_DIR = os.path.join(os.path.dirname(__file__), '..', 'public', 'icons')
 
-# Current brand colour: Azure #0A67D8
-BRAND = (0x0A, 0x67, 0xD8)
+# Current brand colour: Charcoal #1A1A2E
+BRAND = (0x1A, 0x1A, 0x2E)
 
 def generate_icon(size):
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
@@ -25,7 +25,7 @@ def generate_icon(size):
     # Bold white KOSHA text — sized so it fills more of the icon width
     text = "KOSHA"
     font_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'fonts', 'Roboto-Black.ttf')
-    target_width = size * 0.72
+    target_width = size * 0.78
 
     # Binary-search for the font size that hits the target icon width
     lo, hi = 4, size

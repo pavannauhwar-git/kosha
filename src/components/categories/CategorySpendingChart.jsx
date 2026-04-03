@@ -3,7 +3,7 @@ import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
 import { CATEGORIES } from '../../lib/categories'
 
-const BAR_PALETTE = ['#0A67D8', '#2F7AD9', '#629CE6', '#8CB7ED', '#B5D0F2', '#D6E6F8']
+const BAR_PALETTE = ['#1A1A2E', '#2F7AD9', '#629CE6', '#8CB7ED', '#B5D0F2', '#D6E6F8']
 
 const CategorySpendingChart = memo(function CategorySpendingChart({
   entries,
@@ -75,15 +75,15 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         </div>
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
+      <div className="rounded-card bg-kosha-surface-2 p-3 mb-2.5">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
             <p className="text-[10px] text-ink-3">Dominant category</p>
-            <p className="text-[12px] font-bold text-ink truncate">{dominant.name}</p>
+            <p className="text-[13px] font-semibold text-ink truncate">{dominant.name}</p>
           </div>
           <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
             <p className="text-[10px] text-ink-3">Top share</p>
-            <p className="text-[12px] font-bold text-warning-text tabular-nums">{dominant.sharePct}%</p>
+            <p className="text-[13px] font-semibold text-warning-text tabular-nums">{dominant.sharePct}%</p>
           </div>
         </div>
       </div>

@@ -4,12 +4,12 @@ import { C } from '../../../lib/colors'
 import { fmt } from '../../../lib/utils'
 
 const AXES = [
-  { key: 'savings', label: 'Savings rate' },
-  { key: 'investment', label: 'Invest rate' },
-  { key: 'expenseControl', label: 'Expense ctrl' },
+  { key: 'savings', label: 'Savings' },
+  { key: 'investment', label: 'Deployment' },
+  { key: 'expenseControl', label: 'Spend control' },
   { key: 'incomeGrowth', label: 'Income growth' },
   { key: 'consistency', label: 'Consistency' },
-  { key: 'positiveMonths', label: 'Positive mths' },
+  { key: 'positiveMonths', label: 'Surplus months' },
 ]
 
 const CX = 140
@@ -115,15 +115,15 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
     .join(' ')
 
   const healthLabel = scores.overall >= 75 ? 'Strong' : scores.overall >= 50 ? 'Moderate' : 'Needs work'
-  const healthColor = scores.overall >= 75 ? 'text-income-text' : scores.overall >= 50 ? 'text-brand' : 'text-warning-text'
+  const healthColor = scores.overall >= 75 ? 'text-income-text' : scores.overall >= 50 ? 'text-income-text' : 'text-warning-text'
 
   return (
-    <div className="card p-4 md:p-5 overflow-hidden">
+    <div className="card p-4 overflow-hidden">
       <div className="flex items-start justify-between gap-3 mb-1">
         <div>
-          <p className="section-label">Financial health radar</p>
+          <p className="section-label">Financial wellness score</p>
           <p className="text-[11px] text-ink-3 mt-0.5">
-            6-axis profile scoring your financial posture for {year}.
+            6-axis posture profile for {year}
           </p>
         </div>
         <div className="text-right">
@@ -133,21 +133,21 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[9px] text-ink-3">Income</p>
-          <p className="text-[11px] font-bold tabular-nums text-ink">{fmt(scores.metrics.income, true)}</p>
+          <p className="text-[11px] font-semibold tabular-nums text-ink">{fmt(scores.metrics.income, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[9px] text-ink-3">Outflow</p>
-          <p className="text-[11px] font-bold tabular-nums text-expense-text">{fmt(scores.metrics.outflow, true)}</p>
+          <p className="text-[11px] font-semibold tabular-nums text-expense-text">{fmt(scores.metrics.outflow, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[9px] text-ink-3">Invested</p>
-          <p className="text-[11px] font-bold tabular-nums text-invest-text">{fmt(scores.metrics.investment, true)}</p>
+          <p className="text-[11px] font-semibold tabular-nums text-invest-text">{fmt(scores.metrics.investment, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[9px] text-ink-3">Annual net</p>
-          <p className={`text-[11px] font-bold tabular-nums ${scores.metrics.annualNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+          <p className={`text-[11px] font-semibold tabular-nums ${scores.metrics.annualNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
             {scores.metrics.annualNet >= 0 ? '+' : '-'}{fmt(Math.abs(scores.metrics.annualNet), true)}
           </p>
         </div>
@@ -163,7 +163,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
                 `${polarX(ring, i, n)},${polarY(ring, i, n)}`
               ).join(' ')}
               fill="none"
-              stroke="rgba(16,33,63,0.10)"
+              stroke="rgba(26,26,46,0.06)"
               strokeWidth="1"
             />
           ))}
@@ -176,7 +176,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
               y1={CY}
               x2={polarX(1, i, n)}
               y2={polarY(1, i, n)}
-              stroke="rgba(16,33,63,0.08)"
+              stroke="rgba(26,26,46,0.05)"
               strokeWidth="1"
             />
           ))}
@@ -219,7 +219,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="fill-ink-3"
-                style={{ fontSize: '9px', fontWeight: 600 }}
+                style={{ fontSize: '9px', fontWeight: 500 }}
               >
                 <tspan x={lx} dy="-0.4em">{axis.label}</tspan>
                 <tspan x={lx} dy="1.2em" style={{ fontSize: '8px', fontWeight: 700 }} className="fill-ink-2">{pct}%</tspan>
@@ -233,7 +233,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
         {AXES.map((axis, i) => {
           const pct = Math.round(scores.values[i] * 100)
           return (
-            <div key={axis.key} className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+            <div key={axis.key} className="rounded-card bg-kosha-surface-2 p-2.5">
               <p className="text-[9px] text-ink-3 truncate">{axis.label}</p>
               <div className="flex items-center gap-1.5 mt-1">
                 <div className="flex-1 h-1.5 rounded-pill bg-kosha-border overflow-hidden">
@@ -245,7 +245,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
                     transition={{ duration: 0.5, delay: i * 0.06 }}
                   />
                 </div>
-                <span className="text-[10px] font-bold tabular-nums text-ink shrink-0">{pct}</span>
+                <span className="text-[10px] font-semibold tabular-nums text-ink shrink-0">{pct}</span>
               </div>
             </div>
           )

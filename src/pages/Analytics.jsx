@@ -65,7 +65,7 @@ function ParetoTooltip({ active, payload }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
+    <div className="rounded-card bg-kosha-surface-2 p-3 shadow-card min-w-[186px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{row?.label || 'Category'}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -317,6 +317,12 @@ export default function Analytics() {
                 year={year}
               />
 
+              <CalendarHeatmap
+                dailyTotals={yearDailyTotals}
+                year={year}
+                loading={yearDailyLoading}
+              />
+
               {heavyReady && (
                 <FinancialHealthRadar
                   data={data}
@@ -367,12 +373,6 @@ export default function Analytics() {
 
               <InvestmentConsistencyCard monthlyData={data?.monthly} year={year} />
 
-              <CalendarHeatmap
-                dailyTotals={yearDailyTotals}
-                year={year}
-                loading={yearDailyLoading}
-              />
-
               <RunwayCoverageChart
                 flowData={flowTrendData}
                 annualSurplus={annualSurplus}
@@ -385,44 +385,55 @@ export default function Analytics() {
                       <p className="text-label font-semibold text-ink">Category Pareto frontier</p>
                       <p className="text-[11px] text-ink-3 mt-0.5">Bar + cumulative line to show which categories drive most annual spend.</p>
                     </div>
-                    <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-brand-accent text-brand-on tabular-nums">
+                    <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-ink/[0.06] text-ink tabular-nums">
                       Top {categoryPareto.topShare}% · {fmt(categoryPareto.topAmount, true)}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 mb-2.5">
-                    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                    <div className="rounded-card bg-kosha-surface-2 p-2.5">
                       <p className="text-[10px] text-ink-3">Categories for 80%</p>
-                      <p className="text-[12px] font-bold tabular-nums text-ink">{categoryPareto.categoriesFor80Pct}</p>
+                      <p className="text-[13px] font-semibold tabular-nums text-ink">{categoryPareto.categoriesFor80Pct}</p>
                     </div>
-                    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                    <div className="rounded-card bg-kosha-surface-2 p-2.5">
                       <p className="text-[10px] text-ink-3">Top category</p>
-                      <p className="text-[12px] font-bold tabular-nums text-brand" title={categoryPareto.topLabel}>{categoryPareto.topLabel}</p>
+                      <p className="text-[13px] font-semibold tabular-nums text-ink" title={categoryPareto.topLabel}>{categoryPareto.topLabel}</p>
                       <p className="text-[10px] tabular-nums text-ink-3 mt-0.5">{fmt(categoryPareto.topAmount, true)}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 mb-2 md:mb-0 md:hidden space-y-1.5">
-                    {categoryPareto.rows.map((row) => (
-                      <div key={`pareto-mobile-${row.id}`} className="rounded-card border border-kosha-border bg-kosha-surface-2 px-2.5 py-2">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <p className="text-[11px] font-semibold text-ink truncate">{row.label}</p>
-                          <p className="text-[10px] tabular-nums text-ink shrink-0">{fmt(row.amount, true)} · {row.cumulativePct}%</p>
+                  <div className="space-y-2 md:hidden">
+                    {categoryPareto.rows.map((row, idx) => (
+                      <div key={`pareto-mobile-${row.id}`} className="flex items-center gap-3">
+                        <span className="text-[10px] font-semibold text-ink-3 w-4 shrink-0 tabular-nums text-right">{idx + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <p className="text-[11px] font-semibold text-ink truncate">{row.label}</p>
+                            <p className="text-[11px] tabular-nums text-ink shrink-0">{fmt(row.amount, true)}</p>
+                          </div>
+                          <div className="h-1.5 rounded-pill overflow-hidden" style={{ background: 'rgba(26,26,46,0.06)' }}>
+                            <div
+                              className="h-full rounded-pill"
+                              style={{
+                                width: `${Math.max(6, row.sharePct || Math.round((row.amount / (categoryPareto.topAmount / (categoryPareto.topShare / 100))) * 100))}%`,
+                                background: C.brand,
+                                opacity: 1 - idx * 0.08,
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                          <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(6, Math.min(100, row.cumulativePct))}%` }} />
-                        </div>
+                        <span className="text-[10px] font-semibold tabular-nums text-ink-3 w-8 shrink-0 text-right">{row.cumulativePct}%</span>
                       </div>
                     ))}
                   </div>
 
-                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 hidden md:block">
+                  <div className="rounded-card bg-kosha-surface-2 p-3 hidden md:block">
                     <ResponsiveContainer width="100%" height={228}>
                       <ComposedChart data={categoryPareto.rows} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
                         <XAxis
                           dataKey="shortLabel"
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                          tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
                           axisLine={false}
                           tickLine={false}
                           interval={0}
@@ -430,7 +441,7 @@ export default function Analytics() {
                         <YAxis
                           yAxisId="amount"
                           tickFormatter={compactTick}
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                          tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
                           axisLine={false}
                           tickLine={false}
                           width={34}
@@ -440,7 +451,7 @@ export default function Analytics() {
                           orientation="right"
                           domain={[0, 100]}
                           tickFormatter={(value) => `${Math.round(value)}%`}
-                          tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+                          tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
                           axisLine={false}
                           tickLine={false}
                           width={34}

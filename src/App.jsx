@@ -402,21 +402,21 @@ function DesktopSidebar() {
         position: 'fixed',
         top: 0, left: 0, bottom: 0,
         width: 220,
-        background: 'rgba(255,255,255,0.94)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderRight: `1px solid ${C.brandBorder}`,
+        background: 'rgba(245,243,238,0.92)',
+        backdropFilter: 'saturate(180%) blur(20px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+        borderRight: '1px solid rgba(26,26,46,0.06)',
         zIndex: 30,
         padding: '0 12px',
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
       }}
     >
-      <div className="flex items-center gap-2.5 px-2 pb-6 pt-2">
+      <div className="flex items-center gap-2.5 px-2 pb-7 pt-2">
         <KoshaLogo size={32} />
         <div>
-          <p className="text-[15px] font-bold text-ink tracking-tight leading-none">Kosha</p>
-          <p className="text-[10px] text-ink-3 font-medium tracking-widest uppercase mt-0.5">Finance</p>
+          <p className="text-[17px] font-bold text-ink tracking-tight leading-none">Kosha</p>
+          <p className="text-[9px] text-ink-3 font-medium tracking-[0.15em] uppercase mt-1">Finance</p>
         </div>
       </div>
 
@@ -430,11 +430,11 @@ function DesktopSidebar() {
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-100 w-full text-left"
-              style={{ background: isActive ? C.brandContainer : 'transparent' }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-150 w-full text-left"
+              style={{ background: isActive ? 'rgba(26,26,46,0.06)' : 'transparent' }}
             >
-              <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.brand : C.inkMuted} />
-              <span className="text-[14px]" style={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500 }}>
+              <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.ink : C.inkMuted} />
+              <span className="text-[13px]" style={{ color: isActive ? C.ink : C.inkMuted, fontWeight: isActive ? 600 : 400 }}>
                 {item.label}
               </span>
             </button>
@@ -442,11 +442,11 @@ function DesktopSidebar() {
         })}
       </nav>
 
-      <div className="px-2 pt-4" style={{ borderTop: `1px solid ${C.brandBorder}` }}>
+      <div className="px-2 pt-4" style={{ borderTop: '1px solid rgba(26,26,46,0.06)' }}>
         <div className="flex items-center gap-2.5">
           <ProfileMenu dropUp />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-ink truncate">{displayName}</p>
+            <p className="text-[13px] font-medium text-ink truncate">{displayName}</p>
           </div>
         </div>
       </div>
@@ -496,16 +496,16 @@ function BottomNav() {
                 ) : (
                   <div className="nav-icon-bg" />
                 ))}
-                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.15 }}>
-                  <item.Icon size={22} weight="fill" color={C.brand} />
+                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.18 }}>
+                  <item.Icon size={22} weight="fill" color={C.ink} />
                 </motion.span>
-                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 0 : 1 }} transition={{ duration: 0.15 }}>
+                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 0 : 1 }} transition={{ duration: 0.18 }}>
                   <item.Icon size={22} weight="regular" color={C.inkMuted} />
                 </motion.span>
               </div>
               <motion.span className="nav-label"
-                animate={{ color: isActive ? C.brand : C.inkMuted, fontWeight: isActive ? 700 : 500, opacity: isActive ? 1 : 0.86 }}
-                transition={{ duration: 0.15 }}>
+                animate={{ color: isActive ? C.ink : C.inkMuted, fontWeight: isActive ? 600 : 400, opacity: isActive ? 1 : 0.75 }}
+                transition={{ duration: 0.18 }}>
                 {item.label}
               </motion.span>
             </motion.button>

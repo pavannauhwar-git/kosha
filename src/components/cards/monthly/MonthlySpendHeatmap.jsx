@@ -109,7 +109,7 @@ export default memo(function MonthlySpendHeatmap({ txnRows, year, month }) {
       <div className="h-5 mb-1.5">
         {activeDay ? (
           <p className="text-[11px] text-ink-2 font-semibold">
-            {activeDay.label}: <span className="text-brand tabular-nums">{fmt(activeDay.value)}</span>
+            {activeDay.label}: <span className="text-ink tabular-nums">{fmt(activeDay.value)}</span>
           </p>
         ) : (
           <p className="text-[10px] text-ink-3">Hover a cell to see daily spend.</p>
@@ -171,12 +171,12 @@ export default memo(function MonthlySpendHeatmap({ txnRows, year, month }) {
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-[9px] text-ink-3">Avg/day</p>
-            <p className="text-[11px] font-bold tabular-nums text-ink">{fmt(Math.round(stats.avgSpend))}</p>
+            <p className="text-[11px] font-semibold tabular-nums text-ink">{fmt(Math.round(stats.avgSpend))}</p>
           </div>
           {stats.peakDay && (
             <div className="text-right">
               <p className="text-[9px] text-ink-3">Peak</p>
-              <p className="text-[11px] font-bold tabular-nums text-expense-text">
+              <p className="text-[11px] font-semibold tabular-nums text-expense-text">
                 {stats.peakDay.weekday} {stats.peakDay.day} · {fmt(stats.maxSpend)}
               </p>
             </div>

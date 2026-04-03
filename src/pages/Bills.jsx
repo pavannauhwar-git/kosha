@@ -267,11 +267,12 @@ export default function Bills() {
         </div>
         {totalBills > 0 && (
           <button
+            type="button"
             onClick={handleExportCsv}
-            title={`Export ${tab} bills CSV`}
-            className="close-btn border border-kosha-border shrink-0"
+            className="btn-secondary h-9 px-3 text-[11px]"
           >
-            <Download size={16} className="text-ink-2" />
+            <Download size={14} className="mr-1" />
+            Export CSV
           </button>
         )}
       </div>
@@ -300,11 +301,11 @@ export default function Bills() {
 
       {/* ── Summary card ─────────────────────────────────────────────── */}
       {tab === 'pending' && visiblePending.length > 0 && (
-        <div className="card mb-4 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
+        <div className="card mb-3.5 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
           <div className="flex items-start justify-between gap-3 pb-4 border-b border-kosha-border">
             <div>
               <p className="section-label mb-0.5">Total pending</p>
-              <p className="text-value font-bold text-ink tracking-tight tabular-nums leading-none">
+              <p className="text-value font-semibold text-ink tracking-tight tabular-nums leading-none">
                 {fmt(totalPending)}
               </p>
             </div>
@@ -316,12 +317,12 @@ export default function Bills() {
           <div className="grid grid-cols-2 gap-3 mt-4">
             <div className="bg-kosha-surface-2 rounded-card border border-kosha-border px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">Due in 7 days</p>
-              <p className="text-base font-bold text-warning-text tabular-nums leading-none">{fmt(dueSoonAmount)}</p>
+              <p className="text-base font-semibold text-warning-text tabular-nums leading-none">{fmt(dueSoonAmount)}</p>
               <p className="text-caption text-ink-3 mt-1">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
             </div>
             <div className="bg-kosha-surface-2 rounded-card border border-kosha-border px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">Due this month</p>
-              <p className="text-base font-bold text-ink tabular-nums leading-none">{fmt(dueThisMonth.amount)}</p>
+              <p className="text-base font-semibold text-ink tabular-nums leading-none">{fmt(dueThisMonth.amount)}</p>
               <p className="text-caption text-ink-3 mt-1">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>
             </div>
           </div>
@@ -347,17 +348,17 @@ export default function Bills() {
       )}
 
       {showGuideHint && (
-        <div className="card mb-6 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
+        <div className="card mb-3.5 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 flex items-center justify-center shrink-0 border border-kosha-border">
-              <BookOpen size={16} className="text-brand" />
+              <BookOpen size={16} className="text-accent" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-semibold text-ink">Bills setup tip</p>
               <p className="text-[12px] text-ink-3 mt-0.5 leading-relaxed">Mark recurring bills properly to keep due alerts and auto-generation accurate.</p>
               <button
                 onClick={() => navigate('/guide')}
-                className="text-[12px] font-semibold text-brand mt-2 inline-flex items-center gap-1"
+                className="text-[12px] font-semibold text-accent mt-2 inline-flex items-center gap-1"
               >
                 Open guide <ArrowRight size={12} />
               </button>
@@ -445,7 +446,7 @@ export default function Bills() {
                           {bill.description}
                         </p>
                       </div>
-                      <p className="text-[17px] sm:text-lg font-bold amt-expense mb-2">{fmt(+bill.amount)}</p>
+                      <p className="text-[17px] sm:text-lg font-semibold amt-expense mb-2">{fmt(+bill.amount)}</p>
                       <div className="flex items-center gap-2 flex-wrap">
                         {tab === 'pending' ? (
                           <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
@@ -516,7 +517,7 @@ export default function Bills() {
               <div className="sheet-handle" />
               <div className="px-5 overflow-x-hidden">
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="font-display text-display text-ink">Add Bill</h2>
+                  <h2 className="text-display font-bold text-ink">Add Bill</h2>
                   <button onClick={() => setShowAdd(false)} className="close-btn">
                     <X size={16} className="text-ink-3" />
                   </button>
@@ -534,8 +535,8 @@ export default function Bills() {
                                 focus-within:border-warning-border
                                 focus-within:ring-2 focus-within:ring-warning/25
                                 transition-all duration-100">
-                  <span className="font-display text-xl text-warning-text">₹</span>
-                  <input className="flex-1 bg-transparent font-display text-2xl text-ink outline-none min-w-0"
+                  <span className="text-xl font-bold text-warning-text">₹</span>
+                  <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" placeholder="0"
                     value={form.amount}
                     onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />

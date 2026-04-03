@@ -198,10 +198,10 @@ export default function Settings() {
       <PageBackHeader title="Account Settings" onBack={() => navigate(-1)} />
 
       <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
-        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3.5 md:space-y-4">
 
           {/* ── Avatar ───────────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="card p-5 flex flex-col items-center gap-3">
+          <motion.div variants={fadeUp} className="card p-4 flex flex-col items-center gap-3">
             <div className="relative">
               <div className="w-24 h-24 rounded-full bg-brand-container
                               flex items-center justify-center overflow-hidden
@@ -213,7 +213,7 @@ export default function Settings() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-[36px] font-bold text-brand">{initial}</span>
+                  <span className="text-[36px] font-bold text-ink">{initial}</span>
                 )}
               </div>
               {/* Camera badge */}
@@ -240,19 +240,19 @@ export default function Settings() {
 
           {/* ── Profile section ─────────────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
               Profile
             </p>
             <div className="card overflow-hidden p-0">
               <SettingRow
-                icon={<Pencil size={16} className="text-brand" />}
+                icon={<Pencil size={16} className="text-accent" />}
                 label="Display Name"
                 sublabel={displayName}
                 onClick={() => setShowEditName(true)}
               />
               <Divider />
               <SettingRow
-                icon={<Camera size={16} className="text-brand" />}
+                icon={<Camera size={16} className="text-accent" />}
                 label={uploading ? 'Updating photo…' : 'Change Photo'}
                 sublabel="JPG, PNG or WebP"
                 onClick={() => fileInputRef.current?.click()}
@@ -275,12 +275,12 @@ export default function Settings() {
 
           {/* ── Reminders section ───────────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
               Reminders
             </p>
             <div className="card overflow-hidden p-0">
               <SettingRow
-                icon={<BellRing size={16} className="text-brand" />}
+                icon={<BellRing size={16} className="text-accent" />}
                 label="Enable reminders"
                 sublabel="Turn reminder notifications on or off"
                 onClick={() => toggleReminderField('enabled')}
@@ -288,7 +288,7 @@ export default function Settings() {
               />
               <Divider />
               <SettingRow
-                icon={<BellRing size={16} className="text-brand" />}
+                icon={<BellRing size={16} className="text-accent" />}
                 label="Bills due alerts"
                 sublabel="Daily reminder when bills are near due"
                 onClick={() => toggleReminderField('bill_due')}
@@ -297,7 +297,7 @@ export default function Settings() {
               />
               <Divider />
               <SettingRow
-                icon={<ShieldAlert size={16} className="text-brand" />}
+                icon={<ShieldAlert size={16} className="text-accent" />}
                 label="Spending pace alerts"
                 sublabel="Warn when spending runs above month pace"
                 onClick={() => toggleReminderField('spending_pace')}
@@ -306,7 +306,7 @@ export default function Settings() {
               />
               <Divider />
               <SettingRow
-                icon={<BellRing size={16} className="text-brand" />}
+                icon={<BellRing size={16} className="text-accent" />}
                 label="Notification permission"
                 sublabel={`Current: ${notificationPermission}`}
                 onClick={enableNotifications}
@@ -320,12 +320,12 @@ export default function Settings() {
 
           {/* ── Shared wallet section ───────────────────────────────── */}
           <motion.div variants={fadeUp}>
-            <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
               Shared Wallet
             </p>
             <div className="card overflow-hidden p-0">
               <SettingRow
-                icon={<Users size={16} className="text-brand" />}
+                icon={<Users size={16} className="text-accent" />}
                 label={creatingInvite ? 'Creating invite…' : inviteCapReached ? 'Invite limit reached' : 'Create invite link'}
                 sublabel={inviteCapReached ? `Only ${MAX_ACTIVE_INVITES} active links allowed. Reuse an existing link.` : 'Creates a join link only. It does not merge historical data automatically.'}
                 onClick={() => { void handleCreateInvite() }}
@@ -353,7 +353,7 @@ export default function Settings() {
                         <p className="text-[11px] text-ink-2 mt-1 truncate">{buildJoinInviteUrl(invite.token)}</p>
                         <button
                           type="button"
-                          className="text-[11px] mt-1.5 text-brand font-semibold inline-flex items-center gap-1"
+                          className="text-[11px] mt-1.5 text-accent font-semibold inline-flex items-center gap-1"
                           onClick={() => { void copyInviteLink(invite.token) }}
                         >
                           <Copy size={12} /> Copy link

@@ -59,7 +59,7 @@ const FEATURE_CARDS = [
     icon: LayoutGrid,
     route: '/',
     category: 'beginner',
-    accent: 'bg-brand-container text-brand',
+    accent: 'bg-brand-container text-ink',
     summary: 'One-screen view of balance, pace, dues, and recent movement.',
     whenToUse: 'Use this every morning and evening for quick financial orientation.',
     workflow: [
@@ -155,7 +155,7 @@ const FEATURE_CARDS = [
     icon: Link2,
     route: '/reconciliation',
     category: 'weekly',
-    accent: 'bg-brand-bg text-brand',
+    accent: 'bg-brand-bg text-ink',
     summary: 'Catch missing fields, duplicates, and bad statement matches quickly.',
     whenToUse: 'Use this weekly and before closing each month.',
     workflow: [
@@ -258,14 +258,14 @@ export default function Guide() {
               </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
-              <BookOpen size={18} className="text-brand" />
+              <BookOpen size={18} className="text-accent" />
             </div>
           </div>
 
           <div className="mt-4">
             <div className="flex items-center justify-between mb-1.5">
               <p className="text-[12px] font-semibold text-ink-2">Progress</p>
-              <p className="text-[11px] font-semibold text-brand">{viewedCount} / {FEATURE_CARDS.length} viewed · {progressPct}%</p>
+              <p className="text-[11px] font-semibold text-accent">{viewedCount} / {FEATURE_CARDS.length} viewed · {progressPct}%</p>
             </div>
             <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
               <motion.div
@@ -300,7 +300,7 @@ export default function Guide() {
           <div className="list-card">
             {START_HERE.map((step, i) => (
               <div key={step} className={`px-4 py-3.5 ${i === START_HERE.length - 1 ? '' : 'border-b border-kosha-border'}`}>
-                <p className="text-body text-ink"><span className="font-semibold text-brand">{i + 1}.</span> {step}</p>
+                <p className="text-body text-ink"><span className="font-semibold text-accent">{i + 1}.</span> {step}</p>
               </div>
             ))}
           </div>
@@ -360,7 +360,7 @@ export default function Guide() {
                     </span>
                   </div>
                   <p className="text-label text-ink-3 mt-2.5">{card.summary}</p>
-                  <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
+                  <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-accent">
                     Open details <ArrowRight size={13} />
                   </div>
                 </motion.button>
@@ -382,7 +382,7 @@ export default function Guide() {
           <p className="section-label mb-1.5">Trust and privacy</p>
           <div className="card p-4 space-y-2">
             <div className="flex items-start gap-2">
-              <ShieldCheck size={16} className="text-brand mt-0.5" />
+              <ShieldCheck size={16} className="text-ink mt-0.5" />
               <p className="text-label text-ink-2">Your app data stays within your Supabase project under row-level security policies.</p>
             </div>
             <p className="text-label text-ink-3">Use monthly CSV export as a simple external backup ritual.</p>
@@ -392,10 +392,10 @@ export default function Guide() {
 
         <motion.div variants={fadeUp} className="card p-4 bg-brand-container border border-brand-border">
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles size={15} className="text-brand" />
-            <p className="text-body font-semibold text-brand-on">Today tip</p>
+            <Sparkles size={15} className="text-accent" />
+            <p className="text-body font-semibold text-ink">Today tip</p>
           </div>
-          <p className="text-label text-brand-on/90">{todayTip}</p>
+          <p className="text-label text-ink-2">{todayTip}</p>
         </motion.div>
 
         <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-2">
@@ -478,7 +478,7 @@ export default function Guide() {
                   </div>
                 </div>
 
-                <div className="rounded-card bg-kosha-surface-2 p-3 mb-3">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5 mb-2.5">
                   <p className="text-[12px] text-ink-2">{selectedFeature.summary}</p>
                   <p className="text-[11px] text-ink-3 mt-1">{selectedFeature.whenToUse}</p>
                 </div>
@@ -488,7 +488,7 @@ export default function Guide() {
                   <div className="space-y-1.5">
                     {selectedFeature.workflow.map((step, idx) => (
                       <p key={step} className="text-[12px] text-ink-3">
-                        <span className="font-semibold text-brand">{idx + 1}.</span> {step}
+                        <span className="font-semibold text-accent">{idx + 1}.</span> {step}
                       </p>
                     ))}
                   </div>

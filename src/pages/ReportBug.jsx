@@ -251,7 +251,7 @@ export default function ReportBug() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="card p-5"
+              className="card p-4"
             >
               <div className="w-11 h-11 rounded-xl bg-income-bg text-income-text border border-income-border flex items-center justify-center mb-4">
                 <Check size={18} />
@@ -298,7 +298,7 @@ export default function ReportBug() {
             </motion.div>
           ) : (
             <>
-              <div className="card p-5">
+              <div className="card p-4">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-expense-bg flex items-center justify-center shrink-0">
                     <Bug size={18} className="text-expense-text" />
@@ -362,7 +362,7 @@ export default function ReportBug() {
                     {parsedTags.map(tag => (
                       <span
                         key={tag}
-                        className="text-[11px] font-semibold text-brand-on bg-brand-container px-2 py-0.5 rounded-pill"
+                        className="text-[11px] font-semibold text-ink bg-ink/[0.06] px-2 py-0.5 rounded-pill"
                       >
                         {tag}
                       </span>
@@ -413,7 +413,7 @@ export default function ReportBug() {
                         onClick={() => setSeverity(s.id)}
                         className={`px-3 py-1.5 rounded-pill text-label font-semibold border transition-colors
                           ${severity === s.id
-                            ? 'bg-brand-container text-brand-on border-brand-container'
+                            ? 'bg-ink text-white border-ink'
                             : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
                       >
                         {s.label}
@@ -430,7 +430,7 @@ export default function ReportBug() {
                   <span className="text-[14px] font-medium text-ink">Include diagnostics</span>
                   <span className={`text-caption font-semibold px-2 py-0.5 rounded-pill
                     ${includeDiagnostics
-                      ? 'bg-brand-container text-brand-on'
+                      ? 'bg-ink/[0.06] text-ink'
                       : 'bg-kosha-surface-2 text-ink-3'}`}>
                     {includeDiagnostics ? 'On' : 'Off'}
                   </span>

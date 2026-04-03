@@ -170,7 +170,7 @@ export default memo(function DashboardNudges({
                 : 'border-kosha-border bg-kosha-surface-2'
             }`}
           >
-            <span className="w-4 text-right text-[11px] font-bold text-brand shrink-0 mt-0.5">
+            <span className="w-4 text-right text-[11px] font-semibold text-accent shrink-0 mt-0.5">
               {index + 1}
             </span>
             <p className="text-[11px] text-ink-2 leading-relaxed">{nudge.text}</p>

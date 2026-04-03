@@ -206,7 +206,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
                 </span>
               )}
               {txn.is_recurring && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand-on font-medium capitalize">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-ink/[0.06] text-ink font-medium capitalize">
                   {txn.recurrence || 'Recurring'}
                 </span>
               )}

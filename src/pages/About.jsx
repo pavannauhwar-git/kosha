@@ -21,7 +21,7 @@ const LINKEDIN = 'https://www.linkedin.com/in/pavannauhwar/'
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-[11px] font-bold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+    <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
       {children}
     </p>
   )
@@ -81,10 +81,10 @@ export default function About() {
       <PageBackHeader title="About" onBack={() => navigate(-1)} />
 
       <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
-        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3.5 md:space-y-4">
 
           {/* ── Identity card ───────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="card p-5">
+          <motion.div variants={fadeUp} className="card p-4">
             <div className="flex items-center gap-4 pb-4 border-b border-kosha-border">
               <KoshaLogo size={52} />
               <div className="flex-1 min-w-0">
@@ -93,7 +93,7 @@ export default function About() {
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-[10px] text-ink-4 uppercase tracking-wide">Version</p>
-                <p className="text-[15px] font-bold text-brand">v{latestVersion}</p>
+                <p className="text-[15px] font-semibold text-accent">v{latestVersion}</p>
               </div>
             </div>
 
@@ -103,11 +103,11 @@ export default function About() {
 
             <div className="flex gap-3 mt-4">
               <div className="flex-1 bg-kosha-surface-2 rounded-card px-3 py-2.5 text-center">
-                <p className="text-[18px] font-bold text-ink leading-none">{releaseCount}</p>
+                <p className="text-[18px] font-semibold text-ink leading-none">{releaseCount}</p>
                 <p className="text-[10px] text-ink-3 mt-1">Releases</p>
               </div>
               <div className="flex-1 bg-kosha-surface-2 rounded-card px-3 py-2.5 text-center">
-                <p className="text-[18px] font-bold text-ink leading-none">{shippedItems}+</p>
+                <p className="text-[18px] font-semibold text-ink leading-none">{shippedItems}+</p>
                 <p className="text-[10px] text-ink-3 mt-1">Improvements</p>
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function About() {
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {['Fast capture', 'Clear insights', 'Privacy first'].map((pill) => (
-                  <span key={pill} className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand-on">
+                  <span key={pill} className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-ink/[0.06] text-ink">
                     {pill}
                   </span>
                 ))}
@@ -191,7 +191,7 @@ export default function About() {
                       </div>
                       {ri === 0 && (
                         <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
-                               bg-brand-container text-brand-on">
+                               bg-ink/[0.06] text-ink">
                           Latest
                         </span>
                       )}
@@ -214,7 +214,7 @@ export default function About() {
                   <Divider />
                   <button
                     onClick={() => setShowAllVersions(v => !v)}
-                    className="w-full px-4 py-3 text-[13px] font-semibold text-brand
+                    className="w-full px-4 py-3 text-[13px] font-semibold text-accent
                                text-center active:bg-kosha-surface-2 transition-colors
                                flex items-center justify-center gap-1.5"
                   >
@@ -236,7 +236,7 @@ export default function About() {
                 <div className="flex flex-wrap gap-2">
                   {['React 18', 'Supabase', 'Tailwind CSS', 'Vite', 'Framer Motion', 'Phosphor Icons'].map(tech => (
                     <span key={tech}
-                      className="text-[12px] font-medium text-brand bg-brand-container
+                      className="text-[12px] font-medium text-accent bg-brand-container
                                  px-2.5 py-1 rounded-full">
                       {tech}
                     </span>

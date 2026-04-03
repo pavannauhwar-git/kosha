@@ -58,11 +58,11 @@ function ReconciliationFunnelTooltip({ active, payload }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+    <div className="rounded-card bg-kosha-surface-2 p-3 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{row?.name || 'Stage'}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Transactions</span>
-        <span className="font-semibold text-brand tabular-nums">{row?.value || 0}</span>
+        <span className="font-semibold text-ink tabular-nums">{row?.value || 0}</span>
       </div>
     </div>
   )
@@ -73,11 +73,11 @@ function TurnaroundTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
+    <div className="rounded-card bg-kosha-surface-2 p-3 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Resolved items</span>
-        <span className="font-semibold tabular-nums text-brand">{row?.count || 0}</span>
+        <span className="font-semibold tabular-nums text-ink">{row?.count || 0}</span>
       </div>
     </div>
   )
@@ -256,7 +256,7 @@ export default function Reconciliation() {
     return [
       { name: 'Candidates', value: candidates, fill: '#2A84EE' },
       { name: 'Reviewed', value: reviewedOrLinked, fill: '#22C58B' },
-      { name: 'Linked', value: linked, fill: '#0A67D8' },
+      { name: 'Linked', value: linked, fill: '#1A1A2E' },
     ]
   }, [insights.candidates.length, reviewProgress.resolved, reviewCounts.linked])
 
@@ -466,7 +466,7 @@ export default function Reconciliation() {
     <div className="page">
       <PageHeader title="Reconciliation" className="mb-3" />
 
-      <div className="card p-4 mb-6">
+      <div className="card p-4 mb-3.5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-ink">What reconciliation does</p>
@@ -478,13 +478,13 @@ export default function Reconciliation() {
               Scope: quality checks and match confirmation only. It does not auto-import bank statements.
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-brand-container text-brand flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-ink/[0.06] text-ink flex items-center justify-center shrink-0">
             <ShieldCheck size={18} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
-          <Metric label="In queue" value={insights.counts.queue} tone="text-brand" />
+          <Metric label="In queue" value={insights.counts.queue} tone="text-ink" />
           <Metric label="Linked" value={reviewCounts.linked} tone="text-income-text" />
           <Metric label="Missing category" value={insights.counts.missingCategory} tone="text-warning-text" />
           <Metric label="Duplicates" value={insights.counts.potentialDuplicate} tone="text-expense-text" />
@@ -517,7 +517,7 @@ export default function Reconciliation() {
               <p className="text-[11px] text-ink-3 tabular-nums">{linkedConversion}% linked</p>
             </div>
 
-            <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+            <div className="rounded-card bg-kosha-surface-2 p-2.5">
               <ResponsiveContainer width="100%" height={168}>
                 <FunnelChart>
                   <RechartsTooltip content={<ReconciliationFunnelTooltip />} />
@@ -542,19 +542,19 @@ export default function Reconciliation() {
               <p className="text-[11px] text-ink-3 tabular-nums">Median {turnaroundDistribution.medianDays}d</p>
             </div>
 
-            <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+            <div className="rounded-card bg-kosha-surface-2 p-2.5">
               <ResponsiveContainer width="100%" height={172}>
                 <BarChart data={turnaroundDistribution.buckets} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+                    tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis hide allowDecimals={false} />
                   <RechartsTooltip content={<TurnaroundTooltip />} />
-                  <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#0A67D8" maxBarSize={40} />
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#1A1A2E" maxBarSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -582,7 +582,7 @@ export default function Reconciliation() {
                 className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
               >
                 {chip.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
                   {count}
                 </span>
               </motion.button>
@@ -605,7 +605,7 @@ export default function Reconciliation() {
                 className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
               >
                 {chip.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
                   {count}
                 </span>
               </motion.button>
@@ -614,7 +614,7 @@ export default function Reconciliation() {
         </FilterRow>
       </div>
 
-      <div className="card p-4 mb-6">
+      <div className="card p-4 mb-3.5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <p className="text-sm font-semibold text-ink">Match bank statements</p>
@@ -635,7 +635,7 @@ export default function Reconciliation() {
               <RotateCcw size={13} />
               {resettingAliases ? 'Resetting' : 'Reset aliases'}
             </button>
-            <div className="w-9 h-9 rounded-full bg-brand-container text-brand flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-ink/[0.06] text-ink flex items-center justify-center">
               <Link2 size={16} />
             </div>
           </div>
@@ -654,12 +654,12 @@ export default function Reconciliation() {
             <AlertCircle
               size={14}
               className={`shrink-0 mt-0.5 ${
-                driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-brand'
+                driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-ink'
               }`}
             />
             <div>
               <p className={`text-[12px] font-semibold ${
-                driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-brand'
+                driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-ink'
               }`}>
                 {driftMessage.title}
               </p>
@@ -682,7 +682,7 @@ export default function Reconciliation() {
         {!!statementSummary.total && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 mb-3">
             <Metric label="Lines" value={statementSummary.total} />
-            <Metric label="Parseable" value={statementSummary.valid} tone="text-brand" />
+            <Metric label="Parseable" value={statementSummary.valid} tone="text-ink" />
             <Metric label="Matched" value={statementSummary.matched} tone="text-income-text" />
             <Metric label="High confidence" value={statementSummary.highConfidence} tone="text-income-text" />
           </div>
@@ -690,7 +690,7 @@ export default function Reconciliation() {
 
         {!!statementSummary.total && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1 mb-3">
-            <Metric label="Linked suggestions" value={statementSummary.linkedSuggestions} tone="text-brand" />
+            <Metric label="Linked suggestions" value={statementSummary.linkedSuggestions} tone="text-ink" />
             <Metric label="Conversion" value={`${statementSummary.conversion}%`} tone="text-income-text" />
             <Metric label="Learned aliases" value={learnedAliasCount} tone="text-ink" />
           </div>
@@ -728,7 +728,7 @@ export default function Reconciliation() {
                   </p>
                   <button
                     type="button"
-                    className="text-[11px] font-semibold text-brand mt-1 inline-flex items-center gap-1"
+                    className="text-[11px] font-semibold text-accent mt-1 inline-flex items-center gap-1"
                     onClick={() => navigate(`/transactions?focus=${row.transactionId}`)}
                   >
                     Open <ArrowRight size={11} />
@@ -753,7 +753,7 @@ export default function Reconciliation() {
                         <p className="text-[11px] text-ink-2 truncate">{alias.merchant}</p>
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                           alias.qualityScore >= 90 ? 'bg-income-bg text-income-text'
-                          : alias.qualityScore >= 70 ? 'bg-brand-bg text-brand'
+                          : alias.qualityScore >= 70 ? 'bg-ink/[0.06] text-ink'
                           : 'bg-warning-bg text-warning-text'
                         }`}>
                           {alias.qualityScore}%
@@ -805,7 +805,7 @@ export default function Reconciliation() {
         />
       ) : !hasTransactions ? (
         <EmptyState
-          icon={<History size={24} className="text-brand" />}
+          icon={<History size={24} className="text-accent" />}
           title="Nothing to reconcile yet"
           description="Add transactions first. Reconciliation checks will automatically surface quality and matching signals here."
           actionLabel="Go to transactions"
@@ -923,7 +923,7 @@ export default function Reconciliation() {
 
 function Metric({ label, value, tone = 'text-ink' }) {
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+    <div className="rounded-card bg-kosha-surface-2 p-2.5">
       <p className="text-caption text-ink-3">{label}</p>
       <p className={`text-lg font-bold tabular-nums ${tone}`}>{value}</p>
     </div>

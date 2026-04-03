@@ -121,7 +121,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-kosha-border">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center">
-                      <Wallet size={16} className="text-brand" weight="duotone" />
+                      <Wallet size={16} className="text-accent" weight="duotone" />
                     </div>
                     <div>
                       <Dialog.Title className="text-[15px] font-bold text-ink">
@@ -170,13 +170,13 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                                 <circle
                                   cx="18" cy="18" r="15"
                                   fill="none"
-                                  stroke="rgba(16,33,63,0.08)"
+                                  stroke="rgba(26,26,46,0.05)"
                                   strokeWidth="3"
                                 />
                                 <circle
                                   cx="18" cy="18" r="15"
                                   fill="none"
-                                  stroke={pct >= 100 ? '#E11D48' : pct >= 80 ? '#9A7200' : '#0A67D8'}
+                                  stroke={pct >= 100 ? '#C4384A' : pct >= 80 ? '#8B7230' : '#1A1A2E'}
                                   strokeWidth="3"
                                   strokeLinecap="round"
                                   strokeDasharray={`${Math.min(100, pct) * 0.9425} 94.25`}

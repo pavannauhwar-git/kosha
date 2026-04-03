@@ -27,7 +27,7 @@ const PortfolioAllocation = memo(function PortfolioAllocation({ vehicleData }) {
   let offset = 0
 
   return (
-    <div className="card p-5">
+    <div className="card p-4">
       <p className="section-label mb-3">Portfolio Allocation</p>
       <div className="flex gap-4 items-center">
         <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
@@ -66,7 +66,7 @@ const PortfolioAllocation = memo(function PortfolioAllocation({ vehicleData }) {
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 rounded-full shrink-0" style={{ background: seg.color }} />
                 <span className="text-caption text-ink-3 flex-1 truncate">{seg.name}</span>
-                <span className="text-caption font-bold tabular-nums text-ink">{seg.pct}%</span>
+                <span className="text-caption font-semibold tabular-nums text-ink">{seg.pct}%</span>
               </div>
               <p className="text-caption text-ink-3 tabular-nums pl-4">{fmt(seg.value)}</p>
             </div>
@@ -77,7 +77,7 @@ const PortfolioAllocation = memo(function PortfolioAllocation({ vehicleData }) {
       <div className="mt-4 pt-3 border-t border-kosha-border">
         <div className="flex items-center justify-between gap-2">
           <span className="text-caption text-ink-3">Total investment</span>
-          <span className="text-caption font-bold text-invest-text tabular-nums">{fmt(total)}</span>
+          <span className="text-caption font-semibold text-invest-text tabular-nums">{fmt(total)}</span>
         </div>
       </div>
     </div>

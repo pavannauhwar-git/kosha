@@ -46,9 +46,10 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
       {/* ── Avatar button ────────────────────────────────────────── */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-9 h-9 rounded-full bg-brand-container border border-brand-border/70
+        className="w-9 h-9 rounded-full bg-kosha-surface-2
                    shadow-card flex items-center justify-center overflow-hidden
-                   active:scale-95 transition-transform duration-75"
+                   active:scale-95 transition-transform duration-100"
+        style={{ border: '1px solid rgba(26,26,46,0.08)' }}
       >
         {avatarUrl ? (
           <img
@@ -57,7 +58,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
             className="w-full h-full object-cover"
           />
         ) : (
-          <span className="text-label font-bold text-brand-on">{initial}</span>
+          <span className="text-label font-semibold text-ink">{initial}</span>
         )}
       </button>
 
@@ -76,12 +77,13 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
             >
               {/* ── Identity header ───────────────────────────────── */}
               <div className="flex items-center gap-2.5 px-3 py-2.5 mb-1">
-                <div className="w-9 h-9 rounded-full bg-brand-container
-                                flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-9 h-9 rounded-full bg-kosha-surface-2
+                                flex items-center justify-center overflow-hidden shrink-0"
+                  style={{ border: '1px solid rgba(26,26,46,0.08)' }}>
                   {avatarUrl ? (
                     <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-label font-bold text-brand-on">{initial}</span>
+                    <span className="text-label font-semibold text-ink">{initial}</span>
                   )}
                 </div>
                 <div className="min-w-0">

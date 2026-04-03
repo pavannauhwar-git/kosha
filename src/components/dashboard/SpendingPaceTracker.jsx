@@ -17,7 +17,7 @@ function PaceTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[172px]">
+    <div className="rounded-card bg-kosha-surface p-3 shadow-card min-w-[172px]" style={{ border: '1px solid rgba(26,26,46,0.06)' }}>
       <p className="text-[11px] font-semibold text-ink mb-1">Day {label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -115,41 +115,41 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, earn
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Spent so far</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(spent || 0)}</p>
+          <p className="text-[10px] tracking-wide text-ink-3">Spent so far</p>
+          <p className="text-[13px] font-semibold tabular-nums text-expense-text mt-0.5">{fmt(spent || 0)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Projected end</p>
-          <p className={`text-[12px] font-bold tabular-nums ${paceData.projectedOvershoot <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+          <p className="text-[10px] tracking-wide text-ink-3">Projected end</p>
+          <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${paceData.projectedOvershoot <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
             {fmt(paceData.projectedTotal)}
           </p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Days left</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">{paceData.daysLeft}</p>
+          <p className="text-[10px] tracking-wide text-ink-3">Days left</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink mt-0.5">{paceData.daysLeft}</p>
         </div>
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+      <div className="rounded-card bg-kosha-surface-2 p-3" style={{ border: '1px solid rgba(26,26,46,0.04)' }}>
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={paceData.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="spendAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#E11D48" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#E11D48" stopOpacity={0.02} />
+                <stop offset="5%" stopColor="#C4384A" stopOpacity={0.18} />
+                <stop offset="95%" stopColor="#C4384A" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
             <XAxis
               dataKey="day"
-              tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
               tickFormatter={compactTick}
-              tick={{ fontSize: 10, fill: 'rgba(94,109,143,0.95)' }}
+              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
               axisLine={false}
               tickLine={false}
               width={34}
@@ -158,16 +158,16 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, earn
             <Area
               type="monotone"
               dataKey="actual"
-              stroke="#E11D48"
+              stroke="#C4384A"
               fill="url(#spendAreaGrad)"
               strokeWidth={2.2}
               dot={false}
-              activeDot={{ r: 4, fill: '#E11D48', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: '#C4384A', stroke: '#fff', strokeWidth: 2 }}
             />
             <Line
               type="monotone"
               dataKey="pace"
-              stroke="rgba(16,33,63,0.35)"
+              stroke="rgba(26,26,46,0.35)"
               strokeWidth={1.8}
               strokeDasharray="5 4"
               dot={false}

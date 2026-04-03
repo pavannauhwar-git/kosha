@@ -301,7 +301,7 @@ export default function Login() {
                         setError(null)
                         setNotice(null)
                       }}
-                      className="text-label font-semibold text-brand"
+                      className="text-label font-semibold text-accent"
                     >
                       Forgot password?
                     </button>
@@ -329,7 +329,7 @@ export default function Login() {
                       exit={{ opacity: 0 }}
                       className="flex items-start gap-2 bg-brand-container rounded-card px-3 py-2.5"
                     >
-                      <p className="text-caption text-brand font-medium">
+                      <p className="text-caption text-ink font-medium">
                         Redirecting to sign in in {resetCountdown}s...
                       </p>
                     </motion.div>
@@ -391,7 +391,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="text-brand font-semibold"
+                    className="text-accent font-semibold"
                   >
                     Sign in
                   </button>
@@ -405,7 +405,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="text-brand font-semibold"
+                    className="text-accent font-semibold"
                   >
                     Back to sign in
                   </button>
@@ -419,7 +419,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="text-brand font-semibold"
+                    className="text-accent font-semibold"
                   >
                     {mode === 'signin' ? 'Sign up' : 'Sign in'}
                   </button>

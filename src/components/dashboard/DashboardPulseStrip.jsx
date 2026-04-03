@@ -22,15 +22,15 @@ const DashboardPulseStrip = memo(function DashboardPulseStrip({
     <div className="overflow-x-auto -mx-4 px-4">
       <div className="flex gap-2 w-max pr-4">
         {/* Today */}
-        <div className="shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-2xl
-                        bg-kosha-surface border border-kosha-border">
+        <div className="shrink-0 flex flex-col gap-1 px-3.5 py-3 rounded-2xl
+                        bg-kosha-surface-2">
           <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">
             Today
           </p>
-          <p className={`text-[13px] font-bold tabular-nums leading-none ${
+          <p className={`text-[13px] font-semibold tabular-nums leading-none ${
             todaySpend > 0 ? 'text-expense-text' : 'text-income-text'
           }`}>
-            {todaySpend > 0 ? fmt(todaySpend, true) : 'All clear 🌿'}
+            {todaySpend > 0 ? fmt(todaySpend, true) : 'All clear'}
           </p>
         </div>
 
@@ -45,15 +45,15 @@ const DashboardPulseStrip = memo(function DashboardPulseStrip({
             <p className="text-[10px] font-semibold text-repay-text uppercase tracking-wider">
               Bills due
             </p>
-            <p className="text-[13px] font-bold text-repay-text tabular-nums leading-none">
+            <p className="text-[13px] font-semibold text-repay-text tabular-nums leading-none">
               {fmt(totalBillsAmt, true)}
             </p>
           </button>
         )}
 
         {/* Contextual insight */}
-        <div className="shrink-0 w-[175px] flex flex-col gap-1 px-3 py-2.5 rounded-2xl
-                        bg-kosha-surface-2 border border-kosha-border">
+        <div className="shrink-0 w-[175px] flex flex-col gap-1 px-3.5 py-3 rounded-2xl
+                        bg-kosha-surface-2">
           <p className="text-[10px] font-semibold text-ink-4 uppercase tracking-wider">
             Insight
           </p>

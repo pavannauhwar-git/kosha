@@ -62,7 +62,7 @@ function scoreTone(score) {
   if (score == null) {
     return {
       label: 'Insufficient data',
-      color: 'rgba(49,58,134,0.72)',
+      color: 'rgba(26,26,46,0.72)',
       fill: 'rgba(157,170,198,0.5)',
     }
   }
@@ -114,7 +114,7 @@ const PulseTooltip = ({ active, payload, label }) => {
       border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
       <p style={{
-        fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+        fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.5)',
         letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
       }}>
         {label}
@@ -160,7 +160,7 @@ const NetTooltip = ({ active, payload, label }) => {
       border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
       <p style={{
-        fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+        fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.5)',
         letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
       }}>
         {label}
@@ -217,12 +217,12 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
           <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
             Cash Flow Pulse
           </p>
-          <p style={{ fontSize: 11, color: 'rgba(49,58,134,0.55)', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: 'rgba(26,26,46,0.55)', marginTop: 2 }}>
             Monthly surplus/deficit rhythm
           </p>
         </div>
         <div className="text-right">
-          <p className="font-bold tabular-nums"
+          <p className="font-semibold tabular-nums"
             style={{
               fontSize: 15,
               color: totalNet >= 0 ? C.brand : C.bills,
@@ -230,30 +230,30 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             }}>
             {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
           </p>
-          <p style={{ fontSize: 10, color: 'rgba(49,58,134,0.55)', marginTop: 1 }}>net pulse</p>
+          <p style={{ fontSize: 10, color: 'rgba(26,26,46,0.55)', marginTop: 1 }}>net pulse</p>
         </div>
       </div>
 
       <div className="mb-3 grid grid-cols-2 md:grid-cols-5 gap-2">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Income</p>
-          <p className="text-[12px] font-bold tabular-nums text-income-text">{fmt(totalIncome || totalIncomeSafe, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-income-text">{fmt(totalIncome || totalIncomeSafe, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Outflow</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(totalOutflow, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-expense-text">{fmt(totalOutflow, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Investment</p>
-          <p className="text-[12px] font-bold tabular-nums text-invest-text">{fmt(totalInvested, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(totalInvested, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Positive months</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">{positivePulseMonths}/{safeData.length}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{positivePulseMonths}/{safeData.length}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Spend velocity</p>
-          <p className={`text-[12px] font-bold tabular-nums ${spendVelocity <= 85 ? 'text-income-text' : 'text-warning-text'}`}>
+          <p className={`text-[13px] font-semibold tabular-nums ${spendVelocity <= 85 ? 'text-income-text' : 'text-warning-text'}`}>
             {spendVelocity}%
           </p>
         </div>
@@ -262,7 +262,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
       <ResponsiveContainer width="100%" height={chartH}>
         <BarChart data={safeData} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'rgba(26,26,46,0.58)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide domain={[-pulseAxisMax, pulseAxisMax]} />
@@ -282,7 +282,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 
       <div className="flex flex-wrap justify-between gap-2 pb-1 pt-2">
         <div className="text-[11px] text-ink-3">
-          Best pulse: <span className="font-semibold text-brand">{strongestMonth?.name || '—'}</span>
+          Best pulse: <span className="font-semibold text-accent">{strongestMonth?.name || '—'}</span>
         </div>
         <div className="text-[11px] text-ink-3">
           Stress month: <span className="font-semibold text-warning-text">{weakestMonth?.name || '—'}</span>
@@ -293,7 +293,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
         {[['Surplus pulse', C.brandMid], ['Deficit pulse', C.accent]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: c }} />
-            <span style={{ fontSize: 11, color: 'rgba(49,58,134,0.60)', fontWeight: 500 }}>{l}</span>
+            <span style={{ fontSize: 11, color: 'rgba(26,26,46,0.60)', fontWeight: 500 }}>{l}</span>
           </div>
         ))}
       </div>
@@ -333,43 +333,43 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
             Leftover / Surplus
           </p>
-          <p style={{ fontSize: 11, color: 'rgba(49,58,134,0.55)', marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: 'rgba(26,26,46,0.55)', marginTop: 2 }}>
             Income minus expenses and investments
           </p>
         </div>
         <div className="text-right">
-          <p className="font-bold tabular-nums" style={{
+          <p className="font-semibold tabular-nums" style={{
             fontSize: 15,
             color: totalNet >= 0 ? C.brand : C.bills,
             letterSpacing: '-0.01em',
           }}>
             {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
           </p>
-          <p style={{ fontSize: 10, color: 'rgba(49,58,134,0.55)', marginTop: 1 }}>
+          <p style={{ fontSize: 10, color: 'rgba(26,26,46,0.55)', marginTop: 1 }}>
             {totalNet >= 0 ? 'year surplus' : 'year deficit'}
           </p>
         </div>
       </div>
 
       <div className="mb-3 grid grid-cols-3 gap-2">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Positive months</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">{positiveMonths}/{netData.length}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{positiveMonths}/{netData.length}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Highest surplus</p>
-          <p className="text-[12px] font-bold tabular-nums text-brand">{bestMonth?.name || '—'}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{bestMonth?.name || '—'}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Deepest deficit</p>
-          <p className="text-[12px] font-bold tabular-nums text-warning-text">{worstMonth?.name || '—'}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-warning-text">{worstMonth?.name || '—'}</p>
         </div>
       </div>
 
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={safeData} margin={{ top: 4, right: 12, left: 12, bottom: 0 }}>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(49,58,134,0.58)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'rgba(26,26,46,0.58)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide domain={[-safeAxisMax, safeAxisMax]} />
@@ -407,7 +407,7 @@ const FlowCompareTooltip = ({ active, payload, label }) => {
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
       minWidth: 170,
       border: '1px solid rgba(187,217,255,0.85)',
     }}>
@@ -463,27 +463,27 @@ export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({
           <p className="text-label font-semibold text-ink">Money Flow Comparison</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Month by month: income, expenses, and investments side by side.</p>
         </div>
-        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-brand-container text-brand-on">
+        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-ink/[0.06] text-ink">
           Invest rate {deploymentRate}%
         </span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Income</p>
-          <p className="text-[12px] font-bold tabular-nums text-brand">{fmt(totalIncome, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(totalIncome, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Expense</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(totalExpense, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-expense-text">{fmt(totalExpense, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Investment</p>
-          <p className="text-[12px] font-bold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Total outflow</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(totalOutflow, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(totalOutflow, true)}</p>
         </div>
       </div>
 
@@ -491,13 +491,13 @@ export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({
         <BarChart data={safeData} margin={{ top: 6, right: 12, left: 12, bottom: 0 }}>
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide />
-          <Tooltip content={<FlowCompareTooltip />} cursor={{ fill: 'rgba(10,103,216,0.06)' }} />
+          <Tooltip content={<FlowCompareTooltip />} cursor={{ fill: 'rgba(26,26,46,0.06)' }} />
           <Bar dataKey="Income" fill={C.brand} radius={[6, 6, 0, 0]} maxBarSize={18} />
           <Bar dataKey="Spent" fill={C.chartExpense} radius={[6, 6, 0, 0]} maxBarSize={18} />
           <Bar dataKey="Invested" fill={C.invest} radius={[6, 6, 0, 0]} maxBarSize={18} />
@@ -526,7 +526,7 @@ const WaterfallTooltip = ({ active, payload, label }) => {
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
       border: '1px solid rgba(187,217,255,0.85)',
       minWidth: 170,
     }}>
@@ -651,23 +651,23 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
           <p className="text-label font-semibold text-ink">Net movement waterfall</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Shows how income gets absorbed by expense and investments into final net.</p>
         </div>
-        <span className={`text-[12px] font-bold tabular-nums ${net >= 0 ? 'text-brand' : 'text-warning-text'}`}>
+        <span className={`text-[13px] font-semibold tabular-nums ${net >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
           {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
         </span>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Outflow burn</p>
-          <p className={`text-[12px] font-bold tabular-nums ${burnRate <= 85 ? 'text-income-text' : 'text-warning-text'}`}>{burnRate}%</p>
+          <p className={`text-[13px] font-semibold tabular-nums ${burnRate <= 85 ? 'text-income-text' : 'text-warning-text'}`}>{burnRate}%</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Invest share</p>
-          <p className="text-[12px] font-bold tabular-nums text-invest-text">{investShare}%</p>
+          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{investShare}%</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Net outcome</p>
-          <p className={`text-[12px] font-bold tabular-nums ${net >= 0 ? 'text-brand' : 'text-warning-text'}`}>
+          <p className={`text-[13px] font-semibold tabular-nums ${net >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
             {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
           </p>
         </div>
@@ -675,17 +675,17 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
 
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={waterfallRows} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide domain={[-chartLimit, chartLimit]} />
-          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(10,103,216,0.05)' }} />
-          <ReferenceLine y={0} stroke="rgba(16,33,63,0.24)" strokeWidth={1} />
+          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(26,26,46,0.05)' }} />
+          <ReferenceLine y={0} stroke="rgba(26,26,46,0.24)" strokeWidth={1} />
           <Bar dataKey="offset" stackId="waterfall" fill="transparent" isAnimationActive={false} />
           <Bar dataKey="height" stackId="waterfall" radius={[8, 8, 8, 8]} maxBarSize={40}>
             {waterfallRows.map((row) => (
@@ -709,7 +709,7 @@ const CompositionTooltip = ({ active, payload, label }) => {
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
       border: '1px solid rgba(187,217,255,0.85)',
       minWidth: 182,
     }}>
@@ -763,38 +763,38 @@ export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaC
           <p className="text-label font-semibold text-ink">Outflow composition trend</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Stacked monthly outflow split into expense and investment, with income trend on top.</p>
         </div>
-        <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-brand-container text-brand-on">
+        <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-ink/[0.06] text-ink">
           Avg invest share {avgInvestShare}%
         </span>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Peak outflow</p>
-          <p className="text-[12px] font-bold tabular-nums text-warning-text">{highestOutflow?.name || '—'}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-warning-text">{highestOutflow?.name || '—'}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Avg outflow</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(avgOutflow, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(avgOutflow, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Peak amount</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(highestOutflow?.Outflow || 0, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-expense-text">{fmt(highestOutflow?.Outflow || 0, true)}</p>
         </div>
       </div>
 
       <ResponsiveContainer width="100%" height={228}>
         <AreaChart data={safeData} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide />
-          <Tooltip content={<CompositionTooltip />} cursor={{ stroke: 'rgba(10,103,216,0.15)', strokeWidth: 1 }} />
+          <Tooltip content={<CompositionTooltip />} cursor={{ stroke: 'rgba(26,26,46,0.15)', strokeWidth: 1 }} />
           <Area
             type="monotone"
             dataKey="Spent"
@@ -845,7 +845,7 @@ const SurplusTrajectoryTooltip = ({ active, payload, label }) => {
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
       minWidth: 168,
       border: '1px solid rgba(187,217,255,0.85)',
     }}>
@@ -893,25 +893,25 @@ export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ net
           <p className="text-label font-semibold text-ink">Cumulative Surplus Trajectory</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Running surplus curve across the year to spot drawdowns early.</p>
         </div>
-        <span className={`text-[12px] font-bold tabular-nums ${latest >= 0 ? 'text-brand' : 'text-warning-text'}`}>
+        <span className={`text-[13px] font-semibold tabular-nums ${latest >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
           {latest >= 0 ? '+' : '-'}{fmt(Math.abs(latest), true)}
         </span>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Year-end</p>
-          <p className={`text-[12px] font-bold tabular-nums ${latest >= 0 ? 'text-brand' : 'text-warning-text'}`}>
+          <p className={`text-[13px] font-semibold tabular-nums ${latest >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
             {latest >= 0 ? '+' : '-'}{fmt(Math.abs(latest), true)}
           </p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Peak month</p>
-          <p className="text-[12px] font-bold tabular-nums text-brand">{peak?.name || '—'}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{peak?.name || '—'}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Low point</p>
-          <p className="text-[12px] font-bold tabular-nums text-warning-text">{trough?.name || '—'}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-warning-text">{trough?.name || '—'}</p>
         </div>
       </div>
 
@@ -919,14 +919,14 @@ export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ net
         <LineChart data={cumulativeData} margin={{ top: 6, right: 12, left: 12, bottom: 0 }}>
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide domain={[-axisMax, axisMax]} />
-          <Tooltip content={<SurplusTrajectoryTooltip />} cursor={{ stroke: 'rgba(10,103,216,0.16)', strokeWidth: 1 }} />
-          <ReferenceLine y={0} stroke="rgba(16,33,63,0.28)" strokeWidth={1} />
+          <Tooltip content={<SurplusTrajectoryTooltip />} cursor={{ stroke: 'rgba(26,26,46,0.16)', strokeWidth: 1 }} />
+          <ReferenceLine y={0} stroke="rgba(26,26,46,0.28)" strokeWidth={1} />
           <Line
             dataKey="Cumulative"
             type="monotone"
@@ -999,7 +999,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
           <p className="text-label font-semibold text-ink">What-if Surplus Simulator</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Test how category reductions affect year-end surplus before changing your spending plan.</p>
         </div>
-        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-brand-container text-brand-on">
+        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-ink/[0.06] text-ink">
           Scenario lab
         </span>
       </div>
@@ -1027,7 +1027,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
             <div>
               <div className="flex items-end justify-between gap-2 mb-1">
                 <p className="text-[10px] uppercase tracking-[0.06em] text-ink-3">Reduction</p>
-                <p className="text-[12px] font-bold text-brand">{reductionPct}%</p>
+                <p className="text-[13px] font-semibold text-ink">{reductionPct}%</p>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -1053,25 +1053,25 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+            <div className="rounded-card bg-kosha-surface-2 p-2.5">
               <p className="text-[10px] text-ink-3">Current surplus</p>
-              <p className={`text-[12px] font-bold tabular-nums ${currentSurplus >= 0 ? 'text-brand' : 'text-warning-text'}`}>
+              <p className={`text-[13px] font-semibold tabular-nums ${currentSurplus >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
                 {currentSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(currentSurplus))}
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5">{currentSavingsRate}% savings rate</p>
             </div>
 
-            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+            <div className="rounded-card bg-kosha-surface-2 p-2.5">
               <p className="text-[10px] text-ink-3">Potential lift</p>
-              <p className="text-[12px] font-bold tabular-nums text-brand">
+              <p className="text-[13px] font-semibold tabular-nums text-ink">
                 +{fmt(reductionAmount)}
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5">From {selectedCategory?.label || 'selected category'}</p>
             </div>
 
-            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+            <div className="rounded-card bg-kosha-surface-2 p-2.5">
               <p className="text-[10px] text-ink-3">Projected surplus</p>
-              <p className={`text-[12px] font-bold tabular-nums ${projectedSurplus >= 0 ? 'text-brand' : 'text-warning-text'}`}>
+              <p className={`text-[13px] font-semibold tabular-nums ${projectedSurplus >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
                 {projectedSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(projectedSurplus))}
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5">{projectedSavingsRate}% savings rate</p>
@@ -1082,7 +1082,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-16 text-[11px] text-ink-3">Current</span>
-                <div className="flex-1 h-2 rounded-pill" style={{ background: 'rgba(16,33,63,0.10)' }}>
+                <div className="flex-1 h-2 rounded-pill" style={{ background: 'rgba(26,26,46,0.06)' }}>
                   <div
                     className="h-full rounded-pill"
                     style={{
@@ -1098,7 +1098,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
 
               <div className="flex items-center gap-2">
                 <span className="w-16 text-[11px] text-ink-3">Projected</span>
-                <div className="flex-1 h-2 rounded-pill" style={{ background: 'rgba(16,33,63,0.10)' }}>
+                <div className="flex-1 h-2 rounded-pill" style={{ background: 'rgba(26,26,46,0.06)' }}>
                   <div
                     className="h-full rounded-pill"
                     style={{
@@ -1132,7 +1132,7 @@ const RunwayTooltip = ({ active, payload, label }) => {
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(16,33,63,0.14)',
+      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
       border: '1px solid rgba(187,217,255,0.85)',
       minWidth: 148,
     }}>
@@ -1199,30 +1199,30 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
           <p className="text-label font-semibold text-ink">Runway Coverage</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Months of expense+investment coverage if income slows at current outflow pace.</p>
         </div>
-        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-brand-container text-brand-on">
+        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-ink/[0.06] text-ink">
           {baselineMonths.toFixed(1)} months
         </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Trend outflow / month</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(trendOutflow, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(trendOutflow, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Runway corpus</p>
-          <p className="text-[12px] font-bold tabular-nums text-brand">{fmt(reserveAmount, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(reserveAmount, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">12m target</p>
-          <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(trendOutflow * 12, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(trendOutflow * 12, true)}</p>
         </div>
       </div>
 
       <div className="mb-3">
         <div className="flex items-center justify-between gap-2 mb-1">
           <p className="text-[10px] uppercase tracking-[0.06em] text-ink-3">Adjust runway corpus</p>
-          <span className="text-[12px] font-semibold text-brand">{fmt(reserveAmount, true)}</span>
+          <span className="text-[12px] font-semibold text-accent">{fmt(reserveAmount, true)}</span>
         </div>
         <input
           type="number"
@@ -1238,14 +1238,14 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
         <BarChart data={scenarioData} margin={{ top: 6, right: 12, left: 12, bottom: 0 }}>
           <XAxis
             dataKey="short"
-            tick={{ fontSize: 11, fill: 'rgba(94,109,143,0.95)', fontWeight: 600 }}
+            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide domain={[0, Math.max(6, Math.ceil(maxMonths * 1.15))]} />
-          <Tooltip content={<RunwayTooltip />} cursor={{ fill: 'rgba(10,103,216,0.06)' }} />
-          <ReferenceLine y={12} stroke="rgba(16,33,63,0.24)" strokeDasharray="4 4" />
+          <Tooltip content={<RunwayTooltip />} cursor={{ fill: 'rgba(26,26,46,0.06)' }} />
+          <ReferenceLine y={12} stroke="rgba(26,26,46,0.24)" strokeDasharray="4 4" />
           <Bar dataKey="months" radius={[8, 8, 0, 0]} maxBarSize={34}>
             {scenarioData.map((scenario) => (
               <Cell key={scenario.name} fill={scenario.color} fillOpacity={0.94} />
@@ -1325,7 +1325,7 @@ export const VolatilityScoreCard = memo(function VolatilityScoreCard({ flowData 
           <p className="text-[11px] text-ink-3 mt-0.5">Monthly stability score for income, expense, and investment consistency.</p>
         </div>
         <div className="text-right">
-          <p className="text-[15px] font-bold tabular-nums text-brand">
+          <p className="text-[15px] font-semibold tabular-nums text-ink">
             {planningConfidence == null ? '—' : `${planningConfidence}/100`}
           </p>
           <p className="text-[10px] text-ink-3">planning confidence</p>
@@ -1339,14 +1339,14 @@ export const VolatilityScoreCard = memo(function VolatilityScoreCard({ flowData 
           const cvLabel = row.stats.cv == null ? '—' : `${Math.round(row.stats.cv * 100)}% coeff. variation`
 
           return (
-            <div key={row.key} className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+            <div key={row.key} className="rounded-card bg-kosha-surface-2 p-2.5">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] font-semibold text-ink">{row.label}</p>
-                <span className="text-[11px] font-bold tabular-nums" style={{ color: row.tone.color }}>
+                <span className="text-[11px] font-semibold tabular-nums" style={{ color: row.tone.color }}>
                   {row.stats.score == null ? '—' : `${row.stats.score}/100`}
                 </span>
               </div>
-              <div className="mt-2 h-2 rounded-pill" style={{ background: 'rgba(16,33,63,0.10)' }}>
+              <div className="mt-2 h-2 rounded-pill" style={{ background: 'rgba(26,26,46,0.06)' }}>
                 <div
                   className="h-full rounded-pill"
                   style={{
@@ -1390,7 +1390,7 @@ const ConfidenceTooltip = ({ active, payload, label }) => {
       border: '0.5px solid rgba(255,255,255,0.10)',
     }}>
       <p style={{
-        fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+        fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.5)',
         letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
       }}>
         {label}
@@ -1432,7 +1432,7 @@ export const ConfidenceTrendChart = memo(function ConfidenceTrendChart({ trendDa
           </p>
         </div>
         <div className="text-right">
-          <p className="font-bold tabular-nums" style={{
+          <p className="font-semibold tabular-nums" style={{
             fontSize: 15,
             color: latestConfidence != null && latestConfidence >= 70 ? C.chartIncome : C.chartExpense,
             letterSpacing: '-0.01em',

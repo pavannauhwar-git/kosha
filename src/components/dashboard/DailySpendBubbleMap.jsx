@@ -66,7 +66,7 @@ const DailySpendBubbleMap = memo(function DailySpendBubbleMap({ dailyVariance, s
       <div className="h-5 mb-1">
         {activeDay ? (
           <p className="text-[11px] text-ink-2 font-semibold">
-            {activeDay.label}: <span className="text-brand tabular-nums">{fmt(activeDay.value)}</span>
+            {activeDay.label}: <span className="text-ink tabular-nums">{fmt(activeDay.value)}</span>
           </p>
         ) : (
           <p className="text-[10px] text-ink-3">Hover a cell to see daily spend.</p>

@@ -79,7 +79,7 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
   if (!insights) return null
 
   return (
-    <div className="card p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface mb-4">
+    <div className="card p-3.5 sm:p-4 bg-kosha-surface mb-4">
       <div className="flex items-start justify-between gap-3 mb-2.5">
         <div>
           <p className="section-label">Payment discipline</p>
@@ -97,14 +97,14 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-2.5">
-        <div className="rounded-card bg-kosha-surface-2 border border-kosha-border px-3 py-2.5">
+        <div className="rounded-card bg-kosha-surface-2 px-3 py-3">
           <p className="text-caption text-ink-3 mb-0.5">Bills cleared</p>
-          <p className="text-base font-bold text-income-text tabular-nums leading-none">{insights.total}</p>
+          <p className="text-base font-semibold text-income-text tabular-nums leading-none">{insights.total}</p>
           <p className="text-caption text-ink-3 mt-1">{fmt(insights.totalPaidAmount)} total</p>
         </div>
-        <div className="rounded-card bg-kosha-surface-2 border border-kosha-border px-3 py-2.5">
+        <div className="rounded-card bg-kosha-surface-2 px-3 py-3">
           <p className="text-caption text-ink-3 mb-0.5">On-time streak</p>
-          <p className="text-base font-bold text-brand tabular-nums leading-none">{insights.streak}</p>
+          <p className="text-base font-semibold text-ink tabular-nums leading-none">{insights.streak}</p>
           <p className="text-caption text-ink-3 mt-1">consecutive bills</p>
         </div>
       </div>
@@ -112,15 +112,15 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
       <div className="grid grid-cols-3 gap-2 mb-2.5">
         <div className="rounded-card bg-income-bg/30 border border-income-border p-2">
           <p className="text-[10px] text-ink-3">Early</p>
-          <p className="text-[12px] font-bold text-income-text tabular-nums">{insights.earlyCount}</p>
+          <p className="text-[13px] font-semibold text-income-text tabular-nums">{insights.earlyCount}</p>
         </div>
-        <div className="rounded-card bg-kosha-surface-2 border border-kosha-border p-2">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">On time</p>
-          <p className="text-[12px] font-bold text-brand tabular-nums">{insights.onTimeCount}</p>
+          <p className="text-[13px] font-semibold text-ink tabular-nums">{insights.onTimeCount}</p>
         </div>
         <div className={`rounded-card p-2 ${insights.lateEstimate > 0 ? 'bg-warning-bg/30 border border-warning-border' : 'bg-kosha-surface-2 border border-kosha-border'}`}>
           <p className="text-[10px] text-ink-3">Late (est)</p>
-          <p className={`text-[12px] font-bold tabular-nums ${insights.lateEstimate > 0 ? 'text-warning-text' : 'text-ink'}`}>
+          <p className={`text-[13px] font-semibold tabular-nums ${insights.lateEstimate > 0 ? 'text-warning-text' : 'text-ink'}`}>
             {insights.lateEstimate}
           </p>
         </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { fmt } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
@@ -8,14 +9,6 @@ function getDelta(current, previous) {
   if (prev <= 0) return { pct: null, label: 'No baseline' }
   const pct = Math.round(((Number(current || 0) - prev) / prev) * 100)
   return { pct, label: `${pct >= 0 ? '+' : ''}${pct}% vs last year` }
-}
-
-function compactTick(value) {
-  const n = Number(value || 0)
-  const abs = Math.abs(n)
-  if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
-  if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
-  return `${Math.round(n)}`
 }
 
 export default function AnnualSummaryCard({ data, prevData, year }) {
@@ -60,124 +53,164 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
   }))
 
   // Net per month for sparkline
-  const netByMonth = monthlyRows.map((m) => {
+  const netByMonth = Array.from({ length: 12 }, (_, i) => {
+    const m = monthlyRows[i]
+    if (!m) return { net: 0, hasData: false }
     const inc = Number(m?.income || 0)
     const exp = Number(m?.expense || 0)
     const inv = Number(m?.investment || 0)
-    return inc - exp - inv
+    const hasData = inc > 0 || exp > 0 || inv > 0
+    return { net: inc - exp - inv, hasData }
   })
-  const netMax = Math.max(...netByMonth.map(Math.abs), 1)
+  const netMax = Math.max(...netByMonth.map((m) => Math.abs(m.net)), 1)
+
+  const [hoveredMonth, setHoveredMonth] = useState(null)
 
   return (
-    <div className="card p-4 md:p-5 overflow-hidden">
-      {/* Title row */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <p className="section-label">Annual command center</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">
-            {year} balance health, deployment rhythm, and flow structure.
-          </p>
+    <div className="card overflow-hidden">
+      {/* ── Dark hero header ──────────────────────────────────── */}
+      <div className="p-4 pb-5" style={{ background: C.brand }}>
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <p className="text-[11px] font-semibold tracking-wide uppercase" style={{ color: C.heroLabel }}>Annual command center</p>
+          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill tabular-nums" style={{ background: C.heroStatBg, color: C.heroAccent }}>
+            {year}
+          </span>
         </div>
-        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-ink-2">
-          {year}
-        </span>
-      </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Year surplus</p>
-          <p className={`text-[14px] font-bold tabular-nums ${annualBalance >= 0 ? 'text-brand' : 'text-warning-text'}`}>
-            {annualBalance >= 0 ? '+' : '-'}{fmt(Math.abs(annualBalance))}
-          </p>
-          {balanceDelta.pct !== null && (
-            <p className={`text-[9px] font-semibold mt-0.5 ${balanceDelta.pct >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-              {balanceDelta.label}
+        <div className="flex items-baseline justify-between gap-3">
+          <div>
+            <p className="text-[10px] mb-1" style={{ color: C.heroDimmer }}>Year net surplus</p>
+            <p className="text-[22px] font-bold tabular-nums tracking-tight leading-none text-white">
+              {annualBalance >= 0 ? '+' : '−'}{fmt(Math.abs(annualBalance))}
             </p>
+          </div>
+          {balanceDelta.pct !== null && (
+            <span
+              className="text-[10px] font-semibold px-2 py-1 rounded-pill"
+              style={{
+                background: balanceDelta.pct >= 0 ? 'rgba(74,170,138,0.18)' : 'rgba(216,74,92,0.18)',
+                color: balanceDelta.pct >= 0 ? '#6EDBA7' : '#F59BAA',
+              }}
+            >
+              {balanceDelta.label}
+            </span>
           )}
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Avg surplus rate</p>
-          <p className="text-[14px] font-bold tabular-nums text-ink">{avgSurplusRate}%</p>
+      </div>
+
+      <div className="p-4 pt-3">
+      {/* ── Supporting KPIs ───────────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+          <p className="text-[10px] text-ink-3 mb-0.5">Avg surplus rate</p>
+          <p className="text-[15px] font-semibold tabular-nums text-ink leading-none">{avgSurplusRate}%</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Deploy rate</p>
-          <p className={`text-[14px] font-bold tabular-nums ${deploymentRate >= 12 && deploymentRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+          <p className="text-[10px] text-ink-3 mb-0.5">Deploy rate</p>
+          <p className={`text-[15px] font-semibold tabular-nums leading-none ${deploymentRate >= 12 && deploymentRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>
             {deploymentRate}%
           </p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-          <p className="text-[10px] text-ink-3">Positive months</p>
-          <p className="text-[14px] font-bold tabular-nums text-ink">{positiveMonths}/12</p>
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
+          <p className="text-[10px] text-ink-3 mb-0.5">Positive months</p>
+          <p className="text-[15px] font-semibold tabular-nums text-ink leading-none">{positiveMonths}/12</p>
         </div>
       </div>
 
-      {/* Flow structure bar */}
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <p className="text-[11px] font-semibold text-ink-2">Flow structure</p>
-          <p className="text-[11px] text-ink-3 tabular-nums">Income {fmt(totalIncome)}</p>
+      {/* ── Flow structure ────────────────────────────────────── */}
+      <div className="rounded-card bg-kosha-surface-2 p-3 mb-3">
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <p className="text-[11px] font-semibold text-ink">Flow structure</p>
+          <p className="text-[10px] text-ink-3 tabular-nums">Income {fmt(totalIncome)}</p>
         </div>
-        <div className="h-3 rounded-pill bg-kosha-border overflow-hidden border border-kosha-border flex">
+        <div className="h-2.5 rounded-pill overflow-hidden flex" style={{ background: 'rgba(26,26,46,0.06)' }}>
           {flowMixRows.map((row) => (
             <motion.div
               key={row.key}
-              className="h-full"
+              className="h-full first:rounded-l-pill last:rounded-r-pill"
               style={{ background: row.color }}
               initial={{ width: 0 }}
-              animate={{ width: `${Math.max(4, row.pct)}%` }}
-              transition={{ duration: 0.55, ease: 'easeOut' }}
+              animate={{ width: `${Math.max(3, row.pct)}%` }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             />
           ))}
         </div>
-        <div className="flex items-center gap-3 mt-2 flex-wrap">
+        <div className="flex items-center gap-4 mt-2.5 flex-wrap">
           {flowMixRows.map((row) => (
             <div key={`mix-${row.key}`} className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
-              <span className="text-[10px] text-ink-3">{row.label} {row.pct}% · {fmt(row.value)}</span>
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: row.color }} />
+              <span className="text-[10px] text-ink-3 tabular-nums">{row.label} {row.pct}%<span className="text-ink-4 ml-1">·</span> {fmt(row.value)}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Monthly net sparkline */}
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <p className="text-[11px] font-semibold text-ink-2">Monthly surplus pulse</p>
-          <p className="text-[10px] text-ink-3">{positiveMonths} of 12 in surplus</p>
+      {/* ── Monthly pulse ─────────────────────────────────────── */}
+      <div className="rounded-card bg-kosha-surface-2 p-3">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <p className="text-[11px] font-semibold text-ink">Monthly surplus pulse</p>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: C.brand }} />
+              <span className="text-[9px] text-ink-3">Surplus</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: C.expense, opacity: 0.65 }} />
+              <span className="text-[9px] text-ink-3">Deficit</span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-end gap-1 h-12">
-          {netByMonth.map((net, i) => {
-            const isPositive = net >= 0
-            const barH = Math.max(6, Math.round((Math.abs(net) / netMax) * 100))
+        <div className="h-5 mb-1">
+          {hoveredMonth !== null && netByMonth[hoveredMonth]?.hasData ? (
+            <p className="text-[11px] text-ink-2 font-semibold">
+              {MONTH_SHORT[hoveredMonth]}:{' '}
+              <span className={`tabular-nums ${netByMonth[hoveredMonth].net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                {netByMonth[hoveredMonth].net >= 0 ? '+' : '−'}{fmt(Math.abs(netByMonth[hoveredMonth].net))}
+              </span>
+            </p>
+          ) : (
+            <p className="text-[10px] text-ink-3">Hover a bar to see monthly net.</p>
+          )}
+        </div>
+        <div className="flex items-end gap-[3px] h-14" onMouseLeave={() => setHoveredMonth(null)}>
+          {netByMonth.map((m, i) => {
+            if (!m.hasData) {
+              return (
+                <div key={MONTH_SHORT[i]} className="flex-1 h-full flex flex-col items-center justify-end">
+                  <div className="w-full h-[2px] rounded-sm bg-kosha-border" />
+                </div>
+              )
+            }
+            const isPositive = m.net >= 0
+            const barH = Math.max(8, Math.round((Math.abs(m.net) / netMax) * 100))
             return (
-              <div key={MONTH_SHORT[i]} className="flex-1 h-full flex flex-col items-center justify-end">
-                <div
-                  className={`w-full rounded-t-sm ${isPositive ? 'bg-brand' : 'bg-expense'}`}
-                  style={{ height: `${barH}%`, opacity: isPositive ? 1 : 0.65 }}
-                  title={`${MONTH_SHORT[i]}: ${net >= 0 ? '+' : '-'}${fmt(Math.abs(net))}`}
+              <div
+                key={MONTH_SHORT[i]}
+                className="flex-1 h-full flex flex-col items-center justify-end cursor-pointer"
+                onMouseEnter={() => setHoveredMonth(i)}
+              >
+                <motion.div
+                  className="w-full rounded-t-sm"
+                  style={{
+                    background: isPositive ? C.brand : C.expense,
+                    opacity: isPositive ? 1 : 0.55,
+                  }}
+                  initial={{ height: 0 }}
+                  animate={{ height: `${barH}%` }}
+                  transition={{ duration: 0.4, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] }}
                 />
               </div>
             )
           })}
         </div>
-        <div className="flex gap-1 mt-1">
+        <div className="flex gap-[3px] mt-1.5">
           {netByMonth.map((_, i) => (
             <div key={`ml-${i}`} className="flex-1 text-center">
-              <span className="text-[8px] text-ink-3">{MONTH_SHORT[i]}</span>
+              <span className="text-[8px] text-ink-4">{MONTH_SHORT[i]}</span>
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-4 mt-2">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-sm bg-brand" />
-            <span className="text-[10px] text-ink-3">Surplus</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-sm bg-expense opacity-65" />
-            <span className="text-[10px] text-ink-3">Deficit</span>
-          </div>
-        </div>
+      </div>
       </div>
     </div>
   )

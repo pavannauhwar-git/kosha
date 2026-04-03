@@ -7,7 +7,7 @@ function actionMeta(action) {
     case 'transaction_added':
       return { label: 'Transaction added', tone: 'text-income-text', Icon: PlusCircle }
     case 'transaction_updated':
-      return { label: 'Transaction edited', tone: 'text-brand', Icon: FileEdit }
+      return { label: 'Transaction edited', tone: 'text-ink', Icon: FileEdit }
     case 'transaction_deleted':
       return { label: 'Transaction removed', tone: 'text-expense-text', Icon: Trash2 }
     case 'liability_added':
@@ -121,28 +121,28 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Added</p>
-          <p className="text-[12px] font-bold tabular-nums text-income-text">{summary.added}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-income-text">{summary.added}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Updated</p>
-          <p className="text-[12px] font-bold tabular-nums text-brand">{summary.updated}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">{summary.updated}</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Removed</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{summary.removed}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-expense-text">{summary.removed}</p>
         </div>
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 overflow-hidden">
+      <div className="rounded-card bg-kosha-surface-2 overflow-hidden">
         {visibleEvents.map((evt, idx) => {
           const meta = actionMeta(evt.action)
           const Icon = meta.Icon
           const isLast = idx === visibleEvents.length - 1
           return (
             <div key={evt.id} className={`flex items-center gap-3 px-3.5 py-3 bg-kosha-surface-2 ${isLast ? '' : 'border-b border-kosha-border'}`}>
-              <div className="w-9 h-9 rounded-card bg-kosha-surface border border-kosha-border flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-card bg-kosha-surface-2 flex items-center justify-center shrink-0">
                 <Icon size={15} className={meta.tone} />
               </div>
 
