@@ -97,12 +97,12 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-2.5">
-        <div className="mini-panel px-3 py-2.5">
+        <div className="rounded-card bg-kosha-surface-2 border border-kosha-border px-3 py-2.5">
           <p className="text-caption text-ink-3 mb-0.5">Bills cleared</p>
           <p className="text-base font-bold text-income-text tabular-nums leading-none">{insights.total}</p>
           <p className="text-caption text-ink-3 mt-1">{fmt(insights.totalPaidAmount)} total</p>
         </div>
-        <div className="mini-panel px-3 py-2.5">
+        <div className="rounded-card bg-kosha-surface-2 border border-kosha-border px-3 py-2.5">
           <p className="text-caption text-ink-3 mb-0.5">On-time streak</p>
           <p className="text-base font-bold text-brand tabular-nums leading-none">{insights.streak}</p>
           <p className="text-caption text-ink-3 mt-1">consecutive bills</p>
@@ -114,11 +114,11 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
           <p className="text-[10px] text-ink-3">Early</p>
           <p className="text-[12px] font-bold text-income-text tabular-nums">{insights.earlyCount}</p>
         </div>
-        <div className="mini-panel p-2">
+        <div className="rounded-card bg-kosha-surface-2 border border-kosha-border p-2">
           <p className="text-[10px] text-ink-3">On time</p>
           <p className="text-[12px] font-bold text-brand tabular-nums">{insights.onTimeCount}</p>
         </div>
-        <div className={insights.lateEstimate > 0 ? 'rounded-card p-2 bg-expense-bg/30 border border-expense-border' : 'mini-panel p-2'}>
+        <div className={`rounded-card p-2 ${insights.lateEstimate > 0 ? 'bg-expense-bg/30 border border-expense-border' : 'bg-kosha-surface-2 border border-kosha-border'}`}>
           <p className="text-[10px] text-ink-3">Late (est)</p>
           <p className={`text-[12px] font-bold tabular-nums ${insights.lateEstimate > 0 ? 'text-expense-text' : 'text-ink'}`}>
             {insights.lateEstimate}

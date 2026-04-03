@@ -343,7 +343,7 @@ export default function Settings() {
                   walletInvites.map((invite) => {
                     const status = inviteStatusLabel(invite)
                     return (
-                      <div key={invite.id} className="mini-panel px-2.5 py-2">
+                      <div key={invite.id} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] text-ink-3">{fmtDate(invite.created_at)}</p>
                           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>

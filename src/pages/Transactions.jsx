@@ -342,19 +342,19 @@ export default function Transactions() {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
-          <div className="mini-panel p-3">
+          <div className="rounded-card bg-kosha-surface-2 p-3">
             <p className="text-caption text-ink-3">Results</p>
             <p className="text-sm font-bold tabular-nums text-ink-2">
               {data.length}/{total}
             </p>
             <p className="text-[10px] text-ink-3 mt-0.5">Loaded rows / matching rows</p>
           </div>
-          <div className="mini-panel p-3">
+          <div className="rounded-card bg-kosha-surface-2 p-3">
             <p className="text-caption text-ink-3">Date window</p>
             <p className="text-sm font-bold tabular-nums text-ink-2">{activeDatePresetLabel}</p>
             <p className="text-[10px] text-ink-3 mt-0.5">Current timeline range</p>
           </div>
-          <div className="mini-panel p-3">
+          <div className="rounded-card bg-kosha-surface-2 p-3">
             <p className="text-caption text-ink-3">Loaded net flow</p>
             <p className={`text-sm font-bold tabular-nums ${visibleSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
               {visibleSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(visibleSummary.net))}

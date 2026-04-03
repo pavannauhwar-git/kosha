@@ -107,7 +107,7 @@ export default function KoshaErrorPage({
           )}
 
           {normalizedDetail && (
-            <div className="mt-4 mini-panel">
+            <div className="mt-4 rounded-card border border-kosha-border bg-kosha-surface-2">
               <div className="flex items-center justify-between gap-2 px-3 py-2.5">
                 <p className="text-caption font-semibold text-ink-2">Technical details</p>
                 <button

@@ -105,7 +105,7 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
         <div className="flex items-center justify-between mb-2.5">
           <p className="section-label">Recent activity</p>
         </div>
-        <div className="mini-panel border-dashed px-4 py-6 text-center">
+        <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 px-4 py-6 text-center">
           <History size={18} className="mx-auto text-ink-4 mb-2" />
           <p className="text-[13px] text-ink-3">No activity logged yet.</p>
           <p className="text-[11px] text-ink-4 mt-1">Your edits, deletes, and bill updates will appear here.</p>
@@ -121,27 +121,27 @@ const DashboardActivityFeed = memo(function DashboardActivityFeed({ events }) {
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
           <p className="text-[10px] text-ink-3">Added</p>
           <p className="text-[12px] font-bold tabular-nums text-income-text">{summary.added}</p>
         </div>
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
           <p className="text-[10px] text-ink-3">Updated</p>
           <p className="text-[12px] font-bold tabular-nums text-brand">{summary.updated}</p>
         </div>
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
           <p className="text-[10px] text-ink-3">Removed</p>
           <p className="text-[12px] font-bold tabular-nums text-expense-text">{summary.removed}</p>
         </div>
       </div>
 
-      <div className="mini-panel overflow-hidden">
+      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 overflow-hidden">
         {visibleEvents.map((evt, idx) => {
           const meta = actionMeta(evt.action)
           const Icon = meta.Icon
           const isLast = idx === visibleEvents.length - 1
           return (
-            <div key={evt.id} className={`flex items-center gap-3 px-3.5 py-3 ${isLast ? '' : 'border-b border-kosha-border'}`}>
+            <div key={evt.id} className={`flex items-center gap-3 px-3.5 py-3 bg-kosha-surface-2 ${isLast ? '' : 'border-b border-kosha-border'}`}>
               <div className="w-9 h-9 rounded-card bg-kosha-surface border border-kosha-border flex items-center justify-center shrink-0">
                 <Icon size={15} className={meta.tone} />
               </div>

@@ -900,15 +900,15 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-3 gap-2 mb-2.5">
-              <div className="mini-panel p-2.5">
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
                 <p className="text-[10px] text-ink-3">Obligations</p>
                 <p className="text-[12px] font-bold text-warning-text tabular-nums">{fmt(cashRiskRadar.obligations14)}</p>
               </div>
-              <div className="mini-panel p-2.5">
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
                 <p className="text-[10px] text-ink-3">Pred. inflow</p>
                 <p className="text-[12px] font-bold text-income-text tabular-nums">{fmt(cashRiskRadar.projectedInflow14)}</p>
               </div>
-              <div className="mini-panel p-2.5">
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
                 <p className="text-[10px] text-ink-3">Buffer</p>
                 <p className={`text-[12px] font-bold tabular-nums ${cashRiskRadar.buffer >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                   {cashRiskRadar.buffer >= 0 ? '+' : '-'}{fmt(Math.abs(cashRiskRadar.buffer))}
@@ -986,15 +986,15 @@ export default function Dashboard() {
             {duePipeline.hasData ? (
               <>
                 <div className="grid grid-cols-3 gap-2 mb-2.5">
-                  <div className="mini-panel p-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
                     <p className="text-[10px] text-ink-3">Planned bills</p>
                     <p className="text-[12px] font-bold tabular-nums text-ink">{duePipeline.plannedCount}</p>
                   </div>
-                  <div className="mini-panel p-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
                     <p className="text-[10px] text-ink-3">Paid bills</p>
                     <p className="text-[12px] font-bold tabular-nums text-income-text">{duePipeline.paidCount}</p>
                   </div>
-                  <div className="mini-panel p-2.5">
+                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
                     <p className="text-[10px] text-ink-3">Leakage</p>
                     <p className={`text-[12px] font-bold tabular-nums ${duePipeline.overdueCount > 0 ? 'text-warning-text' : 'text-income-text'}`}>
                       {duePipeline.leakagePct}%
@@ -1056,7 +1056,7 @@ export default function Dashboard() {
         {dueSoonCount > 0 && (
           <motion.div variants={fadeUp}>
             <button onClick={() => navigate('/bills')}
-              className="card w-full flex items-center justify-between px-4 py-4 text-left">
+              className="card-warn w-full flex items-center justify-between px-4 py-4 text-left">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-warning-bg flex items-center justify-center shrink-0">
                   <Bell size={16} className="text-warning-text" />
@@ -1111,19 +1111,19 @@ export default function Dashboard() {
               </div>
 
               <div className="grid grid-cols-3 gap-2 mb-2.5">
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3">Spend delta</p>
                   <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                     {weeklyDigest.spendDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.spendDelta))}
                   </p>
                 </div>
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3">Income delta</p>
                   <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                     {weeklyDigest.incomeDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.incomeDelta))}
                   </p>
                 </div>
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3">Net delta</p>
                   <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.netDelta >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                     {weeklyDigest.netDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.netDelta))}
@@ -1136,7 +1136,7 @@ export default function Dashboard() {
                 return (
                   <div className="space-y-1.5">
                     <p className="text-[10px] text-ink-3">Top spend category this week</p>
-                    <div key={row.id} className="mini-panel px-2.5 py-2">
+                    <div key={row.id} className="rounded-card bg-kosha-surface-2 px-2.5 py-2">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <p className="text-[11px] font-semibold text-ink-2 truncate">{row.label}</p>
                         <p className="text-[11px] font-semibold text-expense-text tabular-nums shrink-0">{fmt(row.value)}</p>

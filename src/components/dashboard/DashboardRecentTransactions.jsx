@@ -46,7 +46,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
           <p className="section-label">Latest transactions</p>
         </div>
 
-        <div className="mini-panel border-dashed p-6 text-center">
+        <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 p-6 text-center">
           <CheckCircle2 size={22} className="mx-auto text-brand mb-2" />
           <p className="text-[13px] font-semibold text-ink">No transactions yet</p>
           <p className="text-[11px] text-ink-3 mt-1">Your latest activity will appear here after you add your first transaction.</p>
@@ -75,21 +75,21 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
           <p className="text-[10px] text-ink-3">Rows</p>
           <p className="text-[12px] font-bold text-ink tabular-nums">{visibleRecent.length}</p>
         </div>
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
           <p className="text-[10px] text-ink-3">Inflow</p>
           <p className="text-[12px] font-bold text-income-text tabular-nums">{fmt(summary.inflow)}</p>
         </div>
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
           <p className="text-[10px] text-ink-3">Outflow</p>
           <p className="text-[12px] font-bold text-expense-text tabular-nums">{fmt(summary.outflow)}</p>
         </div>
       </div>
 
-      <div className="mini-panel overflow-hidden">
+      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 overflow-hidden">
         {visibleRecent.map((t, i) => (
           <TransactionItem
             key={t.id}

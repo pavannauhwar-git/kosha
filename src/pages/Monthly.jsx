@@ -26,15 +26,6 @@ import { buildReconciliationInsights, getReviewedReconciliationIds } from '../li
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
 import { transitionEmphasis } from '../lib/animations'
 
-const BRAND_ALLOCATION_PALETTE = [
-  C.brand,
-  C.brandMid,
-  '#4F97EE',
-  C.brandLight,
-  '#8EC2F8',
-  C.brandBorder,
-]
-
 
 export default function Monthly() {
   const navigate = useNavigate()
@@ -234,6 +225,7 @@ export default function Monthly() {
     const topPct = top && total > 0 ? Math.round((top.value / total) * 100) : 0
     const deployRate = inflow > 0 ? Math.round((invested / inflow) * 100) : 0
 
+    const palette = [C.brand, C.invest, C.income, C.bills, C.brandMid, C.brandLight]
     const maxSlices = 5
     const visibleRows = rows.slice(0, maxSlices)
     const visibleTotal = visibleRows.reduce((sum, row) => sum + row.value, 0)
@@ -241,7 +233,7 @@ export default function Monthly() {
     const mixRows = visibleRows.map((row, index) => ({
       ...row,
       pct: total > 0 ? Math.round((row.value / total) * 100) : 0,
-      color: BRAND_ALLOCATION_PALETTE[index % BRAND_ALLOCATION_PALETTE.length],
+      color: palette[index % palette.length],
     }))
 
     if (rows.length > maxSlices && total > visibleTotal) {
@@ -250,7 +242,7 @@ export default function Monthly() {
         name: 'Other',
         value: otherValue,
         pct: total > 0 ? Math.round((otherValue / total) * 100) : 0,
-        color: C.brandContainer,
+        color: C.brandBorder,
       })
     }
 
@@ -429,11 +421,7 @@ export default function Monthly() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
                 <div className="mini-panel p-2.5">
-                  <p className="text-caption text-ink-3">Actual invested</p>
-                  <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(invested, true)}</p>
-                </div>
-                <div className="mini-panel p-2.5">
-                  <p className="text-caption text-ink-3">Tagged allocation</p>
+                  <p className="text-caption text-ink-3">Allocated</p>
                   <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
                 </div>
                 <div className="mini-panel p-2.5">
@@ -448,19 +436,23 @@ export default function Monthly() {
                     {monthlyPortfolioSnapshot.diversificationScore}/100
                   </p>
                 </div>
+                <div className="mini-panel p-2.5">
+                  <p className="text-caption text-ink-3">Primary vehicle</p>
+                  <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
+                </div>
               </div>
 
               {monthlyPortfolioSnapshot.total > 0 ? (
-                <div className="mini-panel p-2.5 mb-3">
-                  <div className="grid md:grid-cols-[148px_1fr] gap-2.5 items-center">
+                <div className="mini-panel p-3 mb-3">
+                  <div className="grid md:grid-cols-[168px_1fr] gap-3 items-center">
                     <div className="flex justify-center md:justify-start">
                       <PortfolioMixDonut
                         rows={monthlyPortfolioSnapshot.mixRows}
                         centerTop="Monthly"
                         centerValue={fmt(monthlyPortfolioSnapshot.total, true)}
-                        centerBottom={`Invested ${fmt(invested, true)}`}
-                        ringSize={104}
-                        innerInset={15}
+                        centerBottom={`${monthlyPortfolioSnapshot.rows.length} vehicles`}
+                        ringSize={118}
+                        innerInset={17}
                       />
                     </div>
 
@@ -483,7 +475,7 @@ export default function Monthly() {
                   </div>
                 </div>
               ) : (
-                <div className="mini-panel border-dashed p-3 mb-3">
+                <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 p-3 mb-3">
                   <p className="text-[11px] text-ink-3">No monthly portfolio allocation is tagged yet. Add vehicle labels to investment entries to unlock this view.</p>
                 </div>
               )}
