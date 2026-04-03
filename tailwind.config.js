@@ -87,9 +87,9 @@ export default {
       },
 
       boxShadow: {
-        'card':       '0 16px 30px rgba(16,33,63,0.08), 0 4px 10px rgba(16,33,63,0.05), inset 0 1px 0 rgba(255,255,255,0.86)',
-        'card-md':    '0 20px 36px rgba(16,33,63,0.11), 0 6px 14px rgba(16,33,63,0.07), inset 0 1px 0 rgba(255,255,255,0.86)',
-        'card-lg':    '0 24px 44px rgba(16,33,63,0.14), 0 8px 18px rgba(16,33,63,0.08), inset 0 1px 0 rgba(255,255,255,0.86)',
+        'card':       '0 3px 10px rgba(18,28,74,0.06), 0 0 0 1px rgba(187,217,255,0.72), inset 0 1px 0 rgba(255,255,255,0.78)',
+        'card-md':    '0 4px 14px rgba(18,28,74,0.10), 0 0 0 0.5px rgba(18,28,74,0.08)',
+        'card-lg':    '0 8px 24px rgba(18,28,74,0.14), 0 0 0 0.5px rgba(18,28,74,0.08)',
         'apple-card': '0 20px 48px rgba(30,27,75,0.18), 0 8px 20px rgba(30,27,75,0.10)',
         'fab':        '0 6px 18px rgba(10,103,216,0.32)',
         'focus':      '0 0 0 3px rgba(10,103,216,0.30)',
