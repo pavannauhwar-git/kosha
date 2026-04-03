@@ -10,7 +10,6 @@ export const C = {
   // ── Contrast Accent — Soft Lemon ─────────────────────────────────
   // Use sparingly for highlights and focused callouts.
   accent:          '#FFFF99',
-  contrast:        '#FFFF99',
   accentBg:        '#FFFF99',
   accentFill:      '#FFFF99',
 
@@ -50,14 +49,6 @@ export const C = {
   chartDark:       '#0C3C8A',
   chartGrid:       'rgba(255,255,255,0.06)', // grid lines on dark card
   chartCursor:     'rgba(255,255,255,0.06)', // tooltip cursor on dark card
-  chartDotStroke:  '#FFFFFF',
-
-  // ── Tooltip system ───────────────────────────────────────────────
-  tooltipBg:       '#FFFFFF',
-  tooltipBorder:   'rgba(187,217,255,0.85)',
-  tooltipTitle:    '#1D355F',
-  tooltipLabel:    '#5E6D8F',
-  tooltipShadow:   '0 8px 18px rgba(16,33,63,0.14)',
 
   // ── Portfolio donut — azure family, darkest → lightest ────────────
   portfolio: [

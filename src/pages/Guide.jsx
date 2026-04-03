@@ -244,12 +244,12 @@ export default function Guide() {
   }, [])
 
   return (
-    <div className="page-shell">
+    <div className="min-h-dvh bg-kosha-bg">
       <PageBackHeader title="Guide" onBack={() => navigate(-1)} />
 
-      <div className="page-content page-content-wide page-content-back">
-        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5 max-w-[760px] mx-auto">
-          <motion.div variants={fadeUp} className="card p-4 md:p-5">
+      <div className="px-4 pt-6 pb-24 max-w-[860px] mx-auto">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5 max-w-[760px] mx-auto">
+        <motion.div variants={fadeUp} className="card p-4 md:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-[20px] font-bold text-ink tracking-tight leading-tight">Kosha Guide</p>
@@ -293,7 +293,7 @@ export default function Guide() {
               Open {nextFeature.title}
             </button>
           </div>
-          </motion.div>
+        </motion.div>
 
         <motion.section variants={fadeUp} className="w-full">
           <p className="section-label mb-1.5">Start here</p>

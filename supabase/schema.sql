@@ -197,10 +197,6 @@ create index if not exists idx_txn_recurring_due on transactions(user_id, next_r
 create index if not exists idx_liab_due     on liabilities(due_date);
 create index if not exists idx_liab_paid    on liabilities(paid);
 create index if not exists idx_liab_user    on liabilities(user_id);
-create index if not exists idx_liab_user_paid_due
-  on liabilities(user_id, paid, due_date);
-create index if not exists idx_liab_user_due
-  on liabilities(user_id, due_date);
 
 create index if not exists idx_invite_token on invites(token);
 

@@ -299,8 +299,8 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="auth-shell">
-      <div className="auth-panel min-h-full flex flex-col pt-8 pb-6">
+    <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-12 pb-10">
+      <div className="w-full max-w-sm mx-auto flex flex-col flex-1">
 
         {/* Logo mark — replaces the old KOSHA text badge */}
         <KoshaLogo size={44} />
@@ -329,6 +329,7 @@ export default function Onboarding() {
         </AnimatePresence>
 
       </div>
+
     </div>
   )
 }
