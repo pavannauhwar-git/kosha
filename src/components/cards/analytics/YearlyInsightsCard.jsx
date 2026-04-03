@@ -11,39 +11,52 @@ export default function YearlyInsightsCard({
 }) {
   if (!data?.monthly?.length && !(data?.totalIncome || data?.totalExpense)) return null
 
+  const totalIncome = Number(data?.totalIncome || 0)
+  const totalExpense = Number(data?.totalExpense || 0)
+  const totalInvestment = Number(data?.totalInvestment || 0)
+  const annualNet = totalIncome - totalExpense - totalInvestment
+  const deployRate = totalIncome > 0 ? Math.round((totalInvestment / totalIncome) * 100) : 0
+
+  const topCategory = (() => {
+    if (!catEntries?.length) return null
+    const [id, amount] = catEntries[0]
+    const label = CATEGORIES.find((cat) => cat.id === id)?.label || id
+    const share = totalExpense > 0 ? Math.round((Number(amount || 0) / totalExpense) * 100) : 0
+    return { label, amount: Number(amount || 0), share }
+  })()
+
+  const bestMonth = (() => {
+    const monthlyRows = Array.isArray(data?.monthly) ? data.monthly : []
+    if (!monthlyRows.length) return null
+    let best = { idx: 0, net: -Infinity }
+    monthlyRows.forEach((m, i) => {
+      const net = Number(m?.income || 0) - Number(m?.expense || 0) - Number(m?.investment || 0)
+      if (net > best.net) best = { idx: i, net }
+    })
+    return best
+  })()
+
   const plainWords = (() => {
     const parts = []
-    const inc = Number(data?.totalIncome || 0)
-    const totalOutflow = Number(data?.totalExpense || 0) + Number(data?.totalInvestment || 0)
-    const annualSurplus = inc - totalOutflow
-    const rate = inc > 0 ? Math.round(((inc - totalOutflow) / inc) * 100) : 0
+    const totalOutflow = totalExpense + totalInvestment
+    const rate = totalIncome > 0 ? Math.round((annualNet / totalIncome) * 100) : 0
 
-    if (rate > 20) parts.push(`You converted ${rate}% of earnings into annual surplus.`)
+    if (rate > 20) parts.push(`You converted ${rate}% of earnings into surplus.`)
     else if (rate > 0) parts.push(`Year closed with a ${rate}% surplus margin after spending and investments.`)
     else parts.push('Outflow was higher than income this year after including investments.')
 
     parts.push(
-      annualSurplus >= 0
-        ? `Net annual surplus is +${fmt(Math.abs(annualSurplus))}.`
-        : `Net annual deficit is -${fmt(Math.abs(annualSurplus))}.`
+      annualNet >= 0
+        ? `Net annual surplus is +${fmt(Math.abs(annualNet))}.`
+        : `Net annual deficit is -${fmt(Math.abs(annualNet))}.`
     )
 
-    if (data?.monthly) {
-      let maxExp = 0
-      let maxIdx = -1
-      data.monthly.forEach((m, i) => {
-        if (m.expense > maxExp) {
-          maxExp = m.expense
-          maxIdx = i
-        }
-      })
-      if (maxIdx >= 0 && maxExp > 0) parts.push(`${MONTH_SHORT[maxIdx]} was the highest burn month.`)
+    if (bestMonth && Number.isFinite(bestMonth.net)) {
+      parts.push(`${MONTH_SHORT[bestMonth.idx]} delivered the strongest net month at ${bestMonth.net >= 0 ? '+' : '-'}${fmt(Math.abs(bestMonth.net))}.`)
     }
 
-    if (catEntries?.length > 0) {
-      const c = CATEGORIES.find(cat => cat.id === catEntries[0][0])
-      const pct = Math.round((catEntries[0][1] / Math.max(data?.totalExpense || 1, 1)) * 100)
-      parts.push(`Top expense branch was ${c ? c.label : catEntries[0][0]} (${pct}% of yearly spend).`)
+    if (topCategory) {
+      parts.push(`Top expense category was ${topCategory.label} at ${fmt(topCategory.amount)} (${topCategory.share}% of spend).`)
     }
 
     return parts.join(' ')
@@ -64,11 +77,33 @@ export default function YearlyInsightsCard({
       <div className="flex items-start justify-between gap-3 mb-2.5">
         <div>
           <p className="text-label font-semibold text-ink">Strategic insights</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Year in plain words, decision signals, and next actions for {year}.</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">Actionable yearly readout for {year}: impact, signals, and concrete next moves.</p>
         </div>
         <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
           {insightCount} insight{insightCount === 1 ? '' : 's'}
         </span>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Annual net</p>
+          <p className={`text-[12px] font-bold tabular-nums ${annualNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+            {annualNet >= 0 ? '+' : '-'}{fmt(Math.abs(annualNet), true)}
+          </p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Invested</p>
+          <p className="text-[12px] font-bold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Deploy rate</p>
+          <p className={`text-[12px] font-bold tabular-nums ${deployRate >= 12 && deployRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>{deployRate}%</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+          <p className="text-[10px] text-ink-3">Top category</p>
+          <p className="text-[11px] font-bold text-brand truncate" title={topCategory?.label || '—'}>{topCategory?.label || '—'}</p>
+          <p className="text-[10px] tabular-nums text-ink-3 mt-0.5">{topCategory ? `${fmt(topCategory.amount, true)} · ${topCategory.share}%` : '—'}</p>
+        </div>
       </div>
 
       <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">

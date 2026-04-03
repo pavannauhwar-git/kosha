@@ -3,7 +3,7 @@ import { fmt } from '../../../lib/utils'
 import { useNavigate } from 'react-router-dom'
 import PortfolioMixDonut from '../../common/PortfolioMixDonut'
 
-const ALLOCATION_PALETTE = ['#0A67D8', '#2F7AD9', '#629CE6', '#8CB7ED', '#B5D0F2', '#D6E6F8']
+const ALLOCATION_PALETTE = [C.brand, C.invest, C.income, C.bills, C.brandMid, C.brandLight]
 
 export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) {
   const navigate = useNavigate()
@@ -86,8 +86,8 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
           <p className="text-label font-semibold text-ink">Yearly portfolio snapshot</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Donut view of allocation, concentration, and deployment quality.</p>
         </div>
-        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-brand-container text-brand-on">
-          {safeVehicleData.length} vehicle{safeVehicleData.length === 1 ? '' : 's'}
+        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-brand-container text-brand-on tabular-nums">
+          {fmt(totalPortfolio, true)} · {safeVehicleData.length} v
         </span>
       </div>
 
@@ -121,6 +121,8 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
                 centerTop="Yearly"
                 centerValue={fmt(totalPortfolio, true)}
                 centerBottom={`${safeVehicleData.length} vehicles`}
+                ringSize={120}
+                innerInset={17}
               />
             </div>
 
@@ -132,7 +134,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: row.color }} />
                       <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
                     </div>
-                    <p className="text-[11px] tabular-nums text-ink shrink-0">{row.pct}% · {fmt(row.value, true)}</p>
+                    <p className="text-[11px] tabular-nums text-ink shrink-0" title={fmt(row.value)}>{row.pct}% · {fmt(row.value, true)}</p>
                   </div>
                   <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
                     <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.color }} />

@@ -224,7 +224,7 @@ export default function Monthly() {
     const topPct = top && total > 0 ? Math.round((top.value / total) * 100) : 0
     const deployRate = inflow > 0 ? Math.round((invested / inflow) * 100) : 0
 
-    const palette = [C.brand, C.brandMid, C.brandLight, C.ink, C.invest, C.brandBorder]
+    const palette = [C.brand, C.invest, C.income, C.bills, C.brandMid, C.brandLight]
     const maxSlices = 5
     const visibleRows = rows.slice(0, maxSlices)
     const visibleTotal = visibleRows.reduce((sum, row) => sum + row.value, 0)
@@ -450,6 +450,8 @@ export default function Monthly() {
                         centerTop="Monthly"
                         centerValue={fmt(monthlyPortfolioSnapshot.total, true)}
                         centerBottom={`${monthlyPortfolioSnapshot.rows.length} vehicles`}
+                        ringSize={118}
+                        innerInset={17}
                       />
                     </div>
 
@@ -461,7 +463,7 @@ export default function Monthly() {
                               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: row.color }} />
                               <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
                             </div>
-                            <p className="text-[11px] tabular-nums text-ink shrink-0">{row.pct}% · {fmt(row.value, true)}</p>
+                            <p className="text-[11px] tabular-nums text-ink shrink-0" title={fmt(row.value)}>{row.pct}% · {fmt(row.value, true)}</p>
                           </div>
                           <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
                             <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.color }} />

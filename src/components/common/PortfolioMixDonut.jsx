@@ -27,8 +27,8 @@ export default function PortfolioMixDonut({
   centerTop = 'Total',
   centerValue = '—',
   centerBottom = 'Allocation',
-  ringSize = 152,
-  innerInset = 20,
+  ringSize = 128,
+  innerInset = 18,
 }) {
   const gradient = useMemo(() => buildConicGradient(rows), [rows])
 
@@ -53,7 +53,7 @@ export default function PortfolioMixDonut({
         }}
       >
         <p className="text-[9px] text-ink-3">{centerTop}</p>
-        <p className="text-[12px] font-bold tabular-nums text-ink leading-tight px-1">{centerValue}</p>
+        <p className="text-[11px] font-bold tabular-nums text-ink leading-tight px-1">{centerValue}</p>
         <p className="text-[8px] text-ink-3">{centerBottom}</p>
       </div>
     </div>

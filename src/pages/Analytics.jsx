@@ -159,18 +159,35 @@ export default function Analytics() {
     const totalIncome = Number(data?.totalIncome || 0)
     const totalExpense = Number(data?.totalExpense || 0)
     const totalInvestment = Number(data?.totalInvestment || 0)
+    const annualNet = totalIncome - totalExpense - totalInvestment
 
     if (totalIncome > 0) {
-      const savingsPct = Math.round(((totalIncome - totalExpense - totalInvestment) / totalIncome) * 100)
-      if (savingsPct < 15) {
-        items.push(`Savings rate is ${savingsPct}%. Reduce discretionary spend by 5-10% next month to improve buffer.`)
-      } else {
-        items.push(`Savings rate is ${savingsPct}%. Maintain this pace and route surplus into planned investments.`)
-      }
+      const netPct = Math.round((annualNet / totalIncome) * 100)
+      const deployPct = Math.round((totalInvestment / totalIncome) * 100)
+
+      items.push(
+        `Annual ${annualNet >= 0 ? 'surplus' : 'deficit'} is ${annualNet >= 0 ? '+' : '-'}${fmt(Math.abs(annualNet))} (${netPct}% of income).`
+      )
+
+      items.push(
+        `Investments total ${fmt(totalInvestment)} this year at a ${deployPct}% deployment rate.`
+      )
+    }
+
+    if (allCatEntries.length > 0) {
+      const [topCategoryId, topCategoryAmount] = allCatEntries[0]
+      const topCategoryLabel = categoryLabelById.get(topCategoryId) || String(topCategoryId).replace(/_/g, ' ')
+      const expenseBase = Math.max(1, Number(data?.totalExpense || 0))
+      const topCategoryShare = Math.round((Number(topCategoryAmount || 0) / expenseBase) * 100)
+      items.push(`${topCategoryLabel} drove ${topCategoryShare}% of yearly spend (${fmt(Number(topCategoryAmount || 0))}).`)
+    }
+
+    if (!items.length) {
+      items.push('Add more transaction history to unlock actionable yearly recommendations.')
     }
 
     return items.slice(0, 3)
-  }, [data])
+  }, [data, allCatEntries, categoryLabelById])
 
   const categoryPareto = useMemo(() => {
     if (!allCatEntries.length) {
@@ -196,7 +213,7 @@ export default function Analytics() {
       return {
         id,
         label,
-        shortLabel: shortLabel(label, 11),
+        shortLabel: shortLabel(label, 10),
         amount,
         cumulativePct: Math.round((running / categoryTotal) * 100),
       }
@@ -208,6 +225,8 @@ export default function Analytics() {
       hasData: rows.length > 0,
       rows,
       topShare: Math.round(((rows[0]?.amount || 0) / categoryTotal) * 100),
+      topAmount: Number(rows[0]?.amount || 0),
+      topLabel: rows[0]?.label || '—',
       categoriesFor80Pct: index80 >= 0 ? index80 + 1 : rows.length,
     }
   }, [allCatEntries, categoryLabelById, categoryTotal])
@@ -366,8 +385,8 @@ export default function Analytics() {
                       <p className="text-label font-semibold text-ink">Category Pareto frontier</p>
                       <p className="text-[11px] text-ink-3 mt-0.5">Bar + cumulative line to show which categories drive most annual spend.</p>
                     </div>
-                    <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-warning-bg text-warning-text">
-                      Top category {categoryPareto.topShare}%
+                    <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-brand-accent text-brand-on tabular-nums">
+                      Top {categoryPareto.topShare}% · {fmt(categoryPareto.topAmount, true)}
                     </span>
                   </div>
 
@@ -377,12 +396,27 @@ export default function Analytics() {
                       <p className="text-[12px] font-bold tabular-nums text-ink">{categoryPareto.categoriesFor80Pct}</p>
                     </div>
                     <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
-                      <p className="text-[10px] text-ink-3">Coverage shown</p>
-                      <p className="text-[12px] font-bold tabular-nums text-brand">{categoryPareto.rows[categoryPareto.rows.length - 1]?.cumulativePct || 0}%</p>
+                      <p className="text-[10px] text-ink-3">Top category</p>
+                      <p className="text-[12px] font-bold tabular-nums text-brand" title={categoryPareto.topLabel}>{categoryPareto.topLabel}</p>
+                      <p className="text-[10px] tabular-nums text-ink-3 mt-0.5">{fmt(categoryPareto.topAmount, true)}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 mb-2 md:mb-0 md:hidden space-y-1.5">
+                    {categoryPareto.rows.map((row) => (
+                      <div key={`pareto-mobile-${row.id}`} className="rounded-card border border-kosha-border bg-kosha-surface-2 px-2.5 py-2">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p className="text-[11px] font-semibold text-ink truncate">{row.label}</p>
+                          <p className="text-[10px] tabular-nums text-ink shrink-0">{fmt(row.amount, true)} · {row.cumulativePct}%</p>
+                        </div>
+                        <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                          <div className="h-full rounded-pill bg-brand" style={{ width: `${Math.max(6, Math.min(100, row.cumulativePct))}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 hidden md:block">
                     <ResponsiveContainer width="100%" height={228}>
                       <ComposedChart data={categoryPareto.rows} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
@@ -412,9 +446,9 @@ export default function Analytics() {
                           width={34}
                         />
                         <RechartsTooltip content={<ParetoTooltip />} />
-                        <ReferenceLine yAxisId="pct" y={80} stroke="rgba(154,114,0,0.65)" strokeDasharray="4 4" />
+                        <ReferenceLine yAxisId="pct" y={80} stroke={C.invest} strokeDasharray="4 4" strokeOpacity={0.7} />
                         <Bar yAxisId="amount" dataKey="amount" fill={C.brand} radius={[6, 6, 0, 0]} maxBarSize={22} />
-                        <Line yAxisId="pct" type="monotone" dataKey="cumulativePct" stroke={C.bills} strokeWidth={2.4} dot={{ r: 3 }} />
+                        <Line yAxisId="pct" type="monotone" dataKey="cumulativePct" stroke={C.invest} strokeWidth={2.4} dot={{ r: 3 }} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { C } from '../../../lib/colors'
+import { fmt } from '../../../lib/utils'
 
 const AXES = [
   { key: 'savings', label: 'Savings rate' },
@@ -12,8 +13,8 @@ const AXES = [
 ]
 
 const CX = 140
-const CY = 130
-const R = 100
+const CY = 142
+const R = 90
 const RINGS = [0.25, 0.5, 0.75, 1.0]
 const ANGLE_OFFSET = -Math.PI / 2
 
@@ -30,6 +31,13 @@ function clamp01(v) {
   return Math.max(0, Math.min(1, v))
 }
 
+function axisColor(axisKey) {
+  if (axisKey === 'investment') return C.invest
+  if (axisKey === 'expenseControl') return C.expense
+  if (axisKey === 'savings' || axisKey === 'positiveMonths') return C.income
+  return C.brand
+}
+
 export default function FinancialHealthRadar({ data, prevData, year }) {
   const scores = useMemo(() => {
     const totalIncome = Number(data?.totalIncome || 0)
@@ -37,7 +45,6 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
     const totalInvestment = Number(data?.totalInvestment || 0)
     const monthly = Array.isArray(data?.monthly) ? data.monthly : []
     const prevIncome = Number(prevData?.totalIncome || 0)
-    const prevExpense = Number(prevData?.totalExpense || 0)
 
     // 1. Savings rate (0-100 → 0-1, capped at 50% = perfect)
     const savingsRate = totalIncome > 0
@@ -83,7 +90,23 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
     const values = [savingsScore, investScore, expenseScore, incomeGrowthScore, consistencyScore, positiveScore]
     const overall = Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 100)
 
-    return { values, overall }
+    const annualNet = totalIncome - totalExpense - totalInvestment
+    const savingsPct = totalIncome > 0 ? Math.round(savingsRate * 100) : 0
+    const investPct = totalIncome > 0 ? Math.round(investRate * 100) : 0
+
+    return {
+      values,
+      overall,
+      metrics: {
+        income: totalIncome,
+        outflow: totalExpense + totalInvestment,
+        investment: totalInvestment,
+        annualNet,
+        savingsPct,
+        investPct,
+        positiveMonths,
+      },
+    }
   }, [data, prevData])
 
   const n = AXES.length
@@ -109,8 +132,29 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+          <p className="text-[9px] text-ink-3">Income</p>
+          <p className="text-[11px] font-bold tabular-nums text-ink">{fmt(scores.metrics.income, true)}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+          <p className="text-[9px] text-ink-3">Outflow</p>
+          <p className="text-[11px] font-bold tabular-nums text-expense-text">{fmt(scores.metrics.outflow, true)}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+          <p className="text-[9px] text-ink-3">Invested</p>
+          <p className="text-[11px] font-bold tabular-nums text-invest-text">{fmt(scores.metrics.investment, true)}</p>
+        </div>
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
+          <p className="text-[9px] text-ink-3">Annual net</p>
+          <p className={`text-[11px] font-bold tabular-nums ${scores.metrics.annualNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+            {scores.metrics.annualNet >= 0 ? '+' : '-'}{fmt(Math.abs(scores.metrics.annualNet), true)}
+          </p>
+        </div>
+      </div>
+
       <div className="flex justify-center">
-        <svg viewBox="0 0 280 270" className="w-full max-w-[320px]">
+        <svg viewBox="0 0 280 296" className="w-full max-w-[300px]">
           {/* Concentric rings */}
           {RINGS.map((ring) => (
             <polygon
@@ -164,8 +208,8 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
 
           {/* Axis labels */}
           {AXES.map((axis, i) => {
-            const lx = polarX(1.22, i, n)
-            const ly = polarY(1.22, i, n)
+            const lx = polarX(1.18, i, n)
+            const ly = polarY(1.18, i, n)
             const pct = Math.round(scores.values[i] * 100)
             return (
               <text
@@ -195,7 +239,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
                 <div className="flex-1 h-1.5 rounded-pill bg-kosha-border overflow-hidden">
                   <motion.div
                     className="h-full rounded-pill"
-                    style={{ background: pct >= 70 ? C.chartIncome : pct >= 40 ? C.brand : C.expense }}
+                    style={{ background: axisColor(axis.key) }}
                     initial={{ width: 0 }}
                     animate={{ width: `${pct}%` }}
                     transition={{ duration: 0.5, delay: i * 0.06 }}
