@@ -15,6 +15,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
+import PortfolioMixDonut from '../components/common/PortfolioMixDonut'
 import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
 import BreakdownCard from '../components/cards/monthly/BreakdownCard'
 import DailySpendTrend from '../components/cards/monthly/DailySpendTrend'
@@ -256,26 +257,17 @@ export default function Monthly() {
         ? 'Moderate concentration'
         : 'Balanced concentration'
 
-    const actions = []
-    if (total <= 0) {
-      actions.push('No tagged vehicle allocation yet. Add investment entries with a vehicle label to unlock mix intelligence.')
-      actions.push('Start with one core vehicle this month, then diversify once cadence is consistent.')
-      actions.push('After logging the first investment, define a second vehicle to establish diversification.')
-    } else {
-      if (rows.length < 3) {
-        actions.push('Diversification opportunity: add at least one new vehicle category in the next investment.')
-      } else {
-        actions.push('Diversification base is healthy. Keep future top-ups close to the current planned weights.')
-      }
+    const concentrationSignal = total <= 0
+      ? 'No allocation yet. Add your first vehicle-tagged investment to start mix tracking.'
+      : topPct >= 55
+        ? `${top?.name || 'Top holding'} holds ${topPct}% share. Route upcoming top-ups to secondary vehicles.`
+        : `Largest holding is ${topPct}%. Concentration is currently controlled.`
 
-      if (deployRate < 10) {
-        actions.push(`Deployment is ${deployRate}% of inflow. A small top-up can improve long-term consistency.`)
-      } else if (deployRate > 35) {
-        actions.push(`Deployment is ${deployRate}% of inflow. Ensure monthly cash runway remains intact before increasing further.`)
-      } else {
-        actions.push(`Deployment is ${deployRate}% of inflow, within a balanced range for this month.`)
-      }
-    }
+    const deploymentSignal = deployRate < 10
+      ? `Deployment is ${deployRate}% of inflow. A small top-up can improve consistency.`
+      : deployRate > 35
+        ? `Deployment is ${deployRate}% of inflow. Protect monthly runway before increasing further.`
+        : `Deployment at ${deployRate}% is within a balanced monthly range.`
 
     const nextAction = (() => {
       if (total <= 0) {
@@ -296,7 +288,8 @@ export default function Monthly() {
       mixRows,
       diversificationScore,
       concentrationBand,
-      actions,
+      concentrationSignal,
+      deploymentSignal,
       nextAction,
     }
   }, [vehicleEntries, inflow, invested])
@@ -416,7 +409,7 @@ export default function Monthly() {
               <SectionHeader
                 className="mb-2"
                 title="Portfolio snapshot"
-                subtitle="Allocation ladder, concentration checks, and next action"
+                subtitle="Donut mix, concentration cues, and next rebalancing move"
                 badge={{
                   label: `${monthlyPortfolioSnapshot.deployRate}% deploy rate`,
                   className: monthlyPortfolioSnapshot.deployRate >= 12 && monthlyPortfolioSnapshot.deployRate <= 35
@@ -448,43 +441,51 @@ export default function Monthly() {
                 </div>
               </div>
 
-              <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
-                <p className="text-[10px] text-ink-3 mb-1.5">Allocation ladder</p>
-                <div className="h-3 rounded-pill bg-kosha-border overflow-hidden flex mb-2.5">
-                  {monthlyPortfolioSnapshot.mixRows.map((row) => (
-                    <div
-                      key={`monthly-allocation-segment-${row.name}`}
-                      title={`${row.name}: ${row.pct}%`}
-                      style={{ width: `${Math.max(4, row.pct)}%`, background: row.color }}
-                    />
-                  ))}
-                </div>
-
-                <div className="space-y-2">
-                  {monthlyPortfolioSnapshot.mixRows.map((row) => (
-                    <div key={`monthly-allocation-row-${row.name}`}>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: row.color }} />
-                          <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
-                        </div>
-                        <p className="text-[11px] tabular-nums text-ink shrink-0">{row.pct}% · {fmt(row.value, true)}</p>
-                      </div>
-                      <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                        <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.color }} />
-                      </div>
+              {monthlyPortfolioSnapshot.total > 0 ? (
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
+                  <div className="grid md:grid-cols-[168px_1fr] gap-3 items-center">
+                    <div className="flex justify-center md:justify-start">
+                      <PortfolioMixDonut
+                        rows={monthlyPortfolioSnapshot.mixRows}
+                        centerTop="Monthly"
+                        centerValue={fmt(monthlyPortfolioSnapshot.total, true)}
+                        centerBottom={`${monthlyPortfolioSnapshot.rows.length} vehicles`}
+                      />
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 space-y-1.5 mb-3">
-                {monthlyPortfolioSnapshot.actions.slice(0, 3).map((line, index) => (
-                  <div key={`monthly-portfolio-action-${index}`} className="flex items-start gap-2">
-                    <span className="w-4 text-right text-[11px] font-bold text-brand shrink-0">{index + 1}</span>
-                    <p className="text-[11px] text-ink-3 leading-relaxed">{line}</p>
+                    <div className="space-y-2">
+                      {monthlyPortfolioSnapshot.mixRows.map((row) => (
+                        <div key={`monthly-allocation-row-${row.name}`} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: row.color }} />
+                              <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
+                            </div>
+                            <p className="text-[11px] tabular-nums text-ink shrink-0">{row.pct}% · {fmt(row.value, true)}</p>
+                          </div>
+                          <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                            <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.color }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                </div>
+              ) : (
+                <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 p-3 mb-3">
+                  <p className="text-[11px] text-ink-3">No monthly portfolio allocation is tagged yet. Add vehicle labels to investment entries to unlock this view.</p>
+                </div>
+              )}
+
+              <div className="grid md:grid-cols-2 gap-2 mb-3">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3 mb-1">Concentration signal · {monthlyPortfolioSnapshot.concentrationBand}</p>
+                  <p className="text-[11px] text-ink-2 leading-relaxed">{monthlyPortfolioSnapshot.concentrationSignal}</p>
+                </div>
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+                  <p className="text-[10px] text-ink-3 mb-1">Deployment signal</p>
+                  <p className="text-[11px] text-ink-2 leading-relaxed">{monthlyPortfolioSnapshot.deploymentSignal}</p>
+                </div>
               </div>
 
               <div className="pt-2 border-t border-kosha-border flex items-center justify-between gap-2">
