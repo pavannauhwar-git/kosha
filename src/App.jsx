@@ -21,10 +21,6 @@ const DASHBOARD_RECENT_COLUMNS =
 const LIABILITY_PREFETCH_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
-const PREFETCH_STALE_FAST = 60 * 1000
-const PREFETCH_STALE_MEDIUM = 2 * 60 * 1000
-const PREFETCH_STALE_LONG = 5 * 60 * 1000
-
 // ── Eager ────────────────────────────────────────────────────────────────
 import Login from './pages/Login'
 
@@ -137,7 +133,7 @@ function useRouteIntentPrefetch() {
             if (error) throw error
             return data || []
           },
-          staleTime: PREFETCH_STALE_MEDIUM,
+          staleTime: 20 * 1000,
         }),
         queryClient.prefetchQuery({
           queryKey: ['txnCount', countFilters],
@@ -149,7 +145,7 @@ function useRouteIntentPrefetch() {
             if (error) throw error
             return count || 0
           },
-          staleTime: PREFETCH_STALE_MEDIUM,
+          staleTime: 30 * 1000,
         }),
       ]).catch(() => {})
       return
@@ -203,7 +199,7 @@ function useRouteIntentPrefetch() {
             count: safeRows.length,
           }
         },
-        staleTime: PREFETCH_STALE_LONG,
+        staleTime: 30 * 1000,
         }),
         queryClient.prefetchQuery({
           queryKey: ['liabilitiesMonth', year, month],
@@ -219,7 +215,7 @@ function useRouteIntentPrefetch() {
             if (error) throw error
             return data || []
           },
-          staleTime: PREFETCH_STALE_LONG,
+          staleTime: 30 * 1000,
         }),
       ]).catch(() => {})
       return
@@ -297,7 +293,7 @@ function useRouteIntentPrefetch() {
             count: Number(totals.count || 0),
           }
         },
-        staleTime: PREFETCH_STALE_LONG,
+        staleTime: 45 * 1000,
       }).catch(() => {})
       return
     }
@@ -315,7 +311,7 @@ function useRouteIntentPrefetch() {
           if (error) throw error
           return data || []
         },
-        staleTime: PREFETCH_STALE_LONG,
+        staleTime: 45 * 1000,
       }).catch(() => {})
       return
     }
@@ -346,7 +342,7 @@ function useRouteIntentPrefetch() {
             if (error) throw error
             return data || []
           },
-          staleTime: PREFETCH_STALE_LONG,
+          staleTime: 30 * 1000,
         }),
         queryClient.prefetchQuery({
           queryKey: ['reconciliationReviews'],
@@ -377,7 +373,7 @@ function useRouteIntentPrefetch() {
 
             return { rows: data || [], unavailable: false }
           },
-          staleTime: PREFETCH_STALE_LONG,
+          staleTime: 30 * 1000,
         }),
       ]).catch(() => {})
     }
@@ -744,7 +740,7 @@ function DashboardWarmPrefetch() {
               if (error) throw error
               return data || []
             },
-            staleTime: PREFETCH_STALE_FAST,
+            staleTime: 15 * 1000,
           }),
           queryClient.prefetchQuery({
             queryKey: ['todayExpenses', todayISO],
@@ -759,82 +755,7 @@ function DashboardWarmPrefetch() {
               if (error) throw error
               return (data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0)
             },
-            staleTime: PREFETCH_STALE_MEDIUM,
-          }),
-          queryClient.prefetchQuery({
-            queryKey: ['year', year],
-            queryFn: async () => {
-              const { data: result, error } = await supabase
-                .rpc('get_year_summary', { p_user_id: user.id, p_year: year })
-                .maybeSingle()
-
-              if (error) throw error
-              if (!result) {
-                return {
-                  monthly: Array.from({ length: 12 }, (_, i) => ({
-                    month: i + 1,
-                    income: 0,
-                    expense: 0,
-                    investment: 0,
-                  })),
-                  totalIncome: 0,
-                  totalRepayments: 0,
-                  totalExpense: 0,
-                  totalInvestment: 0,
-                  avgSavings: 0,
-                  byCategory: {},
-                  byVehicle: {},
-                  top5: [],
-                  count: 0,
-                }
-              }
-
-              const monthlyRaw = result.monthly_data || []
-              const totals = result.totals || {}
-              const byCategory = result.category_data || {}
-              const byVehicle = result.vehicle_data || {}
-              const top5 = result.top5_expenses || []
-
-              const monthMap = Object.fromEntries(monthlyRaw.map((m) => [m.month_num, m]))
-              const monthly = Array.from({ length: 12 }, (_, i) => {
-                const m = monthMap[i + 1] || {}
-                return {
-                  month: i + 1,
-                  income: Number(m.income || 0),
-                  expense: Number(m.expense || 0),
-                  investment: Number(m.investment || 0),
-                }
-              })
-
-              const totalIncome = Number(totals.income || 0)
-              const totalRepayments = Number(totals.repayments || 0)
-              const totalExpense = Number(totals.expense || 0)
-              const totalInvestment = Number(totals.investment || 0)
-
-              const monthsWithIncome = monthly.filter((m) => m.income > 0)
-              const avgSavings = monthsWithIncome.length
-                ? Math.round(
-                    monthsWithIncome.reduce(
-                      (sum, m) => sum + ((m.income - m.expense) / m.income) * 100,
-                      0
-                    ) / monthsWithIncome.length
-                  )
-                : 0
-
-              return {
-                monthly,
-                totalIncome,
-                totalRepayments,
-                totalExpense,
-                totalInvestment,
-                avgSavings,
-                byCategory,
-                byVehicle,
-                top5,
-                count: Number(totals.count || 0),
-              }
-            },
-            staleTime: PREFETCH_STALE_LONG,
+            staleTime: 30 * 1000,
           }),
           queryClient.prefetchQuery({
             queryKey: ['month', year, month],
@@ -880,7 +801,7 @@ function DashboardWarmPrefetch() {
                 count: safeRows.length,
               }
             },
-            staleTime: PREFETCH_STALE_LONG,
+            staleTime: 30 * 1000,
           }),
           queryClient.prefetchQuery({
             queryKey: ['balance', 2099, 12],  // Far future to avoid collisions with real month queries
@@ -892,7 +813,7 @@ function DashboardWarmPrefetch() {
               if (error) throw error
               return Number(balance || 0)
             },
-            staleTime: PREFETCH_STALE_LONG,
+            staleTime: 30 * 1000,
           }),
         ])
       } catch (error) {

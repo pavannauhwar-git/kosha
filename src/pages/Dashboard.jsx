@@ -278,7 +278,7 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    const timer = setTimeout(() => setHeavyReady(true), 16)
+    const timer = setTimeout(() => setHeavyReady(true), 50)
     return () => clearTimeout(timer)
   }, [])
 

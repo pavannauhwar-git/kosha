@@ -33,7 +33,7 @@
   }
 
   html {
-    font-family: 'Roboto', 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     width: 100%;
     max-width: 100%;
     overflow-x: clip;
@@ -134,16 +134,6 @@
 
   .page-stack {
     @apply space-y-5 md:space-y-6;
-  }
-
-  /* Defer heavy offscreen cards for smoother first paint on long pages. */
-  .page-stack > * {
-    content-visibility: auto;
-    contain-intrinsic-size: 320px;
-  }
-
-  .page-stack > :nth-child(-n+2) {
-    content-visibility: visible;
   }
 
   .sticky-toolbar {

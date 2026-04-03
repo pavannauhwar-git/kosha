@@ -90,30 +90,15 @@ export default function Analytics() {
   const [year, setYear] = useState(currentYear)
   const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
-  const [compareReady, setCompareReady] = useState(false)
-  const [calendarReady, setCalendarReady] = useState(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => setHeavyReady(true), 90)
+    const timer = setTimeout(() => setHeavyReady(true), 260)
     return () => clearTimeout(timer)
   }, [])
 
-  useEffect(() => {
-    setCompareReady(false)
-    setCalendarReady(false)
-    const compareTimer = setTimeout(() => setCompareReady(true), 260)
-    const calendarTimer = setTimeout(() => setCalendarReady(true), 700)
-    return () => {
-      clearTimeout(compareTimer)
-      clearTimeout(calendarTimer)
-    }
-  }, [year])
-
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
-  const { data: yearDailyTotals, loading: yearDailyLoading } = useYearDailyExpenseTotals(year, {
-    enabled: heavyReady && calendarReady,
-  })
+  const { data: yearDailyTotals, loading: yearDailyLoading } = useYearDailyExpenseTotals(year, { enabled: heavyReady })
 
   const flowTrendData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
@@ -131,7 +116,7 @@ export default function Analytics() {
     })), [data?.monthly])
 
   const yoyYears = useMemo(() => {
-    const startYear = Math.max(MIN_NAV_YEAR, year - 4)
+    const startYear = Math.max(MIN_NAV_YEAR, year - 7)
     return Array.from({ length: year - startYear + 1 }, (_, index) => startYear + index)
       .filter((value) => value >= MIN_NAV_YEAR && value <= MAX_NAV_YEAR)
   }, [year])
@@ -352,7 +337,7 @@ export default function Analytics() {
 
             <div className="space-y-4">
               {/* ── 2. Year-over-year context ───────────────────────── */}
-              {heavyReady && compareReady ? (
+              {heavyReady ? (
                 <YoYCards years={yoyYears} currentYear={year} enabled />
               ) : (
                 <div className="card p-4">
@@ -385,7 +370,7 @@ export default function Analytics() {
               <CalendarHeatmap
                 dailyTotals={yearDailyTotals}
                 year={year}
-                loading={yearDailyLoading || !calendarReady}
+                loading={yearDailyLoading}
               />
 
               <RunwayCoverageChart
