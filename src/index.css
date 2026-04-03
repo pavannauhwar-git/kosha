@@ -135,10 +135,10 @@
   .card-warn,
   .list-card {
     @apply bg-kosha-surface rounded-card;
-    border: 1px solid rgba(16, 33, 63, 0.08);
+    border: 1px solid rgba(16, 33, 63, 0.10);
     box-shadow:
-      0 16px 30px rgba(16, 33, 63, 0.08),
-      0 4px 10px rgba(16, 33, 63, 0.05),
+      0 2px 8px rgba(16, 33, 63, 0.06),
+      0 8px 24px rgba(16, 33, 63, 0.04),
       inset 0 1px 0 rgba(255, 255, 255, 0.86);
   }
 
@@ -157,10 +157,10 @@
   .card-inset.border,
   .card-urgent.border,
   .card-warn.border {
-    border-color: rgba(16, 33, 63, 0.08) !important;
+    border-color: rgba(16, 33, 63, 0.10) !important;
     box-shadow:
-      0 16px 30px rgba(16, 33, 63, 0.08),
-      0 4px 10px rgba(16, 33, 63, 0.05),
+      0 2px 8px rgba(16, 33, 63, 0.06),
+      0 8px 24px rgba(16, 33, 63, 0.04),
       inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
   }
 
