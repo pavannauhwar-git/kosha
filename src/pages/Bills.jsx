@@ -315,12 +315,12 @@ export default function Bills() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 mt-4">
-            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border panel-neutral px-3 py-2.5">
+            <div className="mini-panel px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">Due in 7 days</p>
               <p className="text-base font-bold text-warning-text tabular-nums leading-none">{fmt(dueSoonAmount)}</p>
               <p className="text-caption text-ink-3 mt-1">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
             </div>
-            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border panel-neutral px-3 py-2.5">
+            <div className="mini-panel px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">Due this month</p>
               <p className="text-base font-bold text-ink tabular-nums leading-none">{fmt(dueThisMonth.amount)}</p>
               <p className="text-caption text-ink-3 mt-1">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>

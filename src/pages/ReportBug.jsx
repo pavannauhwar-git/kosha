@@ -265,7 +265,7 @@ export default function ReportBug() {
                   : 'Thank you for reporting this. We will investigate it quickly.'}
               </p>
 
-              <div className="mt-4 card-inset p-3 border border-kosha-border">
+              <div className="mt-4 card-inset p-3">
                 <p className="text-caption text-ink-3">Reference</p>
                 <div className="mt-1.5 flex items-center justify-between gap-2">
                   <p className="font-mono text-[13px] text-ink">#{submitted.id}</p>
@@ -283,7 +283,7 @@ export default function ReportBug() {
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-[14px] font-semibold text-ink"
+                  className="py-3 card text-[14px] font-semibold text-ink"
                 >
                   Done
                 </button>
@@ -370,7 +370,7 @@ export default function ReportBug() {
                   </div>
                 )}
 
-                <div className="card-inset p-3 border border-kosha-border">
+                <div className="card-inset p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-[13px] font-semibold text-ink">Screenshot (optional)</p>
@@ -425,7 +425,7 @@ export default function ReportBug() {
                 <button
                   type="button"
                   onClick={() => setIncludeDiagnostics(v => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-card border border-kosha-border bg-kosha-surface"
+                  className="w-full flex items-center justify-between px-3 py-2.5 card"
                 >
                   <span className="text-[14px] font-medium text-ink">Include diagnostics</span>
                   <span className={`text-caption font-semibold px-2 py-0.5 rounded-pill
@@ -457,7 +457,7 @@ export default function ReportBug() {
             <button
               type="button"
               onClick={goDashboard}
-              className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-[14px] font-semibold text-ink"
+              className="py-3 card text-[14px] font-semibold text-ink"
             >
               Go to dashboard
             </button>

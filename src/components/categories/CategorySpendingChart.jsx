@@ -130,7 +130,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         ))}
 
         {hiddenRows.length > 0 && (
-          <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 px-2.5 py-2">
+          <div className="mini-panel border-dashed px-2.5 py-2">
             <p className="text-[10px] text-ink-3">
               {hiddenRows.length} smaller categor{hiddenRows.length === 1 ? 'y' : 'ies'} combine to {fmt(hiddenAmount)} ({hiddenShare}%).
             </p>
