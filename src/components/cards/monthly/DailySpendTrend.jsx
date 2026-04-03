@@ -11,7 +11,6 @@ import {
   Cell,
 } from 'recharts'
 import { fmt } from '../../../lib/utils'
-import { C } from '../../../lib/colors'
 
 function DailySpendTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -26,7 +25,7 @@ function DailySpendTooltip({ active, payload, label }) {
           <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row.amount || 0))}</span>
         </div>
         {row.isAboveAvg && (
-          <p className="text-[10px] text-expense-text mt-0.5">Above daily average</p>
+          <p className="text-[10px] text-warning-text mt-0.5">Above daily average</p>
         )}
       </div>
     </div>
@@ -131,7 +130,7 @@ export default memo(function DailySpendTrend({ txnRows, year, month }) {
               {seriesWithFlags.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={entry.isAboveAvg ? C.chartExpense : C.brandMid}
+                  fill={entry.isAboveAvg ? '#E11D48' : '#0A67D8'}
                   fillOpacity={entry.amount > 0 ? 0.78 : 0.15}
                 />
               ))}
@@ -142,11 +141,11 @@ export default memo(function DailySpendTrend({ txnRows, year, month }) {
 
       <div className="flex items-center gap-4 mt-2">
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full" style={{ background: C.brandMid }} />
+          <span className="w-2 h-2 rounded-full" style={{ background: '#0A67D8' }} />
           <span className="text-[10px] text-ink-3">Below avg</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full" style={{ background: C.chartExpense }} />
+          <span className="w-2 h-2 rounded-full" style={{ background: '#E11D48' }} />
           <span className="text-[10px] text-ink-3">Above avg</span>
         </div>
         <div className="flex items-center gap-1.5">

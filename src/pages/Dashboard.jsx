@@ -41,9 +41,8 @@ import PageHeader from '../components/layout/PageHeader'
 import AppToast from '../components/common/AppToast'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 import { CATEGORIES } from '../lib/categories'
-import { C } from '../lib/colors'
 
-const fadeUp = createFadeUp(4)
+const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.04, 0.04)
 const VARIANCE_WINDOW_STORAGE_KEY = 'dashboardVarianceWindowDays'
 const VARIANCE_WINDOW_MAX_DAYS = 14
@@ -59,11 +58,11 @@ function DuePressureTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 shadow-card">
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Cum due</span>
-        <span className="font-semibold tabular-nums text-expense-text">{fmt(row.cumulativeDue || 0)}</span>
+        <span className="font-semibold tabular-nums text-warning-text">{fmt(row.cumulativeDue || 0)}</span>
       </div>
       <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
         <span className="text-ink-3">Cum inflow</span>
@@ -120,7 +119,7 @@ function DuePipelineTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 shadow-card min-w-[172px]">
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[172px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -129,7 +128,7 @@ function DuePipelineTooltip({ active, payload, label }) {
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="text-ink-3">Amount</span>
-          <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row?.amount || 0))}</span>
+          <span className="font-semibold tabular-nums text-warning-text">{fmt(Number(row?.amount || 0))}</span>
         </div>
       </div>
     </div>
@@ -141,7 +140,7 @@ function WeeklyDigestTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 shadow-card">
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Current 7d</span>
@@ -153,7 +152,7 @@ function WeeklyDigestTooltip({ active, payload, label }) {
       </div>
       <div className="flex items-center justify-between gap-3 text-[11px] mt-0.5">
         <span className="text-ink-3">Delta</span>
-        <span className={`font-semibold tabular-nums ${(Number(row.delta || 0) <= 0 && row.metric === 'Spend') || (Number(row.delta || 0) >= 0 && row.metric !== 'Spend') ? 'text-income-text' : 'text-expense-text'}`}>
+        <span className={`font-semibold tabular-nums ${(Number(row.delta || 0) <= 0 && row.metric === 'Spend') || (Number(row.delta || 0) >= 0 && row.metric !== 'Spend') ? 'text-income-text' : 'text-warning-text'}`}>
           {Number(row.delta || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.delta || 0)))}
         </span>
       </div>
@@ -920,7 +919,7 @@ export default function Dashboard() {
               <div className="h-full rounded-pill bg-kosha-border" />
             </div>
 
-            <div className="mt-2.5 rounded-card border border-kosha-border panel-neutral bg-kosha-surface-2 p-2.5">
+            <div className="mt-2.5 rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={cashRiskRadar.timelineSeries} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
@@ -937,18 +936,18 @@ export default function Dashboard() {
                   <Line
                     type="monotone"
                     dataKey="cumulativeDue"
-                    stroke={C.chartExpense}
+                    stroke="#E11D48"
                     strokeWidth={2.1}
                     dot={false}
-                    activeDot={{ r: 4, fill: C.chartExpense, stroke: '#fff', strokeWidth: 2 }}
+                    activeDot={{ r: 4, fill: '#E11D48', stroke: '#fff', strokeWidth: 2 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="cumulativeInflow"
-                    stroke={C.chartIncome}
+                    stroke="#0E9F6E"
                     strokeWidth={2.1}
                     dot={false}
-                    activeDot={{ r: 4, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
+                    activeDot={{ r: 4, fill: '#0E9F6E', stroke: '#fff', strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -1002,7 +1001,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface-2 p-2.5">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
                   <ResponsiveContainer width="100%" height={198}>
                     <BarChart data={duePipeline.stageRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
@@ -1030,8 +1029,8 @@ export default function Dashboard() {
                         width={34}
                       />
                       <RechartsTooltip content={<DuePipelineTooltip />} />
-                      <Bar yAxisId="left" dataKey="count" name="Bills" fill={C.brandMid} radius={[6, 6, 0, 0]} maxBarSize={18} />
-                      <Bar yAxisId="right" dataKey="amount" name="Amount" fill="rgba(242,106,134,0.72)" radius={[6, 6, 0, 0]} maxBarSize={18} />
+                      <Bar yAxisId="left" dataKey="count" name="Bills" fill="#0A67D8" radius={[6, 6, 0, 0]} maxBarSize={18} />
+                      <Bar yAxisId="right" dataKey="amount" name="Amount" fill="rgba(154, 114, 0, 0.72)" radius={[6, 6, 0, 0]} maxBarSize={18} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1086,7 +1085,7 @@ export default function Dashboard() {
                 </span>
               </div>
 
-              <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface-2 p-2.5 mb-2.5">
+              <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
                 <ResponsiveContainer width="100%" height={214}>
                   <BarChart data={weeklyDigest.comparisonSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
@@ -1104,7 +1103,7 @@ export default function Dashboard() {
                       width={34}
                     />
                     <RechartsTooltip content={<WeeklyDigestTooltip />} />
-                    <Bar dataKey="current" name="Current 7d" fill={C.brand} radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="current" name="Current 7d" fill="#0A67D8" radius={[6, 6, 0, 0]} />
                     <Bar dataKey="previous" name="Previous 7d" fill="rgba(10, 103, 216, 0.34)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -1113,19 +1112,19 @@ export default function Dashboard() {
               <div className="grid grid-cols-3 gap-2 mb-2.5">
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3">Spend delta</p>
-                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
                     {weeklyDigest.spendDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.spendDelta))}
                   </p>
                 </div>
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3">Income delta</p>
-                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
                     {weeklyDigest.incomeDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.incomeDelta))}
                   </p>
                 </div>
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3">Net delta</p>
-                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.netDelta >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                  <p className={`text-[12px] font-bold tabular-nums ${weeklyDigest.netDelta >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
                     {weeklyDigest.netDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.netDelta))}
                   </p>
                 </div>
@@ -1142,7 +1141,7 @@ export default function Dashboard() {
                         <p className="text-[11px] font-semibold text-expense-text tabular-nums shrink-0">{fmt(row.value)}</p>
                       </div>
                       <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                        <div className="h-full rounded-pill bg-expense-text" style={{ width: `${Math.max(8, row.sharePct)}%` }} />
+                        <div className="h-full rounded-pill bg-warning-text" style={{ width: `${Math.max(8, row.sharePct)}%` }} />
                       </div>
                       <p className="text-[10px] text-ink-3 tabular-nums mt-1">{row.sharePct}% of current-week spend</p>
                     </div>

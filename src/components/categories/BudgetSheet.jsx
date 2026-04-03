@@ -6,8 +6,6 @@ import { EXPENSE_CATEGORIES } from '../../lib/categories'
 import { upsertBudget, deleteBudget } from '../../hooks/useBudgets'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
-import { C } from '../../lib/colors'
-import { sheetEnterTransition, sheetExitTransition } from '../../lib/animations'
 
 export default function BudgetSheet({ open, onClose, budgets = [], byCategory = {} }) {
   const [saving, setSaving] = useState(null)
@@ -116,8 +114,8 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                   paddingBottom: 'env(safe-area-inset-bottom, 0px)',
                 }}
                 initial={{ y: '100%' }}
-                animate={{ y: 0, transition: sheetEnterTransition }}
-                exit={{ y: '100%', transition: sheetExitTransition }}
+                animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 36 } }}
+                exit={{ y: '100%', transition: { duration: 0.22 } }}
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-kosha-border">
@@ -178,12 +176,12 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                                 <circle
                                   cx="18" cy="18" r="15"
                                   fill="none"
-                                  stroke={pct >= 100 ? C.expense : pct >= 80 ? C.bills : C.brand}
+                                  stroke={pct >= 100 ? '#E11D48' : pct >= 80 ? '#9A7200' : '#0A67D8'}
                                   strokeWidth="3"
                                   strokeLinecap="round"
                                   strokeDasharray={`${Math.min(100, pct) * 0.9425} 94.25`}
                                   transform="rotate(-90 18 18)"
-                                  style={{ transition: 'stroke-dasharray var(--motion-base) cubic-bezier(0.22, 1, 0.36, 1)' }}
+                                  style={{ transition: 'stroke-dasharray 0.4s ease' }}
                                 />
                               </svg>
                               <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold tabular-nums text-ink">

@@ -5,12 +5,12 @@ const WEEKDAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', '']
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 const INTENSITY_COLORS = [
-  '#EDF1F8',                    // 0 — no spend
-  'rgba(242,106,134,0.18)',     // 1
-  'rgba(242,106,134,0.32)',     // 2
-  'rgba(223,62,98,0.52)',       // 3
-  'rgba(223,62,98,0.72)',       // 4
-  '#C7395B',                    // 5 — max
+  'bg-kosha-surface-2',           // 0 — no spend
+  'bg-brand/20',                  // 1
+  'bg-brand/40',                  // 2
+  'bg-brand/60',                  // 3
+  'bg-brand/80',                  // 4
+  'bg-brand',                     // 5 — max
 ]
 
 export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
@@ -173,8 +173,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
                     return (
                       <div
                         key={day.key}
-                        className="w-[11px] h-[11px] rounded-[2px] border border-black/5 cursor-pointer transition-transform hover:scale-125"
-                        style={{ backgroundColor: INTENSITY_COLORS[day.level] }}
+                        className={`w-[11px] h-[11px] rounded-[2px] border border-black/5 cursor-pointer transition-transform hover:scale-125 ${INTENSITY_COLORS[day.level]}`}
                         title={`${day.label}: ${fmt(day.value)}`}
                         onMouseEnter={() => setActiveDay(day)}
                         onFocus={() => setActiveDay(day)}
@@ -192,8 +191,8 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
       <div className="flex items-center justify-between gap-4 mt-3 flex-wrap">
         <div className="flex items-center gap-1.5">
           <span className="text-[9px] text-ink-3">Less</span>
-          {INTENSITY_COLORS.map((color, i) => (
-            <div key={`leg-${i}`} className="w-[11px] h-[11px] rounded-[2px] border border-black/5" style={{ backgroundColor: color }} />
+          {INTENSITY_COLORS.map((cls, i) => (
+            <div key={`leg-${i}`} className={`w-[11px] h-[11px] rounded-[2px] border border-black/5 ${cls}`} />
           ))}
           <span className="text-[9px] text-ink-3">More</span>
         </div>

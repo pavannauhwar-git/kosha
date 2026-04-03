@@ -37,7 +37,6 @@ import {
   ReferenceLine,
 } from 'recharts'
 import { C } from '../lib/colors'
-import { transitionEmphasis } from '../lib/animations'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
@@ -66,7 +65,7 @@ function ParetoTooltip({ active, payload }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[186px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{row?.label || 'Category'}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -75,7 +74,7 @@ function ParetoTooltip({ active, payload }) {
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="text-ink-3">Cumulative share</span>
-          <span className="font-semibold tabular-nums text-brand">{Math.round(Number(row?.cumulativePct || 0))}%</span>
+          <span className="font-semibold tabular-nums text-warning-text">{Math.round(Number(row?.cumulativePct || 0))}%</span>
         </div>
       </div>
     </div>
@@ -322,7 +321,7 @@ export default function Analytics() {
       ) : (
         <motion.div key={year}
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-          transition={transitionEmphasis}
+          transition={{ duration: 0.25 }}
           className="page-stack"
         >
           {hasYearData ? (
@@ -351,7 +350,7 @@ export default function Analytics() {
 
               <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* ── 2. Year-over-year context ───────────────────────── */}
               {heavyReady && compareReady ? (
                 <YoYCards years={yoyYears} currentYear={year} enabled />
@@ -407,20 +406,20 @@ export default function Analytics() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 mb-2.5">
-                    <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+                    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
                       <p className="text-[10px] text-ink-3">Categories for 80%</p>
                       <p className="text-[12px] font-bold tabular-nums text-ink">{categoryPareto.categoriesFor80Pct}</p>
                     </div>
-                    <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+                    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
                       <p className="text-[10px] text-ink-3">Top category</p>
                       <p className="text-[12px] font-bold tabular-nums text-brand" title={categoryPareto.topLabel}>{categoryPareto.topLabel}</p>
                       <p className="text-[10px] tabular-nums text-ink-3 mt-0.5">{fmt(categoryPareto.topAmount, true)}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 mb-2 md:mb-0 md:hidden space-y-1.5">
+                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 mb-2 md:mb-0 md:hidden space-y-1.5">
                     {categoryPareto.rows.map((row) => (
-                      <div key={`pareto-mobile-${row.id}`} className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface-2 px-2.5 py-2">
+                      <div key={`pareto-mobile-${row.id}`} className="rounded-card border border-kosha-border bg-kosha-surface-2 px-2.5 py-2">
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <p className="text-[11px] font-semibold text-ink truncate">{row.label}</p>
                           <p className="text-[10px] tabular-nums text-ink shrink-0">{fmt(row.amount, true)} · {row.cumulativePct}%</p>
@@ -432,7 +431,7 @@ export default function Analytics() {
                     ))}
                   </div>
 
-                  <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 hidden md:block">
+                  <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 hidden md:block">
                     <ResponsiveContainer width="100%" height={228}>
                       <ComposedChart data={categoryPareto.rows} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />

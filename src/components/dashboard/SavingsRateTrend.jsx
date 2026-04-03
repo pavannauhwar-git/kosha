@@ -147,7 +147,7 @@ export default memo(function SavingsRateTrend({ flowTrendData, monthLabels }) {
             />
             <Tooltip content={<SavingsRateTooltip />} />
             <ReferenceLine y={0} stroke="rgba(16,33,63,0.25)" strokeDasharray="4 4" />
-            <ReferenceLine y={20} stroke="rgba(35,194,138,0.38)" strokeDasharray="4 4" />
+            <ReferenceLine y={20} stroke="rgba(14,159,110,0.35)" strokeDasharray="4 4" />
             <Area
               type="monotone"
               dataKey="rate"
@@ -163,7 +163,7 @@ export default memo(function SavingsRateTrend({ flowTrendData, monthLabels }) {
 
       <div className="flex items-center gap-4 mt-2">
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-0.5 border-t border-dashed" style={{ borderColor: 'rgba(35,194,138,0.52)' }} />
+          <span className="w-2 h-0.5 border-t border-dashed" style={{ borderColor: 'rgba(14,159,110,0.5)' }} />
           <span className="text-[10px] text-ink-3">20% target</span>
         </div>
         {trendData.bestMonth && (

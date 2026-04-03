@@ -17,7 +17,6 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import AppToast from '../components/common/AppToast'
 import BillPaymentInsights from '../components/cards/bills/BillPaymentInsights'
-import { sheetEnterTransition, sheetExitTransition, transitionEmphasis } from '../lib/animations'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
@@ -270,7 +269,7 @@ export default function Bills() {
           <button
             onClick={handleExportCsv}
             title={`Export ${tab} bills CSV`}
-            className="close-btn border border-kosha-border panel-neutral shrink-0"
+            className="close-btn border border-kosha-border shrink-0"
           >
             <Download size={16} className="text-ink-2" />
           </button>
@@ -301,26 +300,26 @@ export default function Bills() {
 
       {/* ── Summary card ─────────────────────────────────────────────── */}
       {tab === 'pending' && visiblePending.length > 0 && (
-        <div className="card mb-4 p-3.5 sm:p-4">
-          <div className="flex items-start justify-between gap-3 pb-4 border-b border-kosha-border panel-neutral">
+        <div className="card mb-4 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
+          <div className="flex items-start justify-between gap-3 pb-4 border-b border-kosha-border">
             <div>
               <p className="section-label mb-0.5">Total pending</p>
               <p className="text-value font-bold text-ink tracking-tight tabular-nums leading-none">
                 {fmt(totalPending)}
               </p>
             </div>
-            <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2 px-2.5 py-1 rounded-pill border border-kosha-border panel-neutral">
+            <span className="text-caption font-semibold text-ink-3 bg-kosha-surface-2 px-2.5 py-1 rounded-pill border border-kosha-border">
               {visiblePending.length} bill{visiblePending.length !== 1 ? 's' : ''}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mt-4">
-            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border panel-neutral px-3 py-2.5">
+            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">Due in 7 days</p>
               <p className="text-base font-bold text-warning-text tabular-nums leading-none">{fmt(dueSoonAmount)}</p>
               <p className="text-caption text-ink-3 mt-1">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
             </div>
-            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border panel-neutral px-3 py-2.5">
+            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">Due this month</p>
               <p className="text-base font-bold text-ink tabular-nums leading-none">{fmt(dueThisMonth.amount)}</p>
               <p className="text-caption text-ink-3 mt-1">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>
@@ -332,7 +331,7 @@ export default function Bills() {
               <motion.div
                 className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-income-text'}`}
                 initial={{ width: 0 }} animate={{ width: `${barPct || 100}%` }}
-                transition={transitionEmphasis}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
               />
             </div>
             <div className="flex justify-between">
@@ -348,9 +347,9 @@ export default function Bills() {
       )}
 
       {showGuideHint && (
-        <div className="card mb-6 p-3.5 sm:p-4">
+        <div className="card mb-6 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 flex items-center justify-center shrink-0 border border-kosha-border panel-neutral">
+            <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 flex items-center justify-center shrink-0 border border-kosha-border">
               <BookOpen size={16} className="text-brand" />
             </div>
             <div className="flex-1 min-w-0">
@@ -461,7 +460,7 @@ export default function Bills() {
                           <span className="text-[10px] sm:text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
                         )}
                         {(bill.__optimistic || String(bill.id || '').startsWith('optimistic-')) && (
-                          <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand-on">
+                          <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
                             Syncing...
                           </span>
                         )}
@@ -511,8 +510,8 @@ export default function Bills() {
             />
             <motion.div className="sheet-panel"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: sheetEnterTransition }}
-              exit={{ y: '100%', transition: sheetExitTransition }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+              exit={{ y: '100%', transition: { duration: 0.22 } }}
             >
               <div className="sheet-handle" />
               <div className="px-5 overflow-x-hidden">
@@ -532,10 +531,10 @@ export default function Bills() {
 
                 <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3 overflow-hidden
                                 flex items-center gap-2 border border-transparent
-                                focus-within:border-brand-border
-                                focus-within:ring-2 focus-within:ring-brand/25
+                                focus-within:border-warning-border
+                                focus-within:ring-2 focus-within:ring-warning/25
                                 transition-all duration-100">
-                  <span className="font-display text-xl text-brand">₹</span>
+                  <span className="font-display text-xl text-warning-text">₹</span>
                   <input className="flex-1 bg-transparent font-display text-2xl text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" placeholder="0"
                     value={form.amount}
@@ -544,15 +543,15 @@ export default function Bills() {
 
                 <div className="list-card mb-3">
                   <label className="list-row w-full cursor-pointer">
-                    <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
-                      <span className="text-brand text-xs font-bold">📅</span>
+                    <div className="w-8 h-8 rounded-chip bg-warning-bg flex items-center justify-center shrink-0">
+                      <span className="text-warning-text text-xs font-bold">📅</span>
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Due Date</span>
                     <input type="date"
                       value={form.due_date}
                       onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
                       className="text-[15px] text-ink-3 bg-transparent outline-none text-right
-                                 focus:text-brand" />
+                                 focus:text-warning-text" />
                   </label>
                 </div>
 
@@ -562,7 +561,7 @@ export default function Bills() {
                     className={`flex items-center gap-2 px-3 py-2 rounded-card text-sm font-medium
                                 border transition-all
                       ${form.is_recurring
-                        ? 'bg-brand-container text-brand-on border-brand-border'
+                        ? 'bg-warning-bg text-warning-text border-warning-border'
                         : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
                   >
                     <Repeat size={14} /> Recurring
@@ -574,7 +573,7 @@ export default function Bills() {
                           onClick={() => setForm(f => ({ ...f, recurrence: r }))}
                           className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
                             ${form.recurrence === r
-                              ? 'bg-brand-container text-brand-on border-brand-border'
+                              ? 'bg-warning-bg text-warning-text border-warning-border'
                               : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
                         >{r}</button>
                       ))}
@@ -588,7 +587,7 @@ export default function Bills() {
                   <button onClick={handleAdd}
                     disabled={addSaving}
                     className={`w-full py-4 rounded-card font-semibold transition-all
-                               ${addSaving ? 'bg-brand/70 text-white/90 scale-[0.99]' : 'bg-brand text-white active:scale-[0.99]'}`}>
+                               ${addSaving ? 'bg-repay/70 text-white/90 scale-[0.99]' : 'bg-gradient-to-r from-warning to-repay text-white active:scale-[0.99]'}`}>
                     {addSaving ? 'Adding…' : 'Add Bill'}
                   </button>
                 </div>

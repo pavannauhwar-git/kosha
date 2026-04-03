@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { fmt, savingsRate } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 import { MONTH_NAMES } from '../../../lib/constants'
-import { transitionEmphasis } from '../../../lib/animations'
 
 const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
   const earned = data?.earned || 0
@@ -69,7 +68,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
             className="bar-dark-fill"
             initial={{ width: 0 }}
             animate={{ width: `${rate}%` }}
-            transition={{ ...transitionEmphasis, delay: 0.1 }}
+            transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
           />
         </div>
       </div>

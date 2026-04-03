@@ -14,7 +14,6 @@ import { supabase } from '../../../lib/supabase'
 import { getAuthUserId } from '../../../lib/authStore'
 import { queryClient } from '../../../lib/queryClient'
 import { fmt } from '../../../lib/utils'
-import { C } from '../../../lib/colors'
 
 function toTotals(payload) {
   return {
@@ -222,9 +221,9 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
   const trendRows = points.map((row) => ({
     ...row,
     barColor: row.year === currentYear
-      ? C.brand
+      ? '#0A67D8'
       : row.year === compareYear
-        ? C.brandLight
+        ? '#9A7200'
         : 'rgba(16,33,63,0.22)',
   }))
 
@@ -284,16 +283,8 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
               width={34}
             />
             <Tooltip content={<MetricTooltip />} />
-            <Bar
-              dataKey="compare"
-              name={String(compareYear)}
-              fill={C.brandLight}
-              stroke={C.brandMid}
-              strokeWidth={1}
-              radius={[6, 6, 0, 0]}
-              maxBarSize={20}
-            />
-            <Bar dataKey="current" name={String(currentYear)} fill={C.brand} radius={[6, 6, 0, 0]} maxBarSize={20} />
+            <Bar dataKey="compare" name={String(compareYear)} fill="#9A7200" radius={[6, 6, 0, 0]} maxBarSize={20} />
+            <Bar dataKey="current" name={String(currentYear)} fill="#0A67D8" radius={[6, 6, 0, 0]} maxBarSize={20} />
           </BarChart>
         </ResponsiveContainer>
       </div>

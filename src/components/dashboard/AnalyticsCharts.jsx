@@ -79,7 +79,7 @@ function scoreTone(score) {
     return {
       label: 'Moderate',
       color: C.bills,
-      fill: 'rgba(10,103,216,0.16)',
+      fill: C.accent,
     }
   }
 
@@ -102,7 +102,7 @@ const PulseTooltip = ({ active, payload, label }) => {
   const outflow = toFiniteNumber(point?.Outflow)
   const pulse = toFiniteNumber(point?.Pulse)
   const pulsePct = income > 0 ? Math.round((pulse / income) * 100) : 0
-  const pulseColor = pulse >= 0 ? C.brandMid : C.chartExpense
+  const pulseColor = pulse >= 0 ? C.brandMid : C.accent
 
   return (
     <div style={{
@@ -235,23 +235,23 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
       </div>
 
       <div className="mb-3 grid grid-cols-2 md:grid-cols-5 gap-2">
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Income</p>
           <p className="text-[12px] font-bold tabular-nums text-income-text">{fmt(totalIncome || totalIncomeSafe, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Outflow</p>
           <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(totalOutflow, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Investment</p>
           <p className="text-[12px] font-bold tabular-nums text-invest-text">{fmt(totalInvested, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Positive months</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{positivePulseMonths}/{safeData.length}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Spend velocity</p>
           <p className={`text-[12px] font-bold tabular-nums ${spendVelocity <= 85 ? 'text-income-text' : 'text-warning-text'}`}>
             {spendVelocity}%
@@ -272,7 +272,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             {safeData.map((entry, i) => (
               <Cell
                 key={i}
-                fill={entry.Pulse >= 0 ? C.brandMid : C.chartExpense}
+                fill={entry.Pulse >= 0 ? C.brandMid : C.accent}
                 fillOpacity={0.92}
               />
             ))}
@@ -290,7 +290,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
       </div>
 
       <div className="flex justify-center gap-6 pb-1 pt-1">
-        {[['Surplus pulse', C.brandMid], ['Deficit pulse', C.chartExpense]].map(([l, c]) => (
+        {[['Surplus pulse', C.brandMid], ['Deficit pulse', C.accent]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: c }} />
             <span style={{ fontSize: 11, color: 'rgba(49,58,134,0.60)', fontWeight: 500 }}>{l}</span>
@@ -352,15 +352,15 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
       </div>
 
       <div className="mb-3 grid grid-cols-3 gap-2">
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Positive months</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{positiveMonths}/{netData.length}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Highest surplus</p>
           <p className="text-[12px] font-bold tabular-nums text-brand">{bestMonth?.name || '—'}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Deepest deficit</p>
           <p className="text-[12px] font-bold tabular-nums text-warning-text">{worstMonth?.name || '—'}</p>
         </div>
@@ -378,7 +378,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={26}>
             {safeData.map((entry, i) => (
               <Cell key={i}
-                fill={entry.Net >= 0 ? C.brandMid : C.chartExpense}
+                fill={entry.Net >= 0 ? C.brandMid : C.accent}
                 fillOpacity={0.90}
               />
             ))}
@@ -386,7 +386,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
         </BarChart>
       </ResponsiveContainer>
       <div className="flex justify-center gap-6 pt-2">
-        {[['Surplus', C.brandMid], ['Deficit', C.chartExpense]].map(([label, color]) => (
+        {[['Surplus', C.brandMid], ['Deficit', C.accent]].map(([label, color]) => (
           <div key={label} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: color }} />
             <span className="text-[11px] text-ink-3">{label}</span>
@@ -469,19 +469,19 @@ export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Income</p>
           <p className="text-[12px] font-bold tabular-nums text-brand">{fmt(totalIncome, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Expense</p>
           <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(totalExpense, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Investment</p>
           <p className="text-[12px] font-bold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Total outflow</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(totalOutflow, true)}</p>
         </div>
@@ -651,23 +651,23 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
           <p className="text-label font-semibold text-ink">Net movement waterfall</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Shows how income gets absorbed by expense and investments into final net.</p>
         </div>
-        <span className={`text-[12px] font-bold tabular-nums ${net >= 0 ? 'text-brand' : 'text-expense-text'}`}>
+        <span className={`text-[12px] font-bold tabular-nums ${net >= 0 ? 'text-brand' : 'text-warning-text'}`}>
           {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
         </span>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Outflow burn</p>
           <p className={`text-[12px] font-bold tabular-nums ${burnRate <= 85 ? 'text-income-text' : 'text-warning-text'}`}>{burnRate}%</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Invest share</p>
           <p className="text-[12px] font-bold tabular-nums text-invest-text">{investShare}%</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Net outcome</p>
-          <p className={`text-[12px] font-bold tabular-nums ${net >= 0 ? 'text-brand' : 'text-expense-text'}`}>
+          <p className={`text-[12px] font-bold tabular-nums ${net >= 0 ? 'text-brand' : 'text-warning-text'}`}>
             {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
           </p>
         </div>
@@ -769,15 +769,15 @@ export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaC
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Peak outflow</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{highestOutflow?.name || '—'}</p>
+          <p className="text-[12px] font-bold tabular-nums text-warning-text">{highestOutflow?.name || '—'}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Avg outflow</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(avgOutflow, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Peak amount</p>
           <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(highestOutflow?.Outflow || 0, true)}</p>
         </div>
@@ -893,25 +893,25 @@ export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ net
           <p className="text-label font-semibold text-ink">Cumulative Surplus Trajectory</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Running surplus curve across the year to spot drawdowns early.</p>
         </div>
-        <span className={`text-[12px] font-bold tabular-nums ${latest >= 0 ? 'text-brand' : 'text-expense-text'}`}>
+        <span className={`text-[12px] font-bold tabular-nums ${latest >= 0 ? 'text-brand' : 'text-warning-text'}`}>
           {latest >= 0 ? '+' : '-'}{fmt(Math.abs(latest), true)}
         </span>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Year-end</p>
-          <p className={`text-[12px] font-bold tabular-nums ${latest >= 0 ? 'text-brand' : 'text-expense-text'}`}>
+          <p className={`text-[12px] font-bold tabular-nums ${latest >= 0 ? 'text-brand' : 'text-warning-text'}`}>
             {latest >= 0 ? '+' : '-'}{fmt(Math.abs(latest), true)}
           </p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Peak month</p>
           <p className="text-[12px] font-bold tabular-nums text-brand">{peak?.name || '—'}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Low point</p>
-          <p className="text-[12px] font-bold tabular-nums text-expense-text">{trough?.name || '—'}</p>
+          <p className="text-[12px] font-bold tabular-nums text-warning-text">{trough?.name || '—'}</p>
         </div>
       </div>
 
@@ -1014,7 +1014,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
               <select
                 value={selectedCategory?.id || ''}
                 onChange={(event) => setSelectedCategoryId(event.target.value)}
-                className="w-full rounded-card border border-kosha-border panel-neutral bg-white px-3 py-2 text-[12px] font-semibold text-ink"
+                className="w-full rounded-card border border-kosha-border bg-white px-3 py-2 text-[12px] font-semibold text-ink"
               >
                 {scenarioOptions.map((option) => (
                   <option key={option.id} value={option.id}>
@@ -1046,22 +1046,22 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
                   step={1}
                   value={reductionPct}
                   onChange={(event) => handlePercentChange(event.target.value)}
-                  className="w-16 rounded-card border border-kosha-border panel-neutral px-2 py-1.5 text-[12px] font-semibold text-ink"
+                  className="w-16 rounded-card border border-kosha-border px-2 py-1.5 text-[12px] font-semibold text-ink"
                 />
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-            <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-[10px] text-ink-3">Current surplus</p>
-              <p className={`text-[12px] font-bold tabular-nums ${currentSurplus >= 0 ? 'text-brand' : 'text-expense-text'}`}>
+              <p className={`text-[12px] font-bold tabular-nums ${currentSurplus >= 0 ? 'text-brand' : 'text-warning-text'}`}>
                 {currentSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(currentSurplus))}
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5">{currentSavingsRate}% savings rate</p>
             </div>
 
-            <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-[10px] text-ink-3">Potential lift</p>
               <p className="text-[12px] font-bold tabular-nums text-brand">
                 +{fmt(reductionAmount)}
@@ -1069,16 +1069,16 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
               <p className="text-[10px] text-ink-3 mt-0.5">From {selectedCategory?.label || 'selected category'}</p>
             </div>
 
-            <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+            <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <p className="text-[10px] text-ink-3">Projected surplus</p>
-              <p className={`text-[12px] font-bold tabular-nums ${projectedSurplus >= 0 ? 'text-brand' : 'text-expense-text'}`}>
+              <p className={`text-[12px] font-bold tabular-nums ${projectedSurplus >= 0 ? 'text-brand' : 'text-warning-text'}`}>
                 {projectedSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(projectedSurplus))}
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5">{projectedSavingsRate}% savings rate</p>
             </div>
           </div>
 
-          <div className="rounded-card border border-kosha-border panel-neutral bg-white p-3">
+          <div className="rounded-card border border-kosha-border bg-white p-3">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-16 text-[11px] text-ink-3">Current</span>
@@ -1087,7 +1087,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
                     className="h-full rounded-pill"
                     style={{
                       width: `${currentBarWidth}%`,
-                      background: currentSurplus >= 0 ? C.brandMid : C.chartExpense,
+                      background: currentSurplus >= 0 ? C.brandMid : C.bills,
                     }}
                   />
                 </div>
@@ -1103,7 +1103,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
                     className="h-full rounded-pill"
                     style={{
                       width: `${projectedBarWidth}%`,
-                      background: projectedSurplus >= 0 ? C.brand : C.chartExpense,
+                      background: projectedSurplus >= 0 ? C.brand : C.bills,
                     }}
                   />
                 </div>
@@ -1180,7 +1180,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
   const scenarioData = [
     { name: 'Current trend', short: 'Trend', multiplier: 1, color: C.brand },
     { name: '+10% outflow', short: '+10%', multiplier: 1.1, color: C.brandMid },
-    { name: '+20% stress', short: '+20%', multiplier: 1.2, color: C.expenseBright },
+    { name: '+20% stress', short: '+20%', multiplier: 1.2, color: C.accent },
   ].map((scenario) => {
     const months = trendOutflow > 0 ? reserveAmount / (trendOutflow * scenario.multiplier) : 0
     return {
@@ -1205,15 +1205,15 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Trend outflow / month</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(trendOutflow, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Runway corpus</p>
           <p className="text-[12px] font-bold tabular-nums text-brand">{fmt(reserveAmount, true)}</p>
         </div>
-        <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">12m target</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(trendOutflow * 12, true)}</p>
         </div>
@@ -1230,7 +1230,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
           step={1000}
           value={reserveAmount}
           onChange={(event) => setReserveCorpus(Math.max(0, Number(event.target.value || 0)))}
-          className="w-full rounded-card border border-kosha-border panel-neutral bg-white px-3 py-2 text-[12px] font-semibold text-ink"
+          className="w-full rounded-card border border-kosha-border bg-white px-3 py-2 text-[12px] font-semibold text-ink"
         />
       </div>
 
@@ -1339,7 +1339,7 @@ export const VolatilityScoreCard = memo(function VolatilityScoreCard({ flowData 
           const cvLabel = row.stats.cv == null ? '—' : `${Math.round(row.stats.cv * 100)}% coeff. variation`
 
           return (
-            <div key={row.key} className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5">
+            <div key={row.key} className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] font-semibold text-ink">{row.label}</p>
                 <span className="text-[11px] font-bold tabular-nums" style={{ color: row.tone.color }}>
@@ -1364,7 +1364,7 @@ export const VolatilityScoreCard = memo(function VolatilityScoreCard({ flowData 
         })}
       </div>
 
-      <div className="mt-3 rounded-card border border-kosha-border panel-neutral bg-white p-2.5 text-[11px] text-ink-3">
+      <div className="mt-3 rounded-card border border-kosha-border bg-white p-2.5 text-[11px] text-ink-3">
         <span className="font-semibold text-ink">Focus area:</span>{' '}
         {weakest
           ? `${weakest.label} is least stable. Tightening this variance will improve year-end planning confidence fastest.`

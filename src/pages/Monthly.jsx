@@ -24,7 +24,6 @@ import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
 import MonthCloseChecklist from '../components/cards/monthly/MonthCloseChecklist'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
 import { useReconciliationReviews } from '../hooks/useReconciliationReviews'
-import { transitionEmphasis } from '../lib/animations'
 
 
 export default function Monthly() {
@@ -329,7 +328,7 @@ export default function Monthly() {
           key={`${year}-${month}`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={transitionEmphasis}
+          transition={{ duration: 0.25 }}
           className="page-stack"
         >
           {!hasMonthData ? (
@@ -362,7 +361,7 @@ export default function Monthly() {
             />
           ) : (
           <>
-          <div className="mb-4 md:mb-5">
+          <div className="mb-3 md:mb-4">
             <MonthHeroCard month={month} year={year} data={data} />
           </div>
 
@@ -522,7 +521,7 @@ export default function Monthly() {
               subtitle="Ranked category share with exact spend values"
               budgetMap={bMap}
             />
-            <div className="flex justify-end mt-0.5 mb-1.5">
+            <div className="flex justify-end -mt-1 mb-1">
               <button
                 type="button"
                 onClick={() => setShowBudgetSheet(true)}

@@ -1,5 +1,4 @@
 import { fmt } from '../../../lib/utils'
-import { C } from '../../../lib/colors'
 
 export default function BreakdownCard({ earned, spent, invested, totalLabel = 'Total income' }) {
   const inflow = Number(earned || 0)
@@ -21,7 +20,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
       label: 'Spent',
       amount: expense,
       pct: spentPct,
-      color: C.chartExpense,
+      color: '#E11D48',
       tone: 'text-expense-text',
       bg: 'bg-expense-bg',
     },
@@ -30,7 +29,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
       label: 'Invested',
       amount: investment,
       pct: investedPct,
-      color: C.invest,
+      color: '#7C3AED',
       tone: 'text-invest-text',
       bg: 'bg-invest-bg',
     },
@@ -40,7 +39,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
           label: 'Leftover',
           amount: saved,
           pct: savedPct,
-          color: C.chartIncome,
+          color: '#0E9F6E',
           tone: 'text-income-text',
           bg: 'bg-income-bg',
         }
@@ -49,9 +48,9 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
           label: 'Deficit',
           amount: deficit,
           pct: deficitPct,
-          color: C.expense,
-          tone: 'text-expense-text',
-          bg: 'bg-expense-bg',
+          color: '#9A7200',
+          tone: 'text-warning-text',
+          bg: 'bg-warning-bg',
         },
   ]
 
@@ -79,7 +78,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
         </div>
         <span
           className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${
-            net >= 0 ? 'bg-income-bg text-income-text' : 'bg-expense-bg text-expense-text'
+            net >= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'
           }`}
         >
           {net >= 0 ? '+' : '-'}{fmt(Math.abs(net))}
