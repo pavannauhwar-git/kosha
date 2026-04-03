@@ -163,12 +163,39 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                         className="rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5"
                       >
                         <div className="flex items-center gap-2.5">
+                          {/* Radial gauge icon when budget is set, else static icon */}
+                          {hasBudget && budgetNum > 0 ? (
+                            <div className="w-9 h-9 shrink-0 relative">
+                              <svg viewBox="0 0 36 36" className="w-9 h-9">
+                                <circle
+                                  cx="18" cy="18" r="15"
+                                  fill="none"
+                                  stroke="rgba(16,33,63,0.08)"
+                                  strokeWidth="3"
+                                />
+                                <circle
+                                  cx="18" cy="18" r="15"
+                                  fill="none"
+                                  stroke={pct >= 100 ? '#E11D48' : pct >= 80 ? '#9A7200' : '#0A67D8'}
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                  strokeDasharray={`${Math.min(100, pct) * 0.9425} 94.25`}
+                                  transform="rotate(-90 18 18)"
+                                  style={{ transition: 'stroke-dasharray 0.4s ease' }}
+                                />
+                              </svg>
+                              <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold tabular-nums text-ink">
+                                {Math.min(pct, 999)}%
+                              </span>
+                            </div>
+                          ) : (
                           <div
                             className="w-7 h-7 rounded-full border border-kosha-border flex items-center justify-center shrink-0"
                             style={{ background: cat.bg }}
                           >
                             <CategoryIcon categoryId={cat.id} size={13} />
                           </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <p className="text-[12px] font-semibold text-ink truncate">{cat.label}</p>
                             {cat.spent > 0 && (
@@ -217,19 +244,26 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                           </div>
                         </div>
 
-                        {/* Progress bar when budget is set */}
+                        {/* Gauge status bar when budget is set */}
                         {hasBudget && budgetNum > 0 && (
-                          <div className="mt-2 h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                            <div
-                              className={`h-full rounded-pill transition-all ${
-                                pct >= 100
-                                  ? 'bg-expense-text'
-                                  : pct >= 80
-                                    ? 'bg-warning-text'
-                                    : 'bg-brand'
-                              }`}
-                              style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
-                            />
+                          <div className="mt-2 flex items-center gap-2">
+                            <div className="flex-1 h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                              <div
+                                className={`h-full rounded-pill transition-all ${
+                                  pct >= 100
+                                    ? 'bg-expense-text'
+                                    : pct >= 80
+                                      ? 'bg-warning-text'
+                                      : 'bg-brand'
+                                }`}
+                                style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+                              />
+                            </div>
+                            <span className={`text-[9px] font-semibold shrink-0 ${
+                              pct >= 100 ? 'text-expense-text' : pct >= 80 ? 'text-warning-text' : 'text-ink-3'
+                            }`}>
+                              {pct >= 100 ? 'Over budget' : pct >= 80 ? 'Near limit' : 'On track'}
+                            </span>
                           </div>
                         )}
                       </div>

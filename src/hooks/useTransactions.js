@@ -332,6 +332,55 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
   return { data: data || {}, loading: isLoading, error }
 }
 
+export function useYearDailyExpenseTotals(year, options = {}) {
+  const { enabled = true } = options
+  const safeYear = Number(year) || new Date().getFullYear()
+  const startISO = `${safeYear}-01-01`
+  const endISO = `${safeYear}-12-31`
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['yearDailyExpenseTotals', safeYear],
+    enabled,
+    queryFn: () => traceQuery('transactions:year-daily-expense-totals', async () => {
+      const userId = getAuthUserId()
+      const pageSize = 1000
+      const totalsByDate = {}
+
+      for (let from = 0; ; from += pageSize) {
+        const to = from + pageSize - 1
+
+        const { data: rows, error: qError } = await supabase
+          .from('transactions')
+          .select(DAILY_EXPENSE_TOTAL_COLUMNS)
+          .eq('user_id', userId)
+          .eq('type', 'expense')
+          .gte('date', startISO)
+          .lte('date', endISO)
+          .order('date', { ascending: false })
+          .range(from, to)
+
+        if (qError) throw qError
+
+        const batch = rows || []
+        for (const row of batch) {
+          const key = String(row?.date || '').slice(0, 10)
+          if (!key) continue
+          const amount = Number(row?.amount || 0)
+          if (!Number.isFinite(amount)) continue
+          totalsByDate[key] = (totalsByDate[key] || 0) + amount
+        }
+
+        if (batch.length < pageSize) break
+      }
+
+      return totalsByDate
+    }),
+    gcTime: 5 * 60 * 1000,
+  })
+
+  return { data: data || {}, loading: isLoading, error }
+}
+
 export function useTodayExpenses(options = {}) {
   const { enabled = true } = options
   const today    = new Date()

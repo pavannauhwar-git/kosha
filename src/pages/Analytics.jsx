@@ -9,7 +9,7 @@ import {
   WhatIfSimulatorCard,
   RunwayCoverageChart,
 } from '../components/dashboard/AnalyticsCharts'
-import { useYearSummary } from '../hooks/useTransactions'
+import { useYearSummary, useYearDailyExpenseTotals } from '../hooks/useTransactions'
 import { fmt } from '../lib/utils'
 import PageHeader from '../components/layout/PageHeader'
 import { MONTH_SHORT } from '../lib/constants'
@@ -23,6 +23,8 @@ import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard
 import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
 import InvestmentConsistencyCard from '../components/cards/analytics/InvestmentConsistencyCard'
 import SavingsRateTrend from '../components/dashboard/SavingsRateTrend'
+import FinancialHealthRadar from '../components/cards/analytics/FinancialHealthRadar'
+import CalendarHeatmap from '../components/cards/analytics/CalendarHeatmap'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -96,6 +98,7 @@ export default function Analytics() {
 
   const { data, loading } = useYearSummary(year)
   const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
+  const { data: yearDailyTotals, loading: yearDailyLoading } = useYearDailyExpenseTotals(year, { enabled: heavyReady })
 
   const flowTrendData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
@@ -295,6 +298,14 @@ export default function Analytics() {
                 year={year}
               />
 
+              {heavyReady && (
+                <FinancialHealthRadar
+                  data={data}
+                  prevData={prevData}
+                  year={year}
+                />
+              )}
+
               <YearlyInsightsCard
                 year={year}
                 data={data}
@@ -336,6 +347,12 @@ export default function Analytics() {
               <SavingsRateTrend flowTrendData={flowTrendData} monthLabels={MONTH_SHORT} />
 
               <InvestmentConsistencyCard monthlyData={data?.monthly} year={year} />
+
+              <CalendarHeatmap
+                dailyTotals={yearDailyTotals}
+                year={year}
+                loading={yearDailyLoading}
+              />
 
               <RunwayCoverageChart
                 flowData={flowTrendData}

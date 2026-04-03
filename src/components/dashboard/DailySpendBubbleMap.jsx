@@ -1,6 +1,25 @@
 import { memo, useCallback, useEffect, useState } from 'react'
 import { fmt } from '../../lib/utils'
 
+const INTENSITY_CLASSES = [
+  'bg-kosha-surface-2',           // 0 — no spend
+  'bg-brand/20',                  // 1
+  'bg-brand/40',                  // 2
+  'bg-brand/60',                  // 3
+  'bg-brand/80',                  // 4
+  'bg-brand',                     // 5 — max
+]
+
+function intensityLevel(value, maxValue) {
+  if (value <= 0) return 0
+  const ratio = value / maxValue
+  if (ratio > 0.8) return 5
+  if (ratio > 0.6) return 4
+  if (ratio > 0.4) return 3
+  if (ratio > 0.2) return 2
+  return 1
+}
+
 const DailySpendBubbleMap = memo(function DailySpendBubbleMap({ dailyVariance, selectedWindowDays, onWindowDaysChange }) {
   const [activeDay, setActiveDay] = useState(null)
 
@@ -21,8 +40,8 @@ const DailySpendBubbleMap = memo(function DailySpendBubbleMap({ dailyVariance, s
     <div className="card p-4 border-0">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
-          <p className="section-label">Daily spend bubble map</p>
-          <p className="text-caption text-ink-3 mt-0.5">Each bubble represents one day across the last {dailyVariance.lookbackDays} days</p>
+          <p className="section-label">Daily spend heatmap</p>
+          <p className="text-caption text-ink-3 mt-0.5">Spending intensity over the last {dailyVariance.lookbackDays} days</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="inline-flex items-center rounded-pill border border-kosha-border bg-kosha-surface-2 p-0.5">
@@ -41,36 +60,34 @@ const DailySpendBubbleMap = memo(function DailySpendBubbleMap({ dailyVariance, s
               )
             })}
           </div>
-
-          <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
-            {dailyVariance.activeDays} active day{dailyVariance.activeDays === 1 ? '' : 's'}
-          </span>
         </div>
       </div>
 
-      <p className="text-[10px] text-ink-3 mb-1.5">
-        {activeDay
-          ? `${activeDay.label}: ${fmt(activeDay.value)}`
-          : 'Hover a bubble to see exact spend for that day.'}
-      </p>
+      <div className="h-5 mb-1">
+        {activeDay ? (
+          <p className="text-[11px] text-ink-2 font-semibold">
+            {activeDay.label}: <span className="text-brand tabular-nums">{fmt(activeDay.value)}</span>
+          </p>
+        ) : (
+          <p className="text-[10px] text-ink-3">Hover a cell to see daily spend.</p>
+        )}
+      </div>
 
-      <p className="text-[10px] text-ink-3 mb-1.5">
-        Absolute range: 0 to {fmt(dailyVariance.heatmapMax)} over {dailyVariance.heatmapRange}.
-      </p>
-
-      <div className="grid grid-cols-7 gap-1.5 mb-1">
+      <div className="grid grid-cols-7 gap-[5px] mb-1">
         {dailyVariance.weekdayLabels.map((label) => (
-          <p key={`bubble-header-${label}`} className="text-[9px] text-ink-3 text-center">{label}</p>
+          <p key={`heatmap-header-${label}`} className="text-[8px] text-ink-3 text-center">{label}</p>
         ))}
       </div>
 
-      <div className="space-y-1.5" onMouseLeave={() => setActiveDay(null)}>
+      <div className="space-y-[5px]" onMouseLeave={() => setActiveDay(null)}>
         {dailyVariance.heatmapWeeks.map((week, weekIndex) => (
-          <div key={`heatmap-week-${weekIndex}`} className="grid grid-cols-7 gap-1.5">
+          <div key={`heatmap-week-${weekIndex}`} className="grid grid-cols-7 gap-[5px]">
             {week.map((day, dayIndex) => {
               if (!day) {
-                return <div key={`heatmap-empty-${weekIndex}-${dayIndex}`} className="h-8 rounded-card bg-transparent" aria-hidden="true" />
+                return <div key={`heatmap-empty-${weekIndex}-${dayIndex}`} className="aspect-square rounded-[3px] bg-transparent" aria-hidden="true" />
               }
+
+              const level = intensityLevel(day.value, dailyVariance.heatmapMax)
 
               return (
                 <button
@@ -80,26 +97,27 @@ const DailySpendBubbleMap = memo(function DailySpendBubbleMap({ dailyVariance, s
                   aria-label={`${day.label} spend ${fmt(day.value)}`}
                   onMouseEnter={() => handleDayActivate(day)}
                   onFocus={() => handleDayActivate(day)}
-                  className="h-8 rounded-card bg-kosha-surface-2 border border-kosha-border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-                >
-                  <span
-                    className="rounded-full border border-white/70"
-                    style={{
-                      width: `${day.bubbleSize}px`,
-                      height: `${day.bubbleSize}px`,
-                      background: day.bubbleFill,
-                    }}
-                  />
-                </button>
+                  className={`aspect-square rounded-[3px] border border-black/5 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${INTENSITY_CLASSES[level]}`}
+                />
               )
             })}
           </div>
         ))}
       </div>
 
-      <p className="text-[10px] text-ink-3 mt-1.5">
-        Bubble size and shade both scale with spend magnitude. Tracked spend in this window: {fmt(dailyVariance.trackedTotal)}.
-      </p>
+      {/* Legend + stats */}
+      <div className="flex items-center justify-between gap-3 mt-2.5 flex-wrap">
+        <div className="flex items-center gap-1">
+          <span className="text-[8px] text-ink-3">Less</span>
+          {INTENSITY_CLASSES.map((cls, i) => (
+            <div key={`leg-${i}`} className={`w-[11px] h-[11px] rounded-[2px] border border-black/5 ${cls}`} />
+          ))}
+          <span className="text-[8px] text-ink-3">More</span>
+        </div>
+        <p className="text-[10px] text-ink-3 tabular-nums">
+          {dailyVariance.activeDays} active · {fmt(dailyVariance.trackedTotal)} total
+        </p>
+      </div>
     </div>
   )
 })
