@@ -18,8 +18,7 @@ import SectionHeader from '../components/common/SectionHeader'
 import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
 import BreakdownCard from '../components/cards/monthly/BreakdownCard'
 import DailySpendTrend from '../components/cards/monthly/DailySpendTrend'
-import FixedVsVariableCard from '../components/cards/monthly/FixedVsVariableCard'
-import PaymentModeCard from '../components/cards/monthly/PaymentModeCard'
+import MonthlySpendHeatmap from '../components/cards/monthly/MonthlySpendHeatmap'
 import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
 import MonthCloseChecklist from '../components/cards/monthly/MonthCloseChecklist'
 import { buildReconciliationInsights, getReviewedReconciliationIds } from '../lib/reconciliation'
@@ -502,11 +501,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && txnRows.length > 0 && (
-            <FixedVsVariableCard txnRows={txnRows} earned={inflow} />
-          )}
-
-          {heavyReady && txnRows.length > 0 && (
-            <PaymentModeCard txnRows={txnRows} />
+            <MonthlySpendHeatmap txnRows={txnRows} year={year} month={month} />
           )}
 
           {heavyReady && txnRows.length > 0 && (
