@@ -59,7 +59,7 @@ function DuePressureTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="mini-panel p-2.5">
+    <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Cum due</span>
@@ -120,7 +120,7 @@ function DuePipelineTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="mini-panel p-2.5 min-w-[172px]">
+    <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 shadow-card min-w-[172px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -141,7 +141,7 @@ function WeeklyDigestTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="mini-panel p-2.5">
+    <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Current 7d</span>
@@ -920,7 +920,7 @@ export default function Dashboard() {
               <div className="h-full rounded-pill bg-kosha-border" />
             </div>
 
-            <div className="mt-2.5 mini-panel p-2.5">
+            <div className="mt-2.5 rounded-card border border-kosha-border panel-neutral bg-kosha-surface-2 p-2.5">
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={cashRiskRadar.timelineSeries} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
@@ -1002,7 +1002,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface-2 p-2.5">
                   <ResponsiveContainer width="100%" height={198}>
                     <BarChart data={duePipeline.stageRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
@@ -1075,7 +1075,7 @@ export default function Dashboard() {
 
         {heavyReady && weeklyDigest.hasSignals && (
           <motion.div variants={fadeUp}>
-            <div className="card p-4">
+            <div className="card p-4 bg-kosha-surface">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <p className="section-label">What changed this week</p>
@@ -1086,7 +1086,7 @@ export default function Dashboard() {
                 </span>
               </div>
 
-              <div className="mini-panel p-2.5 mb-2.5">
+              <div className="rounded-card border border-kosha-border panel-neutral bg-kosha-surface-2 p-2.5 mb-2.5">
                 <ResponsiveContainer width="100%" height={214}>
                   <BarChart data={weeklyDigest.comparisonSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />

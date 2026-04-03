@@ -106,28 +106,28 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2.5">
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Adherence</p>
           <p className={`text-[12px] font-bold tabular-nums ${analysis.adherencePct >= 80 ? 'text-income-text' : analysis.adherencePct >= 50 ? 'text-warning-text' : 'text-expense-text'}`}>
             {analysis.adherencePct}%
           </p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Current streak</p>
           <p className="text-[12px] font-bold tabular-nums text-brand">{analysis.streak} mo</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Best streak</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{analysis.bestStreak} mo</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Avg deploy</p>
           <p className="text-[12px] font-bold tabular-nums text-invest-text">{fmt(analysis.avgMonthlyInvestment, true)}</p>
         </div>
       </div>
 
       {/* Monthly adherence strip */}
-      <div className="mini-panel p-2.5">
+      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
         <div className="flex items-end gap-1 h-16">
           {analysis.bars.map((bar) => (
             <div key={bar.label} className="flex-1 h-full flex flex-col items-center justify-end gap-0.5">

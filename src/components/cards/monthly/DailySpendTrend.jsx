@@ -18,7 +18,7 @@ function DailySpendTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="mini-panel p-2.5 min-w-[160px]">
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[160px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{row.label || label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -93,21 +93,21 @@ export default memo(function DailySpendTrend({ txnRows, year, month }) {
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Daily average</p>
           <p className="text-[12px] font-bold tabular-nums text-ink">{fmt(dailyAvg)}</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Peak day</p>
           <p className="text-[12px] font-bold tabular-nums text-expense-text">{peakDay ? fmt(peakDay.amount) : '—'}</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Zero-spend days</p>
           <p className="text-[12px] font-bold tabular-nums text-income-text">{zeroDays}</p>
         </div>
       </div>
 
-      <div className="mini-panel p-2.5">
+      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={seriesWithFlags} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />

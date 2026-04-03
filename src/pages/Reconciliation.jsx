@@ -58,7 +58,7 @@ function ReconciliationFunnelTooltip({ active, payload }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="mini-panel p-2.5">
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{row?.name || 'Stage'}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Transactions</span>
@@ -73,7 +73,7 @@ function TurnaroundTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="mini-panel p-2.5">
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Resolved items</span>
@@ -517,7 +517,7 @@ export default function Reconciliation() {
               <p className="text-[11px] text-ink-3 tabular-nums">{linkedConversion}% linked</p>
             </div>
 
-            <div className="mini-panel p-2.5">
+            <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
               <ResponsiveContainer width="100%" height={168}>
                 <FunnelChart>
                   <RechartsTooltip content={<ReconciliationFunnelTooltip />} />
@@ -542,7 +542,7 @@ export default function Reconciliation() {
               <p className="text-[11px] text-ink-3 tabular-nums">Median {turnaroundDistribution.medianDays}d</p>
             </div>
 
-            <div className="mini-panel p-2.5">
+            <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
               <ResponsiveContainer width="100%" height={172}>
                 <BarChart data={turnaroundDistribution.buckets} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(16,33,63,0.10)" />
@@ -719,7 +719,7 @@ export default function Reconciliation() {
             </div>
             <div className="space-y-2">
               {recentLinkDecisions.map((row) => (
-                <div key={row.transactionId} className="mini-panel px-3 py-2.5">
+                <div key={row.transactionId} className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
                   <p className="text-[12px] text-ink-2 truncate">{row.statementPreview}</p>
                   <p className="text-[11px] text-ink-4 mt-0.5 truncate">
                     Linked to: {row.transactionLabel}
@@ -748,7 +748,7 @@ export default function Reconciliation() {
                 <p className="text-[11px] text-ink-3 mb-1.5">Top merchant matches (30-day)</p>
                 <div className="space-y-1">
                   {aliasQualities.slice(0, 3).map((alias) => (
-                    <div key={alias.merchant} className="mini-panel px-2.5 py-1.5">
+                    <div key={alias.merchant} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-1.5">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[11px] text-ink-2 truncate">{alias.merchant}</p>
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
@@ -923,7 +923,7 @@ export default function Reconciliation() {
 
 function Metric({ label, value, tone = 'text-ink' }) {
   return (
-    <div className="mini-panel p-2.5">
+    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
       <p className="text-caption text-ink-3">{label}</p>
       <p className={`text-lg font-bold tabular-nums ${tone}`}>{value}</p>
     </div>

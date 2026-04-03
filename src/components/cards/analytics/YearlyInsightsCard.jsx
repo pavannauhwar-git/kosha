@@ -85,34 +85,34 @@ export default function YearlyInsightsCard({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Annual net</p>
           <p className={`text-[12px] font-bold tabular-nums ${annualNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
             {annualNet >= 0 ? '+' : '-'}{fmt(Math.abs(annualNet), true)}
           </p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Invested</p>
           <p className="text-[12px] font-bold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Deploy rate</p>
           <p className={`text-[12px] font-bold tabular-nums ${deployRate >= 12 && deployRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>{deployRate}%</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Top category</p>
           <p className="text-[11px] font-bold text-brand truncate" title={topCategory?.label || '—'}>{topCategory?.label || '—'}</p>
           <p className="text-[10px] tabular-nums text-ink-3 mt-0.5">{topCategory ? `${fmt(topCategory.amount, true)} · ${topCategory.share}%` : '—'}</p>
         </div>
       </div>
 
-      <div className="mini-panel p-2.5 mb-2.5">
+      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
         <p className="text-[11px] font-semibold text-ink-2 mb-1">Year in plain words</p>
         <p className="text-[12px] text-ink-2 leading-relaxed">{plainWords}</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-2.5">
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
           <p className="text-[11px] font-semibold text-ink-2 mb-1.5">Decision signals</p>
           <div className="space-y-1.5">
             {signalRows.map((line, index) => (
@@ -124,7 +124,7 @@ export default function YearlyInsightsCard({
           </div>
         </div>
 
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
           <p className="text-[11px] font-semibold text-ink-2 mb-1.5">So what now</p>
           <div className="space-y-1.5">
             {actionRows.map((line, index) => (

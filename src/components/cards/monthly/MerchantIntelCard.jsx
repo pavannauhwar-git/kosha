@@ -97,7 +97,7 @@ export default memo(function MerchantIntelCard({ txnRows }) {
 
       <div className="space-y-2.5">
         {analysis.top5.map((m, index) => (
-          <div key={m.key} className="mini-panel p-2.5">
+          <div key={m.key} className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="w-5 h-5 rounded-md bg-kosha-surface-2 flex items-center justify-center text-[10px] font-bold text-ink-3 shrink-0">

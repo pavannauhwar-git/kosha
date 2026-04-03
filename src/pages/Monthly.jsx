@@ -378,17 +378,17 @@ export default function Monthly() {
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
-              <div className="mini-panel p-3">
+              <div className="rounded-card bg-kosha-surface-2 p-3">
                 <p className="text-caption text-ink-3">Net close</p>
                 <p className={`text-sm font-bold tabular-nums ${monthCloseSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                   {monthCloseSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(monthCloseSummary.net))}
                 </p>
               </div>
-              <div className="mini-panel p-3">
+              <div className="rounded-card bg-kosha-surface-2 p-3">
                 <p className="text-caption text-ink-3">Outflow</p>
                 <p className="text-sm font-bold tabular-nums text-ink-2">{fmt(monthCloseSummary.totalOutflow)}</p>
               </div>
-              <div className="mini-panel p-3">
+              <div className="rounded-card bg-kosha-surface-2 p-3">
                 <p className="text-caption text-ink-3">{monthCloseSummary.timelineLabel}</p>
                 <p className="text-sm font-bold tabular-nums text-ink-2">{monthCloseSummary.timelineValue}</p>
               </div>
@@ -420,30 +420,30 @@ export default function Monthly() {
               />
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
                   <p className="text-caption text-ink-3">Allocated</p>
                   <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
                 </div>
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
                   <p className="text-caption text-ink-3">Top holding</p>
                   <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.topPct >= 55 ? 'text-warning-text' : 'text-brand'}`}>
                     {monthlyPortfolioSnapshot.topPct}%
                   </p>
                 </div>
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
                   <p className="text-caption text-ink-3">Diversification</p>
                   <p className={`text-[13px] font-bold tabular-nums ${monthlyPortfolioSnapshot.diversificationScore >= 70 ? 'text-income-text' : monthlyPortfolioSnapshot.diversificationScore >= 50 ? 'text-brand' : 'text-warning-text'}`}>
                     {monthlyPortfolioSnapshot.diversificationScore}/100
                   </p>
                 </div>
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
                   <p className="text-caption text-ink-3">Primary vehicle</p>
                   <p className="text-[12px] font-bold text-ink truncate">{monthlyPortfolioSnapshot.top?.name || '—'}</p>
                 </div>
               </div>
 
               {monthlyPortfolioSnapshot.total > 0 ? (
-                <div className="mini-panel p-3 mb-3">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
                   <div className="grid md:grid-cols-[168px_1fr] gap-3 items-center">
                     <div className="flex justify-center md:justify-start">
                       <PortfolioMixDonut
@@ -458,7 +458,7 @@ export default function Monthly() {
 
                     <div className="space-y-2">
                       {monthlyPortfolioSnapshot.mixRows.map((row) => (
-                        <div key={`monthly-allocation-row-${row.name}`} className="mini-panel px-2.5 py-2">
+                        <div key={`monthly-allocation-row-${row.name}`} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
                           <div className="flex items-center justify-between gap-2 mb-1">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: row.color }} />
@@ -481,11 +481,11 @@ export default function Monthly() {
               )}
 
               <div className="grid md:grid-cols-2 gap-2 mb-3">
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3 mb-1">Concentration signal · {monthlyPortfolioSnapshot.concentrationBand}</p>
                   <p className="text-[11px] text-ink-2 leading-relaxed">{monthlyPortfolioSnapshot.concentrationSignal}</p>
                 </div>
-                <div className="mini-panel p-2.5">
+                <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
                   <p className="text-[10px] text-ink-3 mb-1">Deployment signal</p>
                   <p className="text-[11px] text-ink-2 leading-relaxed">{monthlyPortfolioSnapshot.deploymentSignal}</p>
                 </div>

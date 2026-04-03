@@ -162,7 +162,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                     return (
                       <div
                         key={cat.id}
-                        className="mini-panel px-3 py-2.5"
+                        className="rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5"
                       >
                         <div className="flex items-center gap-2.5">
                           {/* Radial gauge icon when budget is set, else static icon */}

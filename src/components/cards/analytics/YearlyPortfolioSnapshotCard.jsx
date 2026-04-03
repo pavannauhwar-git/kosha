@@ -92,19 +92,19 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Allocated</p>
           <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(totalPortfolio, true)}</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Top holding</p>
           <p className={`text-[13px] font-bold tabular-nums ${topHoldingPct >= 55 ? 'text-warning-text' : 'text-brand'}`}>{topHoldingPct}%</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Deploy rate</p>
           <p className={`text-[13px] font-bold tabular-nums ${deployTone}`}>{deploymentRate}%</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
           <p className="text-[10px] text-ink-3">Diversification</p>
           <p className={`text-[13px] font-bold tabular-nums ${diversificationScore >= 70 ? 'text-income-text' : diversificationScore >= 50 ? 'text-brand' : 'text-warning-text'}`}>
             {diversificationScore}/100
@@ -113,7 +113,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
       </div>
 
       {totalPortfolio > 0 ? (
-        <div className="mini-panel p-3 mb-3">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
           <div className="grid md:grid-cols-[168px_1fr] gap-3 items-center">
             <div className="flex justify-center md:justify-start">
               <PortfolioMixDonut
@@ -128,7 +128,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
 
             <div className="space-y-2">
               {mixRows.map((row) => (
-                <div key={`yearly-allocation-row-${row.name}`} className="mini-panel px-2.5 py-2">
+                <div key={`yearly-allocation-row-${row.name}`} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: row.color }} />
@@ -151,11 +151,11 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
       )}
 
       <div className="grid md:grid-cols-2 gap-2 mb-3">
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3 mb-1">Concentration signal · {concentrationBand}</p>
           <p className="text-[11px] text-ink-2 leading-relaxed">{concentrationSignal}</p>
         </div>
-        <div className="mini-panel p-2.5">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3 mb-1">Deployment signal</p>
           <p className="text-[11px] text-ink-2 leading-relaxed">{deploySignal}</p>
         </div>

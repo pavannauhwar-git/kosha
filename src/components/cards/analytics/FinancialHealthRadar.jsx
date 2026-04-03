@@ -134,19 +134,19 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
           <p className="text-[9px] text-ink-3">Income</p>
           <p className="text-[11px] font-bold tabular-nums text-ink">{fmt(scores.metrics.income, true)}</p>
         </div>
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
           <p className="text-[9px] text-ink-3">Outflow</p>
           <p className="text-[11px] font-bold tabular-nums text-expense-text">{fmt(scores.metrics.outflow, true)}</p>
         </div>
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
           <p className="text-[9px] text-ink-3">Invested</p>
           <p className="text-[11px] font-bold tabular-nums text-invest-text">{fmt(scores.metrics.investment, true)}</p>
         </div>
-        <div className="mini-panel p-2">
+        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2">
           <p className="text-[9px] text-ink-3">Annual net</p>
           <p className={`text-[11px] font-bold tabular-nums ${scores.metrics.annualNet >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
             {scores.metrics.annualNet >= 0 ? '+' : '-'}{fmt(Math.abs(scores.metrics.annualNet), true)}
@@ -234,7 +234,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
         {AXES.map((axis, i) => {
           const pct = Math.round(scores.values[i] * 100)
           return (
-            <div key={axis.key} className="mini-panel p-2">
+            <div key={axis.key} className="rounded-card border border-kosha-border bg-kosha-surface p-2">
               <p className="text-[9px] text-ink-3 truncate">{axis.label}</p>
               <div className="flex items-center gap-1.5 mt-1">
                 <div className="flex-1 h-1.5 rounded-pill bg-kosha-border overflow-hidden">
