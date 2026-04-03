@@ -91,18 +91,18 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
           <p className="text-[11px] text-ink-3 mt-0.5">Donut view of allocation, concentration, and deployment quality.</p>
         </div>
         <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-brand-container text-brand-on tabular-nums">
-          {fmt(totalPortfolio)} · {safeVehicleData.length} v
+          {fmt(totalPortfolio, true)} · {safeVehicleData.length} v
         </span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Actual invested</p>
-          <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(totalInvestment)}</p>
+          <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
         </div>
         <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Tagged allocation</p>
-          <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(totalPortfolio)}</p>
+          <p className="text-[13px] font-bold tabular-nums text-invest-text">{fmt(totalPortfolio, true)}</p>
         </div>
         <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Top holding</p>
@@ -124,9 +124,9 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
                 rows={mixRows}
                 centerTop="Yearly"
                 centerValue={fmt(totalPortfolio, true)}
-                centerBottom={fmt(totalInvestment)}
+                centerBottom={`Invested ${fmt(totalInvestment, true)}`}
                 ringSize={104}
-                innerInset={12}
+                innerInset={15}
               />
             </div>
 
