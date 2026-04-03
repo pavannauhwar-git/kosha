@@ -943,7 +943,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
     <motion.div
       whileHover={{ y: -1 }}
       transition={{ duration: 0.14 }}
-      className={`card border-l-4 ${borderColor} p-3`}
+      className={`rounded-card border border-kosha-border border-l-4 ${borderColor} bg-kosha-surface p-3`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

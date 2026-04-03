@@ -216,10 +216,10 @@ export default function Login() {
                   onClick={handleGoogle}
                   disabled={googleLoading || loading}
                   className="w-full flex items-center justify-center gap-3 py-3.5
-                       card
+                       rounded-card border border-kosha-border bg-kosha-surface
                        text-label font-semibold text-ink
                        active:scale-[0.98] transition-all duration-75
-                       disabled:opacity-60 mb-4"
+                       disabled:opacity-60 mb-4 shadow-card"
                 >
                   <GoogleLogo />
                   {googleLoading ? 'Redirecting…' : 'Continue with Google'}

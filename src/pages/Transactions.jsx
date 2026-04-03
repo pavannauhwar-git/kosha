@@ -489,7 +489,7 @@ export default function Transactions() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={transitionBase}
-              className="mt-2.5 card p-2.5 flex flex-wrap gap-2"
+              className="mt-2.5 rounded-card border border-kosha-border panel-neutral bg-kosha-surface p-2.5 flex flex-wrap gap-2"
             >
               {filterCategories.map(c => (
                 <button
@@ -603,7 +603,7 @@ export default function Transactions() {
         <button
           onClick={() => setDisplayCount(n => n + 50)}
           className="w-full py-3.5 text-label font-semibold text-brand text-center
-                     card mt-4"
+                     bg-kosha-surface border border-kosha-border rounded-card mt-4"
         >
           Show more ({total - data.length} remaining)
         </button>
