@@ -159,15 +159,9 @@ export default function Login() {
   }
 
   return (
-    <div
-      className="h-dvh bg-kosha-bg px-4 overflow-y-auto"
-      style={{
-        paddingTop: 'max(env(safe-area-inset-top, 0px), 0.5rem)',
-        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.5rem)',
-      }}
-    >
+    <div className="auth-shell">
       <div className="min-h-full flex flex-col items-center justify-center py-8">
-        <div className="w-full max-w-[380px]">
+        <div className="auth-panel">
           <motion.div
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
             initial="hidden"

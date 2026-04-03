@@ -76,11 +76,11 @@ export default function About() {
   }
 
   return (
-    <div className="min-h-dvh bg-kosha-bg">
+    <div className="page-shell">
 
       <PageBackHeader title="About" onBack={() => navigate(-1)} />
 
-      <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
+      <div className="page-content page-content-narrow page-content-back">
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
 
           {/* ── Identity card ───────────────────────────────────── */}
