@@ -87,7 +87,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
       </div>
 
       {/* Central stacked bar */}
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
+      <div className="mini-panel p-3 mb-3">
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] text-ink-3">{totalLabel}</p>
           <p className="text-[12px] font-bold tabular-nums text-income-text">{fmt(inflow)}</p>

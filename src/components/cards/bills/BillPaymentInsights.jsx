@@ -79,7 +79,7 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
   if (!insights) return null
 
   return (
-    <div className="card p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface mb-4">
+    <div className="card p-3.5 sm:p-4 mb-4">
       <div className="flex items-start justify-between gap-3 mb-2.5">
         <div>
           <p className="section-label">Payment discipline</p>

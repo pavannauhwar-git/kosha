@@ -75,13 +75,13 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         </div>
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
+      <div className="mini-panel p-2.5 mb-2.5">
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+          <div className="mini-panel p-2.5">
             <p className="text-[10px] text-ink-3">Dominant category</p>
             <p className="text-[12px] font-bold text-ink truncate">{dominant.name}</p>
           </div>
-          <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
+          <div className="mini-panel p-2.5">
             <p className="text-[10px] text-ink-3">Top share</p>
             <p className="text-[12px] font-bold text-warning-text tabular-nums">{dominant.sharePct}%</p>
           </div>
@@ -90,7 +90,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
 
       <div className="space-y-2">
         {shownRows.map((row) => (
-          <div key={row.id} className="rounded-card border border-kosha-border bg-kosha-surface-2 px-2.5 py-2">
+          <div key={row.id} className="mini-panel px-2.5 py-2">
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-6 h-6 rounded-full border border-kosha-border flex items-center justify-center" style={{ background: row.iconBg }}>

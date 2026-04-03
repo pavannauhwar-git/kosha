@@ -86,7 +86,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Year surplus</p>
           <p className={`text-[14px] font-bold tabular-nums ${annualBalance >= 0 ? 'text-brand' : 'text-warning-text'}`}>
             {annualBalance >= 0 ? '+' : '-'}{fmt(Math.abs(annualBalance))}
@@ -97,24 +97,24 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
             </p>
           )}
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Avg surplus rate</p>
           <p className="text-[14px] font-bold tabular-nums text-ink">{avgSurplusRate}%</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Deploy rate</p>
           <p className={`text-[14px] font-bold tabular-nums ${deploymentRate >= 12 && deploymentRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>
             {deploymentRate}%
           </p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Positive months</p>
           <p className="text-[14px] font-bold tabular-nums text-ink">{positiveMonths}/12</p>
         </div>
       </div>
 
       {/* Flow structure bar */}
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3 mb-3">
+      <div className="mini-panel p-3 mb-3">
         <div className="flex items-center justify-between gap-2 mb-2">
           <p className="text-[11px] font-semibold text-ink-2">Flow structure</p>
           <p className="text-[11px] text-ink-3 tabular-nums">Income {fmt(totalIncome)}</p>
@@ -142,7 +142,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
       </div>
 
       {/* Monthly net sparkline */}
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3">
+      <div className="mini-panel p-3">
         <div className="flex items-center justify-between gap-2 mb-2">
           <p className="text-[11px] font-semibold text-ink-2">Monthly surplus pulse</p>
           <p className="text-[10px] text-ink-3">{positiveMonths} of 12 in surplus</p>

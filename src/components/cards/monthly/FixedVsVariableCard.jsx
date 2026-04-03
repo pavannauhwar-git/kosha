@@ -52,12 +52,12 @@ export default memo(function FixedVsVariableCard({ txnRows, earned }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-2.5">
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Fixed (recurring)</p>
           <p className="text-[12px] font-bold tabular-nums text-expense-text">{fmt(analysis.fixed)}</p>
           <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">{analysis.fixedPct}% of spend</p>
         </div>
-        <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5">
+        <div className="mini-panel p-2.5">
           <p className="text-[10px] text-ink-3">Variable (ad-hoc)</p>
           <p className="text-[12px] font-bold tabular-nums text-brand">{fmt(analysis.variable)}</p>
           <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">{analysis.variablePct}% of spend</p>
@@ -65,7 +65,7 @@ export default memo(function FixedVsVariableCard({ txnRows, earned }) {
       </div>
 
       {/* Stacked bar */}
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+      <div className="mini-panel p-2.5">
         <div className="h-3 rounded-pill overflow-hidden flex">
           {analysis.fixedPct > 0 && (
             <div

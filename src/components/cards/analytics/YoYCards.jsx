@@ -73,7 +73,7 @@ function MetricTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[180px]">
+    <div className="mini-panel p-2.5 min-w-[180px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       {payload.map((row) => (
         <div key={row.dataKey} className="flex items-center justify-between gap-3 text-[11px]">
@@ -90,7 +90,7 @@ function NetTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card border border-kosha-border bg-kosha-surface p-2.5 shadow-card min-w-[172px]">
+    <div className="mini-panel p-2.5 min-w-[172px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Net</span>
@@ -241,7 +241,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
           <select
             value={compareYear || ''}
             onChange={(event) => setCompareYear(Number(event.target.value))}
-            className="h-8 px-2 rounded-card border border-kosha-border bg-kosha-surface text-ink"
+            className="h-8 px-2 mini-panel text-ink"
           >
             {selectableYears.map((year) => (
               <option key={year} value={year}>{year}</option>
@@ -254,7 +254,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
         {metricRows.map((row) => {
           const delta = deltaPct(row.current, row.compare)
           return (
-            <div key={`metric-${row.label}`} className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2">
+            <div key={`metric-${row.label}`} className="mini-panel p-2">
               <p className="text-[10px] text-ink-3">{row.label}</p>
               <p className={`text-[12px] font-bold tabular-nums ${row.tone}`}>{fmt(row.current, true)}</p>
               <p className="text-[10px] text-ink-3 mt-0.5">
@@ -265,7 +265,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
         })}
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
+      <div className="mini-panel p-2.5 mb-2.5">
         <p className="text-[10px] text-ink-3 mb-1.5">Metric comparison: {currentYear} vs {compareYear}</p>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={comparisonChartRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -298,7 +298,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
         </ResponsiveContainer>
       </div>
 
-      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-2.5">
+      <div className="mini-panel p-2.5">
         <p className="text-[10px] text-ink-3 mb-1.5">Net trend by year</p>
         <ResponsiveContainer width="100%" height={168}>
           <BarChart data={trendRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
