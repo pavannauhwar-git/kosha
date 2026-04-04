@@ -87,14 +87,14 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
           <p className="text-[11px] text-ink-3 mt-0.5">Donut view of allocation, concentration, and deployment quality.</p>
         </div>
         <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-ink/[0.06] text-ink tabular-nums">
-          {fmt(totalPortfolio)} · {safeVehicleData.length} v
+          {safeVehicleData.length} vehicles
         </span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Allocated</p>
-          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(totalPortfolio)}</p>
+          <p className="text-[10px] text-ink-3">Largest amount</p>
+          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(topHolding?.value || 0)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Top holding</p>

@@ -69,8 +69,9 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           >
             <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide"
               style={{ color: C.heroLabel }}>{s.label}</p>
-            <p className="text-[13px] sm:text-[14px] font-semibold text-white tabular-nums truncate">
-              {fmt(s.val)}
+            <p className="text-[11px] sm:text-[14px] font-semibold text-white tabular-nums leading-none whitespace-nowrap">
+              <span className="sm:hidden">{fmt(s.val, true)}</span>
+              <span className="hidden sm:inline">{fmt(s.val)}</span>
             </p>
           </div>
         ))}
