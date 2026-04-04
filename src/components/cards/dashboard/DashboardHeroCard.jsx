@@ -64,14 +64,13 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           { label: 'Invested', val: invested },
         ].map(s => (
           <div key={s.label}
-            className="flex-1 min-w-0 px-3 sm:px-4 py-2.5 rounded-2xl"
+            className="flex-1 min-w-0 px-2.5 sm:px-4 py-2.5 rounded-2xl"
             style={{ background: C.heroStatBg }}
           >
             <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide"
               style={{ color: C.heroLabel }}>{s.label}</p>
-            <p className="text-[11px] sm:text-[14px] font-semibold text-white tabular-nums leading-none whitespace-nowrap">
-              <span className="sm:hidden">{fmt(s.val, true)}</span>
-              <span className="hidden sm:inline">{fmt(s.val)}</span>
+            <p className="text-[clamp(0.56rem,2.7vw,0.875rem)] sm:text-[14px] font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] [overflow-wrap:anywhere]">
+              {fmt(s.val)}
             </p>
           </div>
         ))}

@@ -76,13 +76,11 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
       <div className="flex items-start justify-between gap-3 mb-4">
         <p className="section-label">Cashflow breakdown</p>
         <span
-          className={`text-[11px] px-2.5 py-1 rounded-pill font-semibold tabular-nums ${
+          className={`text-[10px] sm:text-[11px] px-2.5 py-1 rounded-pill font-semibold tabular-nums whitespace-nowrap ${
             net >= 0 ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'
           }`}
         >
-          {net >= 0 ? '+' : '−'}
-          <span className="sm:hidden">{fmt(Math.abs(net), true)}</span>
-          <span className="hidden sm:inline">{fmt(Math.abs(net))}</span>
+          {net >= 0 ? '+' : '−'}{fmt(Math.abs(net))}
         </span>
       </div>
 
@@ -90,18 +88,12 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-3 mb-4">
         <div className="min-w-0 flex-1">
           <p className="text-[10px] text-ink-3 mb-0.5">{totalLabel}</p>
-          <p className="text-[clamp(1.1rem,5.4vw,1.375rem)] font-bold tabular-nums text-ink tracking-tight leading-none whitespace-nowrap max-w-full">
-            <span className="sm:hidden">{fmt(inflow, true)}</span>
-            <span className="hidden sm:inline">{fmt(inflow)}</span>
+          <p className="text-[clamp(0.95rem,4.8vw,1.375rem)] font-bold tabular-nums text-ink tracking-tight leading-none [overflow-wrap:anywhere] max-w-full">
+            {fmt(inflow)}
           </p>
         </div>
-        <p className="text-[10px] text-ink-3 tabular-nums shrink-0 text-left sm:text-right">
-          {outflow > 0 ? (
-            <>
-              <span className="sm:hidden">{fmt(outflow, true)} deployed</span>
-              <span className="hidden sm:inline">{fmt(outflow)} deployed</span>
-            </>
-          ) : ''}
+        <p className="text-[10px] text-ink-3 tabular-nums shrink-0 text-left sm:text-right [overflow-wrap:anywhere]">
+          {outflow > 0 ? `${fmt(outflow)} deployed` : ''}
         </p>
       </div>
 
@@ -129,9 +121,8 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: seg.color }} />
               <p className="text-[10px] text-ink-3">{seg.label}</p>
             </div>
-            <p className={`text-[12px] sm:text-[14px] font-semibold tabular-nums leading-none whitespace-nowrap ${seg.tone}`}>
-              <span className="sm:hidden">{fmt(seg.amount, true)}</span>
-              <span className="hidden sm:inline">{fmt(seg.amount)}</span>
+            <p className={`text-[clamp(0.6rem,2.7vw,0.875rem)] sm:text-[14px] font-semibold tabular-nums leading-tight tracking-[-0.01em] [overflow-wrap:anywhere] ${seg.tone}`}>
+              {fmt(seg.amount)}
             </p>
             <p className="text-[10px] text-ink-3 tabular-nums mt-1">{seg.pct}%</p>
           </div>
