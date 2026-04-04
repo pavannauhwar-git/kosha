@@ -1,7 +1,9 @@
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { fmt } from '../../../lib/utils'
 
 export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
+  const [hoveredMonth, setHoveredMonth] = useState(null)
+
   const analysis = useMemo(() => {
     if (!monthlyData?.length) return null
 
@@ -85,6 +87,8 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
 
   if (!analysis || analysis.totalMonths === 0) return null
 
+  const hoveredBar = hoveredMonth != null ? analysis.bars[hoveredMonth] : null
+
   return (
     <div className="card p-4">
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -127,19 +131,37 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
       </div>
 
       {/* Monthly adherence strip */}
-      <div className="rounded-card bg-kosha-surface-2 p-2.5">
+      <div className="rounded-card bg-kosha-surface-2 p-2.5" onMouseLeave={() => setHoveredMonth(null)}>
+        <div className="h-4 mb-1">
+          {hoveredBar ? (
+            <p className="text-[10px] text-ink-2 font-medium tabular-nums">
+              {hoveredBar.label} invested: {fmt(hoveredBar.amount)}
+              {hoveredBar.invested ? ` (${hoveredBar.deployRate}%)` : ''}
+            </p>
+          ) : (
+            <p className="text-[10px] text-ink-3">Hover a month to see invested amount.</p>
+          )}
+        </div>
+
         <div className="flex items-end gap-1 h-16">
-          {analysis.bars.map((bar) => (
-            <div key={bar.label} className="flex-1 h-full flex flex-col items-center justify-end gap-0.5">
-              <div
-                className={`w-full rounded-t-sm ${bar.invested ? 'bg-invest' : 'bg-kosha-border'}`}
-                style={{
-                  height: bar.invested
-                    ? `${Math.max(12, Math.min(100, bar.deployRate * 1.2))}%`
-                    : '12%',
-                }}
-                title={bar.invested ? `${bar.label}: ${fmt(bar.amount)} (${bar.deployRate}%)` : `${bar.label}: No investment`}
-              />
+          {analysis.bars.map((bar, index) => (
+            <div
+              key={bar.label}
+              className="flex-1 h-full flex flex-col items-center justify-end gap-0.5 cursor-pointer"
+              onMouseEnter={() => setHoveredMonth(index)}
+            >
+              {bar.invested ? (
+                <div
+                  className="w-full rounded-t-sm bg-invest"
+                  style={{ height: `${Math.max(12, Math.min(100, bar.deployRate * 1.2))}%` }}
+                  title={`${bar.label}: ${fmt(bar.amount)} (${bar.deployRate}%)`}
+                />
+              ) : (
+                <div
+                  className="w-full h-[2px] rounded-sm bg-kosha-border"
+                  title={`${bar.label}: ${fmt(0)} invested`}
+                />
+              )}
             </div>
           ))}
         </div>

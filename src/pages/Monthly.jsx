@@ -421,7 +421,7 @@ export default function Monthly() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Allocated</p>
-                  <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(monthlyPortfolioSnapshot.total, true)}</p>
+                  <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(monthlyPortfolioSnapshot.total)}</p>
                 </div>
                 <div className="rounded-card bg-kosha-surface-2 p-2.5">
                   <p className="text-caption text-ink-3">Top holding</p>
@@ -448,10 +448,10 @@ export default function Monthly() {
                       <PortfolioMixDonut
                         rows={monthlyPortfolioSnapshot.mixRows}
                         centerTop="Monthly"
-                        centerValue={fmt(monthlyPortfolioSnapshot.total, true)}
+                        centerValue={fmt(monthlyPortfolioSnapshot.total)}
                         centerBottom={`${monthlyPortfolioSnapshot.rows.length} vehicles`}
                         ringSize={118}
-                        innerInset={17}
+                        innerInset={9}
                       />
                     </div>
 
@@ -463,7 +463,7 @@ export default function Monthly() {
                               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: row.color }} />
                               <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
                             </div>
-                            <p className="text-[11px] tabular-nums text-ink shrink-0" title={fmt(row.value)}>{row.pct}% · {fmt(row.value, true)}</p>
+                            <p className="text-[11px] tabular-nums text-ink shrink-0" title={fmt(row.value)}>{row.pct}% · {fmt(row.value)}</p>
                           </div>
                           <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
                             <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.color }} />

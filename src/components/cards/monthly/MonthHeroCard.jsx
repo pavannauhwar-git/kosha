@@ -26,7 +26,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
       <p className="text-[10px] font-medium mb-1 tracking-wide" style={{ color: C.heroLabel }}>
         Monthly balance
       </p>
-      <p className={`text-[34px] sm:text-[38px] font-bold leading-[0.95] tracking-tight tabular-nums ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
+      <p className={`text-[clamp(1.35rem,6.8vw,2.375rem)] font-bold leading-[0.95] tracking-tight tabular-nums whitespace-nowrap max-w-full ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
         {fmt(balance)}
       </p>
 

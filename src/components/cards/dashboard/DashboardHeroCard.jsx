@@ -36,7 +36,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
         onClick={onHeroModeToggle}
         className="cursor-pointer active:scale-[0.99] transition-transform duration-200"
       >
-        <p className="text-[34px] sm:text-[38px] font-bold text-white leading-[0.95] tracking-tight tabular-nums">
+        <p className="text-[clamp(1.35rem,6.8vw,2.375rem)] font-bold text-white leading-[0.95] tracking-tight tabular-nums whitespace-nowrap max-w-full">
           {heroMode === 'balance'
             ? (runningBalance !== null ? fmt(runningBalance) : '—')
             : (safeToSpend    !== null ? fmt(safeToSpend)    : '—')}

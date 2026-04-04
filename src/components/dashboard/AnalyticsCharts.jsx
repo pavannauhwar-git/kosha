@@ -106,37 +106,41 @@ const PulseTooltip = ({ active, payload, label }) => {
 
   return (
     <div style={{
-      background: 'rgba(34,43,109,0.96)',
+      background: '#FFFFFF',
       borderRadius: 12,
-      padding: '10px 14px',
-      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
-      minWidth: 170,
-      border: '0.5px solid rgba(255,255,255,0.10)',
+      padding: '10px 12px',
+      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
+      minWidth: 176,
+      border: '1px solid rgba(187,217,255,0.85)',
     }}>
       <p style={{
-        fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.5)',
-        letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
+        fontSize: 11,
+        fontWeight: 700,
+        color: '#1D355F',
+        letterSpacing: '0.03em',
+        marginBottom: 6,
+        textTransform: 'uppercase',
       }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Income</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Income</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.chartIncome }}>{fmt(income)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Spent</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Spent</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.chartExpense }}>{fmt(spent)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Invested</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Invested</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.invest }}>{fmt(invested)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Outflow</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Outflow</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.heroAccentSolid }}>{fmt(outflow)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Pulse</span>
+        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Pulse</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: pulseColor }}>
           {pulse >= 0 ? '+' : '-'}{fmt(Math.abs(pulse))} ({pulsePct}%)
         </span>

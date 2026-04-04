@@ -85,14 +85,14 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
       </div>
 
       {/* ── Hero amount row ───────────────────────────────────── */}
-      <div className="flex items-baseline justify-between mb-4">
-        <div>
+      <div className="flex items-baseline justify-between gap-3 mb-4">
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] text-ink-3 mb-0.5">{totalLabel}</p>
-          <p className="text-[22px] font-bold tabular-nums text-ink tracking-tight leading-none">
+          <p className="text-[clamp(1.1rem,5.4vw,1.375rem)] font-bold tabular-nums text-ink tracking-tight leading-none whitespace-nowrap max-w-full">
             {fmt(inflow)}
           </p>
         </div>
-        <p className="text-[10px] text-ink-3 tabular-nums">
+        <p className="text-[10px] text-ink-3 tabular-nums shrink-0 text-right">
           {outflow > 0 ? `${fmt(outflow)} deployed` : ''}
         </p>
       </div>

@@ -87,14 +87,14 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
           <p className="text-[11px] text-ink-3 mt-0.5">Donut view of allocation, concentration, and deployment quality.</p>
         </div>
         <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-ink/[0.06] text-ink tabular-nums">
-          {fmt(totalPortfolio, true)} · {safeVehicleData.length} v
+          {fmt(totalPortfolio)} · {safeVehicleData.length} v
         </span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Allocated</p>
-          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(totalPortfolio, true)}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(totalPortfolio)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Top holding</p>
@@ -119,10 +119,10 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
               <PortfolioMixDonut
                 rows={mixRows}
                 centerTop="Yearly"
-                centerValue={fmt(totalPortfolio, true)}
+                centerValue={fmt(totalPortfolio)}
                 centerBottom={`${safeVehicleData.length} vehicles`}
                 ringSize={120}
-                innerInset={17}
+                innerInset={9}
               />
             </div>
 
@@ -134,7 +134,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: row.color }} />
                       <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
                     </div>
-                    <p className="text-[11px] tabular-nums text-ink shrink-0" title={fmt(row.value)}>{row.pct}% · {fmt(row.value, true)}</p>
+                    <p className="text-[11px] tabular-nums text-ink shrink-0" title={fmt(row.value)}>{row.pct}% · {fmt(row.value)}</p>
                   </div>
                   <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
                     <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.color }} />
