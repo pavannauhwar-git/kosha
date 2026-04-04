@@ -1,6 +1,4 @@
-function normalizeText(value) {
-  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ')
-}
+import { normalizeText } from './bugReportUtils'
 
 const NOISE_TOKENS = new Set([
   'upi', 'imps', 'neft', 'rtgs', 'txn', 'ref', 'utr', 'vpa', 'bank',

@@ -41,6 +41,7 @@ export function useFinancialEvents(limit = 10, options = {}) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['financialEvents', safeLimit],
     enabled,
+    staleTime: 10 * 60 * 1000,
     queryFn: () => traceQuery('financial-events:list', async () => {
       const userId = getAuthUserId()
       const { data: rows, error: queryError } = await supabase

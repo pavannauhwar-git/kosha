@@ -1,10 +1,7 @@
 import { getAuthUserId } from './authStore'
+import { normalizeText } from './bugReportUtils'
 
 const RECON_REVIEWED_KEY_PREFIX = 'kosha:reconciliation-reviewed-v1:'
-
-function normalizeText(value) {
-  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ')
-}
 
 function normalizeAmount(value) {
   const num = Number(value || 0)

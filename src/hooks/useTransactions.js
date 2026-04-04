@@ -12,6 +12,40 @@ import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 const txnListKey  = (filters) => ['transactions', filters]
 const txnCountKey = (filters) => ['txnCount', filters]
 
+/** Shared parser for get_month_summary RPC rows — used by hook and prefetch */
+export function parseMonthSummaryRows(rows) {
+  const safeRows   = rows || []
+  const byCategory = {}
+  const byVehicle  = {}
+  let earned = 0, repayments = 0, expense = 0, investment = 0
+
+  for (const row of safeRows) {
+    const amount = Number(row.total || 0)
+    if (row.type === 'income') {
+      if (row.is_repayment) repayments += amount
+      else earned += amount
+    }
+    if (row.type === 'expense') {
+      expense += amount
+      if (row.category) {
+        byCategory[row.category] = (byCategory[row.category] || 0) + amount
+      }
+    }
+    if (row.type === 'investment') {
+      investment += amount
+      const vehicle = row.investment_vehicle || 'Other'
+      byVehicle[vehicle] = (byVehicle[vehicle] || 0) + amount
+    }
+  }
+
+  return {
+    earned, repayments, expense, investment,
+    byCategory, byVehicle,
+    balance: earned + repayments - expense - investment,
+    count:   safeRows.length,
+  }
+}
+
 export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactions'],
   ['transactionsRecent'],
@@ -427,42 +461,13 @@ export function useMonthSummary(year, month, options = {}) {
         })
 
         if (qError) throw qError
-
-        const safeRows   = rows || []
-        const byCategory = {}
-        const byVehicle  = {}
-        let earned = 0, repayments = 0, expense = 0, investment = 0
-
-        for (const row of safeRows) {
-          const amount = Number(row.total || 0)
-          if (row.type === 'income') {
-            if (row.is_repayment) repayments += amount
-            else earned += amount
-          }
-          if (row.type === 'expense') {
-            expense += amount
-            if (row.category) {
-              byCategory[row.category] = (byCategory[row.category] || 0) + amount
-            }
-          }
-          if (row.type === 'investment') {
-            investment += amount
-            const vehicle = row.investment_vehicle || 'Other'
-            byVehicle[vehicle] = (byVehicle[vehicle] || 0) + amount
-          }
-        }
-
-        return {
-          earned, repayments, expense, investment,
-          byCategory, byVehicle,
-          balance: earned + repayments - expense - investment,
-          count:   safeRows.length,
-        }
+        return parseMonthSummaryRows(rows)
       } catch (err) {
         logQueryError('month summary', err)
         throw err
       }
     },
+    placeholderData: (previousData) => previousData,
   })
 
   return { data, loading: isLoading, fetching: isFetching, error }
@@ -473,6 +478,7 @@ export function useYearSummary(year, options = {}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['year', year],
     enabled,
+    placeholderData: (previousData) => previousData,
     queryFn: async () => {
       try {
         const userId = getAuthUserId()
@@ -886,8 +892,10 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
       ? await updateFn(id, payload)
       : await addFn(payload)
 
-    await queryClient.cancelQueries({ queryKey: ['transactions'] })
-    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
+    await Promise.all([
+      queryClient.cancelQueries({ queryKey: ['transactions'] }),
+      queryClient.cancelQueries({ queryKey: ['transactionsRecent'] }),
+    ])
 
     if (!id) {
       optimisticallyDeleteTransactionFromCache(optimisticId)
@@ -929,8 +937,10 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
     const invalidateFn = __testOverrides?.invalidateCache || invalidateCache
 
     await deleteFn(id)
-    await queryClient.cancelQueries({ queryKey: ['transactions'] })
-    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
+    await Promise.all([
+      queryClient.cancelQueries({ queryKey: ['transactions'] }),
+      queryClient.cancelQueries({ queryKey: ['transactionsRecent'] }),
+    ])
 
     optimisticallyDeleteTransactionFromCache(id)
 

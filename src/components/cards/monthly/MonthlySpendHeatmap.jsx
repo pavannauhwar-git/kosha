@@ -12,6 +12,25 @@ const INTENSITY_CLASSES = [
   'bg-brand',                     // 5 — max
 ]
 
+const DayCell = memo(function DayCell({ day, maxSpend, onHover }) {
+  const level = intensityLevel(day.value, maxSpend)
+  return (
+    <div
+      className={`h-7 rounded-[4px] border border-black/5 cursor-pointer transition-transform hover:scale-105 flex items-center justify-center ${INTENSITY_CLASSES[level]}`}
+      title={`${day.label}: ${fmt(day.value)}`}
+      onMouseEnter={() => onHover(day)}
+      onFocus={() => onHover(day)}
+      tabIndex={0}
+      role="button"
+      aria-label={`${day.label} spend ${fmt(day.value)}`}
+    >
+      <span className={`text-[9px] font-semibold tabular-nums ${level >= 4 ? 'text-white' : 'text-ink-3'}`}>
+        {day.day}
+      </span>
+    </div>
+  )
+})
+
 function intensityLevel(value, maxValue) {
   if (value <= 0) return 0
   const ratio = value / maxValue
@@ -25,6 +44,7 @@ function intensityLevel(value, maxValue) {
 export default memo(function MonthlySpendHeatmap({ txnRows, year, month }) {
   const [activeDay, setActiveDay] = useState(null)
   const handleLeave = useCallback(() => setActiveDay(null), [])
+  const handleCellHover = useCallback((day) => setActiveDay(day), [])
 
   const { weeks, stats } = useMemo(() => {
     // Aggregate daily expense totals from txnRows
@@ -135,22 +155,8 @@ export default memo(function MonthlySpendHeatmap({ txnRows, year, month }) {
                 if (!day) {
                   return <div key={`e-${wi}-${di}`} className="h-7 rounded-[4px]" />
                 }
-                const level = intensityLevel(day.value, stats.maxSpend)
                 return (
-                  <div
-                    key={day.key}
-                    className={`h-7 rounded-[4px] border border-black/5 cursor-pointer transition-transform hover:scale-105 flex items-center justify-center ${INTENSITY_CLASSES[level]}`}
-                    title={`${day.label}: ${fmt(day.value)}`}
-                    onMouseEnter={() => setActiveDay(day)}
-                    onFocus={() => setActiveDay(day)}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`${day.label} spend ${fmt(day.value)}`}
-                  >
-                    <span className={`text-[9px] font-semibold tabular-nums ${level >= 4 ? 'text-white' : 'text-ink-3'}`}>
-                      {day.day}
-                    </span>
-                  </div>
+                  <DayCell key={day.key} day={day} maxSpend={stats.maxSpend} onHover={handleCellHover} />
                 )
               })}
             </div>

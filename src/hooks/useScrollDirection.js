@@ -28,6 +28,8 @@ export function useScrollDirection(resetKey) {
   }, [resetKey])
 
   useEffect(() => {
+    let rafId = null
+
     const update = () => {
       const y = window.scrollY
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
@@ -56,13 +58,16 @@ export function useScrollDirection(resetKey) {
 
     const onScroll = () => {
       if (!ticking.current) {
-        requestAnimationFrame(update)
+        rafId = requestAnimationFrame(update)
         ticking.current = true
       }
     }
 
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (rafId != null) cancelAnimationFrame(rafId)
+    }
   }, [])
 
   return scrolledDown

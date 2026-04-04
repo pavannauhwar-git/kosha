@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
 import { supabase } from './lib/supabase'
-import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS } from './hooks/useTransactions'
+import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS, parseMonthSummaryRows } from './hooks/useTransactions'
 import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
 import AuthGuard, { RouteSkeleton } from './components/navigation/AuthGuard'
 import ProfileMenu from './components/navigation/ProfileMenu'
@@ -165,39 +165,7 @@ function useRouteIntentPrefetch() {
             p_month: month,
           })
           if (error) throw error
-
-          const safeRows = rows || []
-          const byCategory = {}
-          const byVehicle = {}
-          let earned = 0, repayments = 0, expense = 0, investment = 0
-
-          for (const row of safeRows) {
-            const amount = Number(row.total || 0)
-            if (row.type === 'income') {
-              if (row.is_repayment) repayments += amount
-              else earned += amount
-            }
-            if (row.type === 'expense') {
-              expense += amount
-              if (row.category) byCategory[row.category] = (byCategory[row.category] || 0) + amount
-            }
-            if (row.type === 'investment') {
-              investment += amount
-              const vehicle = row.investment_vehicle || 'Other'
-              byVehicle[vehicle] = (byVehicle[vehicle] || 0) + amount
-            }
-          }
-
-          return {
-            earned,
-            repayments,
-            expense,
-            investment,
-            byCategory,
-            byVehicle,
-            balance: earned + repayments - expense - investment,
-            count: safeRows.length,
-          }
+          return parseMonthSummaryRows(rows)
         },
         staleTime: 30 * 1000,
         }),
@@ -767,39 +735,7 @@ function DashboardWarmPrefetch() {
               })
 
               if (error) throw error
-
-              const safeRows = rows || []
-              const byCategory = {}
-              const byVehicle = {}
-              let earned = 0, repayments = 0, expense = 0, investment = 0
-
-              for (const row of safeRows) {
-                const amount = Number(row.total || 0)
-                if (row.type === 'income') {
-                  if (row.is_repayment) repayments += amount
-                  else earned += amount
-                }
-                if (row.type === 'expense') {
-                  expense += amount
-                  if (row.category) byCategory[row.category] = (byCategory[row.category] || 0) + amount
-                }
-                if (row.type === 'investment') {
-                  investment += amount
-                  const vehicle = row.investment_vehicle || 'Other'
-                  byVehicle[vehicle] = (byVehicle[vehicle] || 0) + amount
-                }
-              }
-
-              return {
-                earned,
-                repayments,
-                expense,
-                investment,
-                byCategory,
-                byVehicle,
-                balance: earned + repayments - expense - investment,
-                count: safeRows.length,
-              }
+              return parseMonthSummaryRows(rows)
             },
             staleTime: 30 * 1000,
           }),

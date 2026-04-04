@@ -50,20 +50,16 @@ export function useReconciliationReviews(options = {}) {
   const rows = data?.rows || []
   const unavailable = !!data?.unavailable
 
-  const reviewedIdSet = useMemo(() => {
-    const next = new Set()
+  const { reviewedIdSet, linkedIdSet } = useMemo(() => {
+    const reviewed = new Set()
+    const linked = new Set()
     for (const row of rows) {
-      if (row?.transaction_id) next.add(row.transaction_id)
+      if (row?.transaction_id) {
+        reviewed.add(row.transaction_id)
+        if (row.status === 'linked') linked.add(row.transaction_id)
+      }
     }
-    return next
-  }, [rows])
-
-  const linkedIdSet = useMemo(() => {
-    const next = new Set()
-    for (const row of rows) {
-      if (row?.status === 'linked' && row?.transaction_id) next.add(row.transaction_id)
-    }
-    return next
+    return { reviewedIdSet: reviewed, linkedIdSet: linked }
   }, [rows])
 
   return {

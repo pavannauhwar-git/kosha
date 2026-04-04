@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react'
+import { memo, useMemo, useState, useCallback } from 'react'
 import { fmt } from '../../../lib/utils'
 
 const WEEKDAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', '']
@@ -13,10 +13,22 @@ const INTENSITY_COLORS = [
   'bg-brand',                     // 5 — max
 ]
 
+const HeatmapCell = memo(function HeatmapCell({ day, onHover }) {
+  return (
+    <div
+      className={`w-[11px] h-[11px] rounded-[2px] border border-black/5 cursor-pointer transition-transform hover:scale-125 ${INTENSITY_COLORS[day.level]}`}
+      title={`${day.label}: ${fmt(day.value)}`}
+      onMouseEnter={() => onHover(day)}
+      onFocus={() => onHover(day)}
+    />
+  )
+})
+
 export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
   const [activeDay, setActiveDay] = useState(null)
 
   const handleLeave = useCallback(() => setActiveDay(null), [])
+  const handleCellHover = useCallback((day) => setActiveDay(day), [])
 
   const { weeks, monthLabels, stats } = useMemo(() => {
     const jan1 = new Date(year, 0, 1)
@@ -171,13 +183,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
                       return <div key={`e-${wi}-${di}`} className="w-[11px] h-[11px]" />
                     }
                     return (
-                      <div
-                        key={day.key}
-                        className={`w-[11px] h-[11px] rounded-[2px] border border-black/5 cursor-pointer transition-transform hover:scale-125 ${INTENSITY_COLORS[day.level]}`}
-                        title={`${day.label}: ${fmt(day.value)}`}
-                        onMouseEnter={() => setActiveDay(day)}
-                        onFocus={() => setActiveDay(day)}
-                      />
+                      <HeatmapCell key={day.key} day={day} onHover={handleCellHover} />
                     )
                   })}
                 </div>

@@ -184,6 +184,7 @@
     @apply rounded-card;
     background: rgba(26,26,46,0.06);
     animation: skeleton-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: background-color, opacity;
   }
 
   /* -- List card ───────────────────────────────────────────────────── */
