@@ -139,7 +139,7 @@ function useRouteIntentPrefetch() {
             if (error) throw error
             return data || []
           },
-          staleTime: 20 * 1000,
+          staleTime: 30 * 1000,
         }),
         queryClient.prefetchQuery({
           queryKey: ['txnCount', countFilters],
@@ -267,7 +267,7 @@ function useRouteIntentPrefetch() {
             count: Number(totals.count || 0),
           }
         },
-        staleTime: 45 * 1000,
+        staleTime: 30 * 1000,
       }).catch(() => {})
       return
     }
@@ -285,7 +285,7 @@ function useRouteIntentPrefetch() {
           if (error) throw error
           return data || []
         },
-        staleTime: 45 * 1000,
+        staleTime: 30 * 1000,
       }).catch(() => {})
       return
     }
@@ -500,7 +500,7 @@ function AuthCallback() {
 }
 
 const REALTIME_CONNECT_TIMEOUT_MS = 8000
-const REALTIME_FALLBACK_POLL_MS = 45000
+const REALTIME_FALLBACK_POLL_MS = 30000
 const REALTIME_RETRY_DELAYS_MS = [15000, 30000, 60000]
 
 // ── Global Realtime Sync ──────────────────────────────────────────────────

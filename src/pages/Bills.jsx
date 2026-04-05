@@ -281,7 +281,7 @@ export default function Bills() {
       <div className="mb-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => setTab('pending')}
-          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
             ${tab === 'pending'
               ? 'bg-brand text-white border border-brand shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
@@ -290,7 +290,7 @@ export default function Bills() {
         </button>
         <button
           onClick={() => setTab('paid')}
-          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.99]
+          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
             ${tab === 'paid'
               ? 'bg-income text-white border border-income shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
@@ -475,7 +475,7 @@ export default function Bills() {
                           disabled={!!payingId || !!deletingId || !!bill.__optimistic}
                           className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
                                      bg-income-bg text-income-text text-[11px] font-semibold
-                                     border border-income-border active:scale-[0.98] transition-all duration-100
+                                     border border-income-border active:scale-[0.97] transition-all duration-100
                                      disabled:opacity-60"
                         >
                           {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
@@ -487,7 +487,7 @@ export default function Bills() {
                         disabled={!!payingId || !!deletingId || !!bill.__optimistic}
                         className="h-8 w-8 flex items-center justify-center rounded-card
                                    bg-expense-bg text-expense-text text-[11px] font-semibold
-                                   border border-expense-border active:scale-[0.98] transition-all duration-100
+                                   border border-expense-border active:scale-[0.97] transition-all duration-100
                                    disabled:opacity-60"
                       >
                         {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
@@ -588,7 +588,7 @@ export default function Bills() {
                   <button onClick={handleAdd}
                     disabled={addSaving}
                     className={`w-full py-4 rounded-card font-semibold transition-all
-                               ${addSaving ? 'bg-repay/70 text-white/90 scale-[0.99]' : 'bg-gradient-to-r from-warning to-repay text-white active:scale-[0.99]'}`}>
+                               ${addSaving ? 'bg-repay/70 text-white/90 scale-[0.97]' : 'bg-gradient-to-r from-warning to-repay text-white active:scale-[0.97]'}`}>
                     {addSaving ? 'Adding…' : 'Add Bill'}
                   </button>
                 </div>

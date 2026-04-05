@@ -95,7 +95,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
                 onClick={handleSave}
                 disabled={saving || !name.trim()}
                 className="flex-1 py-3 rounded-card bg-brand text-white font-semibold
-                           active:scale-[0.98] disabled:opacity-50 transition-all"
+                           active:scale-[0.97] disabled:opacity-50 transition-all"
               >
                 {saving ? 'Saving…' : 'Save'}
               </button>

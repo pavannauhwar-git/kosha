@@ -25,7 +25,7 @@
  * firing 2+ seconds after a local mutation is NOT suppressed.
  */
 
-const SUPPRESS_TTL_MS = 1500
+const SUPPRESS_TTL_MS = 2000
 
 // Map of tableKey → expiry timestamp
 const _suppressed = new Map()

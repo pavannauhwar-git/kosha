@@ -9,6 +9,9 @@ export const FINANCIAL_EVENT_ACTIONS = {
   BILL_DELETE: 'liability_deleted',
 }
 
+const AUDIT_MAX_RETRIES = 2
+const AUDIT_BASE_DELAY_MS = 500
+
 export async function logFinancialEvent({
   userId,
   action,
@@ -18,24 +21,32 @@ export async function logFinancialEvent({
 }) {
   if (!userId || !action || !entityType || !entityId) return
 
-  try {
-    const { error } = await supabase
-      .from('financial_events')
-      .insert({
-        user_id: userId,
-        action,
-        entity_type: entityType,
-        entity_id: entityId,
-        metadata,
-      })
+  for (let attempt = 0; attempt <= AUDIT_MAX_RETRIES; attempt++) {
+    try {
+      const { error } = await supabase
+        .from('financial_events')
+        .insert({
+          user_id: userId,
+          action,
+          entity_type: entityType,
+          entity_id: entityId,
+          metadata,
+        })
 
-    if (error) throw error
-  } catch (error) {
-    const message = String(error?.message || '')
+      if (error) throw error
+      return // success
+    } catch (error) {
+      const message = String(error?.message || '')
 
-    // Safe no-op when migration has not yet been applied on an environment.
-    if (message.includes('financial_events')) return
+      // Safe no-op when migration has not yet been applied on an environment.
+      if (message.includes('financial_events')) return
 
-    console.warn('[Kosha] financial event log failed', error)
+      if (attempt < AUDIT_MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, AUDIT_BASE_DELAY_MS * (attempt + 1)))
+        continue
+      }
+
+      console.warn('[Kosha] financial event log failed after retries', error)
+    }
   }
 }

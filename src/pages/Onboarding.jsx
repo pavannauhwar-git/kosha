@@ -75,7 +75,7 @@ function StepName({ onNext }) {
         disabled={!name.trim()}
         className="w-full py-4 rounded-card bg-brand text-white
                    text-body font-semibold
-                   active:scale-[0.98] transition-all duration-75
+                   active:scale-[0.97] transition-all duration-75
                    disabled:opacity-40"
       >
         Continue
@@ -121,7 +121,7 @@ function StepIncome({ name, onNext, onBack }) {
         onClick={() => onNext(parseFloat(income) || 0)}
         className="w-full py-4 rounded-card bg-brand text-white
                    text-body font-semibold mb-3
-                   active:scale-[0.98] transition-all duration-75"
+                   active:scale-[0.97] transition-all duration-75"
       >
         {income ? 'Continue' : 'Skip for now'}
       </motion.button>
@@ -232,7 +232,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
         disabled={!amount || !desc.trim() || saving}
         className="w-full py-4 rounded-card bg-brand text-white
                    text-body font-semibold mb-3
-                   active:scale-[0.98] transition-all duration-75
+                   active:scale-[0.97] transition-all duration-75
                    disabled:opacity-40"
       >
         {saving ? 'Saving…' : 'Add & go to dashboard'}

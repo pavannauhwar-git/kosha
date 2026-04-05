@@ -292,8 +292,8 @@ export default function Dashboard() {
     loading: recentLoading,
     fetching: recentFetching,
   } = useRecentTransactions(5)
-  const { data: digestTxnRows = [] } = useTransactionDigest(70, 900, { enabled: heavyReady })
-  const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(VARIANCE_WINDOW_MAX_DAYS, { enabled: heavyReady })
+  const { data: digestTxnRows = [] } = useTransactionDigest(70, 900)
+  const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(VARIANCE_WINDOW_MAX_DAYS)
   const {
     data: summary,
     loading: summaryLoading,
@@ -311,8 +311,8 @@ export default function Dashboard() {
     balanceHorizonDate.getFullYear(),
     balanceHorizonDate.getMonth() + 1
   )
-  const { pending: bills = [], paid: paidBills = [] } = useLiabilities({ includePaid: true, enabled: heavyReady })
-  const { budgets } = useBudgets({ enabled: heavyReady })
+  const { pending: bills = [], paid: paidBills = [] } = useLiabilities({ includePaid: true })
+  const { budgets } = useBudgets()
   const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
 
   const heroLoading = summaryLoading || runningBalanceLoading

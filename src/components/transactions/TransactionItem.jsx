@@ -131,7 +131,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           <button
             onClick={handleDuplicateTap}
             className="flex flex-col items-center justify-center gap-1 px-5
-                     bg-brand-container active:opacity-80 transition-opacity duration-100"
+                     bg-brand-container active:scale-[0.96] active:opacity-80 transition-all duration-150"
           >
             <CopySimple size={18} weight="bold" color="var(--c-brand)" />
             <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
@@ -142,7 +142,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
           <button
             onClick={handleDeleteTap}
             className="flex flex-col items-center justify-center gap-1 px-5
-                     bg-expense active:opacity-80 transition-opacity duration-100"
+                     bg-expense active:scale-[0.96] active:opacity-80 transition-all duration-150"
           >
             <Trash size={18} weight="bold" color="white" />
             <span className="text-[10px] font-semibold text-white">Delete</span>

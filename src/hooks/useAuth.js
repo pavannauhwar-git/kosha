@@ -59,14 +59,10 @@ export function useAuthState() {
     setProfileLoading(true)
 
     try {
-      await queryClient.invalidateQueries({
-        queryKey: profileQueryKey(userId),
-        refetchType: 'active',
-      })
-
       const fresh = await queryClient.fetchQuery({
         queryKey: profileQueryKey(userId),
         queryFn: () => fetchProfileByUserId(userId),
+        staleTime: 0,
       })
 
       setProfile(fresh)

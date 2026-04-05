@@ -15,7 +15,8 @@ export default function PickerNavigator({
       <button
         onClick={onPrev}
         className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                   flex items-center justify-center active:bg-kosha-surface-2"
+                   flex items-center justify-center active:bg-kosha-surface-2
+                   hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-all duration-150"
       >
         <ChevronLeft size={18} className="text-ink-2" />
       </button>
@@ -38,7 +39,8 @@ export default function PickerNavigator({
       <button
         onClick={onNext}
         className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
-                   flex items-center justify-center active:bg-kosha-surface-2"
+                   flex items-center justify-center active:bg-kosha-surface-2
+                   hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-all duration-150"
       >
         <ChevronRight size={18} className="text-ink-2" />
       </button>

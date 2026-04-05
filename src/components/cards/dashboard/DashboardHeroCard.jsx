@@ -62,8 +62,11 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           { label: 'Earned',   val: earned   },
           { label: 'Spent',    val: spent    },
           { label: 'Invested', val: invested },
-        ].map(s => (
-          <div key={s.label}
+        ].map((s, i) => (
+          <motion.div key={s.label}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.06 * i, ease: [0.22, 1, 0.36, 1] }}
             className="flex-1 min-w-0 px-2.5 sm:px-4 py-2.5 rounded-2xl"
             style={{ background: C.heroStatBg }}
           >
@@ -72,7 +75,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
             <p className="text-[clamp(0.56rem,2.7vw,0.875rem)] sm:text-[14px] font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] [overflow-wrap:anywhere]">
               {fmt(s.val)}
             </p>
-          </div>
+          </motion.div>
         ))}
       </div>
 

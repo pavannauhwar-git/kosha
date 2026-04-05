@@ -338,7 +338,7 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
       },
     })
 
-    runInBackground(invalidateLiabilityFn(), 'liability add cache invalidation')
+    await invalidateLiabilityFn()
     return created
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -398,18 +398,13 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       },
     })
 
-    runInBackground(
-      (async () => {
-        await evictSwCacheEntries('/transactions')
-        await Promise.all([
-          invalidateLiabilityFn(),
-          invalidateTransactionFn(),
-          queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'none' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
-        ])
-      })(),
-      'liability markPaid cache invalidation'
-    )
+    await evictSwCacheEntries('/transactions')
+    await Promise.all([
+      invalidateLiabilityFn(),
+      invalidateTransactionFn(),
+      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'none' }),
+      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
+    ])
     return result
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -442,7 +437,7 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
       },
     })
 
-    runInBackground(invalidateLiabilityFn(), 'liability delete cache invalidation')
+    await invalidateLiabilityFn()
     return true
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)

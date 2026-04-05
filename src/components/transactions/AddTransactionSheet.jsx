@@ -602,8 +602,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               className={`w-full py-4 rounded-card text-[17px] font-semibold flex items-center
                           justify-center gap-2 transition-all
                           ${isSaving
-                            ? 'bg-brand/70 text-white/90 scale-[0.98] cursor-not-allowed'
-                            : 'bg-brand text-white active:scale-[0.98]'}`}
+                            ? 'bg-brand/70 text-white/90 scale-[0.97] cursor-not-allowed'
+                            : 'bg-brand text-white active:scale-[0.97]'}`}
             >
               {isSaving ? (
                 <>

@@ -469,8 +469,8 @@ export default function ReportBug() {
                 disabled={saving}
                 className={`py-3 rounded-card text-[14px] font-semibold transition-all
                   ${saving
-                    ? 'bg-brand/70 text-white/90 scale-[0.98]'
-                    : 'bg-brand text-white active:scale-[0.98]'}`}
+                    ? 'bg-brand/70 text-white/90 scale-[0.97]'
+                    : 'bg-brand text-white active:scale-[0.97]'}`}
               >
                 {saving ? 'Submitting…' : 'Submit report'}
               </button>

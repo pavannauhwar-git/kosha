@@ -218,7 +218,7 @@ export default function Login() {
                   className="w-full flex items-center justify-center gap-3 py-3.5
                        rounded-card border border-kosha-border bg-kosha-surface
                        text-label font-semibold text-ink
-                       active:scale-[0.98] transition-all duration-75
+                       active:scale-[0.97] transition-all duration-75
                        disabled:opacity-60 mb-4 shadow-card"
                 >
                   <GoogleLogo />
@@ -360,7 +360,7 @@ export default function Login() {
                   disabled={loading || googleLoading || isRedirectingAfterReset}
                   className="w-full py-4 rounded-card bg-brand text-white
                          text-body font-semibold mt-1
-                         active:scale-[0.98] transition-all duration-75
+                         active:scale-[0.97] transition-all duration-75
                          disabled:opacity-60"
                 >
                   {loading

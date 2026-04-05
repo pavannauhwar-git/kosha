@@ -956,7 +956,7 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
       },
     })
 
-    runInBackground(invalidateFn(),'transactions delete mutation cache invalidation')
+    await invalidateFn()
     return true
   } catch (error) {
     restoreCacheSnapshot(snapshot)
