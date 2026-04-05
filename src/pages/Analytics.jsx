@@ -8,7 +8,7 @@ import {
   SurplusTrajectoryChart,
   WhatIfSimulatorCard,
   RunwayCoverageChart,
-} from '../components/dashboard/AnalyticsCharts'
+} from '../components/analytics/AnalyticsCharts'
 import { useYearSummary, useYearDailyExpenseTotals } from '../hooks/useTransactions'
 import { fmt } from '../lib/utils'
 import PageHeader from '../components/layout/PageHeader'
@@ -22,7 +22,7 @@ import YoYCards from '../components/cards/analytics/YoYCards'
 import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
 import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
 import InvestmentConsistencyCard from '../components/cards/analytics/InvestmentConsistencyCard'
-import SavingsRateTrend from '../components/dashboard/SavingsRateTrend'
+import SavingsRateTrend from '../components/analytics/SavingsRateTrend'
 import FinancialHealthRadar from '../components/cards/analytics/FinancialHealthRadar'
 import CalendarHeatmap from '../components/cards/analytics/CalendarHeatmap'
 import {

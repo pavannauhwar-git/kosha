@@ -5,6 +5,8 @@ This folder contains project scripts used for development, verification, release
 ## Structure
 
 - `load_env.mjs`: Shared env loader for Node-based scripts.
+- `generate_app_icons.py`: PWA icon generator (uses Pillow + Roboto-Black.ttf).
+- `migrate.py`: CSV-to-Supabase transaction import utility.
 - `ops/`: Operational and release checks.
 	- `check_deploy_readiness.mjs`
 	- `release_candidate_check.mjs`
@@ -20,9 +22,6 @@ This folder contains project scripts used for development, verification, release
 	- `test_reconciliation_metrics.mjs`
 	- `test_reconciliation_schema_live.mjs`
 	- `test_statement_matching.mjs`
-- `tools/`: Asset/data utilities.
-	- `generate_icons.py`
-	- `migrate.py`
 
 ## QA notes
 
