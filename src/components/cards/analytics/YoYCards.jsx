@@ -58,7 +58,7 @@ function MetricTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
 
   return (
-    <div className="rounded-card bg-kosha-surface-2 p-3 shadow-card min-w-[180px]">
+    <div className="tooltip-enter rounded-card bg-kosha-surface-2 p-3 shadow-card min-w-[180px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       {payload.map((row) => (
         <div key={row.dataKey} className="flex items-center justify-between gap-3 text-[11px]">
@@ -75,7 +75,7 @@ function NetTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card bg-kosha-surface-2 p-3 shadow-card min-w-[172px]">
+    <div className="tooltip-enter rounded-card bg-kosha-surface-2 p-3 shadow-card min-w-[172px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Net</span>

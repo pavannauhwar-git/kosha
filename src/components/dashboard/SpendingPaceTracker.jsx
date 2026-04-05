@@ -17,7 +17,7 @@ function PaceTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card bg-kosha-surface p-3 shadow-card min-w-[172px]" style={{ border: '1px solid rgba(26,26,46,0.06)' }}>
+    <div className="tooltip-enter rounded-card bg-kosha-surface p-3 shadow-card min-w-[172px]" style={{ border: '1px solid rgba(26,26,46,0.06)' }}>
       <p className="text-[11px] font-semibold text-ink mb-1">Day {label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">

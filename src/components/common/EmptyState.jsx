@@ -1,3 +1,15 @@
+import { motion } from 'framer-motion'
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
+}
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.04 } },
+}
+
 export default function EmptyState({
   icon,
   title,
@@ -9,18 +21,28 @@ export default function EmptyState({
   className = '',
 }) {
   return (
-    <div className={`card empty-state py-10 px-6 flex flex-col items-center text-center ${className}`.trim()}>
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      animate="show"
+      className={`card empty-state py-10 px-6 flex flex-col items-center text-center ${className}`.trim()}
+    >
       {icon ? (
-        <div className="w-16 h-16 rounded-full bg-kosha-surface-2 flex items-center justify-center mb-4">
+        <motion.div
+          variants={fadeUp}
+          animate={{ y: [0, -3, 0] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+          className="w-16 h-16 rounded-full bg-kosha-surface-2 flex items-center justify-center mb-4"
+        >
           {icon}
-        </div>
+        </motion.div>
       ) : null}
 
-      <p className="text-[17px] font-bold text-ink mb-2">{title}</p>
-      <p className="text-label text-ink-3 mb-5 max-w-[240px] leading-relaxed">{description}</p>
+      <motion.p variants={fadeUp} className="text-[17px] font-bold text-ink mb-2">{title}</motion.p>
+      <motion.p variants={fadeUp} className="text-label text-ink-3 mb-5 max-w-[240px] leading-relaxed">{description}</motion.p>
 
       {(actionLabel && onAction) || (secondaryLabel && onSecondaryAction) ? (
-        <div className="flex items-center justify-center gap-2 flex-wrap">
+        <motion.div variants={fadeUp} className="flex items-center justify-center gap-2 flex-wrap">
           {actionLabel && onAction ? (
             <button
               type="button"
@@ -40,8 +62,8 @@ export default function EmptyState({
               {secondaryLabel}
             </button>
           ) : null}
-        </div>
+        </motion.div>
       ) : null}
-    </div>
+    </motion.div>
   )
 }

@@ -17,7 +17,7 @@ function DailySpendTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card bg-kosha-surface-2 p-3 shadow-card min-w-[160px]">
+    <div className="tooltip-enter rounded-card bg-kosha-surface-2 p-3 shadow-card min-w-[160px]">
       <p className="text-[11px] font-semibold text-ink mb-1">{row.label || label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">

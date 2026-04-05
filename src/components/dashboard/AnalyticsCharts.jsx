@@ -105,7 +105,7 @@ const PulseTooltip = ({ active, payload, label }) => {
   const pulseColor = pulse >= 0 ? C.brandMid : C.accent
 
   return (
-    <div style={{
+    <div className="tooltip-enter" style={{
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
@@ -155,7 +155,7 @@ const NetTooltip = ({ active, payload, label }) => {
   const val        = Number(netPayload?.value || 0)
   const valueColor = val >= 0 ? C.brandMid : C.bills
   return (
-    <div style={{
+    <div className="tooltip-enter" style={{
       background: 'rgba(34,43,109,0.96)',
       borderRadius: 12,
       padding: '10px 14px',
@@ -407,7 +407,7 @@ const FlowCompareTooltip = ({ active, payload, label }) => {
   const point = payload[0]?.payload || {}
 
   return (
-    <div style={{
+    <div className="tooltip-enter" style={{
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
@@ -526,7 +526,7 @@ const WaterfallTooltip = ({ active, payload, label }) => {
   const value = toFiniteNumber(row?.displayValue)
 
   return (
-    <div style={{
+    <div className="tooltip-enter" style={{
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
@@ -709,7 +709,7 @@ const CompositionTooltip = ({ active, payload, label }) => {
   const row = payload[0]?.payload || {}
 
   return (
-    <div style={{
+    <div className="tooltip-enter" style={{
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
@@ -845,7 +845,7 @@ const SurplusTrajectoryTooltip = ({ active, payload, label }) => {
   const row = payload[0]?.payload || {}
 
   return (
-    <div style={{
+    <div className="tooltip-enter" style={{
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
@@ -1132,7 +1132,7 @@ const RunwayTooltip = ({ active, payload, label }) => {
   const months = toFiniteNumber(payload[0]?.value)
 
   return (
-    <div style={{
+    <div className="tooltip-enter" style={{
       background: '#FFFFFF',
       borderRadius: 12,
       padding: '10px 12px',
@@ -1385,7 +1385,7 @@ const ConfidenceTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload
   return (
-    <div style={{
+    <div className="tooltip-enter" style={{
       background: 'rgba(34,43,109,0.96)',
       borderRadius: 12,
       padding: '10px 14px',

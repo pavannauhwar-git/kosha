@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
@@ -61,6 +61,12 @@ function SuspenseSkeleton({ pathname, children }) {
       {children}
     </Suspense>
   )
+}
+
+const PAGE_TRANSITION = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } },
+  exit: { opacity: 0, y: -4, transition: { duration: 0.15, ease: [0.22, 1, 0.36, 1] } },
 }
 
 const NAV = [
@@ -773,14 +779,12 @@ function DashboardWarmPrefetch() {
   return null
 }
 
-// ── App shell ─────────────────────────────────────────────────────────────
-function AppShell() {
+function AnimatedRoutes() {
+  const location = useLocation()
   return (
-    <div className="min-h-dvh bg-kosha-bg">
-      <RuntimeRouteTracker />
-      <DesktopSidebar />
-      <ContentWrapper>
-        <Routes>
+    <AnimatePresence mode="wait">
+      <motion.div key={location.pathname} {...PAGE_TRANSITION}>
+        <Routes location={location}>
           <Route path="/login" element={<Login />} />
           <Route path="/join/:token" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
@@ -798,6 +802,19 @@ function AppShell() {
           <Route path="/report-bug" element={<SuspenseSkeleton pathname="/report-bug"><ReportBug /></SuspenseSkeleton>} />
           <Route path="*" element={<Navigate to="/not-found" replace />} />
         </Routes>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+// ── App shell ─────────────────────────────────────────────────────────────
+function AppShell() {
+  return (
+    <div className="min-h-dvh bg-kosha-bg">
+      <RuntimeRouteTracker />
+      <DesktopSidebar />
+      <ContentWrapper>
+        <AnimatedRoutes />
       </ContentWrapper>
       <BottomNav />
     </div>

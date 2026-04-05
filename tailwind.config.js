@@ -70,11 +70,11 @@ export default {
 
       fontSize: {
         'caption': ['11px', { lineHeight: '1.45', letterSpacing: '0.02em'  }],
-        'label':   ['13px', { lineHeight: '1.45', letterSpacing: '0.005em' }],
+        'label':   ['13px', { lineHeight: '1.4',  letterSpacing: '0.005em' }],
         'body':    ['15px', { lineHeight: '1.55', letterSpacing: '0em'     }],
-        'value':   ['22px', { lineHeight: '1.25', letterSpacing: '-0.02em' }],
-        'display': ['32px', { lineHeight: '1.1',  letterSpacing: '-0.025em' }],
-        'hero':    ['42px', { lineHeight: '1.0',  letterSpacing: '-0.03em' }],
+        'value':   ['22px', { lineHeight: '1.2',  letterSpacing: '-0.02em' }],
+        'display': ['32px', { lineHeight: '1.05', letterSpacing: '-0.025em' }],
+        'hero':    ['42px', { lineHeight: '0.95', letterSpacing: '-0.03em' }],
       },
 
       borderRadius: {
@@ -86,16 +86,16 @@ export default {
       },
 
       boxShadow: {
-        'card':       '0 1px 3px rgba(26,26,46,0.04), 0 4px 12px rgba(26,26,46,0.03)',
-        'card-md':    '0 2px 8px rgba(26,26,46,0.06), 0 8px 24px rgba(26,26,46,0.04)',
-        'card-lg':    '0 4px 16px rgba(26,26,46,0.08), 0 12px 40px rgba(26,26,46,0.06)',
-        'apple-card': '0 24px 56px rgba(26,26,46,0.12), 0 8px 20px rgba(26,26,46,0.06)',
-        'fab':        '0 8px 24px rgba(26,26,46,0.20), 0 2px 8px rgba(26,26,46,0.10)',
-        'focus':      '0 0 0 3px rgba(26,26,46,0.12)',
-        'urgent':     '0 2px 8px rgba(196,56,74,0.12)',
-        'warn':       '0 2px 8px rgba(139,114,48,0.12)',
-        'glass':      '0 8px 32px rgba(26,26,46,0.08), inset 0 0.5px 0 rgba(255,255,255,0.5)',
-        'hero-card':  '0 20px 60px rgba(26,26,46,0.25), 0 8px 20px rgba(26,26,46,0.15)',
+        'card':       '0 1px 2px rgba(26,26,46,0.03), 0 4px 16px rgba(26,26,46,0.04)',
+        'card-md':    '0 2px 6px rgba(26,26,46,0.05), 0 8px 28px rgba(26,26,46,0.05)',
+        'card-lg':    '0 4px 12px rgba(26,26,46,0.06), 0 16px 48px rgba(26,26,46,0.07)',
+        'apple-card': '0 24px 56px rgba(26,26,46,0.10), 0 8px 20px rgba(26,26,46,0.05)',
+        'fab':        '0 10px 28px rgba(26,26,46,0.22), 0 3px 10px rgba(26,26,46,0.12)',
+        'focus':      '0 0 0 3px rgba(26,26,46,0.10)',
+        'urgent':     '0 2px 8px rgba(196,56,74,0.10)',
+        'warn':       '0 2px 8px rgba(139,114,48,0.10)',
+        'glass':      '0 8px 32px rgba(26,26,46,0.06), inset 0 0.5px 0 rgba(255,255,255,0.6)',
+        'hero-card':  '0 30px 100px rgba(26,26,46,0.30), 0 12px 36px rgba(26,26,46,0.18), 0 4px 10px rgba(201,169,110,0.08)',
       },
 
       keyframes: {

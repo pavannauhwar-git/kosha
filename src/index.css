@@ -102,10 +102,10 @@
     --c-shimmer-1: #F5F3EE;
     --c-shimmer-2: #EFECE6;
 
-    /* Motion timing scale — slightly slower for premium feel */
-    --motion-fast: 100ms;
-    --motion-base: 180ms;
-    --motion-slow: 280ms;
+    /* Motion timing scale — deliberate, premium */
+    --motion-fast: 120ms;
+    --motion-base: 200ms;
+    --motion-slow: 320ms;
   }
 
   /* GPU layer on interactive elements */
@@ -119,11 +119,13 @@
 
   /* -- Hero card — dark premium slab ──────────────────────────────── */
   .card-hero {
-    background: linear-gradient(145deg, #1A1A2E 0%, #16162B 50%, #0F0F1A 100%);
+    background: linear-gradient(155deg, #1E1E34 0%, #1A1A2E 45%, #111122 100%);
     @apply rounded-hero;
     box-shadow:
-      0 20px 60px rgba(26,26,46,0.25),
-      0 8px 20px rgba(26,26,46,0.15);
+      0 30px 100px rgba(26,26,46,0.30),
+      0 12px 36px rgba(26,26,46,0.18),
+      0 4px 10px rgba(201,169,110,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.06);
     position: relative;
     overflow: hidden;
   }
@@ -139,14 +141,14 @@
     pointer-events: none;
   }
 
-  /* -- Cards — borderless, soft depth ─────────────────────────────── */
+  /* -- Cards — borderless, refined depth ──────────────────────────── */
   .card {
     @apply bg-kosha-surface rounded-card shadow-card;
     border: none;
   }
 
   .page-stack {
-    @apply space-y-3.5 md:space-y-4;
+    @apply space-y-4 md:space-y-5;
   }
 
   .sticky-toolbar {
@@ -182,9 +184,34 @@
   /* -- Skeleton loader ──────────────────────────────────────────────── */
   .skeleton {
     @apply rounded-card;
-    background: rgba(26,26,46,0.06);
-    animation: skeleton-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    will-change: background-color, opacity;
+    background: linear-gradient(90deg, #F0EDE7 0%, #E8E4DD 40%, #F0EDE7 80%);
+    background-size: 800px 100%;
+    animation: skeleton-sweep 1.8s ease-in-out infinite;
+    will-change: background-position, opacity;
+  }
+
+  /* -- Frosted header glass ───────────────────────────────────────── */
+  .header-frosted {
+    background: rgba(245,243,238,0.88);
+    backdrop-filter: saturate(190%) blur(24px);
+    -webkit-backdrop-filter: saturate(190%) blur(24px);
+    border-bottom: 1px solid rgba(26,26,46,0.04);
+  }
+
+  /* -- Chart tooltip entrance ─────────────────────────────────────── */
+  .tooltip-enter {
+    animation: tooltip-pop 120ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes tooltip-pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.92) translateY(2px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
 
   /* -- List card ───────────────────────────────────────────────────── */
@@ -203,13 +230,13 @@
 
   /* -- Section label — CRED-style uppercase tracking ──────────────── */
   .section-label {
-    @apply text-[10px] font-semibold text-ink-3 leading-none;
-    letter-spacing: 0.12em;
+    @apply text-[10px] font-semibold text-ink-4 leading-none;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
   }
 
   .card-title {
-    @apply text-[14px] font-semibold text-ink;
+    @apply text-[14px] font-bold text-ink;
     letter-spacing: -0.01em;
   }
 
@@ -271,18 +298,31 @@
 
   /* -- Buttons — premium, minimal ─────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill transition-all duration-200 active:scale-[0.98] select-none cursor-pointer;
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-pill select-none cursor-pointer;
     letter-spacing: 0.01em;
+    transition: all 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+    filter: brightness(1.04);
   }
 
   .btn-primary {
     @apply btn text-white px-7 py-3.5 border border-transparent;
     background: #1A1A2E;
-    box-shadow: 0 8px 24px rgba(26,26,46,0.20);
+    box-shadow: 0 10px 28px rgba(26,26,46,0.22), 0 3px 10px rgba(26,26,46,0.12);
   }
 
   .btn-primary:hover {
     background: #2D2D44;
+    box-shadow: 0 14px 36px rgba(26,26,46,0.28), 0 5px 14px rgba(26,26,46,0.16);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.97) translateY(0);
+    box-shadow: 0 4px 12px rgba(26,26,46,0.20), 0 2px 6px rgba(26,26,46,0.12);
   }
 
   .btn-tonal {
@@ -297,8 +337,8 @@
 
   .btn-secondary {
     @apply btn bg-kosha-surface text-ink-2 px-5 py-2.5 hover:bg-kosha-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/10;
-    border: 1px solid rgba(26,26,46,0.08);
-    box-shadow: 0 2px 6px rgba(26,26,46,0.04);
+    border: 1px solid rgba(26,26,46,0.06);
+    box-shadow: 0 1px 4px rgba(26,26,46,0.04), 0 4px 12px rgba(26,26,46,0.03);
   }
 
   .btn-secondary-sm {
@@ -350,16 +390,16 @@
     display: flex;
     align-items: center;
     gap: 0;
-    padding: 10px 14px;
+    padding: 10px 16px;
     border-radius: 32px;
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: saturate(190%) blur(24px);
+    -webkit-backdrop-filter: saturate(190%) blur(24px);
     box-shadow:
-      0 16px 36px rgba(26,26,46,0.12),
-      0 4px 10px rgba(26,26,46,0.06),
-      inset 0 0.5px 0 rgba(255,255,255,0.80),
-      0 0 0 1px rgba(26,26,46,0.06);
+      0 20px 48px rgba(26,26,46,0.13),
+      0 6px 14px rgba(26,26,46,0.06),
+      inset 0 0.5px 0 rgba(255,255,255,0.85),
+      0 0 0 1px rgba(26,26,46,0.05);
     pointer-events: auto;
   }
 
@@ -414,23 +454,25 @@
 
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
-    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-[15px] focus:outline-none focus:shadow-focus focus:bg-white transition-all duration-200;
+    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-[15px] focus:outline-none focus:bg-white;
     border: 1px solid rgba(26,26,46,0.06);
     min-width: 0;
     will-change: transform;
     transform: translateZ(0);
+    transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .input:focus {
-    border-color: rgba(26,26,46,0.15);
+    border-color: #C9A96E;
+    box-shadow: 0 0 0 3px rgba(201,169,110,0.10), 0 4px 12px rgba(26,26,46,0.06);
   }
 
   /* -- Bottom sheet ────────────────────────────────────────────────── */
   .sheet-backdrop {
     @apply fixed inset-0 z-40;
-    background: rgba(26, 26, 46, 0.40);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(26, 26, 46, 0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
 
   .sheet-panel {
@@ -473,8 +515,8 @@
   /* -- Page wrapper ────────────────────────────────────────────────── */
   .page {
     @apply min-h-dvh px-5 md:px-6;
-    padding-top: 0.6rem;
-    padding-bottom: calc(var(--nav-height) + 1.5rem);
+    padding-top: 0.75rem;
+    padding-bottom: calc(var(--nav-height) + 1.75rem);
     max-width: 640px;
     margin-left: auto;
     margin-right: auto;
@@ -532,33 +574,30 @@
   }
 }
 
-/* -- Skeleton pulse ──────────────────────────────────────────────────── */
-@keyframes skeleton-pulse {
-
-  0%,
-  100% {
-    opacity: 1;
+/* -- Skeleton sweep — premium directional shimmer ────────────────────── */
+@keyframes skeleton-sweep {
+  0% {
+    background-position: -800px 0;
   }
-
-  50% {
-    opacity: 0.4;
+  100% {
+    background-position: 800px 0;
   }
 }
 
-/* -- Shimmer — green tint to match new palette ─────────────────────── */
+/* -- Shimmer — warm gradient sweep ─────────────────────────────────── */
 @keyframes shimmer {
   0% {
-    background-position: -200% 0;
+    background-position: -800px 0;
   }
-
   100% {
-    background-position: 200% 0;
+    background-position: 800px 0;
   }
 }
 
 .shimmer {
-  background: var(--c-shimmer-1);
-  animation: skeleton-pulse 1.6s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--c-shimmer-1) 0%, var(--c-shimmer-2) 40%, var(--c-shimmer-1) 80%);
+  background-size: 800px 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
 }
 
 @media (max-width: 390px) {
