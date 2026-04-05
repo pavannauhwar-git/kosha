@@ -189,12 +189,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                               </span>
                             </div>
                           ) : (
-                          <div
-                            className="w-7 h-7 rounded-full border border-kosha-border flex items-center justify-center shrink-0"
-                            style={{ background: cat.bg }}
-                          >
-                            <CategoryIcon categoryId={cat.id} size={13} />
-                          </div>
+                          <CategoryIcon categoryId={cat.id} size={13} className="shrink-0" />
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-[12px] font-semibold text-ink truncate">{cat.label}</p>

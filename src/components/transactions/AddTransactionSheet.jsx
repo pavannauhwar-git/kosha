@@ -7,7 +7,7 @@
 
 import { useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, NotePencil, CaretRight, Sparkle } from '@phosphor-icons/react'
+import { X, NotePencil, CaretRight } from '@phosphor-icons/react'
 import {
   saveTransactionMutation,
 } from '../../hooks/useTransactions'
@@ -19,7 +19,7 @@ import {
   getCategoriesForType,
   normalizeCategoryForType,
 } from '../../lib/categories'
-import { parseTransactionSmart } from '../../lib/nlp'
+
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -68,8 +68,6 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       recurrence: editTxn.recurrence || 'monthly',
       notes:      editTxn.notes       || '',
       showNotes:  !!(editTxn.notes),
-      smartMode:  false,
-      smartText:  '',
       isSaving:   false,
       error:      '',
     }
@@ -87,8 +85,6 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       recurrence: duplicateTxn.recurrence || 'monthly',
       notes:      duplicateTxn.notes       || '',
       showNotes:  !!(duplicateTxn.notes),
-      smartMode:  false,
-      smartText:  '',
       isSaving:   false,
       error:      '',
     }
@@ -105,8 +101,6 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
     recurrence: 'monthly',
     notes:     '',
     showNotes: false,
-    smartMode: false,
-    smartText: '',
     isSaving:  false,
     error:     '',
   }
@@ -119,7 +113,6 @@ function formReducer(state, action) {
     case 'SAVING_START': return { ...state, isSaving: true, error: '' }
     // SAVING_ERROR: re-enable inputs so user can retry
     case 'SAVING_ERROR': return { ...state, isSaving: false, error: action.value }
-    case 'SMART_PARSE': return { ...state, ...action.parsed, smartText: action.smartText }
     default:            return state
   }
 }
@@ -275,7 +268,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   const {
     type, amount, desc, category, vehicle, mode, date,
-    isRecurring, recurrence, notes, showNotes, smartMode, smartText, isSaving, error,
+    isRecurring, recurrence, notes, showNotes, isSaving, error,
   } = state
 
   const set = (key, value) => dispatch({ type: 'SET', key, value })
@@ -294,20 +287,6 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const [showCatPicker,  setShowCatPicker]  = useReducer(v => !v, false)
   const [showModePicker, setShowModePicker] = useReducer(v => !v, false)
   const [showVehPicker,  setShowVehPicker]  = useReducer(v => !v, false)
-
-  function handleSmartTextChange(val) {
-    const { amount: a, desc: d, category: c, mode: m } = parseTransactionSmart(val)
-    dispatch({
-      type:      'SMART_PARSE',
-      smartText: val,
-      parsed: {
-        ...(a ? { amount:   a } : {}),
-        ...(d ? { desc:     d } : {}),
-        ...(c ? { category: c } : {}),
-        ...(m ? { mode:     m } : {}),
-      },
-    })
-  }
 
   async function handleSave() {
     // Client-side validation — fast, no async
@@ -381,16 +360,6 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               {editTxn ? 'Edit Transaction' : 'Add Transaction'}
             </h2>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => set('smartMode', !smartMode)}
-                disabled={isSaving}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors
-                  ${smartMode ? 'bg-brand text-white shadow-sm' : 'bg-surface text-ink-3'}
-                  disabled:opacity-50`}
-              >
-                <Sparkle size={14} weight={smartMode ? 'fill' : 'regular'} />
-                Smart Entry
-              </button>
               {/* X button disabled while saving to prevent accidental close mid-flight */}
               <button
                 onClick={isSaving ? undefined : onClose}
@@ -401,31 +370,6 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               </button>
             </div>
           </div>
-
-          {/* Smart Input */}
-          <AnimatePresence>
-            {smartMode && (
-              <motion.div
-                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
-                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                className="overflow-hidden"
-              >
-                <textarea
-                  placeholder="e.g. Paid 400 for lunch using UPI..."
-                  value={smartText}
-                  onChange={e => handleSmartTextChange(e.target.value)}
-                  disabled={isSaving}
-                  className="w-full bg-ink/[0.04] border border-ink/[0.12] text-ink font-medium
-                             rounded-2xl p-4 min-h-[100px] outline-none focus:ring-2
-                             ring-ink/30 resize-none shadow-inner disabled:opacity-50"
-                />
-                <p className="text-[11px] text-ink-4 mt-2 px-2 flex items-center gap-1">
-                  <Sparkle size={12} /> Auto-fills amount, description, category, and mode.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Type selector */}
           <div className="grid grid-cols-3 gap-2 mb-5 min-w-0">

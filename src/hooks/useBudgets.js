@@ -44,32 +44,58 @@ export function budgetMap(budgets) {
 export async function upsertBudget(category, monthlyLimit) {
   const userId = getAuthUserId()
 
-  const { data, error } = await supabase
-    .from('category_budgets')
-    .upsert(
-      { user_id: userId, category, monthly_limit: monthlyLimit },
-      { onConflict: 'user_id,category' }
-    )
-    .select(BUDGET_COLUMNS)
-    .single()
+  // Optimistic update
+  const prev = queryClient.getQueryData(BUDGET_QUERY_KEY)
+  if (prev) {
+    const idx = prev.findIndex((b) => b.category === category)
+    const optimistic = idx >= 0
+      ? prev.map((b, i) => i === idx ? { ...b, monthly_limit: monthlyLimit } : b)
+      : [...prev, { id: `temp-${category}`, category, monthly_limit: monthlyLimit, created_at: new Date().toISOString() }]
+    queryClient.setQueryData(BUDGET_QUERY_KEY, optimistic)
+  }
 
-  if (error) throw error
+  try {
+    const { data, error } = await supabase
+      .from('category_budgets')
+      .upsert(
+        { user_id: userId, category, monthly_limit: monthlyLimit },
+        { onConflict: 'user_id,category' }
+      )
+      .select(BUDGET_COLUMNS)
+      .single()
 
-  queryClient.invalidateQueries({ queryKey: BUDGET_QUERY_KEY, refetchType: 'active' })
-  return data
+    if (error) throw error
+
+    queryClient.invalidateQueries({ queryKey: BUDGET_QUERY_KEY })
+    return data
+  } catch (e) {
+    if (prev) queryClient.setQueryData(BUDGET_QUERY_KEY, prev)
+    throw e
+  }
 }
 
 export async function deleteBudget(id) {
   const userId = getAuthUserId()
 
-  const { error } = await supabase
-    .from('category_budgets')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId)
+  // Optimistic update
+  const prev = queryClient.getQueryData(BUDGET_QUERY_KEY)
+  if (prev) {
+    queryClient.setQueryData(BUDGET_QUERY_KEY, prev.filter((b) => b.id !== id))
+  }
 
-  if (error) throw error
+  try {
+    const { error } = await supabase
+      .from('category_budgets')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId)
 
-  queryClient.invalidateQueries({ queryKey: BUDGET_QUERY_KEY, refetchType: 'active' })
-  return true
+    if (error) throw error
+
+    queryClient.invalidateQueries({ queryKey: BUDGET_QUERY_KEY })
+    return true
+  } catch (e) {
+    if (prev) queryClient.setQueryData(BUDGET_QUERY_KEY, prev)
+    throw e
+  }
 }

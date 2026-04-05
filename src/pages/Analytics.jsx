@@ -213,7 +213,7 @@ export default function Analytics() {
       return {
         id,
         label,
-        shortLabel: shortLabel(label, 10),
+        shortLabel: shortLabel(label, 8),
         amount,
         cumulativePct: Math.round((running / categoryTotal) * 100),
       }
@@ -402,59 +402,37 @@ export default function Analytics() {
                     </div>
                   </div>
 
-                  <div className="space-y-2 md:hidden">
-                    {categoryPareto.rows.map((row, idx) => (
-                      <div key={`pareto-mobile-${row.id}`} className="flex items-center gap-3">
-                        <span className="text-[10px] font-semibold text-ink-3 w-4 shrink-0 tabular-nums text-right">{idx + 1}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <p className="text-[11px] font-semibold text-ink truncate">{row.label}</p>
-                            <p className="text-[11px] tabular-nums text-ink shrink-0">{fmt(row.amount, true)}</p>
-                          </div>
-                          <div className="h-1.5 rounded-pill overflow-hidden" style={{ background: 'rgba(26,26,46,0.06)' }}>
-                            <div
-                              className="h-full rounded-pill"
-                              style={{
-                                width: `${Math.max(6, row.sharePct || Math.round((row.amount / (categoryPareto.topAmount / (categoryPareto.topShare / 100))) * 100))}%`,
-                                background: C.brand,
-                                opacity: 1 - idx * 0.08,
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-semibold tabular-nums text-ink-3 w-8 shrink-0 text-right">{row.cumulativePct}%</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="rounded-card bg-kosha-surface-2 p-3 hidden md:block">
+                  <div className="rounded-card bg-kosha-surface-2 p-3">
                     <ResponsiveContainer width="100%" height={228}>
-                      <ComposedChart data={categoryPareto.rows} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                      <ComposedChart data={categoryPareto.rows} margin={{ top: 8, right: 4, left: -4, bottom: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
                         <XAxis
                           dataKey="shortLabel"
-                          tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+                          tick={{ fontSize: 9, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
                           axisLine={false}
                           tickLine={false}
                           interval={0}
+                          angle={-35}
+                          textAnchor="end"
+                          height={40}
                         />
                         <YAxis
                           yAxisId="amount"
                           tickFormatter={compactTick}
-                          tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
+                          tick={{ fontSize: 9, fill: 'rgba(107,107,128,0.9)' }}
                           axisLine={false}
                           tickLine={false}
-                          width={34}
+                          width={30}
                         />
                         <YAxis
                           yAxisId="pct"
                           orientation="right"
                           domain={[0, 100]}
                           tickFormatter={(value) => `${Math.round(value)}%`}
-                          tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
+                          tick={{ fontSize: 9, fill: 'rgba(107,107,128,0.9)' }}
                           axisLine={false}
                           tickLine={false}
-                          width={34}
+                          width={30}
                         />
                         <RechartsTooltip content={<ParetoTooltip />} />
                         <ReferenceLine yAxisId="pct" y={80} stroke={C.invest} strokeDasharray="4 4" strokeOpacity={0.7} />

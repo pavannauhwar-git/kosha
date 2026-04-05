@@ -617,7 +617,7 @@ export default function Transactions() {
       <AddTransactionSheet
         open={showAdd}
         duplicateTxn={duplicateTxn}
-        onClose={() => { setShowAdd(false); setDuplicateTxn(null) }}
+        onClose={() => { setShowAdd(false); setEditTxn(null); setDuplicateTxn(null) }}
         editTxn={editTxn}
         initialType={addType}
       />
