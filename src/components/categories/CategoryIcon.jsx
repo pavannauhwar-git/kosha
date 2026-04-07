@@ -8,7 +8,7 @@ import {
   QrCode, Bank, Money, Globe, Wallet, DotsThree,
   ChartLineUp, TrendUp, Vault, Coin, Umbrella, Diamond,
   Buildings, CurrencyBtc, Scroll, Briefcase, IdentificationBadge,
-  Certificate,
+  Certificate, Tag,
 } from '@phosphor-icons/react'
 import { memo } from 'react'
 import { getCategory } from '../../lib/categories'
@@ -23,7 +23,7 @@ export const ICON_MAP = {
   QrCode, Bank, Money, Globe, Wallet, DotsThree,
   ChartLineUp, TrendUp, Vault, Coin, Umbrella, Diamond,
   Buildings, CurrencyBtc, Scroll, Briefcase, IdentificationBadge,
-  Certificate,
+  Certificate, Tag,
 }
 
 function CategoryIcon({ categoryId, size = 20, className = '' }) {

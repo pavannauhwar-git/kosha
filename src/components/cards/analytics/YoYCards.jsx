@@ -223,6 +223,7 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
         <label className="flex items-center gap-2 text-[11px] text-ink-3">
           Compare with
           <select
+            name="yoy-compare-year"
             value={compareYear || ''}
             onChange={(event) => setCompareYear(Number(event.target.value))}
             className="h-8 px-2 rounded-card border border-kosha-border bg-kosha-surface text-ink"

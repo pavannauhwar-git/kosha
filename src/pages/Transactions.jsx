@@ -410,6 +410,7 @@ export default function Transactions() {
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
           <input
             className="input pl-8 pr-8 py-2 md:py-2.5 text-[14px]"
+            name="transaction-search"
             placeholder="Search transactions..."
             value={search}
             onChange={e => setSearch(e.target.value)}

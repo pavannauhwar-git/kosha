@@ -7,7 +7,7 @@
 
 import { useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, NotePencil, CaretRight } from '@phosphor-icons/react'
+import { X, NotePencil, CaretRight, Plus } from '@phosphor-icons/react'
 import {
   saveTransactionMutation,
 } from '../../hooks/useTransactions'
@@ -19,6 +19,8 @@ import {
   getCategoriesForType,
   normalizeCategoryForType,
 } from '../../lib/categories'
+import { useUserCategories } from '../../hooks/useUserCategories'
+import CreateCategorySheet from '../categories/CreateCategorySheet'
 
 
 function todayStr() {
@@ -119,7 +121,7 @@ function formReducer(state, action) {
 
 // ── Sub-pickers ───────────────────────────────────────────────────────────
 
-function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Category' }) {
+function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Category', onCreateNew }) {
   return (
     <>
       <motion.div className="sheet-backdrop"
@@ -156,6 +158,18 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
               </button>
             ))}
           </div>
+          {onCreateNew && (
+            <button
+              onClick={onCreateNew}
+              className="list-row w-full mt-2 rounded-card border border-dashed border-kosha-border
+                         hover:bg-kosha-surface-2 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 flex items-center justify-center shrink-0">
+                <Plus size={16} className="text-ink-3" />
+              </div>
+              <span className="flex-1 text-[15px] text-ink-3 text-left">Create Category</span>
+            </button>
+          )}
         </div>
       </motion.div>
     </>
@@ -272,6 +286,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   } = state
 
   const set = (key, value) => dispatch({ type: 'SET', key, value })
+
+  // Load user's custom categories — registers them into the module-level store
+  useUserCategories()
   const categoryOptions = getCategoriesForType(type)
 
   const amountRef = useRef(null)
@@ -287,6 +304,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const [showCatPicker,  setShowCatPicker]  = useReducer(v => !v, false)
   const [showModePicker, setShowModePicker] = useReducer(v => !v, false)
   const [showVehPicker,  setShowVehPicker]  = useReducer(v => !v, false)
+  const [showCreateCat,  setShowCreateCat]  = useReducer(v => !v, false)
 
   async function handleSave() {
     // Client-side validation — fast, no async
@@ -393,7 +411,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <span className={`text-2xl font-bold ${activeType?.color}`}>₹</span>
             <input
               ref={amountRef}
-              type="number" inputMode="decimal" placeholder="0.00"
+              type="number" inputMode="decimal" name="txn-amount" placeholder="0.00"
               value={amount}
               onChange={e => set('amount', e.target.value)}
               disabled={isSaving}
@@ -404,7 +422,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
           {/* Description */}
           <input
-            type="text" placeholder="Description"
+            type="text" name="txn-description" placeholder="Description"
             value={desc} onChange={e => set('desc', e.target.value)}
             disabled={isSaving}
             className="input mb-3 disabled:opacity-50"
@@ -419,7 +437,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 <span className="text-ink text-xs font-semibold">📅</span>
               </div>
               <span className="flex-1 text-[15px] text-ink">Date</span>
-              <input type="date" value={date} onChange={e => set('date', e.target.value)}
+              <input type="date" name="txn-date" value={date} onChange={e => set('date', e.target.value)}
                 disabled={isSaving}
                 className="text-[15px] text-ink-3 bg-transparent outline-none text-right disabled:opacity-50" />
             </label>
@@ -568,6 +586,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   <div className="px-4 pb-3 pt-1">
                     <textarea
                       rows={3}
+                      name="txn-notes"
                       placeholder="e.g. Q1 advance tax, flight reimbursement…"
                       value={notes}
                       onChange={e => set('notes', e.target.value)}
@@ -633,10 +652,18 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             onClose={() => setShowCatPicker()}
             categories={categoryOptions}
             title={type === 'income' ? 'Income Source' : 'Expense Category'}
+            onCreateNew={() => { setShowCatPicker(); setShowCreateCat() }}
           />
         )}
         {showModePicker && <ModePicker      selected={mode}     onSelect={v => set('mode', v)}     onClose={() => setShowModePicker()} />}
         {showVehPicker  && <VehiclePicker   selected={vehicle}  onSelect={v => set('vehicle', v)}  onClose={() => setShowVehPicker()}  />}
+        {showCreateCat && (
+          <CreateCategorySheet
+            type={type}
+            onClose={() => setShowCreateCat()}
+            onCreated={(slug) => set('category', slug)}
+          />
+        )}
       </AnimatePresence>
     </>
   )

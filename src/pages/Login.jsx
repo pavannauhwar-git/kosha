@@ -245,6 +245,7 @@ export default function Login() {
                     <input
                       className="input"
                       type="email"
+                      name="email"
                       placeholder="you@example.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
@@ -265,6 +266,7 @@ export default function Login() {
                     <input
                       className="input"
                       type="password"
+                      name="password"
                       placeholder={mode === 'signin' ? '••••••••' : 'At least 8 characters'}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
@@ -282,6 +284,7 @@ export default function Login() {
                     <input
                       className="input"
                       type="password"
+                      name="confirm-password"
                       placeholder="Re-enter your password"
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}

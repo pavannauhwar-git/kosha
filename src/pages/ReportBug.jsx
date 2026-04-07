@@ -322,6 +322,7 @@ export default function ReportBug() {
               <form id="report-bug-form" onSubmit={handleSubmit} className="space-y-3">
                 <input
                   className="input"
+                  name="bug-title"
                   placeholder="Bug title"
                   value={title}
                   maxLength={160}
@@ -330,6 +331,7 @@ export default function ReportBug() {
 
                 <textarea
                   className="input min-h-[112px] resize-none"
+                  name="bug-description"
                   placeholder="What happened?"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
@@ -337,6 +339,7 @@ export default function ReportBug() {
 
                 <textarea
                   className="input min-h-[86px] resize-none"
+                  name="bug-steps"
                   placeholder="Steps to reproduce (optional)"
                   value={steps}
                   onChange={e => setSteps(e.target.value)}
@@ -345,6 +348,7 @@ export default function ReportBug() {
                 <input
                   className="input"
                   type="email"
+                  name="bug-email"
                   placeholder="Contact email (optional)"
                   value={reporterEmail}
                   onChange={e => setReporterEmail(e.target.value)}
@@ -352,6 +356,7 @@ export default function ReportBug() {
 
                 <input
                   className="input"
+                  name="bug-tags"
                   placeholder="Tags (optional, comma-separated: ui, crash, chart)"
                   value={tagsInput}
                   onChange={e => setTagsInput(e.target.value)}
@@ -386,6 +391,7 @@ export default function ReportBug() {
                       {screenshot ? 'Replace' : 'Attach'}
                       <input
                         type="file"
+                        name="bug-screenshot"
                         accept="image/png,image/jpeg,image/webp"
                         className="hidden"
                         onChange={e => setScreenshot(e.target.files?.[0] || null)}

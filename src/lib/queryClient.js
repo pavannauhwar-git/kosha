@@ -10,7 +10,18 @@ export const queryClient = new QueryClient({
       // most of the SWR/perceived-performance behavior while fixing stale lists.
       refetchOnMount: true,
       refetchOnWindowFocus: false,
-      retry: 1,
+      // Retry transient failures (network, 5xx) but not auth/client errors.
+      retry: (failureCount, error) => {
+        if (failureCount >= 2) return false
+        const status = error?.status || error?.code
+        // Don't retry auth errors or client errors
+        if (status === 401 || status === 403 || status === 404) return false
+        if (String(error?.message || '').includes('Not signed in')) return false
+        return true
+      },
+      // When the device comes back online, refetch active queries
+      // so the app recovers without a manual restart.
+      refetchOnReconnect: 'always',
     },
   },
 })

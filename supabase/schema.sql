@@ -194,9 +194,17 @@ create index if not exists idx_txn_desc_trgm
 create index if not exists idx_txn_recurring_due on transactions(user_id, next_run_date)
   where is_recurring = true;
 
+create index if not exists idx_txn_source_txn
+  on transactions(source_transaction_id)
+  where source_transaction_id is not null;
+
 create index if not exists idx_liab_due     on liabilities(due_date);
 create index if not exists idx_liab_paid    on liabilities(paid);
 create index if not exists idx_liab_user    on liabilities(user_id);
+
+create index if not exists idx_liab_linked_txn
+  on liabilities(linked_transaction_id)
+  where linked_transaction_id is not null;
 
 create index if not exists idx_invite_token on invites(token);
 
@@ -209,83 +217,83 @@ alter table invites      enable row level security;
 -- Profiles policies
 drop policy if exists "profiles: select own" on profiles;
 create policy "profiles: select own" on profiles
-for select to public
-using (auth.uid() = id);
+for select to authenticated
+using ((select auth.uid()) = id);
 
 drop policy if exists "profiles: insert own" on profiles;
 create policy "profiles: insert own" on profiles
-for insert to public
-with check (auth.uid() = id);
+for insert to authenticated
+with check ((select auth.uid()) = id);
 
 drop policy if exists "profiles: update own" on profiles;
 create policy "profiles: update own" on profiles
-for update to public
-using (auth.uid() = id);
+for update to authenticated
+using ((select auth.uid()) = id);
 
 -- Transactions policies
 drop policy if exists "transactions: select own" on transactions;
 create policy "transactions: select own" on transactions
-for select to public
-using (auth.uid() = user_id);
+for select to authenticated
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "transactions: insert own" on transactions;
 create policy "transactions: insert own" on transactions
-for insert to public
-with check (auth.uid() = user_id);
+for insert to authenticated
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "transactions: update own" on transactions;
 create policy "transactions: update own" on transactions
-for update to public
-using (auth.uid() = user_id);
+for update to authenticated
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "transactions: delete own" on transactions;
 create policy "transactions: delete own" on transactions
-for delete to public
-using (auth.uid() = user_id);
+for delete to authenticated
+using ((select auth.uid()) = user_id);
 
 -- Liabilities policies
 drop policy if exists "liabilities: select own" on liabilities;
 create policy "liabilities: select own" on liabilities
-for select to public
-using (auth.uid() = user_id);
+for select to authenticated
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "liabilities: insert own" on liabilities;
 create policy "liabilities: insert own" on liabilities
-for insert to public
-with check (auth.uid() = user_id);
+for insert to authenticated
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "liabilities: update own" on liabilities;
 create policy "liabilities: update own" on liabilities
-for update to public
-using (auth.uid() = user_id);
+for update to authenticated
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "liabilities: delete own" on liabilities;
 create policy "liabilities: delete own" on liabilities
-for delete to public
-using (auth.uid() = user_id);
+for delete to authenticated
+using ((select auth.uid()) = user_id);
 
 -- Invites policies
 drop policy if exists "invites: select for validation" on invites;
 create policy "invites: select for validation" on invites
-for select to public
-using (auth.role() = 'authenticated'::text);
+for select to authenticated
+using (true);
 
 drop policy if exists "invites: insert own" on invites;
 create policy "invites: insert own" on invites
-for insert to public
-with check (auth.uid() = created_by);
+for insert to authenticated
+with check ((select auth.uid()) = created_by);
 
 drop policy if exists "invites: update to consume" on invites;
 create policy "invites: update to consume" on invites
-for update to public
+for update to authenticated
 using (
-  (auth.uid() = created_by)
+  ((select auth.uid()) = created_by)
   or (used_by is null)
 )
 with check (
-  (auth.uid() = created_by)
+  ((select auth.uid()) = created_by)
   or (
-    used_by = auth.uid()
+    used_by = (select auth.uid())
     and used_at is not null
   )
 );
@@ -333,21 +341,21 @@ ALTER TABLE public.liabilities ENABLE ROW LEVEL SECURITY;
 
 -- 2. Profiles Policies
 CREATE POLICY "Users can view own profile" 
-ON public.profiles FOR SELECT USING (auth.uid() = id);
+ON public.profiles FOR SELECT TO authenticated USING ((select auth.uid()) = id);
 
 CREATE POLICY "Users can insert own profile" 
-ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+ON public.profiles FOR INSERT TO authenticated WITH CHECK ((select auth.uid()) = id);
 
 CREATE POLICY "Users can update own profile" 
-ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+ON public.profiles FOR UPDATE TO authenticated USING ((select auth.uid()) = id) WITH CHECK ((select auth.uid()) = id);
 
 -- 3. Transactions Policies
 CREATE POLICY "Users can fully manage own transactions" 
-ON public.transactions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+ON public.transactions FOR ALL TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 
 -- 4. Liabilities (Bills) Policies
 CREATE POLICY "Users can fully manage own liabilities" 
-ON public.liabilities FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+ON public.liabilities FOR ALL TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Phase 1: Bug reports
@@ -375,19 +383,19 @@ alter table public.bug_reports enable row level security;
 
 drop policy if exists "bug_reports: insert own" on public.bug_reports;
 create policy "bug_reports: insert own" on public.bug_reports
-for insert to public
-with check (auth.uid() = user_id);
+for insert to authenticated
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "bug_reports: select own" on public.bug_reports;
 create policy "bug_reports: select own" on public.bug_reports
-for select to public
-using (auth.uid() = user_id);
+for select to authenticated
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "bug_reports: update own" on public.bug_reports;
 create policy "bug_reports: update own" on public.bug_reports
-for update to public
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+for update to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Phase 2: Bug reporting triage, screenshots, and duplicate handling
@@ -447,7 +455,7 @@ create policy "bug_reports_storage: upload own" on storage.objects
 for insert to authenticated
 with check (
   bucket_id = 'bug-reports'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 
 drop policy if exists "bug_reports_storage: read own" on storage.objects;
@@ -455,7 +463,7 @@ create policy "bug_reports_storage: read own" on storage.objects
 for select to authenticated
 using (
   bucket_id = 'bug-reports'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 
 drop policy if exists "bug_reports_storage: delete own" on storage.objects;
@@ -463,7 +471,7 @@ create policy "bug_reports_storage: delete own" on storage.objects
 for delete to authenticated
 using (
   bucket_id = 'bug-reports'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 
 create or replace function public.submit_bug_report(
@@ -772,23 +780,23 @@ alter table public.financial_events enable row level security;
 
 drop policy if exists "financial_events: select own" on public.financial_events;
 create policy "financial_events: select own" on public.financial_events
-for select to public
-using (auth.uid() = user_id);
+for select to authenticated
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "financial_events: insert own" on public.financial_events;
 create policy "financial_events: insert own" on public.financial_events
-for insert to public
-with check (auth.uid() = user_id);
+for insert to authenticated
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "financial_events: update none" on public.financial_events;
 create policy "financial_events: update none" on public.financial_events
-for update to public
+for update to authenticated
 using (false)
 with check (false);
 
 drop policy if exists "financial_events: delete none" on public.financial_events;
 create policy "financial_events: delete none" on public.financial_events
-for delete to public
+for delete to authenticated
 using (false);
 --
 -- Returns one row per (type, is_repayment, category, investment_vehicle) group.
@@ -849,29 +857,37 @@ returns table (
   top5_expenses json
 )
 language plpgsql
-stable
+volatile
 security invoker
 set search_path = public
 as $$
 declare
+  v_start date := make_date(p_year, 1, 1);
+  v_end   date := make_date(p_year, 12, 31);
   v_monthly  json;
   v_category json;
   v_vehicle  json;
   v_totals   json;
   v_top5     json;
 begin
+  -- Single index scan: materialize the year's transactions once in memory
+  create temp table _yr on commit drop as
+    select id, date, type, amount, description, category,
+           investment_vehicle, is_repayment
+    from transactions
+    where user_id = p_user_id
+      and date between v_start and v_end;
+
   -- Monthly income / expense / investment buckets
   select json_agg(row_to_json(m) order by m.month_num)
   into v_monthly
   from (
     select
-      extract(month from date)::int                                   as month_num,
+      extract(month from date)::int as month_num,
       sum(case when type = 'income' and not is_repayment then amount else 0 end) as income,
       sum(case when type = 'expense'    then amount else 0 end)       as expense,
       sum(case when type = 'investment' then amount else 0 end)       as investment
-    from transactions
-    where user_id = p_user_id
-      and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31)
+    from _yr
     group by extract(month from date)
   ) m;
 
@@ -880,10 +896,8 @@ begin
   into v_category
   from (
     select coalesce(category, 'other') as category, sum(amount) as cat_total
-    from transactions
-    where user_id = p_user_id
-      and type    = 'expense'
-      and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31)
+    from _yr
+    where type = 'expense'
     group by category
   ) c;
 
@@ -892,10 +906,8 @@ begin
   into v_vehicle
   from (
     select coalesce(investment_vehicle, 'Other') as vehicle, sum(amount) as veh_total
-    from transactions
-    where user_id = p_user_id
-      and type    = 'investment'
-      and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31)
+    from _yr
+    where type = 'investment'
     group by investment_vehicle
   ) v;
 
@@ -908,19 +920,15 @@ begin
     'count',       count(*)
   )
   into v_totals
-  from transactions
-  where user_id = p_user_id
-    and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31);
+  from _yr;
 
   -- Top 5 expenses
   select json_agg(row_to_json(e))
   into v_top5
   from (
     select id, date, type, amount, description, category
-    from transactions
-    where user_id = p_user_id
-      and type    = 'expense'
-      and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31)
+    from _yr
+    where type = 'expense'
     order by amount desc
     limit 5
   ) e;
@@ -1055,24 +1063,24 @@ alter table public.reconciliation_reviews enable row level security;
 
 drop policy if exists "reconciliation_reviews: select own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: select own" on public.reconciliation_reviews
-  for select
-  using (auth.uid() = user_id);
+  for select to authenticated
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "reconciliation_reviews: insert own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: insert own" on public.reconciliation_reviews
-  for insert
-  with check (auth.uid() = user_id);
+  for insert to authenticated
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "reconciliation_reviews: update own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: update own" on public.reconciliation_reviews
-  for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "reconciliation_reviews: delete own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: delete own" on public.reconciliation_reviews
-  for delete
-  using (auth.uid() = user_id);
+  for delete to authenticated
+  using ((select auth.uid()) = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Category Budgets — per-category monthly spending limits
@@ -1109,20 +1117,82 @@ alter table category_budgets enable row level security;
 
 drop policy if exists "category_budgets: select own" on category_budgets;
 create policy "category_budgets: select own" on category_budgets
-  for select to public
-  using (auth.uid() = user_id);
+  for select to authenticated
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "category_budgets: insert own" on category_budgets;
 create policy "category_budgets: insert own" on category_budgets
-  for insert to public
-  with check (auth.uid() = user_id);
+  for insert to authenticated
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "category_budgets: update own" on category_budgets;
 create policy "category_budgets: update own" on category_budgets
-  for update to public
-  using (auth.uid() = user_id);
+  for update to authenticated
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "category_budgets: delete own" on category_budgets;
 create policy "category_budgets: delete own" on category_budgets
-  for delete to public
-  using (auth.uid() = user_id);
+  for delete to authenticated
+  using ((select auth.uid()) = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- User Custom Categories
+-- Per-user categories with guardrails: name length, slug format, cap via trigger
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create table if not exists user_categories (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  type       text not null check (type in ('expense', 'income')),
+  label      text not null check (char_length(trim(label)) between 2 and 30),
+  slug       text not null check (slug ~ '^custom_[a-z0-9_]+$'),
+  icon       text not null default 'Tag',
+  color      text not null default '#6B7280',
+  bg         text not null default '#F3F4F6',
+  archived   boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique(user_id, slug)
+);
+
+create index if not exists idx_user_cat_user
+  on user_categories(user_id) where archived = false;
+
+alter table user_categories enable row level security;
+
+drop policy if exists "user_categories: select own" on user_categories;
+create policy "user_categories: select own" on user_categories
+  for select to authenticated
+  using ((select auth.uid()) = user_id);
+
+drop policy if exists "user_categories: insert own" on user_categories;
+create policy "user_categories: insert own" on user_categories
+  for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "user_categories: update own" on user_categories;
+create policy "user_categories: update own" on user_categories
+  for update to authenticated
+  using ((select auth.uid()) = user_id);
+
+-- Enforce max 15 active custom categories per user
+create or replace function check_user_category_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (
+    select count(*) from user_categories
+    where user_id = NEW.user_id and archived = false
+  ) >= 15 then
+    raise exception 'Maximum 15 custom categories allowed per user';
+  end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists enforce_user_category_limit on user_categories;
+create trigger enforce_user_category_limit
+  before insert on user_categories
+  for each row execute function check_user_category_limit();

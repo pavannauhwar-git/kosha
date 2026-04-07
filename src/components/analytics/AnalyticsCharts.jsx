@@ -1016,6 +1016,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
             <div>
               <p className="text-[10px] uppercase tracking-[0.06em] text-ink-3 mb-1">Category</p>
               <select
+                name="whatif-category"
                 value={selectedCategory?.id || ''}
                 onChange={(event) => setSelectedCategoryId(event.target.value)}
                 className="w-full rounded-card border border-kosha-border bg-white px-3 py-2 text-[12px] font-semibold text-ink"
@@ -1036,6 +1037,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
               <div className="flex items-center gap-2">
                 <input
                   type="range"
+                  name="whatif-reduction-range"
                   min={0}
                   max={60}
                   step={1}
@@ -1045,6 +1047,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
                 />
                 <input
                   type="number"
+                  name="whatif-reduction"
                   min={0}
                   max={60}
                   step={1}
@@ -1230,6 +1233,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
         </div>
         <input
           type="number"
+          name="runway-corpus"
           min={0}
           step={1000}
           value={reserveAmount}

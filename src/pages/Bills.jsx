@@ -525,6 +525,7 @@ export default function Bills() {
 
                 <input
                   className="input mb-3"
+                  name="bill-description"
                   placeholder="Description (e.g. Car EMI)"
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -537,7 +538,7 @@ export default function Bills() {
                                 transition-all duration-100">
                   <span className="text-xl font-bold text-warning-text">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
-                    type="number" inputMode="decimal" placeholder="0"
+                    type="number" inputMode="decimal" name="bill-amount" placeholder="0"
                     value={form.amount}
                     onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
                 </div>
@@ -548,7 +549,7 @@ export default function Bills() {
                       <span className="text-warning-text text-xs font-bold">📅</span>
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Due Date</span>
-                    <input type="date"
+                    <input type="date" name="bill-due-date"
                       value={form.due_date}
                       onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
                       className="text-[15px] text-ink-3 bg-transparent outline-none text-right

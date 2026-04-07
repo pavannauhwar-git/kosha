@@ -91,7 +91,7 @@ export default defineConfig({
             options: {
               cacheName: 'supabase-data',
               expiration: { maxEntries: 100, maxAgeSeconds: 300 },
-              cacheableResponse: { statuses: [0, 200] },
+              cacheableResponse: { statuses: [200] },
             },
           },
           {

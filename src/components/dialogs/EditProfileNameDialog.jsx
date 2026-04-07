@@ -70,6 +70,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
             <input
               ref={inputRef}
               type="text"
+              name="display-name"
               placeholder="Your display name"
               value={name}
               onChange={e => { setName(e.target.value); setError('') }}

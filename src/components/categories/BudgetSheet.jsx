@@ -205,6 +205,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                             <input
                               type="text"
                               inputMode="decimal"
+                              name={`budget-${cat.id}`}
                               placeholder="—"
                               value={draft}
                               onChange={(e) => handleDraftChange(cat.id, e.target.value)}

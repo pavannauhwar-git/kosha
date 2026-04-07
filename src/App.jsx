@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from
 import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
 import { supabase } from './lib/supabase'
 import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS, parseMonthSummaryRows } from './hooks/useTransactions'
@@ -15,6 +15,7 @@ import { useScrollDirection } from './hooks/useScrollDirection'
 import KoshaLogo from './components/brand/KoshaLogo'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
+import { useUserCategories } from './hooks/useUserCategories'
 
 const DASHBOARD_RECENT_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode'
@@ -808,22 +809,86 @@ function AnimatedRoutes() {
 }
 
 // ── App shell ─────────────────────────────────────────────────────────────
+
+/** Keeps custom categories registered in the module-level store for all components */
+function CustomCategoryLoader() {
+  const { user } = useAuth()
+  useUserCategories({ enabled: !!user })
+  return null
+}
+
+/** Shows a non-intrusive retry bar when active queries are in error state */
+function QueryErrorRecovery() {
+  const qc = useQueryClient()
+  const [hasErrors, setHasErrors] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    // Check for errored queries every 4 seconds
+    const id = setInterval(() => {
+      const errored = qc.getQueryCache().findAll({
+        predicate: (q) => q.state.status === 'error' && q.getObserversCount() > 0,
+      })
+      setHasErrors(errored.length > 0)
+    }, 4000)
+    return () => clearInterval(id)
+  }, [qc])
+
+  // Reset dismissed state when errors resolve
+  useEffect(() => {
+    if (!hasErrors) setDismissed(false)
+  }, [hasErrors])
+
+  if (!hasErrors || dismissed) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.2 }}
+      className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 md:left-[236px] md:bottom-8 z-50 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
+    >
+      <span className="text-[13px] font-medium flex-1">Something didn't load correctly.</span>
+      <button
+        type="button"
+        onClick={() => {
+          qc.refetchQueries({ predicate: (q) => q.state.status === 'error' && q.getObserversCount() > 0 })
+          setDismissed(true)
+        }}
+        className="text-white hover:text-white text-xs font-semibold shrink-0 px-3 py-1.5 rounded-pill bg-white/20 active:bg-white/30"
+      >
+        Retry
+      </button>
+      <button
+        type="button"
+        onClick={() => setDismissed(true)}
+        className="text-white/60 hover:text-white text-xs shrink-0 px-1"
+      >
+        ✕
+      </button>
+    </motion.div>
+  )
+}
+
 function AppShell() {
   return (
     <div className="min-h-dvh bg-kosha-bg">
       <RuntimeRouteTracker />
+      <CustomCategoryLoader />
       <DesktopSidebar />
       <ContentWrapper>
         <AnimatedRoutes />
       </ContentWrapper>
       <BottomNav />
+      <QueryErrorRecovery />
     </div>
   )
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <GlobalRealtimeSync />

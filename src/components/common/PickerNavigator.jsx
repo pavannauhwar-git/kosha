@@ -30,6 +30,7 @@ export default function PickerNavigator({
         <input
           ref={pickerRef}
           type={inputType}
+          name="date-picker"
           value={inputValue}
           onChange={onInputChange}
           className="absolute inset-0 opacity-0 w-full h-full pointer-events-none"

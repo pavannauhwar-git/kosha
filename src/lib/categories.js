@@ -59,16 +59,30 @@ export const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]))
 const EXPENSE_CATEGORY_IDS = new Set(EXPENSE_CATEGORIES.map(c => c.id))
 const INCOME_CATEGORY_IDS = new Set(INCOME_CATEGORIES.map(c => c.id))
 
+// ── Custom category registry (populated by useUserCategories hook) ────────
+let _customCategories = []
+
+export function registerCustomCategories(cats) {
+  _customCategories = cats
+}
+
 export function getCategoriesForType(type) {
-  if (type === 'income') return INCOME_CATEGORIES
-  if (type === 'expense') return EXPENSE_CATEGORIES
-  return CATEGORIES
+  const customs = _customCategories.filter(c => c.type === type)
+  if (customs.length === 0) {
+    if (type === 'income') return INCOME_CATEGORIES
+    if (type === 'expense') return EXPENSE_CATEGORIES
+    return CATEGORIES
+  }
+  // Insert custom categories before the "Other" catch-all
+  if (type === 'income') return [...INCOME_CATEGORIES.slice(0, -1), ...customs, OTHER_CATEGORY]
+  if (type === 'expense') return [...EXPENSE_CATEGORIES.slice(0, -1), ...customs, OTHER_CATEGORY]
+  return [...CATEGORIES, ...customs]
 }
 
 export function isCategoryAllowedForType(type, categoryId) {
   if (!categoryId) return false
-  if (type === 'income') return INCOME_CATEGORY_IDS.has(categoryId)
-  if (type === 'expense') return EXPENSE_CATEGORY_IDS.has(categoryId)
+  if (type === 'income') return INCOME_CATEGORY_IDS.has(categoryId) || _customCategories.some(c => c.id === categoryId && c.type === 'income')
+  if (type === 'expense') return EXPENSE_CATEGORY_IDS.has(categoryId) || _customCategories.some(c => c.id === categoryId && c.type === 'expense')
   return true
 }
 
@@ -78,7 +92,7 @@ export function normalizeCategoryForType(type, categoryId) {
 }
 
 export function getCategory(id) {
-  return CATEGORY_MAP[id] || CATEGORY_MAP['other']
+  return CATEGORY_MAP[id] || _customCategories.find(c => c.id === id) || CATEGORY_MAP['other']
 }
 
 export const INVESTMENT_VEHICLES = [

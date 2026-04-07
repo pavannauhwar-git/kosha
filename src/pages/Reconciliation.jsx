@@ -669,6 +669,7 @@ export default function Reconciliation() {
         )}
 
         <textarea
+          name="statement-input"
           value={statementInput}
           onChange={(e) => setStatementInput(e.target.value)}
           className="input min-h-[110px] text-sm"
@@ -880,6 +881,7 @@ export default function Reconciliation() {
                       Set category
                     </label>
                     <select
+                      name="recon-category"
                       className="input h-9 text-sm w-full md:max-w-[240px]"
                       defaultValue=""
                       onChange={(e) => {
