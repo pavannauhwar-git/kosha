@@ -7,9 +7,10 @@ import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
 import { supabase } from './lib/supabase'
 import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS, parseMonthSummaryRows } from './hooks/useTransactions'
 import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
+import { LOAN_INVALIDATION_KEYS } from './hooks/useLoans'
 import AuthGuard, { RouteSkeleton } from './components/navigation/AuthGuard'
 import ProfileMenu from './components/navigation/ProfileMenu'
-import { House, List, CalendarDots, ChartBar, Receipt } from '@phosphor-icons/react'
+import { House, List, CalendarDots, ChartBar, Receipt, Handshake } from '@phosphor-icons/react'
 import { C } from './lib/colors'
 import { useScrollDirection } from './hooks/useScrollDirection'
 import KoshaLogo from './components/brand/KoshaLogo'
@@ -33,6 +34,7 @@ const Transactions = lazy(() => import('./pages/Transactions'))
 const Monthly = lazy(() => import('./pages/Monthly'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const Bills = lazy(() => import('./pages/Bills'))
+const Loans = lazy(() => import('./pages/Loans'))
 const About = lazy(() => import('./pages/About'))
 const Guide = lazy(() => import('./pages/Guide'))
 const Reconciliation = lazy(() => import('./pages/Reconciliation'))
@@ -45,6 +47,7 @@ const ROUTE_PRELOADERS = {
   '/monthly': () => import('./pages/Monthly'),
   '/analytics': () => import('./pages/Analytics'),
   '/bills': () => import('./pages/Bills'),
+  '/loans': () => import('./pages/Loans'),
   '/reconciliation': () => import('./pages/Reconciliation'),
 }
 
@@ -76,11 +79,13 @@ const NAV = [
   { path: '/monthly', label: 'Monthly', Icon: CalendarDots },
   { path: '/analytics', label: 'Insights', Icon: ChartBar },
   { path: '/bills', label: 'Bills', Icon: Receipt },
+  { path: '/loans', label: 'Loans', Icon: Handshake },
 ]
 
 const REALTIME_INVALIDATION_POLICIES = [
   { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS },
   { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
+  { key: 'loans', table: 'loans', queryKeys: LOAN_INVALIDATION_KEYS },
 ]
 
 const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
@@ -283,6 +288,25 @@ function useRouteIntentPrefetch() {
             .eq('user_id', user.id)
             .eq('paid', false)
             .order('due_date', { ascending: true })
+          if (error) throw error
+          return data || []
+        },
+        staleTime: 30 * 1000,
+      }).catch(() => {})
+      return
+    }
+
+    if (path === '/loans') {
+      void queryClient.prefetchQuery({
+        queryKey: ['loans', 'active', 'given'],
+        queryFn: async () => {
+          const { data, error } = await supabase
+            .from('loans')
+            .select('id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled, created_at')
+            .eq('user_id', user.id)
+            .eq('settled', false)
+            .eq('direction', 'given')
+            .order('created_at', { ascending: false })
           if (error) throw error
           return data || []
         },
@@ -796,6 +820,7 @@ function AnimatedRoutes() {
           <Route path="/monthly" element={<SuspenseSkeleton pathname="/monthly"><AuthGuard><Monthly /></AuthGuard></SuspenseSkeleton>} />
           <Route path="/analytics" element={<SuspenseSkeleton pathname="/analytics"><AuthGuard><Analytics /></AuthGuard></SuspenseSkeleton>} />
           <Route path="/bills" element={<SuspenseSkeleton pathname="/bills"><AuthGuard><Bills /></AuthGuard></SuspenseSkeleton>} />
+          <Route path="/loans" element={<SuspenseSkeleton pathname="/loans"><AuthGuard><Loans /></AuthGuard></SuspenseSkeleton>} />
           <Route path="/reconciliation" element={<SuspenseSkeleton pathname="/reconciliation"><AuthGuard><Reconciliation /></AuthGuard></SuspenseSkeleton>} />
           <Route path="/guide" element={<SuspenseSkeleton pathname="/guide"><AuthGuard><Guide /></AuthGuard></SuspenseSkeleton>} />
           <Route path="/settings" element={<SuspenseSkeleton pathname="/settings"><AuthGuard><Settings /></AuthGuard></SuspenseSkeleton>} />

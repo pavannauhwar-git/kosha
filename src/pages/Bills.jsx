@@ -589,7 +589,7 @@ export default function Bills() {
                   <button onClick={handleAdd}
                     disabled={addSaving}
                     className={`w-full py-4 rounded-card font-semibold transition-all
-                               ${addSaving ? 'bg-repay/70 text-white/90 scale-[0.97]' : 'bg-gradient-to-r from-warning to-repay text-white active:scale-[0.97]'}`}>
+                               ${addSaving ? 'bg-brand/70 text-white/90 scale-[0.97]' : 'bg-brand text-white active:scale-[0.97]'}`}>
                     {addSaving ? 'Adding…' : 'Add Bill'}
                   </button>
                 </div>

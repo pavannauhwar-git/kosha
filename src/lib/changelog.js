@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.2.0',
+    date: 'April 2026',
+    items: [
+      'Added full Loans tracking with given/taken tabs, settlement progress, and record-payment sheet',
+      'Redesigned Reconciliation page into a 3-tab layout (Queue, Matching, Overview) with compact summary strip',
+      'Refreshed Guide page with Loans feature card, updated start checklist, and playbook cadence',
+      'Fixed AuthGuard infinite re-render and added null-guard on token refresh handler',
+      'Standardized sheet submit buttons to solid bg-brand and added form field name attributes for accessibility',
+    ],
+  },
+  {
     version: '1.1.11',
     date: 'March 2026',
     items: [
@@ -14,15 +25,11 @@ export const CHANGELOG = [
     version: '1.1.10',
     date: 'March 2026',
     items: [
-      'Completed Phase 4 roadmap by shipping shared-wallet invite management in Settings with one-tap link creation/copy and live join status',
-      'Added deep analytics narratives: weekly change digest in Analytics and month-close summary projection in Monthly',
-      'Added confidence drift detection to flag when 7-day matching quality drops >15% below 30-day baseline',
-      'Added self-healing alias auto-demotion that removes learned merchant aliases appearing in 2+ rejected matches within 30 days',
-      'Added per-merchant 14-day cooldown after demotion to prevent hasty re-learning of failed aliases',
-      'Added alias quality dashboard showing top-performing merchants and currently auto-demoted merchants with success/rejection ratios',
-      'Alias quality scores displayed as success percentages with color-coded health status (green ≥90%, blue ≥70%, orange <70%)',
-      'Enhanced statement match row visual design with color-coded left border (green for high confidence, yellow for medium, gray for low)',
-      'Added linked status badge on statement matches that are already reconciled for at-a-glance confirmation',
+      'Shipped shared-wallet invite management in Settings with one-tap link creation/copy and live join status',
+      'Added deep analytics narratives: weekly change digest in Analytics and month-close summary in Monthly',
+      'Added confidence drift detection to flag when 7-day matching quality drops >15% below baseline',
+      'Added self-healing alias auto-demotion for merchant aliases appearing in 2+ rejected matches within 30 days',
+      'Added alias quality dashboard showing top-performing merchants and auto-demoted merchants with health status',
     ],
   },
   {
@@ -30,14 +37,10 @@ export const CHANGELOG = [
     date: 'March 2026',
     items: [
       'Improved parsing error guidance with collapsible formatting tips for failed statement lines',
-      'Hide "Report mismatch" button on already-linked statement matches to streamline UI',
-      'Added deterministic edge-case tests for drift detection and alias demotion math in release-candidate verification',
       'Reduced dashboard latest transaction section to a compact snapshot (top 3) to cut cognitive load',
       'Added contextual dismissible guide hints on Transactions and Bills for in-flow feature education',
-      'Added local reminder infrastructure with settings controls',
-      'Added notification permission flow and throttled dashboard alerts',
-      'Improved statement matching confidence with merchant-noise cleanup, transaction-direction inference, and stronger tie-break scoring',
-      'Added reconciliation telemetry counters for linked suggestions and conversion so match quality can be tuned quickly',
+      'Added local reminder infrastructure with settings controls and notification permission flow',
+      'Improved statement matching confidence with merchant-noise cleanup and stronger tie-break scoring',
     ],
   },
   {
@@ -46,12 +49,8 @@ export const CHANGELOG = [
     items: [
       'Added recent matching decisions panel to inspect the latest linked statement-to-transaction outcomes',
       'Added reconciliation confidence trend cards in Analytics based on linked vs mismatch-reported outcomes',
-      'Persisted reconciliation reviewed/linked state to Supabase with secure per-user access policies and local fallback when migration is not yet applied',
-      'Extended deploy-readiness verification to explicitly check reconciliation_reviews table availability',
-      'Added reconciliation flow runtime verification (persist + alias-reset path) with migration-aware skip behavior for environments not yet updated, and included it in release-candidate checks',
-      'Added Monthly entry card that surfaces pending reconciliation count and deep-links into the review workspace',
-      'Added advanced Monthly variance panel with projected month-end delta and category risk buckets',
-      'Reduced Dashboard guide prompt intensity to a lighter helper card to avoid first-screen pressure',
+      'Persisted reconciliation reviewed/linked state to Supabase with secure per-user access policies',
+      'Added Monthly entry card surfacing pending reconciliation count with deep-link into the review workspace',
       'Added optional dev-only query timing traces via localStorage flag kosha:trace-queries=1',
     ],
   },
@@ -59,15 +58,11 @@ export const CHANGELOG = [
     version: '1.1.7',
     date: 'March 2026',
     items: [
-      'Fixed liabilities realtime E2E test flake by cleaning up attempt timers to prevent false post-pass failures',
-      'Added immutable financial audit-event logging for transaction and bill mutations (add, edit, delete, mark-paid)',
+      'Added immutable financial audit-event logging for transaction and bill mutations',
       'Added Dashboard Recent Activity feed powered by financial_events for a transparent mutation timeline',
-      'Documented CI policy and recommended branch-protection required checks for deployment discipline',
-      'Added pull request template with mandatory verification evidence and release-checklist items',
-      'Added CODEOWNERS for critical paths to enforce targeted review ownership on sensitive changes',
-      'Added GitHub issue templates for bug reports and release blockers with structured triage fields',
       'Added one-command release candidate verification script with final PASS/FAIL summary output',
       'Added in-app Guide page with start checklist, feature map, playbooks, and FAQ/privacy guidance',
+      'Documented CI policy and recommended branch-protection required checks for deployment discipline',
     ],
   },
 ]

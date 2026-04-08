@@ -319,9 +319,17 @@ export default function Reconciliation() {
     const next = new URLSearchParams(searchParams)
     let shouldReplace = false
 
+    const tabParam = searchParams.get('tab')
+    if (tabParam && ['queue', 'matching', 'overview'].includes(tabParam)) {
+      setTab(tabParam)
+      next.delete('tab')
+      shouldReplace = true
+    }
+
     const view = searchParams.get('view') || searchParams.get('state')
     if (view && REVIEW_STATE_FILTERS.some((item) => item.id === view)) {
       setReviewStateFilter(view)
+      setTab('queue')
       next.delete('view')
       next.delete('state')
       shouldReplace = true
@@ -330,6 +338,7 @@ export default function Reconciliation() {
     const quality = searchParams.get('quality') || searchParams.get('filter')
     if (quality && FILTERS.some((item) => item.id === quality)) {
       setFilter(quality)
+      setTab('queue')
       next.delete('quality')
       next.delete('filter')
       shouldReplace = true
@@ -462,20 +471,27 @@ export default function Reconciliation() {
     }
   }, [resettingAliases, reviewTableUnavailable, refetchReviews])
 
+  const [tab, setTab] = useState('queue')
+
+  const TABS = [
+    { id: 'queue', label: 'Queue', count: reviewProgress.queue },
+    { id: 'matching', label: 'Matching', count: statementSummary.total || null },
+    { id: 'overview', label: 'Overview', count: null },
+  ]
+
   return (
     <div className="page">
       <PageHeader title="Reconciliation" className="mb-3" />
 
+      {/* ── Summary strip ──────────────────────────────────── */}
       <div className="card p-4 mb-3.5">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-ink">What reconciliation does</p>
-            <p className="text-caption text-ink-3 mt-1">
-              This workflow improves data trust before month-close by fixing uncategorized records,
-              removing duplicates, and linking statement lines to real transactions.
-            </p>
-            <p className="text-[11px] text-ink-4 mt-1">
-              Scope: quality checks and match confirmation only. It does not auto-import bank statements.
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink">Data quality</p>
+            <p className="text-[11px] text-ink-3 mt-0.5">
+              {reviewProgress.queue > 0
+                ? `${reviewProgress.queue} item${reviewProgress.queue > 1 ? 's' : ''} need attention`
+                : 'Queue clear — records look healthy'}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-ink/[0.06] text-ink flex items-center justify-center shrink-0">
@@ -483,19 +499,19 @@ export default function Reconciliation() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
-          <Metric label="In queue" value={insights.counts.queue} tone="text-ink" />
-          <Metric label="Linked" value={reviewCounts.linked} tone="text-income-text" />
-          <Metric label="Missing category" value={insights.counts.missingCategory} tone="text-warning-text" />
-          <Metric label="Duplicates" value={insights.counts.potentialDuplicate} tone="text-expense-text" />
+        <div className="grid grid-cols-4 gap-2 mt-3">
+          <Metric label="Queue" value={insights.counts.queue} tone="text-ink" compact />
+          <Metric label="Linked" value={reviewCounts.linked} tone="text-income-text" compact />
+          <Metric label="No category" value={insights.counts.missingCategory} tone="text-warning-text" compact />
+          <Metric label="Duplicates" value={insights.counts.potentialDuplicate} tone="text-expense-text" compact />
         </div>
 
-        <div className="mt-4">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <p className="text-[11px] font-semibold text-ink-3">Queue progress</p>
-            <p className="text-[11px] text-ink-3">{reviewProgress.resolved}/{reviewProgress.total || 0} resolved</p>
+        <div className="mt-3">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <p className="text-[11px] font-semibold text-ink-3">Progress</p>
+            <p className="text-[11px] text-ink-3 tabular-nums">{reviewProgress.resolved}/{reviewProgress.total || 0}</p>
           </div>
-          <div className="h-2 rounded-pill bg-kosha-border overflow-hidden">
+          <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
             <motion.div
               className="h-full rounded-pill bg-brand"
               initial={{ width: 0 }}
@@ -503,419 +519,464 @@ export default function Reconciliation() {
               transition={{ duration: 0.35, ease: 'easeOut' }}
             />
           </div>
-          <p className="text-[11px] text-ink-3 mt-1">
-            {reviewProgress.queue > 0
-              ? `${reviewProgress.queue} item${reviewProgress.queue > 1 ? 's' : ''} still in queue.`
-              : 'Queue clear. Reconciliation quality looks healthy.'}
-          </p>
         </div>
-
-        {reconciliationFunnel[0]?.value > 0 && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between gap-2 mb-1.5">
-              <p className="text-[11px] font-semibold text-ink-3">Resolution funnel</p>
-              <p className="text-[11px] text-ink-3 tabular-nums">{linkedConversion}% linked</p>
-            </div>
-
-            <div className="rounded-card bg-kosha-surface-2 p-2.5">
-              <ResponsiveContainer width="100%" height={168}>
-                <FunnelChart>
-                  <RechartsTooltip content={<ReconciliationFunnelTooltip />} />
-                  <Funnel dataKey="value" data={reconciliationFunnel} isAnimationActive>
-                    <LabelList
-                      position="right"
-                      fill="#5E6D8F"
-                      stroke="none"
-                      dataKey={(entry) => `${entry.name}: ${entry.value}`}
-                    />
-                  </Funnel>
-                </FunnelChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {turnaroundDistribution.totalResolved > 0 && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between gap-2 mb-1.5">
-              <p className="text-[11px] font-semibold text-ink-3">Turnaround quality</p>
-              <p className="text-[11px] text-ink-3 tabular-nums">Median {turnaroundDistribution.medianDays}d</p>
-            </div>
-
-            <div className="rounded-card bg-kosha-surface-2 p-2.5">
-              <ResponsiveContainer width="100%" height={172}>
-                <BarChart data={turnaroundDistribution.buckets} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis hide allowDecimals={false} />
-                  <RechartsTooltip content={<TurnaroundTooltip />} />
-                  <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#1A1A2E" maxBarSize={40} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
       </div>
 
-      <div className="sticky-toolbar">
-        <p className="text-[11px] text-ink-3 px-1 mb-2">
-          View: {REVIEW_STATE_FILTERS.find((item) => item.id === reviewStateFilter)?.label || 'In queue'} · {FILTERS.find((item) => item.id === filter)?.label || 'All'}
-        </p>
-
-        <FilterRow className="mb-2">
-          {REVIEW_STATE_FILTERS.map((chip) => {
-            const active = chip.id === reviewStateFilter
-            const count = reviewCounts[chip.id] || 0
-            return (
-              <motion.button
-                key={chip.id}
-                type="button"
-                onClick={() => setReviewStateFilter(chip.id)}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.12 }}
-                aria-pressed={active}
-                className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
-              >
-                {chip.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                  {count}
-                </span>
-              </motion.button>
-            )
-          })}
-        </FilterRow>
-
-        <FilterRow>
-          {FILTERS.map((chip) => {
-            const active = chip.id === filter
-            const count = qualityCounts[chip.id] || 0
-            return (
-              <motion.button
-                key={chip.id}
-                type="button"
-                onClick={() => setFilter(chip.id)}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.12 }}
-                aria-pressed={active}
-                className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
-              >
-                {chip.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                  {count}
-                </span>
-              </motion.button>
-            )
-          })}
-        </FilterRow>
-      </div>
-
-      <div className="card p-4 mb-3.5">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div>
-            <p className="text-sm font-semibold text-ink">Match bank statements</p>
-            <p className="text-caption text-ink-3 mt-1">
-              Paste rows in date, description, amount format. Kosha will suggest likely transaction matches.
-            </p>
-            <p className="text-[11px] text-ink-4 mt-1">
-              Learned aliases: {learnedAliasCount}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
+      {/* ── Tab bar ────────────────────────────────────────── */}
+      <FilterRow className="mb-3.5">
+        {TABS.map((t) => {
+          const active = t.id === tab
+          return (
+            <motion.button
+              key={t.id}
               type="button"
-              onClick={() => { void resetLearnedAliases() }}
-              disabled={learnedAliasCount === 0 || resettingAliases || reviewTableUnavailable}
-              className="btn-secondary h-9 px-3 text-[12px]"
+              onClick={() => setTab(t.id)}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.12 }}
+              aria-pressed={active}
+              className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
             >
-              <RotateCcw size={13} />
-              {resettingAliases ? 'Resetting' : 'Reset aliases'}
-            </button>
-            <div className="w-9 h-9 rounded-full bg-ink/[0.06] text-ink flex items-center justify-center">
-              <Link2 size={16} />
-            </div>
-          </div>
-        </div>
+              {t.label}
+              {t.count != null && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                  {t.count}
+                </span>
+              )}
+            </motion.button>
+          )
+        })}
+      </FilterRow>
 
-        {driftMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`rounded-card border mb-3 px-3 py-2.5 flex items-start gap-2 ${
-              driftMessage.severity === 'warning'
-                ? 'border-warning-border bg-warning-bg'
-                : 'border-brand-border bg-brand-bg'
-            }`}
-          >
-            <AlertCircle
-              size={14}
-              className={`shrink-0 mt-0.5 ${
-                driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-ink'
-              }`}
+      {/* ── TAB: Queue ─────────────────────────────────────── */}
+      {tab === 'queue' && (
+        <>
+          <div className="sticky-toolbar">
+            <FilterRow className="mb-2">
+              {REVIEW_STATE_FILTERS.map((chip) => {
+                const active = chip.id === reviewStateFilter
+                const count = reviewCounts[chip.id] || 0
+                return (
+                  <motion.button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => setReviewStateFilter(chip.id)}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.12 }}
+                    aria-pressed={active}
+                    className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
+                  >
+                    {chip.label}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                      {count}
+                    </span>
+                  </motion.button>
+                )
+              })}
+            </FilterRow>
+
+            <FilterRow>
+              {FILTERS.map((chip) => {
+                const active = chip.id === filter
+                const count = qualityCounts[chip.id] || 0
+                return (
+                  <motion.button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => setFilter(chip.id)}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.12 }}
+                    aria-pressed={active}
+                    className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
+                  >
+                    {chip.label}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                      {count}
+                    </span>
+                  </motion.button>
+                )
+              })}
+            </FilterRow>
+          </div>
+
+          {loading ? (
+            <SkeletonLayout
+              sections={[
+                { type: 'block', height: 'h-[160px]' },
+                { type: 'block', height: 'h-[160px]' },
+                { type: 'block', height: 'h-[160px]' },
+              ]}
             />
-            <div>
-              <p className={`text-[12px] font-semibold ${
-                driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-ink'
-              }`}>
-                {driftMessage.title}
-              </p>
-              <p className="text-[11px] text-ink-3 mt-0.5">{driftMessage.message}</p>
-            </div>
-          </motion.div>
-        )}
-
-        <textarea
-          name="statement-input"
-          value={statementInput}
-          onChange={(e) => setStatementInput(e.target.value)}
-          className="input min-h-[110px] text-sm"
-          placeholder={[
-            '24/03/2026, Swiggy, 542.00',
-            '2026-03-22 | Uber | 318',
-            '21-03-2026\tSalary\t50000',
-          ].join('\n')}
-        />
-
-        {!!statementSummary.total && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 mb-3">
-            <Metric label="Lines" value={statementSummary.total} />
-            <Metric label="Parseable" value={statementSummary.valid} tone="text-ink" />
-            <Metric label="Matched" value={statementSummary.matched} tone="text-income-text" />
-            <Metric label="High confidence" value={statementSummary.highConfidence} tone="text-income-text" />
-          </div>
-        )}
-
-        {!!statementSummary.total && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1 mb-3">
-            <Metric label="Linked suggestions" value={statementSummary.linkedSuggestions} tone="text-ink" />
-            <Metric label="Conversion" value={`${statementSummary.conversion}%`} tone="text-income-text" />
-            <Metric label="Learned aliases" value={learnedAliasCount} tone="text-ink" />
-          </div>
-        )}
-
-        {!!statementSummary.total && (
-          <div className="space-y-2">
-            {statementMatches.slice(0, 6).map((row) => (
-              <StatementMatchRow
-                key={row.entry.id}
-                row={row}
-                onOpen={(id) => navigate(`/transactions?focus=${id}`)}
-                linkedIdSet={linkedIdSet}
-                onLink={(id, line) => markLinked(id, line)}
-                onReject={(id, line) => reportFalsePositive(id, line)}
-              />
-            ))}
-          </div>
-        )}
-
-        {recentLinkDecisions.length > 0 && (
-          <div className="mt-4 border-t border-kosha-border pt-3">
-            <div className="flex items-center gap-2 mb-2">
-              <History size={14} className="text-ink-4" />
-              <p className="text-[12px] font-semibold text-ink-2">Recent matching decisions</p>
-            </div>
-            <div className="space-y-2">
-              {recentLinkDecisions.map((row) => (
-                <div key={row.transactionId} className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
-                  <p className="text-[12px] text-ink-2 truncate">{row.statementPreview}</p>
-                  <p className="text-[11px] text-ink-4 mt-0.5 truncate">
-                    Linked to: {row.transactionLabel}
-                    {row.amount != null ? ` · ${fmt(Number(row.amount || 0))}` : ''}
-                    {row.date ? ` · ${fmtDate(row.date)}` : ''}
-                  </p>
-                  <button
-                    type="button"
-                    className="text-[11px] font-semibold text-accent mt-1 inline-flex items-center gap-1"
-                    onClick={() => navigate(`/transactions?focus=${row.transactionId}`)}
-                  >
-                    Open <ArrowRight size={11} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {(aliasQualities.length > 0 || demotedMerchants.size > 0) && (
-          <div className="mt-4 border-t border-kosha-border pt-3">
-            <p className="text-[12px] font-semibold text-ink-2 mb-2">Merchant recognition</p>
-            
-            {aliasQualities.length > 0 && (
-              <div className="mb-3">
-                <p className="text-[11px] text-ink-3 mb-1.5">Top merchant matches (30-day)</p>
-                <div className="space-y-1">
-                  {aliasQualities.slice(0, 3).map((alias) => (
-                    <div key={alias.merchant} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[11px] text-ink-2 truncate">{alias.merchant}</p>
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-                          alias.qualityScore >= 90 ? 'bg-income-bg text-income-text'
-                          : alias.qualityScore >= 70 ? 'bg-ink/[0.06] text-ink'
-                          : 'bg-warning-bg text-warning-text'
-                        }`}>
-                          {alias.qualityScore}%
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-ink-4 mt-0.5">{alias.successCount} linked, {alias.rejectionCount} rejected</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {demotedMerchants.size > 0 && (
-              <div>
-                <p className="text-[11px] text-ink-3 mb-1.5">Temporarily skipped merchants (2+ mismatches)</p>
-                <div className="space-y-1">
-                  {Array.from(demotedMerchants).slice(0, 3).map((merchant) => {
-                    const inCooldown = merchantsInCooldown.has(merchant)
-                    return (
-                      <div key={merchant} className={`rounded-card border px-2.5 py-1.5 ${
-                        inCooldown ? 'border-warning-border bg-warning-bg/10' : 'border-kosha-border bg-expense-bg/10'
-                      }`}>
-                        <p className={`text-[11px] truncate ${inCooldown ? 'text-warning-text' : 'text-expense-text'}`}>{merchant}</p>
-                        <p className="text-[10px] text-ink-4 mt-0.5">
-                          {inCooldown 
-                            ? 'Cooldown active. Matching is paused for 14 days after repeated mismatches.'
-                            : 'Cooldown completed. This merchant can be learned again from new matches.'}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-                {demotedMerchants.size > 3 && (
-                  <p className="text-[10px] text-ink-4 mt-1.5">+{demotedMerchants.size - 3} more demoted merchants</p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {loading ? (
-        <SkeletonLayout
-          sections={[
-            { type: 'block', height: 'h-[160px]' },
-            { type: 'block', height: 'h-[160px]' },
-            { type: 'block', height: 'h-[160px]' },
-          ]}
-        />
-      ) : !hasTransactions ? (
-        <EmptyState
-          icon={<History size={24} className="text-accent" />}
-          title="Nothing to reconcile yet"
-          description="Add transactions first. Reconciliation checks will automatically surface quality and matching signals here."
-          actionLabel="Go to transactions"
-          onAction={() => navigate('/transactions')}
-        />
-      ) : visibleItems.length === 0 ? (
-        <EmptyState
-          icon={<CheckCircle2 size={24} className="text-income-text" />}
-          title={hasActiveFilters ? 'No items for selected filters' : 'Queue is clear'}
-          description={
-            hasActiveFilters
-              ? 'Try resetting filters to inspect the full reconciliation queue.'
-              : reviewStateFilter === 'queue'
-              ? 'No pending items right now. Your recent data quality checks look good.'
-              : 'Try switching view or quality filters to inspect more items.'
-          }
-          actionLabel={hasActiveFilters ? 'Reset filters' : 'Open transactions'}
-          onAction={hasActiveFilters
-            ? () => {
-                setReviewStateFilter('queue')
-                setFilter('all')
+          ) : !hasTransactions ? (
+            <EmptyState
+              icon={<History size={24} className="text-accent" />}
+              title="Nothing to reconcile yet"
+              description="Add transactions first. Reconciliation checks will surface here."
+              actionLabel="Go to transactions"
+              onAction={() => navigate('/transactions')}
+            />
+          ) : visibleItems.length === 0 ? (
+            <EmptyState
+              icon={<CheckCircle2 size={24} className="text-income-text" />}
+              title={hasActiveFilters ? 'No items for selected filters' : 'Queue is clear'}
+              description={
+                hasActiveFilters
+                  ? 'Try resetting filters to inspect the full reconciliation queue.'
+                  : reviewStateFilter === 'queue'
+                  ? 'No pending items right now. Your data quality looks good.'
+                  : 'Try switching view or quality filters to inspect more items.'
               }
-            : () => navigate('/transactions')}
-        />
-      ) : (
-        <motion.div className="space-y-2.5">
-          <AnimatePresence initial={false} mode="sync">
-            {visibleItems.map((item) => {
-            const txn = item.txn
-            const disabled = savingId === txn.id
-            return (
-              <motion.div
-                key={txn.id}
-                id={`recon-item-${txn.id}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8, scale: 0.99 }}
-                whileHover={{ y: -1 }}
-                transition={{ duration: 0.2 }}
-                className={`card p-4 ${highlightedTxnId === txn.id ? 'txn-focus-highlight' : ''}`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-ink truncate">
-                      {txn.description || 'No description'}
-                    </p>
-                    <p className="text-caption text-ink-3 mt-0.5">
-                      {fmtDate(txn.date)} · {txn.type} · {fmt(Number(txn.amount || 0))}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/transactions?focus=${txn.id}`)}
-                    className="chip whitespace-nowrap"
-                  >
-                    Open <ArrowRight size={13} />
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {item.flags.missingDescription && <span className="chip text-warning-text">Missing description</span>}
-                  {item.flags.missingCategory && <span className="chip text-warning-text">Missing category</span>}
-                  {item.flags.missingPaymentMode && <span className="chip text-warning-text">Missing payment mode</span>}
-                  {item.flags.potentialDuplicate && (
-                    <span className="chip text-expense-text">{item.duplicateCount} potential duplicates</span>
-                  )}
-                </div>
-
-                {item.flags.missingCategory && txn.type === 'expense' && (
-                  <div className="mt-3 pt-3 border-t border-kosha-border">
-                    <label className="text-[11px] font-semibold text-ink-3 block mb-1.5">
-                      Set category
-                    </label>
-                    <select
-                      name="recon-category"
-                      className="input h-9 text-sm w-full md:max-w-[240px]"
-                      defaultValue=""
-                      onChange={(e) => {
-                        const value = e.target.value
-                        if (value) {
-                          void setCategory(txn.id, value)
-                          e.target.value = ''
-                        }
-                      }}
-                      disabled={disabled}
+              actionLabel={hasActiveFilters ? 'Reset filters' : 'Open transactions'}
+              onAction={hasActiveFilters
+                ? () => {
+                    setReviewStateFilter('queue')
+                    setFilter('all')
+                  }
+                : () => navigate('/transactions')}
+            />
+          ) : (
+            <motion.div className="space-y-2.5">
+              <AnimatePresence initial={false} mode="sync">
+                {visibleItems.map((item) => {
+                  const txn = item.txn
+                  const disabled = savingId === txn.id
+                  return (
+                    <motion.div
+                      key={txn.id}
+                      id={`recon-item-${txn.id}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.99 }}
+                      whileHover={{ y: -1 }}
+                      transition={{ duration: 0.2 }}
+                      className={`card p-4 ${highlightedTxnId === txn.id ? 'txn-focus-highlight' : ''}`}
                     >
-                      <option value="">Choose category…</option>
-                      {EXPENSE_CATEGORIES.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-ink truncate">
+                            {txn.description || 'No description'}
+                          </p>
+                          <p className="text-caption text-ink-3 mt-0.5">
+                            {fmtDate(txn.date)} · {txn.type} · {fmt(Number(txn.amount || 0))}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/transactions?focus=${txn.id}`)}
+                          className="chip whitespace-nowrap"
+                        >
+                          Open <ArrowRight size={13} />
+                        </button>
+                      </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-2 mt-3">
-                  <button
-                    type="button"
-                    className="btn-secondary h-9 px-3"
-                    disabled={disabled}
-                    onClick={() => { void markReviewed(txn.id) }}
-                  >
-                    Mark reviewed
-                  </button>
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {item.flags.missingDescription && <span className="chip text-warning-text">Missing description</span>}
+                        {item.flags.missingCategory && <span className="chip text-warning-text">Missing category</span>}
+                        {item.flags.missingPaymentMode && <span className="chip text-warning-text">Missing payment mode</span>}
+                        {item.flags.potentialDuplicate && (
+                          <span className="chip text-expense-text">{item.duplicateCount} potential duplicates</span>
+                        )}
+                      </div>
+
+                      {item.flags.missingCategory && txn.type === 'expense' && (
+                        <div className="mt-3 pt-3 border-t border-kosha-border">
+                          <label className="text-[11px] font-semibold text-ink-3 block mb-1.5">
+                            Set category
+                          </label>
+                          <select
+                            name="recon-category"
+                            className="input h-9 text-sm w-full md:max-w-[240px]"
+                            defaultValue=""
+                            onChange={(e) => {
+                              const value = e.target.value
+                              if (value) {
+                                void setCategory(txn.id, value)
+                                e.target.value = ''
+                              }
+                            }}
+                            disabled={disabled}
+                          >
+                            <option value="">Choose category…</option>
+                            {EXPENSE_CATEGORIES.map((cat) => (
+                              <option key={cat.id} value={cat.id}>{cat.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center justify-end gap-2 mt-3">
+                        <button
+                          type="button"
+                          className="btn-secondary h-9 px-3"
+                          disabled={disabled}
+                          onClick={() => { void markReviewed(txn.id) }}
+                        >
+                          Mark reviewed
+                        </button>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </>
+      )}
+
+      {/* ── TAB: Matching ──────────────────────────────────── */}
+      {tab === 'matching' && (
+        <div className="space-y-3.5">
+          <div className="card p-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <p className="text-sm font-semibold text-ink">Match bank statements</p>
+                <p className="text-caption text-ink-3 mt-1">
+                  Paste rows in date, description, amount format.
+                </p>
+                <p className="text-[11px] text-ink-4 mt-1">
+                  Learned aliases: {learnedAliasCount}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => { void resetLearnedAliases() }}
+                  disabled={learnedAliasCount === 0 || resettingAliases || reviewTableUnavailable}
+                  className="btn-secondary h-9 px-3 text-[12px]"
+                >
+                  <RotateCcw size={13} />
+                  {resettingAliases ? 'Resetting' : 'Reset'}
+                </button>
+                <div className="w-9 h-9 rounded-full bg-ink/[0.06] text-ink flex items-center justify-center">
+                  <Link2 size={16} />
+                </div>
+              </div>
+            </div>
+
+            {driftMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-card border mb-3 px-3 py-2.5 flex items-start gap-2 ${
+                  driftMessage.severity === 'warning'
+                    ? 'border-warning-border bg-warning-bg'
+                    : 'border-brand-border bg-brand-bg'
+                }`}
+              >
+                <AlertCircle
+                  size={14}
+                  className={`shrink-0 mt-0.5 ${
+                    driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-ink'
+                  }`}
+                />
+                <div>
+                  <p className={`text-[12px] font-semibold ${
+                    driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-ink'
+                  }`}>
+                    {driftMessage.title}
+                  </p>
+                  <p className="text-[11px] text-ink-3 mt-0.5">{driftMessage.message}</p>
                 </div>
               </motion.div>
-            )
-            })}
-          </AnimatePresence>
-        </motion.div>
+            )}
+
+            <textarea
+              name="statement-input"
+              value={statementInput}
+              onChange={(e) => setStatementInput(e.target.value)}
+              className="input min-h-[110px] text-sm"
+              placeholder={[
+                '24/03/2026, Swiggy, 542.00',
+                '2026-03-22 | Uber | 318',
+                '21-03-2026\tSalary\t50000',
+              ].join('\n')}
+            />
+
+            {!!statementSummary.total && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+                <Metric label="Lines" value={statementSummary.total} compact />
+                <Metric label="Parseable" value={statementSummary.valid} tone="text-ink" compact />
+                <Metric label="Matched" value={statementSummary.matched} tone="text-income-text" compact />
+                <Metric label="High conf." value={statementSummary.highConfidence} tone="text-income-text" compact />
+              </div>
+            )}
+
+            {!!statementSummary.total && (
+              <div className="space-y-2 mt-3">
+                {statementMatches.slice(0, 6).map((row) => (
+                  <StatementMatchRow
+                    key={row.entry.id}
+                    row={row}
+                    onOpen={(id) => navigate(`/transactions?focus=${id}`)}
+                    linkedIdSet={linkedIdSet}
+                    onLink={(id, line) => markLinked(id, line)}
+                    onReject={(id, line) => reportFalsePositive(id, line)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {recentLinkDecisions.length > 0 && (
+            <div className="card p-4">
+              <div className="flex items-center gap-2 mb-2.5">
+                <History size={14} className="text-ink-4" />
+                <p className="text-[12px] font-semibold text-ink-2">Recent matching decisions</p>
+              </div>
+              <div className="space-y-2">
+                {recentLinkDecisions.map((row) => (
+                  <div key={row.transactionId} className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
+                    <p className="text-[12px] text-ink-2 truncate">{row.statementPreview}</p>
+                    <p className="text-[11px] text-ink-4 mt-0.5 truncate">
+                      Linked to: {row.transactionLabel}
+                      {row.amount != null ? ` · ${fmt(Number(row.amount || 0))}` : ''}
+                      {row.date ? ` · ${fmtDate(row.date)}` : ''}
+                    </p>
+                    <button
+                      type="button"
+                      className="text-[11px] font-semibold text-accent mt-1 inline-flex items-center gap-1"
+                      onClick={() => navigate(`/transactions?focus=${row.transactionId}`)}
+                    >
+                      Open <ArrowRight size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(aliasQualities.length > 0 || demotedMerchants.size > 0) && (
+            <div className="card p-4">
+              <p className="text-[12px] font-semibold text-ink-2 mb-2.5">Merchant recognition</p>
+              
+              {aliasQualities.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-[11px] text-ink-3 mb-1.5">Top merchant matches (30-day)</p>
+                  <div className="space-y-1">
+                    {aliasQualities.slice(0, 3).map((alias) => (
+                      <div key={alias.merchant} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] text-ink-2 truncate">{alias.merchant}</p>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                            alias.qualityScore >= 90 ? 'bg-income-bg text-income-text'
+                            : alias.qualityScore >= 70 ? 'bg-ink/[0.06] text-ink'
+                            : 'bg-warning-bg text-warning-text'
+                          }`}>
+                            {alias.qualityScore}%
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-ink-4 mt-0.5">{alias.successCount} linked, {alias.rejectionCount} rejected</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {demotedMerchants.size > 0 && (
+                <div>
+                  <p className="text-[11px] text-ink-3 mb-1.5">Skipped merchants (2+ mismatches)</p>
+                  <div className="space-y-1">
+                    {Array.from(demotedMerchants).slice(0, 3).map((merchant) => {
+                      const inCooldown = merchantsInCooldown.has(merchant)
+                      return (
+                        <div key={merchant} className={`rounded-card border px-2.5 py-1.5 ${
+                          inCooldown ? 'border-warning-border bg-warning-bg/10' : 'border-kosha-border bg-expense-bg/10'
+                        }`}>
+                          <p className={`text-[11px] truncate ${inCooldown ? 'text-warning-text' : 'text-expense-text'}`}>{merchant}</p>
+                          <p className="text-[10px] text-ink-4 mt-0.5">
+                            {inCooldown
+                              ? 'Cooldown active — paused for 14 days.'
+                              : 'Cooldown completed — can be learned again.'}
+                          </p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {demotedMerchants.size > 3 && (
+                    <p className="text-[10px] text-ink-4 mt-1.5">+{demotedMerchants.size - 3} more</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TAB: Overview ──────────────────────────────────── */}
+      {tab === 'overview' && (
+        <div className="space-y-3.5">
+          <div className="card p-4">
+            <p className="text-sm font-semibold text-ink mb-1">What reconciliation does</p>
+            <p className="text-caption text-ink-3">
+              Improves data trust before month-close by fixing uncategorized records,
+              removing duplicates, and linking statement lines to transactions.
+            </p>
+            <p className="text-[11px] text-ink-4 mt-1">
+              Quality checks and match confirmation only. Does not auto-import bank statements.
+            </p>
+          </div>
+
+          {reconciliationFunnel[0]?.value > 0 && (
+            <div className="card p-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-[12px] font-semibold text-ink">Resolution funnel</p>
+                <p className="text-[11px] text-ink-3 tabular-nums">{linkedConversion}% linked</p>
+              </div>
+
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                <ResponsiveContainer width="100%" height={168}>
+                  <FunnelChart>
+                    <RechartsTooltip content={<ReconciliationFunnelTooltip />} />
+                    <Funnel dataKey="value" data={reconciliationFunnel} isAnimationActive>
+                      <LabelList
+                        position="right"
+                        fill="#5E6D8F"
+                        stroke="none"
+                        dataKey={(entry) => `${entry.name}: ${entry.value}`}
+                      />
+                    </Funnel>
+                  </FunnelChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {turnaroundDistribution.totalResolved > 0 && (
+            <div className="card p-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-[12px] font-semibold text-ink">Turnaround quality</p>
+                <p className="text-[11px] text-ink-3 tabular-nums">Median {turnaroundDistribution.medianDays}d</p>
+              </div>
+
+              <div className="rounded-card bg-kosha-surface-2 p-2.5">
+                <ResponsiveContainer width="100%" height={172}>
+                  <BarChart data={turnaroundDistribution.buckets} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis hide allowDecimals={false} />
+                    <RechartsTooltip content={<TurnaroundTooltip />} />
+                    <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#1A1A2E" maxBarSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {!!statementSummary.total && (
+            <div className="card p-4">
+              <p className="text-[12px] font-semibold text-ink mb-2">Statement match stats</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <Metric label="Linked" value={statementSummary.linkedSuggestions} tone="text-ink" compact />
+                <Metric label="Conversion" value={`${statementSummary.conversion}%`} tone="text-income-text" compact />
+                <Metric label="Aliases" value={learnedAliasCount} tone="text-ink" compact />
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
@@ -923,11 +984,11 @@ export default function Reconciliation() {
   )
 }
 
-function Metric({ label, value, tone = 'text-ink' }) {
+function Metric({ label, value, tone = 'text-ink', compact }) {
   return (
     <div className="rounded-card bg-kosha-surface-2 p-2.5">
       <p className="text-caption text-ink-3">{label}</p>
-      <p className={`text-lg font-bold tabular-nums ${tone}`}>{value}</p>
+      <p className={`${compact ? 'text-[15px]' : 'text-lg'} font-bold tabular-nums ${tone}`}>{value}</p>
     </div>
   )
 }

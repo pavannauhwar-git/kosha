@@ -89,7 +89,7 @@ export default function About() {
               <KoshaLogo size={52} />
               <div className="flex-1 min-w-0">
                 <p className="text-[22px] font-bold text-ink leading-tight tracking-tight">Kosha</p>
-                <p className="text-[13px] text-ink-3 mt-0.5">Personal finance, simplified</p>
+                <p className="text-[13px] text-ink-3 mt-0.5">Your financial command center</p>
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-[10px] text-ink-4 uppercase tracking-wide">Version</p>
@@ -98,7 +98,7 @@ export default function About() {
             </div>
 
             <p className="text-[13px] text-ink-2 leading-relaxed mt-4">
-              Built for clarity and calm. Kosha helps you capture money movement fast, trust your numbers, and make better decisions without noise.
+              Track income, expenses, investments, bills, and loans in one place. Kosha gives you direction when you need it fast and precision when the details matter.
             </p>
 
             <div className="flex gap-3 mt-4">
@@ -135,10 +135,10 @@ export default function About() {
             <SectionLabel>Why Kosha</SectionLabel>
             <div className="card p-4">
               <p className="text-[13px] text-ink-2 leading-relaxed">
-                Most finance tools either overwhelm with dashboards or hide the details you need. Kosha is designed to keep both direction and precision in one flow: Dashboard for pulse, Transactions for truth, Reconciliation for trust.
+                Most finance apps either overwhelm you with dashboards or hide the details you need. Kosha keeps both direction and precision in one flow — Dashboard for pulse, Transactions for truth, Analytics for trends, and Reconciliation for trust.
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
-                {['Fast capture', 'Clear insights', 'Privacy first'].map((pill) => (
+                {['Fast capture', 'Clear insights', 'Loan tracking', 'Bill reminders', 'Privacy first'].map((pill) => (
                   <span key={pill} className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-ink/[0.06] text-ink">
                     {pill}
                   </span>
@@ -234,7 +234,7 @@ export default function About() {
             <div className="card overflow-hidden p-0">
               <div className="px-4 py-3.5">
                 <div className="flex flex-wrap gap-2">
-                  {['React 18', 'Supabase', 'Tailwind CSS', 'Vite', 'Framer Motion', 'Phosphor Icons'].map(tech => (
+                  {['React 19', 'Supabase', 'Tailwind CSS', 'Vite', 'Framer Motion', 'Recharts', 'Phosphor Icons'].map(tech => (
                     <span key={tech}
                       className="text-[12px] font-medium text-accent bg-brand-container
                                  px-2.5 py-1 rounded-full">
@@ -269,8 +269,8 @@ export default function About() {
                   <LockIcon size={17} weight="duotone" color={C.brand} />
                 </div>
                 <p className="text-[13px] text-ink-2 leading-relaxed flex-1 pt-1">
-                  Your data lives in your own Supabase instance, protected by
-                  row-level security. No analytics, no tracking, no third-party sharing.
+                  Your data lives in your own Supabase project, protected by
+                  row-level security. No telemetry, no tracking pixels, no third-party data sharing — ever.
                 </p>
               </div>
             </div>

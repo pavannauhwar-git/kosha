@@ -1,4 +1,5 @@
-import { Navigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 // ── Shimmer block primitives ──────────────────────────────────────────────
@@ -148,6 +149,7 @@ export function RouteSkeleton({ pathname }) {
   if (pathname.startsWith('/monthly'))      return <MonthlySkeleton />
   if (pathname.startsWith('/analytics'))    return <AnalyticsSkeleton />
   if (pathname.startsWith('/bills'))        return <BillsSkeleton />
+  if (pathname.startsWith('/loans'))        return <BillsSkeleton />
   return <DashboardSkeleton />
 }
 
@@ -155,6 +157,20 @@ export function RouteSkeleton({ pathname }) {
 export default function AuthGuard({ children }) {
   const { user, profile, loading, profileLoading } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
+
+  // Imperative redirect — fires once per condition change, unlike <Navigate>
+  // which re-fires its internal useEffect on every render (including during
+  // AnimatePresence exit animations, causing "Maximum update depth" warnings).
+  useEffect(() => {
+    if (loading || (user && profileLoading)) return
+
+    if (!user) {
+      navigate('/login', { replace: true, state: { from: location.pathname } })
+    } else if ((!profile || !profile.onboarded) && location.pathname !== '/onboarding') {
+      navigate('/onboarding', { replace: true })
+    }
+  }, [loading, user, profileLoading, profile, navigate, location.pathname])
 
   // Auth initialising — show the skeleton that matches the destination route
   if (loading || (user && profileLoading)) return (
@@ -163,14 +179,13 @@ export default function AuthGuard({ children }) {
     </div>
   )
 
-  // No session
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
-  }
-
-  // User confirmed — require a resolved onboarded profile before entering the app.
-  if ((!profile || !profile.onboarded) && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />
+  // Awaiting redirect — show skeleton instead of null flash
+  if (!user || ((!profile || !profile.onboarded) && location.pathname !== '/onboarding')) {
+    return (
+      <div className="min-h-dvh bg-kosha-bg">
+        <RouteSkeleton pathname={location.pathname} />
+      </div>
+    )
   }
 
   return children

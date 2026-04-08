@@ -103,6 +103,8 @@ export function useAuthState() {
           // The old mutation code called getSession() which returned null
           // during the refresh window. Now authStore always has the latest
           // valid user object immediately after the token refreshes.
+          // Guard: if the refresh failed silently, u can be null — keep existing user.
+          if (!u) return
           setAuthUser(u)
           setUser(u)
           return

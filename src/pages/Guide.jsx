@@ -11,6 +11,7 @@ import {
   Receipt,
   Wallet,
   Link2,
+  Handshake,
   X,
   CheckCircle2,
   AlertCircle,
@@ -25,6 +26,7 @@ const stagger = createStagger(0.05, 0.04)
 const START_HERE = [
   'Add 5-10 recent transactions so your Dashboard and Analytics have enough signal.',
   'Set all upcoming bills once, then keep the paid status up to date in Bills.',
+  'Record any outstanding loans — given or taken — in Loans to track settlements.',
   'Use consistent categories for repeated spends to improve trend quality.',
   'Run a quick Reconciliation pass weekly to keep summaries trustworthy.',
 ]
@@ -170,6 +172,30 @@ const FEATURE_CARDS = [
     avoidThis: [
       'Do not skip unresolved warnings before month-close.',
       'Avoid marking low-confidence links blindly.',
+    ],
+  },
+  {
+    id: 'loans',
+    title: 'Loans',
+    subtitle: 'Track money given and taken',
+    icon: Handshake,
+    route: '/loans',
+    category: 'weekly',
+    accent: 'bg-brand-container text-ink',
+    summary: 'Record personal loans in both directions, track partial settlements, and monitor interest.',
+    whenToUse: 'Use this whenever you lend money, borrow, or receive a partial repayment.',
+    workflow: [
+      'Add a loan with direction (given or taken), counterparty, amount, and optional interest rate.',
+      'Use Record Payment to log partial or full repayments against any active loan.',
+      'Check the net position card for your overall lending balance.',
+    ],
+    doThis: [
+      'Record payments immediately to keep progress bars accurate.',
+      'Set due dates so overdue loans are easy to spot.',
+    ],
+    avoidThis: [
+      'Do not leave settled loans active — they clutter the overview.',
+      'Avoid recording loan repayments as regular transactions without linking.',
     ],
   },
 ]
@@ -373,7 +399,7 @@ export default function Guide() {
           <p className="section-label mb-1.5">Playbook cadence</p>
           <div className="card p-4 space-y-2.5">
             <p className="text-[13px] text-ink-2"><span className="font-semibold">Daily:</span> Dashboard pulse + quick capture</p>
-            <p className="text-[13px] text-ink-2"><span className="font-semibold">Weekly:</span> Bills check + Reconciliation cleanup</p>
+            <p className="text-[13px] text-ink-2"><span className="font-semibold">Weekly:</span> Bills check + Loans settlements + Reconciliation cleanup</p>
             <p className="text-[13px] text-ink-2"><span className="font-semibold">Monthly:</span> Analytics review + export backup</p>
           </div>
         </motion.section>

@@ -7,6 +7,9 @@ export const FINANCIAL_EVENT_ACTIONS = {
   BILL_ADD: 'liability_added',
   BILL_MARK_PAID: 'liability_marked_paid',
   BILL_DELETE: 'liability_deleted',
+  LOAN_ADD: 'loan_added',
+  LOAN_PAYMENT: 'loan_payment_recorded',
+  LOAN_DELETE: 'loan_deleted',
 }
 
 const AUDIT_MAX_RETRIES = 2

@@ -329,32 +329,27 @@ begin
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Phase 2 summary
--- - Multi-user auth-backed data model
--- - RLS enabled on profiles, transactions, liabilities, invites
--- - Invite link support via token-based onboarding
+-- Phase 2 summary (broad convenience policies, idempotent)
 -- ─────────────────────────────────────────────────────────────────────────────
--- 1. Enable RLS on all tables
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.liabilities ENABLE ROW LEVEL SECURITY;
 
--- 2. Profiles Policies
-CREATE POLICY "Users can view own profile" 
+drop policy if exists "Users can view own profile" on public.profiles;
+CREATE POLICY "Users can view own profile"
 ON public.profiles FOR SELECT TO authenticated USING ((select auth.uid()) = id);
 
-CREATE POLICY "Users can insert own profile" 
+drop policy if exists "Users can insert own profile" on public.profiles;
+CREATE POLICY "Users can insert own profile"
 ON public.profiles FOR INSERT TO authenticated WITH CHECK ((select auth.uid()) = id);
 
-CREATE POLICY "Users can update own profile" 
+drop policy if exists "Users can update own profile" on public.profiles;
+CREATE POLICY "Users can update own profile"
 ON public.profiles FOR UPDATE TO authenticated USING ((select auth.uid()) = id) WITH CHECK ((select auth.uid()) = id);
 
--- 3. Transactions Policies
-CREATE POLICY "Users can fully manage own transactions" 
+drop policy if exists "Users can fully manage own transactions" on public.transactions;
+CREATE POLICY "Users can fully manage own transactions"
 ON public.transactions FOR ALL TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 
--- 4. Liabilities (Bills) Policies
-CREATE POLICY "Users can fully manage own liabilities" 
+drop policy if exists "Users can fully manage own liabilities" on public.liabilities;
+CREATE POLICY "Users can fully manage own liabilities"
 ON public.liabilities FOR ALL TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -764,11 +759,23 @@ create table if not exists public.financial_events (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users(id) on delete cascade,
   action      text not null,
-  entity_type text not null check (entity_type in ('transaction', 'liability')),
+  entity_type text not null check (entity_type in ('transaction', 'liability', 'loan')),
   entity_id   uuid not null,
   metadata    jsonb,
   created_at  timestamptz not null default now()
 );
+
+-- Broaden entity_type constraint if table already exists with old constraint
+do $$
+begin
+  alter table public.financial_events
+    drop constraint if exists financial_events_entity_type_check;
+  alter table public.financial_events
+    add constraint financial_events_entity_type_check
+    check (entity_type in ('transaction', 'liability', 'loan'));
+exception
+  when others then null;
+end $$;
 
 create index if not exists idx_financial_events_user_created
   on public.financial_events(user_id, created_at desc);
@@ -1195,4 +1202,176 @@ $$;
 drop trigger if exists enforce_user_category_limit on user_categories;
 create trigger enforce_user_category_limit
   before insert on user_categories
+  for each row execute function check_user_category_limit();
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- ── LOANS ─────────────────────────────────────────────────────────────────────
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- Loans table — tracks money lent to or borrowed from others.
+-- Separate from liabilities because:
+--   1. loan_given is a receivable (asset), not a liability
+--   2. loans support partial repayment (amount_settled)
+--   3. loans have interest tracking
+
+create table if not exists loans (
+  id              uuid primary key default gen_random_uuid(),
+  direction       text not null check (direction in ('given', 'taken')),
+  counterparty    text not null,
+  amount          numeric(12,2) not null check (amount > 0),
+  amount_settled  numeric(12,2) not null default 0 check (amount_settled >= 0),
+  interest_rate   numeric(5,2) not null default 0 check (interest_rate >= 0),
+  loan_date       date not null default current_date,
+  due_date        date,
+  note            text,
+  settled         boolean not null default false,
+  created_at      timestamptz not null default now(),
+  user_id         uuid
+);
+
+create index if not exists idx_loans_user      on loans(user_id);
+create index if not exists idx_loans_settled   on loans(settled);
+create index if not exists idx_loans_direction on loans(direction);
+
+-- Foreign key against Supabase auth users
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'loans_user_id_fkey'
+      and conrelid = 'loans'::regclass
+  ) then
+    alter table loans
+      add constraint loans_user_id_fkey
+      foreign key (user_id) references auth.users(id);
+  end if;
+end $$;
+
+-- Enable Supabase Realtime for loans table
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'loans'
+  ) then
+    alter publication supabase_realtime add table loans;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
+alter table loans enable row level security;
+
+drop policy if exists "loans: select own" on loans;
+create policy "loans: select own" on loans
+  for select to authenticated
+  using ((select auth.uid()) = user_id);
+
+drop policy if exists "loans: insert own" on loans;
+create policy "loans: insert own" on loans
+  for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "loans: update own" on loans;
+create policy "loans: update own" on loans
+  for update to authenticated
+  using ((select auth.uid()) = user_id);
+
+drop policy if exists "loans: delete own" on loans;
+create policy "loans: delete own" on loans
+  for delete to authenticated
+  using ((select auth.uid()) = user_id);
+
+-- ── record_loan_payment — atomic partial/full repayment ──────────────────────
+-- Creates a linked transaction and updates the loan's settled amount.
+-- If the payment brings amount_settled >= amount, settles the loan.
+
+create or replace function public.record_loan_payment(
+  p_loan_id  uuid,
+  p_user_id  uuid,
+  p_amount   numeric
+)
+returns json
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_loan      loans%rowtype;
+  v_txn_id    uuid;
+  v_new_settled numeric;
+  v_fully_settled boolean;
+  v_txn_type  text;
+begin
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'Payment amount must be positive';
+  end if;
+
+  -- Lock and fetch the loan row
+  select * into v_loan
+  from loans
+  where id = p_loan_id and user_id = p_user_id
+  for update;
+
+  if not found then
+    raise exception 'Loan not found or access denied';
+  end if;
+
+  if v_loan.settled then
+    raise exception 'Loan is already fully settled';
+  end if;
+
+  v_new_settled := v_loan.amount_settled + p_amount;
+  if v_new_settled > v_loan.amount then
+    raise exception 'Payment exceeds remaining balance (remaining: %)',
+      (v_loan.amount - v_loan.amount_settled);
+  end if;
+
+  v_fully_settled := v_new_settled >= v_loan.amount;
+
+  -- Determine transaction type:
+  --   loan_given: someone is paying you back → income
+  --   loan_taken: you are repaying someone → expense
+  v_txn_type := case v_loan.direction
+    when 'given' then 'income'
+    else 'expense'
+  end;
+
+  -- Step 1: Insert linked transaction
+  insert into transactions (
+    date, type, description, amount, category,
+    is_repayment, payment_mode, notes, user_id
+  ) values (
+    current_date,
+    v_txn_type,
+    'Loan payment: ' || v_loan.counterparty,
+    p_amount,
+    'loans',
+    true,
+    'other',
+    case v_loan.direction
+      when 'given' then 'Payment received from ' || v_loan.counterparty
+      else 'Payment made to ' || v_loan.counterparty
+    end,
+    p_user_id
+  )
+  returning id into v_txn_id;
+
+  -- Step 2: Update loan
+  update loans
+  set amount_settled = v_new_settled,
+      settled        = v_fully_settled
+  where id = p_loan_id;
+
+  return json_build_object(
+    'transaction_id',    v_txn_id,
+    'loan_id',           p_loan_id,
+    'payment_amount',    p_amount,
+    'new_amount_settled', v_new_settled,
+    'fully_settled',     v_fully_settled
+  );
+end;
+$$;
   for each row execute function check_user_category_limit();

@@ -366,6 +366,14 @@
     transform: translateZ(0);
   }
 
+  .fab-loans {
+    @apply fixed w-14 h-14 bg-ink text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
+    bottom: calc(var(--nav-height) + 1rem);
+    right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
   /* -- Floating nav — premium glass dock ──────────────────────────── */
   .nav-float-wrap {
     position: fixed;
@@ -665,7 +673,8 @@
   }
 
   .fab,
-  .fab-bills {
+  .fab-bills,
+  .fab-loans {
     width: 3.2rem;
     height: 3.2rem;
     bottom: calc(var(--nav-height) + 0.75rem);
@@ -695,6 +704,10 @@
     right: 2rem;
   }
   .fab-bills {
+    bottom: 2rem;
+    right: 2rem;
+  }
+  .fab-loans {
     bottom: 2rem;
     right: 2rem;
   }
