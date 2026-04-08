@@ -204,14 +204,6 @@ VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<supabase-anon-key>
 ```
 
-### Optional — docs link in profile menu
-
-```env
-VITE_DOCS_URL=https://<your-docs-site>.vercel.app
-```
-
-If `VITE_DOCS_URL` is unset, the profile menu "Documentation" action falls back to the in-app Setup Guide page.
-
 ### Required — E2E test scripts
 
 ```env

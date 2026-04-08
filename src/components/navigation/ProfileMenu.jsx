@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, LogOut, Bug, Info, BookOpen, ExternalLink } from 'lucide-react'
+import { Settings, LogOut, Bug, Info, BookOpen } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -48,7 +48,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const docsUrl = String(import.meta.env.VITE_DOCS_URL || '').trim()
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
@@ -56,22 +55,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
 
   function close() {
     setOpen(false)
-  }
-
-  function handleOpenDocs() {
-    close()
-
-    if (!docsUrl) {
-      navigate('/guide')
-      return
-    }
-
-    if (/^https?:\/\//i.test(docsUrl)) {
-      window.open(docsUrl, '_blank', 'noopener,noreferrer')
-      return
-    }
-
-    navigate(docsUrl)
   }
 
   return (
@@ -174,16 +157,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                 />
               </motion.div>
               <motion.div custom={4} variants={menuItemVariants} initial="hidden" animate="show">
-                <MenuRow
-                  icon={<ExternalLink size={15} />}
-                  label="Documentation"
-                  onClick={handleOpenDocs}
-                />
-              </motion.div>
-
-              <MenuDivider />
-
-              <motion.div custom={5} variants={menuItemVariants} initial="hidden" animate="show">
                 <MenuRow
                   icon={<LogOut size={15} />}
                   label="Sign Out"
