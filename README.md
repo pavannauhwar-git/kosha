@@ -1,225 +1,210 @@
 # Kosha
 
-Kosha is a personal finance Progressive Web App (PWA) for tracking transactions, bills, monthly performance, and financial insights.
+> Your financial sheath — a personal finance PWA for tracking transactions, bills, loans, and financial health.
 
 ## Table of contents
 
-- Overview
-- Features
-- Phase planning and release roadmap
-- Tech stack
-- Project structure
-- Prerequisites
-- Quick start
-- Environment variables
-- Database and Supabase setup
-- Available scripts
-- End-to-end verification
-- Deployment
-- Contributing
-- Release process
-- Bug reporting function (Supabase Edge Function)
-- Troubleshooting
+- [Overview](#overview)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Project structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Environment variables](#environment-variables)
+- [Database setup](#database-setup)
+- [Running the app](#running-the-app)
+- [Scripts](#scripts)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Release process](#release-process)
+- [Contributing](#contributing)
+- [Bug reporting Edge Function](#bug-reporting-edge-function)
+- [Troubleshooting](#troubleshooting)
+- [Security notes](#security-notes)
 
 ## Overview
 
-Kosha is designed as a mobile-first finance app with:
+Kosha is a mobile-first Progressive Web App for personal finance. It provides real-time transaction tracking, bill management, loan tracking, monthly/yearly analytics, and statement reconciliation — all backed by Supabase with offline-friendly PWA support.
 
-- fast client navigation (React + Vite)
-- offline-friendly PWA behavior
-- Supabase-backed authentication and storage
-- server-truth data model with cache reconciliation for responsive UI updates
+Key design principles:
+
+- **Server-truth model** — Supabase Postgres is the single source of truth; the client uses React Query for caching and optimistic updates
+- **Mobile-first** — designed for phone-sized screens with installable PWA behavior on Android and iOS
+- **Realtime sync** — Supabase Realtime delivers instant updates across sessions
+- **Audit transparency** — every financial mutation is logged as an immutable audit event
 
 ## Features
 
-- Transaction tracking: add, edit, delete, filter, and search
-- Bills and dues: pending and paid states, recurring support, mark as paid
-- Dashboard cards and recent activity
-- Monthly and yearly analytics
-- Invite and join flow
-- In-app bug reporting flow
-- Installable PWA for Android and iOS
-
-## Phase planning and release roadmap
-
-### Original phase plan status
-
-1. Phase 1 (2 weeks): Security + monitoring + CI gate + exports
-   - Status: complete
-   - Completed: CI gate hardening, deploy-readiness checks, release candidate command, CSV exports, ownership/governance templates, runtime error monitoring polish (global error boundary prefill + unhandled error capture)
-
-2. Phase 2 (2 to 3 weeks): Recurring transaction engine + reminders + undo
-   - Status: complete
-   - Completed: recurring transaction engine (schema, generation RPC, UI wiring, export visibility), reminders, and undo flows
-
-3. Phase 3 (2 weeks): Reconciliation + advanced monthly intelligence
-   - Status: complete
-   - Completed: reconciliation workspace with review queue, quick category fixes, statement-style matching, linked/reviewed queue filtering, confidence drift/trend analytics, monthly entry point, server-backed review persistence, and deterministic reconciliation-focused automated tests
-
-4. Phase 4 (ongoing): Shared wallets, localization, deep analytics
-   - Status: complete
-   - Completed: shared-wallet collaboration UX hardening (invite generation/copy/status in Settings), localization foundation (user-selectable locale and locale-aware date/currency formatting), and deeper analytics narratives (weekly digest + month-close summary cards)
-
-### Adoption-quality release track
-
-Release 1.2.0: Adoption and Guidance
-
-- New in-app Guide / Features hub
-- "Getting Started in 3 minutes" walkthrough
-- Feature map: Dashboard, Transactions, Bills, Analytics, Exports, Recurring
-- "How to use" recipes (monthly close review, bill routine, recurring setup)
-- Contextual first-use hints (dismissible)
-
-Release 1.3.0: Focused Dashboard UX
-
-- Rework dashboard information hierarchy
-- Reduce first-glance cognitive load
-- Keep action-oriented cards (cashflow, bills due, pace, quick add)
-- Optional dashboard personalization (show/hide modules)
-
-Release 1.4.0: Retention and Confidence
-
-- Smart reminders (bill due, unusual spend pace)
-- Monthly close summary
-- "What changed this week" digest
-- Better trust/trace tooling (event timeline + quick jump)
-
-### Dashboard direction on "Latest transactions"
-
-Do not remove the section completely yet. It is a trust anchor for immediate save confirmation.
-
-Preferred progression:
-
-1. Replace full list with a compact snapshot (top 3 + "View all")
-2. Offer collapsible behavior (default collapsed)
-3. Add user setting to show/hide
-
-### Guide/Features page blueprint
-
-1. Start Here
-   - What Kosha helps with
-   - 5-minute setup checklist
-
-2. Core Features
-   - Transactions
-   - Bills and recurring
-   - Analytics
-   - Export and portability
-   - Activity timeline / audit trust layer
-
-3. How-to Playbooks
-   - Set up monthly routine
-   - Track fixed bills
-   - Use recurring correctly
-   - Clean categories for better analytics
-
-4. FAQ and Privacy
-   - Data storage model
-   - Realtime sync behavior
-   - Offline behavior
-   - Export and backup guidance
+- **Transactions** — add, edit, delete, filter, search, CSV export, recurring engine
+- **Bills** — pending/paid states, recurring support, mark-as-paid, due date tracking
+- **Loans** — given/taken tracking, settlement progress, record payments, interest rates
+- **Dashboard** — cashflow cards, spending pace, daily heatmap, weekly digest, recent activity
+- **Analytics** — monthly and yearly breakdowns, category treemaps, savings rate trend, reconciliation confidence
+- **Reconciliation** — statement matching, review queue, confidence scoring, alias learning
+- **Monthly** — month-over-month comparison, variance analysis, projected close
+- **Settings** — shared-wallet invites, locale preferences, reminder configuration
+- **Guide** — in-app feature map, getting-started checklist, how-to playbooks
+- **Bug reporting** — in-app bug report flow with optional Slack/Discord webhook notification
+- **Installable PWA** — service worker with precaching, works offline
 
 ## Tech stack
 
-- Frontend: React 18, React Router 6, Framer Motion
-- Data layer: @tanstack/react-query v5
-- Backend: Supabase (Postgres, Auth, Realtime, Edge Functions)
-- Styling: Tailwind CSS
-- Build tooling: Vite 5, vite-plugin-pwa
-- Charts: Recharts
+| Layer | Technology |
+|-------|-----------|
+| Framework | React 18, React Router 6 |
+| State/Data | @tanstack/react-query v5 |
+| Backend | Supabase (Postgres, Auth, Realtime, Edge Functions) |
+| Styling | Tailwind CSS 3 |
+| Animations | Framer Motion 11 |
+| Charts | Recharts 2 |
+| Icons | Lucide React, Phosphor Icons |
+| Dialogs | Radix UI |
+| Build | Vite 5, vite-plugin-pwa |
+| Deployment | Vercel |
 
 ## Project structure
 
-```text
-.
-├── src/
-│   ├── components/
-│   │   ├── analytics/
-│   │   ├── common/
-│   │   │   ├── AppToast.jsx
-│   │   │   ├── EmptyState.jsx
-│   │   │   ├── FilterRow.jsx
-│   │   │   ├── SectionHeader.jsx
-│   │   │   └── StatMini.jsx
-│   │   └── dashboard/
-│   ├── context/
-│   ├── hooks/
-│   ├── lib/
-│   └── pages/
-├── scripts/
-│   ├── load_env.mjs
-│   ├── test_join_flow.mjs
-│   ├── test_liabilities_realtime.mjs
-│   └── test_mutation_stress.mjs
-├── supabase/
-│   ├── schema.sql
-│   └── functions/
-│       └── bug-report-notify/
-├── index.html
+```
+├── index.html                  # App entry point
 ├── package.json
-└── vite.config.js
+├── vite.config.js              # Vite + PWA + chunk splitting config
+├── tailwind.config.js
+├── vercel.json                 # SPA rewrite rules
+├── public/
+│   ├── fonts/
+│   └── icons/                  # PWA icons
+├── src/
+│   ├── main.jsx                # App bootstrap
+│   ├── App.jsx                 # Router + auth guard + layout
+│   ├── index.css               # Tailwind + custom design tokens
+│   ├── components/
+│   │   ├── analytics/          # Analytics charts, savings rate
+│   │   ├── brand/              # Logo, branding
+│   │   ├── cards/              # Reusable card components
+│   │   ├── categories/         # Category picker, management
+│   │   ├── common/             # Toast, empty state, filters, skeletons
+│   │   ├── dashboard/          # Heatmap, pace tracker, nudges, recent txns
+│   │   ├── dialogs/            # Modal dialogs
+│   │   ├── errors/             # Error boundary
+│   │   ├── layout/             # Page layout wrappers
+│   │   ├── navigation/         # Nav bar, auth guard, route skeleton
+│   │   └── transactions/       # Add/edit sheet, transaction list item
+│   ├── context/
+│   │   └── AuthContext.jsx     # Supabase auth state provider
+│   ├── hooks/
+│   │   ├── useAuth.js          # Auth actions (sign in/out/refresh)
+│   │   ├── useBudgets.js       # Budget queries
+│   │   ├── useFinancialEvents.js  # Audit event log
+│   │   ├── useLiabilities.js   # Bills/liabilities CRUD
+│   │   ├── useLoans.js         # Loans CRUD + payments
+│   │   ├── useReconciliationReviews.js
+│   │   ├── useScrollDirection.js
+│   │   ├── useTransactions.js  # Transaction CRUD + filters
+│   │   └── useUserCategories.js
+│   ├── lib/
+│   │   ├── supabase.js         # Supabase client init
+│   │   ├── queryClient.js      # React Query client config
+│   │   ├── mutationGuard.js    # Optimistic update safety
+│   │   ├── auditLog.js         # Financial event logging
+│   │   ├── categories.js       # Default category definitions
+│   │   ├── changelog.js        # Version history
+│   │   ├── reconciliation.js   # Matching engine
+│   │   ├── statementMatching.js # Statement parser + scoring
+│   │   ├── csv.js              # CSV export
+│   │   ├── invites.js          # Shared-wallet invite logic
+│   │   ├── reminders.js        # Notification reminders
+│   │   └── ...                 # Colors, locale, utils, animations
+│   └── pages/
+│       ├── Dashboard.jsx
+│       ├── Transactions.jsx
+│       ├── Bills.jsx
+│       ├── Loans.jsx
+│       ├── Analytics.jsx
+│       ├── Monthly.jsx
+│       ├── Reconciliation.jsx
+│       ├── Settings.jsx
+│       ├── Guide.jsx
+│       ├── About.jsx
+│       ├── Login.jsx
+│       ├── Onboarding.jsx
+│       ├── ReportBug.jsx
+│       └── NotFound.jsx
+├── scripts/
+│   ├── load_env.mjs            # Dotenv loader for scripts
+│   ├── ops/                    # Deploy readiness + release checks
+│   └── tests/                  # E2E verification scripts
+├── supabase/
+│   ├── schema.sql              # Full DB schema (idempotent)
+│   └── functions/
+│       └── bug-report-notify/  # Slack/Discord webhook function
+└── docs/                       # Internal design docs
 ```
 
 ## Prerequisites
 
-- Node.js 22+ recommended
-- npm 9+
-- A Supabase project with access to SQL Editor
-- Test users in Supabase Auth for runtime tests
+- **Node.js** 22+ (recommended; 18+ works but WebSocket polyfill may be needed for tests)
+- **npm** 9+
+- A **Supabase** project (free tier works)
 
-## Quick start
+## Setup
 
-### 1) Clone the repository
+### 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/<your-org>/kosha.git
 cd kosha
 ```
 
-### 2) Install dependencies
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3) Configure environment variables
-
-Create a local env file:
+### 3. Configure environment variables
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-If `.env.local.example` does not exist in your clone, create `.env.local` manually and use the template in the Environment variables section below.
+Edit `.env.local` and fill in your Supabase project credentials. See [Environment variables](#environment-variables) for the full reference.
 
-### 4) Apply database schema
+### 4. Set up the database
 
-Open Supabase SQL Editor and run:
+Open the **Supabase SQL Editor** and run the contents of `supabase/schema.sql`. The schema is fully idempotent — safe to re-run on an existing database.
 
-- `supabase/schema.sql`
+This creates all required tables (`transactions`, `liabilities`, `loans`, `user_categories`, `financial_events`, `invites`, `reconciliation_reviews`), RLS policies, RPCs, and Realtime publication.
 
-### 5) Run the app
+### 5. Create test users (optional)
+
+If you plan to run the E2E verification scripts, create these users in **Supabase Auth → Users**:
+
+| Purpose | Env var | Notes |
+|---------|---------|-------|
+| Creator account | `E2E_CREATOR_EMAIL` | Used by join-flow test |
+| Joiner account | `E2E_JOINER_EMAIL` | Must be a different user |
+| Session account | `E2E_SESSION_EMAIL` | Used by mutation + realtime tests |
+
+### 6. Start the dev server
 
 ```bash
 npm run dev
 ```
 
-Default local URL:
-
-- `http://localhost:5173`
+The app runs at `http://localhost:5173`. Sign up or sign in with your Supabase auth credentials.
 
 ## Environment variables
 
-Add these values in `.env.local`.
+All variables go in `.env.local` (git-ignored). See `.env.local.example` for the template.
 
-### Required for app runtime
+### Required — app runtime
 
 ```env
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<supabase-anon-key>
 ```
 
-### Required for runtime verification scripts
+### Required — E2E test scripts
 
 ```env
 APP_BASE_URL=http://localhost:5173
@@ -234,44 +219,66 @@ E2E_SESSION_EMAIL=<email>
 E2E_SESSION_PASSWORD=<password>
 ```
 
-Notes:
+> `scripts/load_env.mjs` auto-loads `.env` and `.env.local` for all scripts. Never commit `.env.local`.
 
-- `scripts/load_env.mjs` auto-loads `.env` and `.env.local`.
-- Keep these values private. Do not commit `.env.local`.
+## Database setup
 
-## Database and Supabase setup
+1. Create a Supabase project at [supabase.com](https://supabase.com).
+2. Open **SQL Editor** and paste the contents of `supabase/schema.sql`. Run it.
+3. Verify tables are created: `transactions`, `liabilities`, `loans`, `user_categories`, `financial_events`, `invites`, `reconciliation_reviews`.
+4. Confirm **Realtime** is enabled for `transactions`, `liabilities`, `loans`, and `financial_events` (the schema handles this via `ALTER PUBLICATION`).
 
-1. Create a Supabase project.
-2. Run `supabase/schema.sql` in SQL Editor.
-3. Confirm required tables and policies are present.
-4. Create the E2E users in Supabase Auth used by your local tests.
+> **Note:** Supabase SQL Editor does not support psql meta-commands like `\d`. Use `information_schema` or `pg_catalog` queries to inspect the schema.
 
-## Available scripts
-
-From project root:
+## Running the app
 
 ```bash
+# Development
 npm run dev
+
+# Production build
 npm run build
+
+# Preview production build locally
 npm run preview
-npm run release:candidate-check
-npm run test:deploy-readiness
-npm run test:join-flow
-npm run test:liabilities-realtime
-npm run test:mutation-stress
 ```
 
-What each test does:
+## Scripts
 
-- `test:join-flow`: validates invite token creation and consumption across accounts
-- `test:liabilities-realtime`: validates realtime INSERT delivery across sessions
-- `test:mutation-stress`: validates rapid transaction and liability mutation consistency and cleanup
-- `test:deploy-readiness`: validates env configuration, required tables/columns, and critical Supabase RPC availability
-- `release:candidate-check`: runs the full release verification suite and prints a final PASS/FAIL summary
+### Development
 
-## End-to-end verification
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Serve production build locally |
 
-Run the full verification sequence:
+### Verification & release
+
+| Command | Description |
+|---------|-------------|
+| `npm run release:candidate-check` | Full release verification suite (PASS/FAIL) |
+| `npm run test:deploy-readiness` | Validate env, tables, columns, RPCs |
+| `npm run test:production-assets` | Verify built asset integrity |
+
+### E2E tests
+
+| Command | Description |
+|---------|-------------|
+| `npm run test:join-flow` | Invite token creation and consumption |
+| `npm run test:liabilities-realtime` | Realtime INSERT delivery across sessions |
+| `npm run test:mutation-stress` | Rapid transaction + liability mutation consistency |
+| `npm run test:mutation-paths` | CRUD mutation path coverage |
+| `npm run test:mutation-integration` | Cross-module mutation integration |
+| `npm run test:mutation-rollback` | Optimistic rollback contract verification |
+| `npm run test:statement-matching` | Statement parsing and match scoring |
+| `npm run test:reconciliation-flow` | Reconciliation persist + alias-reset paths |
+| `npm run test:reconciliation-metrics` | Reconciliation telemetry counters |
+| `npm run test:reconciliation-schema-live` | Live schema validation for reconciliation tables |
+
+## Testing
+
+Run the full verification sequence before any release:
 
 ```bash
 npm run build
@@ -279,173 +286,114 @@ npm run test:deploy-readiness
 npm run test:join-flow
 npm run test:liabilities-realtime
 npm run test:mutation-stress
+npm run release:candidate-check
 ```
 
-Expected outcome:
-
-- Build succeeds
-- All test scripts print `PASS` and exit with code 0
+All scripts print `PASS`/`FAIL` and exit with code 0 on success.
 
 ## Deployment
 
-### Vercel
+### Vercel (recommended)
 
-This project is configured for SPA routing via `vercel.json` rewrite:
+The project includes `vercel.json` with SPA rewrite rules — all routes fall through to `index.html`.
 
-- all routes rewrite to `index.html`
-
-Deployment checklist:
-
-1. Import project in Vercel.
-2. Set production environment variables:
+1. Import the repository in [Vercel](https://vercel.com).
+2. Set environment variables:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-3. Deploy.
+3. Deploy. Vercel auto-detects Vite and builds with `npm run build`.
 
-## Contributing
+### Other platforms
 
-1. Create a feature branch from your main integration branch.
-
-```bash
-git checkout -b feat/your-change-name
-```
-
-2. Implement your change with focused commits.
-3. Run quality checks locally:
-
-```bash
-npm run build
-npm run test:deploy-readiness
-npm run test:join-flow
-npm run test:liabilities-realtime
-npm run test:mutation-stress
-```
-
-4. Update documentation when behavior, env vars, setup, or scripts change.
-5. Open a pull request with:
-   - clear problem statement
-   - implementation summary
-   - test evidence (commands + outcome)
-   - completed checklist from `.github/pull_request_template.md`
-
-Recommended commit style:
-
-- `feat: ...`
-- `fix: ...`
-- `refactor: ...`
-- `docs: ...`
-- `test: ...`
-
-## CI policy and branch protection
-
-CI workflow:
-
-- `build`: always runs and must pass
-- `deploy-readiness`: runs when readiness secrets exist and validates schema/RPC/env viability
-- `runtime-verification`: runs after build and deploy-readiness when full E2E secrets exist
-
-Recommended protected-branch settings (GitHub):
-
-1. Require pull request before merge.
-2. Require status checks to pass before merge.
-3. Mark these checks as required:
-   - `build`
-   - `deploy-readiness`
-   - `runtime-verification`
-4. Require branches to be up to date before merging.
-5. Restrict force pushes to protected branches.
-
-Notes:
-
-- If secrets are missing, guarded CI steps are skipped by design.
-- For production readiness, configure all required secrets so all three checks execute on every PR.
-- CODEOWNERS is configured for critical paths in `.github/CODEOWNERS`.
-- Issue intake is standardized via `.github/ISSUE_TEMPLATE/` (bug report and release blocker forms).
+Any static hosting that supports SPA routing works. Build with `npm run build` and serve the `dist/` directory with a fallback to `index.html` for all routes.
 
 ## Release process
 
-Use this checklist before every release.
+1. Pull latest and install dependencies:
+   ```bash
+   git pull && npm install
+   ```
 
-1. Pull latest changes and install dependencies.
+2. Run the release candidate check:
+   ```bash
+   npm run release:candidate-check
+   ```
 
-```bash
-git pull
-npm install
+3. Update `src/lib/changelog.js` with the new version entry (5 items max per version).
+
+4. Commit and tag:
+   ```bash
+   git add -A && git commit -m "release: vX.Y.Z"
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin main --tags
+   ```
+
+5. Deploy to Vercel and smoke test:
+   - Sign in → add a transaction → add a bill → verify dashboard refreshes
+   - Check PWA install prompt on mobile
+
+**Rollback:** Re-deploy the previous commit from the Vercel dashboard.
+
+## Contributing
+
+1. Branch from `main`:
+   ```bash
+   git checkout -b feat/your-change
+   ```
+
+2. Make focused commits using conventional prefixes: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`
+
+3. Run checks locally:
+   ```bash
+   npm run build && npm run test:deploy-readiness
+   ```
+
+4. Open a PR with:
+   - Problem statement
+   - Implementation summary
+   - Test evidence (commands + output)
+
+### Branch protection
+
+Recommended required status checks: `build`, `deploy-readiness`, `runtime-verification`. See `.github/CODEOWNERS` for critical path review ownership.
+
+## Bug reporting Edge Function
+
+**Path:** `supabase/functions/bug-report-notify/`
+
+Sends a webhook notification (Slack/Discord) when a user submits a bug report from the app.
+
+**Required Supabase function secrets:**
+
+```
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+BUG_REPORT_WEBHOOK_URL
 ```
 
-2. Confirm environment variables are present for runtime checks.
-3. Run full verification:
-
-```bash
-npm run release:candidate-check
-```
-
-4. Update changelog entry in `src/lib/changelog.js`.
-5. Tag release commit (if your workflow uses tags).
-
-```bash
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin vX.Y.Z
-```
-
-6. Deploy to Vercel and run a quick smoke test:
-   - sign in
-   - add transaction
-   - add bill
-   - verify dashboard and list refresh behavior
-   - verify bug report submission path (optional but recommended)
-
-Rollback guidance:
-
-- Re-deploy the previous known-good commit from Vercel.
-- Keep DB schema backward-compatible where possible to reduce rollback risk.
-
-## Bug reporting function (Supabase Edge Function)
-
-Path:
-
-- `supabase/functions/bug-report-notify`
-
-Required Supabase function secrets:
-
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `BUG_REPORT_WEBHOOK_URL` (Slack or Discord webhook)
-
-Deploy command:
+**Deploy:**
 
 ```bash
 supabase functions deploy bug-report-notify
 ```
 
-Behavior:
-
-- If webhook URL is missing, bug submission still succeeds and notification is skipped.
+If the webhook URL is not configured, bug submissions still succeed — the notification is silently skipped.
 
 ## Troubleshooting
 
-### App cannot connect to Supabase
-
-- Verify `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
-- Confirm project is active and network allows access.
-
-### Realtime test fails
-
-- Use Node 22+ (or install `ws` package if your runtime does not provide WebSocket).
-- Recheck Supabase Realtime configuration and table replication.
-
-### Join flow test fails
-
-- Ensure creator and joiner are different accounts.
-- Ensure both users are confirmed and can sign in.
-
-### Mutation stress test fails
-
-- Verify E2E session account has permissions for transactions and liabilities.
-- Re-run after cleanup if previous run was interrupted.
+| Problem | Solution |
+|---------|----------|
+| App cannot connect to Supabase | Verify `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local` |
+| Realtime test fails | Use Node 22+ (or install `ws` if your runtime lacks WebSocket). Check Supabase Realtime config and table replication. |
+| Join flow test fails | Ensure creator and joiner are different accounts, both confirmed in Supabase Auth |
+| Mutation stress test fails | Verify the E2E session account has insert/update/delete permissions. Re-run after cleanup if a previous run was interrupted. |
+| Build fails with missing env | Ensure `.env.local` exists with both `VITE_SUPABASE_*` variables |
+| PWA not updating | Hard-refresh or clear service worker in DevTools → Application → Service Workers |
 
 ## Security notes
 
-- Do not commit secrets to git.
-- Use anon key on frontend only.
-- Keep service role keys restricted to server-side or Edge Function environments.
+- Never commit `.env.local` or secrets to git
+- Only the Supabase **anon key** is used on the frontend — safe for client exposure
+- **Service role keys** must stay server-side (Edge Functions only)
+- All database access is gated by Row Level Security (RLS) policies
+- Financial mutations are logged to an immutable audit trail
