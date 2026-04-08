@@ -141,6 +141,32 @@ async function recordPayment(loanId, amount) {
   return result
 }
 
+async function updateLoan(id, updates) {
+  const userId = getAuthUserId()
+  const { data, error } = await supabase
+    .from('loans')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select(LOAN_COLUMNS)
+    .single()
+
+  if (error) throw error
+
+  runInBackground(
+    logFinancialEvent({
+      userId,
+      action: FINANCIAL_EVENT_ACTIONS.LOAN_UPDATE,
+      entityType: 'loan',
+      entityId: id,
+      metadata: updates,
+    }),
+    'loan update audit'
+  )
+
+  return data
+}
+
 async function deleteLoan(id) {
   const userId = getAuthUserId()
   const { error } = await supabase
@@ -351,6 +377,52 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
     ])
 
     return result
+  } catch (error) {
+    restoreLoanSnapshot(snapshot)
+    throw error
+  }
+}
+
+export async function updateLoanMutation(id, updates) {
+  const snapshot = snapshotLoanCaches()
+  suppress('loans')
+
+  // Optimistic: update in the correct cache bucket
+  const cachedLoan = getLoanFromCacheById(id)
+  if (cachedLoan) {
+    const key = cachedLoan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
+    const prev = queryClient.getQueryData(key)
+    if (Array.isArray(prev)) {
+      queryClient.setQueryData(key, prev.map(row => row?.id === id ? { ...row, ...updates } : row))
+    }
+  }
+
+  try {
+    const updated = await updateLoan(id, updates)
+    await queryClient.cancelQueries({ queryKey: ['loans'] })
+
+    // Handle direction change: may need to move between caches
+    const oldKey = cachedLoan?.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
+    const newKey = updated.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
+
+    if (oldKey !== newKey) {
+      const oldData = queryClient.getQueryData(oldKey)
+      if (Array.isArray(oldData)) queryClient.setQueryData(oldKey, oldData.filter(row => row?.id !== id))
+      optimisticallyInsertLoan(updated)
+    } else {
+      const data = queryClient.getQueryData(newKey)
+      if (Array.isArray(data)) queryClient.setQueryData(newKey, data.map(row => row?.id === id ? updated : row))
+    }
+
+    optimisticallyInsertFinancialEvent({
+      action: FINANCIAL_EVENT_ACTIONS.LOAN_UPDATE,
+      entityType: 'loan',
+      entityId: id,
+      metadata: updates,
+    })
+
+    await invalidateLoanCache()
+    return updated
   } catch (error) {
     restoreLoanSnapshot(snapshot)
     throw error

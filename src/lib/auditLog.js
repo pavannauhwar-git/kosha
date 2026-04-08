@@ -5,9 +5,11 @@ export const FINANCIAL_EVENT_ACTIONS = {
   TXN_UPDATE: 'transaction_updated',
   TXN_DELETE: 'transaction_deleted',
   BILL_ADD: 'liability_added',
+  BILL_UPDATE: 'liability_updated',
   BILL_MARK_PAID: 'liability_marked_paid',
   BILL_DELETE: 'liability_deleted',
   LOAN_ADD: 'loan_added',
+  LOAN_UPDATE: 'loan_updated',
   LOAN_PAYMENT: 'loan_payment_recorded',
   LOAN_DELETE: 'loan_deleted',
 }

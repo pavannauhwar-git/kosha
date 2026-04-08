@@ -178,6 +178,33 @@ export async function markPaid(liability) {
   return result;
 }
 
+export async function updateLiability(id, updates) {
+  const userId = getAuthUserId()
+
+  const { data, error } = await supabase
+    .from('liabilities')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select(LIABILITY_COLUMNS)
+    .single()
+
+  if (error) throw error
+
+  runInBackground(
+    logFinancialEvent({
+      userId,
+      action: FINANCIAL_EVENT_ACTIONS.BILL_UPDATE,
+      entityType: 'liability',
+      entityId: id,
+      metadata: updates,
+    }),
+    'liabilities update audit'
+  )
+
+  return data
+}
+
 export async function deleteLiability(id) {
   const userId = getAuthUserId()
   
@@ -406,6 +433,47 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
     ])
     return result
+  } catch (error) {
+    restoreLiabilitySnapshot(snapshot)
+    throw error
+  }
+}
+
+export async function updateLiabilityMutation(id, updates) {
+  const snapshot = snapshotLiabilityCaches()
+  suppress('liabilities')
+
+  // Optimistically update in pending cache
+  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  if (Array.isArray(pendingData)) {
+    queryClient.setQueryData(
+      LIABILITY_PENDING_QUERY_KEY,
+      sortLiabilitiesByDueDateAsc(pendingData.map(row => row?.id === id ? { ...row, ...updates } : row))
+    )
+  }
+
+  try {
+    const updated = await updateLiability(id, updates)
+    await queryClient.cancelQueries({ queryKey: ['liabilities'] })
+
+    // Replace optimistic row with server row
+    const latestPending = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+    if (Array.isArray(latestPending)) {
+      queryClient.setQueryData(
+        LIABILITY_PENDING_QUERY_KEY,
+        sortLiabilitiesByDueDateAsc(latestPending.map(row => row?.id === id ? updated : row))
+      )
+    }
+
+    optimisticallyInsertFinancialEvent({
+      action: FINANCIAL_EVENT_ACTIONS.BILL_UPDATE,
+      entityType: 'liability',
+      entityId: id,
+      metadata: updates,
+    })
+
+    await invalidateLiabilityCache()
+    return updated
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
     throw error

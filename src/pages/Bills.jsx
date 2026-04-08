@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight } from 'lucide-react'
+import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight, Pencil } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useLiabilities,
   addLiabilityMutation,
+  updateLiabilityMutation,
   markLiabilityPaidMutation,
   deleteLiabilityMutation,
 } from '../hooks/useLiabilities'
@@ -32,6 +33,7 @@ export default function Bills() {
   const [tab, setTab] = useState(() => (searchParams.get('tab') === 'paid' ? 'paid' : 'pending'))
   const { pending, paid, loading, pendingLoading, paidLoading } = useLiabilities({ includePaid: true })
   const [showAdd, setShowAdd] = useState(false)
+  const [editBill, setEditBill] = useState(null)
   const [payingId, setPayingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [highlightedBillId, setHighlightedBillId] = useState(null)
@@ -192,6 +194,21 @@ export default function Bills() {
     setFormErr('')
     setAddSaving(true)
 
+    if (editBill) {
+      try {
+        await updateLiabilityMutation(editBill.id, billData)
+        setTab('pending')
+        setShowAdd(false)
+        setEditBill(null)
+        setAddSaving(false)
+        setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
+      } catch (e) {
+        setAddSaving(false)
+        setErrToast(e.message || 'Could not update bill. Check your connection.')
+      }
+      return
+    }
+
     try {
       await addLiabilityMutation(billData)
 
@@ -237,6 +254,19 @@ export default function Bills() {
     } finally {
       setDeletingId(null)
     }
+  }
+
+  function openEditBill(bill) {
+    setEditBill(bill)
+    setForm({
+      description: bill.description || '',
+      amount: String(bill.amount || ''),
+      due_date: bill.due_date || '',
+      is_recurring: !!bill.is_recurring,
+      recurrence: bill.recurrence || 'monthly',
+    })
+    setFormErr('')
+    setShowAdd(true)
   }
 
   function dismissGuideHint() {
@@ -470,18 +500,30 @@ export default function Bills() {
 
                     <div className="flex flex-col gap-2 shrink-0">
                       {tab === 'pending' && (
-                        <button
-                          onClick={() => handleMarkPaid(bill)}
-                          disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                          className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
-                                     bg-income-bg text-income-text text-[11px] font-semibold
-                                     border border-income-border active:scale-[0.97] transition-all duration-100
-                                     disabled:opacity-60"
-                        >
-                          {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                          {payingId === bill.id ? 'Paying…' : 'Paid'}
-                        </button>
-                      )}
+                        <>
+                          <button
+                            onClick={() => openEditBill(bill)}
+                            disabled={!!payingId || !!deletingId || !!bill.__optimistic}
+                            className="h-8 w-8 flex items-center justify-center rounded-card
+                                       bg-kosha-surface-2 text-ink-3 text-[11px] font-semibold
+                                       border border-kosha-border active:scale-[0.97] transition-all duration-100
+                                       disabled:opacity-60"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleMarkPaid(bill)}
+                            disabled={!!payingId || !!deletingId || !!bill.__optimistic}
+                            className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
+                                       bg-income-bg text-income-text text-[11px] font-semibold
+                                       border border-income-border active:scale-[0.97] transition-all duration-100
+                                       disabled:opacity-60"
+                          >
+                            {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                            {payingId === bill.id ? 'Paying…' : 'Paid'}
+                          </button>
+                        </>
+                      )}}
                       <button
                         onClick={() => handleDelete(bill.id)}
                         disabled={!!payingId || !!deletingId || !!bill.__optimistic}
@@ -507,7 +549,7 @@ export default function Bills() {
           <>
             <motion.div className="sheet-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={() => { setShowAdd(false); setFormErr(''); setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' }) }}
+              onClick={() => { setShowAdd(false); setEditBill(null); setFormErr(''); setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' }) }}
             />
             <motion.div className="sheet-panel"
               initial={{ y: '100%' }}
@@ -517,8 +559,8 @@ export default function Bills() {
               <div className="sheet-handle" />
               <div className="px-5 overflow-x-hidden">
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-display font-bold text-ink">Add Bill</h2>
-                  <button onClick={() => setShowAdd(false)} className="close-btn">
+                  <h2 className="text-display font-bold text-ink">{editBill ? 'Edit Bill' : 'Add Bill'}</h2>
+                  <button onClick={() => { setShowAdd(false); setEditBill(null) }} className="close-btn">
                     <X size={16} className="text-ink-3" />
                   </button>
                 </div>
@@ -590,7 +632,7 @@ export default function Bills() {
                     disabled={addSaving}
                     className={`w-full py-4 rounded-card font-semibold transition-all
                                ${addSaving ? 'bg-brand/70 text-white/90 scale-[0.97]' : 'bg-brand text-white active:scale-[0.97]'}`}>
-                    {addSaving ? 'Adding…' : 'Add Bill'}
+                    {addSaving ? (editBill ? 'Saving…' : 'Adding…') : (editBill ? 'Save Changes' : 'Add Bill')}
                   </button>
                 </div>
               </div>

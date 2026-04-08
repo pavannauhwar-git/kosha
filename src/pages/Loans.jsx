@@ -2,11 +2,12 @@ import { useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, X, Check, Loader2, Download, ArrowDownLeft, ArrowUpRight,
-  HandCoins, Users, Percent, Calendar, FileText,
+  HandCoins, Users, Percent, Calendar, FileText, Pencil,
 } from 'lucide-react'
 import {
   useLoans,
   addLoanMutation,
+  updateLoanMutation,
   recordLoanPaymentMutation,
   deleteLoanMutation,
   accruedInterest,
@@ -28,6 +29,7 @@ export default function Loans() {
   const { given, taken, settled, loading, settledLoading } = useLoans()
   const [tab, setTab] = useState('given')
   const [showAdd, setShowAdd] = useState(false)
+  const [editLoan, setEditLoan] = useState(null)
   const [payLoan, setPayLoan] = useState(null)      // loan object being paid
   const [deletingId, setDeletingId] = useState(null)
   const [errToast, setErrToast] = useState(null)
@@ -82,15 +84,28 @@ export default function Loans() {
       loan_date: form.loan_date,
       due_date: form.due_date || null,
       note: form.note.trim() || null,
-      amount_settled: 0,
-      settled: false,
     }
 
     setFormErr('')
     setAddSaving(true)
 
+    if (editLoan) {
+      try {
+        await updateLoanMutation(editLoan.id, loanData)
+        setTab(loanData.direction)
+        setShowAdd(false)
+        setEditLoan(null)
+        setAddSaving(false)
+        resetForm()
+      } catch (e) {
+        setAddSaving(false)
+        setErrToast(e.message || 'Could not update loan.')
+      }
+      return
+    }
+
     try {
-      await addLoanMutation(loanData)
+      await addLoanMutation({ ...loanData, amount_settled: 0, settled: false })
       setTab(loanData.direction)
       setShowAdd(false)
       setAddSaving(false)
@@ -146,6 +161,21 @@ export default function Loans() {
     } finally {
       setDeletingId(null)
     }
+  }
+
+  function openEditLoan(loan) {
+    setEditLoan(loan)
+    setForm({
+      direction: loan.direction || 'given',
+      counterparty: loan.counterparty || '',
+      amount: String(loan.amount || ''),
+      interest_rate: loan.interest_rate ? String(loan.interest_rate) : '',
+      loan_date: loan.loan_date || new Date().toISOString().slice(0, 10),
+      due_date: loan.due_date || '',
+      note: loan.note || '',
+    })
+    setFormErr('')
+    setShowAdd(true)
   }
 
   async function handleExportCsv() {
@@ -382,6 +412,16 @@ export default function Loans() {
                   {!loan.settled && (
                     <div className="flex flex-col gap-2 shrink-0">
                       <button
+                        onClick={() => openEditLoan(loan)}
+                        disabled={!!deletingId || isOptimistic}
+                        className="h-8 w-8 flex items-center justify-center rounded-card
+                                   bg-kosha-surface-2 text-ink-3 text-[11px] font-semibold
+                                   border border-kosha-border active:scale-[0.97] transition-all duration-100
+                                   disabled:opacity-60"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
                         onClick={() => { setPayLoan(loan); setPayAmount(''); setPayErr('') }}
                         disabled={!!deletingId || isOptimistic}
                         className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
@@ -523,7 +563,7 @@ export default function Loans() {
           <>
             <motion.div className="sheet-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={() => { setShowAdd(false); resetForm() }}
+              onClick={() => { setShowAdd(false); setEditLoan(null); resetForm() }}
             />
             <motion.div className="sheet-panel"
               initial={{ y: '100%' }}
@@ -533,8 +573,8 @@ export default function Loans() {
               <div className="sheet-handle" />
               <div className="px-5 overflow-x-hidden">
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-display font-bold text-ink">Add Loan</h2>
-                  <button onClick={() => { setShowAdd(false); resetForm() }} className="close-btn">
+                  <h2 className="text-display font-bold text-ink">{editLoan ? 'Edit Loan' : 'Add Loan'}</h2>
+                  <button onClick={() => { setShowAdd(false); setEditLoan(null); resetForm() }} className="close-btn">
                     <X size={16} className="text-ink-3" />
                   </button>
                 </div>
@@ -660,7 +700,7 @@ export default function Loans() {
                                ${addSaving
                                   ? 'bg-brand/70 text-white/90 scale-[0.97]'
                                   : 'bg-brand text-white active:scale-[0.97]'}`}>
-                    {addSaving ? 'Adding…' : 'Add Loan'}
+                    {addSaving ? (editLoan ? 'Saving…' : 'Adding…') : (editLoan ? 'Save Changes' : 'Add Loan')}
                   </button>
                 </div>
               </div>

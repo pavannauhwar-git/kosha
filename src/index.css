@@ -383,7 +383,7 @@
     z-index: 30;
     display: flex;
     justify-content: center;
-    padding-bottom: calc(0.78rem + var(--safe-bottom));
+    padding: 0 1rem calc(0.78rem + var(--safe-bottom));
     pointer-events: none;
     transform: translateY(0);
     transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
