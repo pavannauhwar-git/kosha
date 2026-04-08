@@ -1,0 +1,363 @@
+// AUTO-GENERATED FROM docs/06-quality-reliability-operations.md
+// Run 'npm run generate' in docs-site to refresh.
+
+= Chapter 6: Quality, Reliability, and Operations Runbook
+
+== 6.1 Reliability posture
+
+Kosha's operations model is designed around safe iteration on financial workflows:
+
+. Every release is gated by deterministic script checks.
+. Runtime failures are captured with context and routed into structured bug reporting.
+. Critical financial writes emit audit events and retry non-blocking telemetry.
+. Realtime freshness is treated as a reliability enhancer with fallback behavior.
+
+Core runtime and release anchors:
+
+. Release candidate orchestrator in link:{repo-blob-url}/scripts/ops/release_candidate_check.mjs#L1[scripts/ops/release_candidate_check.mjs]
+. Deploy readiness probe in link:{repo-blob-url}/scripts/ops/check_deploy_readiness.mjs#L1[scripts/ops/check_deploy_readiness.mjs]
+. Runtime monitor startup in link:{repo-blob-url}/src/main.jsx#L8[src/main.jsx]
+. Global crash capture boundary in link:{repo-blob-url}/src/components/errors/GlobalErrorBoundary.jsx#L8[src/components/errors/GlobalErrorBoundary.jsx]
+. Financial audit logger in link:{repo-blob-url}/src/lib/auditLog.js#L1[src/lib/auditLog.js]
+
+'''
+
+== 6.2 Build and release pipeline
+
+== 6.2.1 NPM entrypoints
+
+The operational command surface is centralized in link:{repo-blob-url}/package.json#L6[package.json]:
+
+. Build and preview: link:{repo-blob-url}/package.json#L8[package.json]
+. Release candidate check: link:{repo-blob-url}/package.json#L11[package.json]
+. Deploy readiness: link:{repo-blob-url}/package.json#L12[package.json]
+. Domain tests (mutation, reconciliation, join-flow, realtime, production assets): link:{repo-blob-url}/package.json#L13[package.json]
+
+This creates a single executable release grammar for local and CI usage.
+
+== 6.2.2 Release candidate orchestration
+
+The release orchestrator executes a strict sequence in link:{repo-blob-url}/scripts/ops/release_candidate_check.mjs#L3[scripts/ops/release_candidate_check.mjs]:
+
+. Build
+. Mutation path checks
+. Reconciliation checks
+. Deploy readiness checks
+. Join and realtime checks
+. Stress checks
+
+Operational behavior:
+
+. Each step streams output and records duration in link:{repo-blob-url}/scripts/ops/release_candidate_check.mjs#L23[scripts/ops/release_candidate_check.mjs].
+. Flaky network-sensitive checks can retry (for example join-flow and liabilities-realtime) in link:{repo-blob-url}/scripts/ops/release_candidate_check.mjs#L14[scripts/ops/release_candidate_check.mjs].
+. Execution halts at first failure and emits a summary table in link:{repo-blob-url}/scripts/ops/release_candidate_check.mjs#L89[scripts/ops/release_candidate_check.mjs].
+
+== 6.2.3 Deploy readiness guard
+
+Deploy readiness is a schema and RPC contract probe in link:{repo-blob-url}/scripts/ops/check_deploy_readiness.mjs#L1[scripts/ops/check_deploy_readiness.mjs].
+
+It verifies:
+
+. Table accessibility and required columns for transactions/liabilities in link:{repo-blob-url}/scripts/ops/check_deploy_readiness.mjs#L60[scripts/ops/check_deploy_readiness.mjs].
+. Financial events and reconciliation review schema availability in link:{repo-blob-url}/scripts/ops/check_deploy_readiness.mjs#L89[scripts/ops/check_deploy_readiness.mjs].
+. mark_liability_paid and generate_recurring_transactions RPC availability in link:{repo-blob-url}/scripts/ops/check_deploy_readiness.mjs#L105[scripts/ops/check_deploy_readiness.mjs].
+
+Critical feature:
+
+. Missing RPC/table conditions are surfaced with migration-specific guidance, reducing ambiguous deployment failures.
+
+'''
+
+== 6.3 Environment and credential model
+
+== 6.3.1 Script env loading
+
+All Node-based scripts load local env files via link:{repo-blob-url}/scripts/load_env.mjs#L1[scripts/load_env.mjs]:
+
+. `.env` then `.env.local`
+. Existing process env values are not overridden
+. Quoted values are normalized
+
+This keeps script behavior reproducible while supporting local overrides.
+
+== 6.3.2 Required operational env vars
+
+Release and test scripts depend on:
+
+. Supabase runtime vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) documented in link:{repo-blob-url}/README.md#L179[README.md].
+. E2E account vars (`E2E_*`) documented in link:{repo-blob-url}/README.md#L186[README.md].
+. Optional production integrity target (`APP_URL`) in link:{repo-blob-url}/scripts/tests/test_production_asset_integrity.mjs#L1[scripts/tests/test_production_asset_integrity.mjs].
+
+== 6.3.3 Edge function secrets
+
+Bug-notify function requires:
+
+. `SUPABASE_URL`
+. `SUPABASE_SERVICE_ROLE_KEY`
+. `BUG_REPORT_WEBHOOK_URL`
+
+These are consumed in link:{repo-blob-url}/supabase/functions/bug-report-notify/index.ts#L24[supabase/functions/bug-report-notify/index.ts].
+
+'''
+
+== 6.4 Verification suite architecture
+
+Kosha's test suite is scenario-first rather than unit-only. Each script validates a production risk lane.
+
+Script index is documented in link:{repo-blob-url}/scripts/README.md#L1[scripts/README.md].
+
+== 6.4.1 Contract and safety checks
+
+. Mutation rollback contract static verification in link:{repo-blob-url}/scripts/tests/test_mutation_rollback_contract.mjs#L1[scripts/tests/test_mutation_rollback_contract.mjs].
+. Reconciliation schema live check in link:{repo-blob-url}/scripts/tests/test_reconciliation_schema_live.mjs#L1[scripts/tests/test_reconciliation_schema_live.mjs].
+. Deploy readiness schema/RPC probes in link:{repo-blob-url}/scripts/ops/check_deploy_readiness.mjs#L58[scripts/ops/check_deploy_readiness.mjs].
+
+Why this matters:
+
+. These checks fail fast when migrations are missing or rollback guarantees regress.
+
+== 6.4.2 Behavior and workflow checks
+
+. Join invite lifecycle in link:{repo-blob-url}/scripts/tests/test_join_flow.mjs#L1[scripts/tests/test_join_flow.mjs].
+. Reconciliation persistence and alias reset behavior in link:{repo-blob-url}/scripts/tests/test_reconciliation_flow.mjs#L1[scripts/tests/test_reconciliation_flow.mjs].
+. Mutation stress lifecycle for transactions and liabilities in link:{repo-blob-url}/scripts/tests/test_mutation_stress.mjs#L1[scripts/tests/test_mutation_stress.mjs].
+
+Why this matters:
+
+. These tests reflect user-facing workflows, not isolated helper behavior.
+
+== 6.4.3 Realtime delivery checks
+
+Realtime reliability is explicitly validated in link:{repo-blob-url}/scripts/tests/test_liabilities_realtime.mjs#L1[scripts/tests/test_liabilities_realtime.mjs]:
+
+. Dual-session sign-in (actor/listener)
+. Channel subscription handshake
+. Timed insert event delivery
+. Retries across transient channel failures
+
+WebSocket fallback behavior:
+
+. For Node environments without native WebSocket, `ws` polyfill import is attempted in link:{repo-blob-url}/scripts/tests/test_liabilities_realtime.mjs#L20[scripts/tests/test_liabilities_realtime.mjs].
+
+== 6.4.4 Production asset integrity checks
+
+Deployed artifact sanity is tested by link:{repo-blob-url}/scripts/tests/test_production_asset_integrity.mjs#L1[scripts/tests/test_production_asset_integrity.mjs]:
+
+. Fetches deployed HTML
+. Extracts hashed JS/CSS asset URLs
+. Verifies asset fetch and content-type correctness
+. Emits manual post-deploy service-worker hygiene step
+
+This complements build success by validating deployment output, not only local dist generation.
+
+'''
+
+== 6.5 Runtime resilience architecture
+
+== 6.5.1 Startup monitoring
+
+Runtime monitor starts before React render in link:{repo-blob-url}/src/main.jsx#L8[src/main.jsx].
+
+It captures:
+
+. Window script errors
+. Unhandled promise rejections
+. Recent route trail and event buffers
+
+Implementation in link:{repo-blob-url}/src/lib/runtimeMonitor.js#L1[src/lib/runtimeMonitor.js] stores bounded diagnostics in sessionStorage.
+
+== 6.5.2 Global crash handling
+
+Rendering crashes are trapped by GlobalErrorBoundary in link:{repo-blob-url}/src/components/errors/GlobalErrorBoundary.jsx#L8[src/components/errors/GlobalErrorBoundary.jsx].
+
+Behavior:
+
+. Displays recovery UI with reload/home/report options.
+. Prepares structured runtime prefill payload for bug report flow in link:{repo-blob-url}/src/components/errors/GlobalErrorBoundary.jsx#L26[src/components/errors/GlobalErrorBoundary.jsx].
+. Navigates directly to Report Bug with crash context.
+
+== 6.5.3 Query performance tracing
+
+Query timing trace utility exists in link:{repo-blob-url}/src/lib/queryTrace.js#L1[src/lib/queryTrace.js].
+
+Key properties:
+
+. Dev-only activation by localStorage flag.
+. Zero overhead when disabled.
+. Consistent timing logs for network/query bottleneck diagnosis.
+
+== 6.5.4 Realtime fallback behavior
+
+GlobalRealtimeSync in link:{repo-blob-url}/src/App.jsx#L535[src/App.jsx] provides resilient freshness behavior:
+
+. Subscribes to table change events.
+. Applies delayed family invalidation.
+. Falls back to polling when socket becomes unavailable.
+. Reconnects with progressive retry delays.
+
+This prevents hard dependency on websocket continuity.
+
+'''
+
+== 6.6 Auditability and financial event logging
+
+Financial mutation telemetry is implemented in link:{repo-blob-url}/src/lib/auditLog.js#L1[src/lib/auditLog.js].
+
+=== Action taxonomy
+
+Standardized action types include:
+
+. Transaction add/update/delete
+. Liability add/mark-paid/delete
+. Loan add/payment/delete
+
+Defined in link:{repo-blob-url}/src/lib/auditLog.js#L3[src/lib/auditLog.js].
+
+=== Delivery semantics
+
+. Logger retries failed inserts with bounded exponential-like delay in link:{repo-blob-url}/src/lib/auditLog.js#L16[src/lib/auditLog.js].
+. Missing `financial_events` table is treated as safe no-op for partially migrated environments in link:{repo-blob-url}/src/lib/auditLog.js#L39[src/lib/auditLog.js].
+. Final failures are warning-logged and do not block user mutations.
+
+Operational implication:
+
+. Business mutations stay available even when telemetry path degrades.
+. Audit trail remains best-effort durable under transient backend errors.
+
+'''
+
+== 6.7 Bug intake and triage pipeline
+
+Kosha has an end-to-end in-app bug pipeline from crash to webhook notification.
+
+== 6.7.1 Client-side report creation
+
+ReportBug page entry is in link:{repo-blob-url}/src/pages/ReportBug.jsx#L24[src/pages/ReportBug.jsx].
+
+Capabilities:
+
+. Structured title/description/steps/severity/tags input.
+. Optional screenshot compression and upload in link:{repo-blob-url}/src/pages/ReportBug.jsx#L111[src/pages/ReportBug.jsx].
+. Fingerprint and diagnostics packaging via utility helpers from link:{repo-blob-url}/src/lib/bugReportUtils.js#L1[src/lib/bugReportUtils.js].
+
+Submission path:
+
+. RPC `submit_bug_report` call in link:{repo-blob-url}/src/pages/ReportBug.jsx#L184[src/pages/ReportBug.jsx].
+. Optional edge notification invoke in link:{repo-blob-url}/src/pages/ReportBug.jsx#L207[src/pages/ReportBug.jsx].
+
+== 6.7.2 Bug utility helpers
+
+Utility module link:{repo-blob-url}/src/lib/bugReportUtils.js#L1[src/lib/bugReportUtils.js] provides:
+
+. Stable fingerprint generation for dedupe in link:{repo-blob-url}/src/lib/bugReportUtils.js#L5[src/lib/bugReportUtils.js].
+. Tag normalization with strict character policy in link:{repo-blob-url}/src/lib/bugReportUtils.js#L22[src/lib/bugReportUtils.js].
+. Client-side image compression for large screenshot payloads in link:{repo-blob-url}/src/lib/bugReportUtils.js#L41[src/lib/bugReportUtils.js].
+
+== 6.7.3 Edge notification bridge
+
+Edge function implementation in link:{repo-blob-url}/supabase/functions/bug-report-notify/index.ts#L1[supabase/functions/bug-report-notify/index.ts]:
+
+. Loads bug report via service-role client.
+. Generates signed screenshot URL when available.
+. Posts to configured webhook (Discord-compatible or generic JSON).
+. Marks report `notified_at` on success.
+
+This separates user-report persistence from external notification reliability.
+
+'''
+
+== 6.8 Deployment and hosting behavior
+
+== 6.8.1 SPA rewrite contract
+
+Hosting rewrite behavior is defined in link:{repo-blob-url}/vercel.json#L1[vercel.json]:
+
+. Filesystem handler first
+. Fallback route rewrite to `index.html` for non-file paths
+
+This is required for client-side routed pages like `/reconciliation` and `/report-bug`.
+
+== 6.8.2 Build-time hardening
+
+Vite configuration in link:{repo-blob-url}/vite.config.js#L1[vite.config.js] enforces:
+
+. Console/debugger stripping via esbuild drop in link:{repo-blob-url}/vite.config.js#L35[vite.config.js].
+. Deterministic vendor chunk splitting in link:{repo-blob-url}/vite.config.js#L5[vite.config.js].
+. PWA runtime caching policy for Supabase REST and font assets in link:{repo-blob-url}/vite.config.js#L67[vite.config.js].
+
+Operational meaning:
+
+. Smaller, cache-friendly bundles.
+. Offline-capable repeat visits.
+. Controlled stale-while-revalidate data behavior aligned with query-layer freshness.
+
+'''
+
+== 6.9 Release and incident runbook
+
+== 6.9.1 Pre-release checklist
+
+. Ensure env vars are present and valid.
+. Run full build and release candidate checks.
+. Confirm deploy-readiness pass against target Supabase project.
+. Validate production assets after deploy.
+
+Commands:
+
+. `npm run build`
+. `npm run test:deploy-readiness`
+. `npm run release:candidate-check`
+. `npm run test:production-assets`
+
+Entrypoint references:
+
+. link:{repo-blob-url}/README.md#L285[README.md]
+. link:{repo-blob-url}/scripts/ops/release_candidate_check.mjs#L1[scripts/ops/release_candidate_check.mjs]
+
+== 6.9.2 If release-candidate check fails
+
+. Stop promotion immediately.
+. Identify first failed stage from release summary output.
+. Re-run only failed check locally after fix.
+. Re-run full release candidate suite before shipping.
+
+The orchestrator intentionally fails-fast in link:{repo-blob-url}/scripts/ops/release_candidate_check.mjs#L75[scripts/ops/release_candidate_check.mjs], so first failure is usually the most actionable signal.
+
+== 6.9.3 If realtime checks fail intermittently
+
+. Re-run liabilities realtime script (it has internal retries).
+. Verify websocket availability (`ws` fallback path for Node).
+. Validate Supabase realtime configuration and network constraints.
+
+Reference: link:{repo-blob-url}/scripts/tests/test_liabilities_realtime.mjs#L20[scripts/tests/test_liabilities_realtime.mjs].
+
+== 6.9.4 If reconciliation schema checks fail
+
+. Apply latest `supabase/schema.sql`.
+. Re-run reconciliation schema live check.
+. Re-run deploy readiness script.
+
+References:
+
+. link:{repo-blob-url}/scripts/tests/test_reconciliation_schema_live.mjs#L50[scripts/tests/test_reconciliation_schema_live.mjs]
+. link:{repo-blob-url}/scripts/ops/check_deploy_readiness.mjs#L97[scripts/ops/check_deploy_readiness.mjs]
+
+== 6.9.5 If runtime crash reports spike
+
+. Inspect bug_reports entries and occurrence_count trends.
+. Use captured route + runtime diagnostics payload from bug reports.
+. Correlate with recent release changes and query timings (if trace enabled).
+. Patch and verify via focused scenario scripts before broad release.
+
+'''
+
+== 6.10 Operational guardrails for contributors
+
+. Never ship schema-dependent changes without running deploy-readiness checks.
+. Keep mutation rollback guarantees intact when refactoring hook mutation wrappers.
+. Preserve bug report fields and fingerprint behavior to avoid triage regressions.
+. Treat release-candidate check as mandatory, not optional.
+. Keep realtime and fallback paths functional; test both optimistic and eventual-consistency behavior.
+. Do not bypass runtime error boundary or monitor wiring in app bootstrap.
+
+Adhering to these guardrails keeps Kosha financially trustworthy under both normal and failure conditions.

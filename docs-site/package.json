@@ -1,0 +1,14 @@
+{
+  "name": "kosha-docs-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node ./tools/generate-adoc.mjs",
+    "build": "npm run generate && node ./tools/build-site.mjs",
+    "preview": "npm run build && npx serve build/site -l 8081"
+  },
+  "devDependencies": {
+    "@asciidoctor/core": "^3.0.4",
+    "serve": "^14.2.4"
+  }
+}
