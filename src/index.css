@@ -397,8 +397,8 @@
   .nav-float {
     display: flex;
     align-items: center;
-    gap: 0;
-    padding: 10px 12px;
+    gap: 2px;
+    padding: 10px 16px;
     border-radius: 32px;
     background: rgba(255, 255, 255, 0.92);
     backdrop-filter: saturate(190%) blur(24px);
@@ -409,7 +409,7 @@
       inset 0 0.5px 0 rgba(255,255,255,0.85),
       0 0 0 1px rgba(26,26,46,0.05);
     pointer-events: auto;
-    max-width: calc(100vw - 1rem);
+    max-width: calc(100vw - 2rem);
     width: auto;
   }
 
@@ -668,7 +668,7 @@
   }
 
   .nav-float {
-    padding: 8px 8px;
+    padding: 8px 10px;
   }
 
   .fab,
