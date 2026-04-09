@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient } from '../lib/queryClient'
+import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
@@ -150,6 +150,7 @@ export async function invalidateCache() {
   // Suppress the realtime double-fetch that would otherwise fire
   // ~300-500ms later for the same mutation.
   suppress('transactions')
+  await evictSwCacheEntries('/transactions')
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
@@ -918,11 +919,14 @@ function updateTodayExpenseCache({ id, payload, existingTxn }) {
 
 function refreshTransactionCachesInBackground(invalidateFn, scope) {
   runInBackground(
-    Promise.all([
-      invalidateFn(),
-      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
-    ]),
+    (async () => {
+      await evictSwCacheEntries('/transactions')
+      await Promise.all([
+        invalidateFn(),
+        queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+      ])
+    })(),
     scope
   )
 }
