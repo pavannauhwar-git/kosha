@@ -260,9 +260,8 @@ export function optimisticallyInsertPendingLiability(liability) {
   if (!liability?.id) return
 
   const prev = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
-  if (!Array.isArray(prev)) return
-  
-  const deduped = prev.filter((row) => row?.id !== liability.id)
+  const base = Array.isArray(prev) ? prev : []
+  const deduped = base.filter((row) => row?.id !== liability.id)
   queryClient.setQueryData(
     LIABILITY_PENDING_QUERY_KEY,
     sortLiabilitiesByDueDateAsc([...deduped, { ...liability, paid: false }])
@@ -330,6 +329,26 @@ export function optimisticallyDeleteLiabilityFromCache(id) {
   }
 }
 
+function refreshLiabilityCachesInBackground(invalidateLiabilityFn, scope) {
+  runInBackground(
+    invalidateLiabilityFn(),
+    scope
+  )
+}
+
+function refreshLiabilityAndTransactionCachesInBackground({ invalidateLiabilityFn, invalidateTransactionFn, scope }) {
+  runInBackground(
+    Promise.all([
+      evictSwCacheEntries('/transactions'),
+      invalidateLiabilityFn(),
+      invalidateTransactionFn(),
+      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+    ]),
+    scope
+  )
+}
+
 export async function addLiabilityMutation(payload, __testOverrides = null) {
   const snapshot = snapshotLiabilityCaches()
   suppress('liabilities')
@@ -365,7 +384,7 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
       },
     })
 
-    await invalidateLiabilityFn()
+    refreshLiabilityCachesInBackground(invalidateLiabilityFn, 'liabilities post-add refresh')
     return created
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -425,13 +444,12 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       },
     })
 
-    await evictSwCacheEntries('/transactions')
-    await Promise.all([
-      invalidateLiabilityFn(),
-      invalidateTransactionFn(),
-      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'none' }),
-      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
-    ])
+    refreshLiabilityAndTransactionCachesInBackground({
+      invalidateLiabilityFn,
+      invalidateTransactionFn,
+      scope: 'liabilities post-mark-paid refresh',
+    })
+
     return result
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -472,7 +490,7 @@ export async function updateLiabilityMutation(id, updates) {
       metadata: updates,
     })
 
-    await invalidateLiabilityCache()
+    refreshLiabilityCachesInBackground(invalidateLiabilityCache, 'liabilities post-update refresh')
     return updated
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -505,7 +523,7 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
       },
     })
 
-    await invalidateLiabilityFn()
+    refreshLiabilityCachesInBackground(invalidateLiabilityFn, 'liabilities post-delete refresh')
     return true
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)

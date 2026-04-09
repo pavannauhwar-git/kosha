@@ -62,8 +62,11 @@ export function dateLabel(dateStr) {
 
 export function groupByDate(transactions) {
   const groups = {}
-  for (const t of transactions) {
-    const key = t.date
+  const rows = Array.isArray(transactions) ? transactions : []
+  for (const t of rows) {
+    if (!t || typeof t !== 'object') continue
+    const key = String(t.date || t.created_at || '').slice(0, 10)
+    if (!key) continue
     if (!groups[key]) groups[key] = []
     groups[key].push(t)
   }

@@ -218,8 +218,8 @@ function optimisticallyInsertLoan(loan) {
   if (!loan?.id) return
   const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
   const prev = queryClient.getQueryData(key)
-  if (!Array.isArray(prev)) return
-  const deduped = prev.filter((row) => row?.id !== loan.id)
+  const base = Array.isArray(prev) ? prev : []
+  const deduped = base.filter((row) => row?.id !== loan.id)
   queryClient.setQueryData(key, [{ ...loan, settled: false }, ...deduped])
 }
 
@@ -243,6 +243,26 @@ function getLoanFromCacheById(id) {
     }
   }
   return null
+}
+
+function refreshLoanCachesInBackground(invalidateLoanFn, scope) {
+  runInBackground(
+    invalidateLoanFn(),
+    scope
+  )
+}
+
+function refreshLoanAndTransactionCachesInBackground({ invalidateLoanFn, invalidateTransactionFn, scope }) {
+  runInBackground(
+    Promise.all([
+      evictSwCacheEntries('/transactions'),
+      invalidateLoanFn(),
+      invalidateTransactionFn(),
+      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+    ]),
+    scope
+  )
 }
 
 // ── Mutation wrappers with optimistic updates ─────────────────────────────
@@ -279,7 +299,7 @@ export async function addLoanMutation(payload) {
       },
     })
 
-    await invalidateLoanCache()
+    refreshLoanCachesInBackground(invalidateLoanCache, 'loans post-add refresh')
     return created
   } catch (error) {
     restoreLoanSnapshot(snapshot)
@@ -309,6 +329,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
     suppress('transactions')
     await queryClient.cancelQueries({ queryKey: ['loans'] })
     await queryClient.cancelQueries({ queryKey: ['transactions'] })
+    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
     const rpcRow = Array.isArray(result) ? result[0] : result
     const fullSettled = rpcRow?.fully_settled
@@ -368,13 +389,11 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
       metadata: { payment_amount: paymentAmount },
     })
 
-    await evictSwCacheEntries('/transactions')
-    await Promise.all([
-      invalidateLoanCache(),
-      invalidateTransactionCache(),
-      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'none' }),
-      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'none' }),
-    ])
+    refreshLoanAndTransactionCachesInBackground({
+      invalidateLoanFn: invalidateLoanCache,
+      invalidateTransactionFn: invalidateTransactionCache,
+      scope: 'loans post-payment refresh',
+    })
 
     return result
   } catch (error) {
@@ -421,7 +440,7 @@ export async function updateLoanMutation(id, updates) {
       metadata: updates,
     })
 
-    await invalidateLoanCache()
+    refreshLoanCachesInBackground(invalidateLoanCache, 'loans post-update refresh')
     return updated
   } catch (error) {
     restoreLoanSnapshot(snapshot)
@@ -451,7 +470,7 @@ export async function deleteLoanMutation(id) {
       },
     })
 
-    await invalidateLoanCache()
+    refreshLoanCachesInBackground(invalidateLoanCache, 'loans post-delete refresh')
     return true
   } catch (error) {
     restoreLoanSnapshot(snapshot)

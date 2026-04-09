@@ -761,12 +761,14 @@ export default function Dashboard() {
 
   // ── Stable callbacks — useCallback deps are all stable primitives ──────
   const handleDelete = useCallback(async (id) => {
-    if (!id) return
+    if (!id) return false
     try {
       await removeTransactionMutation(id)
+      return true
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)
+      throw e
     }
   }, [])
 

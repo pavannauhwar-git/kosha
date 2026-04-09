@@ -88,7 +88,12 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     }
 
     try {
-      await onDelete(txn.id)
+      const didDelete = await onDelete(txn.id)
+      if (didDelete === false) {
+        setDeleting(false)
+        setHidden(false)
+        return
+      }
     } catch {
       // Keep UI responsive even if delete fails.
       setDeleting(false)

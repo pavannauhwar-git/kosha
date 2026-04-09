@@ -726,13 +726,31 @@ function applyTxnLimit(rows, limit) {
   return rows.slice(0, safeLimit)
 }
 
+function defaultTxnListFilters() {
+  return {
+    type: undefined,
+    category: undefined,
+    search: undefined,
+    limit: 50,
+    startDate: undefined,
+    endDate: undefined,
+    columns: TRANSACTION_LIST_COLUMNS,
+  }
+}
+
 function upsertRecentTransactionCaches(txn) {
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
+
+  if (recentEntries.length === 0) {
+    queryClient.setQueryData(['transactionsRecent', 5], applyTxnLimit([txn], 5))
+    return
+  }
+
   for (const [key, rows] of recentEntries) {
-    if (!Array.isArray(rows)) continue
+    const base = Array.isArray(rows) ? rows : []
     const limit = Number(key?.[1]) || 5
     const next = applyTxnLimit(
-      [...rows.filter((row) => row?.id !== txn.id), txn].sort(compareTxnDesc),
+      [...base.filter((row) => row?.id !== txn.id), txn].sort(compareTxnDesc),
       limit
     )
     queryClient.setQueryData(key, next)
@@ -786,11 +804,20 @@ export function optimisticallyUpsertTransactionInCache(txn) {
   if (!txn?.id) return
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+
+  if (listEntries.length === 0) {
+    const filters = defaultTxnListFilters()
+    const seededRows = matchesTransactionFilters(txn, filters)
+      ? applyTxnLimit([txn], filters.limit)
+      : []
+    queryClient.setQueryData(txnListKey(filters), seededRows)
+  }
+
   for (const [key, rows] of listEntries) {
-    if (!Array.isArray(rows)) continue
+    const baseRows = Array.isArray(rows) ? rows : []
     const filters = key?.[1] || {}
 
-    const base = rows.filter((row) => row?.id !== txn.id)
+    const base = baseRows.filter((row) => row?.id !== txn.id)
     const next = matchesTransactionFilters(txn, filters)
       ? applyTxnLimit([...base, txn].sort(compareTxnDesc), filters.limit)
       : base
@@ -806,14 +833,14 @@ export function optimisticallyDeleteTransactionFromCache(id) {
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
   for (const [key, rows] of listEntries) {
-    if (!Array.isArray(rows)) continue
-    queryClient.setQueryData(key, rows.filter((row) => row?.id !== id))
+    const baseRows = Array.isArray(rows) ? rows : []
+    queryClient.setQueryData(key, baseRows.filter((row) => row?.id !== id))
   }
 
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
   for (const [key, rows] of recentEntries) {
-    if (!Array.isArray(rows)) continue
-    queryClient.setQueryData(key, rows.filter((row) => row?.id !== id))
+    const baseRows = Array.isArray(rows) ? rows : []
+    queryClient.setQueryData(key, baseRows.filter((row) => row?.id !== id))
   }
 }
 

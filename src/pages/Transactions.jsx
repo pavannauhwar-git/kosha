@@ -204,12 +204,14 @@ export default function Transactions() {
   }, [focusTxnId, data, hasMore, searchParams, setSearchParams])
 
   const handleDelete = useCallback(async (id) => {
-    if (!id) return
+    if (!id) return false
     try {
       await removeTransactionMutation(id)
+      return true
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
       setTimeout(() => setToast(null), 4000)
+      throw e
     }
   }, [])
 
