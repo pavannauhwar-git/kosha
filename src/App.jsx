@@ -807,7 +807,7 @@ function DashboardWarmPrefetch() {
 function AnimatedRoutes() {
   const location = useLocation()
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       <motion.div key={location.pathname} {...PAGE_TRANSITION}>
         <Routes location={location}>
           <Route path="/login" element={<Login />} />
