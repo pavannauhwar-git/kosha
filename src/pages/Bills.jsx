@@ -523,7 +523,7 @@ export default function Bills() {
                             {payingId === bill.id ? 'Paying…' : 'Paid'}
                           </button>
                         </>
-                      )}}
+                      )}
                       <button
                         onClick={() => handleDelete(bill.id)}
                         disabled={!!payingId || !!deletingId || !!bill.__optimistic}

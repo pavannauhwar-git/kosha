@@ -765,12 +765,20 @@ function restoreCacheSnapshot(snapshot) {
 }
 
 function getTransactionFromCacheById(id) {
-  const entries = queryClient.getQueriesData({ queryKey: ['transactions'] })
-  for (const [, rows] of entries) {
-    if (!Array.isArray(rows)) continue
-    const found = rows.find((row) => row?.id === id)
-    if (found) return found
+  const families = [
+    ['transactions'],
+    ['transactionsRecent'],
+  ]
+
+  for (const family of families) {
+    const entries = queryClient.getQueriesData({ queryKey: family })
+    for (const [, rows] of entries) {
+      if (!Array.isArray(rows)) continue
+      const found = rows.find((row) => row?.id === id)
+      if (found) return found
+    }
   }
+
   return null
 }
 
@@ -836,6 +844,62 @@ export async function deleteTransaction(id) {
   return true;
 }
 
+function applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowIso }) {
+  if (id) {
+    const optimisticBase = existingTxn || {
+      id,
+      created_at: nowIso,
+      date: payload?.date || nowIso.slice(0, 10),
+    }
+    optimisticallyUpsertTransactionInCache({
+      ...optimisticBase,
+      ...payload,
+      id,
+      __optimistic: true,
+    })
+    return
+  }
+
+  optimisticallyUpsertTransactionInCache({
+    ...payload,
+    id: optimisticId,
+    created_at: nowIso,
+    date: payload?.date || nowIso.slice(0, 10),
+    __optimistic: true,
+  })
+}
+
+function updateTodayExpenseCache({ id, payload, existingTxn }) {
+  const todayISO = new Date().toISOString().slice(0, 10)
+  const affectsTodayAfter = payload?.type === 'expense' && payload?.date === todayISO
+  const affectsTodayBefore = existingTxn?.type === 'expense' && existingTxn?.date === todayISO
+
+  if (!affectsTodayAfter && !affectsTodayBefore) return
+
+  const todayEntries = queryClient.getQueriesData({ queryKey: ['todayExpenses'] })
+  for (const [key, currentTotal] of todayEntries) {
+    if (typeof currentTotal !== 'number') continue
+    if (id) {
+      const oldAmt = affectsTodayBefore ? Number(existingTxn?.amount || 0) : 0
+      const newAmt = affectsTodayAfter ? Number(payload?.amount || 0) : 0
+      queryClient.setQueryData(key, currentTotal - oldAmt + newAmt)
+    } else {
+      queryClient.setQueryData(key, currentTotal + Number(payload?.amount || 0))
+    }
+  }
+}
+
+function refreshTransactionCachesInBackground(invalidateFn, scope) {
+  runInBackground(
+    Promise.all([
+      invalidateFn(),
+      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+    ]),
+    scope
+  )
+}
+
 export async function saveTransactionMutation({ id, payload, __testOverrides = null }) {
   const snapshot = snapshotCacheFamilies([
     ['transactions'],
@@ -847,41 +911,10 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
 
   const nowIso = new Date().toISOString()
   const optimisticId = id || `optimistic-txn-${Date.now()}`
+  const existingTxn = id ? getTransactionFromCacheById(id) : null
 
-  if (id) {
-    const existing = getTransactionFromCacheById(id)
-    if (existing) {
-      optimisticallyUpsertTransactionInCache({
-        ...existing,
-        ...payload,
-        id,
-        __optimistic: true,
-      })
-    }
-  } else {
-    optimisticallyUpsertTransactionInCache({
-      ...payload,
-      id: optimisticId,
-      created_at: nowIso,
-      date: payload?.date || nowIso.slice(0, 10),
-      __optimistic: true,
-    })
-  }
-
-  const todayISO = new Date().toISOString().slice(0, 10)
-  if (payload?.type === 'expense' && payload?.date === todayISO) {
-    const todayEntries = queryClient.getQueriesData({ queryKey: ['todayExpenses'] })
-    for (const [key, currentTotal] of todayEntries) {
-      if (typeof currentTotal !== 'number') continue
-      if (id) {
-        const existing = getTransactionFromCacheById(id)
-        const oldAmt = (existing?.type === 'expense' && existing?.date === todayISO) ? Number(existing.amount || 0) : 0
-        queryClient.setQueryData(key, currentTotal - oldAmt + Number(payload.amount || 0))
-      } else {
-        queryClient.setQueryData(key, currentTotal + Number(payload.amount || 0))
-      }
-    }
-  }
+  applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowIso })
+  updateTodayExpenseCache({ id, payload, existingTxn })
 
   try {
     const updateFn = __testOverrides?.updateTransaction || updateTransaction
@@ -914,7 +947,8 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
       },
     })
 
-    await invalidateFn()
+    refreshTransactionCachesInBackground(invalidateFn, 'transactions post-mutation refresh')
+
     return savedTxn
   } catch (error) {
     restoreCacheSnapshot(snapshot)
@@ -956,7 +990,8 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
       },
     })
 
-    await invalidateFn()
+    refreshTransactionCachesInBackground(invalidateFn, 'transactions post-delete refresh')
+
     return true
   } catch (error) {
     restoreCacheSnapshot(snapshot)
