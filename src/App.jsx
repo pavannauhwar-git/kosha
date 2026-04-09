@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
@@ -65,12 +65,6 @@ function SuspenseSkeleton({ pathname, children }) {
       {children}
     </Suspense>
   )
-}
-
-const PAGE_TRANSITION = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } },
-  exit: { opacity: 0, y: -4, transition: { duration: 0.15, ease: [0.22, 1, 0.36, 1] } },
 }
 
 const NAV = [
@@ -807,29 +801,27 @@ function DashboardWarmPrefetch() {
 function AnimatedRoutes() {
   const location = useLocation()
   return (
-    <AnimatePresence>
-      <motion.div key={location.pathname} {...PAGE_TRANSITION}>
-        <Routes location={location}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/join/:token" element={<Login />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/not-found" element={<SuspenseSkeleton pathname="/not-found"><NotFound /></SuspenseSkeleton>} />
-          <Route path="/onboarding" element={<SuspenseSkeleton pathname="/onboarding"><AuthGuard><Onboarding /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/" element={<SuspenseSkeleton pathname="/"><AuthGuard><Dashboard /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/transactions" element={<SuspenseSkeleton pathname="/transactions"><AuthGuard><Transactions /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/monthly" element={<SuspenseSkeleton pathname="/monthly"><AuthGuard><Monthly /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/analytics" element={<SuspenseSkeleton pathname="/analytics"><AuthGuard><Analytics /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/bills" element={<SuspenseSkeleton pathname="/bills"><AuthGuard><Bills /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/loans" element={<SuspenseSkeleton pathname="/loans"><AuthGuard><Loans /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/reconciliation" element={<SuspenseSkeleton pathname="/reconciliation"><AuthGuard><Reconciliation /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/guide" element={<SuspenseSkeleton pathname="/guide"><AuthGuard><Guide /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/settings" element={<SuspenseSkeleton pathname="/settings"><AuthGuard><Settings /></AuthGuard></SuspenseSkeleton>} />
-          <Route path="/about" element={<SuspenseSkeleton pathname="/about"><About /></SuspenseSkeleton>} />
-          <Route path="/report-bug" element={<SuspenseSkeleton pathname="/report-bug"><ReportBug /></SuspenseSkeleton>} />
-          <Route path="*" element={<Navigate to="/not-found" replace />} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+    <div key={location.pathname} className="min-h-dvh">
+      <Routes location={location}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/join/:token" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/not-found" element={<SuspenseSkeleton pathname="/not-found"><NotFound /></SuspenseSkeleton>} />
+        <Route path="/onboarding" element={<SuspenseSkeleton pathname="/onboarding"><AuthGuard><Onboarding /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/" element={<SuspenseSkeleton pathname="/"><AuthGuard><Dashboard /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/transactions" element={<SuspenseSkeleton pathname="/transactions"><AuthGuard><Transactions /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/monthly" element={<SuspenseSkeleton pathname="/monthly"><AuthGuard><Monthly /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/analytics" element={<SuspenseSkeleton pathname="/analytics"><AuthGuard><Analytics /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/bills" element={<SuspenseSkeleton pathname="/bills"><AuthGuard><Bills /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/loans" element={<SuspenseSkeleton pathname="/loans"><AuthGuard><Loans /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/reconciliation" element={<SuspenseSkeleton pathname="/reconciliation"><AuthGuard><Reconciliation /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/guide" element={<SuspenseSkeleton pathname="/guide"><AuthGuard><Guide /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/settings" element={<SuspenseSkeleton pathname="/settings"><AuthGuard><Settings /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/about" element={<SuspenseSkeleton pathname="/about"><About /></SuspenseSkeleton>} />
+        <Route path="/report-bug" element={<SuspenseSkeleton pathname="/report-bug"><ReportBug /></SuspenseSkeleton>} />
+        <Route path="*" element={<Navigate to="/not-found" replace />} />
+      </Routes>
+    </div>
   )
 }
 
