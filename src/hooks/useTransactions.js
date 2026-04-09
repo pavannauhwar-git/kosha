@@ -281,6 +281,7 @@ export function useRecentTransactions(limit = 5) {
       return rows || []
     }),
     gcTime: 5 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 
   return { data: data || [], loading: isLoading, fetching: isFetching, error }
@@ -918,17 +919,23 @@ function updateTodayExpenseCache({ id, payload, existingTxn }) {
 }
 
 function refreshTransactionCachesInBackground(invalidateFn, scope) {
-  runInBackground(
-    (async () => {
-      await evictSwCacheEntries('/transactions')
-      await Promise.all([
-        invalidateFn(),
-        queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
-      ])
-    })(),
-    scope
-  )
+  // Defer past the AnimatePresence exit-animation window (~150ms + buffer).
+  // Firing refetches immediately can cause state updates on the exiting
+  // page, which interferes with the entering page's render/animation
+  // and produces a blank screen on tab switch.
+  setTimeout(() => {
+    runInBackground(
+      (async () => {
+        await evictSwCacheEntries('/transactions')
+        await Promise.all([
+          invalidateFn(),
+          queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+        ])
+      })(),
+      scope
+    )
+  }, 350)
 }
 
 export async function saveTransactionMutation({ id, payload, __testOverrides = null }) {
