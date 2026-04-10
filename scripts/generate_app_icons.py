@@ -11,6 +11,9 @@ ACCENT = (255, 255, 153)
 
 SIZES = [180, 192, 512]
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), '..', 'public', 'icons')
+FAVICON_PATH = os.path.join(os.path.dirname(__file__), '..', 'public', 'favicon.ico')
+FAVICON_BASE_SIZE = 256
+FAVICON_SIZES = [(16, 16), (32, 32), (48, 48), (64, 64)]
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
@@ -26,8 +29,8 @@ def draw_slash_dot_logo(draw, canvas_size):
         (72.0, -26.0),
         (24.0, -50.0),
     ]
-    # Move dot lower and closer to slash.
-    dot_c_base = (84.0, 108.0)
+    # Final tweak: keep size/height, move dot closer to slash.
+    dot_c_base = (78.0, 108.0)
     dot_r_base = 46.0
 
     all_x = [p[0] for p in slash_base] + [dot_c_base[0] - dot_r_base, dot_c_base[0] + dot_r_base]
@@ -53,8 +56,8 @@ def draw_slash_dot_logo(draw, canvas_size):
     )
 
 
-def generate_icon(size):
-    """Generate a single icon at the given size."""
+def generate_icon_image(size):
+    """Generate icon image data for the given size."""
     # Use 4x supersampling for crisp text
     scale = 4
     canvas_size = size * scale
@@ -74,14 +77,28 @@ def generate_icon(size):
 
     # Downsample with high-quality anti-aliasing
     img = img.resize((size, size), Image.LANCZOS)
+    return img
+
+
+def generate_icon(size):
+    """Generate a single icon at the given size."""
+    img = generate_icon_image(size)
 
     output_path = os.path.join(OUTPUT_DIR, f'icon-{size}.png')
     img.save(output_path, 'PNG', optimize=True)
     print(f'  Generated {output_path} ({size}x{size})')
 
 
+def generate_favicon():
+    """Generate favicon.ico with common browser sizes."""
+    img = generate_icon_image(FAVICON_BASE_SIZE)
+    img.save(FAVICON_PATH, 'ICO', sizes=FAVICON_SIZES)
+    print(f'  Generated {FAVICON_PATH} (ICO: {", ".join(f"{w}x{h}" for w, h in FAVICON_SIZES)})')
+
+
 if __name__ == '__main__':
     print('Generating Kosha app icons...')
     for s in SIZES:
         generate_icon(s)
+    generate_favicon()
     print('Done.')

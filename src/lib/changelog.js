@@ -1,5 +1,14 @@
 export const CHANGELOG = [
   {
+    version: '1.2.1',
+    date: 'April 2026',
+    items: [
+      'Finalized app icon mark by moving the accent dot closer to the slash while preserving the latest size and vertical alignment',
+      'Regenerated production icon assets at 180/192/512 to keep launcher and install surfaces consistent',
+      'Added favicon.ico generation to the icon pipeline so browser tab favicon stays in sync with the app icon',
+    ],
+  },
+  {
     version: '1.2.0',
     date: 'April 2026',
     items: [
