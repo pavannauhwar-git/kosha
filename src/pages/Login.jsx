@@ -6,6 +6,8 @@ import AboutKoshaLink from '../components/brand/AboutKoshaLink'
 import KoshaLogo from '../components/brand/KoshaLogo'
 import { C } from '../lib/colors'
 import { createFadeUp } from '../lib/animations'
+import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
 
 const fadeUp = createFadeUp(10, 0.22)
 
@@ -212,18 +214,18 @@ export default function Login() {
 
               {/* ── Google ────────────────────────────────────────────────── */}
               {(mode === 'signin' || mode === 'signup') && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
                   onClick={handleGoogle}
                   disabled={googleLoading || loading}
-                  className="w-full flex items-center justify-center gap-3 py-3.5
-                       rounded-card border border-kosha-border bg-kosha-surface
-                       text-label font-semibold text-ink
-                       active:scale-[0.97] transition-all duration-75
-                       disabled:opacity-60 mb-4 shadow-card"
+                  loading={googleLoading}
+                  icon={!googleLoading ? <GoogleLogo /> : undefined}
+                  className="mb-4 rounded-card h-11"
                 >
-                  <GoogleLogo />
                   {googleLoading ? 'Redirecting…' : 'Continue with Google'}
-                </button>
+                </Button>
               )}
 
               {/* ── Divider ───────────────────────────────────────────────── */}
@@ -238,60 +240,56 @@ export default function Login() {
               {/* ── Email / password form ─────────────────────────────────── */}
               <form onSubmit={handleSubmit} className="space-y-3">
                 {mode !== 'reset' && (
-                  <div>
-                    <label className="block text-caption font-semibold text-ink-3 mb-1.5">
-                      Email address
-                    </label>
-                    <input
-                      className="input"
-                      type="email"
-                      name="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      autoComplete="email"
-                      disabled={loading || isRedirectingAfterReset}
-                    />
-                  </div>
-                )}
-
-                {mode !== 'forgot' && (
-                  <div>
-                    <label className="block text-caption font-semibold text-ink-3 mb-1.5">
-                      {mode === 'reset' ? 'New password' : 'Password'}
-                      {(mode === 'signup' || mode === 'reset') && (
-                        <span className="font-normal text-ink-4 ml-1">· min 8 characters</span>
-                      )}
-                    </label>
-                    <input
-                      className="input"
-                      type="password"
-                      name="password"
-                      placeholder={mode === 'signin' ? '••••••••' : 'At least 8 characters'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                      disabled={loading || isRedirectingAfterReset}
-                    />
-                  </div>
+                  <Input
+                    label="Email address"
+                    name="username"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    autoComplete="username"
+                    disabled={loading || isRedirectingAfterReset}
+                  />
                 )}
 
                 {mode === 'reset' && (
-                  <div>
-                    <label className="block text-caption font-semibold text-ink-3 mb-1.5">
-                      Confirm new password
-                    </label>
-                    <input
-                      className="input"
-                      type="password"
-                      name="confirm-password"
-                      placeholder="Re-enter your password"
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      autoComplete="new-password"
-                      disabled={loading || isRedirectingAfterReset}
-                    />
-                  </div>
+                  <input
+                    type="email"
+                    name="username"
+                    autoComplete="username"
+                    value={user?.email || email}
+                    readOnly
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="sr-only"
+                  />
+                )}
+
+                {mode !== 'forgot' && (
+                  <Input
+                    label={mode === 'reset' ? 'New password' : 'Password'}
+                    helperText={(mode === 'signup' || mode === 'reset') ? 'Min 8 characters' : undefined}
+                    name={mode === 'signin' ? 'password' : 'new-password'}
+                    type="password"
+                    placeholder={mode === 'signin' ? '••••••••' : 'At least 8 characters'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                    disabled={loading || isRedirectingAfterReset}
+                  />
+                )}
+
+                {mode === 'reset' && (
+                  <Input
+                    label="Confirm new password"
+                    name="confirm-new-password"
+                    type="password"
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
+                    disabled={loading || isRedirectingAfterReset}
+                  />
                 )}
 
                 {mode === 'signin' && (
@@ -358,13 +356,14 @@ export default function Login() {
                 </AnimatePresence>
 
                 {/* ── Submit ────────────────────────────────────────────── */}
-                <button
+                <Button
                   type="submit"
-                  disabled={loading || googleLoading || isRedirectingAfterReset}
-                  className="w-full py-4 rounded-card bg-brand text-white
-                         text-body font-semibold mt-1
-                         active:scale-[0.97] transition-all duration-75
-                         disabled:opacity-60"
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  disabled={googleLoading || isRedirectingAfterReset}
+                  loading={loading}
+                  className="mt-1 rounded-card h-12 shadow-card-md"
                 >
                   {loading
                     ? (mode === 'signin'
@@ -381,7 +380,7 @@ export default function Login() {
                         : mode === 'forgot'
                           ? 'Send reset link'
                           : 'Update password')}
-                </button>
+                </Button>
               </form>
 
               {/* ── Toggle mode ───────────────────────────────────────────── */}

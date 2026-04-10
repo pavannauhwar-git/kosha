@@ -4,7 +4,7 @@ import { Bug, Check, Copy, Home, LogIn } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import PageBackHeader from '../components/layout/PageBackHeader'
+import BackHeaderPage from '../components/layout/BackHeaderPage'
 import {
   buildFingerprint,
   parseTags,
@@ -12,6 +12,9 @@ import {
   fileSizeLabel,
   compressImage,
 } from '../lib/bugReportUtils'
+import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
+import AppToast from '../components/common/AppToast'
 
 const SEVERITIES = [
   { id: 'low', label: 'Low' },
@@ -42,6 +45,7 @@ export default function ReportBug() {
   const [includeDiagnostics, setIncludeDiagnostics] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [infoToast, setInfoToast] = useState('')
   const [submitted, setSubmitted] = useState(null)
   const [copiedRef, setCopiedRef] = useState(false)
   const [contextRoute, setContextRoute] = useState(initialReportedRoute)
@@ -178,7 +182,25 @@ export default function ReportBug() {
 
     setSaving(true)
     try {
-      const screenshotPath = await uploadScreenshot()
+      let screenshotPath = null
+      if (screenshot) {
+        try {
+          screenshotPath = await Promise.race([
+            uploadScreenshot(),
+            new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('SCREENSHOT_TIMEOUT')), 10_000)
+            }),
+          ])
+        } catch (uploadError) {
+          const timeout = String(uploadError?.message || '').includes('SCREENSHOT_TIMEOUT')
+          setInfoToast(
+            timeout
+              ? 'Screenshot upload timed out. Report submitted without image.'
+              : 'Could not upload screenshot. Report submitted without image.'
+          )
+          screenshotPath = null
+        }
+      }
 
       const { data, error: submitError } = await supabase
         .rpc('submit_bug_report', {
@@ -225,28 +247,25 @@ export default function ReportBug() {
   }
 
   return (
-    <div
-      className="min-h-dvh bg-kosha-bg"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}
+    <BackHeaderPage
+      title="Report Bug"
+      onBack={handleBack}
+      rightSlot={(
+        <button
+          type="button"
+          onClick={goDashboard}
+          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
+          aria-label="Go to dashboard"
+        >
+          <Home size={16} className="text-ink-2" />
+        </button>
+      )}
+      rootStyle={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}
+      contentClassName="mx-auto max-w-[560px]"
     >
-      <PageBackHeader
-        title="Report Bug"
-        onBack={handleBack}
-        rightSlot={(
-          <button
-            type="button"
-            onClick={goDashboard}
-            className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
-            aria-label="Go to dashboard"
-          >
-            <Home size={16} className="text-ink-3" />
-          </button>
-        )}
-      />
 
       {/* ── Content — constrained ──────────────────────────────────── */}
-      <div className="mx-auto max-w-[560px]">
-        <div className="px-4 pt-4 pb-36 space-y-4">
+      <div className="px-4 pt-4 pb-36 space-y-4">
           {submitted ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -265,35 +284,41 @@ export default function ReportBug() {
                   : 'Thank you for reporting this. We will investigate it quickly.'}
               </p>
 
-              <div className="mt-4 card-inset p-3 border border-kosha-border">
+              <div className="mt-4 mini-panel p-3">
                 <p className="text-caption text-ink-3">Reference</p>
                 <div className="mt-1.5 flex items-center justify-between gap-2">
                   <p className="font-mono text-[13px] text-ink">#{submitted.id}</p>
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Copy size={13} />}
                     onClick={handleCopyReference}
-                    className="px-2.5 py-1 rounded-pill border border-kosha-border bg-white text-[11px] font-semibold text-ink"
+                    className="h-7 px-2.5"
                   >
                     {copiedRef ? 'Copied' : 'Copy ID'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
                   onClick={handleBack}
-                  className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-[14px] font-semibold text-ink"
+                  className="rounded-card h-11"
                 >
                   Done
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
                   onClick={goDashboard}
-                  className="py-3 rounded-card bg-brand text-white text-[14px] font-semibold"
+                  className="rounded-card h-11 shadow-card-md"
                 >
                   Go to dashboard
-                </button>
+                </Button>
               </div>
             </motion.div>
           ) : (
@@ -320,8 +345,8 @@ export default function ReportBug() {
               </div>
 
               <form id="report-bug-form" onSubmit={handleSubmit} className="space-y-3">
-                <input
-                  className="input"
+                <Input
+                  label="Title"
                   name="bug-title"
                   placeholder="Bug title"
                   value={title}
@@ -329,24 +354,32 @@ export default function ReportBug() {
                   onChange={e => setTitle(e.target.value)}
                 />
 
-                <textarea
-                  className="input min-h-[112px] resize-none"
-                  name="bug-description"
-                  placeholder="What happened?"
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                />
+                <div>
+                  <label htmlFor="bug-description" className="text-label font-medium text-ink-2">What happened</label>
+                  <textarea
+                    id="bug-description"
+                    className="input min-h-[112px] resize-none mt-1.5"
+                    name="bug-description"
+                    placeholder="What happened?"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                  />
+                </div>
 
-                <textarea
-                  className="input min-h-[86px] resize-none"
-                  name="bug-steps"
-                  placeholder="Steps to reproduce (optional)"
-                  value={steps}
-                  onChange={e => setSteps(e.target.value)}
-                />
+                <div>
+                  <label htmlFor="bug-steps" className="text-label font-medium text-ink-2">Steps to reproduce</label>
+                  <textarea
+                    id="bug-steps"
+                    className="input min-h-[86px] resize-none mt-1.5"
+                    name="bug-steps"
+                    placeholder="Steps to reproduce (optional)"
+                    value={steps}
+                    onChange={e => setSteps(e.target.value)}
+                  />
+                </div>
 
-                <input
-                  className="input"
+                <Input
+                  label="Contact email (optional)"
                   type="email"
                   name="bug-email"
                   placeholder="Contact email (optional)"
@@ -354,12 +387,13 @@ export default function ReportBug() {
                   onChange={e => setReporterEmail(e.target.value)}
                 />
 
-                <input
-                  className="input"
+                <Input
+                  label="Tags (optional)"
                   name="bug-tags"
                   placeholder="Tags (optional, comma-separated: ui, crash, chart)"
                   value={tagsInput}
                   onChange={e => setTagsInput(e.target.value)}
+                  helperText="Comma-separated tags help grouping and triage."
                 />
 
                 {parsedTags.length > 0 && (
@@ -367,7 +401,7 @@ export default function ReportBug() {
                     {parsedTags.map(tag => (
                       <span
                         key={tag}
-                        className="text-[11px] font-semibold text-ink bg-ink/[0.06] px-2 py-0.5 rounded-pill"
+                        className="text-[11px] font-semibold text-ink-2 bg-kosha-surface-2 border border-kosha-border px-2 py-0.5 rounded-pill"
                       >
                         {tag}
                       </span>
@@ -375,7 +409,7 @@ export default function ReportBug() {
                   </div>
                 )}
 
-                <div className="card-inset p-3 border border-kosha-border">
+                <div className="mini-panel p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-[13px] font-semibold text-ink">Screenshot (optional)</p>
@@ -387,7 +421,7 @@ export default function ReportBug() {
                         <p className="text-[11px] text-ink-3">Attach a screenshot to speed up triage.</p>
                       )}
                     </div>
-                    <label className="shrink-0 px-3 py-1.5 rounded-pill border border-kosha-border bg-kosha-surface text-label font-semibold text-ink cursor-pointer">
+                    <label className="shrink-0 px-3 py-1.5 mini-panel text-label font-semibold text-ink cursor-pointer hover:bg-kosha-surface-2 transition-colors">
                       {screenshot ? 'Replace' : 'Attach'}
                       <input
                         type="file"
@@ -419,7 +453,7 @@ export default function ReportBug() {
                         onClick={() => setSeverity(s.id)}
                         className={`px-3 py-1.5 rounded-pill text-label font-semibold border transition-colors
                           ${severity === s.id
-                            ? 'bg-ink text-white border-ink'
+                            ? 'bg-brand-container text-brand border-brand/20'
                             : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
                       >
                         {s.label}
@@ -431,26 +465,25 @@ export default function ReportBug() {
                 <button
                   type="button"
                   onClick={() => setIncludeDiagnostics(v => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-card border border-kosha-border bg-kosha-surface"
+                  className="w-full flex items-center justify-between px-3 py-2.5 mini-panel"
                 >
                   <span className="text-[14px] font-medium text-ink">Include diagnostics</span>
                   <span className={`text-caption font-semibold px-2 py-0.5 rounded-pill
                     ${includeDiagnostics
-                      ? 'bg-ink/[0.06] text-ink'
+                      ? 'bg-brand-container text-brand'
                       : 'bg-kosha-surface-2 text-ink-3'}`}>
                     {includeDiagnostics ? 'On' : 'Off'}
                   </span>
                 </button>
 
                 <p className="text-[11px] text-ink-3 -mt-1">
-                  Adds route, browser, device, and app version. No financial entries are attached.
+                  Includes route, browser, device type, timezone, and viewport size. No financial entries, location coordinates, or personal identity fields are attached.
                 </p>
 
                 {error && <p className="text-sm text-expense-text">{error}</p>}
               </form>
             </>
           )}
-        </div>
       </div>
 
       {/* ── Bottom action bar ──────────────────────────────────────── */}
@@ -460,39 +493,45 @@ export default function ReportBug() {
             className="mx-auto max-w-[560px] px-4 pt-3 grid grid-cols-2 gap-2"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
           >
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="lg"
+              fullWidth
               onClick={goDashboard}
-              className="py-3 rounded-card border border-kosha-border bg-kosha-surface text-[14px] font-semibold text-ink"
+              className="rounded-card h-11"
             >
               Go to dashboard
-            </button>
+            </Button>
 
             {user ? (
-              <button
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
                 type="submit"
                 form="report-bug-form"
-                disabled={saving}
-                className={`py-3 rounded-card text-[14px] font-semibold transition-all
-                  ${saving
-                    ? 'bg-brand/70 text-white/90 scale-[0.97]'
-                    : 'bg-brand text-white active:scale-[0.97]'}`}
+                loading={saving}
+                className="rounded-card h-11 shadow-card-md"
               >
                 {saving ? 'Submitting…' : 'Submit report'}
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                icon={<LogIn size={15} />}
                 onClick={() => navigate('/login', { state: { from: '/report-bug' } })}
-                className="inline-flex items-center justify-center gap-2 py-3 rounded-card bg-brand text-white text-[14px] font-semibold"
+                className="rounded-card h-11 shadow-card-md"
               >
-                <LogIn size={15} />
                 Sign in to report
-              </button>
+              </Button>
             )}
           </div>
         </div>
       )}
-    </div>
+
+      <AppToast message={infoToast} onDismiss={() => setInfoToast('')} />
+    </BackHeaderPage>
   )
 }

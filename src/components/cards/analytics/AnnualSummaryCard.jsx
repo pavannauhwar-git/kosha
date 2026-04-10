@@ -123,7 +123,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
           <p className="text-[11px] font-semibold text-ink">Flow structure</p>
           <p className="text-[10px] text-ink-3 tabular-nums">Income {fmt(totalIncome)}</p>
         </div>
-        <div className="h-2.5 rounded-pill overflow-hidden flex" style={{ background: 'rgba(26,26,46,0.06)' }}>
+        <div className="h-2.5 rounded-pill overflow-hidden flex" style={{ background: 'var(--ds-border)' }}>
           {flowMixRows.map((row) => (
             <motion.div
               key={row.key}

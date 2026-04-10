@@ -170,13 +170,13 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                                 <circle
                                   cx="18" cy="18" r="15"
                                   fill="none"
-                                  stroke="rgba(26,26,46,0.05)"
+                                  stroke="rgba(17,19,24,0.05)"
                                   strokeWidth="3"
                                 />
                                 <circle
                                   cx="18" cy="18" r="15"
                                   fill="none"
-                                  stroke={pct >= 100 ? '#C4384A' : pct >= 80 ? '#8B7230' : '#1A1A2E'}
+                                  stroke={pct >= 100 ? '#E8453C' : pct >= 80 ? '#F9A825' : '#007FFF'}
                                   strokeWidth="3"
                                   strokeLinecap="round"
                                   strokeDasharray={`${Math.min(100, pct) * 0.9425} 94.25`}

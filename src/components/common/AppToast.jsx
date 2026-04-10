@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 
-export default function AppToast({ message, onDismiss }) {
+export default function AppToast({ message, onDismiss, action, actionLabel }) {
   return (
     <AnimatePresence>
       {message && (
@@ -9,9 +9,18 @@ export default function AppToast({ message, onDismiss }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 md:left-[236px] md:bottom-8 z-50 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
+          className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 z-50 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg max-w-[398px] mx-auto"
         >
           <span className="text-[13px] font-medium flex-1">{message}</span>
+          {action && (
+            <button
+              type="button"
+              onClick={action}
+              className="text-accent font-semibold text-xs shrink-0 px-2.5 py-1 rounded-pill bg-white/15 active:bg-white/25"
+            >
+              {actionLabel || 'Undo'}
+            </button>
+          )}
           <button
             type="button"
             onClick={onDismiss}

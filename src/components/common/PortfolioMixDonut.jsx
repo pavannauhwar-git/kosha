@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 function buildConicGradient(rows) {
   const safeRows = (Array.isArray(rows) ? rows : []).filter((row) => Number(row?.value || 0) > 0)
-  if (!safeRows.length) return 'conic-gradient(rgba(26,26,46,0.05) 0% 100%)'
+  if (!safeRows.length) return 'conic-gradient(rgba(17,19,24,0.05) 0% 100%)'
 
   const total = safeRows.reduce((sum, row) => sum + Number(row.value || 0), 0) || 1
   let cursor = 0
@@ -16,7 +16,7 @@ function buildConicGradient(rows) {
   })
 
   if (cursor < 100) {
-    segments.push(`rgba(26,26,46,0.05) ${cursor.toFixed(2)}% 100%`)
+    segments.push(`rgba(17,19,24,0.05) ${cursor.toFixed(2)}% 100%`)
   }
 
   return `conic-gradient(${segments.join(', ')})`

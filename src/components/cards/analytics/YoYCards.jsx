@@ -206,10 +206,10 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
   const trendRows = points.map((row) => ({
     ...row,
     barColor: row.year === currentYear
-      ? '#1A1A2E'
+      ? '#007FFF'
       : row.year === compareYear
-        ? '#8B7230'
-        : 'rgba(26,26,46,0.22)',
+        ? '#F9A825'
+        : 'rgba(0,127,255,0.22)',
   }))
 
   return (
@@ -254,23 +254,23 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
         <p className="text-[10px] text-ink-3 mb-1.5">Metric comparison: {currentYear} vs {compareYear}</p>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={comparisonChartRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
               dataKey="metric"
-              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+              tick={{ fontSize: 10, fill: 'var(--ds-text-3)', fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               tickFormatter={tickCompact}
-              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
+              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}
             />
             <Tooltip content={<MetricTooltip />} />
-            <Bar dataKey="compare" name={String(compareYear)} fill="#8B7230" radius={[6, 6, 0, 0]} maxBarSize={20} />
-            <Bar dataKey="current" name={String(currentYear)} fill="#1A1A2E" radius={[6, 6, 0, 0]} maxBarSize={20} />
+            <Bar dataKey="compare" name={String(compareYear)} fill="#F9A825" radius={[6, 6, 0, 0]} maxBarSize={20} />
+            <Bar dataKey="current" name={String(currentYear)} fill="#007FFF" radius={[6, 6, 0, 0]} maxBarSize={20} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -279,16 +279,16 @@ export default function YoYCards({ years, currentYear, enabled = true }) {
         <p className="text-[10px] text-ink-3 mb-1.5">Net trend by year</p>
         <ResponsiveContainer width="100%" height={168}>
           <BarChart data={trendRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
               dataKey="year"
-              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+              tick={{ fontSize: 10, fill: 'var(--ds-text-3)', fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               tickFormatter={tickCompact}
-              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
+              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}

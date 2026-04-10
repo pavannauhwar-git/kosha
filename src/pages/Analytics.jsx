@@ -4,39 +4,23 @@ import { motion } from 'framer-motion'
 import {
   CashFlowChart,
   CashflowWaterfallChart,
-  MonthlyCompositionAreaChart,
   SurplusTrajectoryChart,
   WhatIfSimulatorCard,
   RunwayCoverageChart,
 } from '../components/analytics/AnalyticsCharts'
 import { useYearSummary, useYearDailyExpenseTotals } from '../hooks/useTransactions'
 import { fmt } from '../lib/utils'
-import PageHeader from '../components/layout/PageHeader'
+import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
+import PageHeaderPage from '../components/layout/PageHeaderPage'
 import { MONTH_SHORT } from '../lib/constants'
 import { useNavigate } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
-import AnnualSummaryCard from '../components/cards/analytics/AnnualSummaryCard'
 import YoYCards from '../components/cards/analytics/YoYCards'
-import YearlyInsightsCard from '../components/cards/analytics/YearlyInsightsCard'
 import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
 import InvestmentConsistencyCard from '../components/cards/analytics/InvestmentConsistencyCard'
-import SavingsRateTrend from '../components/analytics/SavingsRateTrend'
-import FinancialHealthRadar from '../components/cards/analytics/FinancialHealthRadar'
 import CalendarHeatmap from '../components/cards/analytics/CalendarHeatmap'
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ReferenceLine,
-} from 'recharts'
-import { C } from '../lib/colors'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
@@ -46,41 +30,10 @@ function toFiniteNumber(value) {
   return Number.isFinite(n) ? n : 0
 }
 
-function compactTick(value) {
-  const n = Number(value || 0)
-  const abs = Math.abs(n)
-  if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
-  if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
-  return `${Math.round(n)}`
+function clampNumber(value, min, max) {
+  if (!Number.isFinite(value)) return min
+  return Math.min(max, Math.max(min, value))
 }
-
-function shortLabel(label, maxLength = 12) {
-  const txt = String(label || '')
-  if (txt.length <= maxLength) return txt
-  return `${txt.slice(0, maxLength)}...`
-}
-
-function ParetoTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card bg-kosha-surface-2 p-3 shadow-card min-w-[186px]">
-      <p className="text-[11px] font-semibold text-ink mb-1">{row?.label || 'Category'}</p>
-      <div className="space-y-0.5 text-[11px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Annual spend</span>
-          <span className="font-semibold tabular-nums text-ink">{fmt(Number(row?.amount || 0))}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Cumulative share</span>
-          <span className="font-semibold tabular-nums text-warning-text">{Math.round(Number(row?.cumulativePct || 0))}%</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
@@ -97,7 +50,6 @@ export default function Analytics() {
   }, [])
 
   const { data, loading } = useYearSummary(year)
-  const { data: prevData } = useYearSummary(year - 1, { enabled: heavyReady })
   const { data: yearDailyTotals, loading: yearDailyLoading } = useYearDailyExpenseTotals(year, { enabled: heavyReady })
 
   const flowTrendData = useMemo(() => (data?.monthly || [])
@@ -128,9 +80,6 @@ export default function Analytics() {
   const categoryLabelById = useMemo(() => {
     return new Map(CATEGORIES.map((category) => [category.id, category.label]))
   }, [])
-  const catEntries = useMemo(() => allCatEntries.slice(0, 8), [allCatEntries])
-  const categoryTotal = useMemo(() => allCatEntries.reduce((s, [, v]) => s + v, 0) || 1, [allCatEntries])
-
   const scenarioCategories = useMemo(() => allCatEntries.map(([id, value]) => ({
     id,
     label: categoryLabelById.get(id) || id,
@@ -154,109 +103,98 @@ export default function Analytics() {
     [data?.byVehicle]
   )
 
-  const strategicRecommendations = useMemo(() => {
-    const items = []
-    const totalIncome = Number(data?.totalIncome || 0)
-    const totalExpense = Number(data?.totalExpense || 0)
-    const totalInvestment = Number(data?.totalInvestment || 0)
-    const annualNet = totalIncome - totalExpense - totalInvestment
+  const yearSummaryCard = useMemo(() => {
+    const income = toFiniteNumber(data?.totalIncome)
+    const expense = toFiniteNumber(data?.totalExpense)
+    const investment = toFiniteNumber(data?.totalInvestment)
+    const outflow = expense + investment
+    const net = income - outflow
+    const savingsRate = income > 0 ? Math.round((net / income) * 100) : 0
 
-    if (totalIncome > 0) {
-      const netPct = Math.round((annualNet / totalIncome) * 100)
-      const deployPct = Math.round((totalInvestment / totalIncome) * 100)
+    const monthlyRows = (data?.monthly || [])
+      .map((row) => ({
+        income: toFiniteNumber(row?.income),
+        expense: toFiniteNumber(row?.expense),
+        investment: toFiniteNumber(row?.investment),
+      }))
+      .filter((row) => row.income > 0 || row.expense > 0 || row.investment > 0)
 
-      items.push(
-        `Annual ${annualNet >= 0 ? 'surplus' : 'deficit'} is ${annualNet >= 0 ? '+' : '-'}${fmt(Math.abs(annualNet))} (${netPct}% of income).`
-      )
-
-      items.push(
-        `Investments total ${fmt(totalInvestment)} this year at a ${deployPct}% deployment rate.`
-      )
-    }
-
-    if (allCatEntries.length > 0) {
-      const [topCategoryId, topCategoryAmount] = allCatEntries[0]
-      const topCategoryLabel = categoryLabelById.get(topCategoryId) || String(topCategoryId).replace(/_/g, ' ')
-      const expenseBase = Math.max(1, Number(data?.totalExpense || 0))
-      const topCategoryShare = Math.round((Number(topCategoryAmount || 0) / expenseBase) * 100)
-      items.push(`${topCategoryLabel} drove ${topCategoryShare}% of yearly spend (${fmt(Number(topCategoryAmount || 0))}).`)
-    }
-
-    if (!items.length) {
-      items.push('Add more transaction history to unlock actionable yearly recommendations.')
-    }
-
-    return items.slice(0, 3)
-  }, [data, allCatEntries, categoryLabelById])
-
-  const categoryPareto = useMemo(() => {
-    if (!allCatEntries.length) {
-      return {
-        hasData: false,
-        rows: [],
-        topShare: 0,
-        categoriesFor80Pct: 0,
-      }
-    }
-
-    const head = allCatEntries.slice(0, 8)
-    const tailTotal = allCatEntries.slice(8).reduce((sum, [, value]) => sum + value, 0)
-    const paretoSource = tailTotal > 0 ? [...head, ['other_categories', tailTotal]] : head
-
-    let running = 0
-    const rows = paretoSource.map(([id, amount]) => {
-      running += amount
-      const label = id === 'other_categories'
-        ? 'Other categories'
-        : (categoryLabelById.get(id) || String(id).replace(/_/g, ' '))
-
-      return {
-        id,
-        label,
-        shortLabel: shortLabel(label, 8),
-        amount,
-        cumulativePct: Math.round((running / categoryTotal) * 100),
-      }
-    })
-
-    const index80 = rows.findIndex((row) => row.cumulativePct >= 80)
+    const positiveMonths = monthlyRows.filter((row) => (row.income - row.expense - row.investment) >= 0).length
+    const activeMonths = monthlyRows.length
+    const band = scoreHealthBand(savingsRate, { healthy: 20, watch: 5 })
 
     return {
-      hasData: rows.length > 0,
-      rows,
-      topShare: Math.round(((rows[0]?.amount || 0) / categoryTotal) * 100),
-      topAmount: Number(rows[0]?.amount || 0),
-      topLabel: rows[0]?.label || '—',
-      categoriesFor80Pct: index80 >= 0 ? index80 + 1 : rows.length,
+      income,
+      outflow,
+      net,
+      savingsRate,
+      positiveMonths,
+      activeMonths,
+      band,
     }
-  }, [allCatEntries, categoryLabelById, categoryTotal])
+  }, [data?.monthly, data?.totalIncome, data?.totalExpense, data?.totalInvestment])
 
-  const decisionSignals = useMemo(() => {
-    if (!flowTrendData.length || !surplusData.length) return []
-
-    const highestBurn = flowTrendData
+  const yearHealthSignal = useMemo(() => {
+    const monthlyRows = (data?.monthly || [])
       .map((row) => ({
-        name: row.name,
-        burn: row.Income > 0 ? Math.round((row.Outflow / row.Income) * 100) : 0,
+        income: toFiniteNumber(row?.income),
+        expense: toFiniteNumber(row?.expense),
+        investment: toFiniteNumber(row?.investment),
       }))
-      .sort((a, b) => b.burn - a.burn)[0]
+      .filter((row) => row.income > 0 || row.expense > 0 || row.investment > 0)
 
-    const strongestSurplus = [...surplusData].sort((a, b) => b.Net - a.Net)[0]
-    const deepestDip = [...surplusData].sort((a, b) => a.Net - b.Net)[0]
-    const heaviestDeploy = flowTrendData
-      .map((row) => ({
-        name: row.name,
-        share: row.Income > 0 ? Math.round((row.Invested / row.Income) * 100) : 0,
-      }))
-      .sort((a, b) => b.share - a.share)[0]
+    if (!monthlyRows.length) return null
 
-    return [
-      `Highest cash burn month: ${highestBurn?.name || '—'} at ${highestBurn?.burn || 0}% outflow-to-income ratio.`,
-      `Strongest surplus month: ${strongestSurplus?.name || '—'} with ${fmt(strongestSurplus?.Net || 0)} leftover.`,
-      `Deepest monthly dip: ${deepestDip?.name || '—'} at ${fmt(Math.abs(deepestDip?.Net || 0))} below zero.`,
-      `Highest investment deployment: ${heaviestDeploy?.name || '—'} at ${heaviestDeploy?.share || 0}% of monthly income.`,
-    ]
-  }, [flowTrendData, surplusData])
+    const positiveMonths = monthlyRows.filter((row) => (row.income - row.expense - row.investment) >= 0).length
+    const avgSavings = Math.round(toFiniteNumber(data?.avgSavings))
+
+    const outflowSeries = monthlyRows
+      .map((row) => row.expense + row.investment)
+      .filter((value) => value > 0)
+
+    const outflowMean = outflowSeries.length
+      ? outflowSeries.reduce((sum, value) => sum + value, 0) / outflowSeries.length
+      : 0
+
+    const outflowVariance = outflowSeries.length
+      ? outflowSeries.reduce((sum, value) => sum + ((value - outflowMean) ** 2), 0) / outflowSeries.length
+      : 0
+
+    const outflowCv = outflowMean > 0 ? Math.sqrt(outflowVariance) / outflowMean : 0
+
+    const positiveScore = (positiveMonths / monthlyRows.length) * 50
+    const savingsScore = clampNumber((avgSavings + 10) * 1.5, 0, 30)
+    const stabilityScore = clampNumber(20 - (outflowCv * 20), 0, 20)
+    const score = Math.round(positiveScore + savingsScore + stabilityScore)
+    const band = scoreHealthBand(score, { healthy: 74, watch: 58 })
+
+    return {
+      score,
+      band,
+      positiveMonths,
+      activeMonths: monthlyRows.length,
+      avgSavings,
+    }
+  }, [data?.monthly, data?.avgSavings])
+
+  const expenseConcentrationSignal = useMemo(() => {
+    const totalExpense = toFiniteNumber(data?.totalExpense)
+    if (totalExpense <= 0 || !allCatEntries.length) return null
+
+    const topThree = allCatEntries.slice(0, 3)
+    const topThreeAmount = topThree.reduce((sum, [, amount]) => sum + amount, 0)
+    const topThreePct = Math.round((topThreeAmount / totalExpense) * 100)
+    const topCategoryId = topThree[0]?.[0]
+    const topCategoryAmount = topThree[0]?.[1] || 0
+    const band = scoreRiskBand(topThreePct, { high: 65, watch: 45 })
+
+    return {
+      topThreePct,
+      topCategoryLabel: categoryLabelById.get(topCategoryId) || topCategoryId || '—',
+      topCategoryAmount,
+      band,
+    }
+  }, [data?.totalExpense, allCatEntries, categoryLabelById])
 
   const hasYearData = useMemo(() => {
     return (
@@ -275,8 +213,7 @@ export default function Analytics() {
   ])
 
   return (
-    <div className="page">
-      <PageHeader title="Analytics" className="mb-3" />
+    <PageHeaderPage title="Analytics">
 
       {/* ── Year navigator ────────────────────────────────────────────── */}
       <PickerNavigator
@@ -311,11 +248,44 @@ export default function Analytics() {
         >
           {hasYearData ? (
             <>
-              <AnnualSummaryCard
-                data={data}
-                prevData={prevData}
-                year={year}
-              />
+              <div className="card p-3.5 border-0">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <p className="text-[10px] text-ink-3 tracking-wide">Year summary</p>
+                    <p className="text-[14px] font-semibold text-ink mt-1">{year}</p>
+                  </div>
+                  <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-pill ${yearSummaryCard.band === 'healthy' ? 'bg-income-bg text-income-text' : yearSummaryCard.band === 'watch' ? 'bg-brand-container text-brand' : 'bg-warning-bg text-warning-text'}`}>
+                    {yearSummaryCard.band === 'healthy' ? 'Healthy' : yearSummaryCard.band === 'watch' ? 'Watch' : 'Stressed'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="mini-panel px-3 py-2.5">
+                    <p className="text-[10px] text-ink-3 uppercase tracking-wide">Income</p>
+                    <p className="text-[13px] font-semibold tabular-nums text-income-text mt-1">{fmt(yearSummaryCard.income)}</p>
+                  </div>
+                  <div className="mini-panel px-3 py-2.5">
+                    <p className="text-[10px] text-ink-3 uppercase tracking-wide">Outflow</p>
+                    <p className="text-[13px] font-semibold tabular-nums text-ink mt-1">{fmt(yearSummaryCard.outflow)}</p>
+                  </div>
+                  <div className="mini-panel px-3 py-2.5">
+                    <p className="text-[10px] text-ink-3 uppercase tracking-wide">Net</p>
+                    <p className={`text-[13px] font-semibold tabular-nums mt-1 ${yearSummaryCard.net >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                      {yearSummaryCard.net >= 0 ? '+' : '-'}{fmt(Math.abs(yearSummaryCard.net))}
+                    </p>
+                  </div>
+                  <div className="mini-panel px-3 py-2.5">
+                    <p className="text-[10px] text-ink-3 uppercase tracking-wide">Savings</p>
+                    <p className={`text-[13px] font-semibold tabular-nums mt-1 ${bandTextClass(yearSummaryCard.band)}`}>
+                      {yearSummaryCard.savingsRate}%
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-ink-3 mt-2 tabular-nums">
+                  {yearSummaryCard.positiveMonths}/{yearSummaryCard.activeMonths || 0} months closed positive
+                </p>
+              </div>
 
               <CalendarHeatmap
                 dailyTotals={yearDailyTotals}
@@ -323,21 +293,39 @@ export default function Analytics() {
                 loading={yearDailyLoading}
               />
 
-              {heavyReady && (
-                <FinancialHealthRadar
-                  data={data}
-                  prevData={prevData}
-                  year={year}
-                />
-              )}
+              {(yearHealthSignal || expenseConcentrationSignal) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {yearHealthSignal && (
+                    <div className="card p-3.5 border-0">
+                      <p className="text-[10px] text-ink-3 tracking-wide">Year health score</p>
+                      <p className={`text-[18px] font-semibold tabular-nums mt-1 ${bandTextClass(yearHealthSignal.band)}`}>
+                        {yearHealthSignal.score}/100
+                      </p>
+                      <p className="text-[11px] text-ink-2 mt-1">
+                        {yearHealthSignal.positiveMonths}/{yearHealthSignal.activeMonths} months closed positive
+                      </p>
+                      <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                        Avg savings rate {yearHealthSignal.avgSavings}%
+                      </p>
+                    </div>
+                  )}
 
-              <YearlyInsightsCard
-                year={year}
-                data={data}
-                catEntries={catEntries}
-                strategicRecommendations={strategicRecommendations}
-                decisionSignals={decisionSignals}
-              />
+                  {expenseConcentrationSignal && (
+                    <div className="card p-3.5 border-0">
+                      <p className="text-[10px] text-ink-3 tracking-wide">Expense concentration</p>
+                      <p className={`text-[18px] font-semibold tabular-nums mt-1 ${bandTextClass(expenseConcentrationSignal.band)}`}>
+                        {expenseConcentrationSignal.topThreePct}%
+                      </p>
+                      <p className="text-[11px] text-ink-2 mt-1">
+                        Top 3 categories share of annual spend
+                      </p>
+                      <p className="text-[10px] text-ink-3 mt-1 tabular-nums truncate" title={expenseConcentrationSignal.topCategoryLabel}>
+                        {expenseConcentrationSignal.topCategoryLabel}: {fmt(expenseConcentrationSignal.topCategoryAmount)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
 
@@ -360,7 +348,6 @@ export default function Analytics() {
                 chartData={flowTrendData}
                 totalIncome={data?.totalIncome}
               />
-              <MonthlyCompositionAreaChart flowData={flowTrendData} />
               <CashflowWaterfallChart
                 flowData={flowTrendData}
                 totalIncome={data?.totalIncome}
@@ -369,80 +356,12 @@ export default function Analytics() {
               />
               <SurplusTrajectoryChart netData={surplusData} />
 
-              <SavingsRateTrend flowTrendData={flowTrendData} monthLabels={MONTH_SHORT} />
-
               <InvestmentConsistencyCard monthlyData={data?.monthly} year={year} />
 
               <RunwayCoverageChart
                 flowData={flowTrendData}
                 annualSurplus={annualSurplus}
               />
-
-              {categoryPareto.hasData && (
-                <div className="card p-4">
-                  <div className="mb-2 flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-label font-semibold text-ink">Category Pareto frontier</p>
-                      <p className="text-[11px] text-ink-3 mt-0.5">Bar + cumulative line to show which categories drive most annual spend.</p>
-                    </div>
-                    <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-ink/[0.06] text-ink tabular-nums">
-                      Top {categoryPareto.topShare}% · {fmt(categoryPareto.topAmount, true)}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-2.5">
-                    <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                      <p className="text-[10px] text-ink-3">Categories for 80%</p>
-                      <p className="text-[13px] font-semibold tabular-nums text-ink">{categoryPareto.categoriesFor80Pct}</p>
-                    </div>
-                    <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                      <p className="text-[10px] text-ink-3">Top category</p>
-                      <p className="text-[13px] font-semibold tabular-nums text-ink" title={categoryPareto.topLabel}>{categoryPareto.topLabel}</p>
-                      <p className="text-[10px] tabular-nums text-ink-3 mt-0.5">{fmt(categoryPareto.topAmount, true)}</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-card bg-kosha-surface-2 p-3">
-                    <ResponsiveContainer width="100%" height={228}>
-                      <ComposedChart data={categoryPareto.rows} margin={{ top: 8, right: 4, left: -4, bottom: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
-                        <XAxis
-                          dataKey="shortLabel"
-                          tick={{ fontSize: 9, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
-                          axisLine={false}
-                          tickLine={false}
-                          interval={0}
-                          angle={-35}
-                          textAnchor="end"
-                          height={40}
-                        />
-                        <YAxis
-                          yAxisId="amount"
-                          tickFormatter={compactTick}
-                          tick={{ fontSize: 9, fill: 'rgba(107,107,128,0.9)' }}
-                          axisLine={false}
-                          tickLine={false}
-                          width={30}
-                        />
-                        <YAxis
-                          yAxisId="pct"
-                          orientation="right"
-                          domain={[0, 100]}
-                          tickFormatter={(value) => `${Math.round(value)}%`}
-                          tick={{ fontSize: 9, fill: 'rgba(107,107,128,0.9)' }}
-                          axisLine={false}
-                          tickLine={false}
-                          width={30}
-                        />
-                        <RechartsTooltip content={<ParetoTooltip />} />
-                        <ReferenceLine yAxisId="pct" y={80} stroke={C.invest} strokeDasharray="4 4" strokeOpacity={0.7} />
-                        <Bar yAxisId="amount" dataKey="amount" fill={C.brand} radius={[6, 6, 0, 0]} maxBarSize={22} />
-                        <Line yAxisId="pct" type="monotone" dataKey="cumulativePct" stroke={C.invest} strokeWidth={2.4} dot={{ r: 3 }} />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
 
               <WhatIfSimulatorCard
                 categories={scenarioCategories}
@@ -473,7 +392,7 @@ export default function Analytics() {
 
         </motion.div>
       )}
-    </div>
+    </PageHeaderPage>
   )
 }
 

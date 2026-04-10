@@ -163,7 +163,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
                 `${polarX(ring, i, n)},${polarY(ring, i, n)}`
               ).join(' ')}
               fill="none"
-              stroke="rgba(26,26,46,0.06)"
+              stroke="var(--ds-border)"
               strokeWidth="1"
             />
           ))}
@@ -176,7 +176,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
               y1={CY}
               x2={polarX(1, i, n)}
               y2={polarY(1, i, n)}
-              stroke="rgba(26,26,46,0.05)"
+              stroke="rgba(17,19,24,0.05)"
               strokeWidth="1"
             />
           ))}

@@ -7,7 +7,8 @@
 
 import { useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, NotePencil, CaretRight, Plus } from '@phosphor-icons/react'
+import { X, NotePencil, CaretRight, Plus, CalendarDots } from '@phosphor-icons/react'
+import Button from '../ui/Button'
 import {
   saveTransactionMutation,
 } from '../../hooks/useTransactions'
@@ -147,11 +148,10 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
                 className={`list-row w-full ${selected === cat.id ? 'bg-brand-container' : ''}`}
                 onClick={() => { onSelect(cat.id); onClose() }}
               >
-                <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
-                  style={{ background: cat.bg }}>
+                <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0">
                   <CategoryIcon categoryId={cat.id} size={16} />
                 </div>
-                <span className={`flex-1 text-[15px] ${selected === cat.id ? 'text-accent font-medium' : 'text-ink'}`}>
+                <span className={`flex-1 text-[15px] ${selected === cat.id ? 'text-brand font-medium' : 'text-ink'}`}>
                   {cat.label}
                 </span>
                 <span className={`text-lg w-5 text-right ${selected === cat.id ? 'text-ink' : 'invisible'}`}>✓</span>
@@ -205,12 +205,11 @@ function ModePicker({ selected, onSelect, onClose }) {
                   onClick={() => { onSelect(m.id); onClose() }}
                 >
                   {Icon && (
-                    <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
-                      style={{ background: m.bg }}>
-                      <Icon size={16} weight="duotone" color={m.color} />
+                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                      <Icon size={16} weight="duotone" className="text-ink-2" />
                     </div>
                   )}
-                  <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-accent font-medium' : 'text-ink'}`}>
+                  <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>
                     {m.label}
                   </span>
                   <span className={`text-lg w-5 text-right ${selected === m.id ? 'text-ink' : 'invisible'}`}>✓</span>
@@ -253,12 +252,11 @@ function VehiclePicker({ selected, onSelect, onClose }) {
                   onClick={() => { onSelect(v.label); onClose() }}
                 >
                   {Icon && (
-                    <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
-                      style={{ background: v.bg }}>
-                      <Icon size={16} weight="duotone" color={v.color} />
+                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                      <Icon size={16} weight="duotone" className="text-ink-2" />
                     </div>
                   )}
-                  <span className={`flex-1 text-[15px] ${selected === v.label ? 'text-accent font-medium' : 'text-ink'}`}>
+                  <span className={`flex-1 text-[15px] ${selected === v.label ? 'text-brand font-medium' : 'text-ink'}`}>
                     {v.label}
                   </span>
                   <span className={`text-lg w-5 text-right ${selected === v.label ? 'text-ink' : 'invisible'}`}>✓</span>
@@ -433,8 +431,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
             {/* Date */}
             <label className={`list-row w-full cursor-pointer ${isSaving ? 'opacity-50 pointer-events-none' : ''}`}>
-              <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
-                <span className="text-ink text-xs font-semibold">📅</span>
+              <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                <CalendarDots size={15} weight="duotone" className="text-brand" />
               </div>
               <span className="flex-1 text-[15px] text-ink">Date</span>
               <input type="date" name="txn-date" value={date} onChange={e => set('date', e.target.value)}
@@ -469,9 +467,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   const selVeh  = INVESTMENT_VEHICLES.find(v => v.label === vehicle)
                   const VehIcon = selVeh ? ICON_MAP[selVeh.icon] : null
                   return VehIcon ? (
-                    <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
-                      style={{ background: selVeh.bg }}>
-                      <VehIcon size={15} weight="duotone" color={selVeh.color} />
+                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                      <VehIcon size={15} weight="duotone" className="text-ink-2" />
                     </div>
                   ) : (
                     <div className="w-8 h-8 rounded-chip bg-invest-bg flex items-center justify-center shrink-0">
@@ -496,9 +493,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               {(() => {
                 const ModeIcon = selectedMode ? ICON_MAP[selectedMode.icon] : null
                 return ModeIcon ? (
-                  <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
-                    style={{ background: selectedMode.bg }}>
-                    <ModeIcon size={15} weight="duotone" color={selectedMode.color} />
+                  <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                    <ModeIcon size={15} weight="duotone" className="text-ink-2" />
                   </div>
                 ) : (
                   <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
@@ -545,7 +541,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                       disabled={isSaving}
                       className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
                         ${recurrence === option
-                          ? 'bg-ink text-white border-ink'
+                          ? 'bg-brand-container text-brand border-brand/20'
                           : 'bg-kosha-surface text-ink-2 border-kosha-border'}
                         ${isSaving ? 'opacity-50' : ''}`}
                     >
@@ -615,30 +611,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               When it disappears, the sheet closes and the data is accurate.
           */}
           <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
-            <button
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
               onClick={handleSave}
-              disabled={isSaving}
-              className={`w-full py-4 rounded-card text-[17px] font-semibold flex items-center
-                          justify-center gap-2 transition-all
-                          ${isSaving
-                            ? 'bg-brand/70 text-white/90 scale-[0.97] cursor-not-allowed'
-                            : 'bg-brand text-white active:scale-[0.97]'}`}
+              loading={isSaving}
+              className="rounded-card h-12 shadow-card-md"
             >
-              {isSaving ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
-                    fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10"
-                      stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Saving...</span>
-                </>
-              ) : (
-                editTxn ? 'Save Changes' : `Add ${activeType?.label}`
-              )}
-            </button>
+              {isSaving ? 'Saving...' : (editTxn ? 'Save Changes' : `Add ${activeType?.label}`)}
+            </Button>
             <div className="h-2" />
           </div>
         </div>

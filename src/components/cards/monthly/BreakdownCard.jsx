@@ -99,7 +99,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
 
       {/* ── Stacked bar ───────────────────────────────────────── */}
       <div className="mb-4">
-        <div className="h-2.5 rounded-pill overflow-hidden flex" style={{ background: 'rgba(26,26,46,0.06)' }}>
+        <div className="h-2.5 rounded-pill overflow-hidden flex" style={{ background: 'var(--ds-border)' }}>
           {visibleSegments.map((seg) => (
             <motion.div
               key={seg.key}

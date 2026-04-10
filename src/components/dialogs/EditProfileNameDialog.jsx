@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from '@phosphor-icons/react'
 import { useAuth } from '../../context/AuthContext'
+import Button from '../ui/Button'
+import Input from '../ui/Input'
 
 export default function EditProfileNameDialog({ open, onClose }) {
   const { profile, updateDisplayName } = useAuth()
@@ -67,39 +69,38 @@ export default function EditProfileNameDialog({ open, onClose }) {
               </button>
             </div>
 
-            <input
+            <Input
               ref={inputRef}
-              type="text"
-              name="display-name"
               placeholder="Your display name"
               value={name}
               onChange={e => { setName(e.target.value); setError('') }}
               onKeyDown={handleKeyDown}
-              className="input mb-3"
+              error={error || undefined}
               maxLength={50}
               disabled={saving}
+              className="mb-3"
             />
 
-            {error && (
-              <p className="text-caption text-expense-text mb-3">{error}</p>
-            )}
-
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="ghost"
+                fullWidth
                 onClick={saving ? undefined : onClose}
-                className="btn-ghost flex-1 py-3 rounded-card border border-kosha-border"
                 disabled={saving}
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
+                fullWidth
                 onClick={handleSave}
-                disabled={saving || !name.trim()}
-                className="flex-1 py-3 rounded-card bg-brand text-white font-semibold
-                           active:scale-[0.97] disabled:opacity-50 transition-all"
+                disabled={!name.trim()}
+                loading={saving}
+                className="flex-1"
               >
                 {saving ? 'Saving…' : 'Save'}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </>

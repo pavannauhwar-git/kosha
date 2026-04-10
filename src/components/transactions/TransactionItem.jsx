@@ -32,6 +32,12 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
       vehicle.label === txn.investment_vehicle || vehicle.id === txn.investment_vehicle
     ))
     : null
+  const investmentChipStyle = investmentVehicle
+    ? {
+        backgroundColor: investmentVehicle.bg,
+        background: `color-mix(in srgb, ${investmentVehicle.color} 18%, var(--ds-surface))`,
+      }
+    : undefined
   const amtCls = amountClass(txn.type, txn.is_repayment)
   const prefix = amountPrefix(txn.type)
   const mode   = MODE_LABEL[txn.payment_mode] || ''
@@ -172,7 +178,7 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
       >
         <div
           className={`${compact ? 'w-8 h-8' : 'w-9 h-9'} rounded-full flex items-center justify-center shrink-0`}
-          style={{ background: investmentVehicle?.bg || cat.bg }}
+          style={txn.type === 'investment' ? investmentChipStyle : undefined}
         >
           {txn.type === 'investment' && investmentVehicle ? (
             (() => {

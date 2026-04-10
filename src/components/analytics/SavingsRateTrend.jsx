@@ -16,7 +16,7 @@ function SavingsRateTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="tooltip-enter rounded-card bg-kosha-surface p-3 shadow-card min-w-[168px]" style={{ border: '1px solid rgba(26,26,46,0.06)' }}>
+    <div className="tooltip-enter rounded-card bg-kosha-surface p-3 shadow-card min-w-[168px]" style={{ border: '1px solid var(--ds-border)' }}>
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -129,10 +129,10 @@ export default memo(function SavingsRateTrend({ flowTrendData, monthLabels }) {
                 <stop offset="95%" stopColor={C.brand} stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+              tick={{ fontSize: 10, fill: 'var(--ds-text-3)', fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
               interval={0}
@@ -140,13 +140,13 @@ export default memo(function SavingsRateTrend({ flowTrendData, monthLabels }) {
             <YAxis
               domain={['dataMin - 10', 'dataMax + 10']}
               tickFormatter={(value) => `${Math.round(value)}%`}
-              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
+              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}
             />
             <Tooltip content={<SavingsRateTooltip />} />
-            <ReferenceLine y={0} stroke="rgba(26,26,46,0.25)" strokeDasharray="4 4" />
+            <ReferenceLine y={0} stroke="rgba(0,127,255,0.25)" strokeDasharray="4 4" />
             <ReferenceLine y={20} stroke="rgba(14,159,110,0.35)" strokeDasharray="4 4" />
             <Area
               type="monotone"

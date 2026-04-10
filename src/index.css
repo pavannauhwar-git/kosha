@@ -1,3 +1,4 @@
+@import './design-system/index.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,11 +18,11 @@
 
 @keyframes txn-focus-pulse {
   0% {
-    box-shadow: inset 0 0 0 2px rgba(var(--c-brand-rgb), 0.25);
-    background-color: rgba(var(--c-brand-rgb), 0.04);
+    box-shadow: inset 0 0 0 2px rgba(var(--ds-primary-rgb), 0.25);
+    background-color: rgba(var(--ds-primary-rgb), 0.04);
   }
   100% {
-    box-shadow: inset 0 0 0 0 rgba(var(--c-brand-rgb), 0);
+    box-shadow: inset 0 0 0 0 rgba(var(--ds-primary-rgb), 0);
     background-color: transparent;
   }
 }
@@ -33,7 +34,8 @@
   }
 
   html {
-    font-family: 'InterVariable', 'Inter', system-ui, sans-serif;
+    font-family: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 90%;
     width: 100%;
     max-width: 100%;
     overflow-x: clip;
@@ -60,55 +62,47 @@
   :root {
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --nav-height: calc(88px + env(safe-area-inset-bottom, 0px));
-    --sticky-top-offset: calc(var(--safe-top) + 64px);
+    --nav-height: calc(80px + env(safe-area-inset-bottom, 0px));
+    --sticky-top-offset: calc(var(--safe-top) + 56px);
+    --app-shell-max: 560px;
 
-    /* ── Palette CSS variables — CRED light theme ──────────────────
-       Keep in sync with src/lib/colors.js and tailwind.config.js
+    /* ── Legacy aliases — mapped to design system vars ─────────────
+       Keep for backward compat with existing components
     ───────────────────────────────────────────────────────────────── */
+    --c-brand: var(--ds-primary);
+    --c-brand-mid: var(--ds-primary-light);
+    --c-brand-container: var(--ds-primary-container);
+    --c-brand-border: var(--ds-border);
+    --c-brand-rgb: var(--ds-primary-rgb);
+    --c-brand-mid-rgb: 77, 166, 255;
 
-    /* Brand — Deep charcoal */
-    --c-brand: #1A1A2E;
-    --c-brand-mid: #2D2D44;
-    --c-brand-container: #EFECE6;
-    --c-brand-border: rgba(26,26,46,0.08);
-    --c-brand-rgb: 26, 26, 46;
-    --c-brand-mid-rgb: 45, 45, 68;
+    --c-accent: var(--ds-accent);
+    --c-accent-rgb: 255, 255, 153;
 
-    /* Accent — Warm gold */
-    --c-accent: #C9A96E;
-    --c-accent-rgb: 201, 169, 110;
+    --c-income: var(--ds-income);
+    --c-invest-text: var(--ds-invest-text);
+    --c-expense: var(--ds-expense);
+    --c-expense-bright: #FF5A52;
+    --c-warning: var(--ds-warning);
 
-    /* Semantics */
-    --c-income: #2D8B6F;
-    --c-invest-text: #4A2F9A;
-    --c-expense: #C4384A;
-    --c-expense-bright: #D84A5C;
-    --c-warning: #8B7230;
+    --c-ink-muted: var(--ds-text-tertiary);
 
-    /* Ink */
-    --c-ink-muted: #6B6B80;
+    --c-hero-accent: var(--ds-accent);
+    --c-hero-accent-bg: rgba(255,255,153,0.15);
+    --c-hero-accent-fill: #E6E600;
+    --c-hero-label: rgba(255, 255, 255, 0.70);
+    --c-hero-dimmer: rgba(255, 255, 255, 0.45);
+    --c-hero-divider: rgba(255, 255, 255, 0.12);
+    --c-hero-stat-bg: rgba(255, 255, 255, 0.10);
 
-    /* Hero card overlays (light text on dark hero) */
-    --c-hero-accent: #C9A96E;
-    --c-hero-accent-bg: rgba(201,169,110,0.15);
-    --c-hero-accent-fill: #C9A96E;
-    --c-hero-label: rgba(255, 255, 255, 0.60);
-    --c-hero-dimmer: rgba(255, 255, 255, 0.35);
-    --c-hero-divider: rgba(255, 255, 255, 0.10);
-    --c-hero-stat-bg: rgba(255, 255, 255, 0.08);
+    --c-shimmer-1: var(--ds-shimmer-1);
+    --c-shimmer-2: var(--ds-shimmer-2);
 
-    /* Shimmer */
-    --c-shimmer-1: #F5F3EE;
-    --c-shimmer-2: #EFECE6;
-
-    /* Motion timing scale — deliberate, premium */
-    --motion-fast: 120ms;
-    --motion-base: 200ms;
-    --motion-slow: 320ms;
+    --motion-fast: var(--ds-motion-fast);
+    --motion-base: var(--ds-motion-base);
+    --motion-slow: var(--ds-motion-slow);
   }
 
-  /* GPU layer on interactive elements */
   button,
   [role="button"] {
     -webkit-tap-highlight-color: transparent;
@@ -117,15 +111,14 @@
 
 @layer components {
 
-  /* -- Hero card — dark premium slab ──────────────────────────────── */
+  /* -- Hero card — brand blue gradient ────────────────────────────── */
   .card-hero {
-    background: linear-gradient(155deg, #1E1E34 0%, #1A1A2E 45%, #111122 100%);
+    background: linear-gradient(155deg, #0088FF 0%, #007FFF 45%, #0066CC 100%);
     @apply rounded-hero;
     box-shadow:
-      0 30px 100px rgba(26,26,46,0.30),
-      0 12px 36px rgba(26,26,46,0.18),
-      0 4px 10px rgba(201,169,110,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.06);
+      0 24px 64px rgba(0,127,255,0.18),
+      0 8px 24px rgba(17,19,24,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.12);
     position: relative;
     overflow: hidden;
   }
@@ -137,7 +130,7 @@
     right: -30%;
     width: 60%;
     height: 120%;
-    background: radial-gradient(ellipse, rgba(201,169,110,0.06) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(255,255,153,0.08) 0%, transparent 70%);
     pointer-events: none;
   }
 
@@ -148,14 +141,15 @@
   }
 
   .page-stack {
-    @apply space-y-4 md:space-y-5;
+    @apply space-y-3 md:space-y-4;
   }
 
   .sticky-toolbar {
-    @apply sticky z-10 px-0.5 py-2 bg-kosha-bg;
+    @apply sticky z-10 px-0.5 py-2;
+    background-color: var(--ds-surface-dim);
     top: var(--sticky-top-offset);
     margin-bottom: 1rem;
-    border-bottom: 1px solid rgba(26,26,46,0.06);
+    border-bottom: 1px solid var(--ds-border);
   }
 
   .card-md {
@@ -178,13 +172,13 @@
   /* -- Mini panel — neutral nested containers ────────────────────── */
   .mini-panel {
     @apply rounded-card bg-kosha-surface-2;
-    border: 1px solid rgba(26,26,46,0.04);
+    border: 1px solid var(--ds-border);
   }
 
   /* -- Skeleton loader ──────────────────────────────────────────────── */
   .skeleton {
     @apply rounded-card;
-    background: linear-gradient(90deg, #F0EDE7 0%, #E8E4DD 40%, #F0EDE7 80%);
+    background: linear-gradient(90deg, var(--ds-shimmer-1) 0%, var(--ds-shimmer-2) 40%, var(--ds-shimmer-1) 80%);
     background-size: 800px 100%;
     animation: skeleton-sweep 1.8s ease-in-out infinite;
     will-change: background-position, opacity;
@@ -192,10 +186,23 @@
 
   /* -- Frosted header glass ───────────────────────────────────────── */
   .header-frosted {
-    background: rgba(245,243,238,0.88);
+    background: rgba(244,246,248,0.88);
     backdrop-filter: saturate(190%) blur(24px);
     -webkit-backdrop-filter: saturate(190%) blur(24px);
-    border-bottom: 1px solid rgba(26,26,46,0.04);
+    border-bottom: 1px solid var(--ds-border);
+  }
+
+  .app-topbar {
+    @apply sticky top-0 z-20 border-b border-kosha-border;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: saturate(190%) blur(24px);
+    -webkit-backdrop-filter: saturate(190%) blur(24px);
+    box-shadow: inset 0 -1px 0 rgba(17, 19, 24, 0.04);
+  }
+
+  .dark .app-topbar {
+    background: rgba(29, 32, 36, 0.92);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
   }
 
   /* -- Chart tooltip entrance ─────────────────────────────────────── */
@@ -221,11 +228,11 @@
   }
 
   .list-row {
-    @apply flex items-center gap-3 px-5 py-4 bg-kosha-surface transition-colors duration-200 cursor-pointer hover:bg-kosha-surface-2;
+    @apply flex items-center gap-3 px-5 py-3.5 bg-kosha-surface transition-colors duration-200 cursor-pointer hover:bg-kosha-surface-2;
   }
 
   .list-row+.list-row {
-    border-top: 1px solid rgba(26,26,46,0.05);
+    border-top: 1px solid var(--ds-border);
   }
 
   /* -- Section label — CRED-style uppercase tracking ──────────────── */
@@ -262,16 +269,17 @@
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/10;
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2;
+    --tw-ring-color: rgba(17, 19, 24, 0.10);
   }
 
   .chip-control-muted {
     @apply chip-control bg-kosha-surface text-ink-3 hover:bg-kosha-surface-2;
-    border-color: rgba(26,26,46,0.08);
+    border-color: var(--ds-border);
   }
 
   .chip-control-active {
-    @apply chip-control bg-ink text-white;
+    @apply chip-control bg-brand text-brand-on;
     border-color: transparent;
   }
 
@@ -310,35 +318,37 @@
 
   .btn-primary {
     @apply btn text-white px-7 py-3.5 border border-transparent;
-    background: #1A1A2E;
-    box-shadow: 0 10px 28px rgba(26,26,46,0.22), 0 3px 10px rgba(26,26,46,0.12);
+    background: var(--ds-primary);
+    box-shadow: 0 6px 20px rgba(0,127,255,0.30), 0 2px 8px rgba(0,127,255,0.15);
   }
 
   .btn-primary:hover {
-    background: #2D2D44;
-    box-shadow: 0 14px 36px rgba(26,26,46,0.28), 0 5px 14px rgba(26,26,46,0.16);
+    background: var(--ds-primary-dark);
+    box-shadow: 0 10px 28px rgba(0,127,255,0.35), 0 4px 12px rgba(0,127,255,0.20);
     transform: translateY(-1px);
   }
 
   .btn-primary:active {
     transform: scale(0.97) translateY(0);
-    box-shadow: 0 4px 12px rgba(26,26,46,0.20), 0 2px 6px rgba(26,26,46,0.12);
+    box-shadow: 0 4px 12px rgba(0,127,255,0.25), 0 2px 6px rgba(0,127,255,0.12);
   }
 
   .btn-tonal {
-    @apply btn bg-ink/[0.06] text-ink px-7 py-3.5;
-    border: 1px solid rgba(26,26,46,0.06);
+    @apply btn px-7 py-3.5;
+    background: var(--ds-primary-container);
+    color: var(--ds-on-primary-container);
+    border: 1px solid transparent;
   }
 
   .btn-ghost {
     @apply btn text-ink px-5 py-2.5 bg-transparent hover:bg-kosha-surface-2;
-    border: 1px solid rgba(26,26,46,0.10);
+    border: 1px solid var(--ds-border-strong);
   }
 
   .btn-secondary {
-    @apply btn bg-kosha-surface text-ink-2 px-5 py-2.5 hover:bg-kosha-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/10;
-    border: 1px solid rgba(26,26,46,0.06);
-    box-shadow: 0 1px 4px rgba(26,26,46,0.04), 0 4px 12px rgba(26,26,46,0.03);
+    @apply btn bg-kosha-surface text-ink-2 px-5 py-2.5 hover:bg-kosha-surface-2 focus-visible:outline-none;
+    border: 1px solid var(--ds-border);
+    box-shadow: var(--ds-shadow-sm);
   }
 
   .btn-secondary-sm {
@@ -351,25 +361,28 @@
 
   /* -- FAB — dark, premium ────────────────────────────────────────── */
   .fab {
-    @apply fixed w-14 h-14 bg-ink text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
+    background: var(--ds-primary);
     bottom: calc(var(--nav-height) + 1rem);
-    right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
+    right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
   }
 
   .fab-bills {
-    @apply fixed w-14 h-14 bg-ink text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
+    background: var(--ds-primary);
     bottom: calc(var(--nav-height) + 1rem);
-    right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
+    right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
   }
 
   .fab-loans {
-    @apply fixed w-14 h-14 bg-ink text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
+    background: var(--ds-primary);
     bottom: calc(var(--nav-height) + 1rem);
-    right: max(1rem, calc((100vw - 560px) / 2 + 1rem));
+    right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
   }
@@ -404,13 +417,22 @@
     backdrop-filter: saturate(190%) blur(24px);
     -webkit-backdrop-filter: saturate(190%) blur(24px);
     box-shadow:
-      0 20px 48px rgba(26,26,46,0.13),
-      0 6px 14px rgba(26,26,46,0.06),
+      0 16px 40px rgba(17,19,24,0.10),
+      0 4px 12px rgba(17,19,24,0.05),
       inset 0 0.5px 0 rgba(255,255,255,0.85),
-      0 0 0 1px rgba(26,26,46,0.05);
+      0 0 0 1px rgba(17,19,24,0.04);
     pointer-events: auto;
-    max-width: 600px;
+    max-width: var(--app-shell-max);
     width: 100%;
+  }
+
+  .dark .nav-float {
+    background: rgba(29, 32, 36, 0.92);
+    border: 1px solid var(--ds-border);
+    box-shadow:
+      0 14px 28px rgba(0,0,0,0.36),
+      0 4px 10px rgba(0,0,0,0.22),
+      inset 0 0.5px 0 rgba(255,255,255,0.10);
   }
 
   .nav-float-item {
@@ -443,7 +465,7 @@
     position: absolute;
     inset: 0;
     border-radius: 9999px;
-    background: rgba(26,26,46,0.08);
+    background: var(--ds-primary-container);
   }
 
   .nav-icon-layer {
@@ -465,8 +487,8 @@
 
   /* -- Input ───────────────────────────────────────────────────────── */
   .input {
-    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-[15px] focus:outline-none focus:bg-white;
-    border: 1px solid rgba(26,26,46,0.06);
+    @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-[15px] focus:outline-none focus:bg-kosha-surface;
+    border: 1px solid var(--ds-border);
     min-width: 0;
     will-change: transform;
     transform: translateZ(0);
@@ -474,27 +496,27 @@
   }
 
   .input:focus {
-    border-color: #C9A96E;
-    box-shadow: 0 0 0 3px rgba(201,169,110,0.10), 0 4px 12px rgba(26,26,46,0.06);
+    border-color: var(--ds-primary);
+    box-shadow: 0 0 0 3px rgba(0,127,255,0.12), 0 4px 12px rgba(17,19,24,0.06);
   }
 
   /* -- Bottom sheet ────────────────────────────────────────────────── */
   .sheet-backdrop {
     @apply fixed inset-0 z-40;
-    background: rgba(26, 26, 46, 0.45);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(17, 19, 24, 0.40);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .sheet-panel {
     @apply fixed bottom-0 bg-kosha-surface z-50;
     left: 0;
     right: 0;
-    width: min(100%, 560px);
+    width: min(100%, var(--app-shell-max));
     margin-left: auto;
     margin-right: auto;
-    max-width: 560px;
-    box-shadow: 0 -8px 40px rgba(26,26,46,0.12);
+    max-width: var(--app-shell-max);
+    box-shadow: 0 -8px 40px rgba(17,19,24,0.10);
     border-radius: 24px 24px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     max-height: calc(100dvh - var(--safe-top) - 0.5rem);
@@ -511,26 +533,34 @@
     position: sticky;
     top: 0;
     display: block;
-    height: 14px;
-    margin-bottom: -14px;
+    height: 6px;
+    margin-bottom: -6px;
     z-index: 2;
     pointer-events: none;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--ds-surface);
   }
 
   .sheet-handle {
-    @apply w-10 h-1 rounded-pill mx-auto mt-3 mb-6;
-    background: rgba(26,26,46,0.12);
+    @apply w-10 h-1 rounded-pill mx-auto mt-2 mb-4;
+    background: rgba(17,19,24,0.12);
   }
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
   .page {
-    @apply min-h-dvh px-5 md:px-6;
-    padding-top: 0.75rem;
-    padding-bottom: calc(var(--nav-height) + 1.75rem);
-    max-width: 640px;
+    @apply min-h-dvh px-4;
+    padding-top: 0;
+    padding-bottom: calc(var(--nav-height) + 1.15rem);
+    max-width: var(--app-shell-max);
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .card.p-4 {
+    padding: 0.9rem;
+  }
+
+  .card.p-5 {
+    padding: 1.1rem;
   }
 
   /* -- Progress bars ───────────────────────────────────────────────── */
@@ -547,7 +577,7 @@
 
   .bar-light-track {
     @apply h-1.5 rounded-pill w-full relative overflow-hidden;
-    background: rgba(26,26,46,0.06);
+    background: var(--ds-border);
   }
 
   .bar-light-fill {
@@ -691,38 +721,8 @@
   }
 }
 
-@media (min-width: 768px) {
-  .page {
-    max-width: 920px;
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
-    padding-top: 0.7rem;
-    padding-bottom: 3.5rem;
-  }
-}
+/* Mobile-first: single-column layout, no desktop overrides */
 
-@media (min-width: 768px) {
-  .fab {
-    bottom: 2rem;
-    right: 2rem;
-  }
-  .fab-bills {
-    bottom: 2rem;
-    right: 2rem;
-  }
-  .fab-loans {
-    bottom: 2rem;
-    right: 2rem;
-  }
-}
+/* FAB position: same on all screen sizes */
 
-@media (min-width: 768px) {
-  .sheet-panel {
-    left: max(220px, calc((100vw - 860px) / 2 + 220px));
-    right: max(0px, calc((100vw - 860px) / 2));
-    margin-left: 0;
-    margin-right: 0;
-    max-width: 560px;
-    max-height: 94dvh;
-  }
-}
+/* Sheet panel: no sidebar offset, mobile-first */

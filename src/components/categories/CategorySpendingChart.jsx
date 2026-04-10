@@ -3,7 +3,7 @@ import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
 import { CATEGORIES } from '../../lib/categories'
 
-const BAR_PALETTE = ['#1A1A2E', '#2F7AD9', '#629CE6', '#8CB7ED', '#B5D0F2', '#D6E6F8']
+const BAR_PALETTE = ['#007FFF', '#2F96FF', '#5CADFF', '#8CC4FF', '#B5D8FF', '#D6E9FF']
 
 const CategorySpendingChart = memo(function CategorySpendingChart({
   entries,
@@ -43,7 +43,6 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         amountLabel: fmt(amount),
         sharePct,
         barColor: BAR_PALETTE[index % BAR_PALETTE.length],
-        iconBg: category?.bg || '#E7F2FF',
         budgetLimit,
         budgetPct,
       }
@@ -93,7 +92,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
           <div key={row.id} className="rounded-card border border-kosha-border bg-kosha-surface-2 px-2.5 py-2">
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-full border border-kosha-border flex items-center justify-center" style={{ background: row.iconBg }}>
+                <div className="w-6 h-6 rounded-full border border-kosha-border flex items-center justify-center bg-kosha-surface">
                   <CategoryIcon categoryId={row.id} size={12} />
                 </div>
                 <p className="text-[11px] font-semibold text-ink truncate">{row.name}</p>

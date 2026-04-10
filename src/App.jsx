@@ -9,11 +9,8 @@ import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTIO
 import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
 import { LOAN_INVALIDATION_KEYS } from './hooks/useLoans'
 import AuthGuard, { RouteSkeleton } from './components/navigation/AuthGuard'
-import ProfileMenu from './components/navigation/ProfileMenu'
 import { House, List, CalendarDots, ChartBar, Receipt, Handshake } from '@phosphor-icons/react'
-import { C } from './lib/colors'
 import { useScrollDirection } from './hooks/useScrollDirection'
-import KoshaLogo from './components/brand/KoshaLogo'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
 import { useUserCategories } from './hooks/useUserCategories'
@@ -373,79 +370,7 @@ function useRouteIntentPrefetch() {
   }, [user?.id])
 }
 
-// ── Desktop sidebar ───────────────────────────────────────────────────────
-function DesktopSidebar() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { profile, user } = useAuth()
-  const prefetchRoute = useRouteIntentPrefetch()
-
-  if (NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
-
-  const active = NAV.findIndex(n =>
-    n.path === '/' ? location.pathname === '/' : location.pathname.startsWith(n.path)
-  )
-
-  const displayName = profile?.display_name || user?.email?.split('@')[0] || 'Account'
-
-  return (
-    <aside
-      className="hidden md:flex flex-col"
-      style={{
-        position: 'fixed',
-        top: 0, left: 0, bottom: 0,
-        width: 220,
-        background: 'rgba(245,243,238,0.92)',
-        backdropFilter: 'saturate(180%) blur(20px)',
-        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-        borderRight: '1px solid rgba(26,26,46,0.06)',
-        zIndex: 30,
-        padding: '0 12px',
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-      }}
-    >
-      <div className="flex items-center gap-2.5 px-2 pb-7 pt-2">
-        <KoshaLogo size={32} />
-        <div>
-          <p className="text-[17px] font-bold text-ink tracking-tight leading-none">Kosha</p>
-          <p className="text-[9px] text-ink-3 font-medium tracking-[0.15em] uppercase mt-1">Finance</p>
-        </div>
-      </div>
-
-      <nav className="flex flex-col gap-1 flex-1">
-        {NAV.map((item, i) => {
-          const isActive = i === active
-          return (
-            <button
-              key={item.path}
-              onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
-              onMouseEnter={() => prefetchRoute(item.path)}
-              onFocus={() => prefetchRoute(item.path)}
-              onTouchStart={() => prefetchRoute(item.path)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-card transition-colors duration-150 w-full text-left"
-              style={{ background: isActive ? 'rgba(26,26,46,0.06)' : 'transparent' }}
-            >
-              <item.Icon size={20} weight={isActive ? 'fill' : 'regular'} color={isActive ? C.ink : C.inkMuted} />
-              <span className="text-[13px]" style={{ color: isActive ? C.ink : C.inkMuted, fontWeight: isActive ? 600 : 400 }}>
-                {item.label}
-              </span>
-            </button>
-          )
-        })}
-      </nav>
-
-      <div className="px-2 pt-4" style={{ borderTop: '1px solid rgba(26,26,46,0.06)' }}>
-        <div className="flex items-center gap-2.5">
-          <ProfileMenu dropUp />
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-ink truncate">{displayName}</p>
-          </div>
-        </div>
-      </div>
-    </aside>
-  )
-}
+// Desktop sidebar removed — mobile-first, bottom tab bar only
 
 // ── Mobile bottom nav ─────────────────────────────────────────────────────
 function BottomNav() {
@@ -467,8 +392,8 @@ function BottomNav() {
   )
 
   return (
-    <div className={`nav-float-wrap md:hidden ${scrolledDown ? 'nav-float-wrap--hidden' : ''}`}>
-      <nav className="nav-float">
+    <div className={`nav-float-wrap ${scrolledDown ? 'nav-float-wrap--hidden' : ''}`}>
+      <nav className="nav-float" aria-label="Main navigation">
         {NAV.map((item, i) => {
           const isActive = i === active
           return (
@@ -479,6 +404,7 @@ function BottomNav() {
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
+              aria-current={isActive ? 'page' : undefined}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 600, damping: 28 }}
             >
@@ -490,14 +416,14 @@ function BottomNav() {
                   <div className="nav-icon-bg" />
                 ))}
                 <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.18 }}>
-                  <item.Icon size={22} weight="fill" color={C.ink} />
+                  <item.Icon size={22} weight="fill" color="var(--ds-primary)" />
                 </motion.span>
                 <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 0 : 1 }} transition={{ duration: 0.18 }}>
-                  <item.Icon size={22} weight="regular" color={C.inkMuted} />
+                  <item.Icon size={22} weight="regular" color="var(--ds-text-tertiary)" />
                 </motion.span>
               </div>
               <motion.span className="nav-label"
-                animate={{ color: isActive ? C.ink : C.inkMuted, fontWeight: isActive ? 600 : 400, opacity: isActive ? 1 : 0.75 }}
+                animate={{ color: isActive ? 'var(--ds-primary)' : 'var(--ds-text-tertiary)', fontWeight: isActive ? 600 : 400, opacity: isActive ? 1 : 0.75 }}
                 transition={{ duration: 0.18 }}>
                 {item.label}
               </motion.span>
@@ -539,6 +465,7 @@ function GlobalRealtimeSync() {
     let fallbackIntervalId = null
     let attempt = 0
     let active = true
+    let fallbackMode = false
 
     function scheduleInvalidate(key, invalidate) {
       if (isSuppressed(key)) return
@@ -565,9 +492,10 @@ function GlobalRealtimeSync() {
 
     function removeActiveChannel() {
       clearConnectTimer()
-      if (channel) {
-        supabase.removeChannel(channel)
-        channel = null
+      const currentChannel = channel
+      channel = null
+      if (currentChannel) {
+        supabase.removeChannel(currentChannel)
       }
     }
 
@@ -612,6 +540,13 @@ function GlobalRealtimeSync() {
     function enterFallback(reason) {
       if (!active) return
 
+      if (fallbackMode) {
+        scheduleReconnect(reason)
+        return
+      }
+
+      fallbackMode = true
+
       console.warn(`[Kosha] Realtime unavailable (${reason}). Falling back to periodic refresh.`)
       removeActiveChannel()
 
@@ -651,6 +586,7 @@ function GlobalRealtimeSync() {
 
         if (status === 'SUBSCRIBED') {
           subscribed = true
+          fallbackMode = false
           attempt = 0
           clearConnectTimer()
           clearReconnectTimer()
@@ -672,6 +608,7 @@ function GlobalRealtimeSync() {
 
     return () => {
       active = false
+      fallbackMode = false
       clearConnectTimer()
       clearReconnectTimer()
       stopFallbackPolling()
@@ -684,13 +621,7 @@ function GlobalRealtimeSync() {
 }
 
 function ContentWrapper({ children }) {
-  const location = useLocation()
-  const hasSidebar = !NAV_HIDE_ON.some(p => location.pathname.startsWith(p))
-  return (
-    <div className={hasSidebar ? 'md:ml-[220px]' : ''}>
-      {children}
-    </div>
-  )
+  return <>{children}</>
 }
 
 function RuntimeRouteTracker() {
@@ -864,7 +795,7 @@ function QueryErrorRecovery() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.2 }}
-      className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 md:left-[236px] md:bottom-8 z-50 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg"
+      className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 z-50 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg max-w-[398px] mx-auto"
     >
       <span className="text-[13px] font-medium flex-1">Something didn't load correctly.</span>
       <button
@@ -893,7 +824,6 @@ function AppShell() {
     <div className="min-h-dvh bg-kosha-bg">
       <RuntimeRouteTracker />
       <CustomCategoryLoader />
-      <DesktopSidebar />
       <ContentWrapper>
         <AnimatedRoutes />
       </ContentWrapper>

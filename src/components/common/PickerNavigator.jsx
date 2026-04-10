@@ -8,17 +8,17 @@ export default function PickerNavigator({
   inputType = 'month',
   inputValue,
   onInputChange,
-  className = 'mb-6',
+  className = 'mb-4',
 }) {
   return (
     <div className={`flex items-center justify-between ${className}`}>
       <button
         onClick={onPrev}
-        className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+        className="w-8 h-8 rounded-full bg-kosha-surface border border-kosha-border
                    flex items-center justify-center active:bg-kosha-surface-2
                    hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-all duration-150"
       >
-        <ChevronLeft size={18} className="text-ink-2" />
+        <ChevronLeft size={16} className="text-ink-2" />
       </button>
 
       <button
@@ -26,7 +26,7 @@ export default function PickerNavigator({
         className="relative cursor-pointer"
         onClick={() => pickerRef?.current?.showPicker?.()}
       >
-        <h1 className="text-display font-bold text-ink tracking-tight">{label}</h1>
+        <h1 className="text-value font-semibold text-ink tracking-tight">{label}</h1>
         <input
           ref={pickerRef}
           type={inputType}
@@ -39,11 +39,11 @@ export default function PickerNavigator({
 
       <button
         onClick={onNext}
-        className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border
+        className="w-8 h-8 rounded-full bg-kosha-surface border border-kosha-border
                    flex items-center justify-center active:bg-kosha-surface-2
                    hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-all duration-150"
       >
-        <ChevronRight size={18} className="text-ink-2" />
+        <ChevronRight size={16} className="text-ink-2" />
       </button>
     </div>
   )

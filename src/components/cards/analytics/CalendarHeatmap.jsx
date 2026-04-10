@@ -5,18 +5,18 @@ const WEEKDAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', '']
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 const INTENSITY_COLORS = [
-  'bg-kosha-surface-2',           // 0 — no spend
-  'bg-brand/20',                  // 1
-  'bg-brand/40',                  // 2
-  'bg-brand/60',                  // 3
-  'bg-brand/80',                  // 4
-  'bg-brand',                     // 5 — max
+  'bg-kosha-surface-2 border-kosha-border', // 0 — no spend
+  'bg-[#d6e8ff] border-[#b8d6ff]',          // 1
+  'bg-[#9ec9ff] border-[#77b3ff]',          // 2
+  'bg-[#5ea9ff] border-[#3d95ff]',          // 3
+  'bg-[#1f83ff] border-[#1a72db]',          // 4
+  'bg-[#0058c7] border-[#0047a0]',          // 5 — max
 ]
 
 const HeatmapCell = memo(function HeatmapCell({ day, onHover }) {
   return (
     <div
-      className={`w-[11px] h-[11px] rounded-[2px] border border-black/5 cursor-pointer transition-transform hover:scale-125 ${INTENSITY_COLORS[day.level]}`}
+      className={`w-[11px] h-[11px] rounded-[2px] border cursor-pointer transition-transform hover:scale-125 ${INTENSITY_COLORS[day.level]}`}
       title={`${day.label}: ${fmt(day.value)}`}
       onMouseEnter={() => onHover(day)}
       onFocus={() => onHover(day)}
@@ -60,11 +60,41 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
       ? spendDays.reduce((best, d) => (d.value > best.value ? d : best))
       : null
 
+    const sortedSpendValues = spendDays
+      .map((day) => day.value)
+      .sort((a, b) => a - b)
+
+    const quantile = (q) => {
+      if (!sortedSpendValues.length) return 0
+      const idx = Math.min(
+        sortedSpendValues.length - 1,
+        Math.max(0, Math.round((sortedSpendValues.length - 1) * q))
+      )
+      return sortedSpendValues[idx]
+    }
+
+    const q20 = quantile(0.2)
+    const q40 = quantile(0.4)
+    const q60 = quantile(0.6)
+    const q80 = quantile(0.8)
+    const hasSpread = q80 > q20
+
     // Assign intensity levels (0-5)
     const enrichedDays = days.map((day) => {
       if (day.value <= 0) return { ...day, level: 0 }
-      const ratio = day.value / maxSpend
-      const level = ratio > 0.8 ? 5 : ratio > 0.6 ? 4 : ratio > 0.4 ? 3 : ratio > 0.2 ? 2 : 1
+
+      let level = 1
+      if (hasSpread) {
+        level = day.value >= q80 ? 5
+          : day.value >= q60 ? 4
+            : day.value >= q40 ? 3
+              : day.value >= q20 ? 2
+                : 1
+      } else {
+        const ratio = day.value / maxSpend
+        level = ratio >= 0.75 ? 5 : ratio >= 0.55 ? 4 : ratio >= 0.35 ? 3 : ratio >= 0.18 ? 2 : 1
+      }
+
       return { ...day, level }
     })
 
@@ -198,7 +228,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
         <div className="flex items-center gap-1.5">
           <span className="text-[9px] text-ink-3">Less</span>
           {INTENSITY_COLORS.map((cls, i) => (
-            <div key={`leg-${i}`} className={`w-[11px] h-[11px] rounded-[2px] border border-black/5 ${cls}`} />
+            <div key={`leg-${i}`} className={`w-[11px] h-[11px] rounded-[2px] border border-kosha-border ${cls}`} />
           ))}
           <span className="text-[9px] text-ink-3">More</span>
         </div>

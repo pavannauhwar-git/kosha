@@ -2,11 +2,13 @@ import { C } from '../../../lib/colors'
 import { fmt } from '../../../lib/utils'
 import { useNavigate } from 'react-router-dom'
 import PortfolioMixDonut from '../../common/PortfolioMixDonut'
+import Button from '../../ui/Button'
 
 const ALLOCATION_PALETTE = C.portfolio
 
 export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) {
   const navigate = useNavigate()
+
   const safeVehicleData = (Array.isArray(vehicleData) ? vehicleData : [])
     .map(([name, value]) => ({
       name,
@@ -27,7 +29,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
     ? Math.round((totalInvestment / totalIncome) * 100)
     : 0
 
-  const visibleRows = safeVehicleData.slice(0, 6)
+  const visibleRows = safeVehicleData.slice(0, 5)
   const visibleTotal = visibleRows.reduce((sum, row) => sum + row.value, 0)
   const mixRows = visibleRows.map((row, index) => ({
     ...row,
@@ -35,7 +37,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
     color: ALLOCATION_PALETTE[index % ALLOCATION_PALETTE.length],
   }))
 
-  if (safeVehicleData.length > 6 && totalPortfolio > visibleTotal) {
+  if (safeVehicleData.length > 5 && totalPortfolio > visibleTotal) {
     const otherValue = totalPortfolio - visibleTotal
     mixRows.push({
       name: 'Other',
@@ -46,130 +48,134 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
   }
 
   const diversificationScore = totalPortfolio > 0
-    ? Math.max(0, Math.min(100, Math.round((safeVehicleData.length * 18) + (55 - Math.max(0, topHoldingPct - 45)))))
+    ? Math.max(0, Math.min(100, Math.round((safeVehicleData.length * 16) + (58 - Math.max(0, topHoldingPct - 45)))))
     : 0
 
-  const concentrationBand = topHoldingPct >= 60
+  const concentrationLabel = topHoldingPct >= 60
     ? 'High concentration'
     : topHoldingPct >= 45
       ? 'Moderate concentration'
       : 'Balanced concentration'
 
-  const rebalanceTarget = safeVehicleData[1]?.name || null
-  const deployTone = deploymentRate >= 12 && deploymentRate <= 35
-    ? 'text-income-text'
-    : 'text-warning-text'
-
-  const concentrationSignal = totalPortfolio <= 0
-    ? 'No allocation yet. Start with one core vehicle and build allocation history.'
+  const concentrationHint = totalPortfolio <= 0
+    ? 'Add your first labeled investment to start allocation tracking.'
     : topHoldingPct >= 55
-      ? `${topHolding?.name || 'Top holding'} has ${topHoldingPct}% share. Consider rotating new top-ups.`
-      : `Largest position is ${topHoldingPct}%. Concentration is currently controlled.`
+      ? `${topHolding?.name || 'Top holding'} is ${topHoldingPct}% of your yearly allocation.`
+      : `Largest holding is ${topHoldingPct}%. Concentration is under control.`
 
-  const deploySignal = deploymentRate < 10
-    ? `Deployment is ${deploymentRate}% of income. Increase cadence if cash runway allows.`
+  const deploymentHint = deploymentRate < 10
+    ? `Deployment at ${deploymentRate}% is conservative.`
     : deploymentRate > 35
-      ? `Deployment is ${deploymentRate}% of income. Protect runway before increasing investment intensity.`
-      : `Deployment at ${deploymentRate}% of income is in a balanced range.`
+      ? `Deployment at ${deploymentRate}% is aggressive.`
+      : `Deployment at ${deploymentRate}% is balanced.`
 
   const nextAction = (() => {
-    if (totalPortfolio <= 0) return 'Log your first investment with a vehicle label to activate allocation intelligence.'
-    if (topHoldingPct >= 55 && rebalanceTarget) return `Route the next top-up to ${rebalanceTarget} to reduce concentration.`
-    if (safeVehicleData.length < 3) return 'Add one more vehicle category in the next investment to improve diversification.'
-    return 'Continue planned monthly top-ups to preserve the current allocation profile.'
+    if (totalPortfolio <= 0) return 'Log your first investment with a vehicle label.'
+    if (safeVehicleData.length < 3) return 'Add one more vehicle type for better diversification.'
+    if (topHoldingPct >= 55 && safeVehicleData[1]) return `Route the next top-up to ${safeVehicleData[1].name}.`
+    return 'Continue planned top-ups to preserve allocation discipline.'
   })()
 
   return (
     <div className="card p-4 border-0">
       <div className="flex items-start justify-between gap-3 mb-2.5">
         <div>
-          <p className="text-label font-semibold text-ink">Yearly portfolio snapshot</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Donut view of allocation, concentration, and deployment quality.</p>
+          <p className="text-label font-semibold text-ink">Portfolio snapshot</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">Allocation mix and concentration for this year.</p>
         </div>
-        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-ink/[0.06] text-ink tabular-nums">
+        <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-ink/[0.06] text-ink tabular-nums">
           {safeVehicleData.length} vehicles
         </span>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+      <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Largest amount</p>
-          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(topHolding?.value || 0)}</p>
+          <p className="text-[10px] text-ink-3">Total invested</p>
+          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(totalPortfolio)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Top holding</p>
-          <p className={`text-[13px] font-semibold tabular-nums ${topHoldingPct >= 55 ? 'text-warning-text' : 'text-ink'}`}>{topHoldingPct}%</p>
+          <p className={`text-[13px] font-semibold tabular-nums ${topHoldingPct >= 55 ? 'text-warning-text' : 'text-ink'}`}>
+            {topHoldingPct}%
+          </p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Deploy rate</p>
-          <p className={`text-[13px] font-semibold tabular-nums ${deployTone}`}>{deploymentRate}%</p>
+          <p className={`text-[13px] font-semibold tabular-nums ${deploymentRate >= 12 && deploymentRate <= 35 ? 'text-income-text' : 'text-warning-text'}`}>
+            {deploymentRate}%
+          </p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Diversification</p>
-          <p className={`text-[13px] font-semibold tabular-nums ${diversificationScore >= 70 ? 'text-income-text' : diversificationScore >= 50 ? 'text-income-text' : 'text-warning-text'}`}>
+          <p className={`text-[13px] font-semibold tabular-nums ${diversificationScore >= 70 ? 'text-income-text' : diversificationScore >= 50 ? 'text-ink' : 'text-warning-text'}`}>
             {diversificationScore}/100
           </p>
         </div>
       </div>
 
-      {totalPortfolio > 0 ? (
-        <div className="rounded-card bg-kosha-surface-2 p-2.5 mb-2.5">
-          <div className="grid md:grid-cols-[168px_1fr] gap-3 items-center">
-            <div className="flex justify-center md:justify-start">
+      <div className="rounded-card bg-kosha-surface-2 p-3 mb-3">
+        {totalPortfolio > 0 ? (
+          <div className="space-y-3">
+            <div className="flex justify-center">
               <PortfolioMixDonut
                 rows={mixRows}
                 centerTop="Yearly"
                 centerValue={fmt(totalPortfolio)}
                 centerBottom={`${safeVehicleData.length} vehicles`}
-                ringSize={120}
+                ringSize={112}
                 innerInset={9}
               />
             </div>
 
             <div className="space-y-2">
               {mixRows.map((row) => (
-                <div key={`yearly-allocation-row-${row.name}`} className="rounded-card bg-kosha-surface-2 px-3 py-2.5">
+                <div key={`yearly-allocation-row-${row.name}`} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: row.color }} />
                       <p className="text-[11px] text-ink-2 truncate">{row.name}</p>
                     </div>
-                    <p className="text-[11px] tabular-nums text-ink shrink-0" title={fmt(row.value)}>{row.pct}% · {fmt(row.value)}</p>
+                    <p className="text-[11px] tabular-nums text-ink shrink-0" title={fmt(row.value)}>
+                      {row.pct}% · {fmt(row.value)}
+                    </p>
                   </div>
                   <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                    <div className="h-full rounded-pill" style={{ width: `${Math.max(5, row.pct)}%`, background: row.color }} />
+                    <div className="h-full rounded-pill" style={{ width: `${Math.max(6, row.pct)}%`, background: row.color }} />
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 p-2.5 mb-2.5">
-          <p className="text-[11px] text-ink-3">No yearly vehicle allocation is tagged yet. Add vehicle labels to investment transactions to unlock this view.</p>
-        </div>
-      )}
+        ) : (
+          <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface p-3">
+            <p className="text-[11px] text-ink-3">
+              No yearly vehicle allocation is tagged yet. Add vehicle labels to investment entries to unlock this view.
+            </p>
+          </div>
+        )}
+      </div>
 
-      <div className="grid md:grid-cols-2 gap-2 mb-3">
+      <div className="grid grid-cols-1 gap-2 mb-3">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3 mb-1">Concentration signal · {concentrationBand}</p>
-          <p className="text-[11px] text-ink-2 leading-relaxed">{concentrationSignal}</p>
+          <p className="text-[10px] text-ink-3 mb-1">{concentrationLabel}</p>
+          <p className="text-[11px] text-ink-2 leading-relaxed">{concentrationHint}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3 mb-1">Deployment signal</p>
-          <p className="text-[11px] text-ink-2 leading-relaxed">{deploySignal}</p>
+          <p className="text-[11px] text-ink-2 leading-relaxed">{deploymentHint}</p>
         </div>
       </div>
 
       <div className="pt-2 border-t border-kosha-border flex items-center justify-between gap-2">
         <p className="text-[11px] text-ink-3 flex-1 leading-relaxed">{nextAction}</p>
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => navigate('/transactions', { state: { openAddInvestment: true } })}
-          className="btn-secondary-sm shrink-0"
+          className="shrink-0"
         >
           Log investment
-        </button>
+        </Button>
       </div>
     </div>
   )

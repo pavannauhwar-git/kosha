@@ -1,77 +1,78 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // ── App backgrounds — warm cream (CRED light) ─────────────────
-        'kosha-bg':            '#F5F3EE',
-        'kosha-bg-2':          '#EFECE6',
-        'kosha-surface':       '#FFFFFF',
-        'kosha-surface-2':     '#F9F8F5',
-        'kosha-border':        'rgba(26,26,46,0.08)',
-        'kosha-border-strong': 'rgba(26,26,46,0.16)',
+        /* ── App backgrounds — Vibrant Clarity ─────────────────────── */
+        'kosha-bg':            'var(--ds-surface-dim)',
+        'kosha-bg-2':          'var(--ds-surface-container)',
+        'kosha-surface':       'var(--ds-surface)',
+        'kosha-surface-2':     'var(--ds-surface-bright)',
+        'kosha-border':        'var(--ds-border)',
+        'kosha-border-strong': 'var(--ds-border-strong)',
 
-        // ── Brand — Deep charcoal + warm gold accent ────────────────
-        'brand':           '#1A1A2E',
-        'brand-dark':      '#0F0F1A',
-        'brand-mid':       '#2D2D44',
-        'brand-bg':        '#F5F3EE',
-        'brand-container': '#EFECE6',
-        'brand-on':        '#1A1A2E',
-        'brand-accent':    '#C9A96E',
+        /* ── Brand — Vibrant Blue ──────────────────────────────────── */
+        'brand':           'var(--ds-primary)',
+        'brand-dark':      'var(--ds-primary-dark)',
+        'brand-mid':       'var(--ds-primary-light)',
+        'brand-bg':        'var(--ds-surface-dim)',
+        'brand-container': 'var(--ds-primary-container)',
+        'brand-on':        'var(--ds-on-primary)',
+        'brand-accent':    'var(--ds-accent)',
 
-        // ── Income — Muted sage ──────────────────────────────────────
-        'income':        '#2D8B6F',
-        'income-bg':     '#EFF8F4',
-        'income-text':   '#1D6B53',
-        'income-border': '#C6E8D9',
+        /* ── Income — Emerald ──────────────────────────────────────── */
+        'income':        'var(--ds-income)',
+        'income-bg':     'var(--ds-income-bg)',
+        'income-text':   'var(--ds-income-text)',
+        'income-border': '#C8E6C9',
 
-        // ── Expense — Muted rose ─────────────────────────────────────
-        'expense':        '#C4384A',
-        'expense-bg':     '#FDF1F2',
-        'expense-text':   '#A22B3B',
-        'expense-border': '#F2CDD2',
+        /* ── Expense — Coral ───────────────────────────────────────── */
+        'expense':        'var(--ds-expense)',
+        'expense-bg':     'var(--ds-expense-bg)',
+        'expense-text':   'var(--ds-expense-text)',
+        'expense-border': '#FFCDD2',
 
-        // ── Investment — Muted indigo ────────────────────────────────
-        'invest':        '#6246B5',
-        'invest-bg':     '#F3F0FA',
-        'invest-text':   '#4A2F9A',
-        'invest-border': '#D8CFF0',
+        /* ── Investment — Indigo ───────────────────────────────────── */
+        'invest':        'var(--ds-invest)',
+        'invest-bg':     'var(--ds-invest-bg)',
+        'invest-text':   'var(--ds-invest-text)',
+        'invest-border': '#C5CAE9',
 
-        // ── Repayment / Bills ────────────────────────────────────────
-        'repay':        '#8B7230',
-        'repay-bg':     '#FAF6EC',
-        'repay-text':   '#6B5620',
-        'repay-border': '#E8DDB8',
+        /* ── Repayment / Bills — Amber ─────────────────────────────── */
+        'repay':        'var(--ds-repay)',
+        'repay-bg':     'var(--ds-repay-bg)',
+        'repay-text':   'var(--ds-repay-text)',
+        'repay-border': '#FFF9C4',
 
-        // ── Warning ─────────────────────────────────────────────────
-        'warning':        '#8B7230',
-        'warning-bg':     '#FAF6EC',
-        'warning-border': '#E8DDB8',
-        'warning-text':   '#6B5620',
+        /* ── Warning ───────────────────────────────────────────────── */
+        'warning':        'var(--ds-warning)',
+        'warning-bg':     'var(--ds-warning-bg)',
+        'warning-border': '#FFE0B2',
+        'warning-text':   'var(--ds-expense-text)',
 
-        // ── Ink — warm neutrals ──────────────────────────────────────
-        'ink':   '#1A1A2E',
-        'ink-2': '#2D2D44',
-        'ink-3': '#6B6B80',
-        'ink-4': '#A3A3B5',
+        /* ── Ink / Text ────────────────────────────────────────────── */
+        'ink':   'var(--ds-text)',
+        'ink-2': 'var(--ds-text-secondary)',
+        'ink-3': 'var(--ds-text-tertiary)',
+        'ink-4': 'var(--ds-text-disabled)',
 
-        // ── Utility ─────────────────────────────────────────────────
+        /* ── Utility ───────────────────────────────────────────────── */
         'on-grad':   '#FFFFFF',
-        'on-grad-2': '#FFFFFFBF',
-        'success':   '#2D8B6F',
-        'danger':    '#C4384A',
+        'on-grad-2': 'rgba(255,255,255,0.75)',
+        'success':   'var(--ds-success)',
+        'danger':    'var(--ds-danger)',
       },
 
       fontFamily: {
-        sans:    ['InterVariable', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['InterVariable', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
 
       fontSize: {
-        'caption': ['11px', { lineHeight: '1.45', letterSpacing: '0.02em'  }],
+        'caption': ['11px', { lineHeight: '1.45', letterSpacing: '0.02em' }],
         'label':   ['13px', { lineHeight: '1.4',  letterSpacing: '0.005em' }],
-        'body':    ['15px', { lineHeight: '1.55', letterSpacing: '0em'     }],
+        'body':    ['15px', { lineHeight: '1.55', letterSpacing: '0em' }],
         'value':   ['22px', { lineHeight: '1.2',  letterSpacing: '-0.02em' }],
         'display': ['32px', { lineHeight: '1.05', letterSpacing: '-0.025em' }],
         'hero':    ['42px', { lineHeight: '0.95', letterSpacing: '-0.03em' }],
@@ -86,25 +87,28 @@ export default {
       },
 
       boxShadow: {
-        'card':       '0 1px 2px rgba(26,26,46,0.03), 0 4px 16px rgba(26,26,46,0.04)',
-        'card-md':    '0 2px 6px rgba(26,26,46,0.05), 0 8px 28px rgba(26,26,46,0.05)',
-        'card-lg':    '0 4px 12px rgba(26,26,46,0.06), 0 16px 48px rgba(26,26,46,0.07)',
-        'apple-card': '0 24px 56px rgba(26,26,46,0.10), 0 8px 20px rgba(26,26,46,0.05)',
-        'fab':        '0 10px 28px rgba(26,26,46,0.22), 0 3px 10px rgba(26,26,46,0.12)',
-        'focus':      '0 0 0 3px rgba(26,26,46,0.10)',
-        'urgent':     '0 2px 8px rgba(196,56,74,0.10)',
-        'warn':       '0 2px 8px rgba(139,114,48,0.10)',
-        'glass':      '0 8px 32px rgba(26,26,46,0.06), inset 0 0.5px 0 rgba(255,255,255,0.6)',
-        'hero-card':  '0 30px 100px rgba(26,26,46,0.30), 0 12px 36px rgba(26,26,46,0.18), 0 4px 10px rgba(201,169,110,0.08)',
+        'card':       'var(--ds-shadow-sm)',
+        'card-md':    'var(--ds-shadow-md)',
+        'card-lg':    'var(--ds-shadow-lg)',
+        'apple-card': 'var(--ds-shadow-xl)',
+        'fab':        '0 6px 20px rgba(0,127,255,0.30), 0 2px 8px rgba(0,127,255,0.15)',
+        'focus':      'var(--ds-focus-ring)',
+        'urgent':     '0 2px 8px rgba(232,69,60,0.12)',
+        'warn':       '0 2px 8px rgba(249,168,37,0.12)',
+        'glass':      '0 8px 32px rgba(17,19,24,0.06), inset 0 0.5px 0 rgba(255,255,255,0.6)',
+        'hero-card':  '0 24px 64px rgba(0,127,255,0.18), 0 8px 24px rgba(17,19,24,0.12)',
       },
 
       keyframes: {
         'sheet-in': {
           '0%':   { transform: 'translateY(100%)' },
-          '72%':  { transform: 'translateY(-3px)'  },
-          '100%': { transform: 'translateY(0)'     },
+          '72%':  { transform: 'translateY(-3px)' },
+          '100%': { transform: 'translateY(0)' },
         },
-        'fade-in':  { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        'fade-in': {
+          '0%':   { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
         'slide-up': {
           '0%':   { transform: 'translateY(16px)', opacity: '0' },
           '100%': { transform: 'translateY(0)',    opacity: '1' },
@@ -121,14 +125,24 @@ export default {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%':      { transform: 'translateY(-4px)' },
         },
+        'skeleton-pulse': {
+          '0%':   { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
+        'count-up': {
+          '0%':   { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
-        'sheet-in':  'sheet-in 0.36s cubic-bezier(0.32,0.72,0,1) forwards',
-        'fade-in':   'fade-in 0.24s ease forwards',
-        'slide-up':  'slide-up 0.28s cubic-bezier(0.22,1,0.36,1) forwards',
-        'swipe-out': 'swipe-out 0.24s ease forwards',
-        'scale-in':  'scale-in 0.22s cubic-bezier(0.22,1,0.36,1) forwards',
-        'float':     'float 3s ease-in-out infinite',
+        'sheet-in':       'sheet-in 0.36s cubic-bezier(0.32,0.72,0,1) forwards',
+        'fade-in':        'fade-in 0.24s ease forwards',
+        'slide-up':       'slide-up 0.28s cubic-bezier(0.22,1,0.36,1) forwards',
+        'swipe-out':      'swipe-out 0.24s ease forwards',
+        'scale-in':       'scale-in 0.22s cubic-bezier(0.22,1,0.36,1) forwards',
+        'float':          'float 3s ease-in-out infinite',
+        'skeleton-pulse': 'skeleton-pulse 2s ease-in-out infinite',
+        'count-up':       'count-up 0.5s cubic-bezier(0.22,1,0.36,1) forwards',
       },
     },
   },

@@ -10,6 +10,8 @@ import { EXPENSE_CATEGORIES } from '../lib/categories'
 import CategoryIcon from '../components/categories/CategoryIcon'
 import KoshaLogo from '../components/brand/KoshaLogo'
 import { createFadeUp, createStagger } from '../lib/animations'
+import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
 
 const fadeUp = createFadeUp(8, 0.2)
 const stepStagger = createStagger(0.07, 0)
@@ -59,27 +61,28 @@ function StepName({ onNext }) {
         This appears on your dashboard greeting.
       </motion.p>
 
-      <motion.input
-        variants={fadeUp}
-        className="input mb-3"
-        placeholder="Your first name"
-        value={name}
-        onChange={e => setName(e.target.value)}
-        autoFocus
-        onKeyDown={e => e.key === 'Enter' && name.trim() && onNext(name.trim())}
-      />
+      <motion.div variants={fadeUp} className="mb-3">
+        <Input
+          placeholder="Your first name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          autoFocus
+          onKeyDown={e => e.key === 'Enter' && name.trim() && onNext(name.trim())}
+        />
+      </motion.div>
 
-      <motion.button
-        variants={fadeUp}
-        onClick={() => onNext(name.trim())}
-        disabled={!name.trim()}
-        className="w-full py-4 rounded-card bg-brand text-white
-                   text-body font-semibold
-                   active:scale-[0.97] transition-all duration-75
-                   disabled:opacity-40"
-      >
-        Continue
-      </motion.button>
+      <motion.div variants={fadeUp}>
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          onClick={() => onNext(name.trim())}
+          disabled={!name.trim()}
+          className="rounded-card h-11 shadow-card-md"
+        >
+          Continue
+        </Button>
+      </motion.div>
     </motion.div>
   )
 }
@@ -87,6 +90,19 @@ function StepName({ onNext }) {
 // ── Step 2 — Monthly income ───────────────────────────────────────────────
 function StepIncome({ name, onNext, onBack }) {
   const [income, setIncome] = useState('')
+  const [confirmSkipIncome, setConfirmSkipIncome] = useState(false)
+
+  function handleContinue() {
+    const parsed = Number.parseFloat(income)
+    const normalized = Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+
+    if (normalized === 0 && !confirmSkipIncome) {
+      setConfirmSkipIncome(true)
+      return
+    }
+
+    onNext(normalized)
+  }
 
   return (
     <motion.div
@@ -105,34 +121,63 @@ function StepIncome({ name, onNext, onBack }) {
         Used to calculate your savings rate. You can change this anytime.
       </motion.p>
 
-      <motion.input
-        variants={fadeUp}
-        className="input mb-3"
-        type="number"
-        inputMode="numeric"
-        placeholder="0"
-        value={income}
-        onChange={e => setIncome(e.target.value)}
-        autoFocus
-      />
+      <motion.div variants={fadeUp} className="mb-3">
+        <Input
+          type="number"
+          inputMode="numeric"
+          placeholder="0"
+          value={income}
+          onChange={e => setIncome(e.target.value)}
+          autoFocus
+        />
+      </motion.div>
 
-      <motion.button
-        variants={fadeUp}
-        onClick={() => onNext(parseFloat(income) || 0)}
-        className="w-full py-4 rounded-card bg-brand text-white
-                   text-body font-semibold mb-3
-                   active:scale-[0.97] transition-all duration-75"
-      >
-        {income ? 'Continue' : 'Skip for now'}
-      </motion.button>
+      <motion.div variants={fadeUp} className="mb-3">
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          onClick={handleContinue}
+          className="rounded-card h-11 shadow-card-md"
+        >
+          {income ? 'Continue' : 'Skip for now'}
+        </Button>
+      </motion.div>
 
-      <motion.button
-        variants={fadeUp}
-        onClick={onBack}
-        className="w-full py-3 text-label font-medium text-ink-3"
-      >
-        Back
-      </motion.button>
+      {confirmSkipIncome && (
+        <motion.div variants={fadeUp} className="rounded-card border border-warning-border bg-warning-bg p-3 mb-3">
+          <p className="text-[12px] font-semibold text-warning-text">No monthly income entered</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">Savings rate will be less accurate until you set income in Settings.</p>
+          <div className="flex gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => onNext(0)}
+              className="chip-control chip-control-sm bg-warning-bg text-warning-text border-warning-border"
+            >
+              Continue anyway
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmSkipIncome(false)}
+              className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border"
+            >
+              Add income
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      <motion.div variants={fadeUp}>
+        <Button
+          variant="ghost"
+          size="md"
+          fullWidth
+          onClick={onBack}
+          className="rounded-card h-10"
+        >
+          Back
+        </Button>
+      </motion.div>
     </motion.div>
   )
 }
@@ -142,6 +187,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
   const [amount,   setAmount]   = useState('')
   const [desc,     setDesc]     = useState('')
   const [category, setCategory] = useState('food')
+  const [txnType,  setTxnType]  = useState('expense')
   const [saving,   setSaving]   = useState(false)
   const [error,    setError]    = useState(null)
 
@@ -153,10 +199,10 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       await saveTransactionMutation({
         payload: {
           date:         new Date().toISOString().slice(0, 10),
-          type:         'expense',
+          type:         txnType,
           description:  desc.trim(),
           amount:       parseFloat(amount),
-          category,
+          category:     txnType === 'expense' ? category : 'salary',
           is_repayment: false,
           payment_mode: 'upi',
         },
@@ -179,72 +225,105 @@ function StepFirstTransaction({ onFinish, onSkip }) {
         Step 3 of 3
       </motion.p>
       <motion.h2 variants={fadeUp} className="text-display font-bold text-ink tracking-tight mb-2">
-        Add your first expense
+        Add your first transaction
       </motion.h2>
       <motion.p variants={fadeUp} className="text-label text-ink-3 mb-8">
-        Start with something recent — a coffee, groceries, anything.
+        Start with something recent so your dashboard can calibrate correctly.
       </motion.p>
 
-      <motion.input
-        variants={fadeUp}
-        className="input mb-3"
-        type="number"
-        inputMode="decimal"
-        placeholder="0"
-        value={amount}
-        onChange={e => setAmount(e.target.value)}
-        autoFocus
-      />
-
-      <motion.input
-        variants={fadeUp}
-        className="input mb-3"
-        placeholder="What was it for?"
-        value={desc}
-        onChange={e => setDesc(e.target.value)}
-      />
-
-      <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2 mb-5 max-h-64 overflow-y-auto">
-        {EXPENSE_CATS.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => setCategory(cat.id)}
-            className={`flex flex-col items-center gap-1 p-2 rounded-card border transition-all
-              ${category === cat.id
-                ? 'border-brand bg-brand-container'
-                : 'border-kosha-border bg-kosha-surface'}`}
-          >
-            <CategoryIcon categoryId={cat.id} size={16} />
-            <span className="text-[10px] font-medium text-ink-3 text-center leading-tight truncate w-full">
-              {cat.label.split(' ')[0]}
-            </span>
-          </button>
-        ))}
+      <motion.div variants={fadeUp} className="grid grid-cols-2 gap-2 mb-3">
+        <button
+          type="button"
+          onClick={() => setTxnType('expense')}
+          className={`h-10 rounded-card text-[12px] font-semibold border transition-all active:scale-[0.98] ${
+            txnType === 'expense'
+              ? 'bg-expense-bg text-expense-text border-expense-border'
+              : 'bg-kosha-surface text-ink-3 border-kosha-border'
+          }`}
+        >
+          I spent
+        </button>
+        <button
+          type="button"
+          onClick={() => setTxnType('income')}
+          className={`h-10 rounded-card text-[12px] font-semibold border transition-all active:scale-[0.98] ${
+            txnType === 'income'
+              ? 'bg-income-bg text-income-text border-income-border'
+              : 'bg-kosha-surface text-ink-3 border-kosha-border'
+          }`}
+        >
+          I received
+        </button>
       </motion.div>
+
+      <motion.div variants={fadeUp} className="mb-3">
+        <Input
+          type="number"
+          inputMode="decimal"
+          placeholder="Amount"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          autoFocus
+        />
+      </motion.div>
+
+      <motion.div variants={fadeUp} className="mb-3">
+        <Input
+          placeholder={txnType === 'expense' ? 'What was it for?' : 'Where did it come from?'}
+          value={desc}
+          onChange={e => setDesc(e.target.value)}
+        />
+      </motion.div>
+
+      {txnType === 'expense' && (
+        <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2 mb-5 max-h-64 overflow-y-auto">
+          {EXPENSE_CATS.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setCategory(cat.id)}
+              className={`flex flex-col items-center gap-1 p-2 rounded-card border transition-all
+                ${category === cat.id
+                  ? 'border-brand bg-brand-container'
+                  : 'border-kosha-border bg-kosha-surface'}`}
+            >
+              <CategoryIcon categoryId={cat.id} size={16} />
+              <span className="text-[10px] font-medium text-ink-3 text-center leading-tight truncate w-full">
+                {cat.label.split(' ')[0]}
+              </span>
+            </button>
+          ))}
+        </motion.div>
+      )}
 
       {error && (
         <p className="text-caption text-expense-text mb-3">{error}</p>
       )}
 
-      <motion.button
-        variants={fadeUp}
-        onClick={handleSave}
-        disabled={!amount || !desc.trim() || saving}
-        className="w-full py-4 rounded-card bg-brand text-white
-                   text-body font-semibold mb-3
-                   active:scale-[0.97] transition-all duration-75
-                   disabled:opacity-40"
-      >
-        {saving ? 'Saving…' : 'Add & go to dashboard'}
-      </motion.button>
+      <motion.div variants={fadeUp} className="mb-3">
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          onClick={handleSave}
+          disabled={!amount || !desc.trim()}
+          loading={saving}
+          className="rounded-card h-11 shadow-card-md"
+        >
+          {saving ? 'Saving…' : 'Add & go to dashboard'}
+        </Button>
+      </motion.div>
 
-      <motion.button
-        variants={fadeUp}
-        onClick={onSkip}
-        className="w-full py-3 text-label font-medium text-ink-3"
-      >
-        Skip — go to dashboard
-      </motion.button>
+      <motion.div variants={fadeUp}>
+        <Button
+          variant="ghost"
+          size="md"
+          fullWidth
+          onClick={onSkip}
+          className="rounded-card h-10"
+        >
+          Skip — go to dashboard
+        </Button>
+      </motion.div>
     </motion.div>
   )
 }

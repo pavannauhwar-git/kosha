@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight, Pencil } from 'lucide-react'
+import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight, Pencil, CalendarDays } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useLiabilities,
@@ -13,11 +13,13 @@ import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
-import PageHeader from '../components/layout/PageHeader'
+import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
+import PageHeaderPage from '../components/layout/PageHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import AppToast from '../components/common/AppToast'
 import BillPaymentInsights from '../components/cards/bills/BillPaymentInsights'
+import Button from '../components/ui/Button'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
@@ -25,6 +27,16 @@ const BUCKET_LABEL_CLASS = {
   overdue: 'bg-expense-bg text-expense-text border border-expense-border',
   dueSoon: 'bg-warning-bg text-warning-text border border-warning-border',
   later: 'bg-kosha-surface-2 text-ink-3 border border-kosha-border',
+}
+
+function safeDaysUntilDate(dateValue) {
+  if (!dateValue) return null
+  try {
+    const days = daysUntil(dateValue)
+    return Number.isFinite(days) ? days : null
+  } catch {
+    return null
+  }
 }
 
 export default function Bills() {
@@ -44,17 +56,27 @@ export default function Bills() {
   })
   const [formErr, setFormErr] = useState('')
   const [errToast, setErrToast] = useState(null)
+  const [undoToast, setUndoToast] = useState(null)
+  const [undoBill, setUndoBill] = useState(null)
   const [addSaving, setAddSaving] = useState(false)
   const [hiddenBillIds, setHiddenBillIds] = useState(() => new Set())
+  const undoTimerRef = useRef(null)
 
   const visiblePending = useMemo(() => pending.filter((bill) => !hiddenBillIds.has(bill.id)), [pending, hiddenBillIds])
   const visiblePaid = useMemo(() => paid.filter((bill) => !hiddenBillIds.has(bill.id)), [paid, hiddenBillIds])
 
   const totalPending = useMemo(() => visiblePending.reduce((s, b) => s + +b.amount, 0), [visiblePending])
   const dueSoonAmount = useMemo(() => visiblePending
-    .filter(b => daysUntil(b.due_date) <= 7)
+    .filter((bill) => {
+      const days = safeDaysUntilDate(bill.due_date)
+      return days !== null && days <= 7
+    })
     .reduce((s, b) => s + +b.amount, 0), [visiblePending])
-  const dueSoonCount = useMemo(() => visiblePending.filter(b => daysUntil(b.due_date) <= 7).length, [visiblePending])
+  const dueSoonCount = useMemo(() => visiblePending
+    .filter((bill) => {
+      const days = safeDaysUntilDate(bill.due_date)
+      return days !== null && days <= 7
+    }).length, [visiblePending])
   const dueThisMonth = useMemo(() => {
     const now = new Date()
     const y = now.getFullYear()
@@ -70,13 +92,79 @@ export default function Bills() {
     }
   }, [visiblePending])
 
+  const overdueSummary = useMemo(() => {
+    const rows = visiblePending.filter((bill) => {
+      const days = safeDaysUntilDate(bill.due_date)
+      return days !== null && days < 0
+    })
+
+    return {
+      count: rows.length,
+      amount: rows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+    }
+  }, [visiblePending])
+
+  const duePressureIndex = useMemo(() => {
+    if (!visiblePending.length) return 0
+    const weightedPressure = (overdueSummary.count * 2) + dueSoonCount
+    const maxWeightedPressure = visiblePending.length * 2
+    return Math.round((weightedPressure / Math.max(1, maxWeightedPressure)) * 100)
+  }, [visiblePending.length, overdueSummary.count, dueSoonCount])
+
+  const duePressureBand = useMemo(
+    () => scoreRiskBand(duePressureIndex, { high: 35, watch: 15 }),
+    [duePressureIndex]
+  )
+
+  const recurringBurden = useMemo(() => {
+    const recurringRows = visiblePending.filter((bill) => !!bill.is_recurring)
+    const recurringAmount = recurringRows.reduce((sum, row) => sum + Number(row.amount || 0), 0)
+
+    return {
+      count: recurringRows.length,
+      amount: recurringAmount,
+      ratioPct: totalPending > 0 ? Math.round((recurringAmount / totalPending) * 100) : 0,
+    }
+  }, [visiblePending, totalPending])
+
+  const recurringBurdenBand = useMemo(
+    () => scoreRiskBand(recurringBurden.ratioPct, { high: 45, watch: 30 }),
+    [recurringBurden.ratioPct]
+  )
+
+  const forecast30Days = useMemo(() => {
+    const rows = visiblePending
+      .map((bill) => ({
+        ...bill,
+        days: safeDaysUntilDate(bill.due_date),
+      }))
+      .filter((bill) => bill.days !== null && bill.days >= 0 && bill.days <= 30)
+
+    const weeklyBuckets = [0, 0, 0, 0, 0]
+    for (const row of rows) {
+      const bucketIndex = Math.min(4, Math.floor(row.days / 7))
+      weeklyBuckets[bucketIndex] += 1
+    }
+
+    const peakWeek = weeklyBuckets.reduce((best, count, index) => {
+      if (count > best.count) return { week: index + 1, count }
+      return best
+    }, { week: 0, count: 0 })
+
+    return {
+      count: rows.length,
+      amount: rows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+      peakWeek,
+    }
+  }, [visiblePending])
+
   const pendingWithBucket = useMemo(() => {
     const bucketRank = { overdue: 0, dueSoon: 1, later: 2 }
     return visiblePending
       .map((bill) => {
-        const days = daysUntil(bill.due_date)
+        const days = safeDaysUntilDate(bill.due_date)
         const bucket = days < 0 ? 'overdue' : days <= 7 ? 'dueSoon' : 'later'
-        return { ...bill, _days: days, _bucket: bucket }
+        return { ...bill, _days: days ?? 9999, _bucket: bucket }
       })
       .sort((a, b) => {
         const rankDiff = bucketRank[a._bucket] - bucketRank[b._bucket]
@@ -84,6 +172,23 @@ export default function Bills() {
         return String(a.due_date || '').localeCompare(String(b.due_date || ''))
       })
   }, [visiblePending])
+
+  const nextDueInDays = useMemo(() => {
+    const allDays = visiblePending
+      .map((bill) => safeDaysUntilDate(bill.due_date))
+      .filter((value) => value !== null)
+    if (!allDays.length) return null
+    return Math.max(0, Math.min(...allDays))
+  }, [visiblePending])
+
+  const recurrenceStartsImmediately = useMemo(() => {
+    if (!form.is_recurring || !form.due_date) return false
+    const due = new Date(`${form.due_date}T00:00:00`)
+    if (Number.isNaN(due.getTime())) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return due.getTime() <= today.getTime()
+  }, [form.is_recurring, form.due_date])
 
   const barPct = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
   const totalBills = visiblePending.length + visiblePaid.length
@@ -107,6 +212,15 @@ export default function Bills() {
       setSearchParams(next, { replace: true })
     }
   }, [tabFromQuery, searchParams, setSearchParams])
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current)
+        undoTimerRef.current = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!focusBillId) return
@@ -236,6 +350,9 @@ export default function Bills() {
 
   async function handleDelete(id) {
     if (!id || payingId || deletingId) return
+    const sourceRows = tab === 'pending' ? pending : paid
+    const snapshot = sourceRows.find((bill) => bill.id === id)
+
     setDeletingId(id)
     setHiddenBillIds((prev) => {
       const next = new Set(prev)
@@ -244,6 +361,22 @@ export default function Bills() {
     })
     try {
       await deleteLiabilityMutation(id)
+
+      if (snapshot) {
+        if (undoTimerRef.current) {
+          clearTimeout(undoTimerRef.current)
+          undoTimerRef.current = null
+        }
+
+        setUndoBill(snapshot)
+        setUndoToast(`Deleted "${snapshot.description}".`)
+
+        undoTimerRef.current = setTimeout(() => {
+          setUndoToast(null)
+          setUndoBill(null)
+          undoTimerRef.current = null
+        }, 6000)
+      }
     } catch (e) {
       setHiddenBillIds((prev) => {
         const next = new Set(prev)
@@ -255,6 +388,36 @@ export default function Bills() {
       setDeletingId(null)
     }
   }
+
+  const handleUndoDelete = useCallback(async () => {
+    if (!undoBill) return
+
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current)
+      undoTimerRef.current = null
+    }
+
+    try {
+      await addLiabilityMutation({
+        description: undoBill.description || '',
+        amount: Number(undoBill.amount || 0),
+        due_date: undoBill.due_date || null,
+        is_recurring: !!undoBill.is_recurring,
+        recurrence: undoBill.is_recurring ? (undoBill.recurrence || 'monthly') : null,
+        paid: !!undoBill.paid,
+        linked_transaction_id: undoBill.linked_transaction_id || null,
+      })
+
+      setUndoToast(null)
+      setUndoBill(null)
+      setErrToast('Bill restored.')
+      setTimeout(() => setErrToast(null), 2600)
+    } catch (error) {
+      setUndoToast(null)
+      setErrToast(error?.message || 'Could not restore bill.')
+      setTimeout(() => setErrToast(null), 3600)
+    }
+  }, [undoBill])
 
   function openEditBill(bill) {
     setEditBill(bill)
@@ -279,15 +442,14 @@ export default function Bills() {
   }
 
   return (
-    <div className="page">
-      <PageHeader title="Bills & Dues" className="mb-3" />
+    <PageHeaderPage title="Bills & Dues">
 
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <div>
-          {tab === 'pending' && visiblePending.length > 0 ? (
+          {tab === 'pending' && visiblePending.length > 0 && nextDueInDays !== null ? (
             <p className="text-caption text-ink-3 mt-0.5">
-              Next due in {Math.min(...visiblePending.map(b => Math.max(0, daysUntil(b.due_date) || 0)).filter(Number.isFinite))} days
+              Next due in {nextDueInDays} days
             </p>
           ) : tab === 'paid' ? (
             <p className="text-caption text-ink-3 mt-0.5">{visiblePaid.length} paid bill{visiblePaid.length !== 1 ? 's' : ''}</p>
@@ -296,14 +458,14 @@ export default function Bills() {
           )}
         </div>
         {totalBills > 0 && (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Download size={14} />}
             onClick={handleExportCsv}
-            className="btn-secondary h-9 px-3 text-[11px]"
           >
-            <Download size={14} className="mr-1" />
             Export CSV
-          </button>
+          </Button>
         )}
       </div>
 
@@ -313,7 +475,7 @@ export default function Bills() {
           onClick={() => setTab('pending')}
           className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
             ${tab === 'pending'
-              ? 'bg-brand text-white border border-brand shadow-card'
+              ? 'bg-brand-container text-brand border border-brand shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Pending ({visiblePending.length})
@@ -322,7 +484,7 @@ export default function Bills() {
           onClick={() => setTab('paid')}
           className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
             ${tab === 'paid'
-              ? 'bg-income text-white border border-income shadow-card'
+              ? 'bg-income-bg text-income-text border border-income-border shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
         >
           Paid ({visiblePaid.length})
@@ -331,7 +493,7 @@ export default function Bills() {
 
       {/* ── Summary card ─────────────────────────────────────────────── */}
       {tab === 'pending' && visiblePending.length > 0 && (
-        <div className="card mb-3.5 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
+        <div className="card mb-3.5 p-3.5 sm:p-4">
           <div className="flex items-start justify-between gap-3 pb-4 border-b border-kosha-border">
             <div>
               <p className="section-label mb-0.5">Total pending</p>
@@ -345,12 +507,12 @@ export default function Bills() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 mt-4">
-            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border px-3 py-2.5">
+            <div className="mini-panel px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">Due in 7 days</p>
               <p className="text-base font-semibold text-warning-text tabular-nums leading-none">{fmt(dueSoonAmount)}</p>
               <p className="text-caption text-ink-3 mt-1">{dueSoonCount} bill{dueSoonCount !== 1 ? 's' : ''}</p>
             </div>
-            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border px-3 py-2.5">
+            <div className="mini-panel px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">Due this month</p>
               <p className="text-base font-semibold text-ink tabular-nums leading-none">{fmt(dueThisMonth.amount)}</p>
               <p className="text-caption text-ink-3 mt-1">{dueThisMonth.count} bill{dueThisMonth.count !== 1 ? 's' : ''}</p>
@@ -374,21 +536,54 @@ export default function Bills() {
               </span>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] text-ink-3 uppercase tracking-wide">Due pressure</p>
+              <p className={`text-[13px] font-semibold tabular-nums mt-1 ${bandTextClass(duePressureBand)}`}>
+                {duePressureIndex}/100
+              </p>
+              <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                {overdueSummary.count} overdue · {dueSoonCount} due soon
+              </p>
+            </div>
+
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] text-ink-3 uppercase tracking-wide">Recurring burden</p>
+              <p className={`text-[13px] font-semibold tabular-nums mt-1 ${bandTextClass(recurringBurdenBand, 'text-ink')}`}>
+                {recurringBurden.ratioPct}%
+              </p>
+              <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                {recurringBurden.count} recurring · {fmt(recurringBurden.amount)}
+              </p>
+            </div>
+
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] text-ink-3 uppercase tracking-wide">Next 30 days</p>
+              <p className="text-[13px] font-semibold tabular-nums mt-1 text-ink">
+                {fmt(forecast30Days.amount)}
+              </p>
+              <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                {forecast30Days.count} bill{forecast30Days.count === 1 ? '' : 's'}
+                {forecast30Days.peakWeek.count > 0 ? ` · Peak week ${forecast30Days.peakWeek.week}` : ''}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
       {showGuideHint && (
-        <div className="card mb-3.5 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
+        <div className="card mb-3.5 p-3.5 sm:p-4">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 flex items-center justify-center shrink-0 border border-kosha-border">
-              <BookOpen size={16} className="text-accent" />
+              <BookOpen size={16} className="text-brand" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-semibold text-ink">Bills setup tip</p>
               <p className="text-[12px] text-ink-3 mt-0.5 leading-relaxed">Mark recurring bills properly to keep due alerts and auto-generation accurate.</p>
               <button
                 onClick={() => navigate('/guide')}
-                className="text-[12px] font-semibold text-accent mt-2 inline-flex items-center gap-1"
+                  className="text-[12px] font-semibold text-brand mt-2 inline-flex items-center gap-1"
               >
                 Open guide <ArrowRight size={12} />
               </button>
@@ -504,12 +699,12 @@ export default function Bills() {
                           <button
                             onClick={() => openEditBill(bill)}
                             disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                            className="h-8 w-8 flex items-center justify-center rounded-card
+                            className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
                                        bg-kosha-surface-2 text-ink-3 text-[11px] font-semibold
                                        border border-kosha-border active:scale-[0.97] transition-all duration-100
                                        disabled:opacity-60"
                           >
-                            <Pencil size={13} />
+                            <Pencil size={13} /> Edit
                           </button>
                           <button
                             onClick={() => handleMarkPaid(bill)}
@@ -527,12 +722,13 @@ export default function Bills() {
                       <button
                         onClick={() => handleDelete(bill.id)}
                         disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                        className="h-8 w-8 flex items-center justify-center rounded-card
+                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
                                    bg-expense-bg text-expense-text text-[11px] font-semibold
                                    border border-expense-border active:scale-[0.97] transition-all duration-100
                                    disabled:opacity-60"
                       >
                         {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                        {deletingId === bill.id ? 'Deleting…' : 'Delete'}
                       </button>
                     </div>
                   </div>
@@ -587,8 +783,8 @@ export default function Bills() {
 
                 <div className="list-card mb-3">
                   <label className="list-row w-full cursor-pointer">
-                    <div className="w-8 h-8 rounded-chip bg-warning-bg flex items-center justify-center shrink-0">
-                      <span className="text-warning-text text-xs font-bold">📅</span>
+                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                      <CalendarDays size={14} className="text-brand" />
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Due Date</span>
                     <input type="date" name="bill-due-date"
@@ -605,7 +801,7 @@ export default function Bills() {
                     className={`flex items-center gap-2 px-3 py-2 rounded-card text-sm font-medium
                                 border transition-all
                       ${form.is_recurring
-                        ? 'bg-warning-bg text-warning-text border-warning-border'
+                        ? 'bg-brand-container text-brand border-brand/20'
                         : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
                   >
                     <Repeat size={14} /> Recurring
@@ -617,7 +813,7 @@ export default function Bills() {
                           onClick={() => setForm(f => ({ ...f, recurrence: r }))}
                           className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
                             ${form.recurrence === r
-                              ? 'bg-warning-bg text-warning-text border-warning-border'
+                              ? 'bg-brand-container text-brand border-brand/20'
                               : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
                         >{r}</button>
                       ))}
@@ -625,15 +821,25 @@ export default function Bills() {
                   )}
                 </div>
 
+                {recurrenceStartsImmediately && (
+                  <p className="text-[12px] text-warning-text mb-3">
+                    Recurrence starts from this due date. If this bill is already due, next cycle may generate immediately.
+                  </p>
+                )}
+
                 {formErr && <p className="text-expense-text text-sm mb-3">{formErr}</p>}
 
                 <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
-                  <button onClick={handleAdd}
-                    disabled={addSaving}
-                    className={`w-full py-4 rounded-card font-semibold transition-all
-                               ${addSaving ? 'bg-brand/70 text-white/90 scale-[0.97]' : 'bg-brand text-white active:scale-[0.97]'}`}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onClick={handleAdd}
+                    loading={addSaving}
+                    className="rounded-card h-12 shadow-card-md"
+                  >
                     {addSaving ? (editBill ? 'Saving…' : 'Adding…') : (editBill ? 'Save Changes' : 'Add Bill')}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </motion.div>
@@ -642,12 +848,25 @@ export default function Bills() {
       </AnimatePresence>
 
       {/* FAB */}
-      <button className="fab-bills" onClick={() => setShowAdd(true)}>
+      <button className="fab-bills" aria-label="Add bill" onClick={() => setShowAdd(true)}>
         <Plus size={24} className="text-white" />
       </button>
 
-      <AppToast message={errToast} onDismiss={() => setErrToast(null)} />
+      <AppToast
+        message={undoToast || errToast}
+        onDismiss={() => {
+          setUndoToast(null)
+          setUndoBill(null)
+          setErrToast(null)
+          if (undoTimerRef.current) {
+            clearTimeout(undoTimerRef.current)
+            undoTimerRef.current = null
+          }
+        }}
+        action={undoToast && undoBill ? () => { void handleUndoDelete() } : undefined}
+        actionLabel="Undo"
+      />
 
-    </div>
+    </PageHeaderPage>
   )
 }

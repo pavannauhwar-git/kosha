@@ -13,8 +13,8 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
   const heroAccentStrong = C.heroAccent
 
   return (
-    <div className="card-hero p-6 sm:p-7 relative overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
+    <div className="card-hero p-5 sm:p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between mb-3.5">
         <p className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{ color: heroAccentStrong }}>
           {MONTH_NAMES[month - 1].slice(0, 3)} {year}
         </p>
@@ -23,42 +23,47 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
         </p>
       </div>
 
-      <p className="text-[10px] font-medium mb-1 tracking-wide" style={{ color: C.heroLabel }}>
-        Monthly balance
-      </p>
-      <p className={`text-[clamp(1.35rem,6.8vw,2.375rem)] font-bold leading-[0.95] tracking-tight tabular-nums whitespace-nowrap max-w-full ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
+      <p className="text-[10px] font-medium mb-1 tracking-wide" style={{ color: C.heroLabel }}>Monthly balance</p>
+      <p className={`text-[clamp(1.05rem,5.4vw,1.95rem)] font-bold leading-[0.95] tracking-tight tabular-nums whitespace-nowrap max-w-full overflow-hidden text-ellipsis ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
         {fmt(balance)}
       </p>
 
       <div
-        className="mt-3 mb-5 inline-flex items-center px-3 py-1.5 rounded-pill"
+        className="mt-2.5 mb-4 inline-flex items-center px-2.5 py-1 rounded-pill"
         style={{ background: 'rgba(201,169,110,0.15)', border: '1px solid rgba(201,169,110,0.25)' }}
       >
         <span className="text-[11px] font-semibold tracking-wide" style={{ color: heroAccentStrong }}>
-          {rate}% saved
+          {rate}% saved this month
         </span>
       </div>
 
-      <div className="mb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+      <div className="mb-3.5" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
 
-      <div className="flex justify-between gap-2 sm:gap-3 mb-4">
+      <div className="flex justify-between gap-2">
         {[
           { label: 'Earned', val: earned },
           { label: 'Spent', val: spent },
           { label: 'Invested', val: invested },
-        ].map(s => (
-          <div key={s.label} className="flex-1 min-w-0 px-2.5 sm:px-4 py-2.5 rounded-2xl" style={{ background: C.heroStatBg }}>
+        ].map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.06 * i, ease: [0.22, 1, 0.36, 1] }}
+            className="flex-1 min-w-0 px-2.5 py-2 rounded-2xl"
+            style={{ background: C.heroStatBg }}
+          >
             <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide" style={{ color: C.heroLabel }}>
               {s.label}
             </p>
-            <p className="text-[clamp(0.56rem,2.7vw,0.875rem)] sm:text-[14px] font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] [overflow-wrap:anywhere]">
+            <p className="text-[clamp(0.54rem,2.1vw,0.82rem)] sm:text-[13px] font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] whitespace-nowrap overflow-hidden text-ellipsis">
               {fmt(s.val)}
             </p>
-          </div>
+          </motion.div>
         ))}
       </div>
 
-      <div>
+      <div className="mt-3.5">
         <div className="flex justify-between mb-2">
           <span className="text-[10px] tracking-wide" style={{ color: C.heroLabel }}>Savings rate</span>
           <span className="text-[11px] font-semibold" style={{ color: heroAccentStrong }}>{rate}%</span>

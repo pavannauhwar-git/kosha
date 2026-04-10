@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, LogOut, Bug, Info, BookOpen } from 'lucide-react'
+import { Settings, LogOut, Bug, Info, BookOpen, Link2 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -65,7 +65,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         className="w-9 h-9 rounded-full bg-kosha-surface-2
                    shadow-card flex items-center justify-center overflow-hidden
                    active:scale-95 transition-transform duration-100"
-        style={{ border: '1px solid rgba(26,26,46,0.08)' }}
+        style={{ border: '1px solid var(--ds-border)' }}
       >
         {avatarUrl ? (
           <img
@@ -100,7 +100,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               >
                 <div className="w-9 h-9 rounded-full bg-kosha-surface-2
                                 flex items-center justify-center overflow-hidden shrink-0"
-                  style={{ border: '1px solid rgba(26,26,46,0.08)' }}>
+                  style={{ border: '1px solid var(--ds-border)' }}>
                   {avatarUrl ? (
                     <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                   ) : (
@@ -121,6 +121,13 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                   icon={<Settings size={15} />}
                   label="Account Settings"
                   onClick={() => { close(); navigate('/settings') }}
+                />
+              </motion.div>
+              <motion.div custom={4} variants={menuItemVariants} initial="hidden" animate="show">
+                <MenuRow
+                  icon={<Link2 size={15} />}
+                  label="Reconciliation"
+                  onClick={() => { close(); navigate('/reconciliation') }}
                 />
               </motion.div>
 
@@ -156,7 +163,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                   onClick={() => { close(); navigate('/guide') }}
                 />
               </motion.div>
-              <motion.div custom={4} variants={menuItemVariants} initial="hidden" animate="show">
+              <motion.div custom={5} variants={menuItemVariants} initial="hidden" animate="show">
                 <MenuRow
                   icon={<LogOut size={15} />}
                   label="Sign Out"

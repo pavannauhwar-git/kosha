@@ -17,7 +17,7 @@ function PaceTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="tooltip-enter rounded-card bg-kosha-surface p-3 shadow-card min-w-[172px]" style={{ border: '1px solid rgba(26,26,46,0.06)' }}>
+    <div className="tooltip-enter rounded-card bg-kosha-surface p-3 shadow-card min-w-[172px]" style={{ border: '1px solid var(--ds-border)' }}>
       <p className="text-[11px] font-semibold text-ink mb-1">Day {label}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
@@ -130,26 +130,26 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, earn
         </div>
       </div>
 
-      <div className="rounded-card bg-kosha-surface-2 p-3" style={{ border: '1px solid rgba(26,26,46,0.04)' }}>
+      <div className="rounded-card bg-kosha-surface-2 p-3" style={{ border: '1px solid var(--ds-border)' }}>
         <ResponsiveContainer width="100%" height={180}>
           <AreaChart data={paceData.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="spendAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#C4384A" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#C4384A" stopOpacity={0.02} />
+                <stop offset="5%" stopColor="#E8453C" stopOpacity={0.18} />
+                <stop offset="95%" stopColor="#E8453C" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
               dataKey="day"
-              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
+              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
               tickFormatter={compactTick}
-              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
+              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}
@@ -158,16 +158,16 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, earn
             <Area
               type="monotone"
               dataKey="actual"
-              stroke="#C4384A"
+              stroke="#E8453C"
               fill="url(#spendAreaGrad)"
               strokeWidth={2.2}
               dot={false}
-              activeDot={{ r: 4, fill: '#C4384A', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: '#E8453C', stroke: '#fff', strokeWidth: 2 }}
             />
             <Line
               type="monotone"
               dataKey="pace"
-              stroke="rgba(26,26,46,0.35)"
+              stroke="rgba(0,127,255,0.35)"
               strokeWidth={1.8}
               strokeDasharray="5 4"
               dot={false}

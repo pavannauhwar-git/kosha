@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react'
 import {
   useTransactions,
   removeTransactionMutation,
@@ -14,12 +14,14 @@ import AppToast from '../components/common/AppToast'
 import { CATEGORIES, PAYMENT_MODES, getCategoriesForType } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
+import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
 import { downloadCsv, toCsv } from '../lib/csv'
-import PageHeader from '../components/layout/PageHeader'
+import PageHeaderPage from '../components/layout/PageHeaderPage'
 import SectionHeader from '../components/common/SectionHeader'
 import { getAuthUserId } from '../lib/authStore'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
+import Button from '../components/ui/Button'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 
@@ -38,7 +40,7 @@ const DATE_PRESETS = [
 ]
 
 const TYPE_CHIP = {
-  all:        'bg-ink text-white border-ink',
+  all:        'bg-brand text-brand-on border-brand',
   expense:    'bg-expense-bg text-expense-text border-expense-border',
   income:     'bg-income-bg text-income-text border-income-border',
   investment: 'bg-invest-bg text-invest-text border-invest-border',
@@ -70,6 +72,7 @@ export default function Transactions() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const debouncedSearch = useDebounce(search, 300)
+  const isSearchDebouncing = search !== debouncedSearch
   const { startDate, endDate } = useMemo(() => {
     const now = new Date()
     const toISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -152,6 +155,22 @@ export default function Transactions() {
     () => DATE_PRESETS.find((preset) => preset.id === datePreset)?.label || 'All time',
     [datePreset]
   )
+  const activeCategoryLabel = useMemo(
+    () => (catFilter ? CATEGORIES.find((item) => item.id === catFilter)?.label || 'Custom category' : 'All categories'),
+    [catFilter]
+  )
+  const activePaymentModeLabel = useMemo(
+    () => (paymentModeFilter ? PAYMENT_MODES.find((item) => item.id === paymentModeFilter)?.label || 'Custom mode' : 'All payment modes'),
+    [paymentModeFilter]
+  )
+  const categoryLabelById = useMemo(
+    () => new Map(CATEGORIES.map((category) => [category.id, category.label])),
+    []
+  )
+  const paymentModeLabelById = useMemo(
+    () => new Map(PAYMENT_MODES.map((mode) => [mode.id, mode.label])),
+    []
+  )
   const visibleSummary = useMemo(() => {
     return data.reduce((acc, txn) => {
       const amount = Number(txn?.amount || 0)
@@ -167,6 +186,102 @@ export default function Transactions() {
       return acc
     }, { income: 0, outflow: 0, net: 0 })
   }, [data])
+
+  const timelineActivitySignal = useMemo(() => {
+    if (data.length < 2) return null
+
+    const dateValues = data
+      .map((txn) => String(txn?.date || '').trim())
+      .filter(Boolean)
+
+    if (!dateValues.length) return null
+
+    const activeDays = new Set(dateValues).size
+
+    let spanDays = 1
+    if (startDate && endDate) {
+      const fromTs = new Date(`${startDate}T00:00:00`).getTime()
+      const toTs = new Date(`${endDate}T00:00:00`).getTime()
+      if (Number.isFinite(fromTs) && Number.isFinite(toTs)) {
+        spanDays = Math.max(1, Math.floor((toTs - fromTs) / (24 * 60 * 60 * 1000)) + 1)
+      }
+    } else {
+      const parsed = dateValues
+        .map((value) => new Date(`${value}T00:00:00`).getTime())
+        .filter((value) => Number.isFinite(value))
+      if (parsed.length > 0) {
+        spanDays = Math.max(1, Math.floor((Math.max(...parsed) - Math.min(...parsed)) / (24 * 60 * 60 * 1000)) + 1)
+      } else {
+        spanDays = Math.max(1, activeDays)
+      }
+    }
+
+    const densityPct = Math.round((activeDays / spanDays) * 100)
+    const txnsPerActiveDay = data.length / Math.max(1, activeDays)
+    const band = scoreHealthBand(densityPct, { healthy: 65, watch: 35 })
+
+    return { activeDays, spanDays, densityPct, txnsPerActiveDay, band }
+  }, [data, startDate, endDate])
+
+  const paymentModeSignal = useMemo(() => {
+    if (!data.length) return null
+
+    const counts = new Map()
+    for (const txn of data) {
+      const mode = String(txn?.payment_mode || 'other')
+      counts.set(mode, (counts.get(mode) || 0) + 1)
+    }
+
+    const rows = [...counts.entries()]
+      .map(([mode, count]) => ({
+        mode,
+        label: paymentModeLabelById.get(mode) || 'Other',
+        count,
+        pct: Math.round((count / data.length) * 100),
+      }))
+      .sort((a, b) => b.count - a.count)
+
+    if (!rows.length) return null
+
+    const topPct = rows[0]?.pct || 0
+
+    return {
+      top: rows[0],
+      secondary: rows[1] || null,
+      band: scoreRiskBand(topPct, { high: 72, watch: 55 }),
+    }
+  }, [data, paymentModeLabelById])
+
+  const expenseFrequencySignal = useMemo(() => {
+    const expenseRows = data.filter((txn) => txn?.type === 'expense')
+    if (expenseRows.length < 3) return null
+
+    const counts = new Map()
+    for (const txn of expenseRows) {
+      const categoryId = String(txn?.category || 'other')
+      counts.set(categoryId, (counts.get(categoryId) || 0) + 1)
+    }
+
+    const rows = [...counts.entries()]
+      .map(([categoryId, count]) => ({
+        categoryId,
+        label: categoryLabelById.get(categoryId) || 'Other',
+        count,
+      }))
+      .sort((a, b) => b.count - a.count)
+
+    if (!rows.length) return null
+
+    const topThreeCount = rows.slice(0, 3).reduce((sum, row) => sum + row.count, 0)
+    const concentrationPct = Math.round((topThreeCount / expenseRows.length) * 100)
+
+    return {
+      top: rows[0],
+      concentrationPct,
+      expenseCount: expenseRows.length,
+      band: scoreRiskBand(concentrationPct, { high: 72, watch: 56 }),
+    }
+  }, [data, categoryLabelById])
 
   useEffect(() => {
     try {
@@ -300,15 +415,20 @@ export default function Transactions() {
         paymentModeFilter ? (PAYMENT_MODE_LABELS[paymentModeFilter] || paymentModeFilter) : '',
       ].filter(Boolean).join('-')
 
-      downloadCsv(
-        `kosha-${filters || 'transactions'}-${new Date().toISOString().slice(0, 10)}.csv`,
-        csv
-      )
+      const fileName = `kosha-${filters || 'transactions'}-${new Date().toISOString().slice(0, 10)}.csv`
+      downloadCsv(fileName, csv)
+      setToast(`Downloaded ${fileName} (${exportRows.length} rows).`)
     } catch (e) {
       setToast(e.message || 'Could not export transactions.')
       setTimeout(() => setToast(null), 4000)
     }
   }, [typeFilter, catFilter, paymentModeFilter, debouncedSearch, startDate, endDate])
+
+  useEffect(() => {
+    if (!toast) return
+    const timeoutId = setTimeout(() => setToast(null), 3600)
+    return () => clearTimeout(timeoutId)
+  }, [toast])
 
   const dismissGuideHint = useCallback(() => {
     setShowGuideHint(false)
@@ -342,86 +462,152 @@ export default function Transactions() {
   }, [location.state, location.pathname, location.search, navigate])
 
   return (
-    <div className="page">
-      <PageHeader title="Transactions" className="mb-3" />
+    <PageHeaderPage title="Transactions">
 
-      <div className="card p-4 border-0 mb-3">
-        <SectionHeader
-          title="Transaction workspace"
-          subtitle="Track timeline health, then drill into rows with filters."
-          badge={{
-            label: hasActiveFilters ? 'Filtered view' : 'Full timeline',
-            className: hasActiveFilters ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-2',
-          }}
-        />
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
-          <div className="rounded-card bg-kosha-surface-2 p-2.5">
-            <p className="text-caption text-ink-3">Results</p>
-            <p className="text-sm font-semibold tabular-nums text-ink-2">
-              {data.length}/{total}
-            </p>
-            <p className="text-[10px] text-ink-3 mt-0.5">Loaded rows / matching rows</p>
-          </div>
-          <div className="rounded-card bg-kosha-surface-2 p-2.5">
-            <p className="text-caption text-ink-3">Date window</p>
-            <p className="text-sm font-semibold tabular-nums text-ink-2">{activeDatePresetLabel}</p>
-            <p className="text-[10px] text-ink-3 mt-0.5">Current timeline range</p>
-          </div>
-          <div className="rounded-card bg-kosha-surface-2 p-2.5">
-            <p className="text-caption text-ink-3">Loaded net flow</p>
-            <p className={`text-sm font-semibold tabular-nums ${visibleSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-              {visibleSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(visibleSummary.net))}
-            </p>
-            <p className="text-[10px] text-ink-3 mt-0.5">Income {fmt(visibleSummary.income)} | Outflow {fmt(visibleSummary.outflow)}</p>
+      <div className="card p-0 border-0 overflow-hidden mb-3">
+        <div className="px-4 pt-3.5 pb-3 bg-kosha-surface-2 border-b border-kosha-border">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[15px] font-semibold text-ink">Transaction workspace</p>
+              <p className="text-[12px] text-ink-3 mt-0.5">Quick read of loaded timeline health before you edit rows.</p>
+            </div>
+            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-pill border whitespace-nowrap ${
+              hasActiveFilters
+                ? 'bg-brand-container text-brand border-brand/20'
+                : 'bg-kosha-surface text-ink-3 border-kosha-border'
+            }`}>
+              {hasActiveFilters ? 'Filtered view' : 'Full timeline'}
+            </span>
           </div>
         </div>
 
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setEditTxn(null)
-              setDuplicateTxn(null)
-              setAddType('expense')
-              setShowAdd(true)
-            }}
-            className="btn-secondary h-9 px-3 text-[11px]"
-          >
-            <Plus size={14} className="mr-1" />
-            Add transaction
-          </button>
+        <div className="p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-wide text-ink-3">Rows</p>
+              <p className="text-[15px] font-semibold tabular-nums text-ink mt-1">{data.length}/{total}</p>
+              <p className="text-[10px] text-ink-3 mt-0.5">Loaded / matching</p>
+            </div>
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-wide text-ink-3">Range</p>
+              <p className="text-[13px] font-semibold text-ink mt-1 truncate">{activeDatePresetLabel}</p>
+              <p className="text-[10px] text-ink-3 mt-0.5">Timeline window</p>
+            </div>
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-wide text-ink-3">Income</p>
+              <p className="text-[13px] font-semibold tabular-nums text-income-text mt-1">{fmt(visibleSummary.income)}</p>
+              <p className="text-[10px] text-ink-3 mt-0.5">Loaded rows</p>
+            </div>
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-wide text-ink-3">Net flow</p>
+              <p className={`text-[13px] font-semibold tabular-nums mt-1 ${visibleSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                {visibleSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(visibleSummary.net))}
+              </p>
+              <p className="text-[10px] text-ink-3 mt-0.5">Income - outflow</p>
+            </div>
+          </div>
 
-          {total > 0 ? (
-            <button
-              type="button"
-              onClick={exportCSV}
-              className="btn-secondary h-9 px-3 text-[11px]"
-            >
-              <Download size={14} className="mr-1" />
-              Export CSV
-            </button>
-          ) : null}
+          {(timelineActivitySignal || paymentModeSignal || expenseFrequencySignal) && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
+              {timelineActivitySignal && (
+                <div className="mini-panel px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Activity density</p>
+                  <p className="text-[13px] font-semibold text-ink mt-1 tabular-nums">
+                    {timelineActivitySignal.txnsPerActiveDay.toFixed(1)} txns / active day
+                  </p>
+                  <p className="text-[10px] text-ink-3 mt-0.5">
+                    {timelineActivitySignal.activeDays}/{timelineActivitySignal.spanDays} days active ({timelineActivitySignal.densityPct}%)
+                  </p>
+                  <p className={`text-[10px] font-semibold mt-1 ${bandTextClass(timelineActivitySignal.band)}`}>
+                    {timelineActivitySignal.band === 'healthy' ? 'Frequent logging' : timelineActivitySignal.band === 'watch' ? 'Steady logging' : 'Sparse logging'}
+                  </p>
+                </div>
+              )}
 
-          {hasActiveFilters ? (
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+              {paymentModeSignal && (
+                <div className="mini-panel px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Payment mode mix</p>
+                  <p className={`text-[13px] font-semibold mt-1 ${bandTextClass(paymentModeSignal.band, 'text-ink')}`}>
+                    {paymentModeSignal.top.label}
+                  </p>
+                  <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                    {paymentModeSignal.top.pct}% of visible rows ({paymentModeSignal.top.count})
+                  </p>
+                  {paymentModeSignal.secondary && (
+                    <p className="text-[10px] text-ink-3 mt-1">
+                      Next: {paymentModeSignal.secondary.label} ({paymentModeSignal.secondary.pct}%)
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {expenseFrequencySignal && (
+                <div className="mini-panel px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Expense frequency</p>
+                  <p className="text-[13px] font-semibold text-ink mt-1 truncate" title={expenseFrequencySignal.top.label}>
+                    {expenseFrequencySignal.top.label}
+                  </p>
+                  <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                    {expenseFrequencySignal.top.count} of {expenseFrequencySignal.expenseCount} expense rows
+                  </p>
+                  <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(expenseFrequencySignal.band, 'text-ink-3')}`}>
+                    Top-3 categories cover {expenseFrequencySignal.concentrationPct}%
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border">{activeCategoryLabel}</span>
+            <span className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border">{activePaymentModeLabel}</span>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Plus size={14} />}
+              onClick={() => {
+                setEditTxn(null)
+                setDuplicateTxn(null)
+                setAddType('expense')
+                setShowAdd(true)
+              }}
             >
-              Clear filters
-            </button>
-          ) : null}
+              Add transaction
+            </Button>
+
+            {total > 0 ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Download size={14} />}
+                onClick={exportCSV}
+              >
+                Export CSV
+              </Button>
+            ) : null}
+
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      <div className="card p-4 border-0 mb-3">
-        <SectionHeader
-          title="Find and filter"
-          subtitle="Search by description, then narrow by date, type, category, and payment mode."
-        />
+      <div className="card p-0 border-0 overflow-hidden mb-3">
+        <div className="px-4 pt-3.5 pb-3 border-b border-kosha-border bg-kosha-surface-2">
+          <p className="text-[15px] font-semibold text-ink">Find and filter</p>
+          <p className="text-[12px] text-ink-3 mt-0.5">Search by merchant or note, then narrow by date, type, category, and payment mode.</p>
 
-        <div className="relative mt-2.5">
+          <div className="relative mt-3">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
           <input
             className="input pl-8 pr-8 py-2 md:py-2.5 text-[14px]"
@@ -430,7 +616,9 @@ export default function Transactions() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          {search && (
+          {isSearchDebouncing ? (
+            <Loader2 size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 animate-spin" />
+          ) : search && (
             <button
               type="button"
               onClick={() => setSearch('')}
@@ -439,9 +627,19 @@ export default function Transactions() {
               <X size={13} />
             </button>
           )}
+          </div>
+
+          {isSearchDebouncing && (
+            <p className="text-[11px] text-ink-3 mt-1.5">Updating results…</p>
+          )}
         </div>
 
-        <FilterRow className="mt-2.5">
+        <div className="px-4 py-3.5 space-y-2.5">
+        <SectionHeader
+          title="Date window"
+          subtitle="Set the time horizon for visible transaction rows."
+        />
+        <FilterRow>
           {DATE_PRESETS.map((preset) => (
             <button
               key={preset.id}
@@ -452,7 +650,7 @@ export default function Transactions() {
               }}
               className={`chip-control chip-control-sm ${
                 datePreset === preset.id
-                  ? 'bg-ink text-white border-ink'
+                  ? 'bg-brand text-brand-on border-brand'
                   : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'
               }`}
             >
@@ -461,7 +659,12 @@ export default function Transactions() {
           ))}
         </FilterRow>
 
-        <FilterRow className="mt-2.5">
+        <SectionHeader
+          title="Type and facets"
+          subtitle="Combine type, category, and payment chips to isolate exact rows quickly."
+        />
+
+        <FilterRow>
           {TYPES.map(t => (
             <button
               key={t.id}
@@ -482,7 +685,7 @@ export default function Transactions() {
               setShowPaymentModes(false)
             }}
             className={`chip-control chip-control-sm ${catFilter
-              ? 'bg-ink text-white border-ink'
+              ? 'bg-brand text-brand-on border-brand'
               : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
           >
             <SlidersHorizontal size={11} />
@@ -496,7 +699,7 @@ export default function Transactions() {
               setShowCats(false)
             }}
             className={`chip-control chip-control-sm ${paymentModeFilter
-              ? 'bg-ink text-white border-ink'
+              ? 'bg-brand text-brand-on border-brand'
               : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
           >
             <SlidersHorizontal size={11} />
@@ -533,7 +736,7 @@ export default function Transactions() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.15 }}
-              className="mt-2.5 rounded-card bg-kosha-surface-2 p-3 flex flex-wrap gap-2"
+              className="mini-panel p-3 flex flex-wrap gap-2"
             >
               {filterCategories.map(c => (
                 <button
@@ -544,7 +747,7 @@ export default function Transactions() {
                     setShowCats(false)
                   }}
                   className={`chip-control chip-control-sm ${catFilter === c.id
-                    ? 'bg-ink text-white border-ink'
+                    ? 'bg-brand text-brand-on border-brand'
                     : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
                 >
                   {c.label}
@@ -561,7 +764,7 @@ export default function Transactions() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.15 }}
-              className="mt-2.5 rounded-card bg-kosha-surface-2 p-3 flex flex-wrap gap-2"
+              className="mini-panel p-3 flex flex-wrap gap-2"
             >
               {PAYMENT_MODES.map((mode) => (
                 <button
@@ -572,7 +775,7 @@ export default function Transactions() {
                     setShowPaymentModes(false)
                   }}
                   className={`chip-control chip-control-sm ${paymentModeFilter === mode.id
-                    ? 'bg-ink text-white border-ink'
+                    ? 'bg-brand text-brand-on border-brand'
                     : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
                 >
                   {mode.label}
@@ -581,6 +784,7 @@ export default function Transactions() {
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
       </div>
 
       {showGuideHint && (
@@ -672,18 +876,19 @@ export default function Transactions() {
       )}
 
       {hasMore && (
-        <button
+        <Button
+          variant="ghost"
+          fullWidth
           onClick={() => setDisplayCount(n => n + 50)}
-          className="w-full py-3.5 text-label font-semibold text-accent text-center
-                     bg-kosha-surface border border-kosha-border rounded-card mt-4"
+          className="mt-4"
         >
           Show more ({total - data.length} remaining)
-        </button>
+        </Button>
       )}
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
 
-      <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
+      <button className="fab" aria-label="Add transaction" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={24} className="text-white" />
       </button>
 
@@ -694,6 +899,6 @@ export default function Transactions() {
         editTxn={editTxn}
         initialType={addType}
       />
-    </div>
+    </PageHeaderPage>
   )
 }

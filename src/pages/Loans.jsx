@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, X, Check, Loader2, Download, ArrowDownLeft, ArrowUpRight,
-  HandCoins, Users, Percent, Calendar, FileText, Pencil,
+  HandCoins, Users, Percent, Calendar, CalendarDays, FileText, Pencil,
 } from 'lucide-react'
 import {
   useLoans,
@@ -17,10 +17,12 @@ import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass } from '../lib/utils'
-import PageHeader from '../components/layout/PageHeader'
+import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
+import PageHeaderPage from '../components/layout/PageHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import AppToast from '../components/common/AppToast'
+import Button from '../components/ui/Button'
 
 const LOAN_COLUMNS_EXPORT =
   'id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled'
@@ -60,6 +62,106 @@ export default function Loans() {
   const netPosition = totalGiven - totalTaken
 
   const totalCount = visibleGiven.length + visibleTaken.length + visibleSettled.length
+
+  const activeExposureLoans = useMemo(() => {
+    return [...visibleGiven, ...visibleTaken]
+      .map((loan) => ({
+        ...loan,
+        remaining: Math.max(0, Number(loan.amount || 0) - Number(loan.amount_settled || 0)),
+      }))
+      .filter((loan) => loan.remaining > 0)
+  }, [visibleGiven, visibleTaken])
+
+  const exposureConcentrationSignal = useMemo(() => {
+    if (!activeExposureLoans.length) return null
+
+    const byCounterparty = new Map()
+    let totalRemaining = 0
+
+    for (const loan of activeExposureLoans) {
+      totalRemaining += loan.remaining
+      const displayName = String(loan.counterparty || 'Unknown').trim() || 'Unknown'
+      const key = displayName.toLowerCase()
+      const existing = byCounterparty.get(key)
+
+      if (!existing) {
+        byCounterparty.set(key, {
+          name: displayName,
+          remaining: loan.remaining,
+        })
+      } else {
+        existing.remaining += loan.remaining
+      }
+    }
+
+    const rows = [...byCounterparty.values()].sort((a, b) => b.remaining - a.remaining)
+    const top = rows[0]
+    const topSharePct = totalRemaining > 0 ? Math.round((top.remaining / totalRemaining) * 100) : 0
+    const tone = scoreRiskBand(topSharePct, { high: 55, watch: 35 })
+
+    return {
+      top,
+      topSharePct,
+      counterparties: rows.length,
+      totalRemaining,
+      tone,
+    }
+  }, [activeExposureLoans])
+
+  const dueRiskSignal = useMemo(() => {
+    const riskyLoans = activeExposureLoans
+      .map((loan) => {
+        if (!loan.due_date) return null
+        const days = daysUntil(loan.due_date)
+        if (!Number.isFinite(days)) return null
+
+        const progressPct = loanProgress(loan.amount, loan.amount_settled)
+        const atRisk = days < 0 || (days <= 14 && progressPct < 50)
+        if (!atRisk) return null
+
+        return {
+          ...loan,
+          days,
+          progressPct,
+        }
+      })
+      .filter(Boolean)
+
+    const overdueCount = riskyLoans.filter((loan) => loan.days < 0).length
+    const amountAtRisk = riskyLoans.reduce((sum, loan) => sum + loan.remaining, 0)
+    const riskScore = (overdueCount * 2) + Math.max(0, riskyLoans.length - overdueCount)
+    const tone = scoreRiskBand(riskScore, { high: 2, watch: 1 })
+
+    return {
+      count: riskyLoans.length,
+      overdueCount,
+      amountAtRisk,
+      tone,
+    }
+  }, [activeExposureLoans])
+
+  const settlementVelocitySignal = useMemo(() => {
+    if (!activeExposureLoans.length) return null
+
+    const totalPrincipal = activeExposureLoans.reduce((sum, loan) => sum + Number(loan.amount || 0), 0)
+    const totalSettled = activeExposureLoans.reduce((sum, loan) => sum + Number(loan.amount_settled || 0), 0)
+    const settlementPct = totalPrincipal > 0 ? Math.round((totalSettled / totalPrincipal) * 100) : 0
+
+    const accruedTotal = activeExposureLoans.reduce(
+      (sum, loan) => sum + Number(accruedInterest(loan.amount, loan.interest_rate, loan.loan_date) || 0),
+      0
+    )
+
+    const accrualLoadPct = totalSettled > 0 ? Math.round((accruedTotal / totalSettled) * 100) : null
+    const tone = scoreRiskBand(accrualLoadPct ?? 0, { high: 22, watch: 8 })
+
+    return {
+      settlementPct,
+      accruedTotal,
+      accrualLoadPct,
+      tone,
+    }
+  }, [activeExposureLoans])
 
   // ── Handlers ────────────────────────────────────────────────────────
 
@@ -120,6 +222,7 @@ export default function Loans() {
     if (!payLoan) return
     const amt = +payAmount
     const remaining = +payLoan.amount - +payLoan.amount_settled
+    if (remaining <= 0) { setPayErr('This loan is already fully settled.'); return }
     if (!Number.isFinite(amt) || amt <= 0) { setPayErr('Enter a valid positive amount'); return }
     if (amt > remaining) { setPayErr(`Max payment is ${fmt(remaining)}`); return }
 
@@ -210,8 +313,7 @@ export default function Loans() {
   }
 
   return (
-    <div className="page">
-      <PageHeader title="Loans" className="mb-3" />
+    <PageHeaderPage title="Loans">
 
       {/* ── Subheader ─────────────────────────────────────────────────── */}
       <div className="mb-2.5 flex items-center justify-between gap-3">
@@ -219,18 +321,18 @@ export default function Loans() {
           {totalCount} loan{totalCount !== 1 ? 's' : ''} · {visibleGiven.length + visibleTaken.length} active
         </p>
         {totalCount > 0 && (
-          <button type="button" onClick={handleExportCsv} className="btn-secondary h-9 px-3 text-[11px]">
-            <Download size={14} className="mr-1" /> Export CSV
-          </button>
+          <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={handleExportCsv}>
+            Export CSV
+          </Button>
         )}
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
       <div className="mb-4 grid grid-cols-3 gap-2">
         {[
-          { key: 'given',   label: 'Given',   count: visibleGiven.length,   activeClass: 'bg-income text-white border-income shadow-card' },
-          { key: 'taken',   label: 'Taken',   count: visibleTaken.length,   activeClass: 'bg-expense text-white border-expense shadow-card' },
-          { key: 'settled', label: 'Settled', count: visibleSettled.length, activeClass: 'bg-repay text-white border-repay shadow-card' },
+          { key: 'given',   label: 'Given',   count: visibleGiven.length,   activeClass: 'bg-income-bg text-income-text border-income-border shadow-card' },
+          { key: 'taken',   label: 'Taken',   count: visibleTaken.length,   activeClass: 'bg-expense-bg text-expense-text border-expense-border shadow-card' },
+          { key: 'settled', label: 'Settled', count: visibleSettled.length, activeClass: 'bg-repay-bg text-repay-text border-repay-border shadow-card' },
         ].map(t => (
           <button
             key={t.key}
@@ -245,21 +347,72 @@ export default function Loans() {
 
       {/* ── Summary card ──────────────────────────────────────────────── */}
       {(visibleGiven.length > 0 || visibleTaken.length > 0) && tab !== 'settled' && (
-        <div className="card mb-3.5 p-3.5 sm:p-4 border border-kosha-border bg-kosha-surface">
+        <div className="card mb-3.5 p-3.5 sm:p-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border px-3 py-2.5">
+            <div className="mini-panel px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">You're owed</p>
               <p className="text-base font-semibold amt-income tabular-nums leading-none">{fmt(totalGiven)}</p>
               <p className="text-caption text-ink-3 mt-1">{visibleGiven.length} loan{visibleGiven.length !== 1 ? 's' : ''}</p>
             </div>
-            <div className="bg-kosha-surface-2 rounded-card border border-kosha-border px-3 py-2.5">
+            <div className="mini-panel px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">You owe</p>
               <p className="text-base font-semibold amt-expense tabular-nums leading-none">{fmt(totalTaken)}</p>
               <p className="text-caption text-ink-3 mt-1">{visibleTaken.length} loan{visibleTaken.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
 
-          <div className="mt-3 bg-kosha-surface-2 rounded-card border border-kosha-border px-3 py-2.5">
+
+        {(visibleGiven.length > 0 || visibleTaken.length > 0) && tab !== 'settled' && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3.5">
+            {exposureConcentrationSignal && (
+              <div className="card p-3.5 border-0">
+                <p className="text-[10px] text-ink-3 tracking-wide">Exposure concentration</p>
+                <p className={`text-[14px] font-semibold mt-1 ${bandTextClass(exposureConcentrationSignal.tone)}`}>
+                  {exposureConcentrationSignal.topSharePct}%
+                </p>
+                <p className="text-[12px] text-ink-2 mt-1 truncate" title={exposureConcentrationSignal.top.name}>
+                  {exposureConcentrationSignal.top.name}
+                </p>
+                <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  {exposureConcentrationSignal.counterparties} counterparties · {fmt(exposureConcentrationSignal.totalRemaining)}
+                </p>
+              </div>
+            )}
+
+            {dueRiskSignal && (
+              <div className="card p-3.5 border-0">
+                <p className="text-[10px] text-ink-3 tracking-wide">At-risk due loans</p>
+                <p className={`text-[14px] font-semibold mt-1 ${bandTextClass(dueRiskSignal.tone)}`}>
+                  {dueRiskSignal.count} flagged
+                </p>
+                <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
+                  {fmt(dueRiskSignal.amountAtRisk)} at risk
+                </p>
+                <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  {dueRiskSignal.overdueCount} overdue · {Math.max(0, dueRiskSignal.count - dueRiskSignal.overdueCount)} near due
+                </p>
+              </div>
+            )}
+
+            {settlementVelocitySignal && (
+              <div className="card p-3.5 border-0">
+                <p className="text-[10px] text-ink-3 tracking-wide">Settlement velocity</p>
+                <p className="text-[14px] font-semibold text-ink mt-1 tabular-nums">
+                  {settlementVelocitySignal.settlementPct}% settled
+                </p>
+                <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
+                  Accrued interest {fmt(settlementVelocitySignal.accruedTotal)}
+                </p>
+                <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(settlementVelocitySignal.tone, 'text-ink-3')}`}>
+                  {settlementVelocitySignal.accrualLoadPct == null
+                    ? 'Accrual load builds once settlements begin'
+                    : `Accrual load ${settlementVelocitySignal.accrualLoadPct}% of settled value`}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+          <div className="mt-3 mini-panel px-3 py-2.5">
             <div className="flex items-center justify-between">
               <p className="text-caption text-ink-3">Net position</p>
               <p className={`text-base font-semibold tabular-nums leading-none ${netPosition >= 0 ? 'amt-income' : 'amt-expense'}`}>
@@ -288,7 +441,7 @@ export default function Loans() {
           {tab !== 'settled' && activeLoans.length === 0 && (
             <EmptyState
               className="py-8"
-              icon={<HandCoins size={24} className="text-accent" />}
+              icon={<HandCoins size={24} className="text-brand" />}
               title={tab === 'given' ? 'No loans given' : 'No loans taken'}
               description={tab === 'given'
                 ? 'Track money you\u2019ve lent to friends, family, or others.'
@@ -414,12 +567,12 @@ export default function Loans() {
                       <button
                         onClick={() => openEditLoan(loan)}
                         disabled={!!deletingId || isOptimistic}
-                        className="h-8 w-8 flex items-center justify-center rounded-card
+                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
                                    bg-kosha-surface-2 text-ink-3 text-[11px] font-semibold
                                    border border-kosha-border active:scale-[0.97] transition-all duration-100
                                    disabled:opacity-60"
                       >
-                        <Pencil size={13} />
+                        <Pencil size={13} /> Edit
                       </button>
                       <button
                         onClick={() => { setPayLoan(loan); setPayAmount(''); setPayErr('') }}
@@ -432,14 +585,25 @@ export default function Loans() {
                         <HandCoins size={13} /> Payment
                       </button>
                       <button
+                        onClick={() => { void handleSettleFull(loan) }}
+                        disabled={!!deletingId || isOptimistic || remaining <= 0}
+                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
+                                   bg-warning-bg text-warning-text text-[11px] font-semibold
+                                   border border-warning-border active:scale-[0.97] transition-all duration-100
+                                   disabled:opacity-60"
+                      >
+                        <Check size={13} /> Settle
+                      </button>
+                      <button
                         onClick={() => handleDelete(loan.id)}
                         disabled={!!deletingId || isOptimistic}
-                        className="h-8 w-8 flex items-center justify-center rounded-card
+                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
                                    bg-expense-bg text-expense-text text-[11px] font-semibold
                                    border border-expense-border active:scale-[0.97] transition-all duration-100
                                    disabled:opacity-60"
                       >
                         {deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                        {deletingId === loan.id ? 'Deleting…' : 'Delete'}
                       </button>
                     </div>
                   )}
@@ -449,12 +613,13 @@ export default function Loans() {
                       <button
                         onClick={() => handleDelete(loan.id)}
                         disabled={!!deletingId || isOptimistic}
-                        className="h-8 w-8 flex items-center justify-center rounded-card
+                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
                                    bg-expense-bg text-expense-text text-[11px] font-semibold
                                    border border-expense-border active:scale-[0.97] transition-all duration-100
                                    disabled:opacity-60"
                       >
                         {deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                        {deletingId === loan.id ? 'Deleting…' : 'Delete'}
                       </button>
                     </div>
                   )}
@@ -488,7 +653,7 @@ export default function Loans() {
                 </div>
 
                 {/* Loan context */}
-                <div className="card p-3 mb-4 border border-kosha-border bg-kosha-surface-2">
+                <div className="mini-panel p-3 mb-4">
                   <div className="flex items-center gap-2 mb-1">
                     <div className={`w-6 h-6 rounded-md flex items-center justify-center
                       ${payLoan.direction === 'given' ? 'bg-income-bg' : 'bg-expense-bg'}`}>
@@ -515,10 +680,15 @@ export default function Loans() {
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="payment-amount" placeholder="0"
                     value={payAmount}
+                    max={Math.max(0, (+payLoan.amount - +payLoan.amount_settled) || 0)}
                     onChange={e => setPayAmount(e.target.value)}
                     autoFocus
                   />
                 </div>
+
+                <p className="text-[11px] text-ink-3 mb-2">
+                  Maximum you can record now: {fmt(+payLoan.amount - +payLoan.amount_settled)}
+                </p>
 
                 {/* Quick fill buttons */}
                 <div className="flex gap-2 mb-3 flex-wrap">
@@ -544,12 +714,16 @@ export default function Loans() {
                 {payErr && <p className="text-expense-text text-sm mb-3">{payErr}</p>}
 
                 <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
-                  <button onClick={handleRecordPayment}
-                    disabled={paySaving}
-                    className={`w-full py-4 rounded-card font-semibold transition-all
-                               ${paySaving ? 'bg-income/70 text-white/90 scale-[0.97]' : 'bg-income text-white active:scale-[0.97]'}`}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onClick={handleRecordPayment}
+                    loading={paySaving}
+                    className="rounded-card h-12 shadow-card-md"
+                  >
                     {paySaving ? 'Recording…' : 'Record Payment'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </motion.div>
@@ -622,7 +796,7 @@ export default function Loans() {
                                 focus-within:border-accent-border
                                 focus-within:ring-2 focus-within:ring-accent/25
                                 transition-all duration-100">
-                  <span className="text-xl font-bold text-accent">₹</span>
+                  <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="loan-amount" placeholder="0"
                     value={form.amount}
@@ -656,7 +830,7 @@ export default function Loans() {
                     <input type="date" name="loan-date"
                       value={form.loan_date}
                       onChange={e => setForm(f => ({ ...f, loan_date: e.target.value }))}
-                      className="text-[15px] text-ink-3 bg-transparent outline-none text-right focus:text-accent"
+                      className="text-[15px] text-ink-3 bg-transparent outline-none text-right focus:text-brand"
                     />
                   </label>
                 </div>
@@ -664,8 +838,8 @@ export default function Loans() {
                 {/* Due date */}
                 <div className="list-card mb-3">
                   <label className="list-row w-full cursor-pointer">
-                    <div className="w-8 h-8 rounded-chip bg-warning-bg flex items-center justify-center shrink-0">
-                      <span className="text-warning-text text-xs font-bold">📅</span>
+                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                      <CalendarDays size={14} className="text-brand" />
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Expected Repayment</span>
                     <input type="date" name="loan-due-date"
@@ -694,14 +868,16 @@ export default function Loans() {
                 {formErr && <p className="text-expense-text text-sm mb-3">{formErr}</p>}
 
                 <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
-                  <button onClick={handleAdd}
-                    disabled={addSaving}
-                    className={`w-full py-4 rounded-card font-semibold transition-all
-                               ${addSaving
-                                  ? 'bg-brand/70 text-white/90 scale-[0.97]'
-                                  : 'bg-brand text-white active:scale-[0.97]'}`}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onClick={handleAdd}
+                    loading={addSaving}
+                    className="rounded-card h-12 shadow-card-md"
+                  >
                     {addSaving ? (editLoan ? 'Saving…' : 'Adding…') : (editLoan ? 'Save Changes' : 'Add Loan')}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </motion.div>
@@ -710,11 +886,11 @@ export default function Loans() {
       </AnimatePresence>
 
       {/* FAB */}
-      <button className="fab-loans" onClick={() => setShowAdd(true)}>
+      <button className="fab-loans" aria-label="Add loan" onClick={() => setShowAdd(true)}>
         <Plus size={24} className="text-white" />
       </button>
 
       <AppToast message={errToast} onDismiss={() => setErrToast(null)} />
-    </div>
+    </PageHeaderPage>
   )
 }

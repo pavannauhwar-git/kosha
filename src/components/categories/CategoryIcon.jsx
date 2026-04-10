@@ -26,8 +26,8 @@ export const ICON_MAP = {
   Certificate, Tag,
 }
 
-function CategoryIcon({ categoryId, size = 20, className = '' }) {
-  const cat  = getCategory(categoryId)
+function CategoryIcon({ categoryId, id, size = 20, className = '' }) {
+  const cat  = getCategory(categoryId || id)
   const Icon = ICON_MAP[cat.icon] || Package
 
   return (
@@ -37,6 +37,7 @@ function CategoryIcon({ categoryId, size = 20, className = '' }) {
         width:  size + 12,
         height: size + 12,
         backgroundColor: cat.bg,
+        background: `color-mix(in srgb, ${cat.color} 18%, var(--ds-surface))`,
       }}
     >
       {/* Duotone effect: primary icon layer + lighter shadow */}

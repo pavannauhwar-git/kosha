@@ -1,189 +1,52 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, Plus, ShieldAlert } from 'lucide-react'
+import { Bell, ArrowRight, Plus, Wallet, TrendingDown } from 'lucide-react'
 import {
   useRecentTransactions,
-  useTransactionDigest,
-  useDailyExpenseTotals,
   useMonthSummary,
   useRunningBalance,
   removeTransactionMutation,
+  saveTransactionMutation,
 } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
+import { CATEGORIES } from '../lib/categories'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
+import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
 import { useNavigate } from 'react-router-dom'
 import { createFadeUp, createStagger } from '../lib/animations'
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ReferenceLine,
-} from 'recharts'
-
-// FIX (defect 4.3): Extracted sub-components. Each renders independently —
-// a transaction list refetch no longer re-renders the hero card,
-// and a balance update no longer re-renders the transaction list.
+import { invalidateQueryFamilies } from '../lib/queryClient'
+import Button from '../components/ui/Button'
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
-import DailySpendBubbleMap from '../components/dashboard/DailySpendBubbleMap'
-import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
-import DashboardNudges from '../components/dashboard/DashboardNudges'
-import PageHeader from '../components/layout/PageHeader'
+import PageHeaderPage from '../components/layout/PageHeaderPage'
 import AppToast from '../components/common/AppToast'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
-import { CATEGORIES } from '../lib/categories'
 
 const fadeUp = createFadeUp(12, 0.4)
 const stagger = createStagger(0.06, 0.04)
-const VARIANCE_WINDOW_STORAGE_KEY = 'dashboardVarianceWindowDays'
-const VARIANCE_WINDOW_MAX_DAYS = 14
-
-function normalizeVarianceWindowDays(rawValue) {
-  const parsed = Number(rawValue)
-  if (parsed === 7 || parsed === 14) return parsed
-  return VARIANCE_WINDOW_MAX_DAYS
-}
-
-function DuePressureTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card bg-kosha-surface p-3 shadow-card-md" style={{ border: '1px solid rgba(26,26,46,0.06)' }}>
-      <p className="text-[11px] font-semibold text-ink mb-1.5">{label}</p>
-      <div className="flex items-center justify-between gap-3 text-[11px]">
-        <span className="text-ink-3">Cum due</span>
-        <span className="font-semibold tabular-nums text-warning-text">{fmt(row.cumulativeDue || 0)}</span>
-      </div>
-      <div className="flex items-center justify-between gap-3 text-[11px] mt-1">
-        <span className="text-ink-3">Cum inflow</span>
-        <span className="font-semibold tabular-nums text-income-text">{fmt(row.cumulativeInflow || 0)}</span>
-      </div>
-      <div className="flex items-center justify-between gap-3 text-[11px] mt-1">
-        <span className="text-ink-3">Gap</span>
-        <span className={`font-semibold tabular-nums ${(row.gap || 0) >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-          {(row.gap || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(row.gap || 0))}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function compactTick(value) {
-  const n = Number(value || 0)
-  const abs = Math.abs(n)
-  if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
-  if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
-  return `${Math.round(n)}`
-}
-
-function resolveTxnTimestamp(row) {
-  const rawDate = String(row?.date || '').trim()
-  if (rawDate) {
-    const dateOnlyMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-    if (dateOnlyMatch) {
-      const ts = new Date(
-        Number(dateOnlyMatch[1]),
-        Number(dateOnlyMatch[2]) - 1,
-        Number(dateOnlyMatch[3]),
-        12,
-        0,
-        0,
-        0,
-      ).getTime()
-      if (Number.isFinite(ts)) return ts
-    }
-
-    const dateTs = new Date(rawDate).getTime()
-    if (Number.isFinite(dateTs)) return dateTs
-  }
-
-  const createdRaw = String(row?.created_at || '').trim()
-  if (!createdRaw) return null
-
-  const createdTs = new Date(createdRaw).getTime()
-  return Number.isFinite(createdTs) ? createdTs : null
-}
-
-function DuePipelineTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card bg-kosha-surface p-3 shadow-card-md" style={{ border: '1px solid rgba(26,26,46,0.06)' }}>
-      <p className="text-[11px] font-semibold text-ink mb-1.5">{label}</p>
-      <div className="space-y-1 text-[11px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Bills</span>
-          <span className="font-semibold tabular-nums text-ink">{Math.round(Number(row?.count || 0))}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Amount</span>
-          <span className="font-semibold tabular-nums text-warning-text">{fmt(Number(row?.amount || 0))}</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function WeeklyDigestTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="rounded-card bg-kosha-surface p-3 shadow-card-md" style={{ border: '1px solid rgba(26,26,46,0.06)' }}>
-      <p className="text-[11px] font-semibold text-ink mb-1.5">{label}</p>
-      <div className="flex items-center justify-between gap-3 text-[11px]">
-        <span className="text-ink-3">Current 7d</span>
-        <span className="font-semibold tabular-nums text-ink">{fmt(Number(row.current || 0))}</span>
-      </div>
-      <div className="flex items-center justify-between gap-3 text-[11px] mt-1">
-        <span className="text-ink-3">Previous 7d</span>
-        <span className="font-semibold tabular-nums text-ink-3">{fmt(Number(row.previous || 0))}</span>
-      </div>
-      <div className="flex items-center justify-between gap-3 text-[11px] mt-1">
-        <span className="text-ink-3">Delta</span>
-        <span className={`font-semibold tabular-nums ${(Number(row.delta || 0) <= 0 && row.metric === 'Spend') || (Number(row.delta || 0) >= 0 && row.metric !== 'Spend') ? 'text-income-text' : 'text-warning-text'}`}>
-          {Number(row.delta || 0) >= 0 ? '+' : '-'}{fmt(Math.abs(Number(row.delta || 0)))}
-        </span>
-      </div>
-    </div>
-  )
-}
 
 function DashboardHeroSkeleton() {
   return (
-    <div className="card-hero p-7 sm:p-8 relative overflow-hidden">
-      <div className="flex items-center justify-between mb-6">
+    <div className="card-hero p-5 relative overflow-hidden">
+      <div className="flex items-center justify-between mb-5">
         <div className="h-2.5 w-28 rounded-full shimmer opacity-70" />
         <div className="h-2.5 w-14 rounded-full shimmer opacity-50" />
       </div>
-
-      <div className="h-12 w-48 rounded-2xl shimmer opacity-80" />
-
-      <div className="mt-4 mb-7 h-6 w-32 rounded-full shimmer opacity-60" />
-
-      <div className="mb-5 border-t border-white/8" />
-
-      <div className="flex justify-between gap-2 sm:gap-3">
+      <div className="h-10 w-44 rounded-2xl shimmer opacity-80" />
+      <div className="mt-3 mb-5 h-5 w-32 rounded-full shimmer opacity-60" />
+      <div className="mb-4 border-t border-white/8" />
+      <div className="flex justify-between gap-2">
         {[1, 2, 3].map((slot) => (
-          <div key={slot} className="flex-1 min-w-0 px-3 sm:px-4 py-3 rounded-2xl bg-white/8">
+          <div key={slot} className="flex-1 min-w-0 px-2.5 py-2 rounded-2xl bg-white/8">
             <div className="h-2.5 w-12 rounded-full shimmer opacity-55" />
             <div className="mt-1.5 h-3.5 w-16 rounded-full shimmer opacity-70" />
           </div>
         ))}
       </div>
-
-      <div className="mt-5">
+      <div className="mt-4">
         <div className="flex justify-between mb-2">
           <div className="h-2.5 w-20 rounded-full shimmer opacity-55" />
           <div className="h-2.5 w-8 rounded-full shimmer opacity-65" />
@@ -203,7 +66,6 @@ function DashboardRecentSkeleton() {
         <p className="section-label">Latest</p>
         <div className="h-3 w-14 rounded-full shimmer opacity-75" />
       </div>
-
       <div className="list-card">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={`recent-skeleton-${i}`} className="px-4 py-3 flex items-center gap-3">
@@ -223,16 +85,11 @@ function DashboardRecentSkeleton() {
 export default function Dashboard() {
   const navigate = useNavigate()
   const [now, setNow] = useState(() => new Date())
+  const [pullStartY, setPullStartY] = useState(null)
+  const [pullDistance, setPullDistance] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
-    // FIX (defect 5.6): The old setInterval(60s) could take up to 60 seconds
-    // to detect a month rollover at midnight on the 1st. The running balance
-    // query would continue using the old month for that entire window.
-    //
-    // Fix: align the first tick to the start of the next minute for precision,
-    // then use 60s intervals. On each tick, compare date/month/year and only
-    // update state if something meaningful changed — avoids re-renders on ticks
-    // where nothing visible to the user has changed.
     let intervalId = null
 
     function tick() {
@@ -246,7 +103,7 @@ export default function Dashboard() {
         ) {
           return next
         }
-        return prev  // same object reference — no re-render
+        return prev
       })
     }
 
@@ -270,21 +127,8 @@ export default function Dashboard() {
   const [duplicateTxn, setDuplicateTxn] = useState(null)
   const [heroMode, setHeroMode] = useState('balance')
   const [toast, setToast] = useState(null)
-  const [heavyReady, setHeavyReady] = useState(false)
-  const [varianceWindowDays, setVarianceWindowDays] = useState(() => {
-    if (typeof window === 'undefined') return VARIANCE_WINDOW_MAX_DAYS
-    return normalizeVarianceWindowDays(window.localStorage.getItem(VARIANCE_WINDOW_STORAGE_KEY))
-  })
-
-  useEffect(() => {
-    const timer = setTimeout(() => setHeavyReady(true), 50)
-    return () => clearTimeout(timer)
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem(VARIANCE_WINDOW_STORAGE_KEY, String(varianceWindowDays))
-  }, [varianceWindowDays])
+  const [toastAction, setToastAction] = useState(null)
+  const [toastActionLabel, setToastActionLabel] = useState(null)
 
   // ── Data fetching ─────────────────────────────────────────────────────
   const {
@@ -292,17 +136,12 @@ export default function Dashboard() {
     loading: recentLoading,
     fetching: recentFetching,
   } = useRecentTransactions(5)
-  const { data: digestTxnRows = [] } = useTransactionDigest(70, 900)
-  const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(VARIANCE_WINDOW_MAX_DAYS)
   const {
     data: summary,
     loading: summaryLoading,
     fetching: summaryFetching,
   } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
-  // Total balance should reflect all scheduled/future-dated transactions.
-  // Month-level detail remains available via monthly summaries elsewhere.
   const balanceHorizonDate = useMemo(() => new Date(2099, 11, 31), [])
-
   const {
     balance: runningBalance,
     loading: runningBalanceLoading,
@@ -311,7 +150,7 @@ export default function Dashboard() {
     balanceHorizonDate.getFullYear(),
     balanceHorizonDate.getMonth() + 1
   )
-  const { pending: bills = [], paid: paidBills = [] } = useLiabilities({ includePaid: true })
+  const { pending: bills = [] } = useLiabilities()
   const { budgets } = useBudgets()
   const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
 
@@ -325,38 +164,169 @@ export default function Dashboard() {
   const rate = savingsRate(earned, spent)
 
   const hour = now.getHours()
-  const greeting = hour < 12 ? 'Good morning'
-    : hour < 17 ? 'Good afternoon'
-      : hour < 21 ? 'Good evening'
-        : 'Good night'
+  const greetingMeta = useMemo(() => {
+    if (hour < 5) return { text: 'Good night', emoji: '🌙💤' }
+    if (hour < 12) return { text: 'Good morning', emoji: '🌤️🌸' }
+    if (hour < 17) return { text: 'Good afternoon', emoji: '☀️🌼' }
+    if (hour < 21) return { text: 'Good evening', emoji: '🏜️✨' }
+    return { text: 'Good night', emoji: '🌙💤' }
+  }, [hour])
 
   const firstName = useMemo(
     () => profile?.display_name?.split(' ')[0] || '',
     [profile?.display_name]
   )
 
-  const categoryLabelMap = useMemo(
+  const categoryLabelById = useMemo(
     () => new Map(CATEGORIES.map((category) => [category.id, category.label])),
     []
   )
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const dayOfMonth = now.getDate()
+  const daysRemaining = Math.max(1, daysInMonth - dayOfMonth + 1)
 
-  // FIX (defect 5.3): The old code derived dueSoon and insight from `bills`
-  // directly. When the liabilities query refetched (even with identical data),
-  // `bills` got a new array reference, invalidating dueSoon's memo, which
-  // invalidated insight's memo — a chain re-evaluation on every background
-  // refetch regardless of whether any data actually changed.
-  //
-  // Fix: derive stable primitive values from bills ONCE, then use those
-  // primitives as memo deps. Array reference changes that don't change the
-  // derived values no longer trigger downstream recalculations.
+  // ── Spendable today ────────────────────────────────────────────────────
+  const spendableToday = useMemo(() => {
+    const totalOutflow = spent + invested
+    const remaining = earned - totalOutflow
+    const pendingBillsTotal = bills.reduce((sum, b) => sum + Number(b.amount || 0), 0)
+    const afterBills = Math.max(0, remaining - pendingBillsTotal)
+    const daily = daysRemaining > 0 ? Math.round(afterBills / daysRemaining) : 0
+    return { daily, remaining: afterBills, pendingBillsTotal }
+  }, [earned, spent, invested, bills, daysRemaining])
+
+  // ── Budget burn rate ───────────────────────────────────────────────────
+  const burnRate = useMemo(() => {
+    if (earned <= 0) return null
+    const totalOutflow = spent + invested
+    const paceExpected = (dayOfMonth / daysInMonth) * 100
+    const paceActual = Math.round((totalOutflow / earned) * 100)
+    const ahead = paceActual > paceExpected + 5
+    return { paceActual, paceExpected: Math.round(paceExpected), ahead }
+  }, [earned, spent, invested, dayOfMonth, daysInMonth])
+
+  // ── Runway balance (days left vs money left) ───────────────────────
+  const runwayBalance = useMemo(() => {
+    if (earned <= 0) return null
+
+    const daysLeftPct = Math.round((daysRemaining / Math.max(1, daysInMonth)) * 100)
+    const moneyLeftPctRaw = Math.round((spendableToday.remaining / earned) * 100)
+    const moneyLeftPct = Math.max(0, Math.min(100, moneyLeftPctRaw))
+    const gapPct = daysLeftPct - moneyLeftPct
+    const band = scoreRiskBand(gapPct, { high: 12, watch: 4 })
+
+    return {
+      daysLeftPct,
+      moneyLeftPct,
+      gapPct,
+      band,
+    }
+  }, [earned, spendableToday.remaining, daysRemaining, daysInMonth])
+
+  // ── Category pressure signal ─────────────────────────────────────────
+  const categoryPressureSignal = useMemo(() => {
+    const categoryRows = Object.entries(summary?.byCategory || {})
+      .map(([categoryId, amount]) => [categoryId, Number(amount || 0)])
+      .filter(([, amount]) => Number.isFinite(amount) && amount > 0)
+      .sort((a, b) => b[1] - a[1])
+
+    if (!categoryRows.length || spent <= 0) return null
+
+    const [categoryId, amount] = categoryRows[0]
+    const sharePct = Math.round((amount / spent) * 100)
+    const budgetLimit = Number(bMap?.[categoryId] || 0)
+    const budgetPct = budgetLimit > 0 ? Math.round((amount / budgetLimit) * 100) : null
+    const band = scoreRiskBand(sharePct, { high: 36, watch: 24 })
+
+    return {
+      label: categoryLabelById.get(categoryId) || categoryId,
+      amount,
+      sharePct,
+      budgetPct,
+      band,
+    }
+  }, [summary?.byCategory, spent, bMap, categoryLabelById])
+
+  // ── Spending pace signal ─────────────────────────────────────────────
+  const spendPaceSignal = useMemo(() => {
+    if (earned <= 0 || dayOfMonth <= 0) return null
+
+    const observedDailyOutflow = (spent + invested) / Math.max(1, dayOfMonth)
+    const allowedDailyOutflow = spendableToday.remaining / Math.max(1, daysRemaining)
+
+    if (!Number.isFinite(observedDailyOutflow)) return null
+
+    const paceRatio = allowedDailyOutflow > 0
+      ? observedDailyOutflow / allowedDailyOutflow
+      : (observedDailyOutflow > 0 ? Infinity : 1)
+
+    const band = scoreRiskBand(paceRatio, { high: 1.08, watch: 0.95 })
+
+    return {
+      observedDailyOutflow,
+      allowedDailyOutflow,
+      paceRatio,
+      band,
+    }
+  }, [earned, spent, invested, dayOfMonth, spendableToday.remaining, daysRemaining])
+
+  // ── Bill clustering signal ───────────────────────────────────────────
+  const billClusterSignal = useMemo(() => {
+    if (!bills.length) return null
+
+    const weeklyBuckets = [
+      { count: 0, amount: 0 },
+      { count: 0, amount: 0 },
+      { count: 0, amount: 0 },
+      { count: 0, amount: 0 },
+    ]
+
+    let overdueCount = 0
+    let overdueAmount = 0
+
+    for (const bill of bills) {
+      const days = daysUntil(bill.due_date)
+      if (!Number.isFinite(days)) continue
+
+      const amount = Number(bill.amount || 0)
+
+      if (days < 0) {
+        overdueCount += 1
+        overdueAmount += amount
+        continue
+      }
+
+      if (days > 30) continue
+
+      const bucketIndex = Math.min(3, Math.floor(days / 7))
+      weeklyBuckets[bucketIndex].count += 1
+      weeklyBuckets[bucketIndex].amount += amount
+    }
+
+    const densest = weeklyBuckets.reduce((best, bucket, index) => {
+      if (bucket.count > best.count) {
+        return { index, count: bucket.count, amount: bucket.amount }
+      }
+      return best
+    }, { index: -1, count: 0, amount: 0 })
+
+    if (densest.count === 0 && overdueCount === 0) return null
+
+    return {
+      overdueCount,
+      overdueAmount,
+      densestWeek: densest.index + 1,
+      densestCount: densest.count,
+      densestAmount: densest.amount,
+    }
+  }, [bills])
+
+  // ── Due soon bills ─────────────────────────────────────────────────────
   const { dueSoonCount, dueSoonDescs, dueSoonAmount } = useMemo(() => {
     let count = 0
     let amount = 0
     const descs = []
-
     for (const b of bills) {
       if (daysUntil(b.due_date) <= 7) {
         count += 1
@@ -364,356 +334,20 @@ export default function Dashboard() {
         if (descs.length < 2) descs.push(b.description)
       }
     }
-
-    return {
-      dueSoonCount: count,
-      dueSoonDescs: descs.join(' · '),
-      dueSoonAmount: amount,
-    }
+    return { dueSoonCount: count, dueSoonDescs: descs.join(' · '), dueSoonAmount: amount }
   }, [bills])
 
-  const weeklyDigest = useMemo(() => {
-    const current = now.getTime()
-    const dayMs = 24 * 60 * 60 * 1000
-    const last7Start = current - (7 * dayMs)
-    const prev7Start = current - (14 * dayMs)
+  // ── Upcoming bills (next 3) ────────────────────────────────────────────
+  const upcomingBills = useMemo(() => {
+    return bills
+      .filter(b => daysUntil(b.due_date) >= 0)
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+      .slice(0, 3)
+  }, [bills])
 
-    const inLast7 = digestTxnRows.filter((row) => {
-      const ts = resolveTxnTimestamp(row)
-      return Number.isFinite(ts) && ts >= last7Start && ts <= current
-    })
-    const inPrev7 = digestTxnRows.filter((row) => {
-      const ts = resolveTxnTimestamp(row)
-      return Number.isFinite(ts) && ts >= prev7Start && ts < last7Start
-    })
+  const isNewUser = !heroLoading && recent.length === 0 && earned === 0 && spent === 0 && invested === 0 && bills.length === 0
 
-    const spendLast7 = inLast7
-      .filter((row) => row?.type === 'expense')
-      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-    const spendPrev7 = inPrev7
-      .filter((row) => row?.type === 'expense')
-      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-
-    const incomeLast7 = inLast7
-      .filter((row) => row?.type === 'income' && !row?.is_repayment)
-      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-    const incomePrev7 = inPrev7
-      .filter((row) => row?.type === 'income' && !row?.is_repayment)
-      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-
-    const categoryTotals = new Map()
-    for (const row of inLast7) {
-      if (row?.type !== 'expense') continue
-      const key = String(row?.category || 'other')
-      categoryTotals.set(key, (categoryTotals.get(key) || 0) + Number(row?.amount || 0))
-    }
-
-    const spendDelta = spendLast7 - spendPrev7
-    const incomeDelta = incomeLast7 - incomePrev7
-    const netLast7 = incomeLast7 - spendLast7
-    const netPrev7 = incomePrev7 - spendPrev7
-    const netDelta = netLast7 - netPrev7
-
-    const comparisonSeries = [
-      {
-        metric: 'Spend',
-        current: spendLast7,
-        previous: spendPrev7,
-        delta: spendDelta,
-      },
-      {
-        metric: 'Income',
-        current: incomeLast7,
-        previous: incomePrev7,
-        delta: incomeDelta,
-      },
-      {
-        metric: 'Net',
-        current: netLast7,
-        previous: netPrev7,
-        delta: netDelta,
-      },
-    ]
-
-    const topCategories = [...categoryTotals.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([id, value]) => ({
-        id,
-        label: categoryLabelMap.get(id) || id.replace(/_/g, ' '),
-        value,
-        sharePct: spendLast7 > 0 ? Math.round((value / spendLast7) * 100) : 0,
-      }))
-
-    return {
-      spendLast7,
-      spendPrev7,
-      incomeLast7,
-      incomePrev7,
-      spendDelta,
-      incomeDelta,
-      netLast7,
-      netPrev7,
-      netDelta,
-      comparisonSeries,
-      topCategories,
-      hasSignals: inLast7.length > 0 || inPrev7.length > 0,
-    }
-  }, [digestTxnRows, now, categoryLabelMap])
-
-  const dailyVariance = useMemo(() => {
-    const lookbackDays = varianceWindowDays
-    const heatmapDays = []
-    for (let i = lookbackDays - 1; i >= 0; i -= 1) {
-      const d = new Date(now)
-      d.setHours(0, 0, 0, 0)
-      d.setDate(d.getDate() - i)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      const rawValue = Number(dailyExpenseTotals[key] || 0)
-      const value = Number.isFinite(rawValue) ? rawValue : 0
-      const weekdayIndex = (d.getDay() + 6) % 7
-      heatmapDays.push({
-        key,
-        value,
-        label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-        weekdayIndex,
-      })
-    }
-
-    const heatmapMax = Math.max(...heatmapDays.map((row) => row.value), 1)
-    const bubbleRows = heatmapDays.map((day) => {
-      const intensity = day.value > 0 ? (day.value / heatmapMax) : 0
-      const bubbleSize = day.value <= 0 ? 8 : Math.round(8 + (intensity * 16))
-      const bubbleFill = day.value <= 0
-        ? 'rgba(26,26,46,0.08)'
-        : `rgba(26,26,46,${Math.min(0.92, 0.15 + (intensity * 0.70))})`
-
-      return {
-        ...day,
-        bubbleSize,
-        bubbleFill,
-      }
-    })
-
-    const trackedDays = bubbleRows.filter((row) => row.value > 0)
-    const firstWeekdayIndex = bubbleRows[0]?.weekdayIndex || 0
-    const paddedRows = [...Array(firstWeekdayIndex).fill(null), ...bubbleRows]
-    while (paddedRows.length % 7 !== 0) paddedRows.push(null)
-
-    const heatmapWeeks = []
-    for (let i = 0; i < paddedRows.length; i += 7) {
-      heatmapWeeks.push(paddedRows.slice(i, i + 7))
-    }
-
-    return {
-      lookbackDays,
-      weekdayLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      heatmapWeeks,
-      heatmapMax,
-      activeDays: trackedDays.length,
-      trackedTotal: trackedDays.reduce((sum, row) => sum + row.value, 0),
-      heatmapRange: `${heatmapDays[0]?.label || ''} - ${heatmapDays[heatmapDays.length - 1]?.label || ''}`,
-    }
-  }, [dailyExpenseTotals, now, varianceWindowDays])
-
-  const duePipeline = useMemo(() => {
-    const pendingRows = Array.isArray(bills) ? bills : []
-    const paidRows = Array.isArray(paidBills) ? paidBills : []
-
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    monthStart.setHours(0, 0, 0, 0)
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    monthEnd.setHours(23, 59, 59, 999)
-
-    const inMonth = [...pendingRows, ...paidRows].filter((row) => {
-      const ts = new Date(row?.due_date || 0).getTime()
-      return Number.isFinite(ts) && ts >= monthStart.getTime() && ts <= monthEnd.getTime()
-    })
-
-    const pendingInMonth = inMonth.filter((row) => !row?.paid)
-    const paidInMonth = inMonth.filter((row) => !!row?.paid)
-    const overdueRows = pendingInMonth.filter((row) => daysUntil(row?.due_date) < 0)
-    const dueSoonRows = pendingInMonth.filter((row) => {
-      const d = daysUntil(row?.due_date)
-      return d >= 0 && d <= 7
-    })
-    const upcomingRows = pendingInMonth.filter((row) => daysUntil(row?.due_date) > 7)
-
-    const amountOf = (rows) => rows.reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-
-    const stageRows = [
-      {
-        stage: 'Planned',
-        count: inMonth.length,
-        amount: amountOf(inMonth),
-      },
-      {
-        stage: 'Paid',
-        count: paidInMonth.length,
-        amount: amountOf(paidInMonth),
-      },
-      {
-        stage: 'Due soon',
-        count: dueSoonRows.length,
-        amount: amountOf(dueSoonRows),
-      },
-      {
-        stage: 'Overdue',
-        count: overdueRows.length,
-        amount: amountOf(overdueRows),
-      },
-      {
-        stage: 'Upcoming',
-        count: upcomingRows.length,
-        amount: amountOf(upcomingRows),
-      },
-    ]
-
-    const plannedCount = stageRows[0].count
-    const paidCount = stageRows[1].count
-    const overdueCount = stageRows[3].count
-    const completionPct = plannedCount > 0 ? Math.round((paidCount / plannedCount) * 100) : 100
-    const leakagePct = plannedCount > 0 ? Math.round((overdueCount / plannedCount) * 100) : 0
-
-    let action = {
-      label: 'Open bills',
-      route: '/bills',
-      note: 'Pipeline is healthy. Keep paying bills before they slide into overdue.',
-    }
-
-    if (overdueCount > 0) {
-      action = {
-        label: 'Fix overdue first',
-        route: '/bills',
-        note: `${overdueCount} bill${overdueCount > 1 ? 's are' : ' is'} overdue. Clear these first to reduce leakage in the due pipeline.`,
-      }
-    } else if (dueSoonRows.length > 0) {
-      action = {
-        label: 'Prepare due-soon bills',
-        route: '/bills',
-        note: `${dueSoonRows.length} bill${dueSoonRows.length > 1 ? 's are' : ' is'} due in the next 7 days. Queue payment now to preserve conversion.`,
-      }
-    }
-
-    return {
-      stageRows,
-      completionPct,
-      leakagePct,
-      plannedCount,
-      paidCount,
-      overdueCount,
-      action,
-      hasData: stageRows.some((row) => row.count > 0),
-    }
-  }, [bills, paidBills, now])
-
-  const cashRiskRadar = useMemo(() => {
-    const current = now.getTime()
-    const dayMs = 24 * 60 * 60 * 1000
-    const riskHorizonDays = 14
-    const timelineHorizonDays = 30
-    const riskHorizonEnd = current + (riskHorizonDays * dayMs)
-    const timelineHorizonEnd = current + (timelineHorizonDays * dayMs)
-
-    const upcomingDueRows = (Array.isArray(bills) ? bills : []).filter((bill) => {
-      const ts = new Date(bill?.due_date || 0).getTime()
-      return Number.isFinite(ts) && ts <= riskHorizonEnd
-    })
-
-    const timelineDueRows = (Array.isArray(bills) ? bills : []).filter((bill) => {
-      const ts = new Date(bill?.due_date || 0).getTime()
-      return Number.isFinite(ts) && ts <= timelineHorizonEnd
-    })
-
-    const obligations14 = upcomingDueRows.reduce((sum, bill) => sum + Number(bill?.amount || 0), 0)
-
-    const income28 = (Array.isArray(digestTxnRows) ? digestTxnRows : [])
-      .filter((row) => {
-        if (row?.type !== 'income' || row?.is_repayment) return false
-        const ts = resolveTxnTimestamp(row)
-        return Number.isFinite(ts) && ts >= (current - (28 * dayMs)) && ts <= current
-      })
-      .reduce((sum, row) => sum + Number(row?.amount || 0), 0)
-
-    const projectedInflow14 = income28 > 0
-      ? (income28 / 28) * 14
-      : (earned > 0 ? (earned / Math.max(dayOfMonth, 1)) * 14 : 0)
-    const projectedDailyInflow = projectedInflow14 > 0 ? projectedInflow14 / 14 : 0
-
-    const coverageRatio = projectedInflow14 > 0
-      ? obligations14 / projectedInflow14
-      : (obligations14 > 0 ? 9 : 0)
-
-    let risk = 'Low'
-    if (coverageRatio > 0.85) risk = 'High'
-    else if (coverageRatio > 0.45) risk = 'Medium'
-
-    const buffer = projectedInflow14 - obligations14
-
-    const dueByDate = new Map()
-    for (const bill of timelineDueRows) {
-      const key = String(bill?.due_date || '').slice(0, 10)
-      if (!key) continue
-      dueByDate.set(key, (dueByDate.get(key) || 0) + Number(bill?.amount || 0))
-    }
-
-    let cumulativeDue = 0
-    let cumulativeInflow = 0
-    const timelineSeries = Array.from({ length: timelineHorizonDays }, (_, index) => {
-      const d = new Date(now)
-      d.setHours(0, 0, 0, 0)
-      d.setDate(d.getDate() + index)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      const due = dueByDate.get(key) || 0
-
-      cumulativeDue += due
-      cumulativeInflow += projectedDailyInflow
-
-      return {
-        day: index + 1,
-        label: index % 5 === 0
-          ? d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
-          : '',
-        cumulativeDue,
-        cumulativeInflow,
-        gap: cumulativeInflow - cumulativeDue,
-      }
-    })
-
-    const worstGap = Math.min(...timelineSeries.map((row) => row.gap), buffer)
-
-    let action = {
-      label: 'Open monthly plan',
-      route: '/monthly',
-      note: 'Buffer looks healthy. Keep planned due coverage and route extra cash intentionally.',
-    }
-
-    if (risk === 'High') {
-      action = {
-        label: 'Review bills now',
-        route: '/bills',
-        note: 'Obligations are close to predicted inflow. Sequence due dates and cut discretionary spend this week.',
-      }
-    } else if (risk === 'Medium') {
-      action = {
-        label: 'Protect cash buffer',
-        route: '/monthly',
-        note: 'Coverage is moderate. Reserve bill cash before optional spending this week.',
-      }
-    }
-
-    return {
-      obligations14,
-      projectedInflow14,
-      buffer,
-      risk,
-      dueCount: upcomingDueRows.length,
-      timelineSeries,
-      worstGap,
-      action,
-    }
-  }, [bills, digestTxnRows, earned, dayOfMonth, now])
-
+  // ── Reminders ──────────────────────────────────────────────────────────
   useEffect(() => {
     const prefs = getReminderPrefs()
     if (!prefs.enabled) return
@@ -739,38 +373,89 @@ export default function Dashboard() {
         })
       }
     }
+  }, [dueSoonCount, earned, spent, dayOfMonth, daysInMonth])
 
-    // Daily spend spike alert (yesterday > 2x average)
-    if (prefs.spending_pace && dailyExpenseTotals && typeof dailyExpenseTotals === 'object') {
-      const yesterday = new Date()
-      yesterday.setDate(yesterday.getDate() - 1)
-      const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
-      const ySpend = Number(dailyExpenseTotals[yKey] || 0)
-      const vals = Object.values(dailyExpenseTotals).map(Number).filter(v => Number.isFinite(v) && v > 0)
-      const avg = vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0
-      if (ySpend > 0 && avg > 0 && ySpend > avg * 2) {
-        maybeNotify({
-          id: 'daily-spike',
-          title: 'Kosha: unusual spend spike',
-          body: `Yesterday\'s spend was ${Math.round(ySpend / avg)}× your daily average.`,
-          cooldownMs: 24 * 60 * 60 * 1000,
-        })
-      }
+  const handleTouchStart = useCallback((e) => {
+    if (window.scrollY > 0 || isRefreshing) return
+    setPullStartY(e.touches[0]?.clientY ?? null)
+  }, [isRefreshing])
+
+  const handleTouchMove = useCallback((e) => {
+    if (pullStartY == null || window.scrollY > 0) return
+    const currentY = e.touches[0]?.clientY ?? 0
+    const delta = Math.max(0, Math.min(80, currentY - pullStartY))
+    setPullDistance(delta)
+  }, [pullStartY])
+
+  const handleTouchEnd = useCallback(async () => {
+    if (pullDistance < 56 || isRefreshing) {
+      setPullStartY(null)
+      setPullDistance(0)
+      return
     }
-  }, [dueSoonCount, earned, spent, dayOfMonth, daysInMonth, dailyExpenseTotals])
 
-  // ── Stable callbacks — useCallback deps are all stable primitives ──────
+    setIsRefreshing(true)
+    setToast('Refreshing dashboard...')
+    try {
+      await invalidateQueryFamilies([
+        ['transactionsRecent'],
+        ['month'],
+        ['balance'],
+        ['liabilities'],
+        ['budgets'],
+      ])
+      setToast('Dashboard updated')
+    } catch {
+      setToast('Could not refresh right now.')
+    } finally {
+      setPullStartY(null)
+      setPullDistance(0)
+      setIsRefreshing(false)
+      setTimeout(() => setToast(null), 1800)
+    }
+  }, [pullDistance, isRefreshing])
+
+  // ── Callbacks ──────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (id) => {
     if (!id) return false
+    const deletedTxn = recent.find((row) => row.id === id)
+
     try {
       await removeTransactionMutation(id)
+
+      if (deletedTxn) {
+        setToast('Transaction deleted')
+        setToastAction(() => async () => {
+          try {
+            const { id: _id, created_at: _createdAt, user_id: _userId, ...payload } = deletedTxn
+            await saveTransactionMutation({ payload })
+            setToast('Transaction restored')
+            setToastAction(null)
+            setToastActionLabel(null)
+            setTimeout(() => setToast(null), 1600)
+          } catch {
+            setToast('Could not undo delete.')
+            setToastAction(null)
+            setToastActionLabel(null)
+            setTimeout(() => setToast(null), 1800)
+          }
+        })
+        setToastActionLabel('Undo')
+        setTimeout(() => {
+          setToastAction(null)
+          setToastActionLabel(null)
+        }, 5000)
+      }
+
       return true
     } catch (e) {
       setToast(e.message || 'Could not delete transaction.')
+      setToastAction(null)
+      setToastActionLabel(null)
       setTimeout(() => setToast(null), 4000)
       throw e
     }
-  }, [])
+  }, [recent])
 
   const handleTap = useCallback((t) => {
     setEditTxn(t)
@@ -790,37 +475,45 @@ export default function Dashboard() {
     setHeroMode(m => m === 'balance' ? 'safe' : 'balance')
   }, [])
 
-  const handleVarianceWindowChange = useCallback((nextDays) => {
-    setVarianceWindowDays((prev) => {
-      const normalized = normalizeVarianceWindowDays(nextDays)
-      return prev === normalized ? prev : normalized
-    })
-  }, [])
-
   return (
-    <div className="page">
-      <PageHeader title="Dashboard" className="mb-3" />
+    <PageHeaderPage
+      title="Dashboard"
+      pageProps={{
+        onTouchStart: handleTouchStart,
+        onTouchMove: handleTouchMove,
+        onTouchEnd: handleTouchEnd,
+      }}
+      beforeHeader={(
+        <div className="flex justify-center overflow-hidden" aria-hidden="true">
+          <div
+            className={`text-[10px] text-ink-3 transition-all duration-200 ${pullDistance > 0 || isRefreshing ? 'opacity-100 mb-2' : 'opacity-0 h-0'}`}
+            style={{ transform: `translateY(${Math.min(12, pullDistance / 6)}px)` }}
+          >
+            {isRefreshing ? 'Refreshing…' : pullDistance >= 56 ? 'Release to refresh' : 'Pull to refresh'}
+          </div>
+        </div>
+      )}
+    >
       <motion.div
         variants={stagger}
         initial="hidden"
         animate="show"
         className="page-stack pt-0"
       >
-
         {/* ── Greeting ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
           <p className="text-[11px] text-ink-3 tracking-wide">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="text-[24px] md:text-[28px] font-semibold text-ink tracking-tight mt-1">
-            {greeting}{firstName ? `, ${firstName}` : ''}
+          <h1 className="text-[24px] font-semibold text-ink tracking-tight mt-1">
+            {greetingMeta.text}{firstName ? `, ${firstName}` : ''} {greetingMeta.emoji}
           </h1>
           {isBackgroundFetching && (
             <p className="text-[10px] text-ink-4 mt-1.5 tracking-wide">Syncing latest data...</p>
           )}
         </motion.div>
 
-        {/* ── Hero card — sub-component, renders independently ─────── */}
+        {/* ── Hero card ─────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>
           {heroLoading ? <DashboardHeroSkeleton /> : (
             <DashboardHeroCard
@@ -837,220 +530,172 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* ── Actionable nudges ─────────────────────────────────── */}
-        {heavyReady && (earned > 0 || dueSoonCount > 0) && (
+        {isNewUser && (
           <motion.div variants={fadeUp}>
-            <DashboardNudges
-              earned={earned}
-              spent={spent}
-              invested={invested}
-              dayOfMonth={dayOfMonth}
-              daysInMonth={daysInMonth}
-              dailyExpenseTotals={dailyExpenseTotals}
-              dueSoonCount={dueSoonCount}
-              dueSoonAmount={dueSoonAmount}
-              weeklyDigest={weeklyDigest}
-              budgetMap={bMap}
-              byCategory={summary?.byCategory}
-            />
-          </motion.div>
-        )}
-
-        {/* ── Daily spend bubble map ─────────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          <DailySpendBubbleMap
-            dailyVariance={dailyVariance}
-            selectedWindowDays={varianceWindowDays}
-            onWindowDaysChange={handleVarianceWindowChange}
-          />
-        </motion.div>
-
-        {/* ── Spending pace tracker ──────────────────────────────── */}
-        {heavyReady && earned > 0 && (
-          <motion.div variants={fadeUp}>
-            <SpendingPaceTracker
-              dailyExpenseTotals={dailyExpenseTotals}
-              now={now}
-              earned={earned}
-              spent={spent}
-            />
-          </motion.div>
-        )}
-
-        <motion.div variants={fadeUp}>
-          <div className="card p-4">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-warning-bg flex items-center justify-center shrink-0">
-                  <ShieldAlert size={15} className="text-warning-text" />
-                </div>
-                <div>
-                  <p className="section-label">Cash Risk Radar</p>
-                  <p className="text-[11px] text-ink-3 mt-1">14-day obligations vs predicted inflow</p>
-                </div>
+            <div className="card p-4 border-0">
+              <p className="section-label mb-1.5">Start here</p>
+              <p className="text-[14px] font-semibold text-ink">Add your first transaction to unlock daily guidance.</p>
+              <p className="text-[11px] text-ink-3 mt-1.5">Kosha will start showing spendable today, burn rate, and upcoming bills as soon as your month has activity.</p>
+              <div className="flex gap-2 mt-3">
+                <Button variant="primary" size="sm" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
+                  Add expense
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => navigate('/bills')}>
+                  Add bill
+                </Button>
               </div>
-              <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${cashRiskRadar.risk === 'Low'
-                ? 'bg-income-bg text-income-text'
-                : cashRiskRadar.risk === 'Medium'
-                  ? 'bg-warning-bg text-warning-text'
-                  : 'bg-expense-bg text-expense-text'
-                }`}>
-                {cashRiskRadar.risk} risk
-              </span>
             </div>
+          </motion.div>
+        )}
 
-            <div className="grid grid-cols-3 gap-2 mb-2.5">
-              <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                <p className="text-[10px] text-ink-3 tracking-wide">Obligations</p>
-                <p className="text-[13px] font-semibold text-warning-text tabular-nums mt-0.5">{fmt(cashRiskRadar.obligations14)}</p>
-              </div>
-              <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                <p className="text-[10px] text-ink-3 tracking-wide">Pred. inflow</p>
-                <p className="text-[13px] font-semibold text-income-text tabular-nums mt-0.5">{fmt(cashRiskRadar.projectedInflow14)}</p>
-              </div>
-              <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                <p className="text-[10px] text-ink-3 tracking-wide">Buffer</p>
-                <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${cashRiskRadar.buffer >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                  {cashRiskRadar.buffer >= 0 ? '+' : '-'}{fmt(Math.abs(cashRiskRadar.buffer))}
+        {/* ── Spendable today + burn rate ────────────────────────────── */}
+        {!heroLoading && earned > 0 && (
+          <motion.div variants={fadeUp}>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="card p-3.5 border-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-lg bg-income-bg flex items-center justify-center">
+                    <Wallet size={14} className="text-income-text" />
+                  </div>
+                  <p className="text-[10px] text-ink-3 tracking-wide">Spendable today</p>
+                </div>
+                <p className="text-[18px] font-bold tabular-nums text-ink tracking-tight">
+                  {fmt(spendableToday.daily)}
+                </p>
+                <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  {fmt(spendableToday.remaining)} left this month
                 </p>
               </div>
+
+              {burnRate && (
+                <div className="card p-3.5 border-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${burnRate.ahead ? 'bg-warning-bg' : 'bg-income-bg'}`}>
+                      <TrendingDown size={14} className={burnRate.ahead ? 'text-warning-text' : 'text-income-text'} />
+                    </div>
+                    <p className="text-[10px] text-ink-3 tracking-wide">Burn rate</p>
+                  </div>
+                  <p className={`text-[18px] font-bold tabular-nums tracking-tight ${burnRate.ahead ? 'text-warning-text' : 'text-ink'}`}>
+                    {burnRate.paceActual}%
+                  </p>
+                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                    Expected {burnRate.paceExpected}% by day {dayOfMonth}
+                  </p>
+                </div>
+              )}
             </div>
+          </motion.div>
+        )}
 
-            <div className="h-1.5 rounded-pill bg-kosha-surface-2 overflow-hidden">
-              <div className="h-full rounded-pill" style={{ background: 'rgba(26,26,46,0.08)' }} />
-            </div>
-
-            <div className="mt-3 rounded-card bg-kosha-surface-2 p-3" style={{ border: '1px solid rgba(26,26,46,0.04)' }}>
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={cashRiskRadar.timelineSeries} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
-                    axisLine={false}
-                    tickLine={false}
-                    interval={0}
-                  />
-                  <YAxis hide />
-                  <RechartsTooltip content={<DuePressureTooltip />} />
-                  <ReferenceLine y={0} stroke="rgba(26,26,46,0.12)" />
-                  <Line
-                    type="monotone"
-                    dataKey="cumulativeDue"
-                    stroke="#C4384A"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4, fill: '#C4384A', stroke: '#fff', strokeWidth: 2 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="cumulativeInflow"
-                    stroke="#2D8B6F"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4, fill: '#2D8B6F', stroke: '#fff', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            <p className="text-[11px] text-ink-3 mt-2">
-              {cashRiskRadar.dueCount} bill{cashRiskRadar.dueCount !== 1 ? 's' : ''} fall in the next 14 days. {cashRiskRadar.action.note}
-            </p>
-            <p className="text-[11px] text-ink-3 mt-1">
-              30-day projected worst cash gap: {cashRiskRadar.worstGap >= 0 ? '+' : '-'}{fmt(Math.abs(cashRiskRadar.worstGap))}.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => navigate(cashRiskRadar.action.route)}
-              className="btn-secondary h-9 px-3 text-[11px] mt-2"
-            >
-              {cashRiskRadar.action.label}
-            </button>
-          </div>
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <div className="card p-4">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <p className="section-label">Due pipeline conversion</p>
-                <p className="text-[11px] text-ink-3 mt-1">Lifecycle: planned, paid, due soon, overdue</p>
+        {!heroLoading && runwayBalance && (
+          <motion.div variants={fadeUp}>
+            <div className="card p-3.5 border-0">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-[10px] text-ink-3 tracking-wide">Runway balance</p>
+                <span className={`text-[10px] font-semibold px-2 py-1 rounded-pill ${runwayBalance.band === 'high' ? 'bg-warning-bg text-warning-text' : runwayBalance.band === 'watch' ? 'bg-brand-container text-brand' : 'bg-income-bg text-income-text'}`}>
+                  {runwayBalance.band === 'high' ? 'Tight' : runwayBalance.band === 'watch' ? 'Watch' : 'Healthy'}
+                </span>
               </div>
-              <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${duePipeline.leakagePct > 0 ? 'bg-warning-bg text-warning-text' : 'bg-income-bg text-income-text'}`}>
-                {duePipeline.completionPct}% converted
-              </span>
+
+              <div className="mt-2.5 space-y-2.5">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[10px] text-ink-3">Days left</p>
+                    <p className="text-[11px] font-semibold tabular-nums text-ink">{daysRemaining}/{daysInMonth} ({runwayBalance.daysLeftPct}%)</p>
+                  </div>
+                  <div className="h-1.5 rounded-pill bg-kosha-surface-2 overflow-hidden">
+                    <div className="h-full rounded-pill bg-brand" style={{ width: `${runwayBalance.daysLeftPct}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[10px] text-ink-3">Money left</p>
+                    <p className="text-[11px] font-semibold tabular-nums text-ink">{fmt(spendableToday.remaining)} ({runwayBalance.moneyLeftPct}%)</p>
+                  </div>
+                  <div className="h-1.5 rounded-pill bg-kosha-surface-2 overflow-hidden">
+                    <div
+                      className={`h-full rounded-pill ${runwayBalance.band === 'high' ? 'bg-warning-text' : runwayBalance.band === 'watch' ? 'bg-accent' : 'bg-income-text'}`}
+                      style={{ width: `${runwayBalance.moneyLeftPct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-ink-3 mt-2">
+                {runwayBalance.band === 'high'
+                  ? 'Money runway is trailing time runway. Reduce optional spend until bars realign.'
+                  : runwayBalance.band === 'watch'
+                    ? 'Runway is slightly ahead of budget pace. Keep daily cap disciplined.'
+                    : 'Money runway is aligned with days left. Current pace is sustainable.'}
+              </p>
             </div>
+          </motion.div>
+        )}
 
-            {duePipeline.hasData ? (
-              <>
-                <div className="grid grid-cols-3 gap-2 mb-2.5">
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3 tracking-wide">Planned bills</p>
-                    <p className="text-[13px] font-semibold tabular-nums text-ink mt-0.5">{duePipeline.plannedCount}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3 tracking-wide">Paid bills</p>
-                    <p className="text-[13px] font-semibold tabular-nums text-income-text mt-0.5">{duePipeline.paidCount}</p>
-                  </div>
-                  <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                    <p className="text-[10px] text-ink-3 tracking-wide">Leakage</p>
-                    <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${duePipeline.overdueCount > 0 ? 'text-warning-text' : 'text-income-text'}`}>
-                      {duePipeline.leakagePct}%
+        {!heroLoading && (categoryPressureSignal || spendPaceSignal || billClusterSignal) && (
+          <motion.div variants={fadeUp}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {categoryPressureSignal && (
+                <div className="card p-3.5 border-0">
+                  <p className="text-[10px] text-ink-3 tracking-wide">Top spend pressure</p>
+                  <p className="text-[14px] font-semibold text-ink mt-1 truncate" title={categoryPressureSignal.label}>
+                    {categoryPressureSignal.label}
+                  </p>
+                  <p className={`text-[12px] tabular-nums mt-1 ${bandTextClass(categoryPressureSignal.band)}`}>
+                    {categoryPressureSignal.sharePct}% of spend · {fmt(categoryPressureSignal.amount)}
+                  </p>
+                  {categoryPressureSignal.budgetPct != null && (
+                    <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                      Budget usage: {categoryPressureSignal.budgetPct}%
                     </p>
-                  </div>
+                  )}
                 </div>
+              )}
 
-                <div className="rounded-card bg-kosha-surface-2 p-3" style={{ border: '1px solid rgba(26,26,46,0.04)' }}>
-                  <ResponsiveContainer width="100%" height={198}>
-                    <BarChart data={duePipeline.stageRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
-                      <XAxis
-                        dataKey="stage"
-                        tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        yAxisId="left"
-                        allowDecimals={false}
-                        tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={28}
-                      />
-                      <YAxis
-                        yAxisId="right"
-                        orientation="right"
-                        tickFormatter={compactTick}
-                        tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={34}
-                      />
-                      <RechartsTooltip content={<DuePipelineTooltip />} />
-                      <Bar yAxisId="left" dataKey="count" name="Bills" fill="#1A1A2E" radius={[8, 8, 0, 0]} maxBarSize={16} />
-                      <Bar yAxisId="right" dataKey="amount" name="Amount" fill="rgba(139, 114, 48, 0.60)" radius={[8, 8, 0, 0]} maxBarSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
+              {spendPaceSignal && (
+                <div className="card p-3.5 border-0">
+                  <p className="text-[10px] text-ink-3 tracking-wide">Spend pace risk</p>
+                  <p className={`text-[14px] font-semibold mt-1 ${bandTextClass(spendPaceSignal.band)}`}>
+                    {spendPaceSignal.band === 'high' ? 'Ahead of safe pace' : spendPaceSignal.band === 'watch' ? 'Near limit' : 'Within pace'}
+                  </p>
+                  <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
+                    Outflow/day {fmt(spendPaceSignal.observedDailyOutflow)}
+                  </p>
+                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                    Safe/day {fmt(spendPaceSignal.allowedDailyOutflow)}
+                  </p>
                 </div>
+              )}
 
-                <p className="text-[11px] text-ink-3 mt-2">{duePipeline.action.note}</p>
-
-                <button
-                  type="button"
-                  onClick={() => navigate(duePipeline.action.route)}
-                  className="btn-secondary h-9 px-3 text-[11px] mt-2"
-                >
-                  {duePipeline.action.label}
-                </button>
-              </>
-            ) : (
-              <p className="text-[11px] text-ink-3">No bills in this month yet. Add due items to start pipeline tracking.</p>
-            )}
-          </div>
-        </motion.div>
+              {billClusterSignal && (
+                <div className="card p-3.5 border-0">
+                  <p className="text-[10px] text-ink-3 tracking-wide">Bill timing signal</p>
+                  {billClusterSignal.overdueCount > 0 ? (
+                    <>
+                      <p className="text-[14px] font-semibold text-warning-text mt-1">
+                        {billClusterSignal.overdueCount} overdue
+                      </p>
+                      <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
+                        {fmt(billClusterSignal.overdueAmount)} at risk
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[14px] font-semibold text-ink mt-1">
+                        Week {billClusterSignal.densestWeek} is dense
+                      </p>
+                      <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
+                        {billClusterSignal.densestCount} bill{billClusterSignal.densestCount === 1 ? '' : 's'} · {fmt(billClusterSignal.densestAmount)}
+                      </p>
+                    </>
+                  )}
+                  <p className="text-[10px] text-ink-3 mt-1">Use bills page to sequence payments.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         {/* ── Bill alert ────────────────────────────────────────────── */}
         {dueSoonCount > 0 && (
@@ -1073,87 +718,38 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {heavyReady && weeklyDigest.hasSignals && (
+        {/* ── Upcoming recurrings ───────────────────────────────────── */}
+        {upcomingBills.length > 0 && (
           <motion.div variants={fadeUp}>
-            <div className="card p-4 bg-kosha-surface border-0">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div>
-                  <p className="section-label">What changed this week</p>
-                  <p className="text-caption text-ink-3 mt-0.5">7-day vs previous 7-day digest</p>
-                </div>
-                <span className={`text-[11px] px-2.5 py-1 rounded-pill font-semibold border ${weeklyDigest.spendDelta <= 0 ? 'bg-income-bg text-income-text border-income-border' : 'bg-warning-bg text-warning-text border-warning-border'}`}>
-                  {weeklyDigest.spendDelta <= 0 ? 'Spending cooled' : 'Spending up'}
-                </span>
-              </div>
-
-              <div className="rounded-card bg-kosha-surface-2 p-2.5 mb-2.5" style={{ border: '1px solid rgba(26,26,46,0.04)' }}>
-                <ResponsiveContainer width="100%" height={214}>
-                  <BarChart data={weeklyDigest.comparisonSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
-                    <XAxis
-                      dataKey="metric"
-                      tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tickFormatter={compactTick}
-                      tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={34}
-                    />
-                    <RechartsTooltip content={<WeeklyDigestTooltip />} />
-                    <Bar dataKey="current" name="Current 7d" fill="#1A1A2E" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="previous" name="Previous 7d" fill="rgba(26, 26, 46, 0.22)" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 mb-2.5">
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-[10px] tracking-wide text-ink-3">Spend delta</p>
-                  <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${weeklyDigest.spendDelta <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-                    {weeklyDigest.spendDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.spendDelta))}
-                  </p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-[10px] tracking-wide text-ink-3">Income delta</p>
-                  <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${weeklyDigest.incomeDelta >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-                    {weeklyDigest.incomeDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.incomeDelta))}
-                  </p>
-                </div>
-                <div className="rounded-card bg-kosha-surface-2 p-2.5">
-                  <p className="text-[10px] tracking-wide text-ink-3">Net delta</p>
-                  <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${weeklyDigest.netDelta >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-                    {weeklyDigest.netDelta >= 0 ? '+' : '-'}{fmt(Math.abs(weeklyDigest.netDelta))}
-                  </p>
-                </div>
-              </div>
-
-              {weeklyDigest.topCategories.length > 0 && (() => {
-                const row = weeklyDigest.topCategories[0]
+            <div className="flex items-center justify-between mb-2">
+              <p className="section-label">Upcoming bills</p>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/bills')} className="h-7 px-2.5 text-[10px]">
+                View all
+              </Button>
+            </div>
+            <div className="list-card">
+              {upcomingBills.map((bill) => {
+                const days = daysUntil(bill.due_date)
+                const dueLabel = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days}d`
                 return (
-                  <div className="space-y-1.5">
-                    <p className="text-[10px] tracking-wide text-ink-3">Top spend category this week</p>
-                    <div key={row.id} className="rounded-card bg-kosha-surface-2 px-3 py-2.5">
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <p className="text-[11px] font-semibold text-ink-2 truncate">{row.label}</p>
-                        <p className="text-[11px] font-semibold text-expense-text tabular-nums shrink-0">{fmt(row.value)}</p>
-                      </div>
-                      <div className="h-1 rounded-pill bg-kosha-surface overflow-hidden">
-                        <div className="h-full rounded-pill bg-ink" style={{ width: `${Math.max(8, row.sharePct)}%` }} />
-                      </div>
-                      <p className="text-[10px] text-ink-3 tabular-nums mt-1.5">{row.sharePct}% of current-week spend</p>
+                  <div key={bill.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium text-ink truncate">{bill.description}</p>
+                      <p className="text-[11px] text-ink-3 mt-0.5">
+                        Due {dueLabel}
+                      </p>
                     </div>
+                    <p className="text-[13px] font-semibold tabular-nums text-warning-text shrink-0">
+                      {fmt(Number(bill.amount || 0))}
+                    </p>
                   </div>
                 )
-              })()}
+              })}
             </div>
           </motion.div>
         )}
 
-        {/* ── Recent transactions — sub-component ──────────────────── */}
+        {/* ── Recent transactions ───────────────────────────────────── */}
         <motion.div variants={fadeUp}>
           {recentLoading ? <DashboardRecentSkeleton /> : (
             <DashboardRecentTransactions
@@ -1167,10 +763,19 @@ export default function Dashboard() {
 
       </motion.div>
 
-      <AppToast message={toast} onDismiss={() => setToast(null)} />
+      <AppToast
+        message={toast}
+        onDismiss={() => {
+          setToast(null)
+          setToastAction(null)
+          setToastActionLabel(null)
+        }}
+        action={toastAction}
+        actionLabel={toastActionLabel}
+      />
 
       {/* FAB */}
-      <button className="fab" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
+      <button className="fab" aria-label="Add transaction" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={24} className="text-white" />
       </button>
 
@@ -1181,7 +786,6 @@ export default function Dashboard() {
         editTxn={editTxn}
         initialType={addType}
       />
-    </div>
+    </PageHeaderPage>
   )
 }
-

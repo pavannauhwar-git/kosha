@@ -1,65 +1,67 @@
 export const C = {
 
-  // ── Brand — Deep charcoal (CRED light) ───────────────────────────
-  brand:           '#1A1A2E',
-  brandMid:        '#2D2D44',
-  brandLight:      '#6B6B80',
-  brandContainer:  '#EFECE6',
-  brandBorder:     'rgba(26,26,46,0.08)',
+  // ── Brand — Vibrant Blue ─────────────────────────────────────────
+  brand:           'var(--ds-primary)',
+  brandMid:        'var(--ds-primary-light)',
+  brandLight:      'var(--ds-primary-light)',
+  brandMuted:      'rgba(var(--ds-primary-rgb),0.22)',
+  brandContainer:  'var(--ds-primary-container)',
+  brandBorder:     'var(--ds-border)',
 
-  // ── Contrast Accent — Warm gold ──────────────────────────────────
-  accent:          '#C9A96E',
-  accentBg:        'rgba(201,169,110,0.12)',
-  accentFill:      '#C9A96E',
+  // ── Contrast Accent — Sunny yellow ───────────────────────────────
+  accent:          'var(--ds-accent)',
+  accentBg:        'rgba(255,255,153,0.18)',
+  accentFill:      'var(--ds-accent-dark)',
 
-  // ── Income — Muted sage ───────────────────────────────────────────
-  income:          '#2D8B6F',
-  incomeText:      '#1D6B53',
+  // ── Income — Emerald ──────────────────────────────────────────────
+  income:          'var(--ds-income)',
+  incomeText:      'var(--ds-income-text)',
 
-  // ── Expense — Muted rose ──────────────────────────────────────────
-  expense:         '#C4384A',
-  expenseBright:   '#D84A5C',
+  // ── Expense — Coral ───────────────────────────────────────────────
+  expense:         'var(--ds-expense)',
+  expenseBright:   'var(--ds-expense-text)',
 
-  // ── Investment — Muted indigo ─────────────────────────────────────
-  invest:          '#6246B5',
-  investText:      '#4A2F9A',
+  // ── Investment — Indigo ───────────────────────────────────────────
+  invest:          'var(--ds-invest)',
+  investText:      'var(--ds-invest-text)',
 
-  saved:           '#1A1A2E',
+  saved:           'var(--ds-primary)',
 
-  // ── Bills — Warm gold ─────────────────────────────────────────────
-  bills:           '#8B7230',
+  // ── Bills — Amber ─────────────────────────────────────────────────
+  bills:           'var(--ds-warning)',
+  warningMuted:    'rgba(249,168,37,0.60)',
 
-  // ── Ink — warm neutrals ───────────────────────────────────────────
-  ink:             '#1A1A2E',
-  inkMuted:        '#6B6B80',
+  // ── Ink — clean neutrals ──────────────────────────────────────────
+  ink:             'var(--ds-text)',
+  inkMuted:        'var(--ds-text-tertiary)',
 
-  // ── Hero card overlays (light text on dark charcoal hero) ────────
-  heroAccent:      '#C9A96E',
-  heroAccentBg:    'rgba(201,169,110,0.15)',
-  heroAccentSolid: '#C9A96E',
-  heroLabel:       'rgba(255,255,255,0.60)',
-  heroDimmer:      'rgba(255,255,255,0.35)',
-  heroDivider:     'rgba(255,255,255,0.10)',
-  heroStatBg:      'rgba(255,255,255,0.08)',
+  // ── Hero card overlays (light text on blue hero) ──────────────────
+  heroAccent:      '#FFFF99',
+  heroAccentBg:    'rgba(255,255,153,0.15)',
+  heroAccentSolid: '#FFFF99',
+  heroLabel:       'rgba(255,255,255,0.70)',
+  heroDimmer:      'rgba(255,255,255,0.45)',
+  heroDivider:     'rgba(255,255,255,0.12)',
+  heroStatBg:      'rgba(255,255,255,0.10)',
 
-  // ── Chart colours — muted sophistication ──────────────────────────
-  chartIncome:     '#4AAA8A',
-  chartExpense:    '#D86474',
-  chartDark:       '#1A1A2E',
-  chartGrid:       'rgba(26,26,46,0.06)',
-  chartCursor:     'rgba(26,26,46,0.04)',
+  // ── Chart colours — vibrant clarity ───────────────────────────────
+  chartIncome:     'var(--ds-income)',
+  chartExpense:    'var(--ds-expense)',
+  chartDark:       'var(--ds-primary)',
+  chartGrid:       'rgba(var(--ds-text-rgb),0.10)',
+  chartCursor:     'rgba(var(--ds-primary-rgb),0.10)',
 
-  // ── Portfolio donut — brand shades (darkest → lightest) ────────────
+  // ── Portfolio donut — blue shades (darkest → lightest) ────────────
   portfolio: [
-    '#1A1A2E',
-    '#2F2F4A',
-    '#484868',
-    '#656588',
-    '#8585A5',
-    '#ABABC4',
+    '#003366',
+    '#0055A3',
+    '#007FFF',
+    '#4DA6FF',
+    '#80C4FF',
+    '#B3DEFF',
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#1A1A2E',
-  logoHighlight: '#C9A96E',
+  logoBg:        '#007FFF',
+  logoHighlight: '#FFFF99',
 }

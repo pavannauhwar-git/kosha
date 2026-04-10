@@ -8,7 +8,7 @@ export default function PageBackHeader({
 }) {
   return (
     <div
-      className={`sticky top-0 z-20 bg-kosha-bg/90 backdrop-blur-md border-b border-kosha-border px-4 py-3 flex items-center gap-3 ${className}`.trim()}
+      className={`app-topbar px-4 py-3 flex items-center gap-3 ${className}`.trim()}
       style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)', paddingBottom: '0.75rem' }}
     >
       <button

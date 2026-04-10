@@ -1,8 +1,8 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertCircle, ArrowRight, CheckCircle2, History, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
+import { AlertCircle, ArrowRight, CheckCircle2, History, Home, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import PageHeader from '../components/layout/PageHeader'
+import BackHeaderPage from '../components/layout/BackHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
@@ -27,6 +27,7 @@ import {
   setReviewedReconciliationIds,
 } from '../lib/reconciliation'
 import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases, calculateAliasQuality, identifyMerchantsInCooldown } from '../lib/reconciliationMetrics'
+import { C } from '../lib/colors'
 import {
   ResponsiveContainer,
   FunnelChart,
@@ -58,7 +59,7 @@ function ReconciliationFunnelTooltip({ active, payload }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card bg-kosha-surface-2 p-3 shadow-card">
+    <div className="mini-panel p-3 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{row?.name || 'Stage'}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Transactions</span>
@@ -73,7 +74,7 @@ function TurnaroundTooltip({ active, payload, label }) {
   const row = payload[0]?.payload || {}
 
   return (
-    <div className="rounded-card bg-kosha-surface-2 p-3 shadow-card">
+    <div className="mini-panel p-3 shadow-card">
       <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
       <div className="flex items-center justify-between gap-3 text-[11px]">
         <span className="text-ink-3">Resolved items</span>
@@ -177,6 +178,20 @@ export default function Reconciliation() {
     return { total, valid, matched, highConfidence, linkedSuggestions, conversion }
   }, [statementMatches, linkedIdSet])
 
+  const statementValidationMessage = useMemo(() => {
+    const trimmed = String(statementInput || '').trim()
+    if (!trimmed) return ''
+    if (trimmed.length < 10) {
+      return 'Paste at least one valid transaction line (format: description, amount, date).'
+    }
+    if (!statementEntries.some((row) => row?.isValid)) {
+      return 'No valid statement lines detected. Use format like: 24/03/2026, Swiggy, 542.00'
+    }
+    return ''
+  }, [statementInput, statementEntries])
+
+  const canUseStatementMatches = statementValidationMessage === '' && statementSummary.valid > 0
+
   const recentLinkDecisions = useMemo(() => {
     const linkedRows = (reviewRows || [])
       .filter((row) => row?.status === 'linked' && row?.transaction_id)
@@ -256,9 +271,9 @@ export default function Reconciliation() {
     const linked = reviewCounts.linked
 
     return [
-      { name: 'Candidates', value: candidates, fill: '#2A84EE' },
-      { name: 'Reviewed', value: reviewedOrLinked, fill: '#22C58B' },
-      { name: 'Linked', value: linked, fill: '#1A1A2E' },
+      { name: 'Candidates', value: candidates, fill: C.brand },
+      { name: 'Reviewed', value: reviewedOrLinked, fill: C.income },
+      { name: 'Linked', value: linked, fill: C.invest },
     ]
   }, [insights.candidates.length, reviewProgress.resolved, reviewCounts.linked])
 
@@ -482,50 +497,89 @@ export default function Reconciliation() {
   ]
 
   return (
-    <div className="page">
-      <PageHeader title="Reconciliation" className="mb-3" />
+    <BackHeaderPage
+      title="Reconciliation"
+      onBack={() => navigate(-1)}
+      rightSlot={(
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
+          aria-label="Go to home"
+        >
+          <Home size={16} className="text-ink-2" />
+        </button>
+      )}
+      contentClassName="page"
+    >
 
       {/* ── Summary strip ──────────────────────────────────── */}
-      <div className="card p-4 mb-3.5">
-        <div className="flex items-start justify-between gap-4">
+      <div className="card p-0 mb-3.5 overflow-hidden">
+        <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink">Data quality</p>
+            <p className="text-sm font-semibold text-ink">Reconciliation cockpit</p>
             <p className="text-[11px] text-ink-3 mt-0.5">
               {reviewProgress.queue > 0
                 ? `${reviewProgress.queue} item${reviewProgress.queue > 1 ? 's' : ''} need attention`
-                : 'Queue clear — records look healthy'}
+                : 'Queue clear. Your records look healthy.'}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-ink/[0.06] text-ink flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-brand-container text-brand flex items-center justify-center shrink-0">
             <ShieldCheck size={18} />
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 mt-3">
-          <Metric label="Queue" value={insights.counts.queue} tone="text-ink" compact />
-          <Metric label="Linked" value={reviewCounts.linked} tone="text-income-text" compact />
-          <Metric label="No category" value={insights.counts.missingCategory} tone="text-warning-text" compact />
-          <Metric label="Duplicates" value={insights.counts.potentialDuplicate} tone="text-expense-text" compact />
-        </div>
-
-        <div className="mt-3">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <p className="text-[11px] font-semibold text-ink-3">Progress</p>
-            <p className="text-[11px] text-ink-3 tabular-nums">{reviewProgress.resolved}/{reviewProgress.total || 0}</p>
+        <div className="px-4 py-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] text-ink-3">Queue</p>
+              <p className="text-[15px] font-semibold text-ink tabular-nums mt-1">{insights.counts.queue}</p>
+            </div>
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] text-ink-3">Linked</p>
+              <p className="text-[15px] font-semibold text-income-text tabular-nums mt-1">{reviewCounts.linked}</p>
+            </div>
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] text-ink-3">No category</p>
+              <p className="text-[15px] font-semibold text-warning-text tabular-nums mt-1">{insights.counts.missingCategory}</p>
+            </div>
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[10px] text-ink-3">Duplicates</p>
+              <p className="text-[15px] font-semibold text-expense-text tabular-nums mt-1">{insights.counts.potentialDuplicate}</p>
+            </div>
           </div>
-          <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-            <motion.div
-              className="h-full rounded-pill bg-brand"
-              initial={{ width: 0 }}
-              animate={{ width: `${reviewProgress.pct}%` }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-            />
+
+          <div className="mt-3.5 mini-panel px-3 py-2.5">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <p className="text-[11px] font-semibold text-ink-3">Review progress</p>
+              <p className="text-[11px] text-ink-3 tabular-nums">{reviewProgress.resolved}/{reviewProgress.total || 0}</p>
+            </div>
+            <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+              <motion.div
+                className="h-full rounded-pill bg-brand"
+                initial={{ width: 0 }}
+                animate={{ width: `${reviewProgress.pct}%` }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
+      {confidenceDrift?.drifting && Number(confidenceDrift?.drift || 0) >= 25 && (
+        <div className="rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 mb-3.5 flex items-start gap-2">
+          <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[12px] font-semibold text-warning-text">Match quality is declining</p>
+            <p className="text-[11px] text-ink-3 mt-0.5">
+              Recent linking confidence dropped by {confidenceDrift.drift}% versus baseline. Review links carefully before confirming.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Tab bar ────────────────────────────────────────── */}
-      <FilterRow className="mb-3.5">
+      <div className="card-inset p-1.5 mb-3.5 grid grid-cols-3 gap-1">
         {TABS.map((t) => {
           const active = t.id === tab
           return (
@@ -536,18 +590,21 @@ export default function Reconciliation() {
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.12 }}
               aria-pressed={active}
-              className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
+              className={`h-10 rounded-card text-[12px] font-semibold transition-all border
+                ${active
+                  ? 'bg-kosha-surface text-brand border-brand/20 shadow-card-sm'
+                  : 'bg-transparent text-ink-3 border-transparent hover:bg-kosha-surface'}`}
             >
               {t.label}
               {t.count != null && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
                   {t.count}
                 </span>
               )}
             </motion.button>
           )
         })}
-      </FilterRow>
+      </div>
 
       {/* ── TAB: Queue ─────────────────────────────────────── */}
       {tab === 'queue' && (
@@ -568,7 +625,7 @@ export default function Reconciliation() {
                     className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
                   >
                     {chip.label}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-black/10 text-current' : 'bg-kosha-surface-2 text-ink-3'}`}>
                       {count}
                     </span>
                   </motion.button>
@@ -591,7 +648,7 @@ export default function Reconciliation() {
                     className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
                   >
                     {chip.label}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-ink/[0.06] text-ink' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-black/10 text-current' : 'bg-kosha-surface-2 text-ink-3'}`}>
                       {count}
                     </span>
                   </motion.button>
@@ -824,7 +881,14 @@ export default function Reconciliation() {
               ].join('\n')}
             />
 
-            {!!statementSummary.total && (
+            {statementValidationMessage && (
+              <div className="mt-3 rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 flex items-start gap-2">
+                <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
+                <p className="text-[11px] text-warning-text">{statementValidationMessage}</p>
+              </div>
+            )}
+
+            {canUseStatementMatches && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
                 <Metric label="Lines" value={statementSummary.total} compact />
                 <Metric label="Parseable" value={statementSummary.valid} tone="text-ink" compact />
@@ -833,7 +897,7 @@ export default function Reconciliation() {
               </div>
             )}
 
-            {!!statementSummary.total && (
+            {canUseStatementMatches && (
               <div className="space-y-2 mt-3">
                 {statementMatches.slice(0, 6).map((row) => (
                   <StatementMatchRow
@@ -857,7 +921,7 @@ export default function Reconciliation() {
               </div>
               <div className="space-y-2">
                 {recentLinkDecisions.map((row) => (
-                  <div key={row.transactionId} className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
+                  <div key={row.transactionId} className="mini-panel px-3 py-2.5">
                     <p className="text-[12px] text-ink-2 truncate">{row.statementPreview}</p>
                     <p className="text-[11px] text-ink-4 mt-0.5 truncate">
                       Linked to: {row.transactionLabel}
@@ -886,7 +950,7 @@ export default function Reconciliation() {
                   <p className="text-[11px] text-ink-3 mb-1.5">Top merchant matches (30-day)</p>
                   <div className="space-y-1">
                     {aliasQualities.slice(0, 3).map((alias) => (
-                      <div key={alias.merchant} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-1.5">
+                      <div key={alias.merchant} className="mini-panel px-2.5 py-1.5">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] text-ink-2 truncate">{alias.merchant}</p>
                           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
@@ -955,14 +1019,14 @@ export default function Reconciliation() {
                 <p className="text-[11px] text-ink-3 tabular-nums">{linkedConversion}% linked</p>
               </div>
 
-              <div className="rounded-card bg-kosha-surface-2 p-2.5">
+              <div className="mini-panel p-2.5">
                 <ResponsiveContainer width="100%" height={168}>
                   <FunnelChart>
                     <RechartsTooltip content={<ReconciliationFunnelTooltip />} />
                     <Funnel dataKey="value" data={reconciliationFunnel} isAnimationActive>
                       <LabelList
                         position="right"
-                        fill="#5E6D8F"
+                        fill={C.inkMuted}
                         stroke="none"
                         dataKey={(entry) => `${entry.name}: ${entry.value}`}
                       />
@@ -980,19 +1044,19 @@ export default function Reconciliation() {
                 <p className="text-[11px] text-ink-3 tabular-nums">Median {turnaroundDistribution.medianDays}d</p>
               </div>
 
-              <div className="rounded-card bg-kosha-surface-2 p-2.5">
+              <div className="mini-panel p-2.5">
                 <ResponsiveContainer width="100%" height={172}>
                   <BarChart data={turnaroundDistribution.buckets} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+                      tick={{ fontSize: 10, fill: 'var(--ds-text-3)', fontWeight: 500 }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <YAxis hide allowDecimals={false} />
                     <RechartsTooltip content={<TurnaroundTooltip />} />
-                    <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#1A1A2E" maxBarSize={40} />
+                    <Bar dataKey="count" radius={[8, 8, 0, 0]} fill={C.brand} maxBarSize={40} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1013,13 +1077,13 @@ export default function Reconciliation() {
       )}
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
-    </div>
+    </BackHeaderPage>
   )
 }
 
 function Metric({ label, value, tone = 'text-ink', compact }) {
   return (
-    <div className="rounded-card bg-kosha-surface-2 p-2.5">
+    <div className="mini-panel p-2.5">
       <p className="text-caption text-ink-3">{label}</p>
       <p className={`${compact ? 'text-[15px]' : 'text-lg'} font-bold tabular-nums ${tone}`}>{value}</p>
     </div>

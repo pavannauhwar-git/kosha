@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, Link2, Copy } from 'lucide-react'
+import { Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, Copy, Moon, Sun, Home } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/dialogs/EditProfileNameDialog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
-import PageBackHeader from '../components/layout/PageBackHeader'
+import BackHeaderPage from '../components/layout/BackHeaderPage'
+import Button from '../components/ui/Button'
 import {
   getReminderPrefs,
   setReminderPrefs,
@@ -19,6 +20,7 @@ import { fmtDate } from '../lib/utils'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 
 function SettingRow({ icon, label, sublabel, onClick, destructive = false, disabled = false, rightElement }) {
   return (
@@ -66,6 +68,7 @@ export default function Settings() {
   const [walletError, setWalletError] = useState('')
   const [walletMsg, setWalletMsg] = useState('')
   const [creatingInvite, setCreatingInvite] = useState(false)
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
 
   useEffect(() => {
     setReminderPrefs(reminderPrefs)
@@ -107,6 +110,13 @@ export default function Settings() {
     if (!file || !user) return
 
     setPhotoError('')
+
+    if (file.size > MAX_AVATAR_BYTES) {
+      setPhotoError('Image must be under 5 MB.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
     setUploading(true)
     try {
       const ext = file.name.split('.').pop() || 'jpg'
@@ -147,6 +157,13 @@ export default function Settings() {
 
   function toggleReminderField(field) {
     setReminderPrefsState(prev => ({ ...prev, [field]: !prev[field] }))
+  }
+
+  function toggleDarkMode() {
+    const next = !isDark
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('kosha-theme', next ? 'dark' : 'light')
+    setIsDark(next)
   }
 
   async function enableNotifications() {
@@ -194,82 +211,119 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-dvh bg-kosha-bg">
-      <PageBackHeader title="Account Settings" onBack={() => navigate(-1)} />
+    <BackHeaderPage
+      title="Account Settings"
+      onBack={() => navigate(-1)}
+      rightSlot={(
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
+          aria-label="Go to home"
+        >
+          <Home size={16} className="text-ink-2" />
+        </button>
+      )}
+    >
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
 
-      <div className="px-4 pt-6 pb-24 max-w-[560px] mx-auto">
-        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3.5 md:space-y-4">
+          <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
+            <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-brand-container
+                                  flex items-center justify-center overflow-hidden
+                                  ring-4 ring-kosha-border">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={displayName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[30px] font-bold text-ink">{initial}</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full
+                               bg-brand text-white shadow-card
+                               flex items-center justify-center
+                               active:scale-90 transition-transform duration-75
+                               disabled:opacity-60"
+                    aria-label="Change photo"
+                  >
+                    <Camera size={14} />
+                  </button>
+                </div>
 
-          {/* ── Avatar ───────────────────────────────────────────────── */}
-          <motion.div variants={fadeUp} className="card p-4 flex flex-col items-center gap-3">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-brand-container
-                              flex items-center justify-center overflow-hidden
-                              ring-4 ring-kosha-border">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={displayName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-[36px] font-bold text-ink">{initial}</span>
-                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[17px] font-bold text-ink truncate">{displayName}</p>
+                  <p className="text-[12px] text-ink-3 truncate mt-0.5">{user?.email}</p>
+                  <div className="mt-2 inline-flex items-center gap-2 text-[10px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15">
+                    <ShieldAlert size={12} /> Private profile
+                  </div>
+                </div>
               </div>
-              {/* Camera badge */}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="absolute bottom-0 right-0 w-8 h-8 rounded-full
-                           bg-brand text-white shadow-card
-                           flex items-center justify-center
-                           active:scale-90 transition-transform duration-75
-                           disabled:opacity-60"
-              >
-                <Camera size={14} />
-              </button>
             </div>
-            <div className="text-center">
-              <p className="text-[16px] font-bold text-ink">{displayName}</p>
-              <p className="text-caption text-ink-3">{user?.email}</p>
+
+            <div className="p-4 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                  icon={<Pencil size={14} />}
+                  onClick={() => setShowEditName(true)}
+                >
+                  Edit name
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                  icon={<Camera size={14} />}
+                  onClick={() => fileInputRef.current?.click()}
+                  loading={uploading}
+                >
+                  Change photo
+                </Button>
+              </div>
+
+              {avatarUrl && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  fullWidth
+                  icon={<Trash2 size={14} />}
+                  onClick={handleDeletePhoto}
+                  loading={uploading}
+                >
+                  Remove photo
+                </Button>
+              )}
+
+              {photoError && (
+                <p className="text-[12px] text-expense-text">{photoError}</p>
+              )}
             </div>
-            {photoError && (
-              <p className="text-[12px] text-expense-text text-center">{photoError}</p>
-            )}
           </motion.div>
 
-          {/* ── Profile section ─────────────────────────────────────── */}
+          {/* ── Appearance section ──────────────────────────────────── */}
           <motion.div variants={fadeUp}>
             <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
-              Profile
+              Appearance
             </p>
             <div className="card overflow-hidden p-0">
               <SettingRow
-                icon={<Pencil size={16} className="text-accent" />}
-                label="Display Name"
-                sublabel={displayName}
-                onClick={() => setShowEditName(true)}
+                icon={isDark ? <Moon size={16} className="text-accent" /> : <Sun size={16} className="text-accent" />}
+                label="Dark mode"
+                sublabel={isDark ? 'Currently dark' : 'Currently light'}
+                onClick={toggleDarkMode}
+                rightElement={<span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${isDark ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>{isDark ? 'ON' : 'OFF'}</span>}
               />
-              <Divider />
-              <SettingRow
-                icon={<Camera size={16} className="text-accent" />}
-                label={uploading ? 'Updating photo…' : 'Change Photo'}
-                sublabel="JPG, PNG or WebP"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              />
-              {avatarUrl && (
-                <>
-                  <Divider />
-                  <SettingRow
-                    icon={<Trash2 size={16} className="text-expense-text" />}
-                    label="Remove Photo"
-                    onClick={handleDeletePhoto}
-                    disabled={uploading}
-                    destructive
-                  />
-                </>
-              )}
             </div>
           </motion.div>
 
@@ -279,6 +333,16 @@ export default function Settings() {
               Reminders
             </p>
             <div className="card overflow-hidden p-0">
+              <div className="px-4 py-3 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[13px] font-semibold text-ink">Reminder engine</p>
+                  <p className="text-[11px] text-ink-3 mt-0.5">Controls for due alerts and pace warnings</p>
+                </div>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${reminderPrefs.enabled ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
+                  {reminderPrefs.enabled ? 'Active' : 'Paused'}
+                </span>
+              </div>
+
               <SettingRow
                 icon={<BellRing size={16} className="text-accent" />}
                 label="Enable reminders"
@@ -324,15 +388,24 @@ export default function Settings() {
               Shared Wallet
             </p>
             <div className="card overflow-hidden p-0">
-              <SettingRow
-                icon={<Users size={16} className="text-accent" />}
-                label={creatingInvite ? 'Creating invite…' : inviteCapReached ? 'Invite limit reached' : 'Create invite link'}
-                sublabel={inviteCapReached ? `Only ${MAX_ACTIVE_INVITES} active links allowed. Reuse an existing link.` : 'Creates a join link only. It does not merge historical data automatically.'}
-                onClick={() => { void handleCreateInvite() }}
-                disabled={creatingInvite || inviteCapReached}
-                rightElement={<Link2 size={14} />}
-              />
-              <Divider />
+              <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-ink">Invite members</p>
+                  <p className="text-[11px] text-ink-3 mt-0.5">Create links without merging historical data.</p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Users size={14} />}
+                  onClick={() => { void handleCreateInvite() }}
+                  disabled={inviteCapReached}
+                  loading={creatingInvite}
+                  className="shrink-0"
+                >
+                  Invite
+                </Button>
+              </div>
+
               <div className="px-4 py-3 space-y-2">
                 <p className="text-[12px] font-semibold text-ink-3">Recent invites ({pendingInviteCount}/{MAX_ACTIVE_INVITES} active)</p>
                 {walletLoading ? (
@@ -343,7 +416,7 @@ export default function Settings() {
                   walletInvites.map((invite) => {
                     const status = inviteStatusLabel(invite)
                     return (
-                      <div key={invite.id} className="rounded-card border border-kosha-border bg-kosha-surface px-2.5 py-2">
+                      <div key={invite.id} className="mini-panel px-2.5 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] text-ink-3">{fmtDate(invite.created_at)}</p>
                           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
@@ -351,27 +424,33 @@ export default function Settings() {
                           </span>
                         </div>
                         <p className="text-[11px] text-ink-2 mt-1 truncate">{buildJoinInviteUrl(invite.token)}</p>
-                        <button
-                          type="button"
-                          className="text-[11px] mt-1.5 text-accent font-semibold inline-flex items-center gap-1"
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-1.5 px-0 h-auto text-[11px] text-brand font-semibold"
+                          icon={<Copy size={12} />}
                           onClick={() => { void copyInviteLink(invite.token) }}
                         >
-                          <Copy size={12} /> Copy link
-                        </button>
+                          Copy link
+                        </Button>
                       </div>
                     )
                   })
                 )}
               </div>
             </div>
+            {inviteCapReached && (
+              <p className="text-[12px] text-ink-3 mt-2 px-1">
+                Revoke or use existing invite links to create new ones. Maximum {MAX_ACTIVE_INVITES} active invites are allowed.
+              </p>
+            )}
             {(walletMsg || walletError) && (
               <p className={`text-[12px] mt-2 px-1 ${walletError ? 'text-expense-text' : 'text-ink-3'}`}>
                 {walletError || walletMsg}
               </p>
             )}
           </motion.div>
-        </motion.div>
-      </div>
+      </motion.div>
 
       {/* Hidden file inputs */}
       <input
@@ -388,6 +467,6 @@ export default function Settings() {
         open={showEditName}
         onClose={() => setShowEditName(false)}
       />
-    </div>
+    </BackHeaderPage>
   )
 }

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import Button from '../ui/Button'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 8 },
@@ -32,35 +33,27 @@ export default function EmptyState({
           variants={fadeUp}
           animate={{ y: [0, -3, 0] }}
           transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
-          className="w-16 h-16 rounded-full bg-kosha-surface-2 flex items-center justify-center mb-4"
+          className="w-16 h-16 rounded-full bg-[var(--ds-primary-container)] flex items-center justify-center mb-4"
         >
           {icon}
         </motion.div>
       ) : null}
 
-      <motion.p variants={fadeUp} className="text-[17px] font-bold text-ink mb-2">{title}</motion.p>
-      <motion.p variants={fadeUp} className="text-label text-ink-3 mb-5 max-w-[240px] leading-relaxed">{description}</motion.p>
+      <motion.p variants={fadeUp} className="text-[17px] font-bold text-[var(--ds-text)] mb-2">{title}</motion.p>
+      <motion.p variants={fadeUp} className="text-label text-[var(--ds-text-tertiary)] mb-5 max-w-[240px] leading-relaxed">{description}</motion.p>
 
       {(actionLabel && onAction) || (secondaryLabel && onSecondaryAction) ? (
         <motion.div variants={fadeUp} className="flex items-center justify-center gap-2 flex-wrap">
           {actionLabel && onAction ? (
-            <button
-              type="button"
-              onClick={onAction}
-              className="px-6 py-2.5 rounded-pill bg-brand text-white text-label font-semibold active:scale-[0.97] transition-transform duration-75"
-            >
+            <Button variant="primary" size="sm" onClick={onAction}>
               {actionLabel}
-            </button>
+            </Button>
           ) : null}
 
           {secondaryLabel && onSecondaryAction ? (
-            <button
-              type="button"
-              onClick={onSecondaryAction}
-              className="px-4 py-2.5 rounded-pill bg-kosha-surface border border-kosha-border text-label font-semibold text-ink-2 active:scale-[0.97] transition-transform duration-75"
-            >
+            <Button variant="secondary" size="sm" onClick={onSecondaryAction}>
               {secondaryLabel}
-            </button>
+            </Button>
           ) : null}
         </motion.div>
       ) : null}

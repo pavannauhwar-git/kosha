@@ -1,0 +1,244 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Kosha Design System — Global Styles ("Vibrant Clarity")
+   Brand: #007FFF blue + #FFFF99 sunny accent
+   Material 3 Expressive for personal finance
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Google Fonts — Inter Variable (already via @fontsource) ────────── */
+
+/* ── CSS Custom Properties ──────────────────────────────────────────── */
+:root {
+  /* ── Primary ────────────────────────── */
+  --ds-primary: #007FFF;
+  --ds-primary-dark: #0066CC;
+  --ds-primary-light: #4DA6FF;
+  --ds-primary-container: #E0F0FF;
+  --ds-on-primary: #FFFFFF;
+  --ds-on-primary-container: #003366;
+  --ds-primary-rgb: 0, 127, 255;
+
+  /* ── Accent ─────────────────────────── */
+  --ds-accent: #FFFF99;
+  --ds-accent-dark: #E6E600;
+  --ds-accent-container: #FFFDE0;
+  --ds-on-accent: #3D3D00;
+
+  /* ── Surfaces ───────────────────────── */
+  --ds-surface: #FFFFFF;
+  --ds-surface-dim: #F4F6F8;
+  --ds-surface-bright: #FAFBFC;
+  --ds-surface-container: #EEF1F4;
+  --ds-surface-container-high: #E8ECF0;
+  --ds-surface-container-highest: #E2E6EA;
+
+  /* ── Text / Ink ─────────────────────── */
+  --ds-text: #111318;
+  --ds-text-secondary: #44474E;
+  --ds-text-tertiary: #74777F;
+  --ds-text-disabled: #B0B3BA;
+  --ds-text-rgb: 17, 19, 24;
+
+  /* ── Borders ────────────────────────── */
+  --ds-border: rgba(17, 19, 24, 0.08);
+  --ds-border-strong: rgba(17, 19, 24, 0.16);
+
+  /* ── Status Colors ──────────────────── */
+  --ds-income: #0F9D58;
+  --ds-income-bg: #E8F5E9;
+  --ds-income-text: #0B7A42;
+  --ds-expense: #E8453C;
+  --ds-expense-bg: #FDECEA;
+  --ds-expense-text: #C62828;
+  --ds-invest: #5C6BC0;
+  --ds-invest-bg: #E8EAF6;
+  --ds-invest-text: #283593;
+  --ds-repay: #F9A825;
+  --ds-repay-bg: #FFF8E1;
+  --ds-repay-text: #F57F17;
+
+  /* ── Warning / Danger ───────────────── */
+  --ds-warning: #F9A825;
+  --ds-warning-bg: #FFF8E1;
+  --ds-danger: #E8453C;
+  --ds-danger-bg: #FDECEA;
+  --ds-success: #0F9D58;
+  --ds-success-bg: #E8F5E9;
+
+  /* ── Shadows ────────────────────────── */
+  --ds-shadow-sm: 0 1px 2px rgba(17,19,24,0.04), 0 2px 8px rgba(17,19,24,0.03);
+  --ds-shadow-md: 0 2px 4px rgba(17,19,24,0.05), 0 4px 16px rgba(17,19,24,0.05);
+  --ds-shadow-lg: 0 4px 8px rgba(17,19,24,0.06), 0 12px 32px rgba(17,19,24,0.08);
+  --ds-shadow-xl: 0 8px 16px rgba(17,19,24,0.08), 0 24px 48px rgba(17,19,24,0.10);
+
+  /* ── Motion ─────────────────────────── */
+  --ds-motion-fast: 120ms;
+  --ds-motion-base: 200ms;
+  --ds-motion-slow: 350ms;
+  --ds-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ds-ease-decelerate: cubic-bezier(0, 0, 0, 1);
+  --ds-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Layout ─────────────────────────── */
+  --ds-nav-height: calc(80px + env(safe-area-inset-bottom, 0px));
+  --ds-header-height: 56px;
+  --ds-safe-top: env(safe-area-inset-top, 0px);
+  --ds-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --ds-content-max: 600px;
+  --ds-sidebar-width: 240px;
+
+  /* ── Shimmer ────────────────────────── */
+  --ds-shimmer-1: #F4F6F8;
+  --ds-shimmer-2: #E8ECF0;
+
+  /* ── Focus ring ─────────────────────── */
+  --ds-focus-ring: 0 0 0 3px rgba(0, 127, 255, 0.20);
+}
+
+/* ── Dark Mode ──────────────────────────────────────────────────────── */
+.dark {
+  --ds-primary: #4DA6FF;
+  --ds-primary-dark: #007FFF;
+  --ds-primary-light: #80C4FF;
+  --ds-primary-container: #003366;
+  --ds-on-primary: #003366;
+  --ds-on-primary-container: #E0F0FF;
+  --ds-primary-rgb: 77, 166, 255;
+
+  --ds-accent: #FFFF99;
+  --ds-accent-dark: #CCCC66;
+  --ds-accent-container: #3D3D00;
+  --ds-on-accent: #FFFDE0;
+
+  --ds-surface: #111318;
+  --ds-surface-dim: #0D0E12;
+  --ds-surface-bright: #191C20;
+  --ds-surface-container: #1D2024;
+  --ds-surface-container-high: #272A2E;
+  --ds-surface-container-highest: #323538;
+
+  --ds-text: #E2E6EA;
+  --ds-text-secondary: #BFC3C9;
+  --ds-text-tertiary: #8E9199;
+  --ds-text-disabled: #555860;
+  --ds-text-rgb: 226, 230, 234;
+
+  --ds-border: rgba(255, 255, 255, 0.08);
+  --ds-border-strong: rgba(255, 255, 255, 0.16);
+
+  --ds-income: #66D49A;
+  --ds-income-bg: rgba(15, 157, 88, 0.15);
+  --ds-income-text: #66D49A;
+  --ds-expense: #FF7B73;
+  --ds-expense-bg: rgba(232, 69, 60, 0.15);
+  --ds-expense-text: #FF7B73;
+  --ds-invest: #9FA8DA;
+  --ds-invest-bg: rgba(92, 107, 192, 0.15);
+  --ds-invest-text: #9FA8DA;
+  --ds-repay: #FFD54F;
+  --ds-repay-bg: rgba(249, 168, 37, 0.15);
+  --ds-repay-text: #FFD54F;
+
+  --ds-warning: #FFD54F;
+  --ds-warning-bg: rgba(249, 168, 37, 0.12);
+  --ds-danger: #FF7B73;
+  --ds-danger-bg: rgba(232, 69, 60, 0.12);
+  --ds-success: #66D49A;
+  --ds-success-bg: rgba(15, 157, 88, 0.12);
+
+  --ds-shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+  --ds-shadow-md: 0 2px 6px rgba(0,0,0,0.25);
+  --ds-shadow-lg: 0 4px 12px rgba(0,0,0,0.3);
+  --ds-shadow-xl: 0 8px 24px rgba(0,0,0,0.35);
+
+  --ds-shimmer-1: #1D2024;
+  --ds-shimmer-2: #272A2E;
+
+  --ds-focus-ring: 0 0 0 3px rgba(77, 166, 255, 0.25);
+}
+
+/* ── Base Resets ─────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-family: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+body {
+  background-color: var(--ds-surface-dim);
+  color: var(--ds-text);
+  width: 100%;
+  max-width: 100%;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  overflow-x: clip;
+  margin: 0;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+/* ── Selection ──────────────────────────────────────────────────────── */
+::selection {
+  background-color: rgba(0, 127, 255, 0.18);
+  color: var(--ds-text);
+}
+
+.dark ::selection {
+  background-color: rgba(77, 166, 255, 0.25);
+}
+
+/* ── Focus Ring ─────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+  border-radius: inherit;
+}
+
+/* ── Scrollbar styling ──────────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ds-border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ds-text-tertiary);
+}

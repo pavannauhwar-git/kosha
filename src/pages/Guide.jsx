@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  Home,
   Sparkles,
   ShieldCheck,
   LayoutGrid,
@@ -18,7 +19,8 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createFadeUp, createStagger } from '../lib/animations'
-import PageBackHeader from '../components/layout/PageBackHeader'
+import BackHeaderPage from '../components/layout/BackHeaderPage'
+import Button from '../components/ui/Button'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -270,63 +272,97 @@ export default function Guide() {
   }, [])
 
   return (
-    <div className="min-h-dvh bg-kosha-bg">
-      <PageBackHeader title="Guide" onBack={() => navigate(-1)} />
-
-      <div className="px-4 pt-6 pb-24 max-w-[860px] mx-auto">
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5 max-w-[760px] mx-auto">
-        <motion.div variants={fadeUp} className="card p-4 md:p-5">
-          <div className="flex items-start justify-between gap-3">
+    <BackHeaderPage
+      title="Guide"
+      onBack={() => navigate(-1)}
+      rightSlot={(
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
+        >
+          <Home size={16} className="text-ink-2" />
+        </button>
+      )}
+      contentClassName="px-4 pt-6 pb-24 max-w-[560px] mx-auto"
+    >
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
+        <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
+          <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-[20px] font-bold text-ink tracking-tight leading-tight">Kosha Guide</p>
               <p className="text-[13px] text-ink-3 mt-1 leading-relaxed">
-                Practical workflows, mistakes to avoid, and fast next actions for every page.
+                Practical workflows, mistakes to avoid, and quick next actions for every page.
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-brand-container flex items-center justify-center shrink-0">
-              <BookOpen size={18} className="text-accent" />
+            <div className="w-10 h-10 rounded-xl bg-brand-container border border-brand/15 flex items-center justify-center shrink-0">
+              <BookOpen size={18} className="text-brand" />
             </div>
           </div>
 
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="text-[12px] font-semibold text-ink-2">Progress</p>
-              <p className="text-[11px] font-semibold text-accent">{viewedCount} / {FEATURE_CARDS.length} viewed · {progressPct}%</p>
+          <div className="p-4">
+            <div className="grid grid-cols-3 gap-2 mb-3.5">
+              <div className="mini-panel px-2.5 py-2 text-center">
+                <p className="text-[16px] font-semibold text-ink leading-none">{FEATURE_CARDS.length}</p>
+                <p className="text-[10px] text-ink-3 mt-1">Playbooks</p>
+              </div>
+              <div className="mini-panel px-2.5 py-2 text-center">
+                <p className="text-[16px] font-semibold text-ink leading-none">{viewedCount}</p>
+                <p className="text-[10px] text-ink-3 mt-1">Viewed</p>
+              </div>
+              <div className="mini-panel px-2.5 py-2 text-center">
+                <p className="text-[16px] font-semibold text-brand leading-none">{progressPct}%</p>
+                <p className="text-[10px] text-ink-3 mt-1">Progress</p>
+              </div>
             </div>
-            <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-              <motion.div
-                className="h-full rounded-pill bg-brand"
-                initial={{ width: 0 }}
-                animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-            <button
-              type="button"
-              onClick={() => openFeature(nextFeature.id)}
-              className="btn-primary h-10 px-4 text-[12px] whitespace-nowrap"
-            >
-              Continue with {nextFeature.title}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate(nextFeature.route)}
-              className="btn-secondary h-10 px-4 text-[12px] whitespace-nowrap"
-            >
-              Open {nextFeature.title}
-            </button>
+            <div className="mb-3.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[11px] font-semibold text-ink-2">Guide progress</p>
+                <p className="text-[11px] font-semibold text-brand">{viewedCount} / {FEATURE_CARDS.length}</p>
+              </div>
+              <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                <motion.div
+                  className="h-full rounded-pill bg-brand"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPct}%` }}
+                  transition={{ duration: 0.35, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                fullWidth
+                onClick={() => openFeature(nextFeature.id)}
+                icon={<Sparkles size={14} />}
+              >
+                Continue with {nextFeature.title}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                fullWidth
+                onClick={() => navigate(nextFeature.route)}
+                icon={<ArrowRight size={14} />}
+              >
+                Open {nextFeature.title}
+              </Button>
+            </div>
           </div>
         </motion.div>
 
         <motion.section variants={fadeUp} className="w-full">
           <p className="section-label mb-1.5">Start here</p>
-          <div className="list-card">
+          <div className="card p-3.5 space-y-2">
             {START_HERE.map((step, i) => (
-              <div key={step} className={`px-4 py-3.5 ${i === START_HERE.length - 1 ? '' : 'border-b border-kosha-border'}`}>
-                <p className="text-body text-ink"><span className="font-semibold text-accent">{i + 1}.</span> {step}</p>
+              <div key={step} className="mini-panel px-3 py-2.5 flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-brand-container border border-brand/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[10px] font-semibold text-brand">{i + 1}</span>
+                </div>
+                <p className="text-[12px] text-ink-2 leading-relaxed">{step}</p>
               </div>
             ))}
           </div>
@@ -334,7 +370,7 @@ export default function Guide() {
 
         <motion.section variants={fadeUp} className="w-full">
           <p className="section-label mb-1.5">Feature explorer</p>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3">
+          <div className="card-inset p-1.5 rounded-card flex gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-3">
             {GUIDE_TABS.map((tab) => {
               const active = tab.id === activeTab
               return (
@@ -342,7 +378,10 @@ export default function Guide() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`chip-control ${active ? 'chip-control-active shadow-card' : 'chip-control-muted'}`}
+                  className={`h-9 px-3 rounded-pill text-[11px] font-semibold whitespace-nowrap border transition-all
+                    ${active
+                      ? 'bg-kosha-surface text-brand border-brand/20 shadow-card-sm'
+                      : 'bg-transparent text-ink-3 border-transparent hover:bg-kosha-surface'}`}
                 >
                   {tab.label}
                 </button>
@@ -369,25 +408,31 @@ export default function Guide() {
                   whileTap={{ scale: 0.985 }}
                   transition={{ duration: 0.1 }}
                   onClick={() => openFeature(card.id)}
-                  className="card p-4 text-left"
+                  className="card p-0 overflow-hidden text-left"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-body font-semibold text-ink truncate">{card.title}</p>
+                  <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-pill font-semibold ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
+                          {isViewed ? 'Viewed' : 'New'}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-pill font-semibold bg-kosha-surface text-ink-3 border border-kosha-border capitalize">
+                          {card.category}
+                        </span>
+                      </div>
+                      <p className="text-[15px] font-semibold text-ink truncate">{card.title}</p>
                       <p className="text-[12px] text-ink-3 mt-0.5 truncate">{card.subtitle}</p>
                     </div>
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${card.accent}`}>
                       <Icon size={16} />
                     </div>
                   </div>
-                  <div className="mt-2 inline-flex items-center gap-1">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                      {isViewed ? 'Viewed' : 'New'}
-                    </span>
-                  </div>
-                  <p className="text-label text-ink-3 mt-2.5">{card.summary}</p>
-                  <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-accent">
-                    Open details <ArrowRight size={13} />
+
+                  <div className="p-4">
+                    <p className="text-[12px] text-ink-3 leading-relaxed">{card.summary}</p>
+                    <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
+                      Open details <ArrowRight size={13} />
+                    </div>
                   </div>
                 </motion.button>
               )
@@ -397,16 +442,22 @@ export default function Guide() {
 
         <motion.section variants={fadeUp} className="w-full">
           <p className="section-label mb-1.5">Playbook cadence</p>
-          <div className="card p-4 space-y-2.5">
-            <p className="text-[13px] text-ink-2"><span className="font-semibold">Daily:</span> Dashboard pulse + quick capture</p>
-            <p className="text-[13px] text-ink-2"><span className="font-semibold">Weekly:</span> Bills check + Loans settlements + Reconciliation cleanup</p>
-            <p className="text-[13px] text-ink-2"><span className="font-semibold">Monthly:</span> Analytics review + export backup</p>
+          <div className="card p-3.5 space-y-2">
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[12px] text-ink-2"><span className="font-semibold text-ink">Daily:</span> Dashboard pulse + quick capture</p>
+            </div>
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[12px] text-ink-2"><span className="font-semibold text-ink">Weekly:</span> Bills check + loan settlements + reconciliation cleanup</p>
+            </div>
+            <div className="mini-panel px-3 py-2.5">
+              <p className="text-[12px] text-ink-2"><span className="font-semibold text-ink">Monthly:</span> Analytics review + export backup</p>
+            </div>
           </div>
         </motion.section>
 
         <motion.section variants={fadeUp} className="w-full">
           <p className="section-label mb-1.5">Trust and privacy</p>
-          <div className="card p-4 space-y-2">
+          <div className="card p-4 space-y-2.5">
             <div className="flex items-start gap-2">
               <ShieldCheck size={16} className="text-ink mt-0.5" />
               <p className="text-label text-ink-2">Your app data stays within your Supabase project under row-level security policies.</p>
@@ -416,30 +467,37 @@ export default function Guide() {
           </div>
         </motion.section>
 
-        <motion.div variants={fadeUp} className="card p-4 bg-brand-container border border-brand-border">
+        <motion.div variants={fadeUp} className="card p-4 bg-brand-container border border-brand/20">
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles size={15} className="text-accent" />
+            <Sparkles size={15} className="text-brand" />
             <p className="text-body font-semibold text-ink">Today tip</p>
           </div>
           <p className="text-label text-ink-2">{todayTip}</p>
         </motion.div>
 
         <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-2">
-          <button
+          <Button
+            variant="tonal"
+            size="md"
+            fullWidth
             onClick={() => navigate('/')}
-            className="btn-tonal flex-1 py-3 whitespace-nowrap text-[12px] sm:text-[13px]"
+            icon={<ArrowLeft size={15} />}
+            className="flex-1 whitespace-nowrap text-[12px] sm:text-[13px]"
           >
-            <ArrowLeft size={15} /> Back to dashboard
-          </button>
-          <button
+            Back to dashboard
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            fullWidth
             onClick={() => navigate('/transactions')}
-            className="btn-primary flex-1 py-3 whitespace-nowrap text-[12px] sm:text-[13px]"
+            iconRight={<ArrowRight size={15} />}
+            className="flex-1 whitespace-nowrap text-[12px] sm:text-[13px]"
           >
-            Open transactions <ArrowRight size={15} />
-          </button>
+            Open transactions
+          </Button>
         </motion.div>
       </motion.div>
-      </div>
 
       <AnimatePresence>
         {selectedFeature && (
@@ -483,28 +541,28 @@ export default function Guide() {
                     Card {selectedIndex + 1} of {navigationPool.length}
                   </p>
                   <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      className="h-9 px-3 rounded-pill border border-kosha-border bg-kosha-surface text-[12px] font-semibold text-ink-2 inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="whitespace-nowrap"
                       onClick={() => moveFeature(-1)}
                       disabled={selectedIndex <= 0}
                     >
-                      <ArrowLeft size={13} />
-                      <span className="truncate">Prev</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="h-9 px-3 rounded-pill border border-kosha-border bg-kosha-surface text-[12px] font-semibold text-ink-2 inline-flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                      <ArrowLeft size={13} /> Prev
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="whitespace-nowrap"
                       onClick={() => moveFeature(1)}
                       disabled={selectedIndex >= navigationPool.length - 1}
                     >
-                      <span className="truncate">Next</span>
-                      <ArrowRight size={13} />
-                    </button>
+                      Next <ArrowRight size={13} />
+                    </Button>
                   </div>
                 </div>
 
-                <div className="rounded-card bg-kosha-surface-2 p-2.5 mb-2.5">
+                <div className="mini-panel p-2.5 mb-2.5">
                   <p className="text-[12px] text-ink-2">{selectedFeature.summary}</p>
                   <p className="text-[11px] text-ink-3 mt-1">{selectedFeature.whenToUse}</p>
                 </div>
@@ -544,9 +602,11 @@ export default function Guide() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  className="btn-primary w-full py-3 whitespace-nowrap"
+                <Button
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  className="whitespace-nowrap"
                   onClick={() => {
                     const route = selectedFeature.route
                     setSelectedId(null)
@@ -554,12 +614,12 @@ export default function Guide() {
                   }}
                 >
                   Open {selectedFeature.title} <ArrowRight size={15} />
-                </button>
+                </Button>
               </motion.div>
             </div>
           </>
         )}
       </AnimatePresence>
-    </div>
+    </BackHeaderPage>
   )
 }

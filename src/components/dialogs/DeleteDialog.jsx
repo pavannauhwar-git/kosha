@@ -1,6 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Trash } from '@phosphor-icons/react'
+import { C } from '../../lib/colors'
+import Button from '../ui/Button'
 
 export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this transaction' }) {
   return (
@@ -29,7 +31,7 @@ export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this 
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-card bg-expense-bg flex items-center justify-center">
-                    <Trash size={20} color="#FF4757" weight="duotone" />
+                    <Trash size={20} color={C.expense} weight="duotone" />
                   </div>
                   <Dialog.Title className="font-semibold text-ink text-base">
                     Delete {label}?
@@ -39,12 +41,12 @@ export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this 
                   This cannot be undone. The transaction will be permanently removed.
                 </Dialog.Description>
                 <div className="flex gap-3">
-                  <button onClick={onCancel} className="btn-ghost flex-1 py-3 rounded-card border border-kosha-border">
+                  <Button variant="ghost" fullWidth onClick={onCancel} className="flex-1">
                     Cancel
-                  </button>
-                  <button onClick={onConfirm} className="btn-danger flex-1 py-3 rounded-card">
+                  </Button>
+                  <Button variant="danger" fullWidth onClick={onConfirm} className="flex-1">
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </motion.div>
             </Dialog.Content>

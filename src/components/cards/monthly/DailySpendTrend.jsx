@@ -109,28 +109,28 @@ export default memo(function DailySpendTrend({ txnRows, year, month }) {
       <div className="rounded-card bg-kosha-surface-2 p-2.5">
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={seriesWithFlags} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
               dataKey="day"
-              tick={{ fontSize: 9, fill: 'rgba(107,107,128,0.9)' }}
+              tick={{ fontSize: 9, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
               tickFormatter={compactTick}
-              tick={{ fontSize: 10, fill: 'rgba(107,107,128,0.9)' }}
+              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}
             />
             <Tooltip content={<DailySpendTooltip />} />
-            <ReferenceLine y={dailyAvg} stroke="rgba(26,26,46,0.35)" strokeDasharray="4 4" label={false} />
+            <ReferenceLine y={dailyAvg} stroke="rgba(0,127,255,0.35)" strokeDasharray="4 4" label={false} />
             <Bar dataKey="amount" radius={[3, 3, 0, 0]} maxBarSize={12}>
               {seriesWithFlags.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={entry.isAboveAvg ? '#C4384A' : '#1A1A2E'}
+                  fill={entry.isAboveAvg ? '#E8453C' : '#007FFF'}
                   fillOpacity={entry.amount > 0 ? 0.78 : 0.15}
                 />
               ))}
@@ -141,11 +141,11 @@ export default memo(function DailySpendTrend({ txnRows, year, month }) {
 
       <div className="flex items-center gap-4 mt-2">
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full" style={{ background: '#1A1A2E' }} />
+          <span className="w-2 h-2 rounded-full" style={{ background: '#007FFF' }} />
           <span className="text-[10px] text-ink-3">Below avg</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full" style={{ background: '#C4384A' }} />
+          <span className="w-2 h-2 rounded-full" style={{ background: '#E8453C' }} />
           <span className="text-[10px] text-ink-3">Above avg</span>
         </div>
         <div className="flex items-center gap-1.5">

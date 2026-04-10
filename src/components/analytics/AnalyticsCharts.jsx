@@ -62,7 +62,7 @@ function scoreTone(score) {
   if (score == null) {
     return {
       label: 'Insufficient data',
-      color: 'rgba(26,26,46,0.72)',
+      color: 'rgba(0,127,255,0.72)',
       fill: 'rgba(157,170,198,0.5)',
     }
   }
@@ -106,17 +106,17 @@ const PulseTooltip = ({ active, payload, label }) => {
 
   return (
     <div className="tooltip-enter" style={{
-      background: '#FFFFFF',
+      background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
+      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
       minWidth: 176,
       border: '1px solid rgba(187,217,255,0.85)',
     }}>
       <p style={{
         fontSize: 11,
         fontWeight: 700,
-        color: '#1D355F',
+        color: 'var(--ds-text-1)',
         letterSpacing: '0.03em',
         marginBottom: 6,
         textTransform: 'uppercase',
@@ -124,23 +124,23 @@ const PulseTooltip = ({ active, payload, label }) => {
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Income</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Income</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.chartIncome }}>{fmt(income)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Spent</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Spent</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.chartExpense }}>{fmt(spent)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Invested</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Invested</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.invest }}>{fmt(invested)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Outflow</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Outflow</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.heroAccentSolid }}>{fmt(outflow)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Pulse</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Pulse</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: pulseColor }}>
           {pulse >= 0 ? '+' : '-'}{fmt(Math.abs(pulse))} ({pulsePct}%)
         </span>
@@ -218,10 +218,10 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
     <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
+          <p className="text-label font-semibold text-ink">
             Cash Flow Pulse
           </p>
-          <p style={{ fontSize: 11, color: 'rgba(26,26,46,0.55)', marginTop: 2 }}>
+          <p className="text-[11px] text-ink-3 mt-0.5">
             Monthly surplus/deficit rhythm
           </p>
         </div>
@@ -234,7 +234,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             }}>
             {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
           </p>
-          <p style={{ fontSize: 10, color: 'rgba(26,26,46,0.55)', marginTop: 1 }}>net pulse</p>
+          <p className="text-[10px] text-ink-3 mt-1">net pulse</p>
         </div>
       </div>
 
@@ -266,12 +266,12 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
       <ResponsiveContainer width="100%" height={chartH}>
         <BarChart data={safeData} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(26,26,46,0.58)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'var(--ds-text-tertiary)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide domain={[-pulseAxisMax, pulseAxisMax]} />
-          <Tooltip content={<PulseTooltip />} cursor={{ fill: 'rgba(31,37,95,0.06)' }} />
-          <ReferenceLine y={0} stroke="rgba(31,37,95,0.24)" strokeWidth={1} />
+          <Tooltip content={<PulseTooltip />} cursor={{ fill: 'var(--ds-border)' }} />
+          <ReferenceLine y={0} stroke="rgba(var(--ds-text-rgb),0.22)" strokeWidth={1} />
           <Bar dataKey="Pulse" radius={[8, 8, 8, 8]} maxBarSize={28}>
             {safeData.map((entry, i) => (
               <Cell
@@ -297,7 +297,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
         {[['Surplus pulse', C.brandMid], ['Deficit pulse', C.accent]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ background: c }} />
-            <span style={{ fontSize: 11, color: 'rgba(26,26,46,0.60)', fontWeight: 500 }}>{l}</span>
+            <span className="text-[11px] text-ink-3 font-medium">{l}</span>
           </div>
         ))}
       </div>
@@ -334,10 +334,10 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
     <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-label font-semibold" style={{ color: 'rgba(31,37,95,0.92)' }}>
+          <p className="text-label font-semibold text-ink">
             Leftover / Surplus
           </p>
-          <p style={{ fontSize: 11, color: 'rgba(26,26,46,0.55)', marginTop: 2 }}>
+          <p className="text-[11px] text-ink-3 mt-0.5">
             Income minus expenses and investments
           </p>
         </div>
@@ -349,7 +349,7 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
           }}>
             {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
           </p>
-          <p style={{ fontSize: 10, color: 'rgba(26,26,46,0.55)', marginTop: 1 }}>
+          <p className="text-[10px] text-ink-3 mt-1">
             {totalNet >= 0 ? 'year surplus' : 'year deficit'}
           </p>
         </div>
@@ -373,12 +373,12 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={safeData} margin={{ top: 4, right: 12, left: 12, bottom: 0 }}>
           <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(26,26,46,0.58)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'var(--ds-text-tertiary)', fontWeight: 500 }}
             axisLine={false} tickLine={false} interval={0}
           />
           <YAxis hide domain={[-safeAxisMax, safeAxisMax]} />
-          <Tooltip content={<NetTooltip />} cursor={{ fill: 'rgba(31,37,95,0.06)' }} />
-          <ReferenceLine y={0} stroke="rgba(31,37,95,0.22)" strokeWidth={1} />
+          <Tooltip content={<NetTooltip />} cursor={{ fill: 'var(--ds-border)' }} />
+          <ReferenceLine y={0} stroke="rgba(var(--ds-text-rgb),0.22)" strokeWidth={1} />
           <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={26}>
             {safeData.map((entry, i) => (
               <Cell key={i}
@@ -408,30 +408,30 @@ const FlowCompareTooltip = ({ active, payload, label }) => {
 
   return (
     <div className="tooltip-enter" style={{
-      background: '#FFFFFF',
+      background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
+      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
       minWidth: 170,
       border: '1px solid rgba(187,217,255,0.85)',
     }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Income</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Income</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.brand }}>{fmt(point?.Income || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Expense</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Expense</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.chartExpense }}>{fmt(point?.Spent || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Investment</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Investment</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.invest }}>{fmt(point?.Invested || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Outflow</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Outflow</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.ink }}>{fmt(point?.Outflow || 0)}</span>
       </div>
     </div>
@@ -495,13 +495,13 @@ export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({
         <BarChart data={safeData} margin={{ top: 6, right: 12, left: 12, bottom: 0 }}>
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide />
-          <Tooltip content={<FlowCompareTooltip />} cursor={{ fill: 'rgba(26,26,46,0.06)' }} />
+          <Tooltip content={<FlowCompareTooltip />} cursor={{ fill: 'var(--ds-border)' }} />
           <Bar dataKey="Income" fill={C.brand} radius={[6, 6, 0, 0]} maxBarSize={18} />
           <Bar dataKey="Spent" fill={C.chartExpense} radius={[6, 6, 0, 0]} maxBarSize={18} />
           <Bar dataKey="Invested" fill={C.invest} radius={[6, 6, 0, 0]} maxBarSize={18} />
@@ -527,25 +527,25 @@ const WaterfallTooltip = ({ active, payload, label }) => {
 
   return (
     <div className="tooltip-enter" style={{
-      background: '#FFFFFF',
+      background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
+      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
       border: '1px solid rgba(187,217,255,0.85)',
       minWidth: 170,
     }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Movement</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Movement</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: value >= 0 ? C.brand : C.chartExpense }}>
           {value >= 0 ? '+' : '-'}{fmt(Math.abs(value))}
         </span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Running level</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#1D355F' }}>{fmt(row?.end || 0)}</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Running level</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ds-text-1)' }}>{fmt(row?.end || 0)}</span>
       </div>
     </div>
   )
@@ -679,17 +679,17 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
 
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={waterfallRows} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide domain={[-chartLimit, chartLimit]} />
-          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(26,26,46,0.05)' }} />
-          <ReferenceLine y={0} stroke="rgba(26,26,46,0.24)" strokeWidth={1} />
+          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(17,19,24,0.05)' }} />
+          <ReferenceLine y={0} stroke="rgba(0,127,255,0.24)" strokeWidth={1} />
           <Bar dataKey="offset" stackId="waterfall" fill="transparent" isAnimationActive={false} />
           <Bar dataKey="height" stackId="waterfall" radius={[8, 8, 8, 8]} maxBarSize={40}>
             {waterfallRows.map((row) => (
@@ -710,30 +710,30 @@ const CompositionTooltip = ({ active, payload, label }) => {
 
   return (
     <div className="tooltip-enter" style={{
-      background: '#FFFFFF',
+      background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
+      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
       border: '1px solid rgba(187,217,255,0.85)',
       minWidth: 182,
     }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Expense</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Expense</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.chartExpense }}>{fmt(row?.Spent || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Investment</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Investment</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.invest }}>{fmt(row?.Invested || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Outflow</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#1D355F' }}>{fmt(row?.Outflow || 0)}</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Outflow</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ds-text-1)' }}>{fmt(row?.Outflow || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Income</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Income</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: C.brand }}>{fmt(row?.Income || 0)}</span>
       </div>
     </div>
@@ -789,16 +789,16 @@ export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaC
 
       <ResponsiveContainer width="100%" height={228}>
         <AreaChart data={safeData} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(26,26,46,0.06)" />
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide />
-          <Tooltip content={<CompositionTooltip />} cursor={{ stroke: 'rgba(26,26,46,0.15)', strokeWidth: 1 }} />
+          <Tooltip content={<CompositionTooltip />} cursor={{ stroke: 'rgba(0,127,255,0.15)', strokeWidth: 1 }} />
           <Area
             type="monotone"
             dataKey="Spent"
@@ -846,22 +846,22 @@ const SurplusTrajectoryTooltip = ({ active, payload, label }) => {
 
   return (
     <div className="tooltip-enter" style={{
-      background: '#FFFFFF',
+      background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
+      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
       minWidth: 168,
       border: '1px solid rgba(187,217,255,0.85)',
     }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Monthly surplus</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Monthly surplus</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: row?.Net >= 0 ? C.brandMid : C.bills }}>{fmt(row?.Net || 0)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <span style={{ fontSize: 12, color: '#5E6D8F' }}>Cumulative</span>
+        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Cumulative</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: row?.Cumulative >= 0 ? C.brand : C.bills }}>{fmt(row?.Cumulative || 0)}</span>
       </div>
     </div>
@@ -923,14 +923,14 @@ export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ net
         <LineChart data={cumulativeData} margin={{ top: 6, right: 12, left: 12, bottom: 0 }}>
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide domain={[-axisMax, axisMax]} />
-          <Tooltip content={<SurplusTrajectoryTooltip />} cursor={{ stroke: 'rgba(26,26,46,0.16)', strokeWidth: 1 }} />
-          <ReferenceLine y={0} stroke="rgba(26,26,46,0.28)" strokeWidth={1} />
+          <Tooltip content={<SurplusTrajectoryTooltip />} cursor={{ stroke: 'rgba(0,127,255,0.16)', strokeWidth: 1 }} />
+          <ReferenceLine y={0} stroke="rgba(0,127,255,0.28)" strokeWidth={1} />
           <Line
             dataKey="Cumulative"
             type="monotone"
@@ -1019,7 +1019,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
                 name="whatif-category"
                 value={selectedCategory?.id || ''}
                 onChange={(event) => setSelectedCategoryId(event.target.value)}
-                className="w-full rounded-card border border-kosha-border bg-white px-3 py-2 text-[12px] font-semibold text-ink"
+                className="w-full rounded-card border border-kosha-border bg-kosha-surface px-3 py-2 text-[12px] font-semibold text-ink"
               >
                 {scenarioOptions.map((option) => (
                   <option key={option.id} value={option.id}>
@@ -1053,7 +1053,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
                   step={1}
                   value={reductionPct}
                   onChange={(event) => handlePercentChange(event.target.value)}
-                  className="w-16 rounded-card border border-kosha-border px-2 py-1.5 text-[12px] font-semibold text-ink"
+                  className="w-16 rounded-card border border-kosha-border bg-kosha-surface px-2 py-1.5 text-[12px] font-semibold text-ink"
                 />
               </div>
             </div>
@@ -1085,11 +1085,11 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
             </div>
           </div>
 
-          <div className="rounded-card border border-kosha-border bg-white p-3">
+          <div className="rounded-card border border-kosha-border bg-kosha-surface p-3">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-16 text-[11px] text-ink-3">Current</span>
-                <div className="flex-1 h-2 rounded-pill" style={{ background: 'rgba(26,26,46,0.06)' }}>
+                <div className="flex-1 h-2 rounded-pill" style={{ background: 'var(--ds-border)' }}>
                   <div
                     className="h-full rounded-pill"
                     style={{
@@ -1105,7 +1105,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
 
               <div className="flex items-center gap-2">
                 <span className="w-16 text-[11px] text-ink-3">Projected</span>
-                <div className="flex-1 h-2 rounded-pill" style={{ background: 'rgba(26,26,46,0.06)' }}>
+                <div className="flex-1 h-2 rounded-pill" style={{ background: 'var(--ds-border)' }}>
                   <div
                     className="h-full rounded-pill"
                     style={{
@@ -1136,17 +1136,17 @@ const RunwayTooltip = ({ active, payload, label }) => {
 
   return (
     <div className="tooltip-enter" style={{
-      background: '#FFFFFF',
+      background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(26,26,46,0.14)',
+      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
       border: '1px solid rgba(187,217,255,0.85)',
       minWidth: 148,
     }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#1D355F', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
       </p>
-      <p style={{ fontSize: 12, color: '#5E6D8F' }}>Coverage</p>
+      <p style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Coverage</p>
       <p style={{ fontSize: 13, fontWeight: 700, color: C.brand }}>{months.toFixed(1)} months</p>
     </div>
   )
@@ -1238,7 +1238,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
           step={1000}
           value={reserveAmount}
           onChange={(event) => setReserveCorpus(Math.max(0, Number(event.target.value || 0)))}
-          className="w-full rounded-card border border-kosha-border bg-white px-3 py-2 text-[12px] font-semibold text-ink"
+          className="w-full rounded-card border border-kosha-border bg-kosha-surface px-3 py-2 text-[12px] font-semibold text-ink"
         />
       </div>
 
@@ -1246,14 +1246,14 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
         <BarChart data={scenarioData} margin={{ top: 6, right: 12, left: 12, bottom: 0 }}>
           <XAxis
             dataKey="short"
-            tick={{ fontSize: 11, fill: 'rgba(107,107,128,0.9)', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             interval={0}
           />
           <YAxis hide domain={[0, Math.max(6, Math.ceil(maxMonths * 1.15))]} />
-          <Tooltip content={<RunwayTooltip />} cursor={{ fill: 'rgba(26,26,46,0.06)' }} />
-          <ReferenceLine y={12} stroke="rgba(26,26,46,0.24)" strokeDasharray="4 4" />
+          <Tooltip content={<RunwayTooltip />} cursor={{ fill: 'var(--ds-border)' }} />
+          <ReferenceLine y={12} stroke="rgba(0,127,255,0.24)" strokeDasharray="4 4" />
           <Bar dataKey="months" radius={[8, 8, 0, 0]} maxBarSize={34}>
             {scenarioData.map((scenario) => (
               <Cell key={scenario.name} fill={scenario.color} fillOpacity={0.94} />
@@ -1354,7 +1354,7 @@ export const VolatilityScoreCard = memo(function VolatilityScoreCard({ flowData 
                   {row.stats.score == null ? '—' : `${row.stats.score}/100`}
                 </span>
               </div>
-              <div className="mt-2 h-2 rounded-pill" style={{ background: 'rgba(26,26,46,0.06)' }}>
+              <div className="mt-2 h-2 rounded-pill" style={{ background: 'var(--ds-border)' }}>
                 <div
                   className="h-full rounded-pill"
                   style={{
@@ -1372,7 +1372,7 @@ export const VolatilityScoreCard = memo(function VolatilityScoreCard({ flowData 
         })}
       </div>
 
-      <div className="mt-3 rounded-card border border-kosha-border bg-white p-2.5 text-[11px] text-ink-3">
+      <div className="mt-3 rounded-card border border-kosha-border bg-kosha-surface p-2.5 text-[11px] text-ink-3">
         <span className="font-semibold text-ink">Focus area:</span>{' '}
         {weakest
           ? `${weakest.label} is least stable. Tightening this variance will improve year-end planning confidence fastest.`
@@ -1383,7 +1383,7 @@ export const VolatilityScoreCard = memo(function VolatilityScoreCard({ flowData 
   )
 })
 
-const TREND_CHART_BG = '#0C3C8A'
+const TREND_CHART_BG = '#003366'
 
 const ConfidenceTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
