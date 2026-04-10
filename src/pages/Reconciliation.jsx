@@ -14,7 +14,7 @@ import {
   useReconciliationReviews,
   upsertReconciliationReview,
 } from '../hooks/useReconciliationReviews'
-import { EXPENSE_CATEGORIES } from '../lib/categories'
+import { EXPENSE_CATEGORIES, PAYMENT_MODES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
 import {
   buildLearnedStatementAliases,
@@ -88,6 +88,7 @@ export default function Reconciliation() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [filter, setFilter] = useState('all')
   const [reviewStateFilter, setReviewStateFilter] = useState('queue')
+  const [paymentModeFilter, setPaymentModeFilter] = useState('')
   const [localReviewedIds, setLocalReviewedIds] = useState(() => getReviewedReconciliationIds())
   const [savingId, setSavingId] = useState(null)
   const [resettingAliases, setResettingAliases] = useState(false)
@@ -97,6 +98,7 @@ export default function Reconciliation() {
 
   const { data, loading } = useTransactions({
     limit: 250,
+    paymentMode: paymentModeFilter || undefined,
     columns: TRANSACTION_INSIGHTS_COLUMNS,
   })
   const {
@@ -313,7 +315,7 @@ export default function Reconciliation() {
   }, [reviewRows, data])
 
   const hasTransactions = (data || []).length > 0
-  const hasActiveFilters = reviewStateFilter !== 'queue' || filter !== 'all'
+  const hasActiveFilters = reviewStateFilter !== 'queue' || filter !== 'all' || !!paymentModeFilter
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams)
@@ -596,6 +598,36 @@ export default function Reconciliation() {
                 )
               })}
             </FilterRow>
+
+            <FilterRow className="mt-2">
+              <motion.button
+                type="button"
+                onClick={() => setPaymentModeFilter('')}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.12 }}
+                aria-pressed={!paymentModeFilter}
+                className={`chip-control ${!paymentModeFilter ? 'chip-control-active' : 'chip-control-muted'}`}
+              >
+                All payment modes
+              </motion.button>
+
+              {PAYMENT_MODES.map((mode) => {
+                const active = paymentModeFilter === mode.id
+                return (
+                  <motion.button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => setPaymentModeFilter(mode.id)}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.12 }}
+                    aria-pressed={active}
+                    className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
+                  >
+                    {mode.label}
+                  </motion.button>
+                )
+              })}
+            </FilterRow>
           </div>
 
           {loading ? (
@@ -606,7 +638,7 @@ export default function Reconciliation() {
                 { type: 'block', height: 'h-[160px]' },
               ]}
             />
-          ) : !hasTransactions ? (
+          ) : !hasTransactions && !hasActiveFilters ? (
             <EmptyState
               icon={<History size={24} className="text-accent" />}
               title="Nothing to reconcile yet"
@@ -630,6 +662,7 @@ export default function Reconciliation() {
                 ? () => {
                     setReviewStateFilter('queue')
                     setFilter('all')
+                    setPaymentModeFilter('')
                   }
                 : () => navigate('/transactions')}
             />

@@ -11,7 +11,7 @@ import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
-import { CATEGORIES, getCategoriesForType } from '../lib/categories'
+import { CATEGORIES, PAYMENT_MODES, getCategoriesForType } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
@@ -54,10 +54,12 @@ export default function Transactions() {
   const location = useLocation()
   const [typeFilter,    setTypeFilter]    = useState('all')
   const [catFilter,     setCatFilter]     = useState('')
+  const [paymentModeFilter, setPaymentModeFilter] = useState('')
   const [search,        setSearch]        = useState('')
   const [showAdd,       setShowAdd]       = useState(false)
   const [editTxn,       setEditTxn]       = useState(null)
   const [showCats,      setShowCats]      = useState(false)
+  const [showPaymentModes, setShowPaymentModes] = useState(false)
   const [addType,       setAddType]       = useState('expense')
   const [datePreset,    setDatePreset]    = useState('all')
   const [displayCount,  setDisplayCount]  = useState(50)
@@ -123,9 +125,15 @@ export default function Transactions() {
     setDisplayCount(50)   // reset in same event — single re-render
   }
 
+  function handlePaymentModeFilter(id) {
+    setPaymentModeFilter(id)
+    setDisplayCount(50)
+  }
+
   const { data, total, loading: txnLoading } = useTransactions({
     type:      typeFilter === 'all' ? undefined : typeFilter,
     category:  catFilter || undefined,
+    paymentMode: paymentModeFilter || undefined,
     search:    debouncedSearch || undefined,
     startDate,
     endDate,
@@ -139,7 +147,7 @@ export default function Transactions() {
   }, [data])
   const hasMore = useMemo(() => total > data.length, [total, data.length])
   const focusTxnId = searchParams.get('focus')
-  const hasActiveFilters = typeFilter !== 'all' || !!catFilter || datePreset !== 'all' || !!debouncedSearch
+  const hasActiveFilters = typeFilter !== 'all' || !!catFilter || !!paymentModeFilter || datePreset !== 'all' || !!debouncedSearch
   const activeDatePresetLabel = useMemo(
     () => DATE_PRESETS.find((preset) => preset.id === datePreset)?.label || 'All time',
     [datePreset]
@@ -241,6 +249,7 @@ export default function Transactions() {
 
       if (typeFilter !== 'all') q = q.eq('type', typeFilter)
       if (catFilter)            q = q.eq('category', catFilter)
+      if (paymentModeFilter)    q = q.eq('payment_mode', paymentModeFilter)
       if (debouncedSearch)      q = q.ilike('description', `%${debouncedSearch}%`)
       if (startDate)            q = q.gte('date', startDate)
       if (endDate)              q = q.lte('date', endDate)
@@ -254,6 +263,7 @@ export default function Transactions() {
       }
 
       const CATEGORY_LABELS = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]))
+      const PAYMENT_MODE_LABELS = Object.fromEntries(PAYMENT_MODES.map((mode) => [mode.id, mode.label]))
       const headers = [
         'Date',
         'Type',
@@ -287,6 +297,7 @@ export default function Transactions() {
       const filters = [
         typeFilter !== 'all' ? typeFilter : '',
         catFilter  ? (CATEGORY_LABELS[catFilter] || catFilter) : '',
+        paymentModeFilter ? (PAYMENT_MODE_LABELS[paymentModeFilter] || paymentModeFilter) : '',
       ].filter(Boolean).join('-')
 
       downloadCsv(
@@ -297,7 +308,7 @@ export default function Transactions() {
       setToast(e.message || 'Could not export transactions.')
       setTimeout(() => setToast(null), 4000)
     }
-  }, [typeFilter, catFilter, debouncedSearch, startDate, endDate])
+  }, [typeFilter, catFilter, paymentModeFilter, debouncedSearch, startDate, endDate])
 
   const dismissGuideHint = useCallback(() => {
     setShowGuideHint(false)
@@ -311,9 +322,11 @@ export default function Transactions() {
   const clearAllFilters = useCallback(() => {
     setTypeFilter('all')
     setCatFilter('')
+    setPaymentModeFilter('')
     setDatePreset('all')
     setSearch('')
     setShowCats(false)
+    setShowPaymentModes(false)
     setDisplayCount(50)
   }, [])
 
@@ -405,7 +418,7 @@ export default function Transactions() {
       <div className="card p-4 border-0 mb-3">
         <SectionHeader
           title="Find and filter"
-          subtitle="Search by description, then narrow by date, type, and category."
+          subtitle="Search by description, then narrow by date, type, category, and payment mode."
         />
 
         <div className="relative mt-2.5">
@@ -464,13 +477,32 @@ export default function Transactions() {
 
           <button
             type="button"
-            onClick={() => setShowCats(v => !v)}
+            onClick={() => {
+              setShowCats(v => !v)
+              setShowPaymentModes(false)
+            }}
             className={`chip-control chip-control-sm ${catFilter
               ? 'bg-ink text-white border-ink'
               : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
           >
             <SlidersHorizontal size={11} />
             {catFilter ? CATEGORIES.find(c => c.id === catFilter)?.label || 'Category' : 'Category'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowPaymentModes(v => !v)
+              setShowCats(false)
+            }}
+            className={`chip-control chip-control-sm ${paymentModeFilter
+              ? 'bg-ink text-white border-ink'
+              : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
+          >
+            <SlidersHorizontal size={11} />
+            {paymentModeFilter
+              ? PAYMENT_MODES.find((mode) => mode.id === paymentModeFilter)?.label || 'Payment'
+              : 'Payment'}
           </button>
 
           {catFilter ? (
@@ -480,6 +512,16 @@ export default function Transactions() {
               className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
             >
               Clear category
+            </button>
+          ) : null}
+
+          {paymentModeFilter ? (
+            <button
+              type="button"
+              onClick={() => handlePaymentModeFilter('')}
+              className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+            >
+              Clear payment
             </button>
           ) : null}
         </FilterRow>
@@ -506,6 +548,34 @@ export default function Transactions() {
                     : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
                 >
                   {c.label}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showPaymentModes && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+              className="mt-2.5 rounded-card bg-kosha-surface-2 p-3 flex flex-wrap gap-2"
+            >
+              {PAYMENT_MODES.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => {
+                    handlePaymentModeFilter(paymentModeFilter === mode.id ? '' : mode.id)
+                    setShowPaymentModes(false)
+                  }}
+                  className={`chip-control chip-control-sm ${paymentModeFilter === mode.id
+                    ? 'bg-ink text-white border-ink'
+                    : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
+                >
+                  {mode.label}
                 </button>
               ))}
             </motion.div>

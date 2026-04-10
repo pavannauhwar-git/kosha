@@ -176,9 +176,9 @@ export function useDebounce(value, ms = 300) {
 
 // ── Query hooks ───────────────────────────────────────────────────────────
 
-export function useTransactions({ type, category, search, limit, startDate, endDate, withCount = false, enabled = true, columns } = {}) {
+export function useTransactions({ type, category, paymentMode, search, limit, startDate, endDate, withCount = false, enabled = true, columns } = {}) {
   const selectedColumns = columns || TRANSACTION_LIST_COLUMNS
-  const filters = { type, category, search, limit, startDate, endDate, columns: selectedColumns }
+  const filters = { type, category, paymentMode, search, limit, startDate, endDate, columns: selectedColumns }
   const { data: rows, isLoading, error, refetch } = useQuery({
     queryKey: txnListKey(filters),
     enabled,
@@ -188,7 +188,7 @@ export function useTransactions({ type, category, search, limit, startDate, endD
         // Run recurring materialization only for broad list reads.
         // Filtered/short lists (dashboard widgets, search, category tabs)
         // should stay read-only for latency.
-        if (!type && !category && !search && !startDate && !endDate) {
+        if (!type && !category && !paymentMode && !search && !startDate && !endDate) {
           await ensureRecurringTransactionsReady(userId)
         }
         let q = supabase
@@ -200,6 +200,7 @@ export function useTransactions({ type, category, search, limit, startDate, endD
 
         if (type)     q = q.eq('type', type)
         if (category) q = q.eq('category', category)
+        if (paymentMode) q = q.eq('payment_mode', paymentMode)
         if (startDate) q = q.gte('date', startDate)
         if (endDate)   q = q.lte('date', endDate)
         if (search)   q = q.ilike('description', `%${search}%`)
@@ -226,7 +227,7 @@ export function useTransactions({ type, category, search, limit, startDate, endD
   const shouldFetchCount = enabled && withCount && (!hasLimit || safeRows.length >= numericLimit)
 
   const { data: countData } = useQuery({
-    queryKey: txnCountKey({ type, category, search, startDate, endDate }),
+    queryKey: txnCountKey({ type, category, paymentMode, search, startDate, endDate }),
     enabled: shouldFetchCount,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
@@ -238,6 +239,7 @@ export function useTransactions({ type, category, search, limit, startDate, endD
 
         if (type)       q = q.eq('type', type)
         if (category)   q = q.eq('category', category)
+        if (paymentMode) q = q.eq('payment_mode', paymentMode)
         if (search)     q = q.ilike('description', `%${search}%`)
         if (startDate)  q = q.gte('date', startDate)
         if (endDate)    q = q.lte('date', endDate)
