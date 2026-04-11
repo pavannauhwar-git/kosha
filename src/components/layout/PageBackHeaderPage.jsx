@@ -24,8 +24,10 @@ export default function PageBackHeaderPage({
           {children}
         </div>
       ) : (
-        <div className={`page-header-offset ${contentClassName}`.trim()}>
-          {children}
+        <div className="page-header-offset">
+          <div className={contentClassName}>
+            {children}
+          </div>
         </div>
       )}
     </div>
