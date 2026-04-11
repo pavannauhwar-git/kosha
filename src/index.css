@@ -43,6 +43,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    overscroll-behavior-y: contain;
   }
 
   body {
@@ -50,7 +51,7 @@
     width: 100%;
     max-width: 100%;
     min-height: 100dvh;
-    overscroll-behavior: none;
+    overscroll-behavior-y: none;
     overflow-x: clip;
   }
 
@@ -62,8 +63,8 @@
 
   :root {
     --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --nav-height: calc(72px + env(safe-area-inset-bottom, 0px));
+    --safe-bottom: min(env(safe-area-inset-bottom, 0px), 40px);
+    --nav-height: calc(72px + var(--safe-bottom));
     --sticky-top-offset: calc(var(--safe-top) + 56px);
     --app-shell-max: 560px;
 
