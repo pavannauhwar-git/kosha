@@ -33,7 +33,7 @@ export default function Monthly() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [heavyReady, setHeavyReady] = useState(false)
-  const [touchStartX, setTouchStartX] = useState(null)
+  const [touchStartPoint, setTouchStartPoint] = useState(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 260)
@@ -74,21 +74,41 @@ export default function Monthly() {
   }
 
   function handleTouchStart(e) {
-    setTouchStartX(e.touches?.[0]?.clientX ?? null)
+    const firstTouch = e.touches?.[0]
+    if (!firstTouch) {
+      setTouchStartPoint(null)
+      return
+    }
+
+    setTouchStartPoint({ x: firstTouch.clientX, y: firstTouch.clientY })
   }
 
   function handleTouchEnd(e) {
-    if (touchStartX == null) return
-    const touchEndX = e.changedTouches?.[0]?.clientX ?? touchStartX
-    const deltaX = touchEndX - touchStartX
+    if (!touchStartPoint) return
 
-    if (Math.abs(deltaX) > 64) {
+    const changedTouch = e.changedTouches?.[0]
+    if (!changedTouch) {
+      setTouchStartPoint(null)
+      return
+    }
+
+    const deltaX = changedTouch.clientX - touchStartPoint.x
+    const deltaY = changedTouch.clientY - touchStartPoint.y
+    const absX = Math.abs(deltaX)
+    const absY = Math.abs(deltaY)
+    const isHorizontalIntent = absX > 72 && absX > absY * 1.35
+
+    if (isHorizontalIntent) {
       if (navigator.vibrate) navigator.vibrate(6)
       if (deltaX < 0) next()
       else prev()
     }
 
-    setTouchStartX(null)
+    setTouchStartPoint(null)
+  }
+
+  function handleTouchCancel() {
+    setTouchStartPoint(null)
   }
 
   const earned = data?.earned || 0
@@ -303,6 +323,7 @@ export default function Monthly() {
       pageProps={{
         onTouchStart: handleTouchStart,
         onTouchEnd: handleTouchEnd,
+        onTouchCancel: handleTouchCancel,
       }}
     >
 
