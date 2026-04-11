@@ -24,14 +24,14 @@ def draw_slash_dot_logo(draw, canvas_size):
     unit = (canvas_size / 512.0) * scale_up
 
     slash_base = [
-        (-124.5, 140.0),
-        (-63.5, 140.0),
-        (78.5, -38.0),
-        (17.5, -38.0),
+        (-131.0, 140.0),
+        (-57.0, 140.0),
+        (85.0, -38.0),
+        (11.0, -38.0),
     ]
-    # Make figures ~10% thicker and move dot closer to slash.
-    dot_c_base = (58.0, 102.0)
-    dot_r_base = 48.1
+    # Keep circle slightly slimmer and closer to slash.
+    dot_c_base = (50.0, 102.0)
+    dot_r_base = 45.7
 
     all_x = [p[0] for p in slash_base] + [dot_c_base[0] - dot_r_base, dot_c_base[0] + dot_r_base]
     all_y = [p[1] for p in slash_base] + [dot_c_base[1] - dot_r_base, dot_c_base[1] + dot_r_base]
