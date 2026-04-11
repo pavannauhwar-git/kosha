@@ -19,8 +19,12 @@ export default function PageBackHeaderPage({
         rightSlot={rightSlot}
       />
 
-      {contentClassName == null ? children : (
-        <div className={contentClassName}>
+      {contentClassName == null ? (
+        <div className="page-header-offset">
+          {children}
+        </div>
+      ) : (
+        <div className={`page-header-offset ${contentClassName}`.trim()}>
           {children}
         </div>
       )}

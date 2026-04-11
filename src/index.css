@@ -64,8 +64,10 @@
   :root {
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: min(env(safe-area-inset-bottom, 0px), 40px);
+    --header-content-height: 54px;
     --nav-height: calc(72px + var(--safe-bottom));
-    --sticky-top-offset: calc(var(--safe-top) + 56px);
+    --header-total-offset: calc(var(--safe-top) + var(--header-content-height) + 0.5rem);
+    --sticky-top-offset: calc(var(--safe-top) + var(--header-content-height));
     --app-shell-max: 560px;
 
     /* ── Legacy aliases — mapped to design system vars ─────────────
@@ -203,7 +205,7 @@
   }
 
   .app-topbar {
-    @apply sticky top-0 z-20 border-b border-kosha-border;
+    @apply fixed top-0 left-0 right-0 z-20 border-b border-kosha-border;
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: saturate(175%) blur(18px);
     -webkit-backdrop-filter: saturate(175%) blur(18px);
@@ -526,6 +528,18 @@
     background: rgba(17,19,24,0.12);
   }
 
+  .page-header-offset {
+    padding-top: var(--header-total-offset);
+  }
+
+  .route-skeleton-shell {
+    width: 100%;
+    max-width: var(--app-shell-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: var(--header-total-offset);
+  }
+
   /* -- Page wrapper ────────────────────────────────────────────────── */
   .page {
     @apply min-h-dvh px-4;
@@ -623,6 +637,10 @@
 }
 
 @media (max-width: 390px) {
+  :root {
+    --header-content-height: 50px;
+  }
+
   .page {
     padding-top: 0;
     padding-left: 1rem;

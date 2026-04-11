@@ -50,7 +50,9 @@ const ROUTE_PRELOADERS = {
 function PageFallback({ pathname }) {
   return (
     <div className="min-h-dvh bg-kosha-bg">
-      <RouteSkeleton pathname={pathname || '/'} />
+      <div className="route-skeleton-shell">
+        <RouteSkeleton pathname={pathname || '/'} />
+      </div>
     </div>
   )
 }

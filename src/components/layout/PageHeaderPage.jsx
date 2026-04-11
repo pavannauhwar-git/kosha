@@ -20,7 +20,9 @@ export default function PageHeaderPage({
         leftSlot={leftSlot}
         rightSlot={rightSlot}
       />
-      {children}
+      <div className="page-header-offset">
+        {children}
+      </div>
     </div>
   )
 }

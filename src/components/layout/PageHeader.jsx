@@ -8,7 +8,7 @@ export default function PageHeader({
 }) {
   return (
     <div
-      className={`app-topbar app-topbar--bleed ${className}`.trim()}
+      className={`app-topbar ${className}`.trim()}
       style={{
         paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)',
       }}
