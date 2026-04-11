@@ -24,14 +24,14 @@ def draw_slash_dot_logo(draw, canvas_size):
     unit = (canvas_size / 512.0) * scale_up
 
     slash_base = [
-        (-118.0, 128.0),
-        (-70.0, 152.0),
-        (72.0, -26.0),
-        (24.0, -50.0),
+        (-124.5, 140.0),
+        (-63.5, 140.0),
+        (78.5, -38.0),
+        (17.5, -38.0),
     ]
-    # Final tweak: keep size/height, move dot closer to slash.
-    dot_c_base = (78.0, 108.0)
-    dot_r_base = 46.0
+    # Make figures ~10% thicker and move dot closer to slash.
+    dot_c_base = (58.0, 102.0)
+    dot_r_base = 48.1
 
     all_x = [p[0] for p in slash_base] + [dot_c_base[0] - dot_r_base, dot_c_base[0] + dot_r_base]
     all_y = [p[1] for p in slash_base] + [dot_c_base[1] - dot_r_base, dot_c_base[1] + dot_r_base]
@@ -40,16 +40,16 @@ def draw_slash_dot_logo(draw, canvas_size):
 
     slash = [
         (
-            int((x - shape_cx) * unit + canvas_size * 0.5),
-            int((y - shape_cy) * unit + canvas_size * 0.5),
+            int(round((x - shape_cx) * unit + canvas_size * 0.5)),
+            int(round((y - shape_cy) * unit + canvas_size * 0.5)),
         )
         for x, y in slash_base
     ]
     draw.polygon(slash, fill=WHITE + (255,))
 
-    dot_r = int(dot_r_base * unit)
-    cx = int((dot_c_base[0] - shape_cx) * unit + canvas_size * 0.5)
-    cy = int((dot_c_base[1] - shape_cy) * unit + canvas_size * 0.5)
+    dot_r = int(round(dot_r_base * unit))
+    cx = int(round((dot_c_base[0] - shape_cx) * unit + canvas_size * 0.5))
+    cy = int(round((dot_c_base[1] - shape_cy) * unit + canvas_size * 0.5))
     draw.ellipse(
         (cx - dot_r, cy - dot_r, cx + dot_r, cy + dot_r),
         fill=ACCENT + (255,),
