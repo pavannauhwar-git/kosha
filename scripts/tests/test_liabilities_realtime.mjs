@@ -35,6 +35,21 @@ async function signIn(client, email, password, label) {
   return data.user
 }
 
+async function bindRealtimeAuth(client, label) {
+  const { data, error } = await client.auth.getSession()
+  if (error) throw new Error(`${label} session read failed: ${error.message}`)
+
+  const accessToken = data?.session?.access_token
+  if (!accessToken) {
+    throw new Error(`${label} has no access token for realtime auth`)
+  }
+
+  // Force realtime socket auth to the signed-in JWT to avoid first-attempt misses.
+  if (typeof client.realtime?.setAuth === 'function') {
+    await client.realtime.setAuth(accessToken)
+  }
+}
+
 function waitForSubscribed(channel, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -61,6 +76,7 @@ async function main() {
 
   const MAX_ATTEMPTS = 5
   const EVENT_TIMEOUT_MS = 30000
+  const POST_SUBSCRIBE_SETTLE_MS = 800
 
   const url = requireEnv('VITE_SUPABASE_URL')
   const anonKey = requireEnv('VITE_SUPABASE_ANON_KEY')
@@ -74,9 +90,15 @@ async function main() {
   const actorUser = await signIn(actorClient, email, password, 'Actor session')
   await signIn(listenerClient, email, password, 'Listener session')
 
+  await Promise.all([
+    bindRealtimeAuth(actorClient, 'Actor session'),
+    bindRealtimeAuth(listenerClient, 'Listener session'),
+  ])
+
   const channelName = `e2e-liabilities-${Date.now()}`
   let realtimeChannel = null
   let insertedLiabilityId = null
+  let deliveredAttempt = null
 
   try {
     let delivered = false
@@ -116,7 +138,7 @@ async function main() {
         const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
         // Give listeners a brief settle window after SUBSCRIBED.
-        await new Promise((resolve) => setTimeout(resolve, 250))
+        await new Promise((resolve) => setTimeout(resolve, POST_SUBSCRIBE_SETTLE_MS))
 
         console.log('Inserting liability from actor session...')
         const { data: liability, error: insertError } = await actorClient
@@ -140,6 +162,7 @@ async function main() {
 
         realtimeChannel = attemptChannel
         insertedLiabilityId = attemptLiabilityId
+        deliveredAttempt = attempt
         delivered = true
         break
       } catch (error) {
@@ -164,7 +187,7 @@ async function main() {
       throw new Error('Realtime liabilities event was not delivered')
     }
 
-    console.log('PASS: Realtime liabilities event was received by second session.')
+    console.log(`PASS: Realtime liabilities event was received by listener session (attempt ${deliveredAttempt}/${MAX_ATTEMPTS}).`)
   } finally {
     if (insertedLiabilityId) {
       await actorClient.from('liabilities').delete().eq('id', insertedLiabilityId)

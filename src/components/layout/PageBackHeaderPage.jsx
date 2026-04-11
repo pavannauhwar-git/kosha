@@ -1,6 +1,6 @@
 import PageBackHeader from './PageBackHeader'
 
-export default function BackHeaderPage({
+export default function PageBackHeaderPage({
   title,
   onBack,
   rightSlot = null,

@@ -40,7 +40,7 @@
 | `AmountDisplay` | Animated count-up (600ms), type-colored, tabular-nums |
 | `index.js` | Barrel export |
 
-### Utility: `src/utils/dates.js`
+### Utility: `src/lib/dates.js`
 - `clampToMonthEnd()` — handles Feb 28/29, 30-day months
 - `getNextRecurrenceDate()` — monthly/quarterly/yearly with clamp
 
@@ -78,7 +78,7 @@
 - `AnnualSummaryCard.jsx` — flow bar background
 - `BreakdownCard.jsx` — stacked bar track
 - `DailySpendTrend.jsx` — full chart replacement
-- `YoYCards.jsx` — trendRows, both chart sections
+- `YearOverYearCards.jsx` — trendRows, both chart sections
 - `SavingsRateTrend.jsx` — tooltip, grid, ticks, reference line
 - `Analytics.jsx` — Pareto chart grid + ticks
 - `Reconciliation.jsx` — funnel fills, LabelList, bar
@@ -187,8 +187,8 @@
 | `src/components/ui/TransactionRow.jsx` | Transaction row primitive |
 | `src/components/ui/AmountDisplay.jsx` | Amount display primitive |
 | `src/components/ui/index.js` | Barrel export |
-| `src/utils/dates.js` | Date utility functions |
-| `REDESIGN_SUMMARY.md` | This document |
+| `src/lib/dates.js` | Date utility functions |
+| `docs/REDESIGN_SUMMARY.md` | This document |
 
 ---
 

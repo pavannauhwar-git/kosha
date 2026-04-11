@@ -11,7 +11,7 @@ import KoshaLogo from '../components/brand/KoshaLogo'
 import { CHANGELOG } from '../lib/changelog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
-import BackHeaderPage from '../components/layout/BackHeaderPage'
+import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
 
 const fadeUp = createFadeUp(6, 0.18)
@@ -82,7 +82,7 @@ export default function About() {
   }
 
   return (
-    <BackHeaderPage
+    <PageBackHeaderPage
       title="About"
       onBack={() => navigate(-1)}
       rightSlot={(
@@ -96,9 +96,8 @@ export default function About() {
       )}
     >
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
-
-          <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
-            <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border flex items-center gap-3">
+        <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
+          <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-kosha-surface border border-kosha-border flex items-center justify-center">
                 <KoshaLogo size={34} />
               </div>
@@ -109,9 +108,9 @@ export default function About() {
               <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand border border-brand/15">
                 v{latestVersion}
               </span>
-            </div>
+          </div>
 
-            <div className="p-4">
+          <div className="p-4">
               <p className="text-[13px] text-ink-2 leading-relaxed">
                 Track income, expenses, investments, bills, and loans in one place. Kosha gives you direction when you need it fast and precision when details matter.
               </p>
@@ -151,8 +150,8 @@ export default function About() {
                   View GitHub
                 </Button>
               </div>
-            </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
           <motion.div variants={fadeUp}>
             <SectionLabel>Design Principles</SectionLabel>
@@ -303,6 +302,6 @@ export default function About() {
           </motion.div>
 
       </motion.div>
-    </BackHeaderPage>
+    </PageBackHeaderPage>
   )
 }

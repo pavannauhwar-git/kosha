@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, ArrowRight, CheckCircle2, History, Home, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import BackHeaderPage from '../components/layout/BackHeaderPage'
+import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
@@ -498,7 +498,7 @@ export default function Reconciliation() {
   ]
 
   return (
-    <BackHeaderPage
+    <PageBackHeaderPage
       title="Reconciliation"
       onBack={() => navigate(-1)}
       rightSlot={(
@@ -1081,7 +1081,7 @@ export default function Reconciliation() {
       )}
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
-    </BackHeaderPage>
+    </PageBackHeaderPage>
   )
 }
 

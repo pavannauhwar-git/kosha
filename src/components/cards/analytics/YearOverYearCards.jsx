@@ -87,7 +87,7 @@ function NetTooltip({ active, payload, label }) {
   )
 }
 
-export default function YoYCards({ years, currentYear, enabled = true }) {
+export default function YearOverYearCards({ years, currentYear, enabled = true }) {
   const yearQueries = useQueries({
     queries: years.map((year) => ({
       queryKey: ['yearYoy', year],

@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
-import YoYCards from '../components/cards/analytics/YoYCards'
+import YearOverYearCards from '../components/cards/analytics/YearOverYearCards'
 import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
 import InvestmentConsistencyCard from '../components/cards/analytics/InvestmentConsistencyCard'
 import CalendarHeatmap from '../components/cards/analytics/CalendarHeatmap'
@@ -330,7 +330,7 @@ export default function Analytics() {
             <div className="space-y-4">
               {/* ── 2. Year-over-year context ───────────────────────── */}
               {heavyReady ? (
-                <YoYCards years={yoyYears} currentYear={year} enabled />
+                <YearOverYearCards years={yoyYears} currentYear={year} enabled />
               ) : (
                 <div className="card p-4">
                   <div className="flex items-center justify-between mb-2">

@@ -4,7 +4,7 @@ import { Bug, Check, Copy, Home, LogIn } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import BackHeaderPage from '../components/layout/BackHeaderPage'
+import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import {
   buildFingerprint,
   parseTags,
@@ -247,7 +247,7 @@ export default function ReportBug() {
   }
 
   return (
-    <BackHeaderPage
+    <PageBackHeaderPage
       title="Report Bug"
       onBack={handleBack}
       rightSlot={(
@@ -526,6 +526,6 @@ export default function ReportBug() {
       )}
 
       <AppToast message={infoToast} onDismiss={() => setInfoToast('')} />
-    </BackHeaderPage>
+    </PageBackHeaderPage>
   )
 }

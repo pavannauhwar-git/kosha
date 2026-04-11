@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/dialogs/EditProfileNameDialog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
-import BackHeaderPage from '../components/layout/BackHeaderPage'
+import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
 import {
   getReminderPrefs,
@@ -211,7 +211,7 @@ export default function Settings() {
   }
 
   return (
-    <BackHeaderPage
+    <PageBackHeaderPage
       title="Account Settings"
       onBack={() => navigate(-1)}
       rightSlot={(
@@ -467,6 +467,6 @@ export default function Settings() {
         open={showEditName}
         onClose={() => setShowEditName(false)}
       />
-    </BackHeaderPage>
+    </PageBackHeaderPage>
   )
 }

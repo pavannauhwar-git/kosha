@@ -1,0 +1,3 @@
+[submodule ".references/material-web"]
+	path = .references/material-web
+	url = https://github.com/material-components/material-web.git

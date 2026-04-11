@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createFadeUp, createStagger } from '../lib/animations'
-import BackHeaderPage from '../components/layout/BackHeaderPage'
+import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
 
 const fadeUp = createFadeUp(4, 0.18)
@@ -272,7 +272,7 @@ export default function Guide() {
   }, [])
 
   return (
-    <BackHeaderPage
+    <PageBackHeaderPage
       title="Guide"
       onBack={() => navigate(-1)}
       rightSlot={(
@@ -624,6 +624,6 @@ export default function Guide() {
           </>
         )}
       </AnimatePresence>
-    </BackHeaderPage>
+    </PageBackHeaderPage>
   )
 }
