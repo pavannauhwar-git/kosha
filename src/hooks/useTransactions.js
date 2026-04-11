@@ -261,7 +261,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
   return { data: safeRows, total, loading: isLoading, error, refetch }
 }
 
-const RECENT_TXN_COLUMNS = 'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode'
+const RECENT_TXN_COLUMNS = 'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id'
 const DIGEST_TXN_COLUMNS = 'id, date, created_at, type, amount, category, is_repayment'
 const DAILY_EXPENSE_TOTAL_COLUMNS = 'date, amount'
 

@@ -4,17 +4,51 @@ import { X, Check } from '@phosphor-icons/react'
 import { ICON_MAP } from './CategoryIcon'
 import { createUserCategory } from '../../hooks/useUserCategories'
 
-const ICON_OPTIONS = [
-  'Tag', 'Package', 'Heart', 'Lightning', 'Gift', 'Coin',
-  'ShoppingBag', 'Briefcase', 'House', 'Car', 'Globe', 'BookOpen',
-  'Scroll', 'Diamond', 'Certificate', 'Wrench', 'PawPrint', 'FirstAid',
+const ICON_OPTIONS_BY_TYPE = {
+  expense: [
+    'ForkKnife', 'ShoppingCart', 'Handbag', 'BowlFood', 'Car', 'GasPump',
+    'AirplaneTilt', 'DeviceMobile', 'Phone', 'WifiHigh', 'House', 'Hammer',
+    'Broom', 'MapPin', 'CalendarCheck', 'Ticket', 'Confetti', 'Gift',
+    'Heart', 'FileText', 'Scales', 'CreditCard', 'Receipt', 'BookOpen',
+    'Cigarette',
+    'Popcorn', 'FirstAid', 'Barbell', 'PawPrint', 'Baby', 'Tag',
+  ],
+  income: [
+    'MoneyWavy', 'Wallet', 'CashRegister', 'HandCoins', 'Coins', 'ChartLineUp',
+    'TrendUp', 'IdentificationBadge', 'Sparkle', 'ArrowsCounterClockwise', 'Globe', 'Certificate',
+  ],
+  investment: [
+    'Plant', 'TrendUp', 'Vault', 'Coin', 'Umbrella', 'Diamond',
+    'Buildings', 'CurrencyBtc', 'Scroll', 'Briefcase', 'Bank', 'Certificate',
+  ],
+}
+
+const CATEGORY_TYPES = [
+  { id: 'expense', label: 'Expense', activeClass: 'bg-expense-bg text-expense-text border-expense-border' },
+  { id: 'income', label: 'Income', activeClass: 'bg-income-bg text-income-text border-income-border' },
+  { id: 'investment', label: 'Investment', activeClass: 'bg-invest-bg text-invest-text border-invest-border' },
 ]
 
 export default function CreateCategorySheet({ type, onClose, onCreated }) {
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('Tag')
+  const [selectedType, setSelectedType] = useState(type || 'expense')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const iconOptions = ICON_OPTIONS_BY_TYPE[selectedType] || ICON_OPTIONS_BY_TYPE.expense
+
+  const selectedIconTone = selectedType === 'expense'
+    ? 'text-expense-text'
+    : selectedType === 'income'
+      ? 'text-income-text'
+      : 'text-invest-text'
+
+  const selectedIconBg = selectedType === 'expense'
+    ? 'bg-expense-bg border-expense-border'
+    : selectedType === 'income'
+      ? 'bg-income-bg border-income-border'
+      : 'bg-invest-bg border-invest-border'
 
   async function handleCreate() {
     const trimmed = name.trim()
@@ -31,8 +65,8 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
     setError('')
 
     try {
-      const cat = await createUserCategory({ label: trimmed, type, icon })
-      onCreated(cat.id)
+      const cat = await createUserCategory({ label: trimmed, type: selectedType, icon })
+      onCreated(cat)
       onClose()
     } catch (e) {
       setError(e.message || 'Could not create category')
@@ -75,10 +109,34 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
             className="input mb-4 disabled:opacity-50"
           />
 
+          <p className="text-[13px] font-medium text-ink-3 mb-2">Category type</p>
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {CATEGORY_TYPES.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setSelectedType(option.id)
+                  const nextOptions = ICON_OPTIONS_BY_TYPE[option.id] || []
+                  if (!nextOptions.includes(icon) && nextOptions.length > 0) {
+                    setIcon(nextOptions[0])
+                  }
+                }}
+                disabled={saving}
+                className={`h-9 rounded-card text-[12px] font-semibold border transition-all disabled:opacity-50
+                  ${selectedType === option.id
+                    ? option.activeClass
+                    : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
           {/* Icon picker */}
           <p className="text-[13px] font-medium text-ink-3 mb-2">Choose an icon</p>
           <div className="grid grid-cols-6 gap-2 mb-4">
-            {ICON_OPTIONS.map(iconName => {
+            {iconOptions.map(iconName => {
               const Icon = ICON_MAP[iconName]
               if (!Icon) return null
               const selected = icon === iconName
@@ -91,10 +149,10 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
                   className={`w-full aspect-square rounded-card flex items-center justify-center
                     border transition-all disabled:opacity-50
                     ${selected
-                      ? 'bg-brand-container border-brand'
+                      ? selectedIconBg
                       : 'bg-kosha-surface-2 border-transparent'}`}
                 >
-                  <Icon size={20} weight="duotone" className={selected ? 'text-accent' : 'text-ink-3'} />
+                  <Icon size={20} weight="duotone" className={selected ? selectedIconTone : 'text-ink-3'} />
                 </button>
               )
             })}

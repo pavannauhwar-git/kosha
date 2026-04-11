@@ -8,6 +8,7 @@ import {
 } from '../hooks/useTransactions'
 import TransactionItem from '../components/transactions/TransactionItem'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
+import CreateCategorySheet from '../components/categories/CreateCategorySheet'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
@@ -74,6 +75,7 @@ export default function Transactions() {
   const [showGuideHint, setShowGuideHint] = useState(true)
   const [showSwipeHint, setShowSwipeHint] = useState(false)
   const [triggerSwipeNudge, setTriggerSwipeNudge] = useState(false)
+  const [showCreateCategory, setShowCreateCategory] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
   const debouncedSearch = useDebounce(search, 300)
@@ -106,6 +108,19 @@ export default function Transactions() {
     () => getCategoriesForType(typeFilter === 'all' ? undefined : typeFilter),
     [typeFilter]
   )
+  const getCategoryLabel = useCallback((categoryId) => {
+    if (!categoryId) return 'All categories'
+
+    const pools = [
+      ...getCategoriesForType('expense'),
+      ...getCategoriesForType('income'),
+      ...getCategoriesForType('investment'),
+      ...CATEGORIES,
+    ]
+
+    const found = pools.find((item) => item.id === categoryId)
+    return found?.label || 'Custom category'
+  }, [])
 
   // FIX (defect 5.2): Replaced the useEffect that called setDisplayCount(50)
   // when debouncedSearch/typeFilter/catFilter changed. That caused a triple
@@ -161,8 +176,8 @@ export default function Transactions() {
     [datePreset]
   )
   const activeCategoryLabel = useMemo(
-    () => (catFilter ? CATEGORIES.find((item) => item.id === catFilter)?.label || 'Custom category' : 'All categories'),
-    [catFilter]
+    () => getCategoryLabel(catFilter),
+    [catFilter, getCategoryLabel]
   )
   const activePaymentModeLabel = useMemo(
     () => (paymentModeFilter ? PAYMENT_MODES.find((item) => item.id === paymentModeFilter)?.label || 'Custom mode' : 'All payment modes'),
@@ -357,12 +372,63 @@ export default function Transactions() {
     }
   }, [])
 
+  const inferRepaymentTab = useCallback((txn, loanRow = null) => {
+    if (loanRow?.settled) return 'settled'
+    if (loanRow?.direction === 'taken') return 'taken'
+    if (loanRow?.direction === 'given') return 'given'
+    if (txn?.type === 'expense') return 'taken'
+    if (txn?.type === 'income') return 'given'
+    return null
+  }, [])
+
+  const extractRepaymentCounterparty = useCallback((txn) => {
+    const description = String(txn?.description || '')
+    const notes = String(txn?.notes || '')
+    const counterpartyMatch =
+      description.match(/^loan payment:\s*(.+)$/i) ||
+      notes.match(/payment\s+(?:received\s+from|made\s+to)\s+(.+)$/i)
+
+    return counterpartyMatch?.[1]?.trim() || ''
+  }, [])
+
+  const repaymentLoanRoute = useCallback((txn) => {
+    const params = new URLSearchParams()
+
+    if (txn?.id) params.set('repaymentTxn', String(txn.id))
+    const routeLoanId = txn?.loan_id
+    if (routeLoanId) params.set('repaymentLoan', String(routeLoanId))
+
+    const routeTab = inferRepaymentTab(txn)
+    if (routeTab) params.set('repaymentTab', routeTab)
+
+    if (txn?.type) params.set('repaymentType', String(txn.type))
+
+    const amount = Number(txn?.amount)
+    if (Number.isFinite(amount) && amount > 0) {
+      params.set('repaymentAmount', String(amount))
+    }
+
+    if (txn?.date) params.set('repaymentDate', String(txn.date))
+
+    const counterparty = extractRepaymentCounterparty(txn)
+    if (counterparty) params.set('repaymentCounterparty', counterparty)
+
+    const query = params.toString()
+    return query ? `/loans?${query}` : '/loans'
+  }, [extractRepaymentCounterparty, inferRepaymentTab])
+
   const handleTap = useCallback((t) => {
+    if (t?.is_repayment) {
+      setToast('Repayments are managed from Loans.')
+      navigate(repaymentLoanRoute(t))
+      return
+    }
+
     setEditTxn(t)
     setDuplicateTxn(null)
     setAddType(t.type)
     setShowAdd(true)
-  }, [])
+  }, [navigate, repaymentLoanRoute])
 
   const handleDuplicate = useCallback((txn) => {
     setEditTxn(null)
@@ -735,7 +801,7 @@ export default function Transactions() {
               : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
           >
             <SlidersHorizontal size={11} />
-            {catFilter ? CATEGORIES.find(c => c.id === catFilter)?.label || 'Category' : 'Category'}
+            {catFilter ? getCategoryLabel(catFilter) : 'Category'}
           </button>
 
           <button
@@ -799,6 +865,18 @@ export default function Transactions() {
                   {c.label}
                 </button>
               ))}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCats(false)
+                  setShowCreateCategory(true)
+                }}
+                className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+              >
+                <Plus size={11} />
+                Create category
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -962,6 +1040,28 @@ export default function Transactions() {
       <button className="fab" aria-label="Add transaction" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={24} className="text-white" />
       </button>
+
+      <AnimatePresence>
+        {showCreateCategory && (
+          <CreateCategorySheet
+            type={typeFilter === 'all' ? 'expense' : typeFilter}
+            onClose={() => setShowCreateCategory(false)}
+            onCreated={(createdCategory) => {
+              setShowCreateCategory(false)
+
+              if (!createdCategory?.id) return
+
+              const createdType = createdCategory.type || 'expense'
+              if (typeFilter !== createdType) {
+                handleTypeFilter(createdType)
+              }
+              handleCatFilter(createdCategory.id)
+              setShowCats(false)
+              setToast(`Created ${createdCategory.label} category.`)
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <AddTransactionSheet
         open={showAdd}

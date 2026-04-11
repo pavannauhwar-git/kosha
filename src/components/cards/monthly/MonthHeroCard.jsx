@@ -5,10 +5,10 @@ import { C } from '../../../lib/colors'
 import { MONTH_NAMES } from '../../../lib/constants'
 
 function getHeroAmountClass(length) {
-  if (length <= 11) return 'text-[clamp(1.62rem,7.6vw,2.7rem)]'
-  if (length <= 14) return 'text-[clamp(1.46rem,6.9vw,2.4rem)]'
-  if (length <= 17) return 'text-[clamp(1.3rem,6.1vw,2.08rem)]'
-  return 'text-[clamp(1.1rem,5.3vw,1.78rem)]'
+  if (length <= 11) return 'text-[clamp(1.92rem,8.9vw,3.12rem)]'
+  if (length <= 14) return 'text-[clamp(1.72rem,8.1vw,2.78rem)]'
+  if (length <= 17) return 'text-[clamp(1.5rem,7.2vw,2.44rem)]'
+  return 'text-[clamp(1.28rem,6.2vw,2.12rem)]'
 }
 
 function getHeroStatClass(length) {

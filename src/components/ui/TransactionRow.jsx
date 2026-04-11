@@ -29,7 +29,19 @@ const TransactionRow = memo(function TransactionRow({ transaction, onTap, classN
     >
       {/* Category icon */}
       <div className="shrink-0">
-        <CategoryIcon id={displayCategory} size={36} />
+        {is_repayment ? (
+          <div
+            className="w-[48px] h-[48px] rounded-chip flex items-center justify-center"
+            style={{
+              backgroundColor: 'var(--ds-repay-bg)',
+              background: 'color-mix(in srgb, var(--ds-repay) 16%, var(--ds-surface))',
+            }}
+          >
+            <ArrowUDownLeft size={20} weight="duotone" color="var(--ds-repay-text)" />
+          </div>
+        ) : (
+          <CategoryIcon id={displayCategory} size={36} />
+        )}
       </div>
 
       {/* Description + date + badges */}

@@ -647,7 +647,14 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           <CreateCategorySheet
             type={type}
             onClose={() => setShowCreateCat()}
-            onCreated={(slug) => set('category', slug)}
+            onCreated={(createdCategory) => {
+              const createdId = createdCategory?.id || createdCategory
+              const createdType = createdCategory?.type
+
+              if (type !== 'investment' && createdId && createdType === type) {
+                set('category', createdId)
+              }
+            }}
           />
         )}
       </AnimatePresence>

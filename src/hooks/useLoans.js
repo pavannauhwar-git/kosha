@@ -366,6 +366,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
       date: new Date().toISOString().slice(0, 10),
       created_at: new Date().toISOString(),
       type: loan.direction === 'given' ? 'income' : 'expense',
+      loan_id: loan.id,
       amount: paymentAmount,
       description: `Loan payment: ${loan.counterparty}`,
       category: 'loans',

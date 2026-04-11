@@ -10,23 +10,38 @@ const QUERY_KEY = ['userCategories']
 const COLUMNS = 'id, type, label, slug, icon, color, bg, archived, created_at'
 const MAX_CUSTOM_CATEGORIES = 15
 
-// Color palette auto-assigned to new custom categories
-const CUSTOM_COLORS = [
+// Type-aware palettes keep custom categories aligned with semantic color intent.
+const CUSTOM_COLORS_BY_TYPE = {
+  expense: [
+    { color: '#E11D48', bg: '#FFF1F2' },
+    { color: '#EA580C', bg: '#FFF7ED' },
+    { color: '#DC2626', bg: '#FEF2F2' },
+    { color: '#B45309', bg: '#FFFBEB' },
+    { color: '#BE185D', bg: '#FDF2F8' },
+    { color: '#C2410C', bg: '#FFF7ED' },
+  ],
+  income: [
+    { color: '#059669', bg: '#ECFDF5' },
+    { color: '#16A34A', bg: '#F0FDF4' },
+    { color: '#0D9488', bg: '#F0FDFA' },
+    { color: '#15803D', bg: '#ECFDF5' },
+    { color: '#10B981', bg: '#ECFDF5' },
+    { color: '#047857', bg: '#ECFDF5' },
+  ],
+  investment: [
+    { color: '#2563EB', bg: '#EFF6FF' },
+    { color: '#0EA5E9', bg: '#E0F2FE' },
+    { color: '#4F46E5', bg: '#EEF2FF' },
+    { color: '#7C3AED', bg: '#F5F3FF' },
+    { color: '#6D28D9', bg: '#F5F3FF' },
+    { color: '#3B82F6', bg: '#EFF6FF' },
+  ],
+}
+
+const FALLBACK_CUSTOM_COLORS = [
   { color: '#6366F1', bg: '#EEF2FF' },
-  { color: '#EC4899', bg: '#FDF2F8' },
   { color: '#14B8A6', bg: '#F0FDFA' },
   { color: '#F97316', bg: '#FFF7ED' },
-  { color: '#8B5CF6', bg: '#F5F3FF' },
-  { color: '#EF4444', bg: '#FEF2F2' },
-  { color: '#06B6D4', bg: '#ECFEFF' },
-  { color: '#84CC16', bg: '#F7FEE7' },
-  { color: '#D946EF', bg: '#FDF4FF' },
-  { color: '#F59E0B', bg: '#FFFBEB' },
-  { color: '#0EA5E9', bg: '#E0F2FE' },
-  { color: '#10B981', bg: '#ECFDF5' },
-  { color: '#E11D48', bg: '#FFF1F2' },
-  { color: '#7C3AED', bg: '#F5F3FF' },
-  { color: '#2563EB', bg: '#EFF6FF' },
 ]
 
 /** Convert DB row → category object compatible with the rest of the app */
@@ -128,8 +143,10 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
     throw new Error(`Maximum ${MAX_CUSTOM_CATEGORIES} custom categories allowed`)
   }
 
-  const colorIndex = prev.length % CUSTOM_COLORS.length
-  const { color, bg } = CUSTOM_COLORS[colorIndex]
+  const palette = CUSTOM_COLORS_BY_TYPE[type] || FALLBACK_CUSTOM_COLORS
+  const sameTypeCount = prev.filter((cat) => cat?.type === type).length
+  const colorIndex = sameTypeCount % palette.length
+  const { color, bg } = palette[colorIndex]
 
   // Optimistic update
   const optimistic = {

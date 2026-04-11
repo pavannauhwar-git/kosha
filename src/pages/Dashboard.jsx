@@ -413,12 +413,66 @@ export default function Dashboard() {
     }
   }, [recent])
 
+  const inferRepaymentTab = useCallback((txn, loanRow = null) => {
+    if (loanRow?.settled) return 'settled'
+    if (loanRow?.direction === 'taken') return 'taken'
+    if (loanRow?.direction === 'given') return 'given'
+    if (txn?.type === 'expense') return 'taken'
+    if (txn?.type === 'income') return 'given'
+    return null
+  }, [])
+
+  const extractRepaymentCounterparty = useCallback((txn) => {
+    const description = String(txn?.description || '')
+    const notes = String(txn?.notes || '')
+    const counterpartyMatch =
+      description.match(/^loan payment:\s*(.+)$/i) ||
+      notes.match(/payment\s+(?:received\s+from|made\s+to)\s+(.+)$/i)
+
+    return counterpartyMatch?.[1]?.trim() || ''
+  }, [])
+
+  const repaymentLoanRoute = useCallback((txn) => {
+    const params = new URLSearchParams()
+
+    if (txn?.id) params.set('repaymentTxn', String(txn.id))
+    const routeLoanId = txn?.loan_id
+    if (routeLoanId) params.set('repaymentLoan', String(routeLoanId))
+
+    const routeTab = inferRepaymentTab(txn)
+    if (routeTab) params.set('repaymentTab', routeTab)
+
+    if (txn?.type) params.set('repaymentType', String(txn.type))
+
+    const amount = Number(txn?.amount)
+    if (Number.isFinite(amount) && amount > 0) {
+      params.set('repaymentAmount', String(amount))
+    }
+
+    if (txn?.date) params.set('repaymentDate', String(txn.date))
+
+    const counterparty = extractRepaymentCounterparty(txn)
+    if (counterparty) params.set('repaymentCounterparty', counterparty)
+
+    const query = params.toString()
+    return query ? `/loans?${query}` : '/loans'
+  }, [extractRepaymentCounterparty, inferRepaymentTab])
+
   const handleTap = useCallback((t) => {
+    if (t?.is_repayment) {
+      setToast('Repayments are managed from Loans.')
+      setToastAction(null)
+      setToastActionLabel(null)
+
+      navigate(repaymentLoanRoute(t))
+      return
+    }
+
     setEditTxn(t)
     setDuplicateTxn(null)
     setAddType(t.type)
     setShowAdd(true)
-  }, [])
+  }, [navigate, repaymentLoanRoute])
 
   const handleDuplicate = useCallback((txn) => {
     setEditTxn(null)
@@ -444,7 +498,7 @@ export default function Dashboard() {
           <p className="text-[11px] text-ink-3 tracking-wide">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="text-[24px] font-semibold text-ink tracking-tight mt-1">
+          <h1 className="text-[22px] font-semibold text-ink tracking-tight mt-1">
             {greetingMeta.text}{firstName ? `, ${firstName}` : ''} {greetingMeta.emoji}
           </h1>
           {isBackgroundFetching && (

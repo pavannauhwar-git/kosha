@@ -1,6 +1,7 @@
 import { memo, useState, useCallback, useEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
+import { ArrowUDownLeft } from '@phosphor-icons/react'
 import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../../lib/utils'
 import { getCategory, INVESTMENT_VEHICLES } from '../../lib/categories'
@@ -70,7 +71,7 @@ function TransactionItem({
   const isOptimistic = Boolean(txn?.__optimistic || String(txn?.id || '').startsWith('optimistic-'))
   const rowLabel = txn.type === 'investment'
     ? (investmentVehicle?.label || txn.investment_vehicle || 'Other')
-    : cat.label
+    : (txn.is_repayment ? 'Loan Repayment' : cat.label)
 
   // FIX (defect 5.5): All 6 handlers are now wrapped in useCallback.
   // Previously they were plain functions recreated on every render.
@@ -235,7 +236,17 @@ function TransactionItem({
           className={`${compact ? 'w-8 h-8' : 'w-9 h-9'} rounded-full flex items-center justify-center shrink-0`}
           style={txn.type === 'investment' ? investmentChipStyle : undefined}
         >
-          {txn.type === 'investment' && investmentVehicle ? (
+          {txn.is_repayment ? (
+            <div
+              className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: 'var(--ds-repay-bg)',
+                background: 'color-mix(in srgb, var(--ds-repay) 16%, var(--ds-surface))',
+              }}
+            >
+              <ArrowUDownLeft size={compact ? 16 : 18} weight="duotone" color="var(--ds-repay-text)" />
+            </div>
+          ) : txn.type === 'investment' && investmentVehicle ? (
             (() => {
               const Icon = ICON_MAP[investmentVehicle.icon]
               return Icon
@@ -252,9 +263,16 @@ function TransactionItem({
             {txn.description}
           </p>
           {compact ? (
-            <p className="text-[11px] text-ink-3 truncate mt-0.5">
-              {showDate ? fmtDate(txn.date) : rowLabel}
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+              <span className="text-[11px] text-ink-3 truncate">
+                {showDate ? fmtDate(txn.date) : rowLabel}
+              </span>
+              {txn.is_repayment && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
+                  Repayment
+                </span>
+              )}
+            </div>
           ) : (
             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
               {showDate

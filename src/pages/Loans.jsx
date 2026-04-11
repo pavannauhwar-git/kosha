@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, X, Check, Loader2, Download, ArrowDownLeft, ArrowUpRight,
@@ -18,25 +18,59 @@ import { getAuthUserId } from '../lib/authStore'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass } from '../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
+import { FINANCIAL_EVENT_ACTIONS } from '../lib/auditLog'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import AppToast from '../components/common/AppToast'
 import Button from '../components/ui/Button'
 import PixelDatePicker from '../components/ui/PixelDatePicker'
+import { useSearchParams } from 'react-router-dom'
 
 const LOAN_COLUMNS_EXPORT =
   'id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled'
+const DEEP_LINK_MAX_ATTEMPTS = 8
+const DEEP_LINK_RETRY_MS = 350
 
 export default function Loans() {
   const { given, taken, settled, loading, settledLoading } = useLoans()
-  const [tab, setTab] = useState('given')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const deepLinkTxnId = searchParams.get('repaymentTxn')
+  const deepLinkLoanId = searchParams.get('repaymentLoan')
+  const deepLinkType = searchParams.get('repaymentType')
+  const deepLinkTabHint = searchParams.get('repaymentTab')
+  const deepLinkAmountRaw = searchParams.get('repaymentAmount')
+  const deepLinkDate = searchParams.get('repaymentDate')
+  const deepLinkCounterpartyRaw = searchParams.get('repaymentCounterparty')
+
+  const inferredInitialTab =
+    deepLinkTabHint === 'given' || deepLinkTabHint === 'taken' || deepLinkTabHint === 'settled'
+      ? deepLinkTabHint
+      : deepLinkType === 'expense'
+        ? 'taken'
+        : 'given'
+
+  const [tab, setTab] = useState(inferredInitialTab)
   const [showAdd, setShowAdd] = useState(false)
   const [editLoan, setEditLoan] = useState(null)
   const [payLoan, setPayLoan] = useState(null)      // loan object being paid
   const [deletingId, setDeletingId] = useState(null)
   const [errToast, setErrToast] = useState(null)
+  const [highlightLoanId, setHighlightLoanId] = useState(null)
   const [hiddenIds, setHiddenIds] = useState(() => new Set())
+  const [deepLinkRetryTick, setDeepLinkRetryTick] = useState(0)
+  const deepLinkResolvedRef = useRef('')
+  const deepLinkAttemptRef = useRef({ key: '', count: 0 })
+
+  const deepLinkKey = `${deepLinkTxnId || ''}:${deepLinkLoanId || ''}:${deepLinkTabHint || ''}:${deepLinkType || ''}:${deepLinkAmountRaw || ''}:${deepLinkDate || ''}:${deepLinkCounterpartyRaw || ''}`
+
+  const clearRepaymentDeepLink = useCallback(() => {
+    const next = new URLSearchParams(searchParams)
+    ;['repaymentTxn', 'repaymentLoan', 'repaymentTab', 'repaymentType', 'repaymentAmount', 'repaymentDate', 'repaymentCounterparty'].forEach((key) => {
+      next.delete(key)
+    })
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   // ── Form state ──────────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -57,6 +91,216 @@ export default function Loans() {
   const visibleSettled = useMemo(() => settled.filter(l => !hiddenIds.has(l.id)), [settled, hiddenIds])
 
   const activeLoans = tab === 'given' ? visibleGiven : tab === 'taken' ? visibleTaken : visibleSettled
+
+  useEffect(() => {
+    if (!deepLinkTxnId && !deepLinkLoanId) {
+      deepLinkResolvedRef.current = ''
+      deepLinkAttemptRef.current = { key: '', count: 0 }
+      return
+    }
+
+    if (loading || settledLoading) return
+    if (deepLinkResolvedRef.current === deepLinkKey) return
+
+    if (deepLinkAttemptRef.current.key !== deepLinkKey) {
+      deepLinkAttemptRef.current = { key: deepLinkKey, count: 0 }
+    }
+    deepLinkAttemptRef.current.count += 1
+
+    const currentAttempt = deepLinkAttemptRef.current.count
+    let cancelled = false
+    let retryTimer = null
+
+    const allLoans = [...given, ...taken, ...settled]
+    const normalizedCounterparty = String(deepLinkCounterpartyRaw || '').trim().toLowerCase()
+    const inferredDirection = deepLinkType === 'income' ? 'given' : deepLinkType === 'expense' ? 'taken' : null
+    const deepLinkAmount = Number(deepLinkAmountRaw)
+    const hasAmount = Number.isFinite(deepLinkAmount) && deepLinkAmount > 0
+
+    const fallbackLoanMatch = () => {
+      if (!allLoans.length) return null
+
+      const scored = allLoans
+        .map((loan) => {
+          let score = 0
+          const counterparty = String(loan?.counterparty || '').trim().toLowerCase()
+
+          if (inferredDirection && loan?.direction === inferredDirection) score += 50
+
+          if (normalizedCounterparty) {
+            if (counterparty === normalizedCounterparty) score += 90
+            else if (counterparty.includes(normalizedCounterparty) || normalizedCounterparty.includes(counterparty)) score += 40
+          }
+
+          if (hasAmount) {
+            const principal = Number(loan?.amount || 0)
+            const settledAmt = Number(loan?.amount_settled || 0)
+            const remaining = Math.max(0, principal - settledAmt)
+
+            if (deepLinkAmount <= principal + 0.01) score += 10
+            if (deepLinkAmount <= settledAmt + 0.01) score += 8
+            if (!loan?.settled && deepLinkAmount <= remaining + 0.01) score += 8
+          }
+
+          if (deepLinkDate && loan?.loan_date && loan.loan_date <= deepLinkDate) score += 4
+
+          return { loan, score }
+        })
+        .sort((a, b) => b.score - a.score)
+
+      const top = scored[0]
+      const second = scored[1]
+      if (!top) return null
+
+      const minScore = normalizedCounterparty
+        ? 70
+        : hasAmount
+          ? 65
+          : Number.POSITIVE_INFINITY
+
+      const hasClearLead = !second || (top.score - second.score) >= 20
+      return top.score >= minScore && hasClearLead ? top.loan : null
+    }
+
+    const resolveDeepLink = async () => {
+      let targetLoan = null
+
+      const normalizeId = (value) => (value == null ? '' : String(value).trim())
+      const normalizedTxnId = normalizeId(deepLinkTxnId)
+
+      if (deepLinkLoanId) {
+        targetLoan = allLoans.find((loan) => normalizeId(loan.id) === normalizeId(deepLinkLoanId)) || null
+      }
+
+      // Fast-path local resolution first to avoid network-induced focus lag.
+      if (!targetLoan) {
+        targetLoan = fallbackLoanMatch()
+      }
+
+      if (!targetLoan && deepLinkTxnId) {
+        try {
+          const userId = getAuthUserId()
+          let eventQuery = supabase
+            .from('financial_events')
+            .select('entity_id, metadata, created_at')
+            .eq('action', FINANCIAL_EVENT_ACTIONS.LOAN_PAYMENT)
+            .order('created_at', { ascending: false })
+            .limit(180)
+
+          if (userId) {
+            eventQuery = eventQuery.eq('user_id', userId)
+          }
+
+          const { data: eventRows } = await eventQuery
+          const matchedEvent = (eventRows || []).find((row) => {
+            const metadata = row?.metadata || {}
+            const candidateTxnIds = [
+              metadata?.rpc_result?.transaction_id,
+              metadata?.transaction_id,
+              metadata?.rpc_payload?.transaction_id,
+              metadata?.rpc_payload?.p_transaction_id,
+            ]
+
+            return candidateTxnIds.some((candidate) => normalizeId(candidate) === normalizedTxnId)
+          })
+
+          const loanIdFromEvent =
+            matchedEvent?.entity_id ||
+            matchedEvent?.metadata?.rpc_result?.loan_id ||
+            matchedEvent?.metadata?.loan_id ||
+            matchedEvent?.metadata?.rpc_payload?.loan_id ||
+            matchedEvent?.metadata?.rpc_payload?.p_loan_id ||
+            null
+
+          if (loanIdFromEvent) {
+            targetLoan = allLoans.find((loan) => normalizeId(loan.id) === normalizeId(loanIdFromEvent)) || null
+          }
+        } catch {
+          // Fall back to heuristic matching below.
+        }
+      }
+
+      if (!targetLoan) {
+        if (!cancelled) {
+          if (currentAttempt < DEEP_LINK_MAX_ATTEMPTS) {
+            retryTimer = window.setTimeout(() => {
+              if (!cancelled) {
+                setDeepLinkRetryTick((v) => v + 1)
+              }
+            }, DEEP_LINK_RETRY_MS)
+            return
+          }
+
+          setErrToast('Opened Loans, but could not pinpoint the linked repayment.')
+          deepLinkResolvedRef.current = deepLinkKey
+          clearRepaymentDeepLink()
+        }
+        return
+      }
+
+      if (cancelled) return
+
+      const targetTab = targetLoan.settled
+        ? 'settled'
+        : targetLoan.direction === 'taken'
+          ? 'taken'
+          : 'given'
+
+      setTab(targetTab)
+      setHiddenIds((prev) => {
+        if (!prev.has(targetLoan.id)) return prev
+        const next = new Set(prev)
+        next.delete(targetLoan.id)
+        return next
+      })
+      setHighlightLoanId(targetLoan.id)
+
+      const scrollToTarget = (attempt = 0) => {
+        const el = document.getElementById(`loan-${targetLoan.id}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          return
+        }
+
+        if (attempt < 6) {
+          window.setTimeout(() => scrollToTarget(attempt + 1), 90)
+        }
+      }
+      window.setTimeout(() => scrollToTarget(), 40)
+
+      setErrToast('Opened linked repayment context.')
+      deepLinkResolvedRef.current = deepLinkKey
+      clearRepaymentDeepLink()
+
+      window.setTimeout(() => {
+        setHighlightLoanId((prev) => (prev === targetLoan.id ? null : prev))
+      }, 2600)
+    }
+
+    void resolveDeepLink()
+
+    return () => {
+      cancelled = true
+      if (retryTimer) {
+        window.clearTimeout(retryTimer)
+      }
+    }
+  }, [
+    deepLinkTxnId,
+    deepLinkLoanId,
+    deepLinkType,
+    deepLinkAmountRaw,
+    deepLinkDate,
+    deepLinkCounterpartyRaw,
+    deepLinkKey,
+    loading,
+    settledLoading,
+    given,
+    taken,
+    settled,
+    deepLinkRetryTick,
+    clearRepaymentDeepLink,
+  ])
 
   const totalGiven = useMemo(() => visibleGiven.reduce((s, l) => s + (+l.amount - +l.amount_settled), 0), [visibleGiven])
   const totalTaken = useMemo(() => visibleTaken.reduce((s, l) => s + (+l.amount - +l.amount_settled), 0), [visibleTaken])
@@ -478,7 +722,11 @@ export default function Loans() {
             const isOptimistic = loan.__optimistic || String(loan.id || '').startsWith('optimistic-')
 
             return (
-              <div key={loan.id} className="card p-3 sm:p-3.5">
+              <div
+                id={`loan-${loan.id}`}
+                key={loan.id}
+                className={`card p-3 sm:p-3.5 ${highlightLoanId === loan.id ? 'txn-focus-highlight' : ''}`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {/* Direction icon + counterparty */}
