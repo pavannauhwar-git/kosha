@@ -33,7 +33,6 @@ export default function Monthly() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [heavyReady, setHeavyReady] = useState(false)
-  const [touchStartPoint, setTouchStartPoint] = useState(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setHeavyReady(true), 260)
@@ -71,44 +70,6 @@ export default function Monthly() {
     } else {
       setMonth(m => m + 1)
     }
-  }
-
-  function handleTouchStart(e) {
-    const firstTouch = e.touches?.[0]
-    if (!firstTouch) {
-      setTouchStartPoint(null)
-      return
-    }
-
-    setTouchStartPoint({ x: firstTouch.clientX, y: firstTouch.clientY })
-  }
-
-  function handleTouchEnd(e) {
-    if (!touchStartPoint) return
-
-    const changedTouch = e.changedTouches?.[0]
-    if (!changedTouch) {
-      setTouchStartPoint(null)
-      return
-    }
-
-    const deltaX = changedTouch.clientX - touchStartPoint.x
-    const deltaY = changedTouch.clientY - touchStartPoint.y
-    const absX = Math.abs(deltaX)
-    const absY = Math.abs(deltaY)
-    const isHorizontalIntent = absX > 72 && absX > absY * 1.35
-
-    if (isHorizontalIntent) {
-      if (navigator.vibrate) navigator.vibrate(6)
-      if (deltaX < 0) next()
-      else prev()
-    }
-
-    setTouchStartPoint(null)
-  }
-
-  function handleTouchCancel() {
-    setTouchStartPoint(null)
   }
 
   const earned = data?.earned || 0
@@ -318,14 +279,7 @@ export default function Monthly() {
   }, [inflow, spent, invested, year, month])
 
   return (
-    <PageHeaderPage
-      title="Monthly"
-      pageProps={{
-        onTouchStart: handleTouchStart,
-        onTouchEnd: handleTouchEnd,
-        onTouchCancel: handleTouchCancel,
-      }}
-    >
+    <PageHeaderPage title="Monthly">
 
       <PickerNavigator
         className="mb-3"

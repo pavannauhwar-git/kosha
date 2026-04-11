@@ -379,8 +379,33 @@ function BottomNav() {
   const [layoutReady, setLayoutReady] = useState(false)
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => setLayoutReady(true))
-    return () => cancelAnimationFrame(id)
+    let cancelled = false
+    let revealed = false
+    let fallbackId
+
+    const reveal = () => {
+      if (cancelled || revealed) return
+      revealed = true
+      if (fallbackId) window.clearTimeout(fallbackId)
+      requestAnimationFrame(() => {
+        if (!cancelled) setLayoutReady(true)
+      })
+    }
+
+    // Keep startup masking brief so the shell never feels frozen.
+    fallbackId = window.setTimeout(reveal, 180)
+
+    const readyPromise = document.fonts?.ready
+    if (readyPromise && typeof readyPromise.then === 'function') {
+      readyPromise.then(reveal).catch(reveal)
+    } else {
+      reveal()
+    }
+
+    return () => {
+      cancelled = true
+      if (fallbackId) window.clearTimeout(fallbackId)
+    }
   }, [])
 
   if (BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
@@ -390,7 +415,7 @@ function BottomNav() {
   )
 
   return (
-    <div className="nav-float-wrap">
+    <div className={`nav-float-wrap ${layoutReady ? 'nav-float-wrap--ready' : 'nav-float-wrap--preload'}`}>
       <nav className="nav-float" aria-label="Main navigation">
         {NAV.map((item, i) => {
           const isActive = i === active
