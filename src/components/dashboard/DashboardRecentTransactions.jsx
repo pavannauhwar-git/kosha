@@ -1,8 +1,12 @@
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, CheckCircle2, X } from 'lucide-react'
 import TransactionItem from '../transactions/TransactionItem'
 import { fmt } from '../../lib/utils'
+
+const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
+const SWIPE_HINT_LEARNED_KEY = 'kosha:swipe-delete-hint-learned-v1'
+const SWIPE_HINT_NUDGED_KEY = 'kosha:swipe-delete-hint-nudged-v1'
 
 /**
  * DashboardRecentTransactions
@@ -22,6 +26,50 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
   onDuplicate,
 }) {
   const navigate = useNavigate()
+  const [showSwipeHint, setShowSwipeHint] = useState(false)
+  const [triggerSwipeNudge, setTriggerSwipeNudge] = useState(false)
+
+  useEffect(() => {
+    try {
+      const dismissed = localStorage.getItem(SWIPE_HINT_DISMISSED_KEY) === '1'
+      const learned = localStorage.getItem(SWIPE_HINT_LEARNED_KEY) === '1'
+      const nudged = localStorage.getItem(SWIPE_HINT_NUDGED_KEY) === '1'
+
+      setShowSwipeHint(!dismissed && !learned)
+      setTriggerSwipeNudge(!nudged)
+    } catch {
+      setShowSwipeHint(true)
+      setTriggerSwipeNudge(true)
+    }
+  }, [])
+
+  const dismissSwipeHint = useCallback(() => {
+    setShowSwipeHint(false)
+    try {
+      localStorage.setItem(SWIPE_HINT_DISMISSED_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }, [])
+
+  const handleSwipeHintLearned = useCallback(() => {
+    setShowSwipeHint(false)
+    try {
+      localStorage.setItem(SWIPE_HINT_LEARNED_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }, [])
+
+  const handleAutoNudgeDone = useCallback(() => {
+    setTriggerSwipeNudge(false)
+    try {
+      localStorage.setItem(SWIPE_HINT_NUDGED_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }, [])
+
   const visibleRecent = useMemo(() => (recent || []).slice(0, 5), [recent])
   const summary = useMemo(() => {
     return visibleRecent.reduce((acc, txn) => {
@@ -89,6 +137,27 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
         </div>
       </div>
 
+      {showSwipeHint && (
+        <div className="mini-panel px-3 py-2 mb-2.5 flex items-start gap-2.5">
+          <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+            i
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] text-ink-2 leading-relaxed">
+              Quick tip: swipe left on a row to Repeat or Delete.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={dismissSwipeHint}
+            className="text-ink-4 hover:text-ink-2 transition-colors"
+            aria-label="Dismiss swipe hint"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
       <div className="rounded-card bg-kosha-surface-2 overflow-hidden">
         {visibleRecent.map((t, i) => (
           <TransactionItem
@@ -97,6 +166,9 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
             showDate
             compact
             isLast={i === lastIndex}
+            autoNudge={triggerSwipeNudge && i === 0}
+            onAutoNudgeDone={handleAutoNudgeDone}
+            onSwipeHintLearned={handleSwipeHintLearned}
             onDelete={onDelete}
             onTap={onTap}
             onDuplicate={onDuplicate}

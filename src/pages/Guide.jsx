@@ -279,9 +279,9 @@ export default function Guide() {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
+          className="w-9 h-9 rounded-pill flex items-center justify-center bg-brand-container border border-brand/20 active:scale-95 transition-transform"
         >
-          <Home size={16} className="text-ink-2" />
+          <Home size={16} className="text-brand" />
         </button>
       )}
       contentClassName="px-4 pt-6 pb-24 max-w-[560px] mx-auto"
@@ -338,15 +338,17 @@ export default function Guide() {
                 fullWidth
                 onClick={() => openFeature(nextFeature.id)}
                 icon={<Sparkles size={14} />}
+                className="!h-10 shadow-[0_6px_14px_rgba(0,127,255,0.22)]"
               >
                 Continue with {nextFeature.title}
               </Button>
               <Button
-                variant="secondary"
+                variant="tonal"
                 size="sm"
                 fullWidth
                 onClick={() => navigate(nextFeature.route)}
                 icon={<ArrowRight size={14} />}
+                className="!h-10 !border !border-brand/20"
               >
                 Open {nextFeature.title}
               </Button>
@@ -380,8 +382,8 @@ export default function Guide() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`h-9 px-3 rounded-pill text-[11px] font-semibold whitespace-nowrap border transition-all
                     ${active
-                      ? 'bg-kosha-surface text-brand border-brand/20 shadow-card-sm'
-                      : 'bg-transparent text-ink-3 border-transparent hover:bg-kosha-surface'}`}
+                      ? 'bg-brand text-white border-brand shadow-card-sm'
+                      : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-brand-container/45'}`}
                 >
                   {tab.label}
                 </button>
@@ -430,8 +432,9 @@ export default function Guide() {
 
                   <div className="p-4">
                     <p className="text-[12px] text-ink-3 leading-relaxed">{card.summary}</p>
-                    <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
-                      Open details <ArrowRight size={13} />
+                    <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-pill border border-kosha-border bg-kosha-surface text-ink-2 shadow-[0_1px_2px_rgba(17,19,24,0.08)]">
+                      Open details
+                      <ArrowRight size={12} />
                     </div>
                   </div>
                 </motion.button>
@@ -482,7 +485,7 @@ export default function Guide() {
             fullWidth
             onClick={() => navigate('/')}
             icon={<ArrowLeft size={15} />}
-            className="flex-1 whitespace-nowrap text-[12px] sm:text-[13px]"
+            className="flex-1 whitespace-nowrap !h-12 !rounded-xl text-[13px] sm:text-[14px] !border !border-brand/20"
           >
             Back to dashboard
           </Button>
@@ -492,7 +495,7 @@ export default function Guide() {
             fullWidth
             onClick={() => navigate('/transactions')}
             iconRight={<ArrowRight size={15} />}
-            className="flex-1 whitespace-nowrap text-[12px] sm:text-[13px]"
+            className="flex-1 whitespace-nowrap !h-12 !rounded-xl text-[13px] sm:text-[14px]"
           >
             Open transactions
           </Button>
@@ -542,22 +545,24 @@ export default function Guide() {
                   </p>
                   <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto">
                     <Button
-                      variant="secondary"
+                      variant="tonal"
                       size="sm"
-                      className="whitespace-nowrap"
+                      className="whitespace-nowrap !border !border-brand/20"
                       onClick={() => moveFeature(-1)}
                       disabled={selectedIndex <= 0}
+                      icon={<ArrowLeft size={13} />}
                     >
-                      <ArrowLeft size={13} /> Prev
+                      Prev
                     </Button>
                     <Button
-                      variant="secondary"
+                      variant="primary"
                       size="sm"
-                      className="whitespace-nowrap"
+                      className="whitespace-nowrap shadow-[0_6px_14px_rgba(0,127,255,0.22)]"
                       onClick={() => moveFeature(1)}
                       disabled={selectedIndex >= navigationPool.length - 1}
+                      iconRight={<ArrowRight size={13} />}
                     >
-                      Next <ArrowRight size={13} />
+                      Next
                     </Button>
                   </div>
                 </div>
@@ -606,14 +611,15 @@ export default function Guide() {
                   variant="primary"
                   size="md"
                   fullWidth
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap shadow-[0_8px_16px_rgba(0,127,255,0.24)]"
+                  iconRight={<ArrowRight size={14} />}
                   onClick={() => {
                     const route = selectedFeature.route
                     setSelectedId(null)
                     navigate(route)
                   }}
                 >
-                  Open {selectedFeature.title} <ArrowRight size={15} />
+                  Open {selectedFeature.title}
                 </Button>
               </motion.div>
             </div>

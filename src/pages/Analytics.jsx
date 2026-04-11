@@ -353,6 +353,7 @@ export default function Analytics() {
                 totalIncome={data?.totalIncome}
                 totalExpense={data?.totalExpense}
                 totalInvestment={data?.totalInvestment}
+                periodLabel="Yearly"
               />
               <SurplusTrajectoryChart netData={surplusData} />
 

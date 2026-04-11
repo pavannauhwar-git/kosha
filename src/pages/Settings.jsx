@@ -271,20 +271,22 @@ export default function Settings() {
             <div className="p-4 space-y-2.5">
               <div className="grid grid-cols-2 gap-2">
                 <Button
-                  variant="secondary"
-                  size="sm"
+                  variant="tonal"
+                  size="md"
                   fullWidth
                   icon={<Pencil size={14} />}
+                  className="!h-11 !rounded-pill !border !border-brand/20 shadow-[0_1px_2px_rgba(0,127,255,0.15)]"
                   onClick={() => setShowEditName(true)}
                 >
                   Edit name
                 </Button>
 
                 <Button
-                  variant="secondary"
-                  size="sm"
+                  variant="primary"
+                  size="md"
                   fullWidth
                   icon={<Camera size={14} />}
+                  className="!h-11 !rounded-pill shadow-[0_6px_14px_rgba(0,127,255,0.22)]"
                   onClick={() => fileInputRef.current?.click()}
                   loading={uploading}
                 >
@@ -295,9 +297,10 @@ export default function Settings() {
               {avatarUrl && (
                 <Button
                   variant="danger"
-                  size="sm"
+                  size="md"
                   fullWidth
-                  icon={<Trash2 size={14} />}
+                  icon={<Trash2 size={15} />}
+                  className="!h-11 !rounded-pill shadow-[0_1px_2px_rgba(232,69,60,0.14)]"
                   onClick={handleDeletePhoto}
                   loading={uploading}
                 >

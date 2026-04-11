@@ -24,6 +24,9 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import Button from '../components/ui/Button'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
+const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
+const SWIPE_HINT_LEARNED_KEY = 'kosha:swipe-delete-hint-learned-v1'
+const SWIPE_HINT_NUDGED_KEY = 'kosha:swipe-delete-hint-nudged-v1'
 
 const TYPES = [
   { id: 'all',        label: 'All'      },
@@ -69,6 +72,8 @@ export default function Transactions() {
   const [duplicateTxn,  setDuplicateTxn]  = useState(null)
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
+  const [showSwipeHint, setShowSwipeHint] = useState(false)
+  const [triggerSwipeNudge, setTriggerSwipeNudge] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
   const debouncedSearch = useDebounce(search, 300)
@@ -292,6 +297,20 @@ export default function Transactions() {
     }
   }, [])
 
+  useEffect(() => {
+    try {
+      const dismissed = localStorage.getItem(SWIPE_HINT_DISMISSED_KEY) === '1'
+      const learned = localStorage.getItem(SWIPE_HINT_LEARNED_KEY) === '1'
+      const nudged = localStorage.getItem(SWIPE_HINT_NUDGED_KEY) === '1'
+
+      setShowSwipeHint(!dismissed && !learned)
+      setTriggerSwipeNudge(!nudged)
+    } catch {
+      setShowSwipeHint(true)
+      setTriggerSwipeNudge(true)
+    }
+  }, [])
+
   const focusExpandCountRef = useRef(0)
 
   useEffect(() => {
@@ -434,6 +453,33 @@ export default function Transactions() {
     setShowGuideHint(false)
     try {
       localStorage.setItem(TXN_GUIDE_HINT_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }, [])
+
+  const dismissSwipeHint = useCallback(() => {
+    setShowSwipeHint(false)
+    try {
+      localStorage.setItem(SWIPE_HINT_DISMISSED_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }, [])
+
+  const handleSwipeHintLearned = useCallback(() => {
+    setShowSwipeHint(false)
+    try {
+      localStorage.setItem(SWIPE_HINT_LEARNED_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }, [])
+
+  const handleAutoNudgeDone = useCallback(() => {
+    setTriggerSwipeNudge(false)
+    try {
+      localStorage.setItem(SWIPE_HINT_NUDGED_KEY, '1')
     } catch {
       // no-op
     }
@@ -810,6 +856,25 @@ export default function Transactions() {
         </div>
       )}
 
+      {showSwipeHint && groups.length > 0 && (
+        <div className="mini-panel mb-3 px-3 py-2.5 flex items-start gap-2.5">
+          <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+            i
+          </div>
+          <p className="text-[11px] text-ink-2 leading-relaxed flex-1 min-w-0">
+            Quick tip: swipe left on a row to Repeat or Delete.
+          </p>
+          <button
+            type="button"
+            onClick={dismissSwipeHint}
+            className="text-ink-4 hover:text-ink-2 transition-colors"
+            aria-label="Dismiss swipe hint"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
       <div className="mb-2.5">
         <SectionHeader
           title="Timeline"
@@ -848,7 +913,7 @@ export default function Transactions() {
         />
       ) : (
         <div className="space-y-3.5">
-          {groups.map(([dateKey, txns, net]) => (
+          {groups.map(([dateKey, txns, net], groupIndex) => (
             <div key={dateKey} className="list-card overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3
                               border-b border-kosha-border bg-kosha-surface-2">
@@ -868,6 +933,9 @@ export default function Transactions() {
                   isLast={i === txns.length - 1}
                   onDuplicate={handleDuplicate}
                   isHighlighted={highlightedTxnId === t.id}
+                  autoNudge={triggerSwipeNudge && groupIndex === 0 && i === 0}
+                  onAutoNudgeDone={handleAutoNudgeDone}
+                  onSwipeHintLearned={handleSwipeHintLearned}
                 />
               ))}
             </div>

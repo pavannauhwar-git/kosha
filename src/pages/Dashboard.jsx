@@ -17,7 +17,6 @@ import { fmt, savingsRate, daysUntil } from '../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
 import { useNavigate } from 'react-router-dom'
 import { createFadeUp, createStagger } from '../lib/animations'
-import { invalidateQueryFamilies } from '../lib/queryClient'
 import Button from '../components/ui/Button'
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
@@ -85,9 +84,6 @@ function DashboardRecentSkeleton() {
 export default function Dashboard() {
   const navigate = useNavigate()
   const [now, setNow] = useState(() => new Date())
-  const [pullStartY, setPullStartY] = useState(null)
-  const [pullDistance, setPullDistance] = useState(0)
-  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
     let intervalId = null
@@ -375,46 +371,6 @@ export default function Dashboard() {
     }
   }, [dueSoonCount, earned, spent, dayOfMonth, daysInMonth])
 
-  const handleTouchStart = useCallback((e) => {
-    if (window.scrollY > 0 || isRefreshing) return
-    setPullStartY(e.touches[0]?.clientY ?? null)
-  }, [isRefreshing])
-
-  const handleTouchMove = useCallback((e) => {
-    if (pullStartY == null || window.scrollY > 0) return
-    const currentY = e.touches[0]?.clientY ?? 0
-    const delta = Math.max(0, Math.min(80, currentY - pullStartY))
-    setPullDistance(delta)
-  }, [pullStartY])
-
-  const handleTouchEnd = useCallback(async () => {
-    if (pullDistance < 56 || isRefreshing) {
-      setPullStartY(null)
-      setPullDistance(0)
-      return
-    }
-
-    setIsRefreshing(true)
-    setToast('Refreshing dashboard...')
-    try {
-      await invalidateQueryFamilies([
-        ['transactionsRecent'],
-        ['month'],
-        ['balance'],
-        ['liabilities'],
-        ['budgets'],
-      ])
-      setToast('Dashboard updated')
-    } catch {
-      setToast('Could not refresh right now.')
-    } finally {
-      setPullStartY(null)
-      setPullDistance(0)
-      setIsRefreshing(false)
-      setTimeout(() => setToast(null), 1800)
-    }
-  }, [pullDistance, isRefreshing])
-
   // ── Callbacks ──────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (id) => {
     if (!id) return false
@@ -476,24 +432,7 @@ export default function Dashboard() {
   }, [])
 
   return (
-    <PageHeaderPage
-      title="Dashboard"
-      pageProps={{
-        onTouchStart: handleTouchStart,
-        onTouchMove: handleTouchMove,
-        onTouchEnd: handleTouchEnd,
-      }}
-      beforeHeader={(
-        <div className="flex justify-center overflow-hidden" aria-hidden="true">
-          <div
-            className={`text-[10px] text-ink-3 transition-all duration-200 ${pullDistance > 0 || isRefreshing ? 'opacity-100 mb-2' : 'opacity-0 h-0'}`}
-            style={{ transform: `translateY(${Math.min(12, pullDistance / 6)}px)` }}
-          >
-            {isRefreshing ? 'Refreshing…' : pullDistance >= 56 ? 'Release to refresh' : 'Pull to refresh'}
-          </div>
-        </div>
-      )}
-    >
+    <PageHeaderPage title="Dashboard">
       <motion.div
         variants={stagger}
         initial="hidden"

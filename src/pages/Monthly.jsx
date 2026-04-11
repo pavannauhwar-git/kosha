@@ -407,6 +407,7 @@ export default function Monthly() {
               totalIncome={inflow}
               totalExpense={spent}
               totalInvestment={invested}
+              periodLabel="Monthly"
             />
           )}
 

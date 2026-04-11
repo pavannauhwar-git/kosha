@@ -556,6 +556,7 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
   totalIncome,
   totalExpense,
   totalInvestment,
+  periodLabel = 'Period',
 }) {
   const safeData = Array.isArray(flowData) ? flowData : []
 
@@ -649,37 +650,32 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
   const investShare = income > 0 ? Math.round((investment / income) * 100) : 0
 
   return (
-    <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <div className="card p-3.5 border-0">
+      <div className="mb-2.5 flex items-start justify-between gap-3">
         <div>
           <p className="text-label font-semibold text-ink">Net movement waterfall</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Shows how income gets absorbed by expense and investments into final net.</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">{periodLabel} movement from inflow to net.</p>
         </div>
         <span className={`text-[13px] font-semibold tabular-nums ${net >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
           {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Outflow burn</p>
-          <p className={`text-[13px] font-semibold tabular-nums ${burnRate <= 85 ? 'text-income-text' : 'text-warning-text'}`}>{burnRate}%</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Invest share</p>
-          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{investShare}%</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Net outcome</p>
-          <p className={`text-[13px] font-semibold tabular-nums ${net >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-            {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
-          </p>
-        </div>
+      <div className="mb-2.5 flex flex-wrap gap-1.5">
+        <span className={`chip-control chip-control-sm ${burnRate <= 85 ? 'bg-income-bg text-income-text border-income-border' : 'bg-warning-bg text-warning-text border-warning-border'}`}>
+          Burn {burnRate}%
+        </span>
+        <span className="chip-control chip-control-sm bg-invest-bg text-invest-text border-invest-border">
+          Invest {investShare}%
+        </span>
+        <span className={`chip-control chip-control-sm ${net >= 0 ? 'bg-income-bg text-income-text border-income-border' : 'bg-warning-bg text-warning-text border-warning-border'}`}>
+          Net {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
+        </span>
       </div>
 
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={188}>
         <BarChart data={waterfallRows} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
+          <CartesianGrid vertical={false} strokeDasharray="2 3" stroke="rgba(17,19,24,0.10)" />
           <XAxis
             dataKey="name"
             tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
@@ -691,15 +687,15 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
           <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(17,19,24,0.05)' }} />
           <ReferenceLine y={0} stroke="rgba(0,127,255,0.24)" strokeWidth={1} />
           <Bar dataKey="offset" stackId="waterfall" fill="transparent" isAnimationActive={false} />
-          <Bar dataKey="height" stackId="waterfall" radius={[8, 8, 8, 8]} maxBarSize={40}>
+          <Bar dataKey="height" stackId="waterfall" radius={[6, 6, 6, 6]} maxBarSize={34}>
             {waterfallRows.map((row) => (
-              <Cell key={row.key} fill={row.color} fillOpacity={0.9} />
+              <Cell key={row.key} fill={row.color} fillOpacity={0.86} />
             ))}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
 
-      <p className="text-[11px] text-ink-3 pt-2">Use this to pinpoint whether deficit pressure is coming from expense drift or aggressive deployment.</p>
+      <p className="text-[10px] text-ink-3 pt-1.5">{periodLabel} view: spot whether pressure is coming from expense drift or investment pace.</p>
     </div>
   )
 })

@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react'
+import { memo, useState, useCallback, useEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
 import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
@@ -6,6 +6,8 @@ import { fmt, amountClass, amountPrefix, fmtDate } from '../../lib/utils'
 import { getCategory, INVESTMENT_VEHICLES } from '../../lib/categories'
 
 const PEEK_X = 140
+const SWIPE_OPEN_THRESHOLD = PEEK_X * 0.42
+const AUTO_NUDGE_X = 22
 
 const MODE_LABEL = {
   upi:         'UPI',
@@ -17,14 +19,38 @@ const MODE_LABEL = {
   other:       '',
 }
 
-function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, compact = false, isLast = false, isHighlighted = false }) {
+function TransactionItem({
+  txn,
+  onDelete,
+  onDuplicate,
+  onTap,
+  showDate = false,
+  compact = false,
+  isLast = false,
+  isHighlighted = false,
+  autoNudge = false,
+  onAutoNudgeDone,
+  onSwipeHintLearned,
+}) {
   const x = useMotionValue(0)
 
   const actionOpacity = useTransform(x, [0, -30, -PEEK_X], [0, 0.5, 1])
   const actionScale   = useTransform(x, [-PEEK_X * 0.4, -PEEK_X], [0.92, 1])
+  const deleteBg = 'rgba(232,69,60,0.96)'
+  const deleteFg = 'rgba(255,255,255,1)'
 
   const [deleting, setDeleting] = useState(false)
   const [hidden, setHidden] = useState(false)
+  const swipeLearnedRef = useRef(false)
+  const nudgePlayedRef = useRef(false)
+
+  const markSwipeLearned = useCallback(() => {
+    if (swipeLearnedRef.current) return
+    swipeLearnedRef.current = true
+    if (typeof onSwipeHintLearned === 'function') {
+      onSwipeHintLearned()
+    }
+  }, [onSwipeHintLearned])
 
   const cat    = getCategory(txn.category)
   const investmentVehicle = txn.type === 'investment'
@@ -68,20 +94,45 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
   }, [x])
 
+  useEffect(() => {
+    if (!autoNudge || isOptimistic || nudgePlayedRef.current) return undefined
+
+    nudgePlayedRef.current = true
+    let backTimer = null
+
+    const startTimer = setTimeout(() => {
+      const nudgeIn = animate(x, -AUTO_NUDGE_X, { duration: 0.2, ease: 'easeOut' })
+      backTimer = setTimeout(() => {
+        nudgeIn.stop()
+        animate(x, 0, { type: 'spring', stiffness: 520, damping: 36 })
+        if (typeof onAutoNudgeDone === 'function') {
+          onAutoNudgeDone()
+        }
+      }, 220)
+    }, 220)
+
+    return () => {
+      clearTimeout(startTimer)
+      if (backTimer) clearTimeout(backTimer)
+    }
+  }, [autoNudge, isOptimistic, onAutoNudgeDone, x])
+
   const handleDragEnd = useCallback((_, info) => {
     const ox = info.offset.x
     if (ox > 0) {
       snapToRest()
       return
     }
-    if (ox < -PEEK_X * 0.5) {
+    if (ox < -SWIPE_OPEN_THRESHOLD) {
+      markSwipeLearned()
       snapToPeek()
     } else {
       snapToRest()
     }
-  }, [snapToPeek, snapToRest])
+  }, [markSwipeLearned, snapToPeek, snapToRest])
 
   const handleDeleteTap = useCallback(async () => {
+    markSwipeLearned()
     setDeleting(true)
     setHidden(true)
     animate(x, 0, { duration: 0.2 })
@@ -108,13 +159,14 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
     }
 
     setDeleting(false)
-  }, [onDelete, txn.id, x])
+  }, [markSwipeLearned, onDelete, txn.id, x])
 
   const handleDuplicateTap = useCallback(() => {
+    markSwipeLearned()
     snapToRest()
     if (navigator.vibrate) navigator.vibrate([6, 10, 6])
     setTimeout(() => onDuplicate && onDuplicate(txn), 120)
-  }, [onDuplicate, snapToRest, txn])
+  }, [markSwipeLearned, onDuplicate, snapToRest, txn])
 
   const handleTap = useCallback(() => {
     if (x.get() < -10) {
@@ -150,14 +202,17 @@ function TransactionItem({ txn, onDelete, onDuplicate, onTap, showDate = false, 
             </span>
           </button>
 
-          <button
+          <motion.button
             onClick={handleDeleteTap}
             className="flex flex-col items-center justify-center gap-1 px-5
-                     bg-expense active:scale-[0.96] active:opacity-80 transition-all duration-150"
+                     active:scale-[0.96] active:opacity-80 transition-all duration-150"
+            style={{ backgroundColor: deleteBg, color: deleteFg }}
           >
-            <Trash size={18} weight="bold" color="white" />
-            <span className="text-[10px] font-semibold text-white">Delete</span>
-          </button>
+            <span>
+              <Trash size={18} weight="bold" color="currentColor" />
+            </span>
+            <span className="text-[10px] font-semibold" style={{ color: deleteFg }}>Delete</span>
+          </motion.button>
         </motion.div>
       )}
 

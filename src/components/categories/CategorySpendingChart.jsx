@@ -35,6 +35,13 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
       const budget = budgetMap?.get?.(catId)
       const budgetLimit = budget ? Number(budget.monthly_limit || 0) : 0
       const budgetPct = budgetLimit > 0 ? Math.round((amount / budgetLimit) * 100) : 0
+      const budgetSignal = budgetLimit <= 0
+        ? null
+        : budgetPct >= 100
+          ? { label: 'Over', className: 'text-expense-text' }
+          : budgetPct >= 80
+            ? { label: 'Near', className: 'text-warning-text' }
+            : { label: 'On track', className: 'text-income-text' }
 
       return {
         id: catId,
@@ -45,6 +52,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         barColor: BAR_PALETTE[index % BAR_PALETTE.length],
         budgetLimit,
         budgetPct,
+        budgetSignal,
       }
     })
   }, [safeEntries, safeTotal, categoryById, budgetMap])
@@ -56,16 +64,19 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   const hiddenAmount = hiddenRows.reduce((sum, row) => sum + row.amount, 0)
   const hiddenShare = safeTotal > 0 ? Math.round((hiddenAmount / safeTotal) * 100) : 0
   const dominant = rows[0]
+  const topThreeShare = safeTotal > 0
+    ? Math.round((rows.slice(0, 3).reduce((sum, row) => sum + row.amount, 0) / safeTotal) * 100)
+    : 0
 
   return (
     <div className="card p-4 border-0">
-      <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="flex items-start justify-between gap-3 mb-2.5">
         <div>
           <p className="section-label">{title}</p>
           {subtitle ? (
             <p className="text-[10px] text-ink-3 mt-0.5">{subtitle}</p>
           ) : (
-            <p className="text-[10px] text-ink-3 mt-0.5">Ranked category bars show both contribution and exact spend.</p>
+            <p className="text-[10px] text-ink-3 mt-0.5">Quick monthly spend footprint by category.</p>
           )}
         </div>
         <div className="text-right shrink-0">
@@ -74,68 +85,64 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         </div>
       </div>
 
-      <div className="rounded-card bg-kosha-surface-2 p-3 mb-2.5">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
-            <p className="text-[10px] text-ink-3">Dominant category</p>
-            <p className="text-[13px] font-semibold text-ink truncate">{dominant.name}</p>
-          </div>
-          <div className="rounded-card bg-kosha-surface p-2.5 border border-kosha-border">
-            <p className="text-[10px] text-ink-3">Top share</p>
-            <p className="text-[13px] font-semibold text-warning-text tabular-nums">{dominant.sharePct}%</p>
-          </div>
-        </div>
+      <div className="flex flex-wrap gap-1.5 mb-2.5">
+        <span className="px-2 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-[10px] text-ink-2 font-semibold tabular-nums">
+          Top: {dominant.name}
+        </span>
+        <span className="px-2 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-[10px] text-warning-text font-semibold tabular-nums">
+          Top share {dominant.sharePct}%
+        </span>
+        <span className="px-2 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-[10px] text-ink-2 font-semibold tabular-nums">
+          Top 3 cover {topThreeShare}%
+        </span>
       </div>
 
-      <div className="space-y-2">
-        {shownRows.map((row) => (
-          <div key={row.id} className="rounded-card border border-kosha-border bg-kosha-surface-2 px-2.5 py-2">
-            <div className="flex items-center justify-between gap-2 mb-1.5">
+      <div className="rounded-card border border-kosha-border bg-kosha-surface-2 overflow-hidden">
+        {shownRows.map((row, index) => (
+          <div
+            key={row.id}
+            className={`px-3 py-2.5 ${index !== shownRows.length - 1 || hiddenRows.length > 0 ? 'border-b border-kosha-border' : ''}`}
+          >
+            <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-full border border-kosha-border flex items-center justify-center bg-kosha-surface">
-                  <CategoryIcon categoryId={row.id} size={12} />
+                <div className="w-7 h-7 rounded-full border border-kosha-border flex items-center justify-center bg-kosha-surface">
+                  <CategoryIcon categoryId={row.id} size={13} />
                 </div>
-                <p className="text-[11px] font-semibold text-ink truncate">{row.name}</p>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-ink truncate">{row.name}</p>
+                  <p className="text-[10px] text-ink-3 tabular-nums">
+                    {row.sharePct}% of total
+                    {row.budgetLimit > 0 ? ` · ${row.budgetPct}% budget` : ''}
+                  </p>
+                </div>
               </div>
-              <p className="text-[11px] font-semibold tabular-nums text-expense-text shrink-0">{row.amountLabel}</p>
+              <div className="text-right shrink-0">
+                <p className="text-[11px] font-semibold tabular-nums text-expense-text">{row.amountLabel}</p>
+                {row.budgetSignal && (
+                  <p className={`text-[9px] font-semibold ${row.budgetSignal.className}`}>{row.budgetSignal.label}</p>
+                )}
+              </div>
             </div>
 
-            <div className="h-2 rounded-pill bg-kosha-border overflow-hidden">
+            <div className="mt-1.5 h-1.5 rounded-pill bg-kosha-border overflow-hidden">
               <div
                 className="h-full rounded-pill"
                 style={{ width: `${Math.max(4, row.sharePct)}%`, background: row.barColor }}
               />
             </div>
-
-            {row.budgetLimit > 0 ? (
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-[10px] text-ink-3 tabular-nums">
-                  {row.budgetPct}% of {fmt(row.budgetLimit)} budget
-                </p>
-                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                  row.budgetPct >= 100
-                    ? 'bg-expense-bg text-expense-text'
-                    : row.budgetPct >= 80
-                      ? 'bg-warning-bg text-warning-text'
-                      : 'bg-income-bg text-income-text'
-                }`}>
-                  {row.budgetPct >= 100 ? 'Over' : row.budgetPct >= 80 ? 'Near limit' : 'On track'}
-                </span>
-              </div>
-            ) : (
-              <p className="text-[10px] text-ink-3 mt-1 tabular-nums">{row.sharePct}% of total spend</p>
-            )}
           </div>
         ))}
 
         {hiddenRows.length > 0 && (
-          <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 px-2.5 py-2">
+          <div className="px-3 py-2 border-t border-dashed border-kosha-border bg-kosha-surface">
             <p className="text-[10px] text-ink-3">
               {hiddenRows.length} smaller categor{hiddenRows.length === 1 ? 'y' : 'ies'} combine to {fmt(hiddenAmount)} ({hiddenShare}%).
             </p>
           </div>
         )}
       </div>
+
+      <p className="text-[10px] text-ink-3 mt-2">Spending mix across {rows.length} active categories this month.</p>
     </div>
   )
 })
