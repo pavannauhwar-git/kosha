@@ -74,11 +74,10 @@ function StepName({ onNext }) {
       <motion.div variants={fadeUp}>
         <Button
           variant="primary"
-          size="lg"
+          size="md"
           fullWidth
           onClick={() => onNext(name.trim())}
           disabled={!name.trim()}
-          className="rounded-card h-11 shadow-card-md"
         >
           Continue
         </Button>
@@ -135,10 +134,9 @@ function StepIncome({ name, onNext, onBack }) {
       <motion.div variants={fadeUp} className="mb-3">
         <Button
           variant="primary"
-          size="lg"
+          size="md"
           fullWidth
           onClick={handleContinue}
-          className="rounded-card h-11 shadow-card-md"
         >
           {income ? 'Continue' : 'Skip for now'}
         </Button>
@@ -173,7 +171,6 @@ function StepIncome({ name, onNext, onBack }) {
           size="md"
           fullWidth
           onClick={onBack}
-          className="rounded-card h-10"
         >
           Back
         </Button>
@@ -302,12 +299,11 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       <motion.div variants={fadeUp} className="mb-3">
         <Button
           variant="primary"
-          size="lg"
+          size="md"
           fullWidth
           onClick={handleSave}
           disabled={!amount || !desc.trim()}
           loading={saving}
-          className="rounded-card h-11 shadow-card-md"
         >
           {saving ? 'Saving…' : 'Add & go to dashboard'}
         </Button>
@@ -319,7 +315,6 @@ function StepFirstTransaction({ onFinish, onSkip }) {
           size="md"
           fullWidth
           onClick={onSkip}
-          className="rounded-card h-10"
         >
           Skip — go to dashboard
         </Button>

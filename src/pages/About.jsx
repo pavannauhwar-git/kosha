@@ -216,17 +216,21 @@ export default function About() {
               {CHANGELOG.length > 1 && (
                 <>
                   <Divider />
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="md"
+                    fullWidth
                     onClick={() => setShowAllVersions(v => !v)}
-                    className="w-full px-4 py-3 text-[13px] font-semibold text-brand
-                               text-center active:bg-kosha-surface-2 transition-colors
-                               flex items-center justify-center gap-1.5"
+                    iconRight={showAllVersions
+                      ? <CaretUpIcon size={13} weight="bold" />
+                      : <CaretDownIcon size={13} weight="bold" />}
+                    className="rounded-none border-0 text-brand"
                   >
                     {showAllVersions
-                      ? <>Hide older releases <CaretUpIcon size={13} weight="bold" /></>
-                      : <>Show older releases ({CHANGELOG.length - 2}) <CaretDownIcon size={13} weight="bold" /></>
-                    }
-                  </button>
+                      ? 'Hide older releases'
+                      : `Show older releases (${CHANGELOG.length - 2})`}
+                  </Button>
                 </>
               )}
             </div>

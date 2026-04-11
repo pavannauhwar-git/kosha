@@ -7,6 +7,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
+import Button from '../components/ui/Button'
 import { useTransactions, saveTransactionMutation, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import {
   clearLearnedReconciliationAliases,
@@ -794,14 +795,15 @@ export default function Reconciliation() {
                       )}
 
                       <div className="flex flex-wrap items-center justify-end gap-2 mt-3">
-                        <button
+                        <Button
                           type="button"
-                          className="btn-secondary h-9 px-3"
+                          variant="secondary"
+                          size="sm"
                           disabled={disabled}
                           onClick={() => { void markReviewed(txn.id) }}
                         >
                           Mark reviewed
-                        </button>
+                        </Button>
                       </div>
                     </motion.div>
                   )
@@ -827,15 +829,17 @@ export default function Reconciliation() {
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
+                  icon={<RotateCcw size={13} />}
+                  loading={resettingAliases}
                   onClick={() => { void resetLearnedAliases() }}
                   disabled={learnedAliasCount === 0 || resettingAliases || reviewTableUnavailable}
-                  className="btn-secondary h-9 px-3 text-[12px]"
                 >
-                  <RotateCcw size={13} />
                   {resettingAliases ? 'Resetting' : 'Reset'}
-                </button>
+                </Button>
                 <div className="w-9 h-9 rounded-full bg-ink/[0.06] text-ink flex items-center justify-center">
                   <Link2 size={16} />
                 </div>
@@ -1153,24 +1157,33 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
             Best: {best.txn.description || 'No description'} · {fmt(best.txn.amount)} · {fmtDate(best.txn.date)}
           </p>
           <div className="flex items-center gap-2 mt-2">
-            <button type="button" onClick={() => onOpen(best.txn.id)} className="chip">
-              Open <ArrowRight size={13} />
-            </button>
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => onOpen(best.txn.id)}
+              iconRight={<ArrowRight size={12} />}
+            >
+              Open
+            </Button>
+            <Button
               type="button"
               onClick={() => { if (best?.txn?.id) void onLink(best.txn.id, entry.line) }}
-              className="btn-secondary-sm"
+              variant="secondary"
+              size="xs"
             >
               {isLinked ? 'Linked' : 'Mark linked'}
-            </button>
+            </Button>
             {!isLinked && (
-              <button
+              <Button
                 type="button"
                 onClick={() => { if (best?.txn?.id) void onReject(best.txn.id, entry.line) }}
-                className="btn-secondary-sm text-expense-text"
+                variant="ghost"
+                size="xs"
+                className="text-expense-text hover:bg-expense-bg"
               >
                 Report mismatch
-              </button>
+              </Button>
             )}
           </div>
         </div>

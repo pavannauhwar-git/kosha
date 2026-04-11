@@ -290,10 +290,9 @@ export default function ReportBug() {
                   <p className="font-mono text-[13px] text-ink">#{submitted.id}</p>
                   <Button
                     variant="secondary"
-                    size="sm"
+                    size="xs"
                     icon={<Copy size={13} />}
                     onClick={handleCopyReference}
-                    className="h-7 px-2.5"
                   >
                     {copiedRef ? 'Copied' : 'Copy ID'}
                   </Button>
@@ -303,19 +302,17 @@ export default function ReportBug() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
                 <Button
                   variant="secondary"
-                  size="lg"
+                  size="md"
                   fullWidth
                   onClick={handleBack}
-                  className="rounded-card h-11"
                 >
                   Done
                 </Button>
                 <Button
                   variant="primary"
-                  size="lg"
+                  size="md"
                   fullWidth
                   onClick={goDashboard}
-                  className="rounded-card h-11 shadow-card-md"
                 >
                   Go to dashboard
                 </Button>
@@ -495,10 +492,9 @@ export default function ReportBug() {
           >
             <Button
               variant="secondary"
-              size="lg"
+              size="md"
               fullWidth
               onClick={goDashboard}
-              className="rounded-card h-11"
             >
               Go to dashboard
             </Button>
@@ -506,23 +502,21 @@ export default function ReportBug() {
             {user ? (
               <Button
                 variant="primary"
-                size="lg"
+                size="md"
                 fullWidth
                 type="submit"
                 form="report-bug-form"
                 loading={saving}
-                className="rounded-card h-11 shadow-card-md"
               >
                 {saving ? 'Submitting…' : 'Submit report'}
               </Button>
             ) : (
               <Button
                 variant="primary"
-                size="lg"
+                size="md"
                 fullWidth
                 icon={<LogIn size={15} />}
                 onClick={() => navigate('/login', { state: { from: '/report-bug' } })}
-                className="rounded-card h-11 shadow-card-md"
               >
                 Sign in to report
               </Button>

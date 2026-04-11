@@ -216,13 +216,13 @@ export default function Login() {
               {(mode === 'signin' || mode === 'signup') && (
                 <Button
                   variant="secondary"
-                  size="lg"
+                  size="xl"
                   fullWidth
                   onClick={handleGoogle}
                   disabled={googleLoading || loading}
                   loading={googleLoading}
                   icon={!googleLoading ? <GoogleLogo /> : undefined}
-                  className="mb-4 rounded-card h-11"
+                  className="mb-4"
                 >
                   {googleLoading ? 'Redirecting…' : 'Continue with Google'}
                 </Button>
@@ -359,11 +359,11 @@ export default function Login() {
                 <Button
                   type="submit"
                   variant="primary"
-                  size="lg"
+                  size="xl"
                   fullWidth
                   disabled={googleLoading || isRedirectingAfterReset}
                   loading={loading}
-                  className="mt-1 rounded-card h-12 shadow-card-md"
+                  className="mt-1"
                 >
                   {loading
                     ? (mode === 'signin'

@@ -662,7 +662,7 @@ export default function Dashboard() {
           <motion.div variants={fadeUp}>
             <div className="flex items-center justify-between mb-2">
               <p className="section-label">Upcoming bills</p>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/bills')} className="h-7 px-2.5 text-[10px]">
+              <Button variant="ghost" size="xs" onClick={() => navigate('/bills')}>
                 View all
               </Button>
             </div>

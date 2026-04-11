@@ -564,63 +564,57 @@ export default function Loans() {
                   {/* Actions */}
                   {!loan.settled && (
                     <div className="flex flex-col gap-2 shrink-0">
-                      <button
+                      <Button
                         onClick={() => openEditLoan(loan)}
                         disabled={!!deletingId || isOptimistic}
-                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
-                                   bg-kosha-surface-2 text-ink-3 text-[11px] font-semibold
-                                   border border-kosha-border active:scale-[0.97] transition-all duration-100
-                                   disabled:opacity-60"
+                        variant="secondary"
+                        size="sm"
+                        icon={<Pencil size={13} />}
                       >
-                        <Pencil size={13} /> Edit
-                      </button>
-                      <button
+                        Edit
+                      </Button>
+                      <Button
                         onClick={() => { setPayLoan(loan); setPayAmount(''); setPayErr('') }}
                         disabled={!!deletingId || isOptimistic}
-                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
-                                   bg-income-bg text-income-text text-[11px] font-semibold
-                                   border border-income-border active:scale-[0.97] transition-all duration-100
-                                   disabled:opacity-60"
+                        variant="success"
+                        size="sm"
+                        icon={<HandCoins size={13} />}
                       >
-                        <HandCoins size={13} /> Payment
-                      </button>
-                      <button
+                        Payment
+                      </Button>
+                      <Button
                         onClick={() => { void handleSettleFull(loan) }}
                         disabled={!!deletingId || isOptimistic || remaining <= 0}
-                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
-                                   bg-warning-bg text-warning-text text-[11px] font-semibold
-                                   border border-warning-border active:scale-[0.97] transition-all duration-100
-                                   disabled:opacity-60"
+                        variant="tonal"
+                        size="sm"
+                        icon={<Check size={13} />}
+                        className="bg-warning-bg text-warning-text border border-warning-border hover:brightness-95"
                       >
-                        <Check size={13} /> Settle
-                      </button>
-                      <button
+                        Settle
+                      </Button>
+                      <Button
                         onClick={() => handleDelete(loan.id)}
                         disabled={!!deletingId || isOptimistic}
-                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
-                                   bg-expense-bg text-expense-text text-[11px] font-semibold
-                                   border border-expense-border active:scale-[0.97] transition-all duration-100
-                                   disabled:opacity-60"
+                        variant="danger"
+                        size="sm"
+                        icon={deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                       >
-                        {deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                         {deletingId === loan.id ? 'Deleting…' : 'Delete'}
-                      </button>
+                      </Button>
                     </div>
                   )}
 
                   {loan.settled && (
                     <div className="flex flex-col gap-2 shrink-0">
-                      <button
+                      <Button
                         onClick={() => handleDelete(loan.id)}
                         disabled={!!deletingId || isOptimistic}
-                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
-                                   bg-expense-bg text-expense-text text-[11px] font-semibold
-                                   border border-expense-border active:scale-[0.97] transition-all duration-100
-                                   disabled:opacity-60"
+                        variant="danger"
+                        size="sm"
+                        icon={deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                       >
-                        {deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                         {deletingId === loan.id ? 'Deleting…' : 'Delete'}
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -716,11 +710,10 @@ export default function Loans() {
                 <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
                   <Button
                     variant="primary"
-                    size="lg"
+                    size="xl"
                     fullWidth
                     onClick={handleRecordPayment}
                     loading={paySaving}
-                    className="rounded-card h-12 shadow-card-md"
                   >
                     {paySaving ? 'Recording…' : 'Record Payment'}
                   </Button>
@@ -870,11 +863,10 @@ export default function Loans() {
                 <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
                   <Button
                     variant="primary"
-                    size="lg"
+                    size="xl"
                     fullWidth
                     onClick={handleAdd}
                     loading={addSaving}
-                    className="rounded-card h-12 shadow-card-md"
                   >
                     {addSaving ? (editLoan ? 'Saving…' : 'Adding…') : (editLoan ? 'Save Changes' : 'Add Loan')}
                   </Button>

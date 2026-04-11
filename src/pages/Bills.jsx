@@ -696,40 +696,35 @@ export default function Bills() {
                     <div className="flex flex-col gap-2 shrink-0">
                       {tab === 'pending' && (
                         <>
-                          <button
+                          <Button
                             onClick={() => openEditBill(bill)}
                             disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                            className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
-                                       bg-kosha-surface-2 text-ink-3 text-[11px] font-semibold
-                                       border border-kosha-border active:scale-[0.97] transition-all duration-100
-                                       disabled:opacity-60"
+                            variant="secondary"
+                            size="sm"
+                            icon={<Pencil size={13} />}
                           >
-                            <Pencil size={13} /> Edit
-                          </button>
-                          <button
+                            Edit
+                          </Button>
+                          <Button
                             onClick={() => handleMarkPaid(bill)}
                             disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                            className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
-                                       bg-income-bg text-income-text text-[11px] font-semibold
-                                       border border-income-border active:scale-[0.97] transition-all duration-100
-                                       disabled:opacity-60"
+                            variant="success"
+                            size="sm"
+                            icon={payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                           >
-                            {payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                             {payingId === bill.id ? 'Paying…' : 'Paid'}
-                          </button>
+                          </Button>
                         </>
                       )}
-                      <button
+                      <Button
                         onClick={() => handleDelete(bill.id)}
                         disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                        className="h-8 flex items-center gap-1.5 px-2.5 rounded-card
-                                   bg-expense-bg text-expense-text text-[11px] font-semibold
-                                   border border-expense-border active:scale-[0.97] transition-all duration-100
-                                   disabled:opacity-60"
+                        variant="danger"
+                        size="sm"
+                        icon={deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                       >
-                        {deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                         {deletingId === bill.id ? 'Deleting…' : 'Delete'}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -832,11 +827,10 @@ export default function Bills() {
                 <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
                   <Button
                     variant="primary"
-                    size="lg"
+                    size="xl"
                     fullWidth
                     onClick={handleAdd}
                     loading={addSaving}
-                    className="rounded-card h-12 shadow-card-md"
                   >
                     {addSaving ? (editBill ? 'Saving…' : 'Adding…') : (editBill ? 'Save Changes' : 'Add Bill')}
                   </Button>

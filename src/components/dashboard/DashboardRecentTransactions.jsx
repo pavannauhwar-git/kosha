@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, X } from 'lucide-react'
 import TransactionItem from '../transactions/TransactionItem'
 import { fmt } from '../../lib/utils'
+import Button from '../ui/Button'
 
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
 const SWIPE_HINT_LEARNED_KEY = 'kosha:swipe-delete-hint-learned-v1'
@@ -98,13 +99,15 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
           <CheckCircle2 size={22} className="mx-auto text-ink mb-2" />
           <p className="text-[13px] font-semibold text-ink">No transactions yet</p>
           <p className="text-[11px] text-ink-3 mt-1">Your latest activity will appear here after you add your first transaction.</p>
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => navigate('/transactions')}
-            className="btn-secondary h-9 px-3 text-[11px] mt-3"
+            className="mt-3"
           >
             Go to transactions
-          </button>
+          </Button>
         </div>
       </div>
     )

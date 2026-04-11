@@ -334,21 +334,19 @@ export default function Guide() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
                 variant="primary"
-                size="sm"
+                size="md"
                 fullWidth
                 onClick={() => openFeature(nextFeature.id)}
-                icon={<Sparkles size={14} />}
-                className="!h-10 shadow-[0_6px_14px_rgba(0,127,255,0.22)]"
+                icon={<Sparkles size={15} />}
               >
                 Continue with {nextFeature.title}
               </Button>
               <Button
                 variant="tonal"
-                size="sm"
+                size="md"
                 fullWidth
                 onClick={() => navigate(nextFeature.route)}
-                icon={<ArrowRight size={14} />}
-                className="!h-10 !border !border-brand/20"
+                icon={<ArrowRight size={15} />}
               >
                 Open {nextFeature.title}
               </Button>
@@ -481,21 +479,21 @@ export default function Guide() {
         <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="tonal"
-            size="md"
+            size="xl"
             fullWidth
             onClick={() => navigate('/')}
             icon={<ArrowLeft size={15} />}
-            className="flex-1 whitespace-nowrap !h-12 !rounded-xl text-[13px] sm:text-[14px] !border !border-brand/20"
+            className="flex-1 whitespace-nowrap"
           >
             Back to dashboard
           </Button>
           <Button
             variant="primary"
-            size="md"
+            size="xl"
             fullWidth
             onClick={() => navigate('/transactions')}
             iconRight={<ArrowRight size={15} />}
-            className="flex-1 whitespace-nowrap !h-12 !rounded-xl text-[13px] sm:text-[14px]"
+            className="flex-1 whitespace-nowrap"
           >
             Open transactions
           </Button>
@@ -547,7 +545,7 @@ export default function Guide() {
                     <Button
                       variant="tonal"
                       size="sm"
-                      className="whitespace-nowrap !border !border-brand/20"
+                      className="whitespace-nowrap"
                       onClick={() => moveFeature(-1)}
                       disabled={selectedIndex <= 0}
                       icon={<ArrowLeft size={13} />}
@@ -557,7 +555,7 @@ export default function Guide() {
                     <Button
                       variant="primary"
                       size="sm"
-                      className="whitespace-nowrap shadow-[0_6px_14px_rgba(0,127,255,0.22)]"
+                      className="whitespace-nowrap"
                       onClick={() => moveFeature(1)}
                       disabled={selectedIndex >= navigationPool.length - 1}
                       iconRight={<ArrowRight size={13} />}
@@ -611,7 +609,7 @@ export default function Guide() {
                   variant="primary"
                   size="md"
                   fullWidth
-                  className="whitespace-nowrap shadow-[0_8px_16px_rgba(0,127,255,0.24)]"
+                  className="whitespace-nowrap"
                   iconRight={<ArrowRight size={14} />}
                   onClick={() => {
                     const route = selectedFeature.route

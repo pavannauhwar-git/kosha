@@ -1,4 +1,5 @@
 import { Package } from '@phosphor-icons/react'
+import Button from './Button'
 
 /**
  * EmptyState — shown when lists have no data. Includes icon, text, and CTA.
@@ -24,22 +25,24 @@ export default function EmptyState({ icon, title, description, action, secondary
       {(action || secondaryAction) && (
         <div className="flex items-center gap-3">
           {action && (
-            <button
+            <Button
               onClick={action.onClick}
-              className="btn-primary text-[13px] h-10 px-5"
+              variant="primary"
+              size="md"
               type="button"
             >
               {action.label}
-            </button>
+            </Button>
           )}
           {secondaryAction && (
-            <button
+            <Button
               onClick={secondaryAction.onClick}
-              className="btn-ghost text-[13px] h-10 px-4"
+              variant="ghost"
+              size="md"
               type="button"
             >
               {secondaryAction.label}
-            </button>
+            </Button>
           )}
         </div>
       )}

@@ -842,12 +842,15 @@ export default function Transactions() {
             <div className="flex-1 min-w-0">
               <p className="text-body font-semibold text-ink">Transactions tips</p>
               <p className="text-label text-ink-3 mt-0.5">Use consistent categories and recurring labels for cleaner analytics.</p>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => navigate('/guide')}
-                className="text-label font-semibold text-accent mt-2 inline-flex items-center gap-1"
+                iconRight={<ArrowRight size={13} />}
+                className="mt-2 px-0 h-auto text-label font-semibold text-accent"
               >
-                Open guide <ArrowRight size={13} />
-              </button>
+                Open guide
+              </Button>
             </div>
             <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss transactions hint">
               <X size={14} />

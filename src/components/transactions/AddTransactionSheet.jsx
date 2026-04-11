@@ -613,11 +613,10 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
             <Button
               variant="primary"
-              size="lg"
+              size="xl"
               fullWidth
               onClick={handleSave}
               loading={isSaving}
-              className="rounded-card h-12 shadow-card-md"
             >
               {isSaving ? 'Saving...' : (editTxn ? 'Save Changes' : `Add ${activeType?.label}`)}
             </Button>

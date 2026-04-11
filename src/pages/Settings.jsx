@@ -275,7 +275,6 @@ export default function Settings() {
                   size="md"
                   fullWidth
                   icon={<Pencil size={14} />}
-                  className="!h-11 !rounded-pill !border !border-brand/20 shadow-[0_1px_2px_rgba(0,127,255,0.15)]"
                   onClick={() => setShowEditName(true)}
                 >
                   Edit name
@@ -286,7 +285,6 @@ export default function Settings() {
                   size="md"
                   fullWidth
                   icon={<Camera size={14} />}
-                  className="!h-11 !rounded-pill shadow-[0_6px_14px_rgba(0,127,255,0.22)]"
                   onClick={() => fileInputRef.current?.click()}
                   loading={uploading}
                 >
@@ -300,7 +298,6 @@ export default function Settings() {
                   size="md"
                   fullWidth
                   icon={<Trash2 size={15} />}
-                  className="!h-11 !rounded-pill shadow-[0_1px_2px_rgba(232,69,60,0.14)]"
                   onClick={handleDeletePhoto}
                   loading={uploading}
                 >
