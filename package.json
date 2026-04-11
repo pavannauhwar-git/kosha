@@ -1,7 +1,7 @@
 {
   "name": "kosha",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Kosha — Your financial sheath. Personal finance PWA.",
   "type": "module",
   "scripts": {

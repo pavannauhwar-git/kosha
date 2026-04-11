@@ -10,7 +10,6 @@ import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
 import { LOAN_INVALIDATION_KEYS } from './hooks/useLoans'
 import AuthGuard, { RouteSkeleton } from './components/navigation/AuthGuard'
 import { House, List, CalendarDots, ChartBar, Receipt, Handshake } from '@phosphor-icons/react'
-import { useScrollDirection } from './hooks/useScrollDirection'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
 import { useUserCategories } from './hooks/useUserCategories'
@@ -65,12 +64,12 @@ function SuspenseSkeleton({ pathname, children }) {
 }
 
 const NAV = [
-  { path: '/', label: 'Home', Icon: House },
-  { path: '/transactions', label: 'Activity', Icon: List },
-  { path: '/monthly', label: 'Monthly', Icon: CalendarDots },
-  { path: '/analytics', label: 'Insights', Icon: ChartBar },
-  { path: '/bills', label: 'Bills', Icon: Receipt },
-  { path: '/loans', label: 'Loans', Icon: Handshake },
+  { path: '/', label: 'Home', Icon: House, match: ['/'] },
+  { path: '/transactions', label: 'Activity', Icon: List, match: ['/transactions'] },
+  { path: '/monthly', label: 'Monthly', Icon: CalendarDots, match: ['/monthly'] },
+  { path: '/analytics', label: 'Insights', Icon: ChartBar, match: ['/analytics'] },
+  { path: '/bills', label: 'Bills', Icon: Receipt, match: ['/bills'] },
+  { path: '/loans', label: 'Loans', Icon: Handshake, match: ['/loans'] },
 ]
 
 const REALTIME_INVALIDATION_POLICIES = [
@@ -376,7 +375,6 @@ function useRouteIntentPrefetch() {
 function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
-  const scrolledDown = useScrollDirection(location.pathname)
   const prefetchRoute = useRouteIntentPrefetch()
   const [layoutReady, setLayoutReady] = useState(false)
 
@@ -387,12 +385,12 @@ function BottomNav() {
 
   if (BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
 
-  const active = NAV.findIndex(n =>
-    n.path === '/' ? location.pathname === '/' : location.pathname.startsWith(n.path)
+  const active = NAV.findIndex((n) =>
+    n.match.some((path) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)))
   )
 
   return (
-    <div className={`nav-float-wrap ${scrolledDown ? 'nav-float-wrap--hidden' : ''}`}>
+    <div className="nav-float-wrap">
       <nav className="nav-float" aria-label="Main navigation">
         {NAV.map((item, i) => {
           const isActive = i === active
@@ -400,26 +398,34 @@ function BottomNav() {
             <motion.button
               key={item.path}
               className="nav-float-item"
-              onClick={() => { if (navigator.vibrate) navigator.vibrate(6); navigate(item.path) }}
+              onClick={() => {
+                if (navigator.vibrate) navigator.vibrate(5)
+                if (isActive) {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                  return
+                }
+                navigate(item.path)
+              }}
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
               onTouchStart={() => prefetchRoute(item.path)}
               aria-current={isActive ? 'page' : undefined}
+              aria-label={item.label}
               whileTap={{ scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 600, damping: 28 }}
+              transition={{ type: 'spring', stiffness: 520, damping: 34 }}
             >
               <div className="nav-icon-wrap">
                 {isActive && (layoutReady ? (
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
-                    transition={{ type: 'spring', stiffness: 500, damping: 38, mass: 0.8 }} />
+                    transition={{ type: 'spring', stiffness: 460, damping: 36, mass: 0.9 }} />
                 ) : (
                   <div className="nav-icon-bg" />
                 ))}
                 <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.18 }}>
-                  <item.Icon size={22} weight="fill" color="var(--ds-primary)" />
+                  <item.Icon size={21} weight="fill" color="var(--ds-primary)" />
                 </motion.span>
                 <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 0 : 1 }} transition={{ duration: 0.18 }}>
-                  <item.Icon size={22} weight="regular" color="var(--ds-text-tertiary)" />
+                  <item.Icon size={21} weight="regular" color="var(--ds-text-tertiary)" />
                 </motion.span>
               </div>
               <motion.span className="nav-label"

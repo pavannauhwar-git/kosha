@@ -1,11 +1,24 @@
 export const CHANGELOG = [
   {
+    version: '1.2.2',
+    date: 'April 2026',
+    items: [
+      'Redesigned bottom navigation into a fixed Pixel-style bar with improved tap rhythm and calmer surface motion',
+      'Refined page headers to match nav design language, including full-bleed top surface and balanced title spacing',
+      'Replaced native date inputs with a shared Pixel-style calendar picker across Transactions, Bills, and Loans',
+      'Added direct period-jump controls for Monthly and Analytics, including quick recent-month and recent-year chips',
+      'Resolved Radix dialog accessibility warnings by adding required dialog descriptions in shared sheet surfaces',
+    ],
+  },
+  {
     version: '1.2.1',
     date: 'April 2026',
     items: [
       'Finalized app icon mark by moving the accent dot closer to the slash while preserving the latest size and vertical alignment',
       'Regenerated production icon assets at 180/192/512 to keep launcher and install surfaces consistent',
       'Added favicon.ico generation to the icon pipeline so browser tab favicon stays in sync with the app icon',
+      'Added dark mode support across core app surfaces for comfortable low-light usage',
+      'Improved app-wide button consistency by consolidating actions onto shared button variants and sizes',
     ],
   },
   {

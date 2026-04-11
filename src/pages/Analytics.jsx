@@ -1,5 +1,5 @@
 import { CATEGORIES } from '../lib/categories'
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   CashFlowChart,
@@ -41,7 +41,6 @@ export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
-  const yearRef = useRef(null)
   const [heavyReady, setHeavyReady] = useState(false)
 
   useEffect(() => {
@@ -221,13 +220,12 @@ export default function Analytics() {
         label={year}
         onPrev={() => setYear((y) => Math.max(MIN_NAV_YEAR, y - 1))}
         onNext={() => setYear((y) => Math.min(MAX_NAV_YEAR, y + 1))}
-        pickerRef={yearRef}
-        inputType="month"
-        inputValue={`${year}-01`}
-        onInputChange={e => {
-          const y = parseInt(e.target.value?.split('-')[0], 10)
-          if (!y) return
-          setYear(Math.min(MAX_NAV_YEAR, Math.max(MIN_NAV_YEAR, y)))
+        mode="year"
+        year={year}
+        minYear={MIN_NAV_YEAR}
+        maxYear={MAX_NAV_YEAR}
+        onSelectYear={(selectedYear) => {
+          setYear(Math.min(MAX_NAV_YEAR, Math.max(MIN_NAV_YEAR, selectedYear)))
         }}
       />
 

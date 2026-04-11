@@ -20,6 +20,7 @@ import EmptyState from '../components/common/EmptyState'
 import AppToast from '../components/common/AppToast'
 import BillPaymentInsights from '../components/cards/bills/BillPaymentInsights'
 import Button from '../components/ui/Button'
+import PixelDatePicker from '../components/ui/PixelDatePicker'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
@@ -777,17 +778,19 @@ export default function Bills() {
                 </div>
 
                 <div className="list-card mb-3">
-                  <label className="list-row w-full cursor-pointer">
+                  <div className="list-row w-full">
                     <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
                       <CalendarDays size={14} className="text-brand" />
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Due Date</span>
-                    <input type="date" name="bill-due-date"
+                    <PixelDatePicker
+                      name="bill-due-date"
                       value={form.due_date}
-                      onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-                      className="text-[15px] text-ink-3 bg-transparent outline-none text-right
-                                 focus:text-warning-text" />
-                  </label>
+                      onChange={(nextDate) => setForm(f => ({ ...f, due_date: nextDate }))}
+                      sheetTitle="Select due date"
+                      disabled={addSaving}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 mb-3">

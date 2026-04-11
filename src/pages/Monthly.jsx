@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, useDailyExpenseTotals, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
@@ -21,6 +21,9 @@ import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
 import { CashflowWaterfallChart } from '../components/analytics/AnalyticsCharts'
 import Button from '../components/ui/Button'
 
+const MIN_NAV_YEAR = 1900
+const MAX_NAV_YEAR = 2100
+
 const VARIANCE_WINDOW_MAX_DAYS = 14
 
 export default function Monthly() {
@@ -30,7 +33,6 @@ export default function Monthly() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [heavyReady, setHeavyReady] = useState(false)
-  const monthRef = useRef(null)
   const [touchStartX, setTouchStartX] = useState(null)
 
   useEffect(() => {
@@ -309,15 +311,14 @@ export default function Monthly() {
         label={`${MONTH_NAMES[month - 1]} ${year}`}
         onPrev={prev}
         onNext={next}
-        pickerRef={monthRef}
-        inputType="month"
-        inputValue={`${year}-${String(month).padStart(2, '0')}`}
-        onInputChange={e => {
-          const [y, m] = e.target.value.split('-').map(Number)
-          if (y && m) {
-            setYear(y)
-            setMonth(m)
-          }
+        mode="month"
+        month={month}
+        year={year}
+        minYear={MIN_NAV_YEAR}
+        maxYear={MAX_NAV_YEAR}
+        onSelectMonthYear={({ month: selectedMonth, year: selectedYear }) => {
+          setYear(selectedYear)
+          setMonth(selectedMonth)
         }}
       />
 

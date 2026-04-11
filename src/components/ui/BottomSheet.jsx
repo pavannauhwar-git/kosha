@@ -4,9 +4,16 @@ import * as Dialog from '@radix-ui/react-dialog'
 
 /**
  * BottomSheet — gesture-dismissable on mobile, centered modal on desktop
- * @param {{ open: boolean, onClose: function, title?: string, children: React.ReactNode, className?: string }} props
+ * @param {{ open: boolean, onClose: function, title?: string, description?: string, children: React.ReactNode, className?: string }} props
  */
-export default function BottomSheet({ open, onClose, title, children, className = '' }) {
+export default function BottomSheet({
+  open,
+  onClose,
+  title,
+  description = 'Dialog content.',
+  children,
+  className = '',
+}) {
   const sheetRef = useRef(null)
   const y = useMotionValue(0)
   const backdropOpacity = useTransform(y, [0, 300], [1, 0])
@@ -94,6 +101,10 @@ export default function BottomSheet({ open, onClose, title, children, className 
                     </Dialog.Close>
                   </div>
                 )}
+
+                <Dialog.Description className="sr-only">
+                  {description}
+                </Dialog.Description>
 
                 {/* Scrollable content */}
                 <div className="overflow-y-auto px-6" style={{ maxHeight: 'calc(100dvh - 10rem)' }}>

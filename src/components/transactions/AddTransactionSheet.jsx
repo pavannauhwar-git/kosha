@@ -9,6 +9,7 @@ import { useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, NotePencil, CaretRight, Plus, CalendarDots } from '@phosphor-icons/react'
 import Button from '../ui/Button'
+import PixelDatePicker from '../ui/PixelDatePicker'
 import {
   saveTransactionMutation,
 } from '../../hooks/useTransactions'
@@ -430,15 +431,19 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           <div className="list-card mb-3">
 
             {/* Date */}
-            <label className={`list-row w-full cursor-pointer ${isSaving ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className={`list-row w-full ${isSaving ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
                 <CalendarDots size={15} weight="duotone" className="text-brand" />
               </div>
               <span className="flex-1 text-[15px] text-ink">Date</span>
-              <input type="date" name="txn-date" value={date} onChange={e => set('date', e.target.value)}
+              <PixelDatePicker
+                name="txn-date"
+                value={date}
+                onChange={(nextDate) => set('date', nextDate)}
                 disabled={isSaving}
-                className="text-[15px] text-ink-3 bg-transparent outline-none text-right disabled:opacity-50" />
-            </label>
+                sheetTitle="Select transaction date"
+              />
+            </div>
 
             {/* Category */}
             {type !== 'investment' && (

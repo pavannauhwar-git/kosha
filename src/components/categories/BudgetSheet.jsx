@@ -141,6 +141,10 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                   </Dialog.Close>
                 </div>
 
+                <Dialog.Description className="sr-only">
+                  Set monthly category spending limits and review budget status.
+                </Dialog.Description>
+
                 {error && (
                   <div className="px-5 pt-2">
                     <p className="text-[12px] text-expense-text">{error}</p>

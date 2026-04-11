@@ -23,6 +23,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import AppToast from '../components/common/AppToast'
 import Button from '../components/ui/Button'
+import PixelDatePicker from '../components/ui/PixelDatePicker'
 
 const LOAN_COLUMNS_EXPORT =
   'id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled'
@@ -815,32 +816,37 @@ export default function Loans() {
 
                 {/* Loan date */}
                 <div className="list-card mb-3">
-                  <label className="list-row w-full cursor-pointer">
+                  <div className="list-row w-full">
                     <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 flex items-center justify-center shrink-0 border border-kosha-border">
                       <Calendar size={14} className="text-ink-3" />
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Loan Date</span>
-                    <input type="date" name="loan-date"
+                    <PixelDatePicker
+                      name="loan-date"
                       value={form.loan_date}
-                      onChange={e => setForm(f => ({ ...f, loan_date: e.target.value }))}
-                      className="text-[15px] text-ink-3 bg-transparent outline-none text-right focus:text-brand"
+                      onChange={(nextDate) => setForm(f => ({ ...f, loan_date: nextDate }))}
+                      sheetTitle="Select loan date"
+                      disabled={addSaving}
                     />
-                  </label>
+                  </div>
                 </div>
 
                 {/* Due date */}
                 <div className="list-card mb-3">
-                  <label className="list-row w-full cursor-pointer">
+                  <div className="list-row w-full">
                     <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
                       <CalendarDays size={14} className="text-brand" />
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Expected Repayment</span>
-                    <input type="date" name="loan-due-date"
+                    <PixelDatePicker
+                      name="loan-due-date"
                       value={form.due_date}
-                      onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-                      className="text-[15px] text-ink-3 bg-transparent outline-none text-right focus:text-warning-text"
+                      onChange={(nextDate) => setForm(f => ({ ...f, due_date: nextDate }))}
+                      sheetTitle="Select repayment date"
+                      clearable
+                      disabled={addSaving}
                     />
-                  </label>
+                  </div>
                 </div>
 
                 {/* Note */}
