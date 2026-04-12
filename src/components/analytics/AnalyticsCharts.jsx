@@ -286,7 +286,7 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 
       <div className="flex flex-wrap justify-between gap-2 pb-1 pt-2">
         <div className="text-[11px] text-ink-3">
-          Best pulse: <span className="font-semibold text-accent">{strongestMonth?.name || '—'}</span>
+          Best pulse: <span className="font-semibold text-accent-text">{strongestMonth?.name || '—'}</span>
         </div>
         <div className="text-[11px] text-ink-3">
           Stress month: <span className="font-semibold text-warning-text">{weakestMonth?.name || '—'}</span>
@@ -1225,7 +1225,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
       <div className="mb-3">
         <div className="flex items-center justify-between gap-2 mb-1">
           <p className="text-[10px] uppercase tracking-[0.06em] text-ink-3">Adjust runway corpus</p>
-          <span className="text-[12px] font-semibold text-accent">{fmt(reserveAmount, true)}</span>
+          <span className="text-[12px] font-semibold text-accent-text">{fmt(reserveAmount, true)}</span>
         </div>
         <input
           type="number"

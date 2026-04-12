@@ -21,6 +21,7 @@ export default {
         'brand-container': 'var(--ds-primary-container)',
         'brand-on':        'var(--ds-on-primary)',
         'accent':          'var(--ds-accent)',
+        'accent-text':     'var(--ds-accent-text)',
         'brand-accent':    'var(--ds-accent)',
 
         /* ── Income — Emerald ──────────────────────────────────────── */

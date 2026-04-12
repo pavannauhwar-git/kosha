@@ -302,7 +302,7 @@ export default function Login() {
                         setError(null)
                         setNotice(null)
                       }}
-                      className="text-label font-semibold text-accent"
+                      className="text-label font-semibold text-accent-text"
                     >
                       Forgot password?
                     </button>
@@ -393,7 +393,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="text-accent font-semibold"
+                    className="text-accent-text font-semibold"
                   >
                     Sign in
                   </button>
@@ -407,7 +407,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="text-accent font-semibold"
+                    className="text-accent-text font-semibold"
                   >
                     Back to sign in
                   </button>
@@ -421,7 +421,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="text-accent font-semibold"
+                    className="text-accent-text font-semibold"
                   >
                     {mode === 'signin' ? 'Sign up' : 'Sign in'}
                   </button>

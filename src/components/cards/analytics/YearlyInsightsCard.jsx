@@ -117,7 +117,7 @@ export default function YearlyInsightsCard({
           <div className="space-y-1.5">
             {signalRows.map((line, index) => (
               <div key={`insight-signal-${index}`} className="flex items-start gap-2">
-                <span className="w-4 text-right text-[11px] font-semibold text-accent shrink-0">{index + 1}</span>
+                <span className="w-4 text-right text-[11px] font-semibold text-accent-text shrink-0">{index + 1}</span>
                 <p className="text-[11px] text-ink-3 leading-relaxed">{line}</p>
               </div>
             ))}
@@ -129,7 +129,7 @@ export default function YearlyInsightsCard({
           <div className="space-y-1.5">
             {actionRows.map((line, index) => (
               <div key={`insight-action-${index}`} className="flex items-start gap-2">
-                <span className="w-4 text-right text-[11px] font-semibold text-accent shrink-0">{index + 1}</span>
+                <span className="w-4 text-right text-[11px] font-semibold text-accent-text shrink-0">{index + 1}</span>
                 <p className="text-[11px] text-ink-3 leading-relaxed">{line}</p>
               </div>
             ))}

@@ -119,7 +119,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
         <p className="section-label">Latest transactions</p>
         <button
           onClick={() => navigate('/transactions')}
-          className="flex items-center gap-1 text-label font-medium text-accent"
+          className="flex items-center gap-1 text-label font-medium text-accent-text"
         >
           See all <ArrowRight size={13} />
         </button>

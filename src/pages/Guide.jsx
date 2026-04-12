@@ -591,7 +591,7 @@ export default function Guide() {
                   <div className="space-y-1.5">
                     {selectedFeature.workflow.map((step, idx) => (
                       <p key={step} className="text-[12px] text-ink-3">
-                        <span className="font-semibold text-accent">{idx + 1}.</span> {step}
+                        <span className="font-semibold text-accent-text">{idx + 1}.</span> {step}
                       </p>
                     ))}
                   </div>

@@ -121,7 +121,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-kosha-border">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center">
-                      <Wallet size={16} className="text-accent" weight="duotone" />
+                      <Wallet size={16} className="text-accent-text" weight="duotone" />
                     </div>
                     <div>
                       <Dialog.Title className="text-[15px] font-bold text-ink">

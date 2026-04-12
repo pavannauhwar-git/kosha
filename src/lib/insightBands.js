@@ -22,7 +22,7 @@ export function scoreHealthBand(value, { healthy, watch }) {
 
 export function bandTextClass(band, fallback = 'text-ink-3') {
   if (band === INSIGHT_BANDS.high) return 'text-warning-text'
-  if (band === INSIGHT_BANDS.watch) return 'text-accent'
+  if (band === INSIGHT_BANDS.watch) return 'text-accent-text'
   if (band === INSIGHT_BANDS.healthy) return 'text-income-text'
   return fallback
 }

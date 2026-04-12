@@ -1014,7 +1014,7 @@ export default function Transactions() {
         <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
-              <BookOpen size={16} className="text-accent" />
+              <BookOpen size={16} className="text-accent-text" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-body font-semibold text-ink">Transactions tips</p>
@@ -1024,7 +1024,7 @@ export default function Transactions() {
                 size="sm"
                 onClick={() => navigate('/guide')}
                 iconRight={<ArrowRight size={13} />}
-                className="mt-2 px-0 h-auto text-label font-semibold text-accent"
+                className="mt-2 px-0 h-auto text-label font-semibold text-accent-text"
               >
                 Open guide
               </Button>
@@ -1075,7 +1075,7 @@ export default function Transactions() {
         />
       ) : groups.length === 0 ? (
         <EmptyState
-          icon={<CheckCircle2 size={24} className="text-accent" />}
+          icon={<CheckCircle2 size={24} className="text-accent-text" />}
           title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
           description={
             hasActiveFilters

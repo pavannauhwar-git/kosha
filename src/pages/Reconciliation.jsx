@@ -703,7 +703,7 @@ export default function Reconciliation() {
             />
           ) : !hasTransactions && !hasActiveFilters ? (
             <EmptyState
-              icon={<History size={24} className="text-accent" />}
+              icon={<History size={24} className="text-accent-text" />}
               title="Nothing to reconcile yet"
               description="Add transactions first. Reconciliation checks will surface here."
               actionLabel="Go to transactions"
@@ -943,7 +943,7 @@ export default function Reconciliation() {
                     </p>
                     <button
                       type="button"
-                      className="text-[11px] font-semibold text-accent mt-1 inline-flex items-center gap-1"
+                      className="text-[11px] font-semibold text-accent-text mt-1 inline-flex items-center gap-1"
                       onClick={() => navigate(`/transactions?focus=${row.transactionId}`)}
                     >
                       Open <ArrowRight size={11} />

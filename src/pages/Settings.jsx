@@ -328,7 +328,7 @@ export default function Settings() {
             </p>
             <div className="card overflow-hidden p-0">
               <SettingRow
-                icon={isDark ? <Moon size={16} className="text-accent" /> : <Sun size={16} className="text-accent" />}
+                icon={isDark ? <Moon size={16} className="text-accent-text" /> : <Sun size={16} className="text-accent-text" />}
                 label="Dark mode"
                 sublabel={isDark ? 'Currently dark' : 'Currently light'}
                 onClick={toggleDarkMode}
@@ -355,7 +355,7 @@ export default function Settings() {
               </div>
 
               <SettingRow
-                icon={<BellRing size={16} className="text-accent" />}
+                icon={<BellRing size={16} className="text-accent-text" />}
                 label="Enable reminders"
                 sublabel="Turn reminder notifications on or off"
                 onClick={() => toggleReminderField('enabled')}
@@ -364,7 +364,7 @@ export default function Settings() {
               />
               <Divider />
               <SettingRow
-                icon={<BellRing size={16} className="text-accent" />}
+                icon={<BellRing size={16} className="text-accent-text" />}
                 label="Bills due alerts"
                 sublabel="Daily reminder when bills are near due"
                 onClick={() => toggleReminderField('bill_due')}
@@ -374,7 +374,7 @@ export default function Settings() {
               />
               <Divider />
               <SettingRow
-                icon={<ShieldAlert size={16} className="text-accent" />}
+                icon={<ShieldAlert size={16} className="text-accent-text" />}
                 label="Spending pace alerts"
                 sublabel="Warn when spending runs above month pace"
                 onClick={() => toggleReminderField('spending_pace')}
@@ -384,7 +384,7 @@ export default function Settings() {
               />
               <Divider />
               <SettingRow
-                icon={<BellRing size={16} className="text-accent" />}
+                icon={<BellRing size={16} className="text-accent-text" />}
                 label="Notification permission"
                 sublabel={`Current: ${notificationPermission}`}
                 onClick={enableNotifications}
