@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { X, Check } from '@phosphor-icons/react'
 import { ICON_MAP } from './CategoryIcon'
 import { createUserCategory } from '../../hooks/useUserCategories'
+import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 
 const ICON_OPTIONS_BY_TYPE = {
   expense: [
@@ -71,6 +72,10 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
   const [selectedType, setSelectedType] = useState(initialType)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const sheetRef = useOverlayFocusTrap(true, {
+    onClose: saving ? undefined : onClose,
+    initialFocusSelector: 'input[name="category-name"]',
+  })
 
   const iconOptions = ICON_OPTIONS_BY_TYPE[selectedType] || ICON_OPTIONS_BY_TYPE.expense
 
@@ -104,7 +109,13 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={saving ? undefined : onClose}
       />
-      <motion.div className="sheet-panel"
+      <motion.div
+        ref={sheetRef}
+        className="sheet-panel"
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create category"
         initial={{ y: '100%' }}
         animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
@@ -115,7 +126,13 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-[18px] font-bold text-ink">Create Category</h3>
-            <button onClick={saving ? undefined : onClose} disabled={saving} className="close-btn disabled:opacity-40">
+            <button
+              type="button"
+              aria-label="Close create category sheet"
+              onClick={saving ? undefined : onClose}
+              disabled={saving}
+              className="close-btn disabled:opacity-40"
+            >
               <X size={16} className="text-ink-3" />
             </button>
           </div>
@@ -185,10 +202,11 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
           </div>
 
           {/* Error */}
-          {error && <p className="text-expense-text text-[13px] mb-3 px-1">{error}</p>}
+          {error && <p className="text-expense-text text-[13px] mb-3 px-1" role="alert" aria-live="polite">{error}</p>}
 
           {/* Create button */}
           <button
+            type="button"
             onClick={handleCreate}
             disabled={saving || name.trim().length < 2}
             className={`w-full py-3.5 rounded-card text-[15px] font-semibold flex items-center

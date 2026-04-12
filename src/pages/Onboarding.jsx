@@ -293,7 +293,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       )}
 
       {error && (
-        <p className="text-caption text-expense-text mb-3">{error}</p>
+        <p className="text-caption text-expense-text mb-3" role="alert" aria-live="polite">{error}</p>
       )}
 
       <motion.div variants={fadeUp} className="mb-3">

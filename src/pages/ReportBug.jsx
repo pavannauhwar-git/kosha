@@ -477,7 +477,7 @@ export default function ReportBug() {
                   Includes route, browser, device type, timezone, and viewport size. No financial entries, location coordinates, or personal identity fields are attached.
                 </p>
 
-                {error && <p className="text-sm text-expense-text">{error}</p>}
+                {error && <p className="text-sm text-expense-text" role="alert" aria-live="polite">{error}</p>}
               </form>
             </>
           )}

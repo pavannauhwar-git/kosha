@@ -58,7 +58,7 @@ export default defineConfig({
         name: 'Kosha — Your Financial Sheath',
         short_name: 'Kosha',
         description: 'Personal finance tracker — income, expenses, investments',
-        theme_color: '#3730A3',
+        theme_color: '#007FFF',
         background_color: '#F8F7FF',
         display: 'standalone',
         orientation: 'portrait',

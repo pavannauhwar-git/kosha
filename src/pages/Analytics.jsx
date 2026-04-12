@@ -49,7 +49,7 @@ export default function Analytics() {
   }, [])
 
   const { data, loading } = useYearSummary(year)
-  const { data: yearDailyTotals, loading: yearDailyLoading } = useYearDailyExpenseTotals(year, { enabled: heavyReady })
+  const { data: yearDailyTotals, loading: yearDailyLoading } = useYearDailyExpenseTotals(year)
 
   const flowTrendData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({

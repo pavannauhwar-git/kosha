@@ -20,6 +20,7 @@ export default {
         'brand-bg':        'var(--ds-surface-dim)',
         'brand-container': 'var(--ds-primary-container)',
         'brand-on':        'var(--ds-on-primary)',
+        'accent':          'var(--ds-accent)',
         'brand-accent':    'var(--ds-accent)',
 
         /* ── Income — Emerald ──────────────────────────────────────── */

@@ -23,6 +23,7 @@ import { getAuthUserId } from '../lib/authStore'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import Button from '../components/ui/Button'
+import useWindowedList from '../hooks/useWindowedList'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
@@ -77,6 +78,10 @@ export default function Transactions() {
   const [triggerSwipeNudge, setTriggerSwipeNudge] = useState(false)
   const [showCreateCategory, setShowCreateCategory] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
+  const categoryPanelRef = useRef(null)
+  const paymentPanelRef = useRef(null)
+  const categoryTriggerRef = useRef(null)
+  const paymentTriggerRef = useRef(null)
 
   const debouncedSearch = useDebounce(search, 300)
   const isSearchDebouncing = search !== debouncedSearch
@@ -168,6 +173,46 @@ export default function Transactions() {
     const grouped = groupByDate(data)
     return grouped.map(([dateKey, txns]) => [dateKey, txns, groupNet(txns)])
   }, [data])
+
+  const timelineRows = useMemo(() => {
+    const rows = []
+    groups.forEach(([dateKey, txns, net], groupIndex) => {
+      txns.forEach((txn, txnIndex) => {
+        rows.push({
+          txn,
+          dateKey,
+          net,
+          groupIndex,
+          isGroupFirst: txnIndex === 0,
+          isGroupLast: txnIndex === txns.length - 1,
+        })
+      })
+    })
+    return rows
+  }, [groups])
+
+  const {
+    containerRef: timelineRowListRef,
+    startIndex: timelineRowStartIndex,
+    endIndex: timelineRowEndIndex,
+    topPadding: timelineRowTopPadding,
+    bottomPadding: timelineRowBottomPadding,
+    measureElement: measureTimelineRow,
+    scrollToIndex: scrollTimelineRowToIndex,
+  } = useWindowedList({
+    count: timelineRows.length,
+    estimateSize: 88,
+    overscan: 10,
+    enabled: timelineRows.length > 40,
+    resetKey: `${typeFilter}:${catFilter}:${paymentModeFilter}:${datePreset}:${debouncedSearch}:${displayCount}`,
+    initialCount: 36,
+  })
+
+  const renderedTimelineRows = useMemo(
+    () => timelineRows.slice(timelineRowStartIndex, timelineRowEndIndex),
+    [timelineRows, timelineRowStartIndex, timelineRowEndIndex]
+  )
+
   const hasMore = useMemo(() => total > data.length, [total, data.length])
   const focusTxnId = searchParams.get('focus')
   const hasActiveFilters = typeFilter !== 'all' || !!catFilter || !!paymentModeFilter || datePreset !== 'all' || !!debouncedSearch
@@ -326,6 +371,41 @@ export default function Transactions() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!showCats && !showPaymentModes) return
+
+    function handlePointerDown(event) {
+      const target = event.target
+      if (!(target instanceof Node)) return
+
+      const insideCategory =
+        categoryPanelRef.current?.contains(target) ||
+        categoryTriggerRef.current?.contains(target)
+      const insidePayment =
+        paymentPanelRef.current?.contains(target) ||
+        paymentTriggerRef.current?.contains(target)
+
+      if (!insideCategory && !insidePayment) {
+        setShowCats(false)
+        setShowPaymentModes(false)
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key !== 'Escape') return
+      setShowCats(false)
+      setShowPaymentModes(false)
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [showCats, showPaymentModes])
+
   const focusExpandCountRef = useRef(0)
 
   useEffect(() => {
@@ -345,11 +425,16 @@ export default function Transactions() {
       return
     }
 
+    const focusRowIndex = timelineRows.findIndex((row) => row.txn.id === focusTxnId)
+    if (focusRowIndex >= 0) {
+      scrollTimelineRowToIndex(focusRowIndex, { behavior: 'smooth', block: 'center' })
+    }
+
     setHighlightedTxnId(focusTxnId)
     setTimeout(() => {
       const el = document.getElementById(`txn-${focusTxnId}`)
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 40)
+    }, 70)
 
     const timeoutId = setTimeout(() => setHighlightedTxnId(null), 2400)
 
@@ -358,7 +443,7 @@ export default function Transactions() {
     setSearchParams(next, { replace: true })
 
     return () => clearTimeout(timeoutId)
-  }, [focusTxnId, data, hasMore, searchParams, setSearchParams])
+  }, [focusTxnId, data, hasMore, timelineRows, scrollTimelineRowToIndex, searchParams, setSearchParams])
 
   const handleDelete = useCallback(async (id) => {
     if (!id) return false
@@ -791,11 +876,14 @@ export default function Transactions() {
           ))}
 
           <button
+            ref={categoryTriggerRef}
             type="button"
             onClick={() => {
               setShowCats(v => !v)
               setShowPaymentModes(false)
             }}
+            aria-expanded={showCats}
+            aria-controls="txn-category-filter-panel"
             className={`chip-control chip-control-sm ${catFilter
               ? 'bg-brand text-brand-on border-brand'
               : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
@@ -805,11 +893,14 @@ export default function Transactions() {
           </button>
 
           <button
+            ref={paymentTriggerRef}
             type="button"
             onClick={() => {
               setShowPaymentModes(v => !v)
               setShowCats(false)
             }}
+            aria-expanded={showPaymentModes}
+            aria-controls="txn-payment-filter-panel"
             className={`chip-control chip-control-sm ${paymentModeFilter
               ? 'bg-brand text-brand-on border-brand'
               : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
@@ -844,6 +935,10 @@ export default function Transactions() {
         <AnimatePresence>
           {showCats && (
             <motion.div
+              ref={categoryPanelRef}
+              id="txn-category-filter-panel"
+              role="region"
+              aria-label="Category filters"
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
@@ -884,6 +979,10 @@ export default function Transactions() {
         <AnimatePresence>
           {showPaymentModes && (
             <motion.div
+              ref={paymentPanelRef}
+              id="txn-payment-filter-panel"
+              role="region"
+              aria-label="Payment mode filters"
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
@@ -930,7 +1029,7 @@ export default function Transactions() {
                 Open guide
               </Button>
             </div>
-            <button onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss transactions hint">
+            <button type="button" onClick={dismissGuideHint} className="text-ink-4 hover:text-ink-2 transition-colors" aria-label="Dismiss transactions hint">
               <X size={14} />
             </button>
           </div>
@@ -993,34 +1092,48 @@ export default function Transactions() {
               }}
         />
       ) : (
-        <div className="space-y-3.5">
-          {groups.map(([dateKey, txns, net], groupIndex) => (
-            <div key={dateKey} className="list-card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3
-                              border-b border-kosha-border bg-kosha-surface-2">
-                <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
-                  {dateLabel(dateKey)}
-                </span>
-                <span className={`text-caption font-semibold
-                  ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                  {net >= 0 ? '+' : ''}{fmt(net)}
-                </span>
-              </div>
-              {txns.map((t, i) => (
+        <div ref={timelineRowListRef}>
+          {timelineRowTopPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowTopPadding}px` }} />}
+          {renderedTimelineRows.map((row, localRowIndex) => {
+            const rowIndex = timelineRowStartIndex + localRowIndex
+            const rowSpacingClass = row.isGroupFirst
+              ? row.groupIndex === 0
+                ? ''
+                : 'mt-3.5'
+              : 'mt-1'
+
+            return (
+              <div
+                key={row.txn.id}
+                ref={(node) => measureTimelineRow(rowIndex, node)}
+                className={`list-card overflow-hidden ${rowSpacingClass}`}
+              >
+                {row.isGroupFirst && (
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-kosha-border bg-kosha-surface-2">
+                    <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
+                      {dateLabel(row.dateKey)}
+                    </span>
+                    <span className={`text-caption font-semibold ${row.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                      {row.net >= 0 ? '+' : ''}{fmt(row.net)}
+                    </span>
+                  </div>
+                )}
+
                 <TransactionItem
-                  key={t.id} txn={t}
+                  txn={row.txn}
                   onDelete={handleDelete}
                   onTap={handleTap}
-                  isLast={i === txns.length - 1}
+                  isLast={row.isGroupLast}
                   onDuplicate={handleDuplicate}
-                  isHighlighted={highlightedTxnId === t.id}
-                  autoNudge={triggerSwipeNudge && groupIndex === 0 && i === 0}
+                  isHighlighted={highlightedTxnId === row.txn.id}
+                  autoNudge={triggerSwipeNudge && row.groupIndex === 0 && row.isGroupFirst}
                   onAutoNudgeDone={handleAutoNudgeDone}
                   onSwipeHintLearned={handleSwipeHintLearned}
                 />
-              ))}
-            </div>
-          ))}
+              </div>
+            )
+          })}
+          {timelineRowBottomPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowBottomPadding}px` }} />}
         </div>
       )}
 

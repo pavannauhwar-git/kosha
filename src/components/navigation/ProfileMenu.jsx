@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, LogOut, Bug, Info, BookOpen, Link2 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
@@ -7,6 +7,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 function MenuRow({ icon, label, onClick, destructive = false, disabled = false }) {
   return (
     <button
+      type="button"
+      role="menuitem"
       onClick={onClick}
       disabled={disabled}
       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
@@ -57,11 +59,30 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
     setOpen(false)
   }
 
+  useEffect(() => {
+    if (!open) return
+
+    function onKeyDown(event) {
+      if (event.key === 'Escape') {
+        close()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open])
+
   return (
     <div className={`relative ${className}`.trim()}>
       {/* ── Avatar button ────────────────────────────────────────── */}
       <button
+        type="button"
         onClick={() => setOpen(v => !v)}
+        id="profile-menu-trigger"
+        aria-label={open ? 'Close profile menu' : 'Open profile menu'}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls="profile-menu-panel"
         className="w-9 h-9 rounded-full bg-kosha-surface-2
                    shadow-card flex items-center justify-center overflow-hidden
                    active:scale-95 transition-transform duration-100"
@@ -85,6 +106,9 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
             <div className="fixed inset-0 z-30" onClick={close} />
 
             <motion.div
+              id="profile-menu-panel"
+              role="menu"
+              aria-labelledby="profile-menu-trigger"
               initial={{ opacity: 0, scale: 0.96, y: dropUp ? 8 : -8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: dropUp ? 8 : -8 }}

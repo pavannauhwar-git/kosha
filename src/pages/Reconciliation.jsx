@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react'
+import { lazy, Suspense, useMemo, useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, ArrowRight, CheckCircle2, History, Home, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -15,6 +15,7 @@ import {
   useReconciliationReviews,
   upsertReconciliationReview,
 } from '../hooks/useReconciliationReviews'
+import useWindowedList from '../hooks/useWindowedList'
 import { EXPENSE_CATEGORIES, PAYMENT_MODES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
 import {
@@ -29,18 +30,8 @@ import {
 } from '../lib/reconciliation'
 import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases, calculateAliasQuality, identifyMerchantsInCooldown } from '../lib/reconciliationMetrics'
 import { C } from '../lib/colors'
-import {
-  ResponsiveContainer,
-  FunnelChart,
-  Funnel,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  LabelList,
-  Tooltip as RechartsTooltip,
-} from 'recharts'
+
+const ReconciliationOverviewPanel = lazy(() => import('../components/reconciliation/ReconciliationOverviewPanel'))
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -55,41 +46,12 @@ const REVIEW_STATE_FILTERS = [
   { id: 'reviewed', label: 'Reviewed' },
 ]
 
-function ReconciliationFunnelTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="mini-panel p-3 shadow-card">
-      <p className="text-[11px] font-semibold text-ink mb-1">{row?.name || 'Stage'}</p>
-      <div className="flex items-center justify-between gap-3 text-[11px]">
-        <span className="text-ink-3">Transactions</span>
-        <span className="font-semibold text-ink tabular-nums">{row?.value || 0}</span>
-      </div>
-    </div>
-  )
-}
-
-function TurnaroundTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="mini-panel p-3 shadow-card">
-      <p className="text-[11px] font-semibold text-ink mb-1">{label}</p>
-      <div className="flex items-center justify-between gap-3 text-[11px]">
-        <span className="text-ink-3">Resolved items</span>
-        <span className="font-semibold tabular-nums text-ink">{row?.count || 0}</span>
-      </div>
-    </div>
-  )
-}
-
 export default function Reconciliation() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [filter, setFilter] = useState('all')
   const [reviewStateFilter, setReviewStateFilter] = useState('queue')
+  const [tab, setTab] = useState('queue')
   const [paymentModeFilter, setPaymentModeFilter] = useState('')
   const [localReviewedIds, setLocalReviewedIds] = useState(() => getReviewedReconciliationIds())
   const [savingId, setSavingId] = useState(null)
@@ -127,29 +89,32 @@ export default function Reconciliation() {
     [data, effectiveReviewedIds]
   )
 
+  const needsMatchingInsights = tab === 'matching' || tab === 'overview'
+  const needsOverviewInsights = tab === 'overview'
+
   const statementEntries = useMemo(
-    () => parseStatementLines(statementInput),
-    [statementInput]
+    () => (needsMatchingInsights ? parseStatementLines(statementInput) : []),
+    [statementInput, needsMatchingInsights]
   )
 
   const demotedMerchants = useMemo(
-    () => identifyDemotedAliases(reviewRows, data, 2, 30),
-    [reviewRows, data]
+    () => (needsMatchingInsights ? identifyDemotedAliases(reviewRows, data, 2, 30) : new Set()),
+    [reviewRows, data, needsMatchingInsights]
   )
 
   const merchantsInCooldown = useMemo(
-    () => identifyMerchantsInCooldown(reviewRows, 14),
-    [reviewRows]
+    () => (needsMatchingInsights ? identifyMerchantsInCooldown(reviewRows, 14) : new Set()),
+    [reviewRows, needsMatchingInsights]
   )
 
   const aliasQualities = useMemo(
-    () => calculateAliasQuality(reviewRows, data, 30),
-    [reviewRows, data]
+    () => (needsMatchingInsights ? calculateAliasQuality(reviewRows, data, 30) : []),
+    [reviewRows, data, needsMatchingInsights]
   )
 
   const learnedAliases = useMemo(
-    () => buildLearnedStatementAliases(reviewRows, data, demotedMerchants),
-    [reviewRows, data, demotedMerchants]
+    () => (needsMatchingInsights ? buildLearnedStatementAliases(reviewRows, data, demotedMerchants) : []),
+    [reviewRows, data, demotedMerchants, needsMatchingInsights]
   )
 
   const learnedAliasCount = learnedAliases.length
@@ -165,8 +130,8 @@ export default function Reconciliation() {
   )
 
   const statementMatches = useMemo(
-    () => matchStatementEntries(statementEntries, data, { aliases: learnedAliases }),
-    [statementEntries, data, learnedAliases]
+    () => (needsMatchingInsights ? matchStatementEntries(statementEntries, data, { aliases: learnedAliases }) : []),
+    [statementEntries, data, learnedAliases, needsMatchingInsights]
   )
 
   const statementSummary = useMemo(() => {
@@ -194,6 +159,8 @@ export default function Reconciliation() {
   const canUseStatementMatches = statementValidationMessage === '' && statementSummary.valid > 0
 
   const recentLinkDecisions = useMemo(() => {
+    if (!needsMatchingInsights) return []
+
     const linkedRows = (reviewRows || [])
       .filter((row) => row?.status === 'linked' && row?.transaction_id)
       .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))
@@ -210,7 +177,7 @@ export default function Reconciliation() {
         date: txn?.date || null,
       }
     })
-  }, [reviewRows, data])
+  }, [reviewRows, data, needsMatchingInsights])
 
   const visibleItems = useMemo(() => {
     let base = insights.candidates
@@ -232,6 +199,28 @@ export default function Reconciliation() {
     if (filter === 'duplicates') return base.filter((item) => item.flags.potentialDuplicate)
     return base
   }, [insights.candidates, reviewStateFilter, effectiveReviewedIds, linkedIdSet, filter])
+
+  const {
+    containerRef: queueListRef,
+    startIndex: queueStartIndex,
+    endIndex: queueEndIndex,
+    topPadding: queueTopPadding,
+    bottomPadding: queueBottomPadding,
+    measureElement: measureQueueRow,
+    scrollToIndex: scrollQueueToIndex,
+  } = useWindowedList({
+    count: visibleItems.length,
+    estimateSize: 196,
+    overscan: 6,
+    enabled: visibleItems.length > 20,
+    resetKey: `${tab}:${reviewStateFilter}:${filter}:${paymentModeFilter}:${visibleItems.length}`,
+    initialCount: 24,
+  })
+
+  const renderedQueueItems = useMemo(
+    () => visibleItems.slice(queueStartIndex, queueEndIndex),
+    [visibleItems, queueStartIndex, queueEndIndex]
+  )
 
   const reviewCounts = useMemo(() => ({
     queue: insights.candidates.filter((item) => !effectiveReviewedIds.has(item?.txn?.id)).length,
@@ -267,6 +256,14 @@ export default function Reconciliation() {
   }, [insights.candidates, linkedIdSet, effectiveReviewedIds])
 
   const reconciliationFunnel = useMemo(() => {
+    if (!needsOverviewInsights) {
+      return [
+        { name: 'Candidates', value: 0, fill: C.brand },
+        { name: 'Reviewed', value: 0, fill: C.income },
+        { name: 'Linked', value: 0, fill: C.invest },
+      ]
+    }
+
     const candidates = insights.candidates.length
     const reviewedOrLinked = reviewProgress.resolved
     const linked = reviewCounts.linked
@@ -276,7 +273,7 @@ export default function Reconciliation() {
       { name: 'Reviewed', value: reviewedOrLinked, fill: C.income },
       { name: 'Linked', value: linked, fill: C.invest },
     ]
-  }, [insights.candidates.length, reviewProgress.resolved, reviewCounts.linked])
+  }, [insights.candidates.length, reviewProgress.resolved, reviewCounts.linked, needsOverviewInsights])
 
   const linkedConversion = useMemo(() => {
     const candidates = reconciliationFunnel[0]?.value || 0
@@ -286,6 +283,14 @@ export default function Reconciliation() {
   }, [reconciliationFunnel])
 
   const turnaroundDistribution = useMemo(() => {
+    if (!needsOverviewInsights) {
+      return {
+        buckets: [],
+        totalResolved: 0,
+        medianDays: 0,
+      }
+    }
+
     const txnById = new Map((Array.isArray(data) ? data : []).map((txn) => [txn?.id, txn]))
 
     const buckets = [
@@ -328,7 +333,7 @@ export default function Reconciliation() {
       totalResolved: leadTimes.length,
       medianDays: Math.round(medianDays * 10) / 10,
     }
-  }, [reviewRows, data])
+  }, [reviewRows, data, needsOverviewInsights])
 
   const hasTransactions = (data || []).length > 0
   const hasActiveFilters = reviewStateFilter !== 'queue' || filter !== 'all' || !!paymentModeFilter
@@ -372,15 +377,17 @@ export default function Reconciliation() {
   useEffect(() => {
     if (!focusTxnId) return
 
-    const found = visibleItems.find((item) => item?.txn?.id === focusTxnId)
-    if (!found) return
+    const focusIndex = visibleItems.findIndex((item) => item?.txn?.id === focusTxnId)
+    if (focusIndex < 0) return
+
+    scrollQueueToIndex(focusIndex, { behavior: 'smooth', block: 'center' })
 
     setHighlightedTxnId(focusTxnId)
 
     const scrollTimer = setTimeout(() => {
       const el = document.getElementById(`recon-item-${focusTxnId}`)
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 40)
+    }, 70)
 
     const clearTimer = setTimeout(() => setHighlightedTxnId(null), 2400)
 
@@ -392,7 +399,7 @@ export default function Reconciliation() {
       clearTimeout(scrollTimer)
       clearTimeout(clearTimer)
     }
-  }, [focusTxnId, visibleItems, searchParams, setSearchParams])
+  }, [focusTxnId, visibleItems, scrollQueueToIndex, searchParams, setSearchParams])
 
   const markReviewedLocal = useCallback((id) => {
     if (!id) return
@@ -488,8 +495,6 @@ export default function Reconciliation() {
       setResettingAliases(false)
     }
   }, [resettingAliases, reviewTableUnavailable, refetchReviews])
-
-  const [tab, setTab] = useState('queue')
 
   const TABS = [
     { id: 'queue', label: 'Queue', count: reviewProgress.queue },
@@ -725,14 +730,17 @@ export default function Reconciliation() {
                 : () => navigate('/transactions')}
             />
           ) : (
-            <motion.div className="space-y-2.5">
+            <motion.div ref={queueListRef} className="space-y-2.5">
+              {queueTopPadding > 0 && <div aria-hidden="true" style={{ height: `${queueTopPadding}px` }} />}
               <AnimatePresence initial={false} mode="sync">
-                {visibleItems.map((item) => {
+                {renderedQueueItems.map((item, localIndex) => {
+                  const rowIndex = queueStartIndex + localIndex
                   const txn = item.txn
                   const disabled = savingId === txn.id
                   return (
                     <motion.div
                       key={txn.id}
+                      ref={(node) => measureQueueRow(rowIndex, node)}
                       id={`recon-item-${txn.id}`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -809,6 +817,7 @@ export default function Reconciliation() {
                   )
                 })}
               </AnimatePresence>
+              {queueBottomPadding > 0 && <div aria-hidden="true" style={{ height: `${queueBottomPadding}px` }} />}
             </motion.div>
           )}
         </>
@@ -1004,80 +1013,26 @@ export default function Reconciliation() {
 
       {/* ── TAB: Overview ──────────────────────────────────── */}
       {tab === 'overview' && (
-        <div className="space-y-3.5">
-          <div className="card p-4">
-            <p className="text-sm font-semibold text-ink mb-1">What reconciliation does</p>
-            <p className="text-caption text-ink-3">
-              Improves data trust before month-close by fixing uncategorized records,
-              removing duplicates, and linking statement lines to transactions.
-            </p>
-            <p className="text-[11px] text-ink-4 mt-1">
-              Quality checks and match confirmation only. Does not auto-import bank statements.
-            </p>
-          </div>
-
-          {reconciliationFunnel[0]?.value > 0 && (
-            <div className="card p-4">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <p className="text-[12px] font-semibold text-ink">Resolution funnel</p>
-                <p className="text-[11px] text-ink-3 tabular-nums">{linkedConversion}% linked</p>
-              </div>
-
-              <div className="mini-panel p-2.5">
-                <ResponsiveContainer width="100%" height={168}>
-                  <FunnelChart>
-                    <RechartsTooltip content={<ReconciliationFunnelTooltip />} />
-                    <Funnel dataKey="value" data={reconciliationFunnel} isAnimationActive>
-                      <LabelList
-                        position="right"
-                        fill={C.inkMuted}
-                        stroke="none"
-                        dataKey={(entry) => `${entry.name}: ${entry.value}`}
-                      />
-                    </Funnel>
-                  </FunnelChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+        <Suspense
+          fallback={(
+            <SkeletonLayout
+              className="space-y-3"
+              sections={[
+                { type: 'block', height: 'h-[140px]' },
+                { type: 'block', height: 'h-[230px]' },
+                { type: 'block', height: 'h-[230px]' },
+              ]}
+            />
           )}
-
-          {turnaroundDistribution.totalResolved > 0 && (
-            <div className="card p-4">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <p className="text-[12px] font-semibold text-ink">Turnaround quality</p>
-                <p className="text-[11px] text-ink-3 tabular-nums">Median {turnaroundDistribution.medianDays}d</p>
-              </div>
-
-              <div className="mini-panel p-2.5">
-                <ResponsiveContainer width="100%" height={172}>
-                  <BarChart data={turnaroundDistribution.buckets} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 10, fill: 'var(--ds-text-3)', fontWeight: 500 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis hide allowDecimals={false} />
-                    <RechartsTooltip content={<TurnaroundTooltip />} />
-                    <Bar dataKey="count" radius={[8, 8, 0, 0]} fill={C.brand} maxBarSize={40} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {!!statementSummary.total && (
-            <div className="card p-4">
-              <p className="text-[12px] font-semibold text-ink mb-2">Statement match stats</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                <Metric label="Linked" value={statementSummary.linkedSuggestions} tone="text-ink" compact />
-                <Metric label="Conversion" value={`${statementSummary.conversion}%`} tone="text-income-text" compact />
-                <Metric label="Aliases" value={learnedAliasCount} tone="text-ink" compact />
-              </div>
-            </div>
-          )}
-        </div>
+        >
+          <ReconciliationOverviewPanel
+            reconciliationFunnel={reconciliationFunnel}
+            linkedConversion={linkedConversion}
+            turnaroundDistribution={turnaroundDistribution}
+            statementSummary={statementSummary}
+            learnedAliasCount={learnedAliasCount}
+          />
+        </Suspense>
       )}
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />

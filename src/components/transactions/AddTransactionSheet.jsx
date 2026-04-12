@@ -5,7 +5,7 @@
  * provides instant visual feedback; background invalidation reconciles later.
  */
 
-import { useMemo, useReducer, useRef } from 'react'
+import { useMemo, useReducer } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, NotePencil, CaretRight, Plus, CalendarDots } from '@phosphor-icons/react'
 import Button from '../ui/Button'
@@ -22,6 +22,7 @@ import {
   normalizeCategoryForType,
 } from '../../lib/categories'
 import { useUserCategories } from '../../hooks/useUserCategories'
+import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import CreateCategorySheet from '../categories/CreateCategorySheet'
 
 
@@ -124,13 +125,21 @@ function formReducer(state, action) {
 // ── Sub-pickers ───────────────────────────────────────────────────────────
 
 function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Category', onCreateNew }) {
+  const sheetRef = useOverlayFocusTrap(true, { onClose })
+
   return (
     <>
       <motion.div className="sheet-backdrop"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
       />
-      <motion.div className="sheet-panel"
+      <motion.div
+        ref={sheetRef}
+        className="sheet-panel"
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         initial={{ y: '100%' }}
         animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
@@ -139,7 +148,7 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
         <div className="px-4 pb-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[18px] font-bold text-ink">{title}</h3>
-            <button onClick={onClose} className="close-btn">
+            <button type="button" aria-label="Close category picker" onClick={onClose} className="close-btn">
               <X size={16} className="text-ink-3" />
             </button>
           </div>
@@ -178,13 +187,21 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
 }
 
 function ModePicker({ selected, onSelect, onClose }) {
+  const sheetRef = useOverlayFocusTrap(true, { onClose })
+
   return (
     <>
       <motion.div className="sheet-backdrop"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
       />
-      <motion.div className="sheet-panel"
+      <motion.div
+        ref={sheetRef}
+        className="sheet-panel"
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Payment mode"
         initial={{ y: '100%' }}
         animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
@@ -193,7 +210,7 @@ function ModePicker({ selected, onSelect, onClose }) {
         <div className="px-4 pb-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[18px] font-bold text-ink">Payment Mode</h3>
-            <button onClick={onClose} className="close-btn">
+            <button type="button" aria-label="Close payment mode picker" onClick={onClose} className="close-btn">
               <X size={16} className="text-ink-3" />
             </button>
           </div>
@@ -206,8 +223,16 @@ function ModePicker({ selected, onSelect, onClose }) {
                   onClick={() => { onSelect(m.id); onClose() }}
                 >
                   {Icon && (
-                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
-                      <Icon size={16} weight="duotone" className="text-ink-2" />
+                    <div
+                      className="w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0"
+                      style={m?.bg ? { backgroundColor: m.bg } : undefined}
+                    >
+                      <Icon
+                        size={16}
+                        weight="duotone"
+                        className={m?.color ? '' : 'text-ink-2'}
+                        style={m?.color ? { color: m.color } : undefined}
+                      />
                     </div>
                   )}
                   <span className={`flex-1 text-[15px] ${selected === m.id ? 'text-brand font-medium' : 'text-ink'}`}>
@@ -225,13 +250,21 @@ function ModePicker({ selected, onSelect, onClose }) {
 }
 
 function VehiclePicker({ selected, onSelect, onClose, vehicles, onCreateNew }) {
+  const sheetRef = useOverlayFocusTrap(true, { onClose })
+
   return (
     <>
       <motion.div className="sheet-backdrop"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
       />
-      <motion.div className="sheet-panel"
+      <motion.div
+        ref={sheetRef}
+        className="sheet-panel"
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Investment type"
         initial={{ y: '100%' }}
         animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
@@ -240,7 +273,7 @@ function VehiclePicker({ selected, onSelect, onClose, vehicles, onCreateNew }) {
         <div className="px-4 pb-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[18px] font-bold text-ink">Investment Type</h3>
-            <button onClick={onClose} className="close-btn">
+            <button type="button" aria-label="Close investment type picker" onClick={onClose} className="close-btn">
               <X size={16} className="text-ink-3" />
             </button>
           </div>
@@ -329,7 +362,6 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     })
   }, [categoryOptions])
 
-  const amountRef = useRef(null)
   function setType(nextType) {
     set('type', nextType)
     if (nextType !== 'investment') {
@@ -343,6 +375,14 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const [showModePicker, setShowModePicker] = useReducer(v => !v, false)
   const [showVehPicker,  setShowVehPicker]  = useReducer(v => !v, false)
   const [showCreateCat,  setShowCreateCat]  = useReducer(v => !v, false)
+
+  const mainSheetRef = useOverlayFocusTrap(
+    !showCatPicker && !showModePicker && !showVehPicker && !showCreateCat,
+    {
+      onClose: isSaving ? undefined : onClose,
+      initialFocusSelector: 'input[name="txn-amount"]',
+    }
+  )
 
   async function handleSave() {
     // Client-side validation — fast, no async
@@ -403,11 +443,15 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         onClick={isSaving ? undefined : onClose}
       />
       <motion.div
+        ref={mainSheetRef}
         className="sheet-panel"
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={editTxn ? 'Edit transaction' : 'Add transaction'}
         initial={{ y: '100%' }}
         animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
         exit={{ y: '100%', transition: { duration: 0.22 } }}
-        onAnimationComplete={() => amountRef.current?.focus()}
       >
         <div className="sheet-handle" />
         <div className="px-4 overflow-x-hidden">
@@ -420,6 +464,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <div className="flex items-center gap-3">
               {/* X button disabled while saving to prevent accidental close mid-flight */}
               <button
+                type="button"
+                aria-label="Close transaction sheet"
                 onClick={isSaving ? undefined : onClose}
                 disabled={isSaving}
                 className="close-btn disabled:opacity-40"
@@ -447,10 +493,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           </div>
 
           {/* Amount */}
-          <div className="bg-kosha-surface-2 rounded-card px-4 py-3 mb-4 flex items-center gap-2 overflow-hidden">
+          <div className="bg-transparent px-1 py-2 mb-4 flex items-center gap-2 border-b-2 border-kosha-border">
             <span className={`text-2xl font-bold ${activeType?.color}`}>₹</span>
             <input
-              ref={amountRef}
               type="number" inputMode="decimal" name="txn-amount" placeholder="0.00"
               value={amount}
               onChange={e => set('amount', e.target.value)}
@@ -546,8 +591,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               {(() => {
                 const ModeIcon = selectedMode ? ICON_MAP[selectedMode.icon] : null
                 return ModeIcon ? (
-                  <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
-                    <ModeIcon size={15} weight="duotone" className="text-ink-2" />
+                  <div
+                    className="w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0"
+                    style={selectedMode?.bg ? { backgroundColor: selectedMode.bg } : undefined}
+                  >
+                    <ModeIcon
+                      size={15}
+                      weight="duotone"
+                      className={selectedMode?.color ? '' : 'text-ink-2'}
+                      style={selectedMode?.color ? { color: selectedMode.color } : undefined}
+                    />
                   </div>
                 ) : (
                   <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">

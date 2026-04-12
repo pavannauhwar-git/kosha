@@ -21,6 +21,8 @@ import AppToast from '../components/common/AppToast'
 import BillPaymentInsights from '../components/cards/bills/BillPaymentInsights'
 import Button from '../components/ui/Button'
 import PixelDatePicker from '../components/ui/PixelDatePicker'
+import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
+import useWindowedList from '../hooks/useWindowedList'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
@@ -28,6 +30,16 @@ const BUCKET_LABEL_CLASS = {
   overdue: 'bg-expense-bg text-expense-text border border-expense-border',
   dueSoon: 'bg-warning-bg text-warning-text border border-warning-border',
   later: 'bg-kosha-surface-2 text-ink-3 border border-kosha-border',
+}
+
+function createInitialBillForm() {
+  return {
+    description: '',
+    amount: '',
+    due_date: '',
+    is_recurring: false,
+    recurrence: 'monthly',
+  }
 }
 
 function safeDaysUntilDate(dateValue) {
@@ -52,9 +64,7 @@ export default function Bills() {
   const [highlightedBillId, setHighlightedBillId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
 
-  const [form, setForm] = useState({
-    description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly',
-  })
+  const [form, setForm] = useState(() => createInitialBillForm())
   const [formErr, setFormErr] = useState('')
   const [errToast, setErrToast] = useState(null)
   const [undoToast, setUndoToast] = useState(null)
@@ -62,6 +72,23 @@ export default function Bills() {
   const [addSaving, setAddSaving] = useState(false)
   const [hiddenBillIds, setHiddenBillIds] = useState(() => new Set())
   const undoTimerRef = useRef(null)
+
+  const closeAddBillSheet = useCallback(() => {
+    setShowAdd(false)
+    setEditBill(null)
+    setFormErr('')
+    setForm(createInitialBillForm())
+  }, [])
+
+  const dismissAddBillSheet = useCallback(() => {
+    if (addSaving) return
+    closeAddBillSheet()
+  }, [addSaving, closeAddBillSheet])
+
+  const addBillSheetRef = useOverlayFocusTrap(showAdd, {
+    onClose: dismissAddBillSheet,
+    initialFocusSelector: 'input[name="bill-description"]',
+  })
 
   const visiblePending = useMemo(() => pending.filter((bill) => !hiddenBillIds.has(bill.id)), [pending, hiddenBillIds])
   const visiblePaid = useMemo(() => paid.filter((bill) => !hiddenBillIds.has(bill.id)), [paid, hiddenBillIds])
@@ -174,6 +201,33 @@ export default function Bills() {
       })
   }, [visiblePending])
 
+  const billRows = useMemo(
+    () => (tab === 'pending' ? pendingWithBucket : visiblePaid),
+    [tab, pendingWithBucket, visiblePaid]
+  )
+
+  const {
+    containerRef: billListRef,
+    startIndex: billStartIndex,
+    endIndex: billEndIndex,
+    topPadding: billTopPadding,
+    bottomPadding: billBottomPadding,
+    measureElement: measureBillRow,
+    scrollToIndex: scrollBillToIndex,
+  } = useWindowedList({
+    count: billRows.length,
+    estimateSize: tab === 'pending' ? 154 : 128,
+    overscan: 6,
+    enabled: billRows.length > 18,
+    resetKey: `${tab}:${billRows.length}`,
+    initialCount: 22,
+  })
+
+  const renderedBills = useMemo(
+    () => billRows.slice(billStartIndex, billEndIndex),
+    [billRows, billStartIndex, billEndIndex]
+  )
+
   const nextDueInDays = useMemo(() => {
     const allDays = visiblePending
       .map((bill) => safeDaysUntilDate(bill.due_date))
@@ -226,15 +280,16 @@ export default function Bills() {
   useEffect(() => {
     if (!focusBillId) return
 
-    const sourceRows = tab === 'paid' ? paid : pending
-    const found = sourceRows.find(b => b.id === focusBillId)
-    if (!found) return
+    const focusIndex = billRows.findIndex((bill) => bill.id === focusBillId)
+    if (focusIndex < 0) return
+
+    scrollBillToIndex(focusIndex, { behavior: 'smooth', block: 'center' })
 
     setHighlightedBillId(focusBillId)
     setTimeout(() => {
       const el = document.getElementById(`bill-${focusBillId}`)
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 40)
+    }, 70)
 
     const timeoutId = setTimeout(() => setHighlightedBillId(null), 2400)
 
@@ -243,7 +298,7 @@ export default function Bills() {
     setSearchParams(next, { replace: true })
 
     return () => clearTimeout(timeoutId)
-  }, [focusBillId, tab, pending, paid, searchParams, setSearchParams])
+  }, [focusBillId, billRows, scrollBillToIndex, searchParams, setSearchParams])
 
   async function handleExportCsv() {
     try {
@@ -313,10 +368,8 @@ export default function Bills() {
       try {
         await updateLiabilityMutation(editBill.id, billData)
         setTab('pending')
-        setShowAdd(false)
-        setEditBill(null)
         setAddSaving(false)
-        setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
+        closeAddBillSheet()
       } catch (e) {
         setAddSaving(false)
         setErrToast(e.message || 'Could not update bill. Check your connection.')
@@ -328,9 +381,8 @@ export default function Bills() {
       await addLiabilityMutation(billData)
 
       setTab('pending')
-      setShowAdd(false)
       setAddSaving(false)
-      setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' })
+      closeAddBillSheet()
     } catch (e) {
       setAddSaving(false)
       setErrToast(e.message || 'Could not add bill. Check your connection.')
@@ -643,14 +695,18 @@ export default function Bills() {
           )}
 
           {/* ── Bill cards ── */}
-          {(tab === 'pending' ? pendingWithBucket : visiblePaid).map((bill, index, rows) => {
+          <div ref={billListRef} className="space-y-2.5">
+            {billTopPadding > 0 && <div aria-hidden="true" style={{ height: `${billTopPadding}px` }} />}
+            {renderedBills.map((bill, localIndex) => {
+            const index = billStartIndex + localIndex
+            const previousRow = billRows[index - 1]
             const days = daysUntil(bill.due_date)
             const shadow = tab === 'pending' ? dueShadow(days) : 'card'
             const chipCls = dueChipClass(days)
-            const showBucketHeader = tab === 'pending' && (index === 0 || rows[index - 1]._bucket !== bill._bucket)
+            const showBucketHeader = tab === 'pending' && (index === 0 || previousRow?._bucket !== bill._bucket)
             const bucketLabelClass = BUCKET_LABEL_CLASS[bill._bucket] || BUCKET_LABEL_CLASS.later
             return (
-              <div key={bill.id}>
+              <div key={bill.id} ref={(node) => measureBillRow(index, node)}>
                 {showBucketHeader && (
                   <div className="px-1 mb-1 mt-2">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-pill text-[10px] font-semibold uppercase tracking-wide ${bucketLabelClass}`}>
@@ -732,6 +788,8 @@ export default function Bills() {
               </div>
             )
           })}
+            {billBottomPadding > 0 && <div aria-hidden="true" style={{ height: `${billBottomPadding}px` }} />}
+          </div>
         </div>
       )}
 
@@ -741,9 +799,15 @@ export default function Bills() {
           <>
             <motion.div className="sheet-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={() => { setShowAdd(false); setEditBill(null); setFormErr(''); setForm({ description: '', amount: '', due_date: '', is_recurring: false, recurrence: 'monthly' }) }}
+              onClick={dismissAddBillSheet}
             />
-            <motion.div className="sheet-panel"
+            <motion.div
+              ref={addBillSheetRef}
+              className="sheet-panel"
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label={editBill ? 'Edit bill' : 'Add bill'}
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
               exit={{ y: '100%', transition: { duration: 0.22 } }}
@@ -752,7 +816,12 @@ export default function Bills() {
               <div className="px-5 overflow-x-hidden">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-display font-bold text-ink">{editBill ? 'Edit Bill' : 'Add Bill'}</h2>
-                  <button onClick={() => { setShowAdd(false); setEditBill(null) }} className="close-btn">
+                  <button
+                    type="button"
+                    aria-label="Close add bill sheet"
+                    onClick={dismissAddBillSheet}
+                    className="close-btn"
+                  >
                     <X size={16} className="text-ink-3" />
                   </button>
                 </div>
@@ -765,11 +834,9 @@ export default function Bills() {
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 />
 
-                <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3 overflow-hidden
-                                flex items-center gap-2 border border-transparent
-                                focus-within:border-warning-border
-                                focus-within:ring-2 focus-within:ring-warning/25
-                                transition-all duration-100">
+                <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
+                                flex items-center gap-2 border-b-2 border-warning-border
+                                transition-colors duration-100">
                   <span className="text-xl font-bold text-warning-text">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="bill-amount" placeholder="0"
@@ -795,6 +862,7 @@ export default function Bills() {
 
                 <div className="flex flex-wrap items-center gap-3 mb-3">
                   <button
+                    type="button"
                     onClick={() => setForm(f => ({ ...f, is_recurring: !f.is_recurring }))}
                     className={`flex items-center gap-2 px-3 py-2 rounded-card text-sm font-medium
                                 border transition-all
@@ -808,6 +876,7 @@ export default function Bills() {
                     <div className="flex flex-wrap gap-2">
                       {RECURRENCE.map(r => (
                         <button key={r}
+                          type="button"
                           onClick={() => setForm(f => ({ ...f, recurrence: r }))}
                           className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
                             ${form.recurrence === r
@@ -825,7 +894,11 @@ export default function Bills() {
                   </p>
                 )}
 
-                {formErr && <p className="text-expense-text text-sm mb-3">{formErr}</p>}
+                {formErr && (
+                  <p className="text-expense-text text-sm mb-3" role="alert" aria-live="polite">
+                    {formErr}
+                  </p>
+                )}
 
                 <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
                   <Button

@@ -81,7 +81,7 @@ const REALTIME_INVALIDATION_POLICIES = [
 ]
 
 const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
-const BOTTOM_NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/report-bug', '/settings', '/guide']
+const BOTTOM_NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/report-bug', '/settings', '/guide', '/reconciliation']
 
 function useRouteIntentPrefetch() {
   const { user } = useAuth()
@@ -805,14 +805,15 @@ function QueryErrorRecovery() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    // Check for errored queries every 4 seconds
-    const id = setInterval(() => {
+    const syncErrorState = () => {
       const errored = qc.getQueryCache().findAll({
         predicate: (q) => q.state.status === 'error' && q.getObserversCount() > 0,
       })
       setHasErrors(errored.length > 0)
-    }, 4000)
-    return () => clearInterval(id)
+    }
+
+    syncErrorState()
+    return qc.getQueryCache().subscribe(syncErrorState)
   }, [qc])
 
   // Reset dismissed state when errors resolve
@@ -828,6 +829,9 @@ function QueryErrorRecovery() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.2 }}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
       className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 z-50 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg max-w-[398px] mx-auto"
     >
       <span className="text-[13px] font-medium flex-1">Something didn't load correctly.</span>
@@ -844,11 +848,165 @@ function QueryErrorRecovery() {
       <button
         type="button"
         onClick={() => setDismissed(true)}
+        aria-label="Dismiss retry banner"
         className="text-white/60 hover:text-white text-xs shrink-0 px-1"
       >
         ✕
       </button>
     </motion.div>
+  )
+}
+
+function ShellStatusBanners() {
+  const location = useLocation()
+  const [isOffline, setIsOffline] = useState(() => {
+    if (typeof navigator === 'undefined') return false
+    return !navigator.onLine
+  })
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null)
+  const [installDismissed, setInstallDismissed] = useState(false)
+  const [installing, setInstalling] = useState(false)
+  const [installMessage, setInstallMessage] = useState('')
+  const installMessageTimerRef = useRef(null)
+
+  const announceInstallMessage = useCallback((message, timeout = 2200) => {
+    if (installMessageTimerRef.current) {
+      window.clearTimeout(installMessageTimerRef.current)
+    }
+    setInstallMessage(message)
+    installMessageTimerRef.current = window.setTimeout(() => {
+      setInstallMessage('')
+      installMessageTimerRef.current = null
+    }, timeout)
+  }, [])
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event) => {
+      event.preventDefault()
+      setDeferredInstallPrompt(event)
+      setInstallDismissed(false)
+    }
+
+    const handleInstalled = () => {
+      setDeferredInstallPrompt(null)
+      setInstallDismissed(true)
+      announceInstallMessage('Kosha installed successfully.')
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleInstalled)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleInstalled)
+    }
+  }, [announceInstallMessage])
+
+  useEffect(() => {
+    return () => {
+      if (installMessageTimerRef.current) {
+        window.clearTimeout(installMessageTimerRef.current)
+      }
+    }
+  }, [])
+
+  const navHidden = BOTTOM_NAV_HIDE_ON.some((path) => location.pathname.startsWith(path))
+  const bottomClass = navHidden ? 'bottom-4' : 'bottom-[calc(var(--nav-height)+1rem)]'
+  const showInstallPrompt = !!deferredInstallPrompt && !installDismissed
+
+  async function handleInstall() {
+    const prompt = deferredInstallPrompt
+    if (!prompt || typeof prompt.prompt !== 'function') return
+
+    setInstalling(true)
+    try {
+      await prompt.prompt()
+      const choice = await prompt.userChoice
+      if (choice?.outcome === 'accepted') {
+        announceInstallMessage('Install started.')
+      } else {
+        announceInstallMessage('Install dismissed.', 1800)
+      }
+    } catch {
+      announceInstallMessage('Install is unavailable right now.')
+    } finally {
+      setInstalling(false)
+      setDeferredInstallPrompt(null)
+      setInstallDismissed(true)
+    }
+  }
+
+  if (!isOffline && !showInstallPrompt && !installMessage) return null
+
+  return (
+    <div className={`pointer-events-none fixed left-4 right-4 z-50 mx-auto max-w-[398px] space-y-2 ${bottomClass}`}>
+      {isOffline && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18 }}
+          role="status"
+          aria-live="polite"
+          className="pointer-events-auto flex items-center gap-2 rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 text-warning-text shadow-card"
+        >
+          <span className="text-[12px] font-semibold">You are offline. Kosha will sync when your connection returns.</span>
+        </motion.div>
+      )}
+
+      {showInstallPrompt && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18 }}
+          className="pointer-events-auto flex items-center gap-2 rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5 shadow-card"
+        >
+          <span className="flex-1 text-[12px] leading-snug text-ink-2">Install Kosha for faster launch and offline shell support.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setInstallDismissed(true)
+              setDeferredInstallPrompt(null)
+            }}
+            className="rounded-pill border border-kosha-border bg-kosha-surface-2 px-2.5 py-1 text-[11px] font-semibold text-ink-3"
+          >
+            Not now
+          </button>
+          <button
+            type="button"
+            onClick={() => { void handleInstall() }}
+            disabled={installing}
+            className="rounded-pill bg-brand px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+          >
+            {installing ? 'Installing…' : 'Install'}
+          </button>
+        </motion.div>
+      )}
+
+      {!showInstallPrompt && !isOffline && installMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18 }}
+          role="status"
+          aria-live="polite"
+          className="pointer-events-auto rounded-card bg-ink px-3 py-2.5 text-[12px] font-medium text-white shadow-card"
+        >
+          {installMessage}
+        </motion.div>
+      )}
+    </div>
   )
 }
 
@@ -862,6 +1020,7 @@ function AppShell() {
       </ContentWrapper>
       <BottomNav />
       <QueryErrorRecovery />
+      <ShellStatusBanners />
     </div>
   )
 }

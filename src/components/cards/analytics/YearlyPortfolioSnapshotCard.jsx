@@ -4,7 +4,14 @@ import { useNavigate } from 'react-router-dom'
 import PortfolioMixDonut from '../../common/PortfolioMixDonut'
 import Button from '../../ui/Button'
 
-const ALLOCATION_PALETTE = C.portfolio
+const ALLOCATION_PALETTE = [
+  'var(--ds-invest-text)',
+  'var(--ds-invest)',
+  'var(--ds-invest-border)',
+  'color-mix(in srgb, var(--ds-invest) 70%, white)',
+  'color-mix(in srgb, var(--ds-invest) 52%, white)',
+  'color-mix(in srgb, var(--ds-invest) 34%, white)',
+]
 
 export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) {
   const navigate = useNavigate()
@@ -46,7 +53,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
       name: 'Other',
       value: otherValue,
       pct: totalPortfolio > 0 ? Math.round((otherValue / totalPortfolio) * 100) : 0,
-      color: C.brandBorder,
+      color: 'var(--ds-invest-border)',
     })
   }
 

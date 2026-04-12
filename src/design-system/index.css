@@ -46,19 +46,24 @@
   --ds-income: #0F9D58;
   --ds-income-bg: #E8F5E9;
   --ds-income-text: #0B7A42;
+  --ds-income-border: #C8E6C9;
   --ds-expense: #E8453C;
   --ds-expense-bg: #FDECEA;
   --ds-expense-text: #C62828;
+  --ds-expense-border: #FFCDD2;
   --ds-invest: #5C6BC0;
   --ds-invest-bg: #E8EAF6;
   --ds-invest-text: #283593;
+  --ds-invest-border: #C5CAE9;
   --ds-repay: #F9A825;
   --ds-repay-bg: #FFF8E1;
   --ds-repay-text: #F57F17;
+  --ds-repay-border: #FFF9C4;
 
   /* ── Warning / Danger ───────────────── */
   --ds-warning: #F9A825;
   --ds-warning-bg: #FFF8E1;
+  --ds-warning-border: #FFE0B2;
   --ds-danger: #E8453C;
   --ds-danger-bg: #FDECEA;
   --ds-success: #0F9D58;
@@ -128,18 +133,23 @@
   --ds-income: #66D49A;
   --ds-income-bg: rgba(15, 157, 88, 0.15);
   --ds-income-text: #66D49A;
+  --ds-income-border: rgba(102, 212, 154, 0.35);
   --ds-expense: #FF7B73;
   --ds-expense-bg: rgba(232, 69, 60, 0.15);
   --ds-expense-text: #FF7B73;
+  --ds-expense-border: rgba(255, 123, 115, 0.35);
   --ds-invest: #9FA8DA;
   --ds-invest-bg: rgba(92, 107, 192, 0.15);
   --ds-invest-text: #9FA8DA;
+  --ds-invest-border: rgba(159, 168, 218, 0.35);
   --ds-repay: #FFD54F;
   --ds-repay-bg: rgba(249, 168, 37, 0.15);
   --ds-repay-text: #FFD54F;
+  --ds-repay-border: rgba(255, 213, 79, 0.35);
 
   --ds-warning: #FFD54F;
   --ds-warning-bg: rgba(249, 168, 37, 0.12);
+  --ds-warning-border: rgba(255, 213, 79, 0.35);
   --ds-danger: #FF7B73;
   --ds-danger-bg: rgba(232, 69, 60, 0.12);
   --ds-success: #66D49A;

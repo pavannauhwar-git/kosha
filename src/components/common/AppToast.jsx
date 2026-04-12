@@ -9,6 +9,9 @@ export default function AppToast({ message, onDismiss, action, actionLabel }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.2 }}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
           className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 z-50 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg max-w-[398px] mx-auto"
         >
           <span className="text-[13px] font-medium flex-1">{message}</span>

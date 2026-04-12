@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -21,6 +21,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { createFadeUp, createStagger } from '../lib/animations'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
+import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
 
 const fadeUp = createFadeUp(4, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -242,6 +243,15 @@ export default function Guide() {
     [viewed]
   )
 
+  const closeFeatureDetail = useCallback(() => {
+    setSelectedId(null)
+  }, [])
+
+  const guideDetailRef = useOverlayFocusTrap(!!selectedFeature, {
+    onClose: closeFeatureDetail,
+    initialFocusSelector: 'button[aria-label="Close feature details"]',
+  })
+
   function openFeature(featureId) {
     setSelectedId(featureId)
     setViewed((prev) => {
@@ -279,6 +289,7 @@ export default function Guide() {
         <button
           type="button"
           onClick={() => navigate('/')}
+          aria-label="Go to dashboard"
           className="w-9 h-9 rounded-pill flex items-center justify-center bg-brand-container border border-brand/20 active:scale-95 transition-transform"
         >
           <Home size={16} className="text-brand" />
@@ -506,7 +517,7 @@ export default function Guide() {
             <motion.button
               type="button"
               aria-label="Close guide detail"
-              onClick={() => setSelectedId(null)}
+              onClick={closeFeatureDetail}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -515,7 +526,12 @@ export default function Guide() {
 
             <div className="fixed z-50 inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] px-4 flex justify-center">
               <motion.div
+                ref={guideDetailRef}
                 key={selectedFeature.id}
+                tabIndex={-1}
+                role="dialog"
+                aria-modal="true"
+                aria-label={`${selectedFeature.title} guide details`}
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 24 }}
@@ -529,9 +545,9 @@ export default function Guide() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSelectedId(null)}
+                    onClick={closeFeatureDetail}
                     className="close-btn shrink-0"
-                    aria-label="Close"
+                    aria-label="Close feature details"
                   >
                     <X size={14} />
                   </button>
@@ -613,7 +629,7 @@ export default function Guide() {
                   iconRight={<ArrowRight size={14} />}
                   onClick={() => {
                     const route = selectedFeature.route
-                    setSelectedId(null)
+                    closeFeatureDetail()
                     navigate(route)
                   }}
                 >

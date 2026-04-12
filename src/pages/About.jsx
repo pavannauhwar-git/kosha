@@ -89,6 +89,7 @@ export default function About() {
         <button
           type="button"
           onClick={() => navigate('/')}
+          aria-label="Go to dashboard"
           className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
         >
           <Home size={16} className="text-ink-2" />

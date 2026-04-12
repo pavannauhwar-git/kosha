@@ -46,11 +46,11 @@ export default function Monthly() {
     startDate: monthStartDate,
     endDate: monthEndDate,
     limit: 250,
-    enabled: heavyReady,
+    enabled: true,
     columns: TRANSACTION_INSIGHTS_COLUMNS,
   })
   const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(VARIANCE_WINDOW_MAX_DAYS)
-  const { budgets } = useBudgets({ enabled: heavyReady })
+  const { budgets } = useBudgets()
   const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
   const [showBudgetSheet, setShowBudgetSheet] = useState(false)
 

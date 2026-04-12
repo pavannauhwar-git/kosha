@@ -22,11 +22,21 @@ const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 
-function SettingRow({ icon, label, sublabel, onClick, destructive = false, disabled = false, rightElement }) {
+function SettingRow({ icon, label, sublabel, onClick, destructive = false, disabled = false, rightElement, toggleState = null }) {
+  const toggleA11yProps = typeof toggleState === 'boolean'
+    ? {
+        role: 'switch',
+        'aria-checked': toggleState,
+        'aria-pressed': toggleState,
+      }
+    : {}
+
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
+      {...toggleA11yProps}
       className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
                   transition-colors active:bg-kosha-surface-2
                   disabled:opacity-50
@@ -322,6 +332,7 @@ export default function Settings() {
                 label="Dark mode"
                 sublabel={isDark ? 'Currently dark' : 'Currently light'}
                 onClick={toggleDarkMode}
+                toggleState={isDark}
                 rightElement={<span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${isDark ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>{isDark ? 'ON' : 'OFF'}</span>}
               />
             </div>
@@ -348,6 +359,7 @@ export default function Settings() {
                 label="Enable reminders"
                 sublabel="Turn reminder notifications on or off"
                 onClick={() => toggleReminderField('enabled')}
+                toggleState={reminderPrefs.enabled}
                 rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.enabled ? 'ON' : 'OFF'}</span>}
               />
               <Divider />
@@ -357,6 +369,7 @@ export default function Settings() {
                 sublabel="Daily reminder when bills are near due"
                 onClick={() => toggleReminderField('bill_due')}
                 disabled={!reminderPrefs.enabled}
+                toggleState={reminderPrefs.bill_due}
                 rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.bill_due ? 'ON' : 'OFF'}</span>}
               />
               <Divider />
@@ -366,6 +379,7 @@ export default function Settings() {
                 sublabel="Warn when spending runs above month pace"
                 onClick={() => toggleReminderField('spending_pace')}
                 disabled={!reminderPrefs.enabled}
+                toggleState={reminderPrefs.spending_pace}
                 rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.spending_pace ? 'ON' : 'OFF'}</span>}
               />
               <Divider />

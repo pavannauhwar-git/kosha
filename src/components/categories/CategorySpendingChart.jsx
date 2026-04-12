@@ -1,9 +1,9 @@
 import { memo, useMemo } from 'react'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
-import { CATEGORIES } from '../../lib/categories'
+import { getCategory } from '../../lib/categories'
 
-const BAR_PALETTE = ['#007FFF', '#2F96FF', '#5CADFF', '#8CC4FF', '#B5D8FF', '#D6E9FF']
+const FALLBACK_BAR_PALETTE = ['#FF6B35', '#00C896', '#0EA5E9', '#F59E0B', '#7C3AED', '#EC4899']
 
 const CategorySpendingChart = memo(function CategorySpendingChart({
   entries,
@@ -19,10 +19,6 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
       .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
     : []
 
-  const categoryById = useMemo(() => {
-    return new Map(CATEGORIES.map((category) => [category.id, category]))
-  }, [])
-
   const safeTotal = total > 0
     ? total
     : safeEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0) || 1
@@ -30,7 +26,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   const rows = useMemo(() => {
     return safeEntries.map(([catId, amt], index) => {
       const amount = Number(amt || 0)
-      const category = categoryById.get(catId)
+      const category = getCategory(catId)
       const sharePct = safeTotal > 0 ? Math.round((amount / safeTotal) * 100) : 0
       const budget = budgetMap?.get?.(catId)
       const budgetLimit = budget ? Number(budget.monthly_limit || 0) : 0
@@ -49,13 +45,13 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         amount,
         amountLabel: fmt(amount),
         sharePct,
-        barColor: BAR_PALETTE[index % BAR_PALETTE.length],
+        barColor: category?.color || FALLBACK_BAR_PALETTE[index % FALLBACK_BAR_PALETTE.length],
         budgetLimit,
         budgetPct,
         budgetSignal,
       }
     })
-  }, [safeEntries, safeTotal, categoryById, budgetMap])
+  }, [safeEntries, safeTotal, budgetMap])
 
   if (!rows.length) return null
 

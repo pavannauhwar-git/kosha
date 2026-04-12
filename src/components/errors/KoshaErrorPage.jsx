@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, Check, Copy, Home, RotateCw } from 'lucide-react'
 import KoshaLogo from '../brand/KoshaLogo'
@@ -21,12 +21,23 @@ export default function KoshaErrorPage({
 }) {
   const [copied, setCopied] = useState(false)
   const normalizedDetail = useMemo(() => String(detail || '').trim().slice(0, 1800), [detail])
+  const headingRef = useRef(null)
 
   const isNotFound = type === 'not-found'
   const badgeLabel = isNotFound ? '404' : 'System Error'
   const toneClass = isNotFound
     ? 'bg-warning-bg text-warning-text border-warning-border'
     : 'bg-expense-bg text-expense-text border-expense-border'
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      headingRef.current?.focus()
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+    }
+  }, [])
 
   async function handleCopyDetail() {
     if (!normalizedDetail || !navigator.clipboard?.writeText) return
@@ -68,7 +79,7 @@ export default function KoshaErrorPage({
               <AlertTriangle size={18} />
             </div>
             <div>
-              <h1 className="text-[20px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
+              <h1 ref={headingRef} tabIndex="-1" className="text-[20px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
               <p className="mt-1.5 text-label leading-relaxed text-ink-2">{description}</p>
             </div>
           </div>

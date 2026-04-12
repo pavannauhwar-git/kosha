@@ -25,6 +25,8 @@ import EmptyState from '../components/common/EmptyState'
 import AppToast from '../components/common/AppToast'
 import Button from '../components/ui/Button'
 import PixelDatePicker from '../components/ui/PixelDatePicker'
+import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
+import useWindowedList from '../hooks/useWindowedList'
 import { useSearchParams } from 'react-router-dom'
 
 const LOAN_COLUMNS_EXPORT =
@@ -85,12 +87,45 @@ export default function Loans() {
   const [payErr, setPayErr] = useState('')
   const [paySaving, setPaySaving] = useState(false)
 
+  const closePaySheet = useCallback(() => {
+    setPayLoan(null)
+    setPayAmount('')
+    setPayErr('')
+  }, [])
+
+  const dismissPaySheet = useCallback(() => {
+    if (paySaving) return
+    closePaySheet()
+  }, [paySaving, closePaySheet])
+
   // ── Derived data ────────────────────────────────────────────────────
   const visibleGiven   = useMemo(() => given.filter(l => !hiddenIds.has(l.id)),   [given, hiddenIds])
   const visibleTaken   = useMemo(() => taken.filter(l => !hiddenIds.has(l.id)),   [taken, hiddenIds])
   const visibleSettled = useMemo(() => settled.filter(l => !hiddenIds.has(l.id)), [settled, hiddenIds])
 
   const activeLoans = tab === 'given' ? visibleGiven : tab === 'taken' ? visibleTaken : visibleSettled
+
+  const {
+    containerRef: loanListRef,
+    startIndex: loanStartIndex,
+    endIndex: loanEndIndex,
+    topPadding: loanTopPadding,
+    bottomPadding: loanBottomPadding,
+    measureElement: measureLoanRow,
+    scrollToIndex: scrollLoanToIndex,
+  } = useWindowedList({
+    count: activeLoans.length,
+    estimateSize: 186,
+    overscan: 6,
+    enabled: activeLoans.length > 16,
+    resetKey: `${tab}:${activeLoans.length}`,
+    initialCount: 20,
+  })
+
+  const renderedLoans = useMemo(
+    () => activeLoans.slice(loanStartIndex, loanEndIndex),
+    [activeLoans, loanStartIndex, loanEndIndex]
+  )
 
   useEffect(() => {
     if (!deepLinkTxnId && !deepLinkLoanId) {
@@ -255,19 +290,6 @@ export default function Loans() {
       })
       setHighlightLoanId(targetLoan.id)
 
-      const scrollToTarget = (attempt = 0) => {
-        const el = document.getElementById(`loan-${targetLoan.id}`)
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          return
-        }
-
-        if (attempt < 6) {
-          window.setTimeout(() => scrollToTarget(attempt + 1), 90)
-        }
-      }
-      window.setTimeout(() => scrollToTarget(), 40)
-
       setErrToast('Opened linked repayment context.')
       deepLinkResolvedRef.current = deepLinkKey
       clearRepaymentDeepLink()
@@ -301,6 +323,23 @@ export default function Loans() {
     deepLinkRetryTick,
     clearRepaymentDeepLink,
   ])
+
+  useEffect(() => {
+    if (!highlightLoanId) return
+
+    const index = activeLoans.findIndex((loan) => loan.id === highlightLoanId)
+    if (index < 0) return
+
+    scrollLoanToIndex(index, { behavior: 'smooth', block: 'center' })
+    const timerId = window.setTimeout(() => {
+      const el = document.getElementById(`loan-${highlightLoanId}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 70)
+
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [highlightLoanId, activeLoans, scrollLoanToIndex])
 
   const totalGiven = useMemo(() => visibleGiven.reduce((s, l) => s + (+l.amount - +l.amount_settled), 0), [visibleGiven])
   const totalTaken = useMemo(() => visibleTaken.reduce((s, l) => s + (+l.amount - +l.amount_settled), 0), [visibleTaken])
@@ -410,13 +449,24 @@ export default function Loans() {
 
   // ── Handlers ────────────────────────────────────────────────────────
 
-  function resetForm() {
+  const resetForm = useCallback(() => {
     setForm({
       direction: 'given', counterparty: '', amount: '', interest_rate: '',
       loan_date: new Date().toISOString().slice(0, 10), due_date: '', note: '',
     })
     setFormErr('')
-  }
+  }, [])
+
+  const closeAddLoanSheet = useCallback(() => {
+    setShowAdd(false)
+    setEditLoan(null)
+    resetForm()
+  }, [resetForm])
+
+  const dismissAddLoanSheet = useCallback(() => {
+    if (addSaving) return
+    closeAddLoanSheet()
+  }, [addSaving, closeAddLoanSheet])
 
   async function handleAdd() {
     if (!form.counterparty.trim()) { setFormErr('Enter a name'); return }
@@ -440,10 +490,8 @@ export default function Loans() {
       try {
         await updateLoanMutation(editLoan.id, loanData)
         setTab(loanData.direction)
-        setShowAdd(false)
-        setEditLoan(null)
         setAddSaving(false)
-        resetForm()
+        closeAddLoanSheet()
       } catch (e) {
         setAddSaving(false)
         setErrToast(e.message || 'Could not update loan.')
@@ -454,9 +502,8 @@ export default function Loans() {
     try {
       await addLoanMutation({ ...loanData, amount_settled: 0, settled: false })
       setTab(loanData.direction)
-      setShowAdd(false)
       setAddSaving(false)
-      resetForm()
+      closeAddLoanSheet()
     } catch (e) {
       setAddSaving(false)
       setErrToast(e.message || 'Could not add loan.')
@@ -477,8 +524,7 @@ export default function Loans() {
     try {
       await recordLoanPaymentMutation(payLoan, amt)
       setPaySaving(false)
-      setPayLoan(null)
-      setPayAmount('')
+      closePaySheet()
     } catch (e) {
       setPaySaving(false)
       setErrToast(e.message || 'Could not record payment.')
@@ -525,6 +571,16 @@ export default function Loans() {
     setFormErr('')
     setShowAdd(true)
   }
+
+  const paySheetRef = useOverlayFocusTrap(!!payLoan, {
+    onClose: dismissPaySheet,
+    initialFocusSelector: 'input[name="payment-amount"]',
+  })
+
+  const addLoanSheetRef = useOverlayFocusTrap(showAdd, {
+    onClose: dismissAddLoanSheet,
+    initialFocusSelector: 'input[name="loan-counterparty"]',
+  })
 
   async function handleExportCsv() {
     try {
@@ -714,7 +770,10 @@ export default function Loans() {
           )}
 
           {/* ── Loan cards ───────────────────────────────────────────── */}
-          {activeLoans.map((loan) => {
+          <div ref={loanListRef} className="space-y-2.5">
+            {loanTopPadding > 0 && <div aria-hidden="true" style={{ height: `${loanTopPadding}px` }} />}
+            {renderedLoans.map((loan, localIndex) => {
+            const rowIndex = loanStartIndex + localIndex
             const remaining = +loan.amount - +loan.amount_settled
             const pct = loanProgress(loan.amount, loan.amount_settled)
             const interest = accruedInterest(loan.amount, loan.interest_rate, loan.loan_date)
@@ -725,6 +784,7 @@ export default function Loans() {
               <div
                 id={`loan-${loan.id}`}
                 key={loan.id}
+                ref={(node) => measureLoanRow(rowIndex, node)}
                 className={`card p-3 sm:p-3.5 ${highlightLoanId === loan.id ? 'txn-focus-highlight' : ''}`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -870,6 +930,8 @@ export default function Loans() {
               </div>
             )
           })}
+            {loanBottomPadding > 0 && <div aria-hidden="true" style={{ height: `${loanBottomPadding}px` }} />}
+          </div>
         </div>
       )}
 
@@ -879,9 +941,15 @@ export default function Loans() {
           <>
             <motion.div className="sheet-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={() => { setPayLoan(null); setPayAmount(''); setPayErr('') }}
+              onClick={dismissPaySheet}
             />
-            <motion.div className="sheet-panel"
+            <motion.div
+              ref={paySheetRef}
+              className="sheet-panel"
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Record payment"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
               exit={{ y: '100%', transition: { duration: 0.22 } }}
@@ -890,7 +958,12 @@ export default function Loans() {
               <div className="px-5 overflow-x-hidden">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-display font-bold text-ink">Record Payment</h2>
-                  <button onClick={() => { setPayLoan(null); setPayAmount(''); setPayErr('') }} className="close-btn">
+                  <button
+                    type="button"
+                    aria-label="Close record payment sheet"
+                    onClick={dismissPaySheet}
+                    className="close-btn"
+                  >
                     <X size={16} className="text-ink-3" />
                   </button>
                 </div>
@@ -914,11 +987,9 @@ export default function Loans() {
                 </div>
 
                 {/* Amount input */}
-                <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3 overflow-hidden
-                                flex items-center gap-2 border border-transparent
-                                focus-within:border-income-border
-                                focus-within:ring-2 focus-within:ring-income/25
-                                transition-all duration-100">
+                <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
+                                flex items-center gap-2 border-b-2 border-income-border
+                                transition-colors duration-100">
                   <span className="text-xl font-bold text-income-text">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="payment-amount" placeholder="0"
@@ -943,6 +1014,7 @@ export default function Loans() {
                     ].filter(Boolean)
                     return options.map(o => (
                       <button key={o.label}
+                        type="button"
                         onClick={() => setPayAmount(String(o.value))}
                         className="px-3 py-1.5 rounded-pill text-xs font-semibold border
                                    bg-kosha-surface text-ink-2 border-kosha-border
@@ -954,7 +1026,11 @@ export default function Loans() {
                   })()}
                 </div>
 
-                {payErr && <p className="text-expense-text text-sm mb-3">{payErr}</p>}
+                {payErr && (
+                  <p className="text-expense-text text-sm mb-3" role="alert" aria-live="polite">
+                    {payErr}
+                  </p>
+                )}
 
                 <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
                   <Button
@@ -979,9 +1055,15 @@ export default function Loans() {
           <>
             <motion.div className="sheet-backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={() => { setShowAdd(false); setEditLoan(null); resetForm() }}
+              onClick={dismissAddLoanSheet}
             />
-            <motion.div className="sheet-panel"
+            <motion.div
+              ref={addLoanSheetRef}
+              className="sheet-panel"
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label={editLoan ? 'Edit loan' : 'Add loan'}
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
               exit={{ y: '100%', transition: { duration: 0.22 } }}
@@ -990,7 +1072,12 @@ export default function Loans() {
               <div className="px-5 overflow-x-hidden">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-display font-bold text-ink">{editLoan ? 'Edit Loan' : 'Add Loan'}</h2>
-                  <button onClick={() => { setShowAdd(false); setEditLoan(null); resetForm() }} className="close-btn">
+                  <button
+                    type="button"
+                    aria-label="Close add loan sheet"
+                    onClick={dismissAddLoanSheet}
+                    className="close-btn"
+                  >
                     <X size={16} className="text-ink-3" />
                   </button>
                 </div>
@@ -998,6 +1085,7 @@ export default function Loans() {
                 {/* Direction toggle */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
                   <button
+                    type="button"
                     onClick={() => setForm(f => ({ ...f, direction: 'given' }))}
                     className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-all active:scale-[0.97]
                       ${form.direction === 'given'
@@ -1007,6 +1095,7 @@ export default function Loans() {
                     <ArrowUpRight size={16} /> I Gave
                   </button>
                   <button
+                    type="button"
                     onClick={() => setForm(f => ({ ...f, direction: 'taken' }))}
                     className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-all active:scale-[0.97]
                       ${form.direction === 'taken'
@@ -1033,11 +1122,9 @@ export default function Loans() {
                 </div>
 
                 {/* Amount */}
-                <div className="bg-kosha-surface-2 rounded-card px-4 py-3.5 mb-3 overflow-hidden
-                                flex items-center gap-2 border border-transparent
-                                focus-within:border-accent-border
-                                focus-within:ring-2 focus-within:ring-accent/25
-                                transition-all duration-100">
+                <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
+                                flex items-center gap-2 border-b-2 border-accent-border
+                                transition-colors duration-100">
                   <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="loan-amount" placeholder="0"
@@ -1112,7 +1199,11 @@ export default function Loans() {
                   </label>
                 </div>
 
-                {formErr && <p className="text-expense-text text-sm mb-3">{formErr}</p>}
+                {formErr && (
+                  <p className="text-expense-text text-sm mb-3" role="alert" aria-live="polite">
+                    {formErr}
+                  </p>
+                )}
 
                 <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
                   <Button
