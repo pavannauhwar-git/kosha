@@ -10,7 +10,7 @@ export default function AboutKoshaLink({ className = 'text-center pt-4' }) {
       <button
         type="button"
         onClick={() => navigate('/about')}
-        className="inline-flex items-center gap-1 text-caption text-ink-4 active:text-brand transition-colors"
+        className="inline-flex items-center gap-1 text-caption text-ink-2 active:text-brand transition-colors"
       >
         About Kosha
         <Heart size={11} weight="fill" className="text-expense-text" style={{ verticalAlign: '-0.06em' }} />

@@ -9,7 +9,7 @@ const SIZE_CLASSES = {
 }
 
 const VARIANT_CLASSES = {
-  primary:   'bg-[var(--ds-primary)] text-white shadow-fab hover:bg-[var(--ds-primary-dark)] active:scale-[0.97]',
+  primary:   'bg-[var(--ds-primary-dark)] text-white shadow-fab hover:bg-[var(--ds-primary)] active:scale-[0.97]',
   secondary: 'bg-[var(--ds-surface)] text-[var(--ds-text-secondary)] shadow-card border border-[var(--ds-border)] hover:bg-[var(--ds-surface-container)] active:scale-[0.97]',
   ghost:     'bg-transparent text-[var(--ds-text-secondary)] hover:bg-[var(--ds-surface-container)] active:scale-[0.97] border border-transparent',
   danger:    'bg-[var(--ds-expense-bg)] text-[var(--ds-expense-text)] border border-[var(--ds-expense-border)] hover:bg-red-100 active:scale-[0.97]',

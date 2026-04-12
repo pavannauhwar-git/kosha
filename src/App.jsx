@@ -979,7 +979,7 @@ function ShellStatusBanners() {
               setInstallDismissed(true)
               setDeferredInstallPrompt(null)
             }}
-            className="rounded-pill border border-kosha-border bg-kosha-surface-2 px-2.5 py-1 text-[11px] font-semibold text-ink-3"
+            className="rounded-pill border border-kosha-border bg-kosha-surface-2 px-2.5 py-1 text-[11px] font-semibold text-ink-2"
           >
             Not now
           </button>
@@ -987,7 +987,7 @@ function ShellStatusBanners() {
             type="button"
             onClick={() => { void handleInstall() }}
             disabled={installing}
-            className="rounded-pill bg-brand px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+            className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
           >
             {installing ? 'Installing…' : 'Install'}
           </button>
@@ -1015,9 +1015,11 @@ function AppShell() {
     <div className="min-h-dvh bg-kosha-bg">
       <RuntimeRouteTracker />
       <CustomCategoryLoader />
-      <ContentWrapper>
-        <AnimatedRoutes />
-      </ContentWrapper>
+      <main id="main-content" role="main">
+        <ContentWrapper>
+          <AnimatedRoutes />
+        </ContentWrapper>
+      </main>
       <BottomNav />
       <QueryErrorRecovery />
       <ShellStatusBanners />

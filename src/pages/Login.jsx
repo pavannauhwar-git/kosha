@@ -186,7 +186,7 @@ export default function Login() {
                 <KoshaLogo size={40} />
                 <div>
                   <p className="text-[17px] font-bold text-ink leading-tight">Kosha</p>
-                  <p className="text-[12px] text-ink-3 mt-0.5">Personal finance, simplified</p>
+                  <p className="text-[12px] text-ink-2 mt-0.5">Personal finance, simplified</p>
                 </div>
               </div>
 
@@ -201,7 +201,7 @@ export default function Login() {
                         ? 'Reset password'
                         : 'Set new password'}
                 </h1>
-                <p className="text-[13px] text-ink-3">
+                <p className="text-[13px] text-ink-2">
                   {mode === 'signin'
                     ? 'Sign in to continue to Kosha'
                     : mode === 'signup'
@@ -232,7 +232,7 @@ export default function Login() {
               {(mode === 'signin' || mode === 'signup') && (
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex-1 h-px bg-kosha-border" />
-                  <span className="text-caption text-ink-4 font-medium">or</span>
+                  <span className="text-caption text-ink-2 font-medium">or</span>
                   <div className="flex-1 h-px bg-kosha-border" />
                 </div>
               )}
@@ -385,7 +385,7 @@ export default function Login() {
 
               {/* ── Toggle mode ───────────────────────────────────────────── */}
               {mode === 'forgot' ? (
-                <p className="text-label text-ink-3 text-center mt-4">
+                <p className="text-label text-ink-2 text-center mt-4">
                   Remembered your password?{' '}
                   <button
                     onClick={() => {
@@ -399,7 +399,7 @@ export default function Login() {
                   </button>
                 </p>
               ) : mode === 'reset' ? (
-                <p className="text-label text-ink-3 text-center mt-4">
+                <p className="text-label text-ink-2 text-center mt-4">
                   Opened the wrong page?{' '}
                   <button
                     onClick={() => {
@@ -413,7 +413,7 @@ export default function Login() {
                   </button>
                 </p>
               ) : (
-                <p className="text-label text-ink-3 text-center mt-4">
+                <p className="text-label text-ink-2 text-center mt-4">
                   {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
                   <button
                     onClick={() => {
