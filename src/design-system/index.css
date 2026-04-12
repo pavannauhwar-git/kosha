@@ -22,7 +22,7 @@
   --ds-accent-dark: #E6E600;
   --ds-accent-container: #FFFDE0;
   --ds-on-accent: #3D3D00;
-  --ds-accent-text: #665A00;
+  --ds-accent-text: var(--ds-text-secondary);
 
   /* ── Surfaces ───────────────────────── */
   --ds-surface: #FFFFFF;
@@ -114,7 +114,7 @@
   --ds-accent-dark: #CCCC66;
   --ds-accent-container: #3D3D00;
   --ds-on-accent: #FFFDE0;
-  --ds-accent-text: #FFF59D;
+  --ds-accent-text: var(--ds-text-secondary);
 
   --ds-surface: #111318;
   --ds-surface-dim: #0D0E12;
