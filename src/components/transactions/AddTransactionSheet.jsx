@@ -5,7 +5,7 @@
  * provides instant visual feedback; background invalidation reconciles later.
  */
 
-import { useReducer, useRef } from 'react'
+import { useMemo, useReducer, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, NotePencil, CaretRight, Plus, CalendarDots } from '@phosphor-icons/react'
 import Button from '../ui/Button'
@@ -224,7 +224,7 @@ function ModePicker({ selected, onSelect, onClose }) {
   )
 }
 
-function VehiclePicker({ selected, onSelect, onClose }) {
+function VehiclePicker({ selected, onSelect, onClose, vehicles, onCreateNew }) {
   return (
     <>
       <motion.div className="sheet-backdrop"
@@ -245,7 +245,7 @@ function VehiclePicker({ selected, onSelect, onClose }) {
             </button>
           </div>
           <div className="list-card">
-            {INVESTMENT_VEHICLES.map(v => {
+            {vehicles.map(v => {
               const Icon = ICON_MAP[v.icon]
               return (
                 <button key={v.id}
@@ -253,8 +253,16 @@ function VehiclePicker({ selected, onSelect, onClose }) {
                   onClick={() => { onSelect(v.label); onClose() }}
                 >
                   {Icon && (
-                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
-                      <Icon size={16} weight="duotone" className="text-ink-2" />
+                    <div
+                      className={`w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0 ${v.bg ? '' : 'bg-kosha-surface-2'}`}
+                      style={v.bg ? { backgroundColor: v.bg } : undefined}
+                    >
+                      <Icon
+                        size={16}
+                        weight="duotone"
+                        className={v.color ? '' : 'text-ink-2'}
+                        style={v.color ? { color: v.color } : undefined}
+                      />
                     </div>
                   )}
                   <span className={`flex-1 text-[15px] ${selected === v.label ? 'text-brand font-medium' : 'text-ink'}`}>
@@ -265,6 +273,18 @@ function VehiclePicker({ selected, onSelect, onClose }) {
               )
             })}
           </div>
+          {onCreateNew && (
+            <button
+              onClick={onCreateNew}
+              className="list-row w-full mt-2 rounded-card border border-dashed border-kosha-border
+                         hover:bg-kosha-surface-2 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 flex items-center justify-center shrink-0">
+                <Plus size={16} className="text-ink-3" />
+              </div>
+              <span className="flex-1 text-[15px] text-ink-3 text-left">Create Category</span>
+            </button>
+          )}
         </div>
       </motion.div>
     </>
@@ -289,6 +309,25 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   // Load user's custom categories — registers them into the module-level store
   useUserCategories()
   const categoryOptions = getCategoriesForType(type)
+  const investmentOptions = useMemo(() => {
+    const customInvestment = categoryOptions
+      .filter(cat => cat.type === 'investment' && cat.id !== 'other')
+      .map(cat => ({
+        id: cat.id,
+        label: cat.label,
+        icon: cat.icon || 'Tag',
+        color: cat.color,
+        bg: cat.bg,
+      }))
+
+    const seen = new Set()
+    return [...INVESTMENT_VEHICLES, ...customInvestment].filter((option) => {
+      const key = String(option.label || '').trim().toLowerCase()
+      if (!key || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }, [categoryOptions])
 
   const amountRef = useRef(null)
   function setType(nextType) {
@@ -353,6 +392,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const selectedCat  = categoryOptions.find(c => c.id === category)
                     || CATEGORIES.find(c => c.id === category)
   const selectedMode = PAYMENT_MODES.find(m => m.id === mode)
+  const selectedVeh  = investmentOptions.find(v => v.label === vehicle)
+                    || INVESTMENT_VEHICLES.find(v => v.label === vehicle)
 
   return (
     <>
@@ -469,11 +510,18 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 disabled={isSaving}
               >
                 {(() => {
-                  const selVeh  = INVESTMENT_VEHICLES.find(v => v.label === vehicle)
-                  const VehIcon = selVeh ? ICON_MAP[selVeh.icon] : null
+                  const VehIcon = selectedVeh ? ICON_MAP[selectedVeh.icon] : null
                   return VehIcon ? (
-                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
-                      <VehIcon size={15} weight="duotone" className="text-ink-2" />
+                    <div
+                      className={`w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0 ${selectedVeh?.bg ? '' : 'bg-kosha-surface-2'}`}
+                      style={selectedVeh?.bg ? { backgroundColor: selectedVeh.bg } : undefined}
+                    >
+                      <VehIcon
+                        size={15}
+                        weight="duotone"
+                        className={selectedVeh?.color ? '' : 'text-ink-2'}
+                        style={selectedVeh?.color ? { color: selectedVeh.color } : undefined}
+                      />
                     </div>
                   ) : (
                     <div className="w-8 h-8 rounded-chip bg-invest-bg flex items-center justify-center shrink-0">
@@ -642,7 +690,15 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           />
         )}
         {showModePicker && <ModePicker      selected={mode}     onSelect={v => set('mode', v)}     onClose={() => setShowModePicker()} />}
-        {showVehPicker  && <VehiclePicker   selected={vehicle}  onSelect={v => set('vehicle', v)}  onClose={() => setShowVehPicker()}  />}
+        {showVehPicker  && (
+          <VehiclePicker
+            selected={vehicle}
+            onSelect={v => set('vehicle', v)}
+            onClose={() => setShowVehPicker()}
+            vehicles={investmentOptions}
+            onCreateNew={() => { setShowVehPicker(); setShowCreateCat() }}
+          />
+        )}
         {showCreateCat && (
           <CreateCategorySheet
             type={type}
@@ -650,6 +706,12 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             onCreated={(createdCategory) => {
               const createdId = createdCategory?.id || createdCategory
               const createdType = createdCategory?.type
+              const createdLabel = createdCategory?.label
+
+              if (type === 'investment' && createdType === 'investment' && createdLabel) {
+                set('vehicle', createdLabel)
+                return
+              }
 
               if (type !== 'investment' && createdId && createdType === type) {
                 set('category', createdId)

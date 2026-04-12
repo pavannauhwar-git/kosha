@@ -29,26 +29,50 @@ const CATEGORY_TYPES = [
   { id: 'investment', label: 'Investment', activeClass: 'bg-invest-bg text-invest-text border-invest-border' },
 ]
 
+const ICON_SWATCHES_BY_TYPE = {
+  expense: [
+    { color: '#D24B4B', bg: '#FFE8E6' },
+    { color: '#D17A00', bg: '#FFF2DF' },
+    { color: '#8D5CF6', bg: '#F1EAFF' },
+    { color: '#2E9F8F', bg: '#E7F8F4' },
+    { color: '#007FFF', bg: '#E6F2FF' },
+    { color: '#B357E8', bg: '#F5E9FF' },
+  ],
+  income: [
+    { color: '#1E9E63', bg: '#E8F9EF' },
+    { color: '#0AA3B5', bg: '#E7FAFC' },
+    { color: '#2B8A3E', bg: '#EAF8ED' },
+    { color: '#1F7AE0', bg: '#E6F1FF' },
+    { color: '#5E60CE', bg: '#ECECFF' },
+    { color: '#F08C00', bg: '#FFF3E0' },
+  ],
+  investment: [
+    { color: '#2D9CDB', bg: '#EAF6FF' },
+    { color: '#2F80ED', bg: '#E9F2FF' },
+    { color: '#27AE60', bg: '#E8F8EE' },
+    { color: '#9B51E0', bg: '#F4E9FF' },
+    { color: '#F2C94C', bg: '#FFF8DD' },
+    { color: '#F2994A', bg: '#FFF1E6' },
+    { color: '#EB5757', bg: '#FFECEC' },
+    { color: '#56CCF2', bg: '#E8FAFF' },
+  ],
+}
+
+function getIconSwatch(type, index) {
+  const palette = ICON_SWATCHES_BY_TYPE[type] || ICON_SWATCHES_BY_TYPE.expense
+  return palette[index % palette.length]
+}
+
 export default function CreateCategorySheet({ type, onClose, onCreated }) {
+  const initialType = type || 'expense'
+  const initialIcons = ICON_OPTIONS_BY_TYPE[initialType] || ICON_OPTIONS_BY_TYPE.expense
   const [name, setName] = useState('')
-  const [icon, setIcon] = useState('Tag')
-  const [selectedType, setSelectedType] = useState(type || 'expense')
+  const [icon, setIcon] = useState(initialIcons[0] || 'Tag')
+  const [selectedType, setSelectedType] = useState(initialType)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   const iconOptions = ICON_OPTIONS_BY_TYPE[selectedType] || ICON_OPTIONS_BY_TYPE.expense
-
-  const selectedIconTone = selectedType === 'expense'
-    ? 'text-expense-text'
-    : selectedType === 'income'
-      ? 'text-income-text'
-      : 'text-invest-text'
-
-  const selectedIconBg = selectedType === 'expense'
-    ? 'bg-expense-bg border-expense-border'
-    : selectedType === 'income'
-      ? 'bg-income-bg border-income-border'
-      : 'bg-invest-bg border-invest-border'
 
   async function handleCreate() {
     const trimmed = name.trim()
@@ -136,10 +160,11 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
           {/* Icon picker */}
           <p className="text-[13px] font-medium text-ink-3 mb-2">Choose an icon</p>
           <div className="grid grid-cols-6 gap-2 mb-4">
-            {iconOptions.map(iconName => {
+            {iconOptions.map((iconName, index) => {
               const Icon = ICON_MAP[iconName]
               if (!Icon) return null
               const selected = icon === iconName
+              const swatch = getIconSwatch(selectedType, index)
               return (
                 <button
                   key={iconName}
@@ -149,10 +174,11 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
                   className={`w-full aspect-square rounded-card flex items-center justify-center
                     border transition-all disabled:opacity-50
                     ${selected
-                      ? selectedIconBg
+                      ? ''
                       : 'bg-kosha-surface-2 border-transparent'}`}
+                  style={selected ? { backgroundColor: swatch.bg, borderColor: swatch.color } : undefined}
                 >
-                  <Icon size={20} weight="duotone" className={selected ? selectedIconTone : 'text-ink-3'} />
+                  <Icon size={20} weight="duotone" style={{ color: swatch.color }} />
                 </button>
               )
             })}
