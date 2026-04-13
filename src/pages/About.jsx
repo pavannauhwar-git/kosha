@@ -31,44 +31,47 @@ function SectionLabel({ children }) {
   )
 }
 
-function CardRow({ icon, label, sublabel, right, onClick, href, tone = 'brand' }) {
+function StoryRow({ icon, title, description, tone = 'brand' }) {
   const toneClasses = {
     brand: 'bg-brand-container border border-brand/15',
-    income: 'bg-income-bg border border-income-border',
-    expense: 'bg-expense-bg border border-expense-border',
     invest: 'bg-invest-bg border border-invest-border',
-    warning: 'bg-warning-bg border border-warning-border',
-    neutral: 'bg-kosha-surface-2 border border-kosha-border',
-  }
-
-  const inner = (
-    <>
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${toneClasses[tone] || toneClasses.brand}`}>
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-medium text-ink leading-snug">{label}</p>
-        {sublabel && <p className="text-[12px] text-ink-3 mt-0.5 truncate">{sublabel}</p>}
-      </div>
-      {right && <div className="shrink-0">{right}</div>}
-    </>
-  )
-
-  const cls = `w-full flex items-center gap-3 px-4 py-3.5
-               transition-colors hover:bg-kosha-surface-2 active:bg-kosha-surface-2 text-left`
-
-  if (href) {
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
-        {inner}
-      </a>
-    )
   }
 
   return (
-    <button onClick={onClick} className={cls}>
-      {inner}
-    </button>
+    <div className="flex items-start gap-3 px-4 py-3.5">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${toneClasses[tone] || toneClasses.brand}`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-semibold text-ink leading-snug">{title}</p>
+        <p className="text-[12px] text-ink-2 mt-1 leading-relaxed">{description}</p>
+      </div>
+    </div>
+  )
+}
+
+function ConnectRow({ href, icon, label, sublabel, tone = 'neutral' }) {
+  const toneClasses = {
+    invest: 'bg-invest-bg border border-invest-border',
+    neutral: 'bg-kosha-surface-2 border border-kosha-border',
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-kosha-surface-2 active:bg-kosha-surface-2"
+    >
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${toneClasses[tone] || toneClasses.neutral}`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-semibold text-ink leading-snug">{label}</p>
+        <p className="text-[12px] text-ink-3 mt-0.5 truncate">{sublabel}</p>
+      </div>
+      <ExternalLink size={14} className="text-ink-3 shrink-0" />
+    </a>
   )
 }
 
@@ -90,12 +93,11 @@ export default function About() {
     }
   }
 
-  function openExternal(url) {
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
-
   function openSupportUpi() {
-    window.location.href = SUPPORT_UPI_LINK
+    const popup = window.open(SUPPORT_UPI_LINK, '_blank', 'noopener,noreferrer')
+    if (!popup) {
+      window.location.assign(SUPPORT_UPI_LINK)
+    }
   }
 
   return (
@@ -146,7 +148,7 @@ export default function About() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+              <div className="mt-4">
                 <Button
                   variant="secondary"
                   size="md"
@@ -157,213 +159,198 @@ export default function About() {
                 >
                   Open product guide
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="md"
-                  fullWidth
-                  onClick={() => openExternal(REPO_URL)}
-                  icon={<ExternalLink size={14} />}
-                  className="bg-[#181717] text-white border-[#181717] hover:bg-[#0f0f0f]"
-                >
-                  View GitHub
-                </Button>
               </div>
           </div>
         </motion.div>
 
-          <motion.div variants={fadeUp}>
-            <SectionLabel tone="invest">Design Principles</SectionLabel>
-            <div className="card p-4 space-y-2.5">
-              <div className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
-                <p className="text-[12px] font-semibold text-ink">Direction first</p>
-                <p className="text-[11px] text-ink-3 mt-0.5">Dashboard gives fast orientation before deep edits.</p>
-              </div>
-              <div className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
-                <p className="text-[12px] font-semibold text-ink">Precision always</p>
-                <p className="text-[11px] text-ink-3 mt-0.5">Transactions, bills, loans, and reconciliation preserve record quality.</p>
-              </div>
-              <div className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
-                <p className="text-[12px] font-semibold text-ink">Privacy by default</p>
-                <p className="text-[11px] text-ink-3 mt-0.5">No telemetry or ad tracking. Your Supabase project is your source of truth.</p>
-              </div>
-            </div>
-          </motion.div>
+        <motion.div variants={fadeUp}>
+          <SectionLabel>How Kosha Works</SectionLabel>
+          <div className="card overflow-hidden p-0">
+            <StoryRow
+              icon={<Sparkles size={14} className="text-brand" />}
+              title="Capture once"
+              description="Track transactions, bills, loans, and investments in one place instead of managing separate systems."
+              tone="brand"
+            />
+            <Divider />
+            <StoryRow
+              icon={<CodeIcon size={14} weight="duotone" color={C.brand} />}
+              title="Understand faster"
+              description="Dashboards and summaries show what matters now without forcing you through noisy detail screens."
+              tone="brand"
+            />
+            <Divider />
+            <StoryRow
+              icon={<HeartIcon size={14} weight="fill" color={C.expense} />}
+              title="Act with confidence"
+              description="Reconcile, review, and improve your habits with data quality controls that keep records trustworthy."
+              tone="invest"
+            />
+          </div>
+        </motion.div>
 
-          <motion.div variants={fadeUp}>
-            <SectionLabel tone="warning">Release Timeline</SectionLabel>
-            <div className="card overflow-hidden p-0">
-              {currentRelease && (
-                <div>
-                  <div className="flex items-center justify-between px-4 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-warning-bg border border-warning-border
-                            flex items-center justify-center shrink-0">
-                        <StarIcon size={17} weight="duotone" color={C.bills} />
-                      </div>
-                      <div>
-                        <p className="text-[15px] font-semibold text-ink">
-                          v{currentRelease.version}
-                        </p>
-                        <p className="text-[12px] text-ink-3 mt-0.5">{currentRelease.date}</p>
-                      </div>
+        <motion.div variants={fadeUp}>
+          <SectionLabel>Release Timeline</SectionLabel>
+          <div className="card overflow-hidden p-0">
+            {currentRelease && (
+              <div>
+                <div className="flex items-center justify-between px-4 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-brand-container border border-brand/15 flex items-center justify-center shrink-0">
+                      <StarIcon size={17} weight="duotone" color={C.brand} />
                     </div>
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
-                             bg-warning-bg text-warning-text border border-warning-border">
-                      Current
-                    </span>
-                  </div>
-                  <Divider />
-                  <div className="px-4 py-3.5 space-y-2.5">
-                    {currentRelease.items.map((item, i) => (
-                      <div key={i} className="flex items-start gap-2.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-warning-text mt-[6px] shrink-0" />
-                        <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {showAllVersions && olderReleases.map((release) => (
-                <div key={release.version}>
-                  <Divider />
-                  <div className="flex items-center justify-between px-4 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-invest-bg border border-invest-border
-                            flex items-center justify-center shrink-0">
-                        <StarIcon size={17} weight="duotone" color={C.investText} />
-                      </div>
-                      <div>
-                        <p className="text-[15px] font-semibold text-ink">
-                          v{release.version}
-                        </p>
-                        <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
-                      </div>
+                    <div>
+                      <p className="text-[15px] font-semibold text-ink">v{currentRelease.version}</p>
+                      <p className="text-[12px] text-ink-3 mt-0.5">{currentRelease.date}</p>
                     </div>
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
-                             bg-ink/[0.06] text-ink-2">
-                      Archived
-                    </span>
                   </div>
-                  <Divider />
-                  <div className="px-4 py-3.5 space-y-2.5">
-                    {release.items.map((item, i) => (
-                      <div key={i} className="flex items-start gap-2.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-invest-text mt-[6px] shrink-0" />
-                        <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
-                      </div>
-                    ))}
-                  </div>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand border border-brand/15">
+                    Current
+                  </span>
                 </div>
-              ))}
-
-              {olderReleases.length > 0 && (
-                <>
-                  <Divider />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="md"
-                    fullWidth
-                    onClick={() => setShowAllVersions(v => !v)}
-                    iconRight={showAllVersions
-                      ? <CaretUpIcon size={13} weight="bold" />
-                      : <CaretDownIcon size={13} weight="bold" />}
-                    className="rounded-none border-0 bg-warning-bg text-warning-text border-warning-border"
-                  >
-                    {showAllVersions
-                      ? 'Hide older releases'
-                      : `Expand older releases (${olderReleases.length})`}
-                  </Button>
-                </>
-              )}
-            </div>
-          </motion.div>
-
-          <motion.div variants={fadeUp}>
-            <SectionLabel tone="income">Connect</SectionLabel>
-            <div className="card overflow-hidden p-0">
-              <CardRow
-                icon={<CodeIcon size={17} weight="duotone" color={C.brand} />}
-                label="Pavan Kumar Nauhwar"
-                sublabel="Developer · India"
-                href={LINKEDIN}
-                tone="invest"
-                right={<ExternalLink size={14} className="text-ink-3" />}
-              />
-              <Divider />
-              <CardRow
-                icon={<GithubLogoIcon size={17} weight="fill" color={C.ink} />}
-                label="View on GitHub"
-                sublabel="pavannauhwar-git/kosha"
-                href={REPO_URL}
-                tone="neutral"
-                right={<ExternalLink size={14} className="text-ink-3" />}
-              />
-              <Divider />
-              <div className="px-4 py-3.5 bg-warning-bg/35">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-warning-bg border border-warning-border">
-                    <CurrencyInrIcon size={17} weight="bold" color={C.bills} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-medium text-ink leading-snug">Support Kosha</p>
-                    <p className="text-[12px] text-ink-3 mt-0.5 truncate">{UPI_ID}</p>
-                  </div>
+                <Divider />
+                <div className="px-4 py-3.5 space-y-2.5">
+                  {currentRelease.items.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-ink-2 mt-[6px] shrink-0" />
+                      <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
+                    </div>
+                  ))}
                 </div>
+              </div>
+            )}
 
+            {showAllVersions && olderReleases.map((release) => (
+              <div key={release.version}>
+                <Divider />
+                <div className="flex items-center justify-between px-4 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                      <StarIcon size={17} weight="duotone" color={C.inkMuted} />
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-semibold text-ink">v{release.version}</p>
+                      <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-kosha-surface-2 text-ink-2 border border-kosha-border">
+                    Archived
+                  </span>
+                </div>
+                <Divider />
+                <div className="px-4 py-3.5 space-y-2.5">
+                  {release.items.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-ink-2 mt-[6px] shrink-0" />
+                      <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {olderReleases.length > 0 && (
+              <>
+                <Divider />
                 <Button
                   type="button"
                   variant="secondary"
-                  size="sm"
+                  size="md"
                   fullWidth
-                  onClick={openSupportUpi}
-                  className="mt-3 bg-ink text-white border-ink hover:brightness-110"
+                  onClick={() => setShowAllVersions(v => !v)}
+                  iconRight={showAllVersions
+                    ? <CaretUpIcon size={13} weight="bold" />
+                    : <CaretDownIcon size={13} weight="bold" />}
+                  className="rounded-none border-0 bg-kosha-surface-2 text-ink-2"
                 >
-                  Pay with any UPI app
+                  {showAllVersions
+                    ? 'Hide older releases'
+                    : `Expand older releases (${olderReleases.length})`}
                 </Button>
+              </>
+            )}
+          </div>
+        </motion.div>
 
+        <motion.div variants={fadeUp}>
+          <SectionLabel>Connect</SectionLabel>
+          <div className="card overflow-hidden p-0">
+            <ConnectRow
+              href={LINKEDIN}
+              icon={<CodeIcon size={17} weight="duotone" color={C.brand} />}
+              label="Pavan Kumar Nauhwar"
+              sublabel="Developer · India"
+              tone="invest"
+            />
+            <Divider />
+            <ConnectRow
+              href={REPO_URL}
+              icon={<GithubLogoIcon size={17} weight="fill" color={C.ink} />}
+              label="View on GitHub"
+              sublabel="pavannauhwar-git/kosha"
+              tone="neutral"
+            />
+            <Divider />
+
+            <div className="px-4 py-3.5 bg-warning-bg/35">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-warning-bg border border-warning-border">
+                  <CurrencyInrIcon size={17} weight="bold" color={C.bills} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-medium text-ink leading-snug">Support Kosha</p>
+                  <p className="text-[12px] text-ink-3 mt-1 truncate">{UPI_ID}</p>
+                </div>
                 <Button
                   type="button"
                   variant="secondary"
-                  size="sm"
-                  fullWidth
+                  size="xs"
                   onClick={copyUpi}
-                  className="mt-2 bg-kosha-surface text-ink-2 border-kosha-border"
+                  className="shrink-0 !h-7 !px-2.5 !bg-kosha-surface !text-ink-2 !border-kosha-border"
                   icon={copied
-                    ? <CheckIcon size={14} weight="bold" color={C.income} />
-                    : <CopyIcon size={14} color={C.inkMuted} />}
+                    ? <CheckIcon size={12} weight="bold" color={C.income} />
+                    : <CopyIcon size={12} color={C.inkMuted} />}
                 >
-                  {copied ? 'UPI copied' : 'Copy UPI ID'}
+                  {copied ? 'Copied' : 'Copy UPI ID'}
                 </Button>
+              </div>
 
-                <p className="text-[10px] text-ink-3 mt-2">This opens the default UPI chooser so you can pick any installed payment app.</p>
-              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                fullWidth
+                onClick={openSupportUpi}
+                icon={<HeartIcon size={14} weight="fill" />}
+                className="mt-3 !bg-ink !text-white !border-ink hover:!brightness-110"
+              >
+                Pay to support
+              </Button>
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          <motion.div variants={fadeUp}>
-            <SectionLabel tone="expense">Privacy And Stack</SectionLabel>
-            <div className="card p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-expense-bg border border-expense-border flex items-center justify-center shrink-0 mt-0.5">
-                  <LockIcon size={17} weight="duotone" color={C.expense} />
-                </div>
-                <p className="text-[13px] text-ink-2 leading-relaxed flex-1">
-                  Your data lives in your own Supabase project, protected by
-                  row-level security. No telemetry, no tracking pixels, no third-party data sharing — ever.
-                </p>
+        <motion.div variants={fadeUp}>
+          <SectionLabel>Privacy And Stack</SectionLabel>
+          <div className="card p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-expense-bg border border-expense-border flex items-center justify-center shrink-0 mt-0.5">
+                <LockIcon size={17} weight="duotone" color={C.expense} />
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-invest-bg border border-invest-border flex items-center justify-center shrink-0 mt-0.5">
-                  <ShieldCheck size={16} className="text-invest-text" />
-                </div>
-                <p className="text-[13px] text-ink-2 leading-relaxed flex-1">
-                  Built with React, Supabase, Vite, Tailwind, and Framer Motion for fast interaction and clear information density.
-                </p>
-              </div>
+              <p className="text-[13px] text-ink-2 leading-relaxed flex-1">
+                Your data stays in your own Supabase project, protected by row-level security. No telemetry, no ad tracking, no third-party sharing.
+              </p>
             </div>
-          </motion.div>
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-invest-bg border border-invest-border flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldCheck size={16} className="text-invest-text" />
+              </div>
+              <p className="text-[13px] text-ink-2 leading-relaxed flex-1">
+                Built with React, Supabase, Vite, Tailwind, and Framer Motion for fast interaction and clear information density.
+              </p>
+            </div>
+          </div>
+        </motion.div>
 
           <motion.div variants={fadeUp}
             className="flex items-center justify-center gap-1.5 pt-2 pb-2"
