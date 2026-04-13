@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, X } from 'lucide-react'
 import TransactionItem from '../transactions/TransactionItem'
 import { fmt } from '../../lib/utils'
+import { CATEGORIES } from '../../lib/categories'
 import Button from '../ui/Button'
 
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
@@ -72,6 +73,10 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
   }, [])
 
   const visibleRecent = useMemo(() => (recent || []).slice(0, 5), [recent])
+  const categoryLabelById = useMemo(
+    () => new Map(CATEGORIES.map((category) => [category.id, category.label])),
+    []
+  )
   const summary = useMemo(() => {
     return visibleRecent.reduce((acc, txn) => {
       const amount = Number(txn?.amount || 0)
@@ -86,6 +91,45 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
       return acc
     }, { inflow: 0, outflow: 0 })
   }, [visibleRecent])
+  const outflowInsights = useMemo(() => {
+    const outflowRows = visibleRecent.filter((txn) => txn?.type === 'expense' || txn?.type === 'investment')
+    if (!outflowRows.length) return null
+
+    const categoryTotals = new Map()
+    let largestTxn = null
+
+    for (const txn of outflowRows) {
+      const amount = Number(txn?.amount || 0)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+
+      const bucket = txn?.type === 'investment'
+        ? (String(txn?.investment_vehicle || '').trim() || 'Investment')
+        : (String(txn?.category || '').trim() || 'other')
+
+      categoryTotals.set(bucket, (categoryTotals.get(bucket) || 0) + amount)
+
+      if (!largestTxn || amount > Number(largestTxn.amount || 0)) {
+        largestTxn = txn
+      }
+    }
+
+    if (!categoryTotals.size) return null
+
+    const [topBucket, topAmount] = [...categoryTotals.entries()].sort((a, b) => b[1] - a[1])[0]
+    const topLabel = categoryLabelById.get(topBucket) || topBucket
+
+    const largestLabel = largestTxn?.description
+      || categoryLabelById.get(largestTxn?.category)
+      || largestTxn?.investment_vehicle
+      || 'Largest outflow'
+
+    return {
+      topLabel,
+      topAmount,
+      largestLabel,
+      largestAmount: Number(largestTxn?.amount || 0),
+    }
+  }, [visibleRecent, categoryLabelById])
   const lastIndex = visibleRecent.length - 1
 
   if (visibleRecent.length === 0) {
@@ -139,6 +183,18 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
           <p className="text-[13px] font-semibold text-expense-text tabular-nums mt-0.5">{fmt(summary.outflow)}</p>
         </div>
       </div>
+
+      {outflowInsights && (
+        <div className="mini-panel px-3 py-2.5 mb-2.5">
+          <p className="text-[10px] tracking-wide text-ink-3">Recent outflow cues</p>
+          <p className="text-[11px] text-ink-2 mt-1">
+            Top driver: <span className="font-semibold">{outflowInsights.topLabel}</span> · {fmt(outflowInsights.topAmount)}
+          </p>
+          <p className="text-[10px] text-ink-3 mt-1">
+            Largest row: {outflowInsights.largestLabel} · {fmt(outflowInsights.largestAmount)}
+          </p>
+        </div>
+      )}
 
       {showSwipeHint && (
         <div className="mini-panel px-3 py-2 mb-2.5 flex items-start gap-2.5">

@@ -25,7 +25,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
   invested,
   bills,
   heroMode,
-  onHeroModeToggle,
+  onSetHeroMode,
 }) {
   const safeToSpend = runningBalance !== null
     ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0))
@@ -49,21 +49,36 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
   return (
     <motion.div className="card-hero p-5 sm:p-6 relative overflow-hidden">
 
-      {/* Top row — label + watermark */}
-      <div className="flex items-center justify-between mb-3.5">
+      {/* Top row — label + mode switch */}
+      <div className="flex items-center justify-between mb-3.5 gap-2">
         <p className="text-[10px] font-semibold tracking-[0.18em] uppercase"
           style={{ color: C.heroAccent }}>
           {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
         </p>
-        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase"
-          style={{ color: C.heroDimmer }}>KOSHA</p>
+
+        <div className="inline-flex items-center rounded-pill p-0.5"
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)' }}>
+          <button
+            type="button"
+            onClick={() => onSetHeroMode?.('balance')}
+            className={`h-6 px-2.5 rounded-pill text-[10px] font-semibold transition-colors ${heroMode === 'balance' ? 'text-white' : 'text-white/70 hover:text-white'}`}
+            style={heroMode === 'balance' ? { background: 'rgba(255,255,255,0.2)' } : undefined}
+          >
+            Balance
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetHeroMode?.('safe')}
+            className={`h-6 px-2.5 rounded-pill text-[10px] font-semibold transition-colors ${heroMode === 'safe' ? 'text-white' : 'text-white/70 hover:text-white'}`}
+            style={heroMode === 'safe' ? { background: 'rgba(255,255,255,0.2)' } : undefined}
+          >
+            Safe
+          </button>
+        </div>
       </div>
 
       {/* Main amount — large */}
-      <div
-        onClick={onHeroModeToggle}
-        className="cursor-pointer active:scale-[0.99] transition-transform duration-200"
-      >
+      <div>
         <p className={`${mainValueClass} font-bold text-white leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere]`}>
           {mainValueText}
         </p>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowRight, Plus, Wallet, TrendingDown } from 'lucide-react'
+import { Plus, Wallet, TrendingDown, ArrowRight } from 'lucide-react'
 import {
   useRecentTransactions,
   useMonthSummary,
@@ -25,6 +25,7 @@ import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import AppToast from '../components/common/AppToast'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
+import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
 
 const fadeUp = createFadeUp(12, 0.4)
 const stagger = createStagger(0.06, 0.04)
@@ -79,6 +80,17 @@ function DashboardRecentSkeleton() {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+function DashboardSectionCue({ title, subtitle }) {
+  return (
+    <div className="px-0.5">
+      <p className="section-label">{title}</p>
+      {subtitle && (
+        <p className="text-[10px] text-ink-3 mt-0.5">{subtitle}</p>
+      )}
     </div>
   )
 }
@@ -184,6 +196,8 @@ export default function Dashboard() {
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const dayOfMonth = now.getDate()
   const daysRemaining = Math.max(1, daysInMonth - dayOfMonth + 1)
+  const currentMonthParam = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const weeklyDriftSignal = useMemo(() => computeWeeklySpendDrift(dailyExpenseTotals, now), [dailyExpenseTotals, now])
 
   // ── Spendable today ────────────────────────────────────────────────────
   const spendableToday = useMemo(() => {
@@ -239,7 +253,9 @@ export default function Dashboard() {
     const band = scoreRiskBand(sharePct, { high: 36, watch: 24 })
 
     return {
+      categoryId,
       label: categoryLabelById.get(categoryId) || categoryId,
+      topCategoryLabel: categoryLabelById.get(categoryId) || categoryId,
       amount,
       sharePct,
       budgetPct,
@@ -299,18 +315,17 @@ export default function Dashboard() {
   }, [bills])
 
   // ── Due soon bills ─────────────────────────────────────────────────────
-  const { dueSoonCount, dueSoonDescs, dueSoonAmount } = useMemo(() => {
+  const { dueSoonCount, dueSoonAmount } = useMemo(() => {
     let count = 0
     let amount = 0
-    const descs = []
     for (const b of bills) {
-      if (daysUntil(b.due_date) <= 7) {
+      const days = daysUntil(b.due_date)
+      if (days >= 0 && days <= 7) {
         count += 1
         amount += Number(b.amount || 0)
-        if (descs.length < 2) descs.push(b.description)
       }
     }
-    return { dueSoonCount: count, dueSoonDescs: descs.join(' · '), dueSoonAmount: amount }
+    return { dueSoonCount: count, dueSoonAmount: amount }
   }, [bills])
 
   // ── Upcoming bills (next 3) ────────────────────────────────────────────
@@ -321,7 +336,110 @@ export default function Dashboard() {
       .slice(0, 3)
   }, [bills])
 
+  const nextUpcomingBillDays = useMemo(() => {
+    if (!upcomingBills.length) return null
+    const days = daysUntil(upcomingBills[0].due_date)
+    return Number.isFinite(days) ? days : null
+  }, [upcomingBills])
+
+  const billsControlSubtitle = useMemo(() => {
+    const overdueCount = billClusterSignal?.overdueCount || 0
+
+    if (overdueCount > 0 && dueSoonCount > 0) {
+      return `${overdueCount} overdue · ${dueSoonCount} due in next 7 days`
+    }
+
+    if (overdueCount > 0) return `${overdueCount} overdue bill${overdueCount === 1 ? '' : 's'} need attention`
+    if (dueSoonCount > 0) return `${dueSoonCount} bill${dueSoonCount === 1 ? '' : 's'} due in next 7 days`
+
+    if (nextUpcomingBillDays != null && nextUpcomingBillDays > 30) {
+      return `No bills due in next 30 days. Next bill is in ${nextUpcomingBillDays} days.`
+    }
+    if (nextUpcomingBillDays != null) return `Next bill is due in ${nextUpcomingBillDays} days.`
+
+    return 'Review upcoming bills'
+  }, [billClusterSignal?.overdueCount, dueSoonCount, nextUpcomingBillDays])
+
+  const attentionItems = useMemo(() => {
+    const items = []
+    const expenseMonthRoute = `/transactions?month=${currentMonthParam}&type=expense`
+
+    if (billClusterSignal?.overdueCount > 0) {
+      items.push({
+        id: 'overdue-bills',
+        priority: 100,
+        tone: 'high',
+        title: `${billClusterSignal.overdueCount} overdue bill${billClusterSignal.overdueCount === 1 ? '' : 's'}`,
+        message: `${fmt(billClusterSignal.overdueAmount)} is overdue. Clear these first to reduce compounding stress.`,
+        actionLabel: 'Open bills',
+        route: '/bills',
+      })
+    }
+
+    if (dueSoonCount > 0) {
+      items.push({
+        id: 'due-soon-bills',
+        priority: 85,
+        tone: 'watch',
+        title: `${dueSoonCount} bill${dueSoonCount === 1 ? '' : 's'} due in 7 days`,
+        message: `${fmt(dueSoonAmount)} coming up soon. Reserve cash and schedule payments now.`,
+        actionLabel: 'Plan payments',
+        route: '/bills',
+      })
+    }
+
+    if (weeklyDriftSignal?.hasData && weeklyDriftSignal.status === 'high') {
+      items.push({
+        id: 'weekly-drift-high',
+        priority: 75,
+        tone: 'high',
+        title: 'Weekly spend drift is high',
+        message: `This week is ${weeklyDriftSignal.driftPct}% above your 4-week baseline.`,
+        actionLabel: 'Review transactions',
+        route: expenseMonthRoute,
+      })
+    } else if (weeklyDriftSignal?.hasData && weeklyDriftSignal.status === 'watch') {
+      items.push({
+        id: 'weekly-drift-watch',
+        priority: 60,
+        tone: 'watch',
+        title: 'Weekly spend drift is rising',
+        message: `This week is ${weeklyDriftSignal.driftPct}% above baseline.`,
+        actionLabel: 'Inspect outflows',
+        route: expenseMonthRoute,
+      })
+    }
+
+    if (categoryPressureSignal?.band === 'high' || categoryPressureSignal?.band === 'watch') {
+      const categoryRoute = categoryPressureSignal.categoryId
+        ? `${expenseMonthRoute}&category=${encodeURIComponent(categoryPressureSignal.categoryId)}`
+        : expenseMonthRoute
+
+      items.push({
+        id: 'category-pressure',
+        priority: categoryPressureSignal.band === 'high' ? 70 : 55,
+        tone: categoryPressureSignal.band === 'high' ? 'high' : 'watch',
+        title: `${categoryPressureSignal.topCategoryLabel} is leading spend`,
+        message: `${categoryPressureSignal.sharePct}% share this month${categoryPressureSignal.budgetPct != null ? ` (${categoryPressureSignal.budgetPct}% budget use)` : ''}.`,
+        actionLabel: 'Review category',
+        route: categoryRoute,
+      })
+    }
+
+    return items.sort((a, b) => b.priority - a.priority).slice(0, 3)
+  }, [
+    billClusterSignal,
+    dueSoonCount,
+    dueSoonAmount,
+    weeklyDriftSignal,
+    categoryPressureSignal,
+    currentMonthParam,
+  ])
+
   const isNewUser = !heroLoading && recent.length === 0 && earned === 0 && spent === 0 && invested === 0 && bills.length === 0
+  const showActionQueueSection = !heroLoading && !isNewUser
+  const showSpendControlSection = !heroLoading && (earned > 0 || weeklyDriftSignal?.hasData || !!categoryPressureSignal)
+  const showBillsControlSection = dueSoonCount > 0 || upcomingBills.length > 0 || !!billClusterSignal
 
   // ── Reminders ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -337,19 +455,17 @@ export default function Dashboard() {
       })
     }
 
-    if (prefs.spending_pace && earned > 0) {
-      const spendPct = spent / earned
-      const dayPct = dayOfMonth / daysInMonth
-      if (spendPct > dayPct + 0.15) {
-        maybeNotify({
-          id: 'spending-pace',
-          title: 'Kosha reminder: spending pace is high',
-          body: 'Current spending is running above this month\'s pace.',
-          cooldownMs: 12 * 60 * 60 * 1000,
-        })
-      }
+    if (prefs.spending_pace && weeklyDriftSignal?.hasData && weeklyDriftSignal.status === 'high') {
+      maybeNotify({
+        id: 'spending-pace',
+        title: 'Kosha reminder: weekly spend drift is high',
+        body: weeklyDriftSignal.driftPct != null
+          ? `This week is ${weeklyDriftSignal.driftPct}% above your 4-week baseline.`
+          : 'This week is above your baseline spend pattern.',
+        cooldownMs: 12 * 60 * 60 * 1000,
+      })
     }
-  }, [dueSoonCount, earned, spent, dayOfMonth, daysInMonth])
+  }, [dueSoonCount, weeklyDriftSignal])
 
   // ── Callbacks ──────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (id) => {
@@ -461,8 +577,9 @@ export default function Dashboard() {
     setShowAdd(true)
   }, [])
 
-  const handleHeroModeToggle = useCallback(() => {
-    setHeroMode(m => m === 'balance' ? 'safe' : 'balance')
+  const handleHeroModeChange = useCallback((nextMode) => {
+    if (nextMode !== 'balance' && nextMode !== 'safe') return
+    setHeroMode(nextMode)
   }, [])
 
   return (
@@ -498,10 +615,99 @@ export default function Dashboard() {
               invested={invested}
               bills={bills}
               heroMode={heroMode}
-              onHeroModeToggle={handleHeroModeToggle}
+              onSetHeroMode={handleHeroModeChange}
             />
           )}
         </motion.div>
+
+        {showActionQueueSection && (
+          <motion.div variants={fadeUp}>
+            <DashboardSectionCue
+              title="Action queue"
+              subtitle="Handle the highest-impact items first."
+            />
+          </motion.div>
+        )}
+
+        {!heroLoading && attentionItems.length > 0 && (
+          <motion.div variants={fadeUp}>
+            <div className="card p-3.5 border-0">
+              <div className="flex items-start justify-between gap-2 mb-2.5">
+                <div>
+                  <p className="text-[10px] text-ink-3 tracking-wide">Attention inbox</p>
+                  <p className="text-[13px] font-semibold text-ink mt-0.5">Top actions to protect this month</p>
+                </div>
+                <span className="text-[10px] font-semibold px-2 py-1 rounded-pill bg-kosha-surface-2 text-ink-2 border border-kosha-border tabular-nums">
+                  {attentionItems.length} open
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {attentionItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5 flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className={`text-[12px] font-semibold ${item.tone === 'high' ? 'text-warning-text' : item.tone === 'watch' ? 'text-brand' : 'text-ink'}`}>
+                        {item.title}
+                      </p>
+                      <p className="text-[10px] text-ink-3 mt-0.5 leading-relaxed">{item.message}</p>
+                    </div>
+                    <Button
+                      variant={item.tone === 'high' ? 'primary' : 'secondary'}
+                      size="xs"
+                      onClick={() => navigate(item.route)}
+                      className="shrink-0 whitespace-nowrap"
+                    >
+                      {item.actionLabel}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {!heroLoading && !isNewUser && attentionItems.length === 0 && (
+          <motion.div variants={fadeUp}>
+            <div className="card p-3.5 border-0">
+              <div className="flex items-start justify-between gap-2 mb-2.5">
+                <div>
+                  <p className="text-[10px] text-ink-3 tracking-wide">Attention inbox</p>
+                  <p className="text-[13px] font-semibold text-ink mt-0.5">No urgent alerts right now</p>
+                </div>
+                <span className="text-[10px] font-semibold px-2 py-1 rounded-pill bg-income-bg text-income-text border border-income-border">
+                  All clear
+                </span>
+              </div>
+
+              <p className="text-[10px] text-ink-3 leading-relaxed mb-2.5">
+                Keep momentum by reviewing this month&apos;s expenses and upcoming bills.
+              </p>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  iconRight={<ArrowRight size={12} />}
+                  onClick={() => navigate(`/transactions?month=${currentMonthParam}&type=expense`)}
+                >
+                  Review expenses
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  iconRight={<ArrowRight size={12} />}
+                  className="shrink-0 whitespace-nowrap"
+                  onClick={() => navigate('/bills')}
+                >
+                  Open bills
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {isNewUser && (
           <motion.div variants={fadeUp}>
@@ -518,6 +724,15 @@ export default function Dashboard() {
                 </Button>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {showSpendControlSection && (
+          <motion.div variants={fadeUp}>
+            <DashboardSectionCue
+              title="Spend control"
+              subtitle="Track pace, runway, and pressure before month-end."
+            />
           </motion.div>
         )}
 
@@ -565,6 +780,7 @@ export default function Dashboard() {
             <SpendingPaceTracker
               dailyExpenseTotals={dailyExpenseTotals}
               now={now}
+              driftData={weeklyDriftSignal}
             />
           </motion.div>
         )}
@@ -615,103 +831,110 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {!heroLoading && (categoryPressureSignal || billClusterSignal) && (
+        {!heroLoading && categoryPressureSignal && (
           <motion.div variants={fadeUp}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {categoryPressureSignal && (
-                <div className="card p-3.5 border-0">
+            <div className="card p-3.5 border-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
                   <p className="text-[10px] text-ink-3 tracking-wide">Top spend pressure</p>
                   <p className="text-[14px] font-semibold text-ink mt-1 truncate" title={categoryPressureSignal.label}>
                     {categoryPressureSignal.label}
                   </p>
-                  <p className={`text-[12px] tabular-nums mt-1 ${bandTextClass(categoryPressureSignal.band)}`}>
-                    {categoryPressureSignal.sharePct}% of spend · {fmt(categoryPressureSignal.amount)}
-                  </p>
-                  {categoryPressureSignal.budgetPct != null && (
-                    <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
-                      Budget usage: {categoryPressureSignal.budgetPct}%
-                    </p>
-                  )}
                 </div>
-              )}
-
-              {billClusterSignal && (
-                <div className="card p-3.5 border-0">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Bill timing signal</p>
-                  {billClusterSignal.overdueCount > 0 ? (
-                    <>
-                      <p className="text-[14px] font-semibold text-warning-text mt-1">
-                        {billClusterSignal.overdueCount} overdue
-                      </p>
-                      <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
-                        {fmt(billClusterSignal.overdueAmount)} at risk
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-[14px] font-semibold text-ink mt-1">
-                        Week {billClusterSignal.densestWeek} is dense
-                      </p>
-                      <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
-                        {billClusterSignal.densestCount} bill{billClusterSignal.densestCount === 1 ? '' : 's'} · {fmt(billClusterSignal.densestAmount)}
-                      </p>
-                    </>
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  iconRight={<ArrowRight size={12} />}
+                  onClick={() => navigate(
+                    categoryPressureSignal.categoryId
+                      ? `/transactions?month=${currentMonthParam}&type=expense&category=${encodeURIComponent(categoryPressureSignal.categoryId)}`
+                      : `/transactions?month=${currentMonthParam}&type=expense`
                   )}
-                  <p className="text-[10px] text-ink-3 mt-1">Use bills page to sequence payments.</p>
-                </div>
+                >
+                  Review
+                </Button>
+              </div>
+              <p className={`text-[12px] tabular-nums mt-1 ${bandTextClass(categoryPressureSignal.band)}`}>
+                {categoryPressureSignal.sharePct}% of spend · {fmt(categoryPressureSignal.amount)}
+              </p>
+              {categoryPressureSignal.budgetPct != null && (
+                <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  Budget usage: {categoryPressureSignal.budgetPct}%
+                </p>
               )}
             </div>
           </motion.div>
         )}
 
-        {/* ── Bill alert ────────────────────────────────────────────── */}
-        {dueSoonCount > 0 && (
+        {showBillsControlSection && (
           <motion.div variants={fadeUp}>
-            <button onClick={() => navigate('/bills')}
-              className="card-warn w-full flex items-center justify-between px-4 py-4 text-left">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-warning-bg flex items-center justify-center shrink-0">
-                  <Bell size={16} className="text-warning-text" />
-                </div>
+            <DashboardSectionCue
+              title="Bills control"
+              subtitle="Stay ahead of due dates and payment clusters."
+            />
+          </motion.div>
+        )}
+
+        {showBillsControlSection && (
+          <motion.div variants={fadeUp}>
+            <div className="card p-3.5 border-0">
+              <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
-                  <p className="text-body font-semibold text-ink">
-                    {dueSoonCount} bill{dueSoonCount > 1 ? 's' : ''} due soon
+                  <p className="text-[10px] text-ink-3 tracking-wide">Bills control center</p>
+                  <p className="text-[13px] font-semibold text-ink mt-0.5">{billsControlSubtitle}</p>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  iconRight={<ArrowRight size={12} />}
+                  onClick={() => navigate('/bills')}
+                >
+                  Open bills
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2.5">
+                <div className="mini-panel px-3 py-2.5">
+                  <p className="text-[10px] text-ink-3 tracking-wide">Due in 7d</p>
+                  <p className="text-[13px] font-semibold tabular-nums text-ink mt-0.5">{dueSoonCount}</p>
+                </div>
+                <div className="mini-panel px-3 py-2.5">
+                  <p className="text-[10px] text-ink-3 tracking-wide">Due amount</p>
+                  <p className="text-[13px] font-semibold tabular-nums text-warning-text mt-0.5">{fmt(dueSoonAmount)}</p>
+                </div>
+                <div className="mini-panel px-3 py-2.5 col-span-2 sm:col-span-1">
+                  <p className="text-[10px] text-ink-3 tracking-wide">Risk signal</p>
+                  <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${(billClusterSignal?.overdueCount || 0) > 0 ? 'text-warning-text' : 'text-ink'}`}>
+                    {(billClusterSignal?.overdueCount || 0) > 0
+                      ? `${billClusterSignal.overdueCount} overdue`
+                      : billClusterSignal?.densestCount > 0
+                        ? `Week ${billClusterSignal.densestWeek} dense`
+                        : 'Stable'}
                   </p>
-                  <p className="text-label text-ink-3">{dueSoonDescs}</p>
                 </div>
               </div>
-              <ArrowRight size={15} className="text-ink-4 shrink-0" />
-            </button>
-          </motion.div>
-        )}
 
-        {/* ── Upcoming recurrings ───────────────────────────────────── */}
-        {upcomingBills.length > 0 && (
-          <motion.div variants={fadeUp}>
-            <div className="flex items-center justify-between mb-2">
-              <p className="section-label">Upcoming bills</p>
-              <Button variant="ghost" size="xs" onClick={() => navigate('/bills')}>
-                View all
-              </Button>
-            </div>
-            <div className="list-card">
-              {upcomingBills.map((bill) => {
-                const days = daysUntil(bill.due_date)
-                const dueLabel = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days}d`
-                return (
-                  <div key={bill.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium text-ink truncate">{bill.description}</p>
-                      <p className="text-[11px] text-ink-3 mt-0.5">
-                        Due {dueLabel}
-                      </p>
-                    </div>
-                    <p className="text-[13px] font-semibold tabular-nums text-warning-text shrink-0">
-                      {fmt(Number(bill.amount || 0))}
-                    </p>
+              <div className="rounded-card bg-kosha-surface-2 overflow-hidden">
+                {upcomingBills.length > 0 ? (
+                  upcomingBills.map((bill, index) => {
+                    const days = daysUntil(bill.due_date)
+                    const dueLabel = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days}d`
+                    return (
+                      <div key={bill.id} className={`px-3 py-2.5 flex items-center justify-between gap-3 ${index !== upcomingBills.length - 1 ? 'border-b border-kosha-border' : ''}`}>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] font-medium text-ink truncate">{bill.description}</p>
+                          <p className="text-[10px] text-ink-3 mt-0.5">Due {dueLabel}</p>
+                        </div>
+                        <p className="text-[12px] font-semibold tabular-nums text-warning-text shrink-0">{fmt(Number(bill.amount || 0))}</p>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <div className="px-3 py-3">
+                    <p className="text-[11px] text-ink-3">No upcoming bills in the next cycle.</p>
                   </div>
-                )
-              })}
+                )}
+              </div>
             </div>
           </motion.div>
         )}

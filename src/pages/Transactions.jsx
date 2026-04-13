@@ -450,13 +450,37 @@ export default function Transactions() {
   }, [])
 
   useEffect(() => {
+    let shouldResetCount = false
+    const validTypeIds = new Set(TYPES.map((item) => item.id))
+
     const monthParam = searchParams.get('month')
     const parsed = parseMonthInput(monthParam)
-    if (!parsed) return
+    if (parsed) {
+      const normalizedMonth = `${parsed.year}-${String(parsed.month).padStart(2, '0')}`
+      setSelectedMonth(normalizedMonth)
+      setDatePreset('custom-month')
+      shouldResetCount = true
+    }
 
-    setSelectedMonth(monthParam)
-    setDatePreset('custom-month')
-    setDisplayCount(50)
+    const typeParam = String(searchParams.get('type') || '').trim()
+    const hasValidType = validTypeIds.has(typeParam)
+    if (hasValidType) {
+      setTypeFilter(typeParam)
+      shouldResetCount = true
+    }
+
+    const categoryParam = String(searchParams.get('category') || '').trim()
+    if (categoryParam) {
+      if (!hasValidType) {
+        setTypeFilter('all')
+      }
+      setCatFilter(categoryParam)
+      shouldResetCount = true
+    }
+
+    if (shouldResetCount) {
+      setDisplayCount(50)
+    }
   }, [searchParams])
 
   useEffect(() => {
