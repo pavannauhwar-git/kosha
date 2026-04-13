@@ -1150,7 +1150,7 @@ create policy "category_budgets: delete own" on category_budgets
 create table if not exists user_categories (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references auth.users(id) on delete cascade,
-  type       text not null check (type in ('expense', 'income')),
+  type       text not null check (type in ('expense', 'income', 'investment')),
   label      text not null check (char_length(trim(label)) between 2 and 30),
   slug       text not null check (slug ~ '^custom_[a-z0-9_]+$'),
   icon       text not null default 'Tag',
@@ -1160,6 +1160,15 @@ create table if not exists user_categories (
   created_at timestamptz not null default now(),
   unique(user_id, slug)
 );
+
+-- Keep type constraint aligned for existing databases created before
+-- investment custom categories were introduced.
+alter table if exists user_categories
+  drop constraint if exists user_categories_type_check;
+
+alter table if exists user_categories
+  add constraint user_categories_type_check
+  check (type in ('expense', 'income', 'investment'));
 
 create index if not exists idx_user_cat_user
   on user_categories(user_id) where archived = false;

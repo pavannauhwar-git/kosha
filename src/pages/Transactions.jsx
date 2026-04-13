@@ -3,7 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react'
 import {
   useTransactions,
+  useTransactionSignalAggregates,
   removeTransactionMutation,
+  optimisticallyDeleteTransactionFromCache,
+  optimisticallyUpsertTransactionInCache,
   useDebounce,
 } from '../hooks/useTransactions'
 import TransactionItem from '../components/transactions/TransactionItem'
@@ -45,6 +48,8 @@ const DATE_PRESETS = [
   { id: 'prev-month', label: 'Last month' },
   { id: 'custom-month', label: 'Specific month' },
 ]
+
+const FILTER_URL_KEYS = ['month', 'day', 'type', 'category', 'payment', 'q']
 
 const MONTH_FILTER_MIN_YEAR = 1900
 const MONTH_FILTER_MAX_YEAR = 2100
@@ -128,6 +133,8 @@ export default function Transactions() {
   const [forcedDateRange, setForcedDateRange] = useState(null)
   const [displayCount,  setDisplayCount]  = useState(50)
   const [toast,         setToast]         = useState(null)
+  const [toastAction,   setToastAction]   = useState(null)
+  const [toastActionLabel, setToastActionLabel] = useState(null)
   const [duplicateTxn,  setDuplicateTxn]  = useState(null)
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
@@ -139,9 +146,60 @@ export default function Transactions() {
   const paymentPanelRef = useRef(null)
   const categoryTriggerRef = useRef(null)
   const paymentTriggerRef = useRef(null)
+  const toastTimeoutRef = useRef(null)
+  const pendingDeleteRef = useRef(null)
 
   const debouncedSearch = useDebounce(search, 300)
   const isSearchDebouncing = search !== debouncedSearch
+
+  const dismissToast = useCallback(() => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current)
+      toastTimeoutRef.current = null
+    }
+    setToast(null)
+    setToastAction(null)
+    setToastActionLabel(null)
+  }, [])
+
+  const pushToast = useCallback((message, options = {}) => {
+    const {
+      action = null,
+      actionLabel = 'Undo',
+      duration = 3600,
+    } = options
+
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current)
+      toastTimeoutRef.current = null
+    }
+
+    setToast(message)
+    if (typeof action === 'function') {
+      setToastAction(() => action)
+      setToastActionLabel(actionLabel)
+    } else {
+      setToastAction(null)
+      setToastActionLabel(null)
+    }
+
+    if (duration > 0) {
+      toastTimeoutRef.current = setTimeout(() => {
+        setToast(null)
+        setToastAction(null)
+        setToastActionLabel(null)
+        toastTimeoutRef.current = null
+      }, duration)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current)
+      }
+    }
+  }, [])
 
   function handleDatePreset(nextPreset) {
     setDatePreset(nextPreset)
@@ -275,6 +333,17 @@ export default function Transactions() {
     withCount: true,
   })
 
+  const shouldFetchSignalAggregates = total > data.length
+  const { data: signalAggregates } = useTransactionSignalAggregates({
+    type: typeFilter === 'all' ? undefined : typeFilter,
+    category: catFilter || undefined,
+    paymentMode: paymentModeFilter || undefined,
+    search: debouncedSearch || undefined,
+    startDate,
+    endDate,
+    enabled: shouldFetchSignalAggregates,
+  })
+
   const groups = useMemo(() => {
     const grouped = groupByDate(data)
     return grouped.map(([dateKey, txns]) => [dateKey, txns, groupNet(txns)])
@@ -370,6 +439,36 @@ export default function Transactions() {
   }, [data])
 
   const timelineActivitySignal = useMemo(() => {
+    if (signalAggregates?.rowCount >= 2) {
+      const activeDays = Number(signalAggregates.activeDays || 0)
+      if (activeDays <= 0) return null
+
+      let spanDays = 1
+      if (startDate && endDate) {
+        const fromTs = new Date(`${startDate}T00:00:00`).getTime()
+        const toTs = new Date(`${endDate}T00:00:00`).getTime()
+        if (Number.isFinite(fromTs) && Number.isFinite(toTs)) {
+          spanDays = Math.max(1, Math.floor((toTs - fromTs) / (24 * 60 * 60 * 1000)) + 1)
+        }
+      } else if (signalAggregates.minDate && signalAggregates.maxDate) {
+        const fromTs = new Date(`${signalAggregates.minDate}T00:00:00`).getTime()
+        const toTs = new Date(`${signalAggregates.maxDate}T00:00:00`).getTime()
+        if (Number.isFinite(fromTs) && Number.isFinite(toTs)) {
+          spanDays = Math.max(1, Math.floor((toTs - fromTs) / (24 * 60 * 60 * 1000)) + 1)
+        } else {
+          spanDays = Math.max(1, activeDays)
+        }
+      } else {
+        spanDays = Math.max(1, activeDays)
+      }
+
+      const densityPct = Math.round((activeDays / spanDays) * 100)
+      const txnsPerActiveDay = signalAggregates.rowCount / Math.max(1, activeDays)
+      const band = scoreHealthBand(densityPct, { healthy: 65, watch: 35 })
+
+      return { activeDays, spanDays, densityPct, txnsPerActiveDay, band }
+    }
+
     if (data.length < 2) return null
 
     const dateValues = data
@@ -403,9 +502,32 @@ export default function Transactions() {
     const band = scoreHealthBand(densityPct, { healthy: 65, watch: 35 })
 
     return { activeDays, spanDays, densityPct, txnsPerActiveDay, band }
-  }, [data, startDate, endDate])
+  }, [signalAggregates, data, startDate, endDate])
 
   const paymentModeSignal = useMemo(() => {
+    if (signalAggregates?.rowCount) {
+      const totalRows = signalAggregates.rowCount
+      const counts = Object.entries(signalAggregates.paymentModeCounts || {})
+      const rows = counts
+        .map(([mode, count]) => ({
+          mode,
+          label: paymentModeLabelById.get(mode) || 'Other',
+          count,
+          pct: Math.round((count / totalRows) * 100),
+        }))
+        .sort((a, b) => b.count - a.count)
+
+      if (!rows.length) return null
+
+      const topPct = rows[0]?.pct || 0
+      return {
+        top: rows[0],
+        secondary: rows[1] || null,
+        band: scoreRiskBand(topPct, { high: 72, watch: 55 }),
+        scopeLabel: 'matching rows',
+      }
+    }
+
     if (!data.length) return null
 
     const counts = new Map()
@@ -431,10 +553,33 @@ export default function Transactions() {
       top: rows[0],
       secondary: rows[1] || null,
       band: scoreRiskBand(topPct, { high: 72, watch: 55 }),
+      scopeLabel: 'visible rows',
     }
-  }, [data, paymentModeLabelById])
+  }, [signalAggregates, data, paymentModeLabelById])
 
   const expenseFrequencySignal = useMemo(() => {
+    if (signalAggregates?.expenseCount >= 3) {
+      const rows = Object.entries(signalAggregates.expenseCategoryCounts || {})
+        .map(([categoryId, count]) => ({
+          categoryId,
+          label: categoryLabelById.get(categoryId) || 'Other',
+          count,
+        }))
+        .sort((a, b) => b.count - a.count)
+
+      if (!rows.length) return null
+
+      const topThreeCount = rows.slice(0, 3).reduce((sum, row) => sum + row.count, 0)
+      const concentrationPct = Math.round((topThreeCount / signalAggregates.expenseCount) * 100)
+
+      return {
+        top: rows[0],
+        concentrationPct,
+        expenseCount: signalAggregates.expenseCount,
+        band: scoreRiskBand(concentrationPct, { high: 72, watch: 56 }),
+      }
+    }
+
     const expenseRows = data.filter((txn) => txn?.type === 'expense')
     if (expenseRows.length < 3) return null
 
@@ -463,7 +608,7 @@ export default function Transactions() {
       expenseCount: expenseRows.length,
       band: scoreRiskBand(concentrationPct, { high: 72, watch: 56 }),
     }
-  }, [data, categoryLabelById])
+  }, [signalAggregates, data, categoryLabelById])
 
   useEffect(() => {
     try {
@@ -489,57 +634,84 @@ export default function Transactions() {
   }, [])
 
   useEffect(() => {
-    let shouldResetCount = false
     const validTypeIds = new Set(TYPES.map((item) => item.id))
+    const validPaymentModeIds = new Set(PAYMENT_MODES.map((item) => item.id))
 
-    const monthParam = searchParams.get('month')
-    const parsed = parseMonthInput(monthParam)
-    if (parsed) {
-      const normalizedMonth = `${parsed.year}-${String(parsed.month).padStart(2, '0')}`
-      setSelectedMonth(normalizedMonth)
-      setDatePreset('custom-month')
-      shouldResetCount = true
-    }
-
+    const monthParam = parseMonthInput(searchParams.get('month'))
+    const dayParam = parseIsoDateInput(searchParams.get('day'))
     const typeParam = String(searchParams.get('type') || '').trim()
-    const hasValidType = validTypeIds.has(typeParam)
-    if (hasValidType) {
-      setTypeFilter(typeParam)
-      shouldResetCount = true
-    }
-
+    const resolvedType = validTypeIds.has(typeParam) ? typeParam : 'all'
     const categoryParam = String(searchParams.get('category') || '').trim()
-    if (categoryParam) {
-      if (!hasValidType) {
-        setTypeFilter('all')
-      }
-      setCatFilter(categoryParam)
-      shouldResetCount = true
-    }
+    const paymentModeParam = String(searchParams.get('payment') || '').trim()
+    const resolvedPaymentMode = validPaymentModeIds.has(paymentModeParam) ? paymentModeParam : ''
+    const queryParam = String(searchParams.get('q') || '').trim()
 
-    if (searchParams.has('q')) {
-      const queryParam = String(searchParams.get('q') || '').trim()
-      setSearch(queryParam)
-      shouldResetCount = true
-    }
+    setTypeFilter(resolvedType)
+    setPaymentModeFilter(resolvedPaymentMode)
+    setSearch(queryParam)
 
-    if (searchParams.has('day')) {
-      const dayParam = parseIsoDateInput(searchParams.get('day'))
-      if (dayParam) {
-        setForcedDateRange({ startDate: dayParam, endDate: dayParam })
-        setDatePreset('all')
-        shouldResetCount = true
-      } else {
-        setForcedDateRange(null)
-      }
+    const allowedCategories = getCategoriesForType(resolvedType === 'all' ? undefined : resolvedType)
+    const categoryAllowed = !categoryParam || allowedCategories.some((item) => item.id === categoryParam)
+    setCatFilter(categoryAllowed ? categoryParam : '')
+
+    if (dayParam) {
+      setForcedDateRange({ startDate: dayParam, endDate: dayParam })
+      setDatePreset('all')
+    } else if (monthParam) {
+      const normalizedMonth = `${monthParam.year}-${String(monthParam.month).padStart(2, '0')}`
+      setSelectedMonth(normalizedMonth)
+      setForcedDateRange(null)
+      setDatePreset('custom-month')
     } else {
       setForcedDateRange(null)
+      setDatePreset('all')
     }
 
-    if (shouldResetCount) {
-      setDisplayCount(50)
-    }
+    setDisplayCount(50)
   }, [searchParams])
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams()
+
+    if (forcedDateRange?.startDate && forcedDateRange.startDate === forcedDateRange.endDate) {
+      nextParams.set('day', forcedDateRange.startDate)
+    } else if (datePreset === 'custom-month') {
+      const parsed = parseMonthInput(selectedMonth)
+      if (parsed) {
+        nextParams.set('month', `${parsed.year}-${String(parsed.month).padStart(2, '0')}`)
+      }
+    }
+
+    if (typeFilter !== 'all') nextParams.set('type', typeFilter)
+    if (catFilter) nextParams.set('category', catFilter)
+    if (paymentModeFilter) nextParams.set('payment', paymentModeFilter)
+
+    const query = String(debouncedSearch || '').trim()
+    if (query) nextParams.set('q', query)
+
+    const focusParam = String(searchParams.get('focus') || '').trim()
+    if (focusParam) nextParams.set('focus', focusParam)
+
+    const currentParams = new URLSearchParams(searchParams)
+    FILTER_URL_KEYS.forEach((key) => currentParams.delete(key))
+    for (const [key, value] of nextParams.entries()) {
+      currentParams.set(key, value)
+    }
+
+    if (currentParams.toString() !== searchParams.toString()) {
+      setSearchParams(currentParams, { replace: true })
+    }
+  }, [
+    typeFilter,
+    catFilter,
+    paymentModeFilter,
+    datePreset,
+    selectedMonth,
+    forcedDateRange,
+    debouncedSearch,
+    searchParams,
+    setSearchParams,
+  ])
 
   useEffect(() => {
     if (!showCats && !showPaymentModes) return
@@ -615,17 +787,84 @@ export default function Transactions() {
     return () => clearTimeout(timeoutId)
   }, [focusTxnId, data, hasMore, timelineRows, scrollTimelineRowToIndex, searchParams, setSearchParams])
 
+  const commitPendingDelete = useCallback(async (pendingDelete) => {
+    if (!pendingDelete?.id) return
+    try {
+      await removeTransactionMutation(pendingDelete.id)
+    } catch (e) {
+      if (pendingDelete.txn) {
+        optimisticallyUpsertTransactionInCache(pendingDelete.txn)
+      }
+      pushToast(e.message || 'Could not delete transaction.', { duration: 4200 })
+    }
+  }, [pushToast])
+
+  useEffect(() => {
+    return () => {
+      const pendingDelete = pendingDeleteRef.current
+      if (!pendingDelete) return
+      if (pendingDelete.timeoutId) {
+        clearTimeout(pendingDelete.timeoutId)
+      }
+      pendingDeleteRef.current = null
+      void commitPendingDelete(pendingDelete)
+    }
+  }, [commitPendingDelete])
+
   const handleDelete = useCallback(async (id) => {
     if (!id) return false
-    try {
-      await removeTransactionMutation(id)
-      return true
-    } catch (e) {
-      setToast(e.message || 'Could not delete transaction.')
-      setTimeout(() => setToast(null), 4000)
-      throw e
+
+    const pendingDelete = pendingDeleteRef.current
+    if (pendingDelete?.id && pendingDelete.id !== id) {
+      if (pendingDelete.timeoutId) {
+        clearTimeout(pendingDelete.timeoutId)
+      }
+      pendingDeleteRef.current = null
+      void commitPendingDelete(pendingDelete)
     }
-  }, [])
+
+    const txn = data.find((row) => row?.id === id)
+    if (!txn) {
+      try {
+        await removeTransactionMutation(id)
+        return true
+      } catch (e) {
+        pushToast(e.message || 'Could not delete transaction.', { duration: 4200 })
+        throw e
+      }
+    }
+
+    const snapshot = { ...txn }
+    optimisticallyDeleteTransactionFromCache(id)
+
+    const undoDelete = () => {
+      const pending = pendingDeleteRef.current
+      if (!pending || pending.id !== id) return
+      if (pending.timeoutId) {
+        clearTimeout(pending.timeoutId)
+      }
+      pendingDeleteRef.current = null
+      optimisticallyUpsertTransactionInCache(pending.txn)
+      pushToast('Deletion canceled.', { duration: 2200 })
+    }
+
+    const timeoutId = setTimeout(() => {
+      const pending = pendingDeleteRef.current
+      if (!pending || pending.id !== id) return
+      pendingDeleteRef.current = null
+      void commitPendingDelete(pending)
+    }, 4200)
+
+    pendingDeleteRef.current = { id, txn: snapshot, timeoutId }
+
+    pushToast('Transaction deleted.', {
+      action: undoDelete,
+      actionLabel: 'Undo',
+      duration: 4200,
+    })
+
+    return true
+  }, [commitPendingDelete, data, pushToast])
 
   const inferRepaymentTab = useCallback((txn, loanRow = null) => {
     if (loanRow?.settled) return 'settled'
@@ -674,7 +913,7 @@ export default function Transactions() {
 
   const handleTap = useCallback((t) => {
     if (t?.is_repayment) {
-      setToast('Repayments are managed from Loans.')
+      pushToast('Repayments are managed from Loans.')
       navigate(repaymentLoanRoute(t))
       return
     }
@@ -683,7 +922,7 @@ export default function Transactions() {
     setDuplicateTxn(null)
     setAddType(t.type)
     setShowAdd(true)
-  }, [navigate, repaymentLoanRoute])
+  }, [navigate, pushToast, repaymentLoanRoute])
 
   const handleDuplicate = useCallback((txn) => {
     setEditTxn(null)
@@ -705,15 +944,22 @@ export default function Transactions() {
       if (typeFilter !== 'all') q = q.eq('type', typeFilter)
       if (catFilter)            q = q.eq('category', catFilter)
       if (paymentModeFilter)    q = q.eq('payment_mode', paymentModeFilter)
-      if (debouncedSearch)      q = q.ilike('description', `%${debouncedSearch}%`)
+      if (debouncedSearch) {
+        const searchNeedle = String(debouncedSearch)
+          .trim()
+          .replace(/[,%()]/g, ' ')
+          .replace(/\s+/g, ' ')
+        if (searchNeedle) {
+          q = q.or(`description.ilike.%${searchNeedle}%,notes.ilike.%${searchNeedle}%`)
+        }
+      }
       if (startDate)            q = q.gte('date', startDate)
       if (endDate)              q = q.lte('date', endDate)
 
       const { data: exportRows, error } = await q
       if (error) throw error
       if (!exportRows?.length) {
-        setToast('No transactions to export for current filters.')
-        setTimeout(() => setToast(null), 3000)
+        pushToast('No transactions to export for current filters.', { duration: 3000 })
         return
       }
 
@@ -757,18 +1003,11 @@ export default function Transactions() {
 
       const fileName = `kosha-${filters || 'transactions'}-${new Date().toISOString().slice(0, 10)}.csv`
       downloadCsv(fileName, csv)
-      setToast(`Downloaded ${fileName} (${exportRows.length} rows).`)
+      pushToast(`Downloaded ${fileName} (${exportRows.length} rows).`)
     } catch (e) {
-      setToast(e.message || 'Could not export transactions.')
-      setTimeout(() => setToast(null), 4000)
+      pushToast(e.message || 'Could not export transactions.', { duration: 4000 })
     }
-  }, [typeFilter, catFilter, paymentModeFilter, debouncedSearch, startDate, endDate])
-
-  useEffect(() => {
-    if (!toast) return
-    const timeoutId = setTimeout(() => setToast(null), 3600)
-    return () => clearTimeout(timeoutId)
-  }, [toast])
+  }, [typeFilter, catFilter, paymentModeFilter, debouncedSearch, startDate, endDate, pushToast])
 
   const dismissGuideHint = useCallback(() => {
     setShowGuideHint(false)
@@ -890,6 +1129,13 @@ export default function Transactions() {
                   <p className={`text-[10px] font-semibold mt-1 ${bandTextClass(timelineActivitySignal.band)}`}>
                     {timelineActivitySignal.band === 'healthy' ? 'Frequent logging' : timelineActivitySignal.band === 'watch' ? 'Steady logging' : 'Sparse logging'}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => handleDatePreset('7d')}
+                    className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                  >
+                    Focus last 7d
+                  </button>
                 </div>
               )}
 
@@ -900,13 +1146,20 @@ export default function Transactions() {
                     {paymentModeSignal.top.label}
                   </p>
                   <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
-                    {paymentModeSignal.top.pct}% of visible rows ({paymentModeSignal.top.count})
+                    {paymentModeSignal.top.pct}% of {paymentModeSignal.scopeLabel} ({paymentModeSignal.top.count})
                   </p>
                   {paymentModeSignal.secondary && (
                     <p className="text-[10px] text-ink-3 mt-1">
                       Next: {paymentModeSignal.secondary.label} ({paymentModeSignal.secondary.pct}%)
                     </p>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => handlePaymentModeFilter(paymentModeSignal.top.mode)}
+                    className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                  >
+                    Filter {paymentModeSignal.top.label}
+                  </button>
                 </div>
               )}
 
@@ -922,6 +1175,18 @@ export default function Transactions() {
                   <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(expenseFrequencySignal.band, 'text-ink-3')}`}>
                     Top-3 categories cover {expenseFrequencySignal.concentrationPct}%
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeFilter !== 'expense') {
+                        handleTypeFilter('expense')
+                      }
+                      handleCatFilter(expenseFrequencySignal.top.categoryId)
+                    }}
+                    className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                  >
+                    Filter {expenseFrequencySignal.top.label}
+                  </button>
                 </div>
               )}
             </div>
@@ -1370,7 +1635,12 @@ export default function Transactions() {
         </Button>
       )}
 
-      <AppToast message={toast} onDismiss={() => setToast(null)} />
+      <AppToast
+        message={toast}
+        onDismiss={dismissToast}
+        action={toastAction}
+        actionLabel={toastActionLabel}
+      />
 
       <button className="fab" aria-label="Add transaction" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
         <Plus size={24} className="text-white" />
@@ -1392,7 +1662,7 @@ export default function Transactions() {
               }
               handleCatFilter(createdCategory.id)
               setShowCats(false)
-              setToast(`Created ${createdCategory.label} category.`)
+              pushToast(`Created ${createdCategory.label} category.`)
             }}
           />
         )}

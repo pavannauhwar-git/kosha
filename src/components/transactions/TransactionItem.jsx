@@ -9,6 +9,7 @@ import { getCategory, INVESTMENT_VEHICLES } from '../../lib/categories'
 const PEEK_X = 140
 const SWIPE_OPEN_THRESHOLD = PEEK_X * 0.42
 const AUTO_NUDGE_X = 22
+const ACTIONS_ENABLE_X = -36
 
 const MODE_LABEL = {
   upi:         'UPI',
@@ -42,6 +43,7 @@ function TransactionItem({
 
   const [deleting, setDeleting] = useState(false)
   const [hidden, setHidden] = useState(false)
+  const [actionsEnabled, setActionsEnabled] = useState(false)
   const swipeLearnedRef = useRef(false)
   const nudgePlayedRef = useRef(false)
 
@@ -118,6 +120,15 @@ function TransactionItem({
     }
   }, [autoNudge, isOptimistic, onAutoNudgeDone, x])
 
+  useEffect(() => {
+    const unsubscribe = x.on('change', (latest) => {
+      const nextEnabled = latest <= ACTIONS_ENABLE_X
+      setActionsEnabled((prev) => (prev === nextEnabled ? prev : nextEnabled))
+    })
+
+    return () => unsubscribe()
+  }, [x])
+
   const handleDragEnd = useCallback((_, info) => {
     const ox = info.offset.x
     if (ox > 0) {
@@ -190,7 +201,12 @@ function TransactionItem({
       {!isOptimistic && (
         <motion.div
           className="absolute inset-y-0 right-0 flex items-stretch"
-          style={{ opacity: actionOpacity, scale: actionScale }}
+          style={{
+            opacity: actionOpacity,
+            scale: actionScale,
+            pointerEvents: actionsEnabled ? 'auto' : 'none',
+          }}
+          aria-hidden={!actionsEnabled}
         >
           <button
             onClick={handleDuplicateTap}

@@ -182,9 +182,17 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
     return toCategory(data)
   } catch (e) {
     queryClient.setQueryData(QUERY_KEY, prev)
-    if (e.message?.includes('duplicate') || e.code === '23505') {
+    const message = String(e?.message || '')
+    const code = String(e?.code || '')
+
+    if (message.includes('duplicate') || code === '23505') {
       throw new Error('A category with this name already exists')
     }
+
+    if (message.includes('user_categories_type_check') || code === '23514') {
+      throw new Error('Category type is not supported by your current database schema. Apply the latest schema migration and retry.')
+    }
+
     throw e
   }
 }

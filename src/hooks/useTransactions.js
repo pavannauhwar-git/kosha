@@ -6,6 +6,7 @@ import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
+import { CATEGORIES } from '../lib/categories'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
 // ── Query key factories ───────────────────────────────────────────────────
@@ -50,6 +51,7 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactions'],
   ['transactionsRecent'],
   ['transactionsDigest'],
+  ['transactionSignalAggregates'],
   ['dailyExpenseTotals'],
   ['monthExpenseDailyTotals'],
   ['txnCount'],
@@ -144,6 +146,43 @@ function logQueryError(scope, error) {
   console.error(`[Kosha] ${scope} query failed`, error)
 }
 
+const CATEGORY_LABEL_BY_ID = new Map(
+  CATEGORIES.map((category) => [category.id, String(category?.label || '').toLowerCase()])
+)
+
+function normalizeSearchNeedle(search) {
+  return String(search || '')
+    .trim()
+    .replace(/[,%()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+    .trim()
+}
+
+function buildTransactionSearchOrClause(search) {
+  const needle = normalizeSearchNeedle(search)
+  if (!needle) return ''
+
+  const ilikePattern = `%${needle}%`
+  const conditions = [
+    `description.ilike.${ilikePattern}`,
+    `notes.ilike.${ilikePattern}`,
+  ]
+
+  for (const [categoryId, categoryLabel] of CATEGORY_LABEL_BY_ID.entries()) {
+    if (!categoryLabel.includes(needle)) continue
+    conditions.push(`category.eq.${categoryId}`)
+  }
+
+  return conditions.join(',')
+}
+
+function applyTransactionSearchFilter(query, search) {
+  const clause = buildTransactionSearchOrClause(search)
+  if (!clause) return query
+  return query.or(clause)
+}
+
 
 // ── Cache invalidation (exported for cross-hook use) ──────────────────────
 
@@ -154,6 +193,7 @@ export async function invalidateCache() {
   await evictSwCacheEntries('/transactions')
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['transactionSignalAggregates'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
@@ -204,7 +244,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         if (paymentMode) q = q.eq('payment_mode', paymentMode)
         if (startDate) q = q.gte('date', startDate)
         if (endDate)   q = q.lte('date', endDate)
-        if (search)   q = q.ilike('description', `%${search}%`)
+        if (search)   q = applyTransactionSearchFilter(q, search)
         if (limit)    q = q.limit(limit)
 
         const { data, error: err } = await q
@@ -241,7 +281,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         if (type)       q = q.eq('type', type)
         if (category)   q = q.eq('category', category)
         if (paymentMode) q = q.eq('payment_mode', paymentMode)
-        if (search)     q = q.ilike('description', `%${search}%`)
+        if (search)     q = applyTransactionSearchFilter(q, search)
         if (startDate)  q = q.gte('date', startDate)
         if (endDate)    q = q.lte('date', endDate)
 
@@ -260,6 +300,84 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
     : safeRows.length
 
   return { data: safeRows, total, loading: isLoading, error, refetch }
+}
+
+export function useTransactionSignalAggregates({ type, category, paymentMode, search, startDate, endDate, enabled = true } = {}) {
+  const filters = { type, category, paymentMode, search, startDate, endDate }
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['transactionSignalAggregates', filters],
+    enabled,
+    queryFn: () => traceQuery('transactions:signal-aggregates', async () => {
+      const userId = getAuthUserId()
+      const pageSize = 1000
+      const activeDates = new Set()
+      const paymentModeCounts = {}
+      const expenseCategoryCounts = {}
+
+      let rowCount = 0
+      let expenseCount = 0
+      let minDate = null
+      let maxDate = null
+
+      for (let from = 0; ; from += pageSize) {
+        const to = from + pageSize - 1
+
+        let q = supabase
+          .from('transactions')
+          .select('date, type, category, payment_mode')
+          .eq('user_id', userId)
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .range(from, to)
+
+        if (type) q = q.eq('type', type)
+        if (category) q = q.eq('category', category)
+        if (paymentMode) q = q.eq('payment_mode', paymentMode)
+        if (startDate) q = q.gte('date', startDate)
+        if (endDate) q = q.lte('date', endDate)
+        if (search) q = applyTransactionSearchFilter(q, search)
+
+        const { data: rows, error: qError } = await q
+        if (qError) throw qError
+
+        const batch = rows || []
+        for (const row of batch) {
+          const date = String(row?.date || '').slice(0, 10)
+          if (date) {
+            activeDates.add(date)
+            if (!minDate || date < minDate) minDate = date
+            if (!maxDate || date > maxDate) maxDate = date
+          }
+
+          const mode = String(row?.payment_mode || 'other')
+          paymentModeCounts[mode] = (paymentModeCounts[mode] || 0) + 1
+
+          rowCount += 1
+
+          if (row?.type === 'expense') {
+            const categoryId = String(row?.category || 'other')
+            expenseCategoryCounts[categoryId] = (expenseCategoryCounts[categoryId] || 0) + 1
+            expenseCount += 1
+          }
+        }
+
+        if (batch.length < pageSize) break
+      }
+
+      return {
+        rowCount,
+        activeDays: activeDates.size,
+        minDate,
+        maxDate,
+        paymentModeCounts,
+        expenseCategoryCounts,
+        expenseCount,
+      }
+    }),
+    gcTime: 5 * 60 * 1000,
+  })
+
+  return { data, loading: isLoading, error }
 }
 
 const RECENT_TXN_COLUMNS = 'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id'
@@ -768,13 +886,22 @@ function matchesTransactionFilters(txn, filters = {}) {
 
   if (filters.type && txn.type !== filters.type) return false
   if (filters.category && txn.category !== filters.category) return false
+  if (filters.paymentMode && txn.payment_mode !== filters.paymentMode) return false
   if (filters.startDate && String(txn.date || '') < String(filters.startDate)) return false
   if (filters.endDate && String(txn.date || '') > String(filters.endDate)) return false
 
   if (filters.search) {
-    const needle = String(filters.search).toLowerCase().trim()
-    const hay = String(txn.description || '').toLowerCase()
-    if (needle && !hay.includes(needle)) return false
+    const needle = normalizeSearchNeedle(filters.search)
+    if (needle) {
+      const description = String(txn.description || '').toLowerCase()
+      const notes = String(txn.notes || '').toLowerCase()
+      const categoryLabel = CATEGORY_LABEL_BY_ID.get(String(txn.category || '')) || ''
+      const hasMatch =
+        description.includes(needle)
+        || notes.includes(needle)
+        || categoryLabel.includes(needle)
+      if (!hasMatch) return false
+    }
   }
 
   return true
@@ -790,6 +917,7 @@ function defaultTxnListFilters() {
   return {
     type: undefined,
     category: undefined,
+    paymentMode: undefined,
     search: undefined,
     limit: 50,
     startDate: undefined,
