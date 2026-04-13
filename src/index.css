@@ -383,19 +383,19 @@
       0 -4px 12px rgba(17, 19, 24, 0.05),
       inset 0 0.5px 0 rgba(255,255,255,0.76);
     padding-bottom: var(--safe-bottom);
-    transition: opacity 160ms cubic-bezier(0.2, 0, 0, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: opacity 160ms cubic-bezier(0.2, 0, 0, 1);
     pointer-events: auto;
+    will-change: opacity;
+    transform: translateZ(0);
   }
 
   .nav-float-wrap--preload {
     opacity: 0;
-    transform: translateY(10px);
     pointer-events: none;
   }
 
   .nav-float-wrap--ready {
     opacity: 1;
-    transform: translateY(0);
   }
 
   .nav-float {

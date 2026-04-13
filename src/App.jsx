@@ -384,22 +384,50 @@ function BottomNav() {
     let cancelled = false
     let revealed = false
     let fallbackId
+    let settleId
+    let rafId1
+    let rafId2
 
     const reveal = () => {
       if (cancelled || revealed) return
       revealed = true
       if (fallbackId) window.clearTimeout(fallbackId)
-      requestAnimationFrame(() => {
-        if (!cancelled) setLayoutReady(true)
+      if (settleId) window.clearTimeout(settleId)
+      rafId1 = requestAnimationFrame(() => {
+        rafId2 = requestAnimationFrame(() => {
+          if (!cancelled) setLayoutReady(true)
+        })
       })
     }
 
-    // Keep startup masking brief so the shell never feels frozen.
-    fallbackId = window.setTimeout(reveal, 180)
+    const scheduleReveal = (delay = 120) => {
+      if (revealed || cancelled) return
+      if (settleId) window.clearTimeout(settleId)
+      settleId = window.setTimeout(reveal, delay)
+    }
 
-    const readyPromise = document.fonts?.ready
-    if (readyPromise && typeof readyPromise.then === 'function') {
-      readyPromise.then(reveal).catch(reveal)
+    // Wait for viewport metrics to settle on iOS before showing the fixed nav.
+    const vv = window.visualViewport
+    if (vv) {
+      const handleViewportChange = () => scheduleReveal(120)
+
+      vv.addEventListener('resize', handleViewportChange)
+      vv.addEventListener('scroll', handleViewportChange)
+      window.addEventListener('orientationchange', handleViewportChange)
+
+      scheduleReveal(120)
+      fallbackId = window.setTimeout(reveal, 600)
+
+      return () => {
+        cancelled = true
+        if (fallbackId) window.clearTimeout(fallbackId)
+        if (settleId) window.clearTimeout(settleId)
+        if (rafId1) window.cancelAnimationFrame(rafId1)
+        if (rafId2) window.cancelAnimationFrame(rafId2)
+        vv.removeEventListener('resize', handleViewportChange)
+        vv.removeEventListener('scroll', handleViewportChange)
+        window.removeEventListener('orientationchange', handleViewportChange)
+      }
     } else {
       reveal()
     }
@@ -407,6 +435,9 @@ function BottomNav() {
     return () => {
       cancelled = true
       if (fallbackId) window.clearTimeout(fallbackId)
+      if (settleId) window.clearTimeout(settleId)
+      if (rafId1) window.cancelAnimationFrame(rafId1)
+      if (rafId2) window.cancelAnimationFrame(rafId2)
     }
   }, [])
 
