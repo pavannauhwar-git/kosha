@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Check } from '@phosphor-icons/react'
 import { ICON_MAP } from './CategoryIcon'
-import { createUserCategory } from '../../hooks/useUserCategories'
+import { createUserCategory, updateUserCategory } from '../../hooks/useUserCategories'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 
 const ICON_OPTIONS_BY_TYPE = {
@@ -64,11 +64,12 @@ function getIconSwatch(type, index) {
   return palette[index % palette.length]
 }
 
-export default function CreateCategorySheet({ type, onClose, onCreated }) {
-  const initialType = type || 'expense'
+export default function CreateCategorySheet({ type, onClose, onSaved, onCreated, existingCategory = null }) {
+  const isEditing = Boolean(existingCategory?.dbId)
+  const initialType = existingCategory?.type || type || 'expense'
   const initialIcons = ICON_OPTIONS_BY_TYPE[initialType] || ICON_OPTIONS_BY_TYPE.expense
-  const [name, setName] = useState('')
-  const [icon, setIcon] = useState(initialIcons[0] || 'Tag')
+  const [name, setName] = useState(existingCategory?.label || '')
+  const [icon, setIcon] = useState(existingCategory?.icon || initialIcons[0] || 'Tag')
   const [selectedType, setSelectedType] = useState(initialType)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -94,11 +95,19 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
     setError('')
 
     try {
-      const cat = await createUserCategory({ label: trimmed, type: selectedType, icon })
-      onCreated(cat)
+      const cat = isEditing
+        ? await updateUserCategory({
+          dbId: existingCategory.dbId,
+          label: trimmed,
+          icon,
+        })
+        : await createUserCategory({ label: trimmed, type: selectedType, icon })
+
+      onSaved?.(cat)
+      onCreated?.(cat)
       onClose()
     } catch (e) {
-      setError(e.message || 'Could not create category')
+      setError(e.message || (isEditing ? 'Could not update category' : 'Could not create category'))
       setSaving(false)
     }
   }
@@ -125,7 +134,7 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
 
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-[18px] font-bold text-ink">Create Category</h3>
+            <h3 className="text-[18px] font-bold text-ink">{isEditing ? 'Edit Category' : 'Create Category'}</h3>
             <button
               type="button"
               aria-label="Close create category sheet"
@@ -157,13 +166,14 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
                 key={option.id}
                 type="button"
                 onClick={() => {
+                  if (isEditing) return
                   setSelectedType(option.id)
                   const nextOptions = ICON_OPTIONS_BY_TYPE[option.id] || []
                   if (!nextOptions.includes(icon) && nextOptions.length > 0) {
                     setIcon(nextOptions[0])
                   }
                 }}
-                disabled={saving}
+                disabled={saving || isEditing}
                 className={`h-9 rounded-card text-[12px] font-semibold border transition-all disabled:opacity-50
                   ${selectedType === option.id
                     ? option.activeClass
@@ -224,12 +234,12 @@ export default function CreateCategorySheet({ type, onClose, onCreated }) {
                   <path className="opacity-75" fill="currentColor"
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span>Creating...</span>
+                <span>{isEditing ? 'Saving...' : 'Creating...'}</span>
               </>
             ) : (
               <>
                 <Check size={16} weight="bold" />
-                <span>Create Category</span>
+                <span>{isEditing ? 'Save Changes' : 'Create Category'}</span>
               </>
             )}
           </button>

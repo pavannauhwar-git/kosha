@@ -113,7 +113,6 @@ export function useUserCategories({ enabled = true } = {}) {
   // Keep module-level store in sync so getCategory() works outside React
   useEffect(() => {
     registerCustomCategories(categories)
-    return () => registerCustomCategories([])
   }, [categories])
 
   return { customCategories: categories, loading: isLoading, error }
@@ -159,7 +158,9 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
     isCustom: true,
     dbId: `temp-${slug}`,
   }
-  queryClient.setQueryData(QUERY_KEY, [...prev, optimistic])
+  const optimisticList = [...prev, optimistic]
+  queryClient.setQueryData(QUERY_KEY, optimisticList)
+  registerCustomCategories(optimisticList)
 
   try {
     const { data, error } = await supabase
@@ -178,10 +179,18 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
 
     if (error) throw error
 
+    const created = toCategory(data)
+    const afterCreate = (queryClient.getQueryData(QUERY_KEY) || []).map((cat) => (
+      cat.id === slug ? created : cat
+    ))
+    queryClient.setQueryData(QUERY_KEY, afterCreate)
+    registerCustomCategories(afterCreate)
+
     queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-    return toCategory(data)
+    return created
   } catch (e) {
     queryClient.setQueryData(QUERY_KEY, prev)
+    registerCustomCategories(prev)
     const message = String(e?.message || '')
     const code = String(e?.code || '')
 
@@ -198,13 +207,78 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
 }
 
 /**
+ * Edit a custom category (label/icon).
+ * Slug is intentionally preserved so existing transactions keep their category id.
+ */
+export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
+  const userId = getAuthUserId()
+  const trimmed = label.trim()
+
+  if (!dbId) {
+    throw new Error('Category id is required')
+  }
+
+  if (trimmed.length < 2 || trimmed.length > 30) {
+    throw new Error('Category name must be 2–30 characters')
+  }
+
+  const prev = queryClient.getQueryData(QUERY_KEY) || []
+  const optimistic = prev.map((cat) => (
+    cat.dbId === dbId
+      ? { ...cat, label: trimmed, icon: icon || cat.icon || 'Tag' }
+      : cat
+  ))
+  queryClient.setQueryData(QUERY_KEY, optimistic)
+  registerCustomCategories(optimistic)
+
+  try {
+    const { data, error } = await supabase
+      .from('user_categories')
+      .update({
+        label: trimmed,
+        icon,
+      })
+      .eq('id', dbId)
+      .eq('user_id', userId)
+      .select(COLUMNS)
+      .single()
+
+    if (error) throw error
+
+    const updated = toCategory(data)
+    const next = (queryClient.getQueryData(QUERY_KEY) || []).map((cat) => (
+      cat.dbId === dbId ? updated : cat
+    ))
+    queryClient.setQueryData(QUERY_KEY, next)
+    registerCustomCategories(next)
+
+    queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+    return updated
+  } catch (e) {
+    queryClient.setQueryData(QUERY_KEY, prev)
+    registerCustomCategories(prev)
+
+    const message = String(e?.message || '')
+    const code = String(e?.code || '')
+
+    if (message.includes('duplicate') || code === '23505') {
+      throw new Error('A category with this name already exists')
+    }
+
+    throw e
+  }
+}
+
+/**
  * Soft-delete (archive) a custom category. Existing transactions keep their
  * category value; the category just stops appearing in pickers.
  */
 export async function archiveUserCategory(dbId) {
   const userId = getAuthUserId()
   const prev = queryClient.getQueryData(QUERY_KEY) || []
-  queryClient.setQueryData(QUERY_KEY, prev.filter(c => c.dbId !== dbId))
+  const next = prev.filter(c => c.dbId !== dbId)
+  queryClient.setQueryData(QUERY_KEY, next)
+  registerCustomCategories(next)
 
   try {
     const { error } = await supabase
@@ -218,6 +292,7 @@ export async function archiveUserCategory(dbId) {
     queryClient.invalidateQueries({ queryKey: QUERY_KEY })
   } catch (e) {
     queryClient.setQueryData(QUERY_KEY, prev)
+    registerCustomCategories(prev)
     throw e
   }
 }

@@ -210,7 +210,7 @@ function TransactionItem({
         >
           <button
             onClick={handleDuplicateTap}
-            className="flex flex-col items-center justify-center gap-1 px-5
+            className="w-[70px] flex flex-col items-center justify-center gap-1 px-5
                      bg-brand-container active:scale-[0.96] active:opacity-80 transition-all duration-150"
           >
             <CopySimple size={18} weight="bold" color="var(--c-brand)" />
@@ -221,7 +221,7 @@ function TransactionItem({
 
           <motion.button
             onClick={handleDeleteTap}
-            className="flex flex-col items-center justify-center gap-1 px-5
+            className="w-[70px] flex flex-col items-center justify-center gap-1 px-5
                      active:scale-[0.96] active:opacity-80 transition-all duration-150"
             style={{ backgroundColor: deleteBg, color: deleteFg }}
           >

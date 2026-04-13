@@ -5,9 +5,9 @@
  * provides instant visual feedback; background invalidation reconciles later.
  */
 
-import { useMemo, useReducer } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, NotePencil, CaretRight, Plus, CalendarDots } from '@phosphor-icons/react'
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
+import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash } from '@phosphor-icons/react'
 import Button from '../ui/Button'
 import PixelDatePicker from '../ui/PixelDatePicker'
 import {
@@ -21,7 +21,7 @@ import {
   getCategoriesForType,
   normalizeCategoryForType,
 } from '../../lib/categories'
-import { useUserCategories } from '../../hooks/useUserCategories'
+import { archiveUserCategory, useUserCategories } from '../../hooks/useUserCategories'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import CreateCategorySheet from '../categories/CreateCategorySheet'
 
@@ -37,6 +37,159 @@ const TYPES = [
 ]
 
 const RECURRENCE_OPTIONS = ['monthly', 'quarterly', 'yearly']
+const PICKER_PEEK_X = 140
+const PICKER_OPEN_THRESHOLD = PICKER_PEEK_X * 0.42
+const PICKER_ACTIONS_ENABLE_X = -36
+const CATEGORY_SWIPE_HINT_DISMISSED_KEY = 'kosha:category-swipe-manage-hint-dismissed-v1'
+const CATEGORY_SWIPE_HINT_LEARNED_KEY = 'kosha:category-swipe-manage-hint-learned-v1'
+
+function SwipeManagePickerRow({
+  selected,
+  label,
+  onSelect,
+  canManage,
+  onEdit,
+  onDelete,
+  onSwipeLearned,
+  leading,
+  showTopBorder,
+}) {
+  const x = useMotionValue(0)
+  const actionOpacity = useTransform(x, [0, -30, -PICKER_PEEK_X], [0, 0.5, 1])
+  const actionScale = useTransform(x, [-PICKER_PEEK_X * 0.4, -PICKER_PEEK_X], [0.92, 1])
+  const [actionsEnabled, setActionsEnabled] = useState(false)
+  const swipeLearnedRef = useRef(false)
+
+  const markSwipeLearned = () => {
+    if (swipeLearnedRef.current) return
+    swipeLearnedRef.current = true
+    onSwipeLearned?.()
+  }
+
+  useEffect(() => {
+    const unsubscribe = x.on('change', (latest) => {
+      const nextEnabled = latest <= PICKER_ACTIONS_ENABLE_X
+      setActionsEnabled((prev) => (prev === nextEnabled ? prev : nextEnabled))
+    })
+    return () => unsubscribe()
+  }, [x])
+
+  const snapToPeek = () => {
+    animate(x, -PICKER_PEEK_X, { type: 'spring', stiffness: 500, damping: 36 })
+  }
+
+  const snapToRest = () => {
+    animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
+  }
+
+  const handleDragEnd = (_, info) => {
+    if (!canManage) return
+    const ox = info.offset.x
+    if (ox > 0) {
+      snapToRest()
+      return
+    }
+    if (ox < -PICKER_OPEN_THRESHOLD) {
+      markSwipeLearned()
+      snapToPeek()
+    } else {
+      snapToRest()
+    }
+  }
+
+  const handleTap = () => {
+    if (canManage && x.get() < -10) {
+      snapToRest()
+      return
+    }
+    onSelect?.()
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleTap()
+    }
+  }
+
+  const handleEditTap = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    snapToRest()
+    onEdit?.()
+  }
+
+  const handleDeleteTap = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    snapToRest()
+    onDelete?.()
+  }
+
+  const borderClass = showTopBorder ? 'border-t border-kosha-border' : ''
+
+  return (
+    <div className={`relative overflow-hidden bg-kosha-surface ${borderClass}`}>
+      {canManage && (
+        <motion.div
+          className="absolute inset-y-0 right-0 flex items-stretch"
+          style={{
+            opacity: actionOpacity,
+            scale: actionScale,
+            pointerEvents: actionsEnabled ? 'auto' : 'none',
+          }}
+          aria-hidden={!actionsEnabled}
+        >
+          <button
+            type="button"
+            onClick={handleEditTap}
+            className="w-[70px] flex flex-col items-center justify-center gap-1 px-5
+                     bg-brand-container active:scale-[0.96] active:opacity-80 transition-all duration-150"
+          >
+            <PencilSimple size={20} weight="bold" color="var(--c-brand)" />
+            <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
+              Edit
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDeleteTap}
+            className="w-[70px] flex flex-col items-center justify-center gap-1 px-5
+                     active:scale-[0.96] active:opacity-80 transition-all duration-150"
+            style={{ backgroundColor: 'rgba(232,69,60,0.96)', color: 'rgba(255,255,255,1)' }}
+          >
+            <Trash size={18} weight="bold" color="currentColor" />
+            <span className="text-[10px] font-semibold" style={{ color: 'rgba(255,255,255,1)' }}>
+              Delete
+            </span>
+          </button>
+        </motion.div>
+      )}
+
+      <motion.div
+        role="button"
+        tabIndex={0}
+        className={`list-row w-full ${selected ? 'bg-brand-container' : ''}`}
+        style={{ x }}
+        drag={canManage ? 'x' : false}
+        dragConstraints={{ left: -PICKER_PEEK_X * 1.5, right: 0 }}
+        dragElastic={{ left: 0.12, right: 0.02 }}
+        onDragEnd={handleDragEnd}
+        onClick={handleTap}
+        onKeyDown={handleKeyDown}
+        whileTap={{ scale: 0.992 }}
+        transition={{ scale: { duration: 0.08 } }}
+      >
+        {leading}
+        <span className={`flex-1 text-[15px] ${selected ? 'text-brand font-medium' : 'text-ink'}`}>
+          {label}
+        </span>
+        <span className={`text-lg w-5 text-right ${selected ? 'text-ink' : 'invisible'}`}>✓</span>
+      </motion.div>
+    </div>
+  )
+}
 
 function nextRecurringDate(dateStr, recurrence) {
   if (!dateStr || !recurrence) return null
@@ -124,8 +277,52 @@ function formReducer(state, action) {
 
 // ── Sub-pickers ───────────────────────────────────────────────────────────
 
-function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Category', onCreateNew }) {
+function CategoryPicker({
+  selected,
+  onSelect,
+  onClose,
+  categories,
+  title = 'Category',
+  onCreateNew,
+  onEditCustom,
+  onDeleteCustom,
+}) {
   const sheetRef = useOverlayFocusTrap(true, { onClose })
+  const hasManageableCategories = categories.some((cat) => Boolean(cat.isCustom && cat.dbId))
+  const [showSwipeHint, setShowSwipeHint] = useState(false)
+
+  useEffect(() => {
+    if (!hasManageableCategories) {
+      setShowSwipeHint(false)
+      return
+    }
+
+    try {
+      const dismissed = localStorage.getItem(CATEGORY_SWIPE_HINT_DISMISSED_KEY) === '1'
+      const learned = localStorage.getItem(CATEGORY_SWIPE_HINT_LEARNED_KEY) === '1'
+      setShowSwipeHint(!dismissed && !learned)
+    } catch {
+      setShowSwipeHint(true)
+    }
+  }, [hasManageableCategories])
+
+  const dismissSwipeHint = () => {
+    setShowSwipeHint(false)
+    try {
+      localStorage.setItem(CATEGORY_SWIPE_HINT_DISMISSED_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }
+
+  const handleSwipeHintLearned = () => {
+    setShowSwipeHint(false)
+    try {
+      localStorage.setItem(CATEGORY_SWIPE_HINT_LEARNED_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }
 
   return (
     <>
@@ -152,20 +349,49 @@ function CategoryPicker({ selected, onSelect, onClose, categories, title = 'Cate
               <X size={16} className="text-ink-3" />
             </button>
           </div>
-          <div className="list-card">
-            {categories.map(cat => (
-              <button key={cat.id}
-                className={`list-row w-full ${selected === cat.id ? 'bg-brand-container' : ''}`}
-                onClick={() => { onSelect(cat.id); onClose() }}
+
+          {showSwipeHint && (
+            <div className="mini-panel px-3 py-2 mb-2.5 flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                i
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] text-ink-2 leading-relaxed">
+                  Quick tip: swipe left on a custom category to Edit or Delete.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={dismissSwipeHint}
+                className="text-ink-4 hover:text-ink-2 transition-colors"
+                aria-label="Dismiss swipe hint"
               >
-                <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0">
-                  <CategoryIcon categoryId={cat.id} size={16} />
-                </div>
-                <span className={`flex-1 text-[15px] ${selected === cat.id ? 'text-brand font-medium' : 'text-ink'}`}>
-                  {cat.label}
-                </span>
-                <span className={`text-lg w-5 text-right ${selected === cat.id ? 'text-ink' : 'invisible'}`}>✓</span>
+                <X size={13} />
               </button>
+            </div>
+          )}
+
+          <div className="list-card">
+            {categories.map((cat, index) => (
+              <SwipeManagePickerRow
+                key={cat.id}
+                selected={selected === cat.id}
+                label={cat.label}
+                showTopBorder={index > 0}
+                leading={(
+                  <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0">
+                    <CategoryIcon categoryId={cat.id} size={16} />
+                  </div>
+                )}
+                canManage={Boolean(cat.isCustom && cat.dbId)}
+                onSwipeLearned={handleSwipeHintLearned}
+                onSelect={() => {
+                  onSelect(cat.id)
+                  onClose()
+                }}
+                onEdit={() => onEditCustom?.(cat)}
+                onDelete={() => onDeleteCustom?.(cat)}
+              />
             ))}
           </div>
           {onCreateNew && (
@@ -249,8 +475,51 @@ function ModePicker({ selected, onSelect, onClose }) {
   )
 }
 
-function VehiclePicker({ selected, onSelect, onClose, vehicles, onCreateNew }) {
+function VehiclePicker({
+  selected,
+  onSelect,
+  onClose,
+  vehicles,
+  onCreateNew,
+  onEditCustom,
+  onDeleteCustom,
+}) {
   const sheetRef = useOverlayFocusTrap(true, { onClose })
+  const hasManageableVehicles = vehicles.some((item) => Boolean(item.isCustom && item.dbId))
+  const [showSwipeHint, setShowSwipeHint] = useState(false)
+
+  useEffect(() => {
+    if (!hasManageableVehicles) {
+      setShowSwipeHint(false)
+      return
+    }
+
+    try {
+      const dismissed = localStorage.getItem(CATEGORY_SWIPE_HINT_DISMISSED_KEY) === '1'
+      const learned = localStorage.getItem(CATEGORY_SWIPE_HINT_LEARNED_KEY) === '1'
+      setShowSwipeHint(!dismissed && !learned)
+    } catch {
+      setShowSwipeHint(true)
+    }
+  }, [hasManageableVehicles])
+
+  const dismissSwipeHint = () => {
+    setShowSwipeHint(false)
+    try {
+      localStorage.setItem(CATEGORY_SWIPE_HINT_DISMISSED_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }
+
+  const handleSwipeHintLearned = () => {
+    setShowSwipeHint(false)
+    try {
+      localStorage.setItem(CATEGORY_SWIPE_HINT_LEARNED_KEY, '1')
+    } catch {
+      // no-op
+    }
+  }
 
   return (
     <>
@@ -277,15 +546,38 @@ function VehiclePicker({ selected, onSelect, onClose, vehicles, onCreateNew }) {
               <X size={16} className="text-ink-3" />
             </button>
           </div>
+
+          {showSwipeHint && (
+            <div className="mini-panel px-3 py-2 mb-2.5 flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                i
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] text-ink-2 leading-relaxed">
+                  Quick tip: swipe left on a custom category to Edit or Delete.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={dismissSwipeHint}
+                className="text-ink-4 hover:text-ink-2 transition-colors"
+                aria-label="Dismiss swipe hint"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+
           <div className="list-card">
-            {vehicles.map(v => {
+            {vehicles.map((v, index) => {
               const Icon = ICON_MAP[v.icon]
               return (
-                <button key={v.id}
-                  className={`list-row w-full ${selected === v.label ? 'bg-brand-container' : ''}`}
-                  onClick={() => { onSelect(v.label); onClose() }}
-                >
-                  {Icon && (
+                <SwipeManagePickerRow
+                  key={v.id}
+                  selected={selected === v.label}
+                  label={v.label}
+                  showTopBorder={index > 0}
+                  leading={Icon ? (
                     <div
                       className={`w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0 ${v.bg ? '' : 'bg-kosha-surface-2'}`}
                       style={v.bg ? { backgroundColor: v.bg } : undefined}
@@ -297,12 +589,20 @@ function VehiclePicker({ selected, onSelect, onClose, vehicles, onCreateNew }) {
                         style={v.color ? { color: v.color } : undefined}
                       />
                     </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                      <span className="text-[11px] font-semibold text-ink-3">₹</span>
+                    </div>
                   )}
-                  <span className={`flex-1 text-[15px] ${selected === v.label ? 'text-brand font-medium' : 'text-ink'}`}>
-                    {v.label}
-                  </span>
-                  <span className={`text-lg w-5 text-right ${selected === v.label ? 'text-ink' : 'invisible'}`}>✓</span>
-                </button>
+                  canManage={Boolean(v.isCustom && v.dbId)}
+                  onSwipeLearned={handleSwipeHintLearned}
+                  onSelect={() => {
+                    onSelect(v.label)
+                    onClose()
+                  }}
+                  onEdit={() => onEditCustom?.(v)}
+                  onDelete={() => onDeleteCustom?.(v)}
+                />
               )
             })}
           </div>
@@ -351,6 +651,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         icon: cat.icon || 'Tag',
         color: cat.color,
         bg: cat.bg,
+        dbId: cat.dbId,
+        type: cat.type,
+        isCustom: true,
       }))
 
     const seen = new Set()
@@ -374,7 +677,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const [showCatPicker,  setShowCatPicker]  = useReducer(v => !v, false)
   const [showModePicker, setShowModePicker] = useReducer(v => !v, false)
   const [showVehPicker,  setShowVehPicker]  = useReducer(v => !v, false)
-  const [showCreateCat,  setShowCreateCat]  = useReducer(v => !v, false)
+  const [showCreateCat, setShowCreateCat] = useState(false)
+  const [editingCategory, setEditingCategory] = useState(null)
 
   const mainSheetRef = useOverlayFocusTrap(
     !showCatPicker && !showModePicker && !showVehPicker && !showCreateCat,
@@ -383,6 +687,29 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       initialFocusSelector: 'input[name="txn-amount"]',
     }
   )
+
+  async function handleDeleteCustomCategory(customCategory) {
+    const dbId = customCategory?.dbId
+    if (!dbId) return
+
+    const label = customCategory?.label || 'this category'
+    const confirmed = window.confirm(`Delete "${label}"? Existing transactions will keep their saved category id, but this category will stop appearing in pickers.`)
+    if (!confirmed) return
+
+    try {
+      await archiveUserCategory(dbId)
+
+      if (type === 'investment' && vehicle === customCategory.label) {
+        set('vehicle', 'Other')
+      }
+
+      if (type !== 'investment' && category === customCategory.id) {
+        set('category', type === 'income' ? 'salary' : 'other')
+      }
+    } catch (e) {
+      dispatch({ type: 'SAVING_ERROR', value: e?.message || 'Could not delete category' })
+    }
+  }
 
   async function handleSave() {
     // Client-side validation — fast, no async
@@ -739,7 +1066,17 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             onClose={() => setShowCatPicker()}
             categories={categoryOptions}
             title={type === 'income' ? 'Income Source' : 'Expense Category'}
-            onCreateNew={() => { setShowCatPicker(); setShowCreateCat() }}
+            onCreateNew={() => {
+              setShowCatPicker()
+              setEditingCategory(null)
+              setShowCreateCat(true)
+            }}
+            onEditCustom={(customCategory) => {
+              setShowCatPicker()
+              setEditingCategory(customCategory)
+              setShowCreateCat(true)
+            }}
+            onDeleteCustom={handleDeleteCustomCategory}
           />
         )}
         {showModePicker && <ModePicker      selected={mode}     onSelect={v => set('mode', v)}     onClose={() => setShowModePicker()} />}
@@ -749,25 +1086,46 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             onSelect={v => set('vehicle', v)}
             onClose={() => setShowVehPicker()}
             vehicles={investmentOptions}
-            onCreateNew={() => { setShowVehPicker(); setShowCreateCat() }}
+            onCreateNew={() => {
+              setShowVehPicker()
+              setEditingCategory(null)
+              setShowCreateCat(true)
+            }}
+            onEditCustom={(customCategory) => {
+              setShowVehPicker()
+              setEditingCategory(customCategory)
+              setShowCreateCat(true)
+            }}
+            onDeleteCustom={handleDeleteCustomCategory}
           />
         )}
         {showCreateCat && (
           <CreateCategorySheet
             type={type}
-            onClose={() => setShowCreateCat()}
-            onCreated={(createdCategory) => {
-              const createdId = createdCategory?.id || createdCategory
-              const createdType = createdCategory?.type
-              const createdLabel = createdCategory?.label
+            existingCategory={editingCategory}
+            onClose={() => {
+              setShowCreateCat(false)
+              setEditingCategory(null)
+            }}
+            onSaved={(savedCategory) => {
+              const savedId = savedCategory?.id || savedCategory
+              const savedType = savedCategory?.type
+              const savedLabel = savedCategory?.label
 
-              if (type === 'investment' && createdType === 'investment' && createdLabel) {
-                set('vehicle', createdLabel)
+              if (!editingCategory) {
+                if (type === 'investment' && savedType === 'investment' && savedLabel) {
+                  set('vehicle', savedLabel)
+                  return
+                }
+
+                if (type !== 'investment' && savedId && savedType === type) {
+                  set('category', savedId)
+                }
                 return
               }
 
-              if (type !== 'investment' && createdId && createdType === type) {
-                set('category', createdId)
+              if (type === 'investment' && savedType === 'investment' && vehicle === editingCategory.label && savedLabel) {
+                set('vehicle', savedLabel)
               }
             }}
           />
