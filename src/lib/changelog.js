@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.2.3',
+    date: 'April 2026',
+    items: [
+      'Added a user-friendly in-app PWA update prompt with Update and Not now actions, plus periodic service-worker refresh checks',
+      'Fixed custom category creation for investment type by aligning user_categories type constraints and improving schema mismatch error messaging',
+      'Prevented accidental right-edge deletes by requiring a real swipe-open state before Repeat/Delete actions are tappable in Transactions and Dashboard recent rows',
+      'Improved Transactions signal reliability by computing insight cards from full matching-scope aggregates when timeline rows are only partially loaded',
+      'Enhanced Transactions filtering quality with deterministic URL filter sync (including payment mode) and broader search across description, notes, and category labels',
+    ],
+  },
+  {
     version: '1.2.2',
     date: 'April 2026',
     items: [

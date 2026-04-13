@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
+import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
@@ -894,11 +895,28 @@ function ShellStatusBanners() {
     if (typeof navigator === 'undefined') return false
     return !navigator.onLine
   })
+  const [updateDismissed, setUpdateDismissed] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [swRegistration, setSwRegistration] = useState(null)
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null)
   const [installDismissed, setInstallDismissed] = useState(false)
   const [installing, setInstalling] = useState(false)
   const [installMessage, setInstallMessage] = useState('')
   const installMessageTimerRef = useRef(null)
+
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegisteredSW(_, registration) {
+      if (registration) {
+        setSwRegistration(registration)
+      }
+    },
+    onRegisterError(error) {
+      console.warn('[Kosha] SW register failed', error)
+    },
+  })
 
   const announceInstallMessage = useCallback((message, timeout = 2200) => {
     if (installMessageTimerRef.current) {
@@ -946,6 +964,27 @@ function ShellStatusBanners() {
   }, [announceInstallMessage])
 
   useEffect(() => {
+    if (!swRegistration) return undefined
+
+    // Poll for a fresh service worker periodically so long-running sessions
+    // receive release prompts without requiring a manual reload.
+    const intervalId = window.setInterval(() => {
+      void swRegistration.update()
+    }, 30 * 60 * 1000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [swRegistration])
+
+  useEffect(() => {
+    if (needRefresh) {
+      setUpdateDismissed(false)
+      setUpdating(false)
+    }
+  }, [needRefresh])
+
+  useEffect(() => {
     return () => {
       if (installMessageTimerRef.current) {
         window.clearTimeout(installMessageTimerRef.current)
@@ -955,7 +994,18 @@ function ShellStatusBanners() {
 
   const navHidden = BOTTOM_NAV_HIDE_ON.some((path) => location.pathname.startsWith(path))
   const bottomClass = navHidden ? 'bottom-4' : 'bottom-[calc(var(--nav-height)+1rem)]'
+  const showUpdatePrompt = needRefresh && !updateDismissed
   const showInstallPrompt = !!deferredInstallPrompt && !installDismissed
+
+  async function handleAppUpdate() {
+    setUpdating(true)
+    try {
+      await updateServiceWorker(true)
+    } catch {
+      setUpdating(false)
+      announceInstallMessage('Could not update right now. Please retry.')
+    }
+  }
 
   async function handleInstall() {
     const prompt = deferredInstallPrompt
@@ -979,7 +1029,7 @@ function ShellStatusBanners() {
     }
   }
 
-  if (!isOffline && !showInstallPrompt && !installMessage) return null
+  if (!isOffline && !showUpdatePrompt && !showInstallPrompt && !installMessage) return null
 
   return (
     <div className={`pointer-events-none fixed left-4 right-4 z-50 mx-auto max-w-[398px] space-y-2 ${bottomClass}`}>
@@ -993,6 +1043,37 @@ function ShellStatusBanners() {
           className="pointer-events-auto flex items-center gap-2 rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 text-warning-text shadow-card"
         >
           <span className="text-[12px] font-semibold">You are offline. Kosha will sync when your connection returns.</span>
+        </motion.div>
+      )}
+
+      {showUpdatePrompt && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18 }}
+          className="pointer-events-auto flex items-center gap-2 rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5 shadow-card"
+        >
+          <span className="flex-1 text-[12px] leading-snug text-ink-2">
+            Bug fixes and improvements are ready.
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setUpdateDismissed(true)
+              setNeedRefresh(false)
+            }}
+            className="rounded-pill border border-kosha-border bg-kosha-surface-2 px-2.5 py-1 text-[11px] font-semibold text-ink-2"
+          >
+            Not now
+          </button>
+          <button
+            type="button"
+            onClick={() => { void handleAppUpdate() }}
+            disabled={updating}
+            className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+          >
+            {updating ? 'Updating…' : 'Update'}
+          </button>
         </motion.div>
       )}
 
