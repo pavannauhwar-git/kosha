@@ -20,19 +20,30 @@ const stagger = createStagger(0.06, 0.04)
 const UPI_ID = 'kumar.pavan.pk96@okicici'
 const REPO_URL = 'https://github.com/pavannauhwar-git/kosha'
 const LINKEDIN = 'https://www.linkedin.com/in/pavannauhwar/'
+const SUPPORT_UPI_QUERY = `pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent('Pavan Kumar Nauhwar')}&tn=${encodeURIComponent('Support Kosha')}`
+const SUPPORT_UPI_LINK = `upi://pay?${SUPPORT_UPI_QUERY}`
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+    <p className="text-[14px] font-semibold text-ink mb-2 px-1">
       {children}
     </p>
   )
 }
 
-function CardRow({ icon, label, sublabel, right, onClick, href }) {
+function CardRow({ icon, label, sublabel, right, onClick, href, tone = 'brand' }) {
+  const toneClasses = {
+    brand: 'bg-brand-container border border-brand/15',
+    income: 'bg-income-bg border border-income-border',
+    expense: 'bg-expense-bg border border-expense-border',
+    invest: 'bg-invest-bg border border-invest-border',
+    warning: 'bg-warning-bg border border-warning-border',
+    neutral: 'bg-kosha-surface-2 border border-kosha-border',
+  }
+
   const inner = (
     <>
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-brand-container border border-brand/15">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${toneClasses[tone] || toneClasses.brand}`}>
         {icon}
       </div>
       <div className="flex-1 min-w-0">
@@ -44,7 +55,7 @@ function CardRow({ icon, label, sublabel, right, onClick, href }) {
   )
 
   const cls = `w-full flex items-center gap-3 px-4 py-3.5
-               transition-colors active:bg-kosha-surface-2 text-left`
+               transition-colors hover:bg-kosha-surface-2 active:bg-kosha-surface-2 text-left`
 
   if (href) {
     return (
@@ -65,7 +76,9 @@ export default function About() {
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const [showAllVersions, setShowAllVersions] = useState(false)
-  const latestVersion = CHANGELOG[0]?.version || '1.0.0'
+  const currentRelease = CHANGELOG[0]
+  const olderReleases = CHANGELOG.slice(1)
+  const latestVersion = currentRelease?.version || '1.0.0'
   const releaseCount = CHANGELOG.length
   const shippedItems = CHANGELOG.reduce((sum, release) => sum + (release.items?.length || 0), 0)
 
@@ -79,6 +92,10 @@ export default function About() {
 
   function openExternal(url) {
     window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  function openSupportUpi() {
+    window.location.href = SUPPORT_UPI_LINK
   }
 
   return (
@@ -99,9 +116,7 @@ export default function About() {
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
           <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-kosha-surface border border-kosha-border flex items-center justify-center">
-                <KoshaLogo size={34} />
-              </div>
+              <KoshaLogo size={42} className="drop-shadow-[0_4px_10px_rgba(0,0,0,0.10)]" />
               <div className="min-w-0 flex-1">
                 <p className="text-[20px] font-bold text-ink tracking-tight leading-tight">Kosha</p>
                 <p className="text-[12px] text-ink-3 mt-0.5">Your financial command center</p>
@@ -133,11 +148,12 @@ export default function About() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   size="md"
                   fullWidth
                   onClick={() => navigate('/guide')}
                   icon={<Sparkles size={14} />}
+                  className="bg-brand text-white border-brand hover:brightness-95"
                 >
                   Open product guide
                 </Button>
@@ -147,6 +163,7 @@ export default function About() {
                   fullWidth
                   onClick={() => openExternal(REPO_URL)}
                   icon={<ExternalLink size={14} />}
+                  className="bg-[#181717] text-white border-[#181717] hover:bg-[#0f0f0f]"
                 >
                   View GitHub
                 </Button>
@@ -155,17 +172,17 @@ export default function About() {
         </motion.div>
 
           <motion.div variants={fadeUp}>
-            <SectionLabel>Design Principles</SectionLabel>
+            <SectionLabel tone="invest">Design Principles</SectionLabel>
             <div className="card p-4 space-y-2.5">
-              <div className="mini-panel px-3 py-2.5">
+              <div className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
                 <p className="text-[12px] font-semibold text-ink">Direction first</p>
                 <p className="text-[11px] text-ink-3 mt-0.5">Dashboard gives fast orientation before deep edits.</p>
               </div>
-              <div className="mini-panel px-3 py-2.5">
+              <div className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
                 <p className="text-[12px] font-semibold text-ink">Precision always</p>
                 <p className="text-[11px] text-ink-3 mt-0.5">Transactions, bills, loans, and reconciliation preserve record quality.</p>
               </div>
-              <div className="mini-panel px-3 py-2.5">
+              <div className="rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5">
                 <p className="text-[12px] font-semibold text-ink">Privacy by default</p>
                 <p className="text-[11px] text-ink-3 mt-0.5">No telemetry or ad tracking. Your Supabase project is your source of truth.</p>
               </div>
@@ -173,63 +190,90 @@ export default function About() {
           </motion.div>
 
           <motion.div variants={fadeUp}>
-            <SectionLabel>Release Timeline</SectionLabel>
+            <SectionLabel tone="warning">Release Timeline</SectionLabel>
             <div className="card overflow-hidden p-0">
-              {CHANGELOG
-                .slice(0, showAllVersions ? CHANGELOG.length : 2)
-                .map((release, ri) => (
-                  <div key={release.version}>
-                    {ri > 0 && <Divider />}
-                    <div className="flex items-center justify-between px-4 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-brand-container border border-brand/15
-                              flex items-center justify-center shrink-0">
-                          <StarIcon size={17} weight="duotone" color={C.brand} />
-                        </div>
-                        <div>
-                          <p className="text-[15px] font-semibold text-ink">
-                            v{release.version}
-                          </p>
-                          <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
-                        </div>
+              {currentRelease && (
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-warning-bg border border-warning-border
+                            flex items-center justify-center shrink-0">
+                        <StarIcon size={17} weight="duotone" color={C.bills} />
                       </div>
-                      {ri === 0 && (
-                        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
-                               bg-ink/[0.06] text-ink">
-                          Latest
-                        </span>
-                      )}
+                      <div>
+                        <p className="text-[15px] font-semibold text-ink">
+                          v{currentRelease.version}
+                        </p>
+                        <p className="text-[12px] text-ink-3 mt-0.5">{currentRelease.date}</p>
+                      </div>
                     </div>
-                    <Divider />
-                    <div className="px-4 py-3.5 space-y-2.5">
-                      {release.items.map((item, i) => (
-                        <div key={i} className="flex items-start gap-2.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-brand mt-[6px] shrink-0" />
-                          <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
-                        </div>
-                      ))}
-                    </div>
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
+                             bg-warning-bg text-warning-text border border-warning-border">
+                      Current
+                    </span>
                   </div>
-                ))
-              }
+                  <Divider />
+                  <div className="px-4 py-3.5 space-y-2.5">
+                    {currentRelease.items.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-warning-text mt-[6px] shrink-0" />
+                        <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              {CHANGELOG.length > 1 && (
+              {showAllVersions && olderReleases.map((release) => (
+                <div key={release.version}>
+                  <Divider />
+                  <div className="flex items-center justify-between px-4 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-invest-bg border border-invest-border
+                            flex items-center justify-center shrink-0">
+                        <StarIcon size={17} weight="duotone" color={C.investText} />
+                      </div>
+                      <div>
+                        <p className="text-[15px] font-semibold text-ink">
+                          v{release.version}
+                        </p>
+                        <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full
+                             bg-ink/[0.06] text-ink-2">
+                      Archived
+                    </span>
+                  </div>
+                  <Divider />
+                  <div className="px-4 py-3.5 space-y-2.5">
+                    {release.items.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-invest-text mt-[6px] shrink-0" />
+                        <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {olderReleases.length > 0 && (
                 <>
                   <Divider />
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="secondary"
                     size="md"
                     fullWidth
                     onClick={() => setShowAllVersions(v => !v)}
                     iconRight={showAllVersions
                       ? <CaretUpIcon size={13} weight="bold" />
                       : <CaretDownIcon size={13} weight="bold" />}
-                    className="rounded-none border-0 text-brand"
+                    className="rounded-none border-0 bg-warning-bg text-warning-text border-warning-border"
                   >
                     {showAllVersions
                       ? 'Hide older releases'
-                      : `Show older releases (${CHANGELOG.length - 2})`}
+                      : `Expand older releases (${olderReleases.length})`}
                   </Button>
                 </>
               )}
@@ -237,13 +281,14 @@ export default function About() {
           </motion.div>
 
           <motion.div variants={fadeUp}>
-            <SectionLabel>Connect</SectionLabel>
+            <SectionLabel tone="income">Connect</SectionLabel>
             <div className="card overflow-hidden p-0">
               <CardRow
                 icon={<CodeIcon size={17} weight="duotone" color={C.brand} />}
                 label="Pavan Kumar Nauhwar"
                 sublabel="Developer · India"
                 href={LINKEDIN}
+                tone="invest"
                 right={<ExternalLink size={14} className="text-ink-3" />}
               />
               <Divider />
@@ -252,29 +297,57 @@ export default function About() {
                 label="View on GitHub"
                 sublabel="pavannauhwar-git/kosha"
                 href={REPO_URL}
+                tone="neutral"
                 right={<ExternalLink size={14} className="text-ink-3" />}
               />
               <Divider />
-              <CardRow
-                icon={<CurrencyInrIcon size={17} weight="bold" color={C.brand} />}
-                label="Support Kosha"
-                sublabel={UPI_ID}
-                onClick={copyUpi}
-                right={
-                  copied
-                    ? <CheckIcon size={15} weight="bold" color={C.income} />
-                    : <CopyIcon size={15} color={C.inkMuted} />
-                }
-              />
+              <div className="px-4 py-3.5 bg-warning-bg/35">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-warning-bg border border-warning-border">
+                    <CurrencyInrIcon size={17} weight="bold" color={C.bills} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] font-medium text-ink leading-snug">Support Kosha</p>
+                    <p className="text-[12px] text-ink-3 mt-0.5 truncate">{UPI_ID}</p>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                  onClick={openSupportUpi}
+                  className="mt-3 bg-ink text-white border-ink hover:brightness-110"
+                >
+                  Pay with any UPI app
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                  onClick={copyUpi}
+                  className="mt-2 bg-kosha-surface text-ink-2 border-kosha-border"
+                  icon={copied
+                    ? <CheckIcon size={14} weight="bold" color={C.income} />
+                    : <CopyIcon size={14} color={C.inkMuted} />}
+                >
+                  {copied ? 'UPI copied' : 'Copy UPI ID'}
+                </Button>
+
+                <p className="text-[10px] text-ink-3 mt-2">This opens the default UPI chooser so you can pick any installed payment app.</p>
+              </div>
             </div>
           </motion.div>
 
           <motion.div variants={fadeUp}>
-            <SectionLabel>Privacy And Stack</SectionLabel>
+            <SectionLabel tone="expense">Privacy And Stack</SectionLabel>
             <div className="card p-4 space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-brand-container border border-brand/15 flex items-center justify-center shrink-0 mt-0.5">
-                  <LockIcon size={17} weight="duotone" color={C.brand} />
+                <div className="w-9 h-9 rounded-xl bg-expense-bg border border-expense-border flex items-center justify-center shrink-0 mt-0.5">
+                  <LockIcon size={17} weight="duotone" color={C.expense} />
                 </div>
                 <p className="text-[13px] text-ink-2 leading-relaxed flex-1">
                   Your data lives in your own Supabase project, protected by
@@ -282,8 +355,8 @@ export default function About() {
                 </p>
               </div>
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-brand-container border border-brand/15 flex items-center justify-center shrink-0 mt-0.5">
-                  <ShieldCheck size={16} className="text-brand" />
+                <div className="w-9 h-9 rounded-xl bg-invest-bg border border-invest-border flex items-center justify-center shrink-0 mt-0.5">
+                  <ShieldCheck size={16} className="text-invest-text" />
                 </div>
                 <p className="text-[13px] text-ink-2 leading-relaxed flex-1">
                   Built with React, Supabase, Vite, Tailwind, and Framer Motion for fast interaction and clear information density.
