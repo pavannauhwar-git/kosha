@@ -5,6 +5,7 @@ import {
   useRecentTransactions,
   useMonthSummary,
   useRunningBalance,
+  useDailyExpenseTotals,
   removeTransactionMutation,
   saveTransactionMutation,
 } from '../hooks/useTransactions'
@@ -20,6 +21,7 @@ import { createFadeUp, createStagger } from '../lib/animations'
 import Button from '../components/ui/Button'
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
+import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import AppToast from '../components/common/AppToast'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
@@ -137,6 +139,7 @@ export default function Dashboard() {
     loading: summaryLoading,
     fetching: summaryFetching,
   } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
+  const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(42)
   const balanceHorizonDate = useMemo(() => new Date(2099, 11, 31), [])
   const {
     balance: runningBalance,
@@ -243,29 +246,6 @@ export default function Dashboard() {
       band,
     }
   }, [summary?.byCategory, spent, bMap, categoryLabelById])
-
-  // ── Spending pace signal ─────────────────────────────────────────────
-  const spendPaceSignal = useMemo(() => {
-    if (earned <= 0 || dayOfMonth <= 0) return null
-
-    const observedDailyOutflow = (spent + invested) / Math.max(1, dayOfMonth)
-    const allowedDailyOutflow = spendableToday.remaining / Math.max(1, daysRemaining)
-
-    if (!Number.isFinite(observedDailyOutflow)) return null
-
-    const paceRatio = allowedDailyOutflow > 0
-      ? observedDailyOutflow / allowedDailyOutflow
-      : (observedDailyOutflow > 0 ? Infinity : 1)
-
-    const band = scoreRiskBand(paceRatio, { high: 1.08, watch: 0.95 })
-
-    return {
-      observedDailyOutflow,
-      allowedDailyOutflow,
-      paceRatio,
-      band,
-    }
-  }, [earned, spent, invested, dayOfMonth, spendableToday.remaining, daysRemaining])
 
   // ── Bill clustering signal ───────────────────────────────────────────
   const billClusterSignal = useMemo(() => {
@@ -580,6 +560,15 @@ export default function Dashboard() {
           </motion.div>
         )}
 
+        {!heroLoading && (
+          <motion.div variants={fadeUp}>
+            <SpendingPaceTracker
+              dailyExpenseTotals={dailyExpenseTotals}
+              now={now}
+            />
+          </motion.div>
+        )}
+
         {!heroLoading && runwayBalance && (
           <motion.div variants={fadeUp}>
             <div className="card p-3.5 border-0">
@@ -626,9 +615,9 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {!heroLoading && (categoryPressureSignal || spendPaceSignal || billClusterSignal) && (
+        {!heroLoading && (categoryPressureSignal || billClusterSignal) && (
           <motion.div variants={fadeUp}>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {categoryPressureSignal && (
                 <div className="card p-3.5 border-0">
                   <p className="text-[10px] text-ink-3 tracking-wide">Top spend pressure</p>
@@ -643,21 +632,6 @@ export default function Dashboard() {
                       Budget usage: {categoryPressureSignal.budgetPct}%
                     </p>
                   )}
-                </div>
-              )}
-
-              {spendPaceSignal && (
-                <div className="card p-3.5 border-0">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Spend pace risk</p>
-                  <p className={`text-[14px] font-semibold mt-1 ${bandTextClass(spendPaceSignal.band)}`}>
-                    {spendPaceSignal.band === 'high' ? 'Ahead of safe pace' : spendPaceSignal.band === 'watch' ? 'Near limit' : 'Within pace'}
-                  </p>
-                  <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
-                    Outflow/day {fmt(spendPaceSignal.observedDailyOutflow)}
-                  </p>
-                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
-                    Safe/day {fmt(spendPaceSignal.allowedDailyOutflow)}
-                  </p>
                 </div>
               )}
 

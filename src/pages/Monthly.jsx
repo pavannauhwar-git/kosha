@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { useMonthSummary, useTransactions, useDailyExpenseTotals, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
+import { useMonthSummary, useTransactions, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 import { CATEGORIES } from '../lib/categories'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
@@ -15,7 +15,6 @@ import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
 import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
-import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
 import DailySpendTrend from '../components/cards/monthly/DailySpendTrend'
 import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
 import { CashflowWaterfallChart } from '../components/analytics/AnalyticsCharts'
@@ -23,8 +22,6 @@ import Button from '../components/ui/Button'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
-
-const VARIANCE_WINDOW_MAX_DAYS = 14
 
 export default function Monthly() {
   const navigate = useNavigate()
@@ -49,7 +46,6 @@ export default function Monthly() {
     enabled: true,
     columns: TRANSACTION_INSIGHTS_COLUMNS,
   })
-  const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(VARIANCE_WINDOW_MAX_DAYS)
   const { budgets } = useBudgets()
   const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
   const [showBudgetSheet, setShowBudgetSheet] = useState(false)
@@ -434,15 +430,6 @@ export default function Monthly() {
                 </div>
               )}
             </div>
-          )}
-
-          {heavyReady && inflow > 0 && (
-            <SpendingPaceTracker
-              dailyExpenseTotals={dailyExpenseTotals}
-              now={new Date(year, month - 1, Math.min(now.getDate(), new Date(year, month, 0).getDate()))}
-              earned={inflow}
-              spent={spent}
-            />
           )}
 
           {heavyReady && txnRows.length > 0 && (

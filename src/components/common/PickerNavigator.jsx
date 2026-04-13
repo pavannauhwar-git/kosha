@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { MONTH_SHORT } from '../../lib/constants'
 import BottomSheet from '../ui/BottomSheet'
 import Button from '../ui/Button'
@@ -117,11 +117,11 @@ export default function PickerNavigator({
 
         <button
           type="button"
-          className="cursor-pointer"
+          className="cursor-pointer leading-none"
           onClick={() => setOpen(true)}
         >
-          <h1 className="text-value font-semibold text-ink tracking-tight">{label}</h1>
-          <p className="text-[10px] text-ink-4 text-center mt-0.5">Jump to</p>
+          <h1 className="text-value font-semibold text-ink tracking-tight leading-[1.05]">{label}</h1>
+          <p className="text-[10px] text-ink-4 text-center mt-0">Jump to</p>
         </button>
 
         <button
@@ -144,7 +144,7 @@ export default function PickerNavigator({
       >
         <div className="pb-3">
           {mode === 'month' && recentMonths.length > 0 && (
-            <div className="mb-3">
+            <div className="mb-2.5">
               <p className="text-[11px] text-ink-3 uppercase tracking-[0.08em] mb-2">Recent months</p>
               <div className="overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
                 <div className="flex items-center gap-2 min-w-max">
@@ -172,7 +172,7 @@ export default function PickerNavigator({
           )}
 
           {mode === 'year' && recentYears.length > 0 && (
-            <div className="mb-3">
+            <div className="mb-2.5">
               <p className="text-[11px] text-ink-3 uppercase tracking-[0.08em] mb-2">Recent years</p>
               <div className="overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
                 <div className="flex items-center gap-2 min-w-max">
@@ -199,17 +199,21 @@ export default function PickerNavigator({
             </div>
           )}
 
-          <div className="mb-3">
+          <div className="mb-2.5">
             <p className="text-[11px] text-ink-3 uppercase tracking-[0.08em] mb-1.5">Year</p>
-            <select
-              value={draftYear}
-              onChange={(e) => setDraftYear(Number(e.target.value))}
-              className="input h-11"
-            >
-              {yearOptions.map((optionYear) => (
-                <option key={optionYear} value={optionYear}>{optionYear}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={draftYear}
+                onChange={(e) => setDraftYear(Number(e.target.value))}
+                className="w-full h-11 appearance-none rounded-card border border-kosha-border bg-kosha-surface-2 px-4 pr-10
+                           text-[15px] leading-[1.2] text-ink focus:outline-none focus:border-brand focus:bg-kosha-surface"
+              >
+                {yearOptions.map((optionYear) => (
+                  <option key={optionYear} value={optionYear}>{optionYear}</option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+            </div>
           </div>
 
           {mode === 'month' && (

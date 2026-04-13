@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
 import { downloadCsv, toCsv } from '../lib/csv'
+import { MONTH_SHORT } from '../lib/constants'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import SectionHeader from '../components/common/SectionHeader'
 import { getAuthUserId } from '../lib/authStore'
@@ -42,7 +43,36 @@ const DATE_PRESETS = [
   { id: '7d', label: 'Last 7d' },
   { id: 'month', label: 'This month' },
   { id: 'prev-month', label: 'Last month' },
+  { id: 'custom-month', label: 'Specific month' },
 ]
+
+const MONTH_FILTER_MIN_YEAR = 1900
+const MONTH_FILTER_MAX_YEAR = 2100
+
+function monthInputFromDate(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+function parseMonthInput(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})$/)
+  if (!match) return null
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) return null
+
+  return { year, month }
+}
+
+function formatMonthInputLabel(value) {
+  const parsed = parseMonthInput(value)
+  if (!parsed) return 'Specific month'
+
+  return new Date(parsed.year, parsed.month - 1, 1).toLocaleString(undefined, {
+    month: 'short',
+    year: 'numeric',
+  })
+}
 
 const TYPE_CHIP = {
   all:        'bg-brand text-brand-on border-brand',
@@ -69,6 +99,7 @@ export default function Transactions() {
   const [showPaymentModes, setShowPaymentModes] = useState(false)
   const [addType,       setAddType]       = useState('expense')
   const [datePreset,    setDatePreset]    = useState('all')
+  const [selectedMonth, setSelectedMonth] = useState(() => monthInputFromDate())
   const [displayCount,  setDisplayCount]  = useState(50)
   const [toast,         setToast]         = useState(null)
   const [duplicateTxn,  setDuplicateTxn]  = useState(null)
@@ -85,6 +116,41 @@ export default function Transactions() {
 
   const debouncedSearch = useDebounce(search, 300)
   const isSearchDebouncing = search !== debouncedSearch
+
+  function handleDatePreset(nextPreset) {
+    setDatePreset(nextPreset)
+    if (nextPreset === 'custom-month' && !parseMonthInput(selectedMonth)) {
+      setSelectedMonth(monthInputFromDate())
+    }
+    setDisplayCount(50)
+  }
+
+  const selectedMonthParts = useMemo(
+    () => parseMonthInput(selectedMonth)
+      || parseMonthInput(monthInputFromDate())
+      || { year: new Date().getFullYear(), month: new Date().getMonth() + 1 },
+    [selectedMonth]
+  )
+
+  const monthFilterYearOptions = useMemo(() => {
+    const options = []
+    for (let optionYear = MONTH_FILTER_MAX_YEAR; optionYear >= MONTH_FILTER_MIN_YEAR; optionYear -= 1) {
+      options.push(optionYear)
+    }
+    return options
+  }, [])
+
+  function updateSelectedMonth(nextYear, nextMonth) {
+    const safeYear = Math.min(
+      MONTH_FILTER_MAX_YEAR,
+      Math.max(MONTH_FILTER_MIN_YEAR, Number(nextYear) || selectedMonthParts.year)
+    )
+    const safeMonth = Math.min(12, Math.max(1, Number(nextMonth) || selectedMonthParts.month))
+
+    setSelectedMonth(`${safeYear}-${String(safeMonth).padStart(2, '0')}`)
+    setDisplayCount(50)
+  }
+
   const { startDate, endDate } = useMemo(() => {
     const now = new Date()
     const toISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -107,8 +173,17 @@ export default function Transactions() {
       return { startDate: toISO(start), endDate: toISO(end) }
     }
 
+    if (datePreset === 'custom-month') {
+      const parsed = parseMonthInput(selectedMonth)
+      if (!parsed) return { startDate: undefined, endDate: undefined }
+
+      const start = new Date(parsed.year, parsed.month - 1, 1)
+      const end = new Date(parsed.year, parsed.month, 0)
+      return { startDate: toISO(start), endDate: toISO(end) }
+    }
+
     return { startDate: undefined, endDate: undefined }
-  }, [datePreset])
+  }, [datePreset, selectedMonth])
   const filterCategories = useMemo(
     () => getCategoriesForType(typeFilter === 'all' ? undefined : typeFilter),
     [typeFilter]
@@ -204,7 +279,7 @@ export default function Transactions() {
     estimateSize: 88,
     overscan: 10,
     enabled: timelineRows.length > 40,
-    resetKey: `${typeFilter}:${catFilter}:${paymentModeFilter}:${datePreset}:${debouncedSearch}:${displayCount}`,
+    resetKey: `${typeFilter}:${catFilter}:${paymentModeFilter}:${datePreset}:${startDate || 'na'}:${endDate || 'na'}:${debouncedSearch}:${displayCount}`,
     initialCount: 36,
   })
 
@@ -217,8 +292,11 @@ export default function Transactions() {
   const focusTxnId = searchParams.get('focus')
   const hasActiveFilters = typeFilter !== 'all' || !!catFilter || !!paymentModeFilter || datePreset !== 'all' || !!debouncedSearch
   const activeDatePresetLabel = useMemo(
-    () => DATE_PRESETS.find((preset) => preset.id === datePreset)?.label || 'All time',
-    [datePreset]
+    () => {
+      if (datePreset === 'custom-month') return formatMonthInputLabel(selectedMonth)
+      return DATE_PRESETS.find((preset) => preset.id === datePreset)?.label || 'All time'
+    },
+    [datePreset, selectedMonth]
   )
   const activeCategoryLabel = useMemo(
     () => getCategoryLabel(catFilter),
@@ -370,6 +448,16 @@ export default function Transactions() {
       setTriggerSwipeNudge(true)
     }
   }, [])
+
+  useEffect(() => {
+    const monthParam = searchParams.get('month')
+    const parsed = parseMonthInput(monthParam)
+    if (!parsed) return
+
+    setSelectedMonth(monthParam)
+    setDatePreset('custom-month')
+    setDisplayCount(50)
+  }, [searchParams])
 
   useEffect(() => {
     if (!showCats && !showPaymentModes) return
@@ -641,6 +729,7 @@ export default function Transactions() {
     setCatFilter('')
     setPaymentModeFilter('')
     setDatePreset('all')
+    setSelectedMonth(monthInputFromDate())
     setSearch('')
     setShowCats(false)
     setShowPaymentModes(false)
@@ -841,10 +930,7 @@ export default function Transactions() {
             <button
               key={preset.id}
               type="button"
-              onClick={() => {
-                setDatePreset(preset.id)
-                setDisplayCount(50)
-              }}
+              onClick={() => handleDatePreset(preset.id)}
               className={`chip-control chip-control-sm ${
                 datePreset === preset.id
                   ? 'bg-brand text-brand-on border-brand'
@@ -855,6 +941,59 @@ export default function Transactions() {
             </button>
           ))}
         </FilterRow>
+
+        <AnimatePresence>
+          {datePreset === 'custom-month' && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+              className="mini-panel p-3"
+            >
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-[11px] uppercase tracking-wide text-ink-3">Choose month</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = monthInputFromDate()
+                    setSelectedMonth(current)
+                    setDisplayCount(50)
+                  }}
+                  className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                >
+                  Current month
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
+                <select
+                  name="transactions-month-filter-month"
+                  value={selectedMonthParts.month}
+                  onChange={(event) => updateSelectedMonth(selectedMonthParts.year, event.target.value)}
+                  className="w-full h-10 rounded-card border border-kosha-border bg-kosha-surface-2 px-3 text-[14px] text-ink focus:outline-none focus:border-brand"
+                >
+                  {MONTH_SHORT.map((monthLabel, index) => (
+                    <option key={monthLabel} value={index + 1}>{monthLabel}</option>
+                  ))}
+                </select>
+
+                <select
+                  name="transactions-month-filter-year"
+                  value={selectedMonthParts.year}
+                  onChange={(event) => updateSelectedMonth(event.target.value, selectedMonthParts.month)}
+                  className="w-full h-10 rounded-card border border-kosha-border bg-kosha-surface-2 px-3 text-[14px] text-ink focus:outline-none focus:border-brand"
+                >
+                  {monthFilterYearOptions.map((optionYear) => (
+                    <option key={optionYear} value={optionYear}>{optionYear}</option>
+                  ))}
+                </select>
+              </div>
+
+              <p className="text-[10px] text-ink-3 mt-1">Filtering: {formatMonthInputLabel(selectedMonth)}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <SectionHeader
           title="Type and facets"

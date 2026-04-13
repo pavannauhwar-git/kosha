@@ -1,39 +1,46 @@
 import { memo, useMemo } from 'react'
 import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
-  Line,
+  BarChart,
+  Bar,
+  Cell,
+  ReferenceLine,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ReferenceLine,
 } from 'recharts'
 import { fmt } from '../../lib/utils'
 
-function PaceTooltip({ active, payload, label }) {
+function WeeklyDriftTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload || {}
+  const baseline = Number(row?.baseline || 0)
+  const spend = Number(row?.total || 0)
+  const delta = baseline > 0 ? spend - baseline : null
 
   return (
     <div className="tooltip-enter rounded-card bg-kosha-surface p-3 shadow-card min-w-[172px]" style={{ border: '1px solid var(--ds-border)' }}>
-      <p className="text-[11px] font-semibold text-ink mb-1">Day {label}</p>
+      <p className="text-[11px] font-semibold text-ink mb-1">{row?.range || 'Week'}</p>
       <div className="space-y-0.5 text-[11px]">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Actual spend</span>
-          <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row.actual || 0))}</span>
+          <span className="text-ink-3">Week spend</span>
+          <span className="font-semibold tabular-nums text-expense-text">{fmt(spend)}</span>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Even pace</span>
-          <span className="font-semibold tabular-nums text-ink">{fmt(Number(row.pace || 0))}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Gap</span>
-          <span className={`font-semibold tabular-nums ${(row.actual || 0) <= (row.pace || 0) ? 'text-income-text' : 'text-warning-text'}`}>
-            {(row.actual || 0) <= (row.pace || 0) ? 'Under' : 'Over'} by {fmt(Math.abs((row.actual || 0) - (row.pace || 0)))}
-          </span>
-        </div>
+        {baseline > 0 && (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-ink-3">4W median</span>
+              <span className="font-semibold tabular-nums text-ink">{fmt(baseline)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-ink-3">Drift</span>
+              <span className={`font-semibold tabular-nums ${delta <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
+                {delta <= 0 ? '-' : '+'}{fmt(Math.abs(delta))}
+              </span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -47,140 +54,229 @@ function compactTick(value) {
   return `${Math.round(n)}`
 }
 
-export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, earned, spent }) {
-  const paceData = useMemo(() => {
-    const year = now.getFullYear()
-    const month = now.getMonth()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const today = now.getDate()
+function toDateKey(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
-    // Monthly budget = last month's income (earned) as the spend ceiling
-    const monthlyBudget = Number(earned || 0)
-    if (monthlyBudget <= 0) return { series: [], hasData: false }
+function addDays(date, days) {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
 
-    const dailyPace = monthlyBudget / daysInMonth
-    let cumActual = 0
-    const series = []
+function startOfWeekMonday(date) {
+  const start = new Date(date)
+  const day = (start.getDay() + 6) % 7
+  start.setDate(start.getDate() - day)
+  start.setHours(12, 0, 0, 0)
+  return start
+}
 
-    for (let d = 1; d <= Math.min(today, daysInMonth); d++) {
-      const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-      const daySpend = Number(dailyExpenseTotals?.[key] || 0)
-      cumActual += daySpend
-      const cumPace = dailyPace * d
+function formatShortDate(date) {
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  })
+}
 
-      series.push({
-        day: d,
-        actual: Math.round(cumActual),
-        pace: Math.round(cumPace),
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b)
+  if (!sorted.length) return 0
+  const mid = Math.floor(sorted.length / 2)
+  if (sorted.length % 2 === 0) return (sorted[mid - 1] + sorted[mid]) / 2
+  return sorted[mid]
+}
+
+export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now }) {
+  const driftData = useMemo(() => {
+    const safeTotals = dailyExpenseTotals || {}
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12)
+    const currentWeekStart = startOfWeekMonday(today)
+    const weeks = []
+
+    for (let offset = 7; offset >= 0; offset -= 1) {
+      const weekStart = addDays(currentWeekStart, -offset * 7)
+      const weekEnd = addDays(weekStart, 6)
+      const countedEnd = offset === 0 ? today : weekEnd
+      const daysToCount = Math.max(1, Math.floor((countedEnd.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000)) + 1)
+
+      let total = 0
+      for (let dayIndex = 0; dayIndex < daysToCount; dayIndex += 1) {
+        const date = addDays(weekStart, dayIndex)
+        total += Number(safeTotals[toDateKey(date)] || 0)
+      }
+
+      weeks.push({
+        label: formatShortDate(weekStart),
+        range: `${formatShortDate(weekStart)} - ${formatShortDate(countedEnd)}`,
+        total: Math.round(total),
+        isCurrent: offset === 0,
       })
     }
 
-    const latestActual = series[series.length - 1]?.actual || 0
-    const latestPace = series[series.length - 1]?.pace || 0
-    const variance = latestActual - latestPace
-    const variancePct = latestPace > 0 ? Math.round((variance / latestPace) * 100) : 0
-    const onTrack = variance <= 0
+    const hasData = weeks.some((row) => row.total > 0)
+    if (!hasData) return { hasData: false }
 
-    const daysLeft = daysInMonth - today
-    const projectedTotal = today > 0 ? Math.round((cumActual / today) * daysInMonth) : 0
-    const projectedOvershoot = projectedTotal - monthlyBudget
+    const currentWeek = weeks[weeks.length - 1] || { total: 0 }
+    const previousWeek = weeks[weeks.length - 2] || { total: 0 }
+    const baselineWindow = weeks.slice(-5, -1).map((row) => row.total).filter((value) => value > 0)
+    const median4w = Math.round(median(baselineWindow))
+
+    const driftPct = median4w > 0
+      ? Math.round(((currentWeek.total - median4w) / median4w) * 100)
+      : null
+
+    const wowPct = previousWeek.total > 0
+      ? Math.round(((currentWeek.total - previousWeek.total) / previousWeek.total) * 100)
+      : null
+
+    let status = 'healthy'
+    if (driftPct != null && driftPct > 20) status = 'high'
+    else if (driftPct != null && driftPct > 5) status = 'watch'
+
+    const statusLabel = status === 'high'
+      ? 'Above baseline'
+      : status === 'watch'
+        ? 'Slightly high'
+        : 'Within baseline'
+
+    const guidance = driftPct == null
+      ? 'Build a few active weeks to establish a reliable weekly baseline.'
+      : status === 'high'
+        ? `This week is ${driftPct}% above your 4-week median. Freeze optional spend to avoid end-of-month pressure.`
+        : status === 'watch'
+          ? `This week is ${driftPct}% above baseline. Keep the next few days lighter to realign.`
+          : `This week is ${Math.abs(driftPct)}% below baseline. Current weekly rhythm is controlled.`
+
+    const chartRows = weeks.map((row) => ({
+      ...row,
+      baseline: median4w,
+    }))
 
     return {
-      series,
-      hasData: series.some((row) => row.actual > 0),
-      variance,
-      variancePct,
-      onTrack,
-      daysLeft,
-      projectedTotal,
-      projectedOvershoot,
-      monthlyBudget,
-      today,
+      hasData: true,
+      currentWeekTotal: currentWeek.total,
+      median4w,
+      driftPct,
+      wowPct,
+      status,
+      statusLabel,
+      guidance,
+      weeks: chartRows,
     }
-  }, [dailyExpenseTotals, now, earned])
+  }, [dailyExpenseTotals, now])
 
-  if (!paceData.hasData) return null
+  if (!driftData.hasData) return null
+
+  const statusTone = driftData.status === 'high'
+    ? 'bg-warning-bg text-warning-text'
+    : driftData.status === 'watch'
+      ? 'bg-brand-container text-brand'
+      : 'bg-income-bg text-income-text'
+
+  const driftTone = (driftData.driftPct ?? 0) <= 0 ? 'text-income-text' : 'text-warning-text'
+  const wowTone = (driftData.wowPct ?? 0) <= 0 ? 'text-income-text' : 'text-warning-text'
+  const yDomainMax = useMemo(() => {
+    const maxValue = driftData.weeks.reduce((maxSoFar, row) => {
+      return Math.max(maxSoFar, Number(row?.total || 0), Number(row?.baseline || 0))
+    }, 0)
+
+    if (maxValue <= 0) return 1000
+
+    return Math.max(1000, Math.ceil((maxValue * 1.08) / 1000) * 1000)
+  }, [driftData.weeks])
 
   return (
-    <div className="card p-4 border-0">
+    <div className="card p-3.5 border-0">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
-          <p className="section-label">Spending pace</p>
-          <p className="text-caption text-ink-3 mt-0.5">Cumulative daily spend vs even monthly pace</p>
+          <p className="section-label">Weekly spend drift</p>
+          <p className="text-caption text-ink-3 mt-0.5">Current week vs rolling 4-week median.</p>
         </div>
-        <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${paceData.onTrack ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-          {paceData.onTrack ? 'Under pace' : 'Over pace'}
+        <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${statusTone}`}>
+          {driftData.statusLabel}
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-2.5">
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] tracking-wide text-ink-3">Spent so far</p>
-          <p className="text-[13px] font-semibold tabular-nums text-expense-text mt-0.5">{fmt(spent || 0)}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+        <div className="rounded-card bg-kosha-surface-2 px-3 py-2" style={{ border: '1px solid var(--ds-border)' }}>
+          <p className="text-[10px] tracking-wide text-ink-3">This week</p>
+          <p className="text-[12px] font-semibold tabular-nums text-expense-text mt-0.5">{fmt(driftData.currentWeekTotal)}</p>
         </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] tracking-wide text-ink-3">Projected end</p>
-          <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${paceData.projectedOvershoot <= 0 ? 'text-income-text' : 'text-warning-text'}`}>
-            {fmt(paceData.projectedTotal)}
+        <div className="rounded-card bg-kosha-surface-2 px-3 py-2" style={{ border: '1px solid var(--ds-border)' }}>
+          <p className="text-[10px] tracking-wide text-ink-3">4W median</p>
+          <p className="text-[12px] font-semibold tabular-nums text-ink mt-0.5">{fmt(driftData.median4w)}</p>
+        </div>
+        <div className="rounded-card bg-kosha-surface-2 px-3 py-2" style={{ border: '1px solid var(--ds-border)' }}>
+          <p className="text-[10px] tracking-wide text-ink-3">Drift</p>
+          <p className={`text-[12px] font-semibold tabular-nums mt-0.5 ${driftTone}`}>
+            {driftData.driftPct == null
+              ? '—'
+              : `${driftData.driftPct >= 0 ? '+' : ''}${driftData.driftPct}%`}
           </p>
         </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] tracking-wide text-ink-3">Days left</p>
-          <p className="text-[13px] font-semibold tabular-nums text-ink mt-0.5">{paceData.daysLeft}</p>
+        <div className="rounded-card bg-kosha-surface-2 px-3 py-2" style={{ border: '1px solid var(--ds-border)' }}>
+          <p className="text-[10px] tracking-wide text-ink-3">Vs last week</p>
+          <p className={`text-[12px] font-semibold tabular-nums mt-0.5 ${wowTone}`}>
+            {driftData.wowPct == null
+              ? '—'
+              : `${driftData.wowPct >= 0 ? '+' : ''}${driftData.wowPct}%`}
+          </p>
         </div>
       </div>
 
-      <div className="rounded-card bg-kosha-surface-2 p-3" style={{ border: '1px solid var(--ds-border)' }}>
-        <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={paceData.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="spendAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#E8453C" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#E8453C" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
+      <div className="rounded-card bg-kosha-surface-2 px-2.5 py-2" style={{ border: '1px solid var(--ds-border)' }}>
+        <div className="flex items-center justify-between mb-1 px-0.5">
+          <p className="text-[10px] text-ink-3">Last 8 weeks</p>
+          <p className="text-[10px] text-ink-3">Blue line = 4W median</p>
+        </div>
+
+        <ResponsiveContainer width="100%" height={132}>
+          <BarChart data={driftData.weeks} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
-              dataKey="day"
+              dataKey="label"
               tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
+              domain={[0, yDomainMax]}
               tickFormatter={compactTick}
               tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}
             />
-            <Tooltip content={<PaceTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="actual"
-              stroke="#E8453C"
-              fill="url(#spendAreaGrad)"
-              strokeWidth={2.2}
-              dot={false}
-              activeDot={{ r: 4, fill: '#E8453C', stroke: '#fff', strokeWidth: 2 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="pace"
-              stroke="rgba(0,127,255,0.35)"
-              strokeWidth={1.8}
-              strokeDasharray="5 4"
-              dot={false}
-            />
-          </AreaChart>
+            <Tooltip content={<WeeklyDriftTooltip />} />
+            {driftData.median4w > 0 && (
+              <ReferenceLine
+                y={driftData.median4w}
+                stroke="#007FFF"
+                strokeOpacity={0.8}
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                ifOverflow="extendDomain"
+              />
+            )}
+            <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={18}>
+              {driftData.weeks.map((row, index) => (
+                <Cell
+                  key={`weekly-drift-bar-${row.label}-${index}`}
+                  fill={row.isCurrent ? '#E8453C' : 'rgba(0,127,255,0.52)'}
+                />
+              ))}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <p className="text-[11px] text-ink-3 mt-2">
-        {paceData.onTrack
-          ? `You're ${fmt(Math.abs(paceData.variance))} under even pace. Keep this discipline to close the month comfortably.`
-          : `You're ${fmt(Math.abs(paceData.variance))} over even pace (${Math.abs(paceData.variancePct)}%). Slow daily spend over the next ${paceData.daysLeft} day${paceData.daysLeft === 1 ? '' : 's'} to recover.`
-        }
+      <p className="text-[10px] text-ink-3 mt-1.5 leading-relaxed">
+        {driftData.guidance}
       </p>
     </div>
   )
