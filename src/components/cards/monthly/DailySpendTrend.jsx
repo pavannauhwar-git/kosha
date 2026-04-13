@@ -11,6 +11,7 @@ import {
   Cell,
 } from 'recharts'
 import { fmt } from '../../../lib/utils'
+import Button from '../../ui/Button'
 
 function DailySpendTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -40,16 +41,16 @@ function compactTick(value) {
   return `${Math.round(n)}`
 }
 
-export default memo(function DailySpendTrend({ txnRows, year, month }) {
+export default memo(function DailySpendTrend({ dailyTotals, year, month, onReviewExpenses, onReviewPeakDay }) {
   const daysInMonth = new Date(year, month, 0).getDate()
 
-  // Aggregate expense per day
+  // Aggregate expense per day from a pre-aggregated date=>amount map.
   const dailyMap = new Map()
-  for (const row of (Array.isArray(txnRows) ? txnRows : [])) {
-    if (row?.type !== 'expense') continue
-    const amount = Number(row?.amount || 0)
+  const sourceTotals = dailyTotals && typeof dailyTotals === 'object' ? dailyTotals : {}
+  for (const [dateKey, amountValue] of Object.entries(sourceTotals)) {
+    const amount = Number(amountValue || 0)
     if (!Number.isFinite(amount) || amount <= 0) continue
-    const day = Number(String(row?.date || '').slice(8, 10))
+    const day = Number(String(dateKey || '').slice(8, 10))
     if (day < 1 || day > daysInMonth) continue
     dailyMap.set(day, (dailyMap.get(day) || 0) + amount)
   }
@@ -75,7 +76,10 @@ export default memo(function DailySpendTrend({ txnRows, year, month }) {
     isAboveAvg: row.amount > dailyAvg,
   }))
 
-  const peakDay = activeDays.sort((a, b) => b.amount - a.amount)[0]
+  const peakDay = [...activeDays].sort((a, b) => b.amount - a.amount)[0]
+  const peakDayDate = peakDay
+    ? `${year}-${String(month).padStart(2, '0')}-${String(peakDay.day).padStart(2, '0')}`
+    : null
   const spendDays = activeDays.length
   const zeroDays = daysInMonth - spendDays
 
@@ -86,9 +90,21 @@ export default memo(function DailySpendTrend({ txnRows, year, month }) {
           <p className="section-label">Daily spend pattern</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Expense distribution across the month with daily average</p>
         </div>
-        <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
-          {spendDays} active day{spendDays === 1 ? '' : 's'}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
+            {spendDays} active day{spendDays === 1 ? '' : 's'}
+          </span>
+          {onReviewExpenses && (
+            <Button
+              variant="secondary"
+              size="xs"
+              onClick={onReviewExpenses}
+              className="whitespace-nowrap"
+            >
+              Review
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
@@ -99,6 +115,15 @@ export default memo(function DailySpendTrend({ txnRows, year, month }) {
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Peak day</p>
           <p className="text-[13px] font-semibold tabular-nums text-expense-text">{peakDay ? fmt(peakDay.amount) : '—'}</p>
+          {peakDayDate && onReviewPeakDay && (
+            <button
+              type="button"
+              onClick={() => onReviewPeakDay(peakDayDate)}
+              className="text-[10px] font-semibold text-brand hover:underline mt-0.5"
+            >
+              Inspect day
+            </button>
+          )}
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Zero-spend days</p>

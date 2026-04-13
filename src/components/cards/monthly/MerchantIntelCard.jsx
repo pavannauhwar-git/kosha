@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react'
 import { fmt } from '../../../lib/utils'
+import Button from '../../ui/Button'
 
 /**
  * Normalize a transaction description to a merchant-like key.
@@ -20,7 +21,7 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
-export default memo(function MerchantIntelCard({ txnRows }) {
+export default memo(function MerchantIntelCard({ txnRows, onReviewExpenses, onReviewMerchant }) {
   const analysis = useMemo(() => {
     const merchants = new Map()
 
@@ -45,6 +46,7 @@ export default memo(function MerchantIntelCard({ txnRows }) {
         merchants.set(key, {
           key,
           displayName: capitalize(rawDesc.length > 28 ? rawDesc.slice(0, 28).trim() : rawDesc),
+          queryText: rawDesc,
           total: amt,
           count: 1,
           maxTxn: amt,
@@ -90,9 +92,21 @@ export default memo(function MerchantIntelCard({ txnRows }) {
             Repeat payees ranked by total spend — reveals subscription and habit patterns.
           </p>
         </div>
-        <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-3 border border-kosha-border">
-          {analysis.totalMerchants} repeat{analysis.totalMerchants !== 1 ? 's' : ''}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-3 border border-kosha-border">
+            {analysis.totalMerchants} repeat{analysis.totalMerchants !== 1 ? 's' : ''}
+          </span>
+          {onReviewExpenses && (
+            <Button
+              variant="secondary"
+              size="xs"
+              onClick={onReviewExpenses}
+              className="whitespace-nowrap"
+            >
+              Review
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2.5">
@@ -105,7 +119,18 @@ export default memo(function MerchantIntelCard({ txnRows }) {
                 </span>
                 <p className="text-[12px] font-semibold text-ink truncate">{m.displayName}</p>
               </div>
-              <p className="text-[13px] font-semibold tabular-nums text-expense-text shrink-0">{fmt(m.total)}</p>
+              <div className="shrink-0 text-right flex flex-col items-end gap-0.5">
+                <p className="text-[13px] font-semibold tabular-nums text-expense-text">{fmt(m.total)}</p>
+                {onReviewMerchant && (
+                  <button
+                    type="button"
+                    onClick={() => onReviewMerchant(m)}
+                    className="text-[10px] font-semibold text-brand hover:underline"
+                  >
+                    Inspect
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-3 text-[10px] text-ink-3">

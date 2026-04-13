@@ -51,6 +51,7 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactionsRecent'],
   ['transactionsDigest'],
   ['dailyExpenseTotals'],
+  ['monthExpenseDailyTotals'],
   ['txnCount'],
   ['month'],
   ['year'],
@@ -345,6 +346,61 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
           .eq('user_id', userId)
           .eq('type', 'expense')
           .gte('date', startISO)
+          .order('date', { ascending: false })
+          .range(from, to)
+
+        if (qError) throw qError
+
+        const batch = rows || []
+        for (const row of batch) {
+          const key = String(row?.date || '').slice(0, 10)
+          if (!key) continue
+          const amount = Number(row?.amount || 0)
+          if (!Number.isFinite(amount)) continue
+          totalsByDate[key] = (totalsByDate[key] || 0) + amount
+        }
+
+        if (batch.length < pageSize) break
+      }
+
+      return totalsByDate
+    }),
+    gcTime: 5 * 60 * 1000,
+  })
+
+  return { data: data || {}, loading: isLoading, error }
+}
+
+export function useMonthExpenseDailyTotals(year, month, options = {}) {
+  const { enabled = true } = options
+  const safeYear = Number(year)
+  const safeMonth = Number(month)
+  const validYear = Number.isFinite(safeYear) ? safeYear : new Date().getFullYear()
+  const validMonth = Number.isFinite(safeMonth) && safeMonth >= 1 && safeMonth <= 12
+    ? safeMonth
+    : (new Date().getMonth() + 1)
+
+  const startISO = `${validYear}-${String(validMonth).padStart(2, '0')}-01`
+  const endISO = `${validYear}-${String(validMonth).padStart(2, '0')}-${String(new Date(validYear, validMonth, 0).getDate()).padStart(2, '0')}`
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['monthExpenseDailyTotals', validYear, validMonth],
+    enabled,
+    queryFn: () => traceQuery('transactions:month-expense-daily-totals', async () => {
+      const userId = getAuthUserId()
+      const pageSize = 1000
+      const totalsByDate = {}
+
+      for (let from = 0; ; from += pageSize) {
+        const to = from + pageSize - 1
+
+        const { data: rows, error: qError } = await supabase
+          .from('transactions')
+          .select(DAILY_EXPENSE_TOTAL_COLUMNS)
+          .eq('user_id', userId)
+          .eq('type', 'expense')
+          .gte('date', startISO)
+          .lte('date', endISO)
           .order('date', { ascending: false })
           .range(from, to)
 

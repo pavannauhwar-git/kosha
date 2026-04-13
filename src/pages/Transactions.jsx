@@ -74,6 +74,31 @@ function formatMonthInputLabel(value) {
   })
 }
 
+function parseIsoDateInput(value) {
+  const trimmed = String(value || '').trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null
+
+  const [year, month, day] = trimmed.split('-').map(Number)
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null
+
+  const date = new Date(`${trimmed}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return null
+  if (date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) return null
+
+  return trimmed
+}
+
+function formatIsoDateLabel(value) {
+  const parsed = parseIsoDateInput(value)
+  if (!parsed) return 'Custom range'
+
+  return new Date(`${parsed}T00:00:00`).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 const TYPE_CHIP = {
   all:        'bg-brand text-brand-on border-brand',
   expense:    'bg-expense-bg text-expense-text border-expense-border',
@@ -100,6 +125,7 @@ export default function Transactions() {
   const [addType,       setAddType]       = useState('expense')
   const [datePreset,    setDatePreset]    = useState('all')
   const [selectedMonth, setSelectedMonth] = useState(() => monthInputFromDate())
+  const [forcedDateRange, setForcedDateRange] = useState(null)
   const [displayCount,  setDisplayCount]  = useState(50)
   const [toast,         setToast]         = useState(null)
   const [duplicateTxn,  setDuplicateTxn]  = useState(null)
@@ -119,6 +145,7 @@ export default function Transactions() {
 
   function handleDatePreset(nextPreset) {
     setDatePreset(nextPreset)
+    setForcedDateRange(null)
     if (nextPreset === 'custom-month' && !parseMonthInput(selectedMonth)) {
       setSelectedMonth(monthInputFromDate())
     }
@@ -148,10 +175,11 @@ export default function Transactions() {
     const safeMonth = Math.min(12, Math.max(1, Number(nextMonth) || selectedMonthParts.month))
 
     setSelectedMonth(`${safeYear}-${String(safeMonth).padStart(2, '0')}`)
+    setForcedDateRange(null)
     setDisplayCount(50)
   }
 
-  const { startDate, endDate } = useMemo(() => {
+  const presetDateRange = useMemo(() => {
     const now = new Date()
     const toISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
@@ -184,6 +212,9 @@ export default function Transactions() {
 
     return { startDate: undefined, endDate: undefined }
   }, [datePreset, selectedMonth])
+
+  const startDate = forcedDateRange?.startDate || presetDateRange.startDate
+  const endDate = forcedDateRange?.endDate || presetDateRange.endDate
   const filterCategories = useMemo(
     () => getCategoriesForType(typeFilter === 'all' ? undefined : typeFilter),
     [typeFilter]
@@ -290,13 +321,21 @@ export default function Transactions() {
 
   const hasMore = useMemo(() => total > data.length, [total, data.length])
   const focusTxnId = searchParams.get('focus')
-  const hasActiveFilters = typeFilter !== 'all' || !!catFilter || !!paymentModeFilter || datePreset !== 'all' || !!debouncedSearch
+  const hasActiveFilters = typeFilter !== 'all' || !!catFilter || !!paymentModeFilter || datePreset !== 'all' || !!forcedDateRange || !!debouncedSearch
   const activeDatePresetLabel = useMemo(
     () => {
+      if (forcedDateRange?.startDate && forcedDateRange?.startDate === forcedDateRange?.endDate) {
+        return formatIsoDateLabel(forcedDateRange.startDate)
+      }
+
+      if (forcedDateRange?.startDate && forcedDateRange?.endDate) {
+        return `${formatIsoDateLabel(forcedDateRange.startDate)} - ${formatIsoDateLabel(forcedDateRange.endDate)}`
+      }
+
       if (datePreset === 'custom-month') return formatMonthInputLabel(selectedMonth)
       return DATE_PRESETS.find((preset) => preset.id === datePreset)?.label || 'All time'
     },
-    [datePreset, selectedMonth]
+    [datePreset, selectedMonth, forcedDateRange]
   )
   const activeCategoryLabel = useMemo(
     () => getCategoryLabel(catFilter),
@@ -476,6 +515,25 @@ export default function Transactions() {
       }
       setCatFilter(categoryParam)
       shouldResetCount = true
+    }
+
+    if (searchParams.has('q')) {
+      const queryParam = String(searchParams.get('q') || '').trim()
+      setSearch(queryParam)
+      shouldResetCount = true
+    }
+
+    if (searchParams.has('day')) {
+      const dayParam = parseIsoDateInput(searchParams.get('day'))
+      if (dayParam) {
+        setForcedDateRange({ startDate: dayParam, endDate: dayParam })
+        setDatePreset('all')
+        shouldResetCount = true
+      } else {
+        setForcedDateRange(null)
+      }
+    } else {
+      setForcedDateRange(null)
     }
 
     if (shouldResetCount) {
@@ -754,6 +812,7 @@ export default function Transactions() {
     setPaymentModeFilter('')
     setDatePreset('all')
     setSelectedMonth(monthInputFromDate())
+    setForcedDateRange(null)
     setSearch('')
     setShowCats(false)
     setShowPaymentModes(false)
