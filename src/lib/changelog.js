@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.2.4',
+    date: 'April 2026',
+    items: [
+      'Added in-app change password controls in Settings with confirm-password validation and clear success/error feedback',
+      'Added swipe-to-manage custom categories in Add Transaction pickers with direct Edit and Delete actions',
+      'Added a one-time swipe hint in category and investment pickers to improve discoverability of manage actions',
+      'Improved custom category responsiveness by synchronizing local category registry updates immediately after create/edit/archive flows',
+      'Polished swipe action sizing so Edit/Delete and Repeat/Delete remain flush with the swiped row without trailing visual gaps',
+    ],
+  },
+  {
     version: '1.2.3',
     date: 'April 2026',
     items: [

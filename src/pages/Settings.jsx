@@ -9,6 +9,7 @@ import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
 import {
   getReminderPrefs,
   setReminderPrefs,
@@ -64,7 +65,7 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { user, profile, updateProfile } = useAuth()
+  const { user, profile, updateProfile, updatePassword } = useAuth()
   const fileInputRef = useRef(null)
 
   const [uploading, setUploading] = useState(false)
@@ -79,6 +80,12 @@ export default function Settings() {
   const [walletMsg, setWalletMsg] = useState('')
   const [creatingInvite, setCreatingInvite] = useState(false)
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordMsg, setPasswordMsg] = useState('')
 
   useEffect(() => {
     setReminderPrefs(reminderPrefs)
@@ -220,6 +227,40 @@ export default function Settings() {
     }
   }
 
+  async function handlePasswordUpdate(e) {
+    e.preventDefault()
+    setPasswordError('')
+    setPasswordMsg('')
+
+    if (!newPassword.trim()) {
+      setPasswordError('Enter a new password.')
+      return
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError('Password must be at least 8 characters.')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match.')
+      return
+    }
+
+    setPasswordSaving(true)
+    try {
+      await updatePassword(newPassword)
+      setPasswordMsg('Password updated successfully.')
+      setNewPassword('')
+      setConfirmPassword('')
+      setShowPasswordForm(false)
+    } catch (error) {
+      setPasswordError(error?.message || 'Could not update password. Try again.')
+    } finally {
+      setPasswordSaving(false)
+    }
+  }
+
   return (
     <PageBackHeaderPage
       title="Account Settings"
@@ -336,6 +377,87 @@ export default function Settings() {
                 rightElement={<span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${isDark ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>{isDark ? 'ON' : 'OFF'}</span>}
               />
             </div>
+          </motion.div>
+
+          {/* ── Security section ────────────────────────────────────── */}
+          <motion.div variants={fadeUp}>
+            <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+              Security
+            </p>
+            <div className="card overflow-hidden p-0">
+              <SettingRow
+                icon={<ShieldAlert size={16} className="text-accent-text" />}
+                label="Change password"
+                sublabel="Update the password used for sign in"
+                onClick={() => {
+                  setShowPasswordForm((prev) => !prev)
+                  setPasswordError('')
+                  setPasswordMsg('')
+                }}
+                rightElement={(
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${showPasswordForm ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                    {showPasswordForm ? 'OPEN' : 'CLOSED'}
+                  </span>
+                )}
+              />
+
+              {showPasswordForm && (
+                <>
+                  <Divider />
+                  <form onSubmit={handlePasswordUpdate} className="px-4 py-3 space-y-3">
+                    <input
+                      type="email"
+                      name="username"
+                      autoComplete="username"
+                      value={user?.email || ''}
+                      readOnly
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="sr-only"
+                    />
+
+                    <Input
+                      label="New password"
+                      name="new-password"
+                      type="password"
+                      placeholder="At least 8 characters"
+                      helperText="Min 8 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      autoComplete="new-password"
+                      disabled={passwordSaving}
+                    />
+
+                    <Input
+                      label="Confirm new password"
+                      name="confirm-new-password"
+                      type="password"
+                      placeholder="Re-enter your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
+                      disabled={passwordSaving}
+                    />
+
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="md"
+                      fullWidth
+                      loading={passwordSaving}
+                    >
+                      Update password
+                    </Button>
+                  </form>
+                </>
+              )}
+            </div>
+
+            {(passwordError || passwordMsg) && (
+              <p className={`text-[12px] mt-2 px-1 ${passwordError ? 'text-expense-text' : 'text-ink-3'}`}>
+                {passwordError || passwordMsg}
+              </p>
+            )}
           </motion.div>
 
           {/* ── Reminders section ───────────────────────────────────── */}
