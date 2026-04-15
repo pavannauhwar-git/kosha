@@ -332,25 +332,14 @@ end $$;
 -- Phase 2 summary (broad convenience policies, idempotent)
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- NOTE: The broad "Users can fully manage own X" FOR ALL policies below are intentionally
+-- NOT recreated. The specific per-operation policies above already cover all access.
+-- Having both would create "Multiple Permissive Policies" warnings and Realtime instability.
 drop policy if exists "Users can view own profile" on public.profiles;
-CREATE POLICY "Users can view own profile"
-ON public.profiles FOR SELECT TO authenticated USING ((select auth.uid()) = id);
-
 drop policy if exists "Users can insert own profile" on public.profiles;
-CREATE POLICY "Users can insert own profile"
-ON public.profiles FOR INSERT TO authenticated WITH CHECK ((select auth.uid()) = id);
-
 drop policy if exists "Users can update own profile" on public.profiles;
-CREATE POLICY "Users can update own profile"
-ON public.profiles FOR UPDATE TO authenticated USING ((select auth.uid()) = id) WITH CHECK ((select auth.uid()) = id);
-
 drop policy if exists "Users can fully manage own transactions" on public.transactions;
-CREATE POLICY "Users can fully manage own transactions"
-ON public.transactions FOR ALL TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
-
 drop policy if exists "Users can fully manage own liabilities" on public.liabilities;
-CREATE POLICY "Users can fully manage own liabilities"
-ON public.liabilities FOR ALL TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Phase 1: Bug reports
@@ -1360,6 +1349,23 @@ create index if not exists idx_split_group_access_group on split_group_access(gr
 create index if not exists idx_split_group_invites_group on split_group_invites(group_id);
 create index if not exists idx_split_group_invites_created_by on split_group_invites(created_by);
 create index if not exists idx_split_group_invites_token on split_group_invites(token);
+
+-- Indexes for unindexed FK columns (fixes Performance Advisor warnings)
+create index if not exists idx_split_expense_splits_member
+  on split_expense_splits(member_id);
+create index if not exists idx_split_expenses_paid_by_member
+  on split_expenses(paid_by_member_id);
+create index if not exists idx_split_group_invites_consumed_by
+  on split_group_invites(consumed_by)
+  where consumed_by is not null;
+create index if not exists idx_split_group_members_linked_user
+  on split_group_members(linked_user_id)
+  where linked_user_id is not null;
+create index if not exists idx_split_settlements_payer
+  on split_settlements(payer_member_id);
+create index if not exists idx_split_settlements_payee
+  on split_settlements(payee_member_id);
+
 
 do $$
 begin

@@ -76,7 +76,7 @@ async function main() {
 
   const MAX_ATTEMPTS = 5
   const EVENT_TIMEOUT_MS = 30000
-  const POST_SUBSCRIBE_SETTLE_MS = 800
+  const POST_SUBSCRIBE_SETTLE_MS = 3000
 
   const url = requireEnv('VITE_SUPABASE_URL')
   const anonKey = requireEnv('VITE_SUPABASE_ANON_KEY')
