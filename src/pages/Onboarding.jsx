@@ -333,20 +333,6 @@ export default function Onboarding() {
   const [name,   setName]   = useState('')
   const [saving, setSaving] = useState(false)
 
-  async function consumeInvite() {
-    const inviteToken = getInviteToken(location.search)
-    if (!inviteToken || !user?.id) return
-    try {
-      await consumeInviteToken({
-        supabaseClient: supabase,
-        inviteToken,
-        userId: user.id,
-      })
-    } catch (_) {}
-    finally {
-      sessionStorage.removeItem('pendingInviteToken')
-    }
-  }
 
   async function handleNameNext(displayName) {
     setName(displayName)
@@ -363,7 +349,6 @@ export default function Onboarding() {
   async function finish() {
     setSaving(true)
     try {
-      await consumeInvite()
       await updateProfile({ onboarded: true })
 
       const hasPendingSplitInvite = (() => {

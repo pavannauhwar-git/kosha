@@ -23,6 +23,7 @@ const LIABILITY_PREFETCH_COLUMNS =
 
 // ── Eager ────────────────────────────────────────────────────────────────
 import Login from './pages/Login'
+import InviteLanding from './pages/InviteLanding'
 
 // ── Lazy ─────────────────────────────────────────────────────────────────
 const Onboarding = lazy(() => import('./pages/Onboarding'))
@@ -780,8 +781,8 @@ function AnimatedRoutes() {
     <div key={location.pathname} className="min-h-dvh">
       <Routes location={location}>
         <Route path="/login" element={<Login />} />
-        <Route path="/join/:token" element={<Login />} />
-        <Route path="/splitwise/join/:splitToken" element={<Login />} />
+        <Route path="/join/:token" element={<InviteLanding />} />
+        <Route path="/splitwise/join/:splitToken" element={<InviteLanding />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/not-found" element={<SuspenseSkeleton pathname="/not-found"><NotFound /></SuspenseSkeleton>} />
         <Route path="/onboarding" element={<SuspenseSkeleton pathname="/onboarding"><AuthGuard><Onboarding /></AuthGuard></SuspenseSkeleton>} />

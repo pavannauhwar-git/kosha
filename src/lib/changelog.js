@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.3.0',
+    date: 'April 2026',
+    items: [
+      'Implemented end-to-end Linked Wallets sharing, enabling multi-user visibility for transactions, bills, and loans via unified identity management',
+      'Upgraded core server-side functions (Balance, Month/Year Summaries) to automatically aggregate financial data across all linked partner accounts',
+      'Integrated linked-user discovery into the global authentication lifecycle, ensuring instant data synchronization and cache awareness upon login',
+      'Rebuilt the Settings UX with distinct sections for Active Sync partners, Invite Token management, and a dedicated Social App Sharing area',
+      'Hardened automated join-flow test suites with improved record-cleanup logic and explicit verification for multi-user data-access paths',
+    ],
+  },
+  {
     version: '1.2.4',
     date: 'April 2026',
     items: [

@@ -37,8 +37,9 @@ export default function Login() {
   } = useAuth()
 
   const isRecoveryFlow = searchParams.get('reset') === '1'
+  const initialMode = searchParams.get('mode') || (isRecoveryFlow ? 'reset' : 'signin')
 
-  const [mode, setMode] = useState(isRecoveryFlow ? 'reset' : 'signin')
+  const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -87,18 +88,6 @@ export default function Login() {
   }, [resetCountdown, navigate])
 
   const isRedirectingAfterReset = resetCountdown !== null
-
-  useEffect(() => {
-    if (token) {
-      sessionStorage.setItem('pendingInviteToken', token)
-    }
-  }, [token])
-
-  useEffect(() => {
-    if (splitToken) {
-      sessionStorage.setItem('pendingSplitGroupInviteToken', splitToken)
-    }
-  }, [splitToken])
 
   async function handleGoogle() {
     setError(null)
@@ -178,25 +167,18 @@ export default function Login() {
   }
 
   return (
-    <div
-      className="h-dvh bg-kosha-bg px-4 overflow-y-auto"
-      style={{
-        paddingTop: 'max(env(safe-area-inset-top, 0px), 0.5rem)',
-        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.5rem)',
-      }}
-    >
-      <div className="min-h-full flex flex-col items-center justify-center py-8">
-        <div className="w-full max-w-[380px]">
+    <div className="h-dvh bg-kosha-bg px-4 flex flex-col items-center justify-center overscroll-none overflow-y-auto">
+      <div className="w-full max-w-[400px] py-12">
+        <motion.div
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+          initial="hidden"
+          animate="show"
+        >
+          {/* ── Card ─────────────────────────────────────────────────────── */}
           <motion.div
-            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-            initial="hidden"
-            animate="show"
+            variants={fadeUp}
+            className="card p-6 mb-4"
           >
-            {/* ── Card ─────────────────────────────────────────────────────── */}
-            <motion.div
-              variants={fadeUp}
-              className="card p-6 mb-4"
-            >
 
               {/* ── Logo ──────────────────────────────────────────────────── */}
               <div className="flex items-center gap-3 mb-5 pb-4 border-b border-kosha-border">
@@ -450,8 +432,7 @@ export default function Login() {
             <motion.div variants={fadeUp}>
               <AboutKoshaLink className="text-center pt-1" />
             </motion.div>
-          </motion.div>
-        </div>
+        </motion.div>
       </div>
     </div>
   )
