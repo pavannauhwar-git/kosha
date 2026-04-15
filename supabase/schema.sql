@@ -620,7 +620,7 @@ $$;
 -- Now: single query, server-side SUM, returns one row with one number.
 
 create or replace function public.get_running_balance(
-  p_user_id uuid,
+  p_user_ids uuid[],
   p_end_date date
 )
 returns numeric
@@ -634,7 +634,7 @@ as $$
     0
   )
   from transactions
-  where user_id  = p_user_id
+  where user_id  = any(p_user_ids)
     and date    <= p_end_date
 $$;
 
@@ -804,7 +804,7 @@ using (false);
 -- The JS hook aggregates these ~5–30 rows instead of ~50–300 raw rows.
 
 create or replace function public.get_month_summary(
-  p_user_id uuid,
+  p_user_ids uuid[],
   p_year    int,
   p_month   int
 )
@@ -827,7 +827,7 @@ as $$
     coalesce(investment_vehicle, 'Other') as investment_vehicle,
     sum(amount)                           as total
   from transactions
-  where user_id = p_user_id
+  where user_id = any(p_user_ids)
     and date   >= make_date(p_year, p_month, 1)
     and date   <= (make_date(p_year, p_month, 1) + interval '1 month - 1 day')::date
   group by type, is_repayment, category, investment_vehicle
@@ -847,7 +847,7 @@ $$;
 --   top5_expenses — JSON array of top 5 expense transactions
 
 create or replace function public.get_year_summary(
-  p_user_id uuid,
+  p_user_ids uuid[],
   p_year    int
 )
 returns table (
@@ -876,7 +876,7 @@ begin
     select id, date, type, amount, description, category,
            investment_vehicle, is_repayment
     from transactions
-    where user_id = p_user_id
+    where user_id = any(p_user_ids)
       and date between v_start and v_end;
 
   -- Monthly income / expense / investment buckets

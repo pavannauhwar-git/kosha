@@ -33,11 +33,13 @@ export async function invalidateLiabilityCache() {
 
 async function fetchLiabilitiesByPaid(paidValue) {
   return traceQuery(`liabilities:${paidValue ? 'paid' : 'pending'}`, async () => {
-    const userId = getAuthUserId()
+    const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
+    const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+    
     const { data: rows, error } = await supabase
       .from('liabilities')
       .select(LIABILITY_COLUMNS)
-      .eq('user_id', userId)
+      .in('user_id', allUserIds)
       .eq('paid', paidValue)
       .order('due_date', { ascending: true })
 
@@ -94,11 +96,13 @@ export function useLiabilitiesByMonth(year, month, options = {}) {
     queryKey: ['liabilitiesMonth', year, month],
     enabled: enabled && !!startDate && !!endDate,
     queryFn: async () => traceQuery('liabilities:month', async () => {
-      const userId = getAuthUserId()
+      const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
+      const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+
       const { data: rows, error: queryError } = await supabase
         .from('liabilities')
         .select(MONTH_LIABILITY_COLUMNS)
-        .eq('user_id', userId)
+        .in('user_id', allUserIds)
         .gte('due_date', startDate)
         .lte('due_date', endDate)
         .order('due_date', { ascending: true })

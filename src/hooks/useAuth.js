@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { setAuthUser, clearAuthUser, getAuthUserId } from '../lib/authStore'
+import { fetchLinkedUserIds, fetchLinkedProfiles } from '../lib/walletSync'
 
 const USER_PROFILE_QUERY_KEY = ['user-profile']
 const PROFILE_COLUMNS = 'id, display_name, avatar_url, onboarded'
@@ -11,6 +12,8 @@ export function useAuthState() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(true)
+  const [linkedUserIds, setLinkedUserIds] = useState([])
+  const [linkedProfiles, setLinkedProfiles] = useState([])
 
   const profileQueryKey = useCallback(
     (userId) => [...USER_PROFILE_QUERY_KEY, userId],
@@ -41,9 +44,21 @@ export function useAuthState() {
         queryKey: profileQueryKey(userId),
         queryFn: () => fetchProfileByUserId(userId),
       })
-      setProfile(data)
+      const ids = await fetchLinkedUserIds(userId)
+      const lp = ids.length > 0 ? await fetchLinkedProfiles(userId) : []
+      
+      const fullData = { ...data, linkedUserIds: ids, linkedProfiles: lp }
+      
+      setProfile(fullData)
+      setLinkedUserIds(ids)
+      setLinkedProfiles(lp)
+      
+      // Update cache with the full enriched profile
+      queryClient.setQueryData(profileQueryKey(userId), fullData)
     } catch {
       setProfile(null)
+      setLinkedUserIds([])
+      setLinkedProfiles([])
     } finally {
       setProfileLoading(false)
     }
@@ -257,6 +272,7 @@ export function useAuthState() {
 
   return {
     user, profile, loading, profileLoading,
+    linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,

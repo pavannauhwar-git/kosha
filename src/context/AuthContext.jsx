@@ -6,6 +6,7 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const {
     user, profile, loading, profileLoading,
+    linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
@@ -19,11 +20,13 @@ export function AuthProvider({ children }) {
   // value reference only changes when something meaningful actually changed.
   const value = useMemo(() => ({
     user, profile, loading, profileLoading,
+    linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
   }), [
     user, profile, loading, profileLoading,
+    linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,

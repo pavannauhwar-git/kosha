@@ -31,11 +31,13 @@ export async function invalidateLoanCache() {
 async function fetchLoans(direction, settledValue) {
   const label = settledValue ? 'settled' : `active:${direction}`
   return traceQuery(`loans:${label}`, async () => {
-    const userId = getAuthUserId()
+    const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
+    const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+
     let query = supabase
       .from('loans')
       .select(LOAN_COLUMNS)
-      .eq('user_id', userId)
+      .in('user_id', allUserIds)
       .eq('settled', settledValue)
 
     if (!settledValue && direction) {

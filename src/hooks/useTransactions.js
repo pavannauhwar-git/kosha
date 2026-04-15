@@ -225,7 +225,9 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
     enabled,
     queryFn: () => traceQuery('transactions:list', async () => {
       try {
-        const userId = getAuthUserId()
+        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
+        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+        
         // Run recurring materialization only for broad list reads.
         // Filtered/short lists (dashboard widgets, search, category tabs)
         // should stay read-only for latency.
@@ -235,7 +237,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         let q = supabase
           .from('transactions')
           .select(selectedColumns)
-          .eq('user_id', userId)
+          .in('user_id', allUserIds)
           .order('date',       { ascending: false })
           .order('created_at', { ascending: false })
 
@@ -272,11 +274,13 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
     enabled: shouldFetchCount,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
-        const userId = getAuthUserId()
+        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
+        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+
         let q = supabase
           .from('transactions')
           .select('id', { count: 'exact', head: true })
-          .eq('user_id', userId)
+          .in('user_id', allUserIds)
 
         if (type)       q = q.eq('type', type)
         if (category)   q = q.eq('category', category)
@@ -630,12 +634,13 @@ export function useMonthSummary(year, month, options = {}) {
     enabled,
     queryFn: async () => {
       try {
-        const userId = getAuthUserId()
+        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
+        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
 
         const { data: rows, error: qError } = await supabase.rpc('get_month_summary', {
-          p_user_id: userId,
-          p_year:    year,
-          p_month:   month,
+          p_user_ids: allUserIds,
+          p_year:     year,
+          p_month:    month,
         })
 
         if (qError) throw qError
@@ -659,10 +664,11 @@ export function useYearSummary(year, options = {}) {
     placeholderData: (previousData) => previousData,
     queryFn: async () => {
       try {
-        const userId = getAuthUserId()
+        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
+        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
 
         const { data: result, error: rpcError } = await supabase
-          .rpc('get_year_summary', { p_user_id: userId, p_year: year })
+          .rpc('get_year_summary', { p_user_ids: allUserIds, p_year: year })
           .maybeSingle()
 
         if (rpcError) throw rpcError
@@ -788,12 +794,13 @@ export function useRunningBalance(year, month) {
     queryKey: ['balance', year, month],
     queryFn: async () => {
       try {
-        const userId  = getAuthUserId()
+        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
+        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
         const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
         const { data: balance, error: rpcError } = await supabase.rpc(
           'get_running_balance',
-          { p_user_id: userId, p_end_date: endDate }
+          { p_user_ids: allUserIds, p_end_date: endDate }
         )
 
         if (rpcError) throw rpcError

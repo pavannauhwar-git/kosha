@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, Copy, Moon, Sun, Home } from 'lucide-react'
+import { Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, User, Copy, Moon, Sun, Home } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/dialogs/EditProfileNameDialog'
@@ -66,7 +66,7 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { user, profile, updateProfile, updatePassword } = useAuth()
+  const { user, profile, updateProfile, updatePassword, linkedProfiles } = useAuth()
   const fileInputRef = useRef(null)
 
   const [uploading, setUploading] = useState(false)
@@ -542,16 +542,59 @@ export default function Settings() {
           )}
         </motion.div>
 
-        {/* ── Shared wallet section ───────────────────────────────── */}
+        {/* ── Linked wallets section ────────────────────────────────── */}
         <motion.div variants={fadeUp}>
           <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
-            Shared Wallet
+            Linked Wallets
           </p>
-          <div className="card overflow-hidden p-0">
+          <div className="card overflow-hidden p-0 mb-6">
+            {linkedProfiles.length === 0 ? (
+              <div className="px-4 py-8 text-center bg-kosha-surface-2">
+                <div className="w-10 h-10 rounded-full bg-kosha-surface flex items-center justify-center mx-auto mb-3">
+                  <Users size={18} className="text-ink-3" />
+                </div>
+                <p className="text-[13px] font-semibold text-ink">No linked wallets yet</p>
+                <p className="text-[11px] text-ink-3 mt-1 px-4">
+                  Pair with a partner or family member to sync your transactions and balances.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-kosha-border bg-white">
+                {linkedProfiles.map((lp) => (
+                  <div key={lp.id} className="px-4 py-3.5 flex items-center justify-between gap-3 bg-kosha-surface-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center overflow-hidden border border-brand-border">
+                        {lp.avatar_url ? (
+                          <img src={lp.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <User size={16} className="text-brand" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-semibold text-ink leading-tight truncate">{lp.display_name}</p>
+                        <p className="text-[10px] text-ink-3 mt-1 flex items-center gap-1.5 uppercase font-bold tracking-wider">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                          Live Sync Active
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* ── Invite to link section ───────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            Invite to Link Wallet
+          </p>
+          <div className="card overflow-hidden p-0 mb-6">
             <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-ink">Invite members</p>
-                <p className="text-[11px] text-ink-3 mt-0.5">Create links without merging historical data.</p>
+                <p className="text-[13px] font-semibold text-ink">Generate link</p>
+                <p className="text-[11px] text-ink-3 mt-0.5">Invite others to sync their wallet with yours.</p>
               </div>
               <Button
                 variant="primary"
@@ -621,6 +664,35 @@ export default function Settings() {
               {walletError || walletMsg}
             </p>
           )}
+        </motion.div>
+
+        {/* ── Share Kosha section ─────────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            Share Kosha
+          </p>
+          <div className="card p-4 flex items-center justify-between gap-4 mb-6">
+            <div>
+              <p className="text-[13px] font-semibold text-ink">Invite Friends</p>
+              <p className="text-[11px] text-ink-3 mt-0.5">Help others track their finances with Kosha.</p>
+            </div>
+            <Button 
+              variant="primary" 
+              size="sm" 
+              className="h-8 px-4"
+              onClick={async () => {
+                try {
+                  await shareLink({
+                    url: window.location.origin
+                  })
+                } catch (e) {
+                  console.error('Share failed', e)
+                }
+              }}
+            >
+              Share App
+            </Button>
+          </div>
         </motion.div>
       </motion.div>
 
