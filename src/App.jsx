@@ -379,69 +379,31 @@ function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
   const prefetchRoute = useRouteIntentPrefetch()
-  const [layoutReady, setLayoutReady] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    let revealed = false
-    let fallbackId
-    let settleId
-    let rafId1
-    let rafId2
+    let timerId
 
-    const reveal = () => {
-      if (cancelled || revealed) return
-      revealed = true
-      if (fallbackId) window.clearTimeout(fallbackId)
-      if (settleId) window.clearTimeout(settleId)
-      rafId1 = requestAnimationFrame(() => {
-        rafId2 = requestAnimationFrame(() => {
-          if (!cancelled) setLayoutReady(true)
+    const paint = () => {
+      if (cancelled) return
+      requestAnimationFrame(() => {
+        if (cancelled) return
+        requestAnimationFrame(() => {
+          if (!cancelled) setMounted(true)
         })
       })
     }
 
-    const scheduleReveal = (delay = 120) => {
-      if (revealed || cancelled) return
-      if (settleId) window.clearTimeout(settleId)
-      settleId = window.setTimeout(reveal, delay)
-    }
-
-    // Wait for viewport metrics to settle on iOS before showing the fixed nav.
-    const vv = window.visualViewport
-    if (vv) {
-      const handleViewportChange = () => scheduleReveal(120)
-
-      vv.addEventListener('resize', handleViewportChange)
-      vv.addEventListener('scroll', handleViewportChange)
-      window.addEventListener('orientationchange', handleViewportChange)
-
-      scheduleReveal(120)
-      fallbackId = window.setTimeout(reveal, 600)
-
-      return () => {
-        cancelled = true
-        if (fallbackId) window.clearTimeout(fallbackId)
-        if (settleId) window.clearTimeout(settleId)
-        if (rafId1) window.cancelAnimationFrame(rafId1)
-        if (rafId2) window.cancelAnimationFrame(rafId2)
-        vv.removeEventListener('resize', handleViewportChange)
-        vv.removeEventListener('scroll', handleViewportChange)
-        window.removeEventListener('orientationchange', handleViewportChange)
-      }
-    } else {
-      reveal()
-    }
+    timerId = setTimeout(paint, 50)
 
     return () => {
       cancelled = true
-      if (fallbackId) window.clearTimeout(fallbackId)
-      if (settleId) window.clearTimeout(settleId)
-      if (rafId1) window.cancelAnimationFrame(rafId1)
-      if (rafId2) window.cancelAnimationFrame(rafId2)
+      clearTimeout(timerId)
     }
   }, [])
-
+  
+  if (!mounted) return null
   if (BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
 
   const active = NAV.findIndex((n) =>
@@ -449,7 +411,7 @@ function BottomNav() {
   )
 
   return (
-    <div className={`nav-float-wrap ${layoutReady ? 'nav-float-wrap--ready' : 'nav-float-wrap--preload'}`}>
+    <div className="nav-float-wrap">
       <nav className="nav-float" aria-label="Main navigation">
         {NAV.map((item, i) => {
           const isActive = i === active
@@ -474,12 +436,10 @@ function BottomNav() {
               transition={{ type: 'spring', stiffness: 520, damping: 34 }}
             >
               <div className="nav-icon-wrap">
-                {isActive && (layoutReady ? (
+                {isActive && (
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
                     transition={{ type: 'spring', stiffness: 460, damping: 36, mass: 0.9 }} />
-                ) : (
-                  <div className="nav-icon-bg" />
-                ))}
+                )}
                 <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.18 }}>
                   <item.Icon size={21} weight="fill" color="var(--ds-primary)" />
                 </motion.span>
