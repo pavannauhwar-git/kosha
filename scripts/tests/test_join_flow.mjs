@@ -87,12 +87,15 @@ async function main() {
     throw new Error('Invite used_at was not set')
   }
 
+  console.log('Cleaning up invite record...')
+  await creatorClient.from('invites').delete().eq('token', inviteToken)
+
   await Promise.all([
     creatorClient.auth.signOut(),
     joinerClient.auth.signOut(),
   ])
 
-  console.log('PASS: Join flow invite was consumed and marked used by joiner.')
+  console.log('PASS: Join flow invite was consumed, marked used, and cleaned up.')
 }
 
 main().catch((error) => {

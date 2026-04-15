@@ -34,7 +34,11 @@ const LOAN_COLUMNS_EXPORT =
 const DEEP_LINK_MAX_ATTEMPTS = 8
 const DEEP_LINK_RETRY_MS = 350
 
-export default function Loans({ embedded = false } = {}) {
+export default function Loans({
+  embedded = false,
+  showAddExternal,
+  onShowAddChange,
+} = {}) {
   const { given, taken, settled, loading, settledLoading } = useLoans()
   const [searchParams, setSearchParams] = useSearchParams()
   const deepLinkTxnId = searchParams.get('repaymentTxn')
@@ -53,7 +57,10 @@ export default function Loans({ embedded = false } = {}) {
         : 'given'
 
   const [tab, setTab] = useState(inferredInitialTab)
-  const [showAdd, setShowAdd] = useState(false)
+  const [showAddInternal, setShowAddInternal] = useState(false)
+  const showAdd = showAddExternal !== undefined ? showAddExternal : showAddInternal
+  const setShowAdd = onShowAddChange || setShowAddInternal
+
   const [editLoan, setEditLoan] = useState(null)
   const [payLoan, setPayLoan] = useState(null)      // loan object being paid
   const [deletingId, setDeletingId] = useState(null)
@@ -68,9 +75,9 @@ export default function Loans({ embedded = false } = {}) {
 
   const clearRepaymentDeepLink = useCallback(() => {
     const next = new URLSearchParams(searchParams)
-    ;['repaymentTxn', 'repaymentLoan', 'repaymentTab', 'repaymentType', 'repaymentAmount', 'repaymentDate', 'repaymentCounterparty'].forEach((key) => {
-      next.delete(key)
-    })
+      ;['repaymentTxn', 'repaymentLoan', 'repaymentTab', 'repaymentType', 'repaymentAmount', 'repaymentDate', 'repaymentCounterparty'].forEach((key) => {
+        next.delete(key)
+      })
     setSearchParams(next, { replace: true })
   }, [searchParams, setSearchParams])
 
@@ -99,8 +106,8 @@ export default function Loans({ embedded = false } = {}) {
   }, [paySaving, closePaySheet])
 
   // ── Derived data ────────────────────────────────────────────────────
-  const visibleGiven   = useMemo(() => given.filter(l => !hiddenIds.has(l.id)),   [given, hiddenIds])
-  const visibleTaken   = useMemo(() => taken.filter(l => !hiddenIds.has(l.id)),   [taken, hiddenIds])
+  const visibleGiven = useMemo(() => given.filter(l => !hiddenIds.has(l.id)), [given, hiddenIds])
+  const visibleTaken = useMemo(() => taken.filter(l => !hiddenIds.has(l.id)), [taken, hiddenIds])
   const visibleSettled = useMemo(() => settled.filter(l => !hiddenIds.has(l.id)), [settled, hiddenIds])
 
   const activeLoans = tab === 'given' ? visibleGiven : tab === 'taken' ? visibleTaken : visibleSettled
@@ -648,8 +655,8 @@ export default function Loans({ embedded = false } = {}) {
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
       <div className="mb-2.5 grid grid-cols-3 gap-2">
         {[
-          { key: 'given',   label: 'Given',   count: visibleGiven.length,   activeClass: 'bg-income-bg text-income-text border-income-border shadow-card' },
-          { key: 'taken',   label: 'Taken',   count: visibleTaken.length,   activeClass: 'bg-expense-bg text-expense-text border-expense-border shadow-card' },
+          { key: 'given', label: 'Given', count: visibleGiven.length, activeClass: 'bg-income-bg text-income-text border-income-border shadow-card' },
+          { key: 'taken', label: 'Taken', count: visibleTaken.length, activeClass: 'bg-expense-bg text-expense-text border-expense-border shadow-card' },
           { key: 'settled', label: 'Settled', count: visibleSettled.length, activeClass: 'bg-repay-bg text-repay-text border-repay-border shadow-card' },
         ].map(t => (
           <button
@@ -665,292 +672,292 @@ export default function Loans({ embedded = false } = {}) {
 
       <div className="space-y-3">
 
-      {/* ── Summary card ──────────────────────────────────────────────── */}
-      {(visibleGiven.length > 0 || visibleTaken.length > 0) && tab !== 'settled' && (
-        <div className="card p-3.5 sm:p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="mini-panel px-3 py-2.5">
-              <p className="text-caption text-ink-3 mb-1">You're owed</p>
-              <p className="text-base font-semibold amt-income tabular-nums leading-none">{fmt(totalGiven)}</p>
-              <p className="text-caption text-ink-3 mt-1">{visibleGiven.length} loan{visibleGiven.length !== 1 ? 's' : ''}</p>
+        {/* ── Summary card ──────────────────────────────────────────────── */}
+        {(visibleGiven.length > 0 || visibleTaken.length > 0) && tab !== 'settled' && (
+          <div className="card p-3.5 sm:p-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="mini-panel px-3 py-2.5">
+                <p className="text-caption text-ink-3 mb-1">You're owed</p>
+                <p className="text-base font-semibold amt-income tabular-nums leading-none">{fmt(totalGiven)}</p>
+                <p className="text-caption text-ink-3 mt-1">{visibleGiven.length} loan{visibleGiven.length !== 1 ? 's' : ''}</p>
+              </div>
+              <div className="mini-panel px-3 py-2.5">
+                <p className="text-caption text-ink-3 mb-1">You owe</p>
+                <p className="text-base font-semibold amt-expense tabular-nums leading-none">{fmt(totalTaken)}</p>
+                <p className="text-caption text-ink-3 mt-1">{visibleTaken.length} loan{visibleTaken.length !== 1 ? 's' : ''}</p>
+              </div>
             </div>
-            <div className="mini-panel px-3 py-2.5">
-              <p className="text-caption text-ink-3 mb-1">You owe</p>
-              <p className="text-base font-semibold amt-expense tabular-nums leading-none">{fmt(totalTaken)}</p>
-              <p className="text-caption text-ink-3 mt-1">{visibleTaken.length} loan{visibleTaken.length !== 1 ? 's' : ''}</p>
+
+            <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {exposureConcentrationSignal && (
+                <div className="mini-panel p-3.5">
+                  <p className="text-[10px] text-ink-3 tracking-wide">Exposure concentration</p>
+                  <p className={`text-label font-semibold mt-1 ${bandTextClass(exposureConcentrationSignal.tone)}`}>
+                    {exposureConcentrationSignal.topSharePct}%
+                  </p>
+                  <p className="text-caption text-ink-2 mt-1 truncate" title={exposureConcentrationSignal.top.name}>
+                    {exposureConcentrationSignal.top.name}
+                  </p>
+                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                    {exposureConcentrationSignal.counterparties} counterparties · {fmt(exposureConcentrationSignal.totalRemaining)}
+                  </p>
+                </div>
+              )}
+
+              {dueRiskSignal && (
+                <div className="mini-panel p-3.5">
+                  <p className="text-[10px] text-ink-3 tracking-wide">At-risk due loans</p>
+                  <p className={`text-label font-semibold mt-1 ${bandTextClass(dueRiskSignal.tone)}`}>
+                    {dueRiskSignal.count} flagged
+                  </p>
+                  <p className="text-caption text-ink-2 mt-1 tabular-nums">
+                    {fmt(dueRiskSignal.amountAtRisk)} at risk
+                  </p>
+                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                    {dueRiskSignal.overdueCount} overdue · {Math.max(0, dueRiskSignal.count - dueRiskSignal.overdueCount)} near due
+                  </p>
+                </div>
+              )}
+
+              {settlementVelocitySignal && (
+                <div className="mini-panel p-3.5">
+                  <p className="text-[10px] text-ink-3 tracking-wide">Settlement velocity</p>
+                  <p className="text-label font-semibold text-ink mt-1 tabular-nums">
+                    {settlementVelocitySignal.settlementPct}% settled
+                  </p>
+                  <p className="text-caption text-ink-2 mt-1 tabular-nums">
+                    Accrued interest {fmt(settlementVelocitySignal.accruedTotal)}
+                  </p>
+                  <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(settlementVelocitySignal.tone, 'text-ink-3')}`}>
+                    {settlementVelocitySignal.accrualLoadPct == null
+                      ? 'Accrual load builds once settlements begin'
+                      : `Accrual load ${settlementVelocitySignal.accrualLoadPct}% of settled value`}
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
 
-          <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {exposureConcentrationSignal && (
-              <div className="mini-panel p-3.5">
-                <p className="text-[10px] text-ink-3 tracking-wide">Exposure concentration</p>
-                <p className={`text-label font-semibold mt-1 ${bandTextClass(exposureConcentrationSignal.tone)}`}>
-                  {exposureConcentrationSignal.topSharePct}%
-                </p>
-                <p className="text-caption text-ink-2 mt-1 truncate" title={exposureConcentrationSignal.top.name}>
-                  {exposureConcentrationSignal.top.name}
-                </p>
-                <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
-                  {exposureConcentrationSignal.counterparties} counterparties · {fmt(exposureConcentrationSignal.totalRemaining)}
+            <div className="mt-3 mini-panel px-3 py-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-caption text-ink-3">Net position</p>
+                <p className={`text-base font-semibold tabular-nums leading-none ${netPosition >= 0 ? 'amt-income' : 'amt-expense'}`}>
+                  {netPosition >= 0 ? '+' : ''}{fmt(netPosition)}
                 </p>
               </div>
-            )}
-
-            {dueRiskSignal && (
-              <div className="mini-panel p-3.5">
-                <p className="text-[10px] text-ink-3 tracking-wide">At-risk due loans</p>
-                <p className={`text-label font-semibold mt-1 ${bandTextClass(dueRiskSignal.tone)}`}>
-                  {dueRiskSignal.count} flagged
-                </p>
-                <p className="text-caption text-ink-2 mt-1 tabular-nums">
-                  {fmt(dueRiskSignal.amountAtRisk)} at risk
-                </p>
-                <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
-                  {dueRiskSignal.overdueCount} overdue · {Math.max(0, dueRiskSignal.count - dueRiskSignal.overdueCount)} near due
-                </p>
-              </div>
-            )}
-
-            {settlementVelocitySignal && (
-              <div className="mini-panel p-3.5">
-                <p className="text-[10px] text-ink-3 tracking-wide">Settlement velocity</p>
-                <p className="text-label font-semibold text-ink mt-1 tabular-nums">
-                  {settlementVelocitySignal.settlementPct}% settled
-                </p>
-                <p className="text-caption text-ink-2 mt-1 tabular-nums">
-                  Accrued interest {fmt(settlementVelocitySignal.accruedTotal)}
-                </p>
-                <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(settlementVelocitySignal.tone, 'text-ink-3')}`}>
-                  {settlementVelocitySignal.accrualLoadPct == null
-                    ? 'Accrual load builds once settlements begin'
-                    : `Accrual load ${settlementVelocitySignal.accrualLoadPct}% of settled value`}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3 mini-panel px-3 py-2.5">
-            <div className="flex items-center justify-between">
-              <p className="text-caption text-ink-3">Net position</p>
-              <p className={`text-base font-semibold tabular-nums leading-none ${netPosition >= 0 ? 'amt-income' : 'amt-expense'}`}>
-                {netPosition >= 0 ? '+' : ''}{fmt(netPosition)}
+              <p className="text-caption text-ink-3 mt-0.5">
+                {netPosition > 0 ? 'In your favor' : netPosition < 0 ? 'You owe more' : 'Balanced'}
               </p>
             </div>
-            <p className="text-caption text-ink-3 mt-0.5">
-              {netPosition > 0 ? 'In your favor' : netPosition < 0 ? 'You owe more' : 'Balanced'}
-            </p>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Loading / Empty states ────────────────────────────────────── */}
-      {loading && activeLoans.length === 0 ? (
-        <SkeletonLayout
-          className="space-y-3"
-          sections={[
-            { type: 'block', height: 'h-[120px]' },
-            { type: 'block', height: 'h-[100px]' },
-            { type: 'block', height: 'h-[100px]' },
-          ]}
-        />
-      ) : (
-        <div className="space-y-3">
-          {tab !== 'settled' && activeLoans.length === 0 && (
-            <EmptyState
-              className="py-8"
-              icon={<HandCoins size={24} className="text-brand" />}
-              title={tab === 'given' ? 'No loans given' : 'No loans taken'}
-              description={tab === 'given'
-                ? 'Track money you\u2019ve lent to friends, family, or others.'
-                : 'Track money you\u2019ve borrowed from others.'}
-              actionLabel="Add a loan"
-              onAction={() => { setForm(f => ({ ...f, direction: tab })); setShowAdd(true) }}
-            />
-          )}
+        {/* ── Loading / Empty states ────────────────────────────────────── */}
+        {loading && activeLoans.length === 0 ? (
+          <SkeletonLayout
+            className="space-y-3"
+            sections={[
+              { type: 'block', height: 'h-[120px]' },
+              { type: 'block', height: 'h-[100px]' },
+              { type: 'block', height: 'h-[100px]' },
+            ]}
+          />
+        ) : (
+          <div className="space-y-3">
+            {tab !== 'settled' && activeLoans.length === 0 && (
+              <EmptyState
+                className="py-8"
+                icon={<HandCoins size={24} className="text-brand" />}
+                title={tab === 'given' ? 'No loans given' : 'No loans taken'}
+                description={tab === 'given'
+                  ? 'Track money you\u2019ve lent to friends, family, or others.'
+                  : 'Track money you\u2019ve borrowed from others.'}
+                actionLabel="Add a loan"
+                onAction={() => { setForm(f => ({ ...f, direction: tab })); setShowAdd(true) }}
+              />
+            )}
 
-          {tab === 'settled' && settledLoading && visibleSettled.length === 0 && (
-            <div className="card p-4">
-              <p className="section-label">Settled loans</p>
-              <p className="text-[12px] text-ink-3 mt-1">Loading history…</p>
-            </div>
-          )}
-
-          {tab === 'settled' && !settledLoading && visibleSettled.length === 0 && (
-            <EmptyState
-              className="py-8"
-              title="No settled loans"
-              description="Loans you fully repay will show up here."
-              actionLabel="View active"
-              onAction={() => setTab('given')}
-            />
-          )}
-
-          {/* ── Loan cards ───────────────────────────────────────────── */}
-          <div ref={loanListRef} className="space-y-2.5">
-            {loanTopPadding > 0 && <div aria-hidden="true" style={{ height: `${loanTopPadding}px` }} />}
-            {renderedLoans.map((loan, localIndex) => {
-            const rowIndex = loanStartIndex + localIndex
-            const remaining = +loan.amount - +loan.amount_settled
-            const pct = loanProgress(loan.amount, loan.amount_settled)
-            const interest = accruedInterest(loan.amount, loan.interest_rate, loan.loan_date)
-            const days = loan.due_date ? daysUntil(loan.due_date) : null
-            const isOptimistic = loan.__optimistic || String(loan.id || '').startsWith('optimistic-')
-
-            return (
-              <div
-                id={`loan-${loan.id}`}
-                key={loan.id}
-                ref={(node) => measureLoanRow(rowIndex, node)}
-                className={`card p-3 sm:p-3.5 ${highlightLoanId === loan.id ? 'txn-focus-highlight' : ''}`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    {/* Direction icon + counterparty */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0
-                        ${loan.direction === 'given' ? 'bg-income-bg' : 'bg-expense-bg'}`}>
-                        {loan.direction === 'given'
-                          ? <ArrowUpRight size={14} className="text-income-text" />
-                          : <ArrowDownLeft size={14} className="text-expense-text" />}
-                      </div>
-                      <p className="text-[13px] sm:text-sm font-semibold text-ink truncate">
-                        {loan.counterparty}
-                      </p>
-                    </div>
-
-                    {/* Amount */}
-                    <p className={`text-[17px] sm:text-lg font-semibold mb-1 ${loan.direction === 'given' ? 'amt-income' : 'amt-expense'}`}>
-                      {fmt(+loan.amount)}
-                    </p>
-
-                    {/* Interest if applicable */}
-                    {interest > 0 && (
-                      <p className="text-[11px] text-ink-3 mb-1">
-                        +{fmt(Math.round(interest * 100) / 100)} interest ({loan.interest_rate}%/yr)
-                      </p>
-                    )}
-
-                    {/* Progress bar (active loans only) */}
-                    {!loan.settled && (
-                      <div className="mb-2">
-                        <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-1">
-                          <motion.div
-                            className={`h-full rounded-pill ${loan.direction === 'given' ? 'bg-income-text' : 'bg-expense-text'}`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pct}%` }}
-                            transition={{ duration: 0.5, ease: 'easeOut' }}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-ink-3">
-                            {fmt(+loan.amount_settled)} / {fmt(+loan.amount)}
-                          </span>
-                          <span className={`text-[10px] font-semibold ${pct >= 100 ? 'text-income-text' : 'text-ink-3'}`}>
-                            {pct}%
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Meta chips */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
-                        {loan.direction === 'given' ? 'Given' : 'Taken'} {fmtDate(loan.loan_date)}
-                      </span>
-                      {loan.due_date && !loan.settled && days !== null && (
-                        <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${dueChipClass(days)}`}>
-                          {dueLabel(days)}
-                        </span>
-                      )}
-                      {loan.settled && (
-                        <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-income-bg text-income-text border border-income-border">
-                          Settled
-                        </span>
-                      )}
-                      {loan.interest_rate > 0 && (
-                        <span className="text-[10px] sm:text-[11px] text-ink-3">{loan.interest_rate}%/yr</span>
-                      )}
-                      {loan.interest_rate === 0 && !loan.settled && (
-                        <span className="text-[10px] sm:text-[11px] text-ink-3">0% interest</span>
-                      )}
-                      {isOptimistic && (
-                        <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
-                          Syncing…
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Note */}
-                    {loan.note && (
-                      <p className="text-[11px] text-ink-3 mt-1.5 truncate">{loan.note}</p>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  {!loan.settled && (
-                    <div className="flex flex-col gap-2 shrink-0">
-                      <Button
-                        onClick={() => openEditLoan(loan)}
-                        disabled={!!deletingId || isOptimistic}
-                        variant="secondary"
-                        size="sm"
-                        icon={<Pencil size={13} />}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        onClick={() => { setPayLoan(loan); setPayAmount(''); setPayErr('') }}
-                        disabled={!!deletingId || isOptimistic}
-                        variant="success"
-                        size="sm"
-                        icon={<HandCoins size={13} />}
-                      >
-                        Payment
-                      </Button>
-                      <Button
-                        onClick={() => { void handleSettleFull(loan) }}
-                        disabled={!!deletingId || isOptimistic || remaining <= 0}
-                        variant="tonal"
-                        size="sm"
-                        icon={<Check size={13} />}
-                        className="bg-warning-bg text-warning-text border border-warning-border hover:brightness-95"
-                      >
-                        Settle
-                      </Button>
-                      <Button
-                        onClick={() => handleDelete(loan.id)}
-                        disabled={!!deletingId || isOptimistic}
-                        variant="danger"
-                        size="sm"
-                        icon={deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
-                      >
-                        {deletingId === loan.id ? 'Deleting…' : 'Delete'}
-                      </Button>
-                    </div>
-                  )}
-
-                  {loan.settled && (
-                    <div className="flex flex-col gap-2 shrink-0">
-                      <Button
-                        onClick={() => handleDelete(loan.id)}
-                        disabled={!!deletingId || isOptimistic}
-                        variant="danger"
-                        size="sm"
-                        icon={deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
-                      >
-                        {deletingId === loan.id ? 'Deleting…' : 'Delete'}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+            {tab === 'settled' && settledLoading && visibleSettled.length === 0 && (
+              <div className="card p-4">
+                <p className="section-label">Settled loans</p>
+                <p className="text-[12px] text-ink-3 mt-1">Loading history…</p>
               </div>
-            )
-          })}
-            {loanBottomPadding > 0 && <div aria-hidden="true" style={{ height: `${loanBottomPadding}px` }} />}
+            )}
+
+            {tab === 'settled' && !settledLoading && visibleSettled.length === 0 && (
+              <EmptyState
+                className="py-8"
+                title="No settled loans"
+                description="Loans you fully repay will show up here."
+                actionLabel="View active"
+                onAction={() => setTab('given')}
+              />
+            )}
+
+            {/* ── Loan cards ───────────────────────────────────────────── */}
+            <div ref={loanListRef} className="space-y-2.5">
+              {loanTopPadding > 0 && <div aria-hidden="true" style={{ height: `${loanTopPadding}px` }} />}
+              {renderedLoans.map((loan, localIndex) => {
+                const rowIndex = loanStartIndex + localIndex
+                const remaining = +loan.amount - +loan.amount_settled
+                const pct = loanProgress(loan.amount, loan.amount_settled)
+                const interest = accruedInterest(loan.amount, loan.interest_rate, loan.loan_date)
+                const days = loan.due_date ? daysUntil(loan.due_date) : null
+                const isOptimistic = loan.__optimistic || String(loan.id || '').startsWith('optimistic-')
+
+                return (
+                  <div
+                    id={`loan-${loan.id}`}
+                    key={loan.id}
+                    ref={(node) => measureLoanRow(rowIndex, node)}
+                    className={`card p-3 sm:p-3.5 ${highlightLoanId === loan.id ? 'txn-focus-highlight' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        {/* Direction icon + counterparty */}
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0
+                        ${loan.direction === 'given' ? 'bg-income-bg' : 'bg-expense-bg'}`}>
+                            {loan.direction === 'given'
+                              ? <ArrowUpRight size={14} className="text-income-text" />
+                              : <ArrowDownLeft size={14} className="text-expense-text" />}
+                          </div>
+                          <p className="text-[13px] sm:text-sm font-semibold text-ink truncate">
+                            {loan.counterparty}
+                          </p>
+                        </div>
+
+                        {/* Amount */}
+                        <p className={`text-[17px] sm:text-lg font-semibold mb-1 ${loan.direction === 'given' ? 'amt-income' : 'amt-expense'}`}>
+                          {fmt(+loan.amount)}
+                        </p>
+
+                        {/* Interest if applicable */}
+                        {interest > 0 && (
+                          <p className="text-[11px] text-ink-3 mb-1">
+                            +{fmt(Math.round(interest * 100) / 100)} interest ({loan.interest_rate}%/yr)
+                          </p>
+                        )}
+
+                        {/* Progress bar (active loans only) */}
+                        {!loan.settled && (
+                          <div className="mb-2">
+                            <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-1">
+                              <motion.div
+                                className={`h-full rounded-pill ${loan.direction === 'given' ? 'bg-income-text' : 'bg-expense-text'}`}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.5, ease: 'easeOut' }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-ink-3">
+                                {fmt(+loan.amount_settled)} / {fmt(+loan.amount)}
+                              </span>
+                              <span className={`text-[10px] font-semibold ${pct >= 100 ? 'text-income-text' : 'text-ink-3'}`}>
+                                {pct}%
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Meta chips */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
+                            {loan.direction === 'given' ? 'Given' : 'Taken'} {fmtDate(loan.loan_date)}
+                          </span>
+                          {loan.due_date && !loan.settled && days !== null && (
+                            <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${dueChipClass(days)}`}>
+                              {dueLabel(days)}
+                            </span>
+                          )}
+                          {loan.settled && (
+                            <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-income-bg text-income-text border border-income-border">
+                              Settled
+                            </span>
+                          )}
+                          {loan.interest_rate > 0 && (
+                            <span className="text-[10px] sm:text-[11px] text-ink-3">{loan.interest_rate}%/yr</span>
+                          )}
+                          {loan.interest_rate === 0 && !loan.settled && (
+                            <span className="text-[10px] sm:text-[11px] text-ink-3">0% interest</span>
+                          )}
+                          {isOptimistic && (
+                            <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
+                              Syncing…
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Note */}
+                        {loan.note && (
+                          <p className="text-[11px] text-ink-3 mt-1.5 truncate">{loan.note}</p>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      {!loan.settled && (
+                        <div className="flex flex-col gap-2 shrink-0">
+                          <Button
+                            onClick={() => openEditLoan(loan)}
+                            disabled={!!deletingId || isOptimistic}
+                            variant="secondary"
+                            size="sm"
+                            icon={<Pencil size={13} />}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => { setPayLoan(loan); setPayAmount(''); setPayErr('') }}
+                            disabled={!!deletingId || isOptimistic}
+                            variant="success"
+                            size="sm"
+                            icon={<HandCoins size={13} />}
+                          >
+                            Payment
+                          </Button>
+                          <Button
+                            onClick={() => { void handleSettleFull(loan) }}
+                            disabled={!!deletingId || isOptimistic || remaining <= 0}
+                            variant="tonal"
+                            size="sm"
+                            icon={<Check size={13} />}
+                            className="bg-warning-bg text-warning-text border border-warning-border hover:brightness-95"
+                          >
+                            Settle
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(loan.id)}
+                            disabled={!!deletingId || isOptimistic}
+                            variant="danger"
+                            size="sm"
+                            icon={deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                          >
+                            {deletingId === loan.id ? 'Deleting…' : 'Delete'}
+                          </Button>
+                        </div>
+                      )}
+
+                      {loan.settled && (
+                        <div className="flex flex-col gap-2 shrink-0">
+                          <Button
+                            onClick={() => handleDelete(loan.id)}
+                            disabled={!!deletingId || isOptimistic}
+                            variant="danger"
+                            size="sm"
+                            icon={deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                          >
+                            {deletingId === loan.id ? 'Deleting…' : 'Delete'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+              {loanBottomPadding > 0 && <div aria-hidden="true" style={{ height: `${loanBottomPadding}px` }} />}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       </div>
 
@@ -1007,9 +1014,9 @@ export default function Loans({ embedded = false } = {}) {
 
                 {/* Amount input */}
                 <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
-                                flex items-center gap-2 border-b-2 border-income-border
-                                transition-colors duration-100">
-                  <span className="text-xl font-bold text-income-text">₹</span>
+                                flex items-center gap-2 border-b-2 border-kosha-border
+                                transition-all duration-200">
+                  <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="payment-amount" placeholder="0"
                     value={payAmount}
@@ -1142,8 +1149,8 @@ export default function Loans({ embedded = false } = {}) {
 
                 {/* Amount */}
                 <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
-                                flex items-center gap-2 border-b-2 border-accent-border
-                                transition-colors duration-100">
+                                flex items-center gap-2 border-b-2 border-kosha-border
+                                transition-all duration-200">
                   <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="loan-amount" placeholder="0"

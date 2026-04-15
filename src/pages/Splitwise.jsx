@@ -38,6 +38,7 @@ import {
 import { fmt, fmtDate } from '../lib/utils'
 
 import { downloadCsv, toCsv } from '../lib/csv'
+import { shareLink } from '../lib/share'
 
 const BANNERS = [
   { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.png' },
@@ -142,6 +143,8 @@ export default function Splitwise() {
   const [consumingInvite, setConsumingInvite] = useState(false)
   const [invitePreview, setInvitePreview] = useState(null)
   const [memberProfilesByUserId, setMemberProfilesByUserId] = useState({})
+  const [editExpense, setEditExpense] = useState(null)
+  const [editSettlement, setEditSettlement] = useState(null)
 
   const [showBannerPicker, setShowBannerPicker] = useState(false)
   const [savedBannerId, setSavedBannerId] = useState('goa')
@@ -481,6 +484,8 @@ export default function Splitwise() {
     setShowAddExpense(false)
     setShowSettlement(false)
     setShowAddMember(false)
+    setEditExpense(null)
+    setEditSettlement(null)
     setNewMemberName('')
   }
 
@@ -513,10 +518,18 @@ export default function Splitwise() {
       const invite = await createSplitGroupInviteMutation({ groupId: activeGroupId })
       const url = `${window.location.origin}/splitwise/join/${invite.token}`
 
-      try {
-        await navigator.clipboard.writeText(url)
-        setToast('Invite link copied. Share with your friends.')
-      } catch {
+      const result = await shareLink({
+        title: 'Join Trip on Kosha',
+        url: url,
+      })
+
+      if (result.success) {
+        if (result.method === 'share') {
+          // Already shared via native sheet
+        } else {
+          setToast('Invite link copied.')
+        }
+      } else if (!result.aborted) {
         setToast(url)
       }
     } catch (inviteError) {
@@ -721,8 +734,12 @@ export default function Splitwise() {
       return
     }
 
-    setSaving('expense')
+    setSaving(editExpense ? 'expense-edit' : 'expense')
     try {
+      if (editExpense) {
+        await deleteSplitExpenseMutation(editExpense.id)
+      }
+
       await addSplitExpenseMutation({
         groupId: activeGroupId,
         paidByMemberId: expenseForm.paid_by_member_id,
@@ -740,9 +757,11 @@ export default function Splitwise() {
         amount: '',
         notes: '',
       }))
+      setEditExpense(null)
       setShowAddExpense(false)
+      setToast(editExpense ? 'Expense updated.' : 'Expense added.')
     } catch (expenseError) {
-      setToast(expenseError?.message || 'Could not add expense.')
+      setToast(expenseError?.message || 'Could not save expense.')
     } finally {
       setSaving('')
     }
@@ -773,8 +792,12 @@ export default function Splitwise() {
       return
     }
 
-    setSaving('settlement')
+    setSaving(editSettlement ? 'settlement-edit' : 'settlement')
     try {
+      if (editSettlement) {
+        await deleteSplitSettlementMutation(editSettlement.id)
+      }
+
       await recordSplitSettlementMutation({
         groupId: activeGroupId,
         payerMemberId: settlementForm.payer_member_id,
@@ -788,12 +811,53 @@ export default function Splitwise() {
         amount: '',
         note: '',
       }))
+      setEditSettlement(null)
       setShowSettlement(false)
+      setToast(editSettlement ? 'Settlement updated.' : 'Settlement recorded.')
     } catch (settleError) {
-      setToast(settleError?.message || 'Could not record settlement.')
+      setToast(settleError?.message || 'Could not save settlement.')
     } finally {
       setSaving('')
     }
+  }
+
+  function openEditExpense(expense) {
+    if (!canManageGroup) return
+    setEditExpense(expense)
+    setExpenseForm({
+      description: expense.description || '',
+      amount: String(expense.amount || ''),
+      expense_date: expense.expense_date || new Date().toISOString().slice(0, 10),
+      paid_by_member_id: expense.paid_by_member_id || '',
+      split_method: expense.split_method || 'equal',
+      notes: expense.notes || '',
+    })
+
+    const nextSplits = {}
+    members.forEach((m) => {
+      const split = expense.split_expense_splits?.find((s) => s.member_id === m.id)
+      nextSplits[m.id] = {
+        enabled: !!split,
+        exact: split?.share ? String(split.share) : '',
+        percent: split?.percent ? String(split.percent) : '',
+        shares: split?.shares ? String(split.shares) : '',
+      }
+    })
+    setSplitInputs(nextSplits)
+    setShowAddExpense(true)
+  }
+
+  function openEditSettlement(s) {
+    if (!canManageGroup) return
+    setEditSettlement(s)
+    setSettlementForm({
+      payer_member_id: s.payer_member_id || '',
+      payee_member_id: s.payee_member_id || '',
+      amount: String(s.amount || ''),
+      settled_at: s.settled_at || new Date().toISOString().slice(0, 10),
+      note: s.note || '',
+    })
+    setShowSettlement(true)
   }
 
   async function handleDeleteExpense(expenseId) {
@@ -1254,40 +1318,50 @@ export default function Splitwise() {
                 <p className="text-[11px] text-ink-3 mt-1">Add an expense to get started.</p>
               </div>
             ) : (
-              <div className="divide-y divide-kosha-border max-h-[450px] overflow-y-auto">
+              <div className="divide-y divide-kosha-border max-h-[500px] overflow-y-auto">
                 {transactions.map((t) => {
                   const isExpense = t.type === 'expense'
                   const deleting = saving === (isExpense ? `expense-delete-${t.id}` : `settlement-delete-${t.id}`)
-                  
+
                   return (
-                    <div key={t.id} className="p-3.5 bg-kosha-surface hover:bg-kosha-surface-2 transition-colors group">
+                    <div key={t.id} className="p-2 sm:p-2.5 bg-kosha-surface hover:bg-kosha-surface-2 transition-colors group">
                       {isExpense ? (() => {
                         const payer = memberById.get(t.paid_by_member_id)
                         return (
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3 min-w-0">
-                              <div className="h-9 w-9 rounded-full bg-brand/10 text-brand shrink-0 flex items-center justify-center border border-brand/20 mt-0.5">
-                                <ReceiptText size={16} />
+                          <div className="flex items-start justify-between gap-2.5">
+                            <div className="flex items-start gap-2.5 min-w-0">
+                              <div className="h-8 w-8 rounded-full bg-brand/10 text-brand shrink-0 flex items-center justify-center border border-brand/20 mt-0.5">
+                                <ReceiptText size={14} />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-[14px] font-semibold text-ink truncate leading-tight">{t.description}</p>
-                                <p className="text-[11.5px] text-ink-3 mt-1 truncate">
+                                <p className="text-[13px] font-semibold text-ink truncate leading-tight">{t.description}</p>
+                                <p className="text-[11px] text-ink-3 mt-1 truncate">
                                   <span className="font-medium text-ink">{resolveMemberName(payer)}</span> paid
                                 </p>
                                 <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.sortDate)}</p>
                               </div>
                             </div>
                             <div className="text-right shrink-0 flex flex-col justify-start items-end">
-                              <p className="text-[15px] font-bold text-ink tabular-nums">{fmt(t.amount)}</p>
+                              <p className="text-[14px] font-bold text-ink tabular-nums">{fmt(t.amount)}</p>
                               {canManageGroup && (
-                                <button
-                                  type="button"
-                                  onClick={() => { void handleDeleteExpense(t.id) }}
-                                  className="mt-2 text-[10px] font-semibold text-danger/0 group-hover:text-danger/80 hover:!text-danger transition-all duration-200"
-                                  disabled={!!saving}
-                                >
-                                  {deleting ? 'Deleting...' : 'Delete'}
-                                </button>
+                                <div className="mt-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditExpense(t)}
+                                    className="text-[10px] font-semibold text-brand/80 hover:text-brand"
+                                    disabled={!!saving}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { void handleDeleteExpense(t.id) }}
+                                    className="text-[10px] font-semibold text-danger/80 hover:text-danger"
+                                    disabled={!!saving}
+                                  >
+                                    {deleting ? '...' : 'Delete'}
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -1296,30 +1370,40 @@ export default function Splitwise() {
                         const payer = memberById.get(t.payer_member_id)
                         const payee = memberById.get(t.payee_member_id)
                         return (
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3 min-w-0">
-                              <div className="h-9 w-9 rounded-full bg-success/10 text-success shrink-0 flex items-center justify-center border border-success/20 mt-0.5">
-                                <ArrowRightLeft size={16} />
+                          <div className="flex items-start justify-between gap-2.5">
+                            <div className="flex items-start gap-2.5 min-w-0">
+                              <div className="h-8 w-8 rounded-full bg-success/10 text-success shrink-0 flex items-center justify-center border border-success/20 mt-0.5">
+                                <ArrowRightLeft size={14} />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-[14px] font-semibold text-ink truncate leading-tight">Settlement</p>
-                                <p className="text-[11.5px] text-ink-3 mt-1 truncate">
+                                <p className="text-[13px] font-semibold text-ink truncate leading-tight">Settlement</p>
+                                <p className="text-[11px] text-ink-3 mt-1 truncate">
                                   <span className="font-medium text-ink">{resolveMemberName(payer)}</span> paid <span className="font-medium text-ink">{resolveMemberName(payee)}</span>
                                 </p>
                                 <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.sortDate)}</p>
                               </div>
                             </div>
                             <div className="text-right shrink-0 flex flex-col justify-start items-end">
-                              <p className="text-[15px] font-bold text-success tabular-nums">{fmt(t.amount)}</p>
+                              <p className="text-[14px] font-bold text-success tabular-nums">{fmt(t.amount)}</p>
                               {canManageGroup && (
-                                <button
-                                  type="button"
-                                  onClick={() => { void handleDeleteSettlement(t.id) }}
-                                  className="mt-2 text-[10px] font-semibold text-danger/0 group-hover:text-danger/80 hover:!text-danger transition-all duration-200"
-                                  disabled={!!saving}
-                                >
-                                  {deleting ? 'Deleting...' : 'Delete'}
-                                </button>
+                                <div className="mt-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditSettlement(t)}
+                                    className="text-[10px] font-semibold text-brand/80 hover:text-brand"
+                                    disabled={!!saving}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { void handleDeleteSettlement(t.id) }}
+                                    className="text-[10px] font-semibold text-danger/80 hover:text-danger"
+                                    disabled={!!saving}
+                                  >
+                                    {deleting ? '...' : 'Delete'}
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -1530,7 +1614,7 @@ export default function Splitwise() {
               <div className="sheet-handle" />
               <div className="px-5 overflow-y-auto">
                 <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-display font-bold text-ink">Add Expense</h2>
+                  <h2 className="text-display font-bold text-ink">{editExpense ? 'Edit Expense' : 'Add Expense'}</h2>
                   <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close add expense sheet">
                     <X size={16} className="text-ink-3" />
                   </button>
@@ -1698,15 +1782,15 @@ export default function Splitwise() {
                   </label>
                 </div>
 
-                <Button
-                  variant="primary"
-                  size="xl"
-                  fullWidth
-                  onClick={() => { void handleAddExpense() }}
-                  loading={saving === 'expense'}
-                >
-                  Add Expense
-                </Button>
+                  <Button
+                    variant="primary"
+                    size="xl"
+                    fullWidth
+                    onClick={() => { void handleAddExpense() }}
+                    loading={saving === 'expense' || saving === 'expense-edit'}
+                  >
+                    {editExpense ? (saving === 'expense-edit' ? 'Updating…' : 'Update Expense') : (saving === 'expense' ? 'Adding…' : 'Add Expense')}
+                  </Button>
               </div>
             </motion.div>
           </>
@@ -1726,7 +1810,7 @@ export default function Splitwise() {
               <div className="sheet-handle" />
               <div className="px-5 overflow-y-auto">
                 <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-display font-bold text-ink">Record Settlement</h2>
+                  <h2 className="text-display font-bold text-ink">{editSettlement ? 'Edit Settlement' : 'Record Settlement'}</h2>
                   <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close settlement sheet">
                     <X size={16} className="text-ink-3" />
                   </button>
@@ -1800,15 +1884,15 @@ export default function Splitwise() {
                   </label>
                 </div>
 
-                <Button
-                  variant="primary"
-                  size="xl"
-                  fullWidth
-                  onClick={() => { void handleRecordSettlement() }}
-                  loading={saving === 'settlement'}
-                >
-                  Record Settlement
-                </Button>
+                  <Button
+                    variant="primary"
+                    size="xl"
+                    fullWidth
+                    onClick={() => { void handleRecordSettlement() }}
+                    loading={saving === 'settlement' || saving === 'settlement-edit'}
+                  >
+                    {editSettlement ? (saving === 'settlement-edit' ? 'Updating…' : 'Update Settlement') : (saving === 'settlement' ? 'Recording…' : 'Record Settlement')}
+                  </Button>
               </div>
             </motion.div>
           </>

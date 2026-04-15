@@ -15,6 +15,7 @@ import {
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import AppToast from '../components/common/AppToast'
+import { copyToClipboard } from '../lib/share'
 
 const SEVERITIES = [
   { id: 'low', label: 'Low' },
@@ -240,10 +241,12 @@ export default function ReportBug() {
   }
 
   async function handleCopyReference() {
-    if (!submitted?.id || !navigator.clipboard?.writeText) return
-    await navigator.clipboard.writeText(String(submitted.id))
-    setCopiedRef(true)
-    setTimeout(() => setCopiedRef(false), 1500)
+    if (!submitted?.id) return
+    const res = await copyToClipboard(String(submitted.id))
+    if (res.success) {
+      setCopiedRef(true)
+      setTimeout(() => setCopiedRef(false), 1500)
+    }
   }
 
   return (

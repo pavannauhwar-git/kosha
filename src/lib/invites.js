@@ -40,7 +40,7 @@ export async function listInvites({ supabaseClient, userId, limit = MAX_ACTIVE_I
   if (!supabaseClient) throw new Error('supabaseClient is required')
   if (!userId) return []
 
-  const safeLimit = Math.max(1, Math.min(Number(limit || MAX_ACTIVE_INVITES), MAX_ACTIVE_INVITES))
+  const safeLimit = Math.max(1, Math.min(Number(limit || 10), 50))
 
   const { data, error } = await supabaseClient
     .from('invites')
@@ -95,4 +95,26 @@ export async function consumeInviteToken({ supabaseClient, inviteToken, userId }
   if (updateError) throw updateError
 
   return { consumed: true, inviteId: invite.id }
+}
+
+export async function deleteInvite({ supabaseClient, inviteId }) {
+  if (!supabaseClient) throw new Error('supabaseClient is required')
+  if (!inviteId) throw new Error('inviteId is required')
+
+  const { error, count } = await supabaseClient
+    .from('invites')
+    .delete({ count: 'exact' })
+    .eq('id', inviteId)
+
+  if (error) {
+    console.error('[Kosha] deleteInvite database error:', error)
+    throw new Error(`Database error: ${error.message}`)
+  }
+
+  if (count === 0) {
+    console.warn('[Kosha] deleteInvite: 0 rows affected. Likely RLS policy violation.')
+    throw new Error('Permission denied. You can only remove links you created or that are joined to your account.')
+  }
+
+  return true
 }

@@ -13,6 +13,7 @@ import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
+import { copyToClipboard } from '../lib/share'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.06, 0.04)
@@ -85,9 +86,9 @@ export default function About() {
   const releaseCount = CHANGELOG.length
   const shippedItems = CHANGELOG.reduce((sum, release) => sum + (release.items?.length || 0), 0)
 
-  function copyUpi() {
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(UPI_ID)
+  async function copyUpi() {
+    const res = await copyToClipboard(UPI_ID)
+    if (res.success) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }

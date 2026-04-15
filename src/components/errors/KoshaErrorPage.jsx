@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, Check, Copy, Home, RotateCw } from 'lucide-react'
 import KoshaLogo from '../brand/KoshaLogo'
+import { copyToClipboard } from '../../lib/share'
 
 export default function KoshaErrorPage({
   type = 'runtime',
@@ -40,10 +41,12 @@ export default function KoshaErrorPage({
   }, [])
 
   async function handleCopyDetail() {
-    if (!normalizedDetail || !navigator.clipboard?.writeText) return
-    await navigator.clipboard.writeText(normalizedDetail)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    if (!normalizedDetail) return
+    const res = await copyToClipboard(normalizedDetail)
+    if (res.success) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    }
   }
 
   return (

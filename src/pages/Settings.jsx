@@ -16,8 +16,9 @@ import {
   getNotificationPermission,
   requestNotificationPermission,
 } from '../lib/reminders'
-import { buildJoinInviteUrl, createInvite, inviteStatusLabel, listInvites, MAX_ACTIVE_INVITES } from '../lib/invites'
+import { buildJoinInviteUrl, createInvite, deleteInvite, inviteStatusLabel, listInvites, MAX_ACTIVE_INVITES } from '../lib/invites'
 import { fmtDate } from '../lib/utils'
+import { shareLink } from '../lib/share'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -26,10 +27,10 @@ const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 function SettingRow({ icon, label, sublabel, onClick, destructive = false, disabled = false, rightElement, toggleState = null }) {
   const toggleA11yProps = typeof toggleState === 'boolean'
     ? {
-        role: 'switch',
-        'aria-checked': toggleState,
-        'aria-pressed': toggleState,
-      }
+      role: 'switch',
+      'aria-checked': toggleState,
+      'aria-pressed': toggleState,
+    }
     : {}
 
   return (
@@ -79,6 +80,7 @@ export default function Settings() {
   const [walletError, setWalletError] = useState('')
   const [walletMsg, setWalletMsg] = useState('')
   const [creatingInvite, setCreatingInvite] = useState(false)
+  const [revokingId, setRevokingId] = useState('')
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
   const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [newPassword, setNewPassword] = useState('')
@@ -102,7 +104,7 @@ export default function Settings() {
         const rows = await listInvites({
           supabaseClient: supabase,
           userId: user.id,
-          limit: MAX_ACTIVE_INVITES,
+          limit: 50,
         })
         if (!cancelled) setWalletInvites(rows)
       } catch (error) {
@@ -202,13 +204,21 @@ export default function Settings() {
     const url = buildJoinInviteUrl(token)
     if (!url) return
 
-    try {
-      await navigator.clipboard.writeText(url)
-      setWalletMsg('Invite link copied.')
-      setTimeout(() => setWalletMsg(''), 2200)
-    } catch {
-      setWalletMsg('Could not copy automatically. Share manually from this screen.')
-      setTimeout(() => setWalletMsg(''), 3000)
+    const result = await shareLink({
+      title: 'Join Wallet on Kosha',
+      url: url,
+    })
+
+    if (result.success) {
+      if (result.method === 'share') {
+        // Shared via native sheet
+      } else {
+        setWalletMsg('Invite link copied.')
+        setTimeout(() => setWalletMsg(''), 2200)
+      }
+    } else if (!result.aborted) {
+      setWalletMsg(url)
+      setTimeout(() => setWalletMsg(''), 5000)
     }
   }
 
@@ -224,6 +234,20 @@ export default function Settings() {
       setWalletError(error?.message || 'Could not create invite link.')
     } finally {
       setCreatingInvite(false)
+    }
+  }
+
+  async function handleRevokeInvite(inviteId) {
+    if (!inviteId || revokingId) return
+    setRevokingId(inviteId)
+    setWalletError('')
+    try {
+      await deleteInvite({ supabaseClient: supabase, inviteId })
+      setWalletInvites((prev) => prev.filter(i => i.id !== inviteId))
+    } catch (error) {
+      setWalletError(error?.message || 'Could not revoke invite link.')
+    } finally {
+      setRevokingId('')
     }
   }
 
@@ -278,288 +302,289 @@ export default function Settings() {
     >
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
 
-          <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
-            <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full bg-brand-container
+        <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
+          <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-brand-container
                                   flex items-center justify-center overflow-hidden
                                   ring-4 ring-kosha-border">
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt={displayName}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-[30px] font-bold text-ink">{initial}</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-[30px] font-bold text-ink">{initial}</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full
                                bg-brand text-white shadow-card
                                flex items-center justify-center
                                active:scale-90 transition-transform duration-75
                                disabled:opacity-60"
-                    aria-label="Change photo"
-                  >
-                    <Camera size={14} />
-                  </button>
-                </div>
+                  aria-label="Change photo"
+                >
+                  <Camera size={14} />
+                </button>
+              </div>
 
-                <div className="min-w-0 flex-1">
-                  <p className="text-[17px] font-bold text-ink truncate">{displayName}</p>
-                  <p className="text-[12px] text-ink-3 truncate mt-0.5">{user?.email}</p>
-                  <div className="mt-2 inline-flex items-center gap-2 text-[10px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15">
-                    <ShieldAlert size={12} /> Private profile
-                  </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[17px] font-bold text-ink truncate">{displayName}</p>
+                <p className="text-[12px] text-ink-3 truncate mt-0.5">{user?.email}</p>
+                <div className="mt-2 inline-flex items-center gap-2 text-[10px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15">
+                  <ShieldAlert size={12} /> Private profile
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="p-4 space-y-2.5">
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="tonal"
-                  size="md"
-                  fullWidth
-                  icon={<Pencil size={14} />}
-                  onClick={() => setShowEditName(true)}
-                >
-                  Edit name
-                </Button>
+          <div className="p-4 space-y-2.5">
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="tonal"
+                size="md"
+                fullWidth
+                icon={<Pencil size={14} />}
+                onClick={() => setShowEditName(true)}
+              >
+                Edit name
+              </Button>
 
-                <Button
-                  variant="primary"
-                  size="md"
-                  fullWidth
-                  icon={<Camera size={14} />}
-                  onClick={() => fileInputRef.current?.click()}
-                  loading={uploading}
-                >
-                  Change photo
-                </Button>
-              </div>
-
-              {avatarUrl && (
-                <Button
-                  variant="danger"
-                  size="md"
-                  fullWidth
-                  icon={<Trash2 size={15} />}
-                  onClick={handleDeletePhoto}
-                  loading={uploading}
-                >
-                  Remove photo
-                </Button>
-              )}
-
-              {photoError && (
-                <p className="text-[12px] text-expense-text">{photoError}</p>
-              )}
-            </div>
-          </motion.div>
-
-          {/* ── Appearance section ──────────────────────────────────── */}
-          <motion.div variants={fadeUp}>
-            <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
-              Appearance
-            </p>
-            <div className="card overflow-hidden p-0">
-              <SettingRow
-                icon={isDark ? <Moon size={16} className="text-accent-text" /> : <Sun size={16} className="text-accent-text" />}
-                label="Dark mode"
-                sublabel={isDark ? 'Currently dark' : 'Currently light'}
-                onClick={toggleDarkMode}
-                toggleState={isDark}
-                rightElement={<span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${isDark ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>{isDark ? 'ON' : 'OFF'}</span>}
-              />
-            </div>
-          </motion.div>
-
-          {/* ── Security section ────────────────────────────────────── */}
-          <motion.div variants={fadeUp}>
-            <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
-              Security
-            </p>
-            <div className="card overflow-hidden p-0">
-              <SettingRow
-                icon={<ShieldAlert size={16} className="text-accent-text" />}
-                label="Change password"
-                sublabel="Update the password used for sign in"
-                onClick={() => {
-                  setShowPasswordForm((prev) => !prev)
-                  setPasswordError('')
-                  setPasswordMsg('')
-                }}
-                rightElement={(
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${showPasswordForm ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                    {showPasswordForm ? 'OPEN' : 'CLOSED'}
-                  </span>
-                )}
-              />
-
-              {showPasswordForm && (
-                <>
-                  <Divider />
-                  <form onSubmit={handlePasswordUpdate} className="px-4 py-3 space-y-3">
-                    <input
-                      type="email"
-                      name="username"
-                      autoComplete="username"
-                      value={user?.email || ''}
-                      readOnly
-                      tabIndex={-1}
-                      aria-hidden="true"
-                      className="sr-only"
-                    />
-
-                    <Input
-                      label="New password"
-                      name="new-password"
-                      type="password"
-                      placeholder="At least 8 characters"
-                      helperText="Min 8 characters"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      autoComplete="new-password"
-                      disabled={passwordSaving}
-                    />
-
-                    <Input
-                      label="Confirm new password"
-                      name="confirm-new-password"
-                      type="password"
-                      placeholder="Re-enter your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      autoComplete="new-password"
-                      disabled={passwordSaving}
-                    />
-
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="md"
-                      fullWidth
-                      loading={passwordSaving}
-                    >
-                      Update password
-                    </Button>
-                  </form>
-                </>
-              )}
+              <Button
+                variant="primary"
+                size="md"
+                fullWidth
+                icon={<Camera size={14} />}
+                onClick={() => fileInputRef.current?.click()}
+                loading={uploading}
+              >
+                Change photo
+              </Button>
             </div>
 
-            {(passwordError || passwordMsg) && (
-              <p className={`text-[12px] mt-2 px-1 ${passwordError ? 'text-expense-text' : 'text-ink-3'}`}>
-                {passwordError || passwordMsg}
-              </p>
+            {avatarUrl && (
+              <Button
+                variant="danger"
+                size="md"
+                fullWidth
+                icon={<Trash2 size={15} />}
+                onClick={handleDeletePhoto}
+                loading={uploading}
+              >
+                Remove photo
+              </Button>
             )}
-          </motion.div>
 
-          {/* ── Reminders section ───────────────────────────────────── */}
-          <motion.div variants={fadeUp}>
-            <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
-              Reminders
-            </p>
-            <div className="card overflow-hidden p-0">
-              <div className="px-4 py-3 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[13px] font-semibold text-ink">Reminder engine</p>
-                  <p className="text-[11px] text-ink-3 mt-0.5">Controls for due alerts and pace warnings</p>
-                </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${reminderPrefs.enabled ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
-                  {reminderPrefs.enabled ? 'Active' : 'Paused'}
+            {photoError && (
+              <p className="text-[12px] text-expense-text">{photoError}</p>
+            )}
+          </div>
+        </motion.div>
+
+        {/* ── Appearance section ──────────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            Appearance
+          </p>
+          <div className="card overflow-hidden p-0">
+            <SettingRow
+              icon={isDark ? <Moon size={16} className="text-accent-text" /> : <Sun size={16} className="text-accent-text" />}
+              label="Dark mode"
+              sublabel={isDark ? 'Currently dark' : 'Currently light'}
+              onClick={toggleDarkMode}
+              toggleState={isDark}
+              rightElement={<span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${isDark ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>{isDark ? 'ON' : 'OFF'}</span>}
+            />
+          </div>
+        </motion.div>
+
+        {/* ── Security section ────────────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            Security
+          </p>
+          <div className="card overflow-hidden p-0">
+            <SettingRow
+              icon={<ShieldAlert size={16} className="text-accent-text" />}
+              label="Change password"
+              sublabel="Update the password used for sign in"
+              onClick={() => {
+                setShowPasswordForm((prev) => !prev)
+                setPasswordError('')
+                setPasswordMsg('')
+              }}
+              rightElement={(
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${showPasswordForm ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                  {showPasswordForm ? 'OPEN' : 'CLOSED'}
                 </span>
-              </div>
+              )}
+            />
 
-              <SettingRow
-                icon={<BellRing size={16} className="text-accent-text" />}
-                label="Enable reminders"
-                sublabel="Turn reminder notifications on or off"
-                onClick={() => toggleReminderField('enabled')}
-                toggleState={reminderPrefs.enabled}
-                rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.enabled ? 'ON' : 'OFF'}</span>}
-              />
-              <Divider />
-              <SettingRow
-                icon={<BellRing size={16} className="text-accent-text" />}
-                label="Bills due alerts"
-                sublabel="Daily reminder when bills are near due"
-                onClick={() => toggleReminderField('bill_due')}
-                disabled={!reminderPrefs.enabled}
-                toggleState={reminderPrefs.bill_due}
-                rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.bill_due ? 'ON' : 'OFF'}</span>}
-              />
-              <Divider />
-              <SettingRow
-                icon={<ShieldAlert size={16} className="text-accent-text" />}
-                label="Spending pace alerts"
-                sublabel="Warn when spending runs above month pace"
-                onClick={() => toggleReminderField('spending_pace')}
-                disabled={!reminderPrefs.enabled}
-                toggleState={reminderPrefs.spending_pace}
-                rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.spending_pace ? 'ON' : 'OFF'}</span>}
-              />
-              <Divider />
-              <SettingRow
-                icon={<BellRing size={16} className="text-accent-text" />}
-                label="Notification permission"
-                sublabel={`Current: ${notificationPermission}`}
-                onClick={enableNotifications}
-                rightElement={<span className="text-[11px] font-semibold">Request</span>}
-              />
-            </div>
-            {reminderMsg && (
-              <p className="text-[12px] text-ink-3 mt-2 px-1">{reminderMsg}</p>
+            {showPasswordForm && (
+              <>
+                <Divider />
+                <form onSubmit={handlePasswordUpdate} className="px-4 py-3 space-y-3">
+                  <input
+                    type="email"
+                    name="username"
+                    autoComplete="username"
+                    value={user?.email || ''}
+                    readOnly
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="sr-only"
+                  />
+
+                  <Input
+                    label="New password"
+                    name="new-password"
+                    type="password"
+                    placeholder="At least 8 characters"
+                    helperText="Min 8 characters"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    disabled={passwordSaving}
+                  />
+
+                  <Input
+                    label="Confirm new password"
+                    name="confirm-new-password"
+                    type="password"
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
+                    disabled={passwordSaving}
+                  />
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    loading={passwordSaving}
+                  >
+                    Update password
+                  </Button>
+                </form>
+              </>
             )}
-          </motion.div>
+          </div>
 
-          {/* ── Shared wallet section ───────────────────────────────── */}
-          <motion.div variants={fadeUp}>
-            <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
-              Shared Wallet
+          {(passwordError || passwordMsg) && (
+            <p className={`text-[12px] mt-2 px-1 ${passwordError ? 'text-expense-text' : 'text-ink-3'}`}>
+              {passwordError || passwordMsg}
             </p>
-            <div className="card overflow-hidden p-0">
-              <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-ink">Invite members</p>
-                  <p className="text-[11px] text-ink-3 mt-0.5">Create links without merging historical data.</p>
-                </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={<Users size={14} />}
-                  onClick={() => { void handleCreateInvite() }}
-                  disabled={inviteCapReached}
-                  loading={creatingInvite}
-                  className="shrink-0"
-                >
-                  Invite
-                </Button>
-              </div>
+          )}
+        </motion.div>
 
-              <div className="px-4 py-3 space-y-2">
-                <p className="text-[12px] font-semibold text-ink-3">Recent invites ({pendingInviteCount}/{MAX_ACTIVE_INVITES} active)</p>
-                {walletLoading ? (
-                  <p className="text-[12px] text-ink-3">Loading invites…</p>
-                ) : walletInvites.length === 0 ? (
-                  <p className="text-[12px] text-ink-3">No invite links yet.</p>
-                ) : (
-                  walletInvites.map((invite) => {
-                    const status = inviteStatusLabel(invite)
-                    return (
-                      <div key={invite.id} className="mini-panel px-2.5 py-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-[11px] text-ink-3">{fmtDate(invite.created_at)}</p>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
-                            {status}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-ink-2 mt-1 truncate">{buildJoinInviteUrl(invite.token)}</p>
+        {/* ── Reminders section ───────────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            Reminders
+          </p>
+          <div className="card overflow-hidden p-0">
+            <div className="px-4 py-3 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-2">
+              <div>
+                <p className="text-[13px] font-semibold text-ink">Reminder engine</p>
+                <p className="text-[11px] text-ink-3 mt-0.5">Controls for due alerts and pace warnings</p>
+              </div>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${reminderPrefs.enabled ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
+                {reminderPrefs.enabled ? 'Active' : 'Paused'}
+              </span>
+            </div>
+
+            <SettingRow
+              icon={<BellRing size={16} className="text-accent-text" />}
+              label="Enable reminders"
+              sublabel="Turn reminder notifications on or off"
+              onClick={() => toggleReminderField('enabled')}
+              toggleState={reminderPrefs.enabled}
+              rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.enabled ? 'ON' : 'OFF'}</span>}
+            />
+            <Divider />
+            <SettingRow
+              icon={<BellRing size={16} className="text-accent-text" />}
+              label="Bills due alerts"
+              sublabel="Daily reminder when bills are near due"
+              onClick={() => toggleReminderField('bill_due')}
+              disabled={!reminderPrefs.enabled}
+              toggleState={reminderPrefs.bill_due}
+              rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.bill_due ? 'ON' : 'OFF'}</span>}
+            />
+            <Divider />
+            <SettingRow
+              icon={<ShieldAlert size={16} className="text-accent-text" />}
+              label="Spending pace alerts"
+              sublabel="Warn when spending runs above month pace"
+              onClick={() => toggleReminderField('spending_pace')}
+              disabled={!reminderPrefs.enabled}
+              toggleState={reminderPrefs.spending_pace}
+              rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.spending_pace ? 'ON' : 'OFF'}</span>}
+            />
+            <Divider />
+            <SettingRow
+              icon={<BellRing size={16} className="text-accent-text" />}
+              label="Notification permission"
+              sublabel={`Current: ${notificationPermission}`}
+              onClick={enableNotifications}
+              rightElement={<span className="text-[11px] font-semibold">Request</span>}
+            />
+          </div>
+          {reminderMsg && (
+            <p className="text-[12px] text-ink-3 mt-2 px-1">{reminderMsg}</p>
+          )}
+        </motion.div>
+
+        {/* ── Shared wallet section ───────────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            Shared Wallet
+          </p>
+          <div className="card overflow-hidden p-0">
+            <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-ink">Invite members</p>
+                <p className="text-[11px] text-ink-3 mt-0.5">Create links without merging historical data.</p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Users size={14} />}
+                onClick={() => { void handleCreateInvite() }}
+                disabled={inviteCapReached}
+                loading={creatingInvite}
+                className="shrink-0"
+              >
+                Invite
+              </Button>
+            </div>
+
+            <div className="px-4 py-3 space-y-2">
+              <p className="text-[12px] font-semibold text-ink-3">Recent invites ({pendingInviteCount}/{MAX_ACTIVE_INVITES} active)</p>
+              {walletLoading ? (
+                <p className="text-[12px] text-ink-3">Loading invites…</p>
+              ) : walletInvites.length === 0 ? (
+                <p className="text-[12px] text-ink-3">No invite links yet.</p>
+              ) : (
+                walletInvites.map((invite) => {
+                  const status = inviteStatusLabel(invite)
+                  return (
+                    <div key={invite.id} className="mini-panel px-2.5 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-ink-3">{fmtDate(invite.created_at)}</p>
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                          {status}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-ink-2 mt-1 truncate">{buildJoinInviteUrl(invite.token)}</p>
+                      <div className="flex items-center gap-3">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -569,23 +594,34 @@ export default function Settings() {
                         >
                           Copy link
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-1.5 px-0 h-auto text-[11px] text-expense-text font-semibold"
+                          icon={<Trash2 size={12} />}
+                          onClick={() => { void handleRevokeInvite(invite.id) }}
+                          loading={revokingId === invite.id}
+                        >
+                          Remove link
+                        </Button>
                       </div>
-                    )
-                  })
-                )}
-              </div>
+                    </div>
+                  )
+                })
+              )}
             </div>
-            {inviteCapReached && (
-              <p className="text-[12px] text-ink-3 mt-2 px-1">
-                Revoke or use existing invite links to create new ones. Maximum {MAX_ACTIVE_INVITES} active invites are allowed.
-              </p>
-            )}
-            {(walletMsg || walletError) && (
-              <p className={`text-[12px] mt-2 px-1 ${walletError ? 'text-expense-text' : 'text-ink-3'}`}>
-                {walletError || walletMsg}
-              </p>
-            )}
-          </motion.div>
+          </div>
+          {inviteCapReached && (
+            <p className="text-[12px] text-ink-3 mt-2 px-1">
+              Revoke or use existing invite links to create new ones. Maximum {MAX_ACTIVE_INVITES} active invites are allowed.
+            </p>
+          )}
+          {(walletMsg || walletError) && (
+            <p className={`text-[12px] mt-2 px-1 ${walletError ? 'text-expense-text' : 'text-ink-3'}`}>
+              {walletError || walletMsg}
+            </p>
+          )}
+        </motion.div>
       </motion.div>
 
       {/* Hidden file inputs */}

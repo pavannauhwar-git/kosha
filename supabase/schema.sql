@@ -297,6 +297,11 @@ with check (
     and used_at is not null
   )
 );
+ 
+drop policy if exists "invites: delete own" on invites;
+create policy "invites: delete own" on invites
+for delete to authenticated
+using ((select auth.uid()) = created_by);
 
 -- Create profile row automatically when a new auth user is inserted
 create or replace function public.handle_new_user()
