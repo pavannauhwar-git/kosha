@@ -13,6 +13,7 @@ import {
   Wallet,
   Link2,
   Handshake,
+  Users,
   X,
   CheckCircle2,
   AlertCircle,
@@ -31,6 +32,7 @@ const START_HERE = [
   'Set all upcoming bills once, then keep the paid status up to date in Bills.',
   'Record any outstanding loans — given or taken — in Loans to track settlements.',
   'Use consistent categories for repeated spends to improve trend quality.',
+  'Create a Splitwise group for your next trip or shared expense with friends.',
   'Run a quick Reconciliation pass weekly to keep summaries trustworthy.',
 ]
 
@@ -199,6 +201,34 @@ const FEATURE_CARDS = [
     avoidThis: [
       'Do not leave settled loans active — they clutter the overview.',
       'Avoid recording loan repayments as regular transactions without linking.',
+    ],
+  },
+  {
+    id: 'splitwise',
+    title: 'Splitwise',
+    subtitle: 'Split expenses with friends',
+    icon: Users,
+    route: '/splitwise',
+    category: 'weekly',
+    accent: 'bg-brand-container text-brand',
+    summary: 'Create trip groups, invite friends via link, split expenses equally or by custom shares, and settle debts.',
+    whenToUse: 'Use this whenever you travel or dine with others and need to track shared costs.',
+    workflow: [
+      'Create a group for each trip or shared event and pick a cover banner.',
+      'Invite friends with a shareable link — they join with their Kosha account.',
+      'Add expenses with split method (equal, exact, percent, or shares).',
+      'Check suggested settlements and record payments to settle up.',
+      'Archive the trip when all debts are cleared.',
+    ],
+    doThis: [
+      'Record expenses immediately to avoid forgetting who paid.',
+      'Use suggested settlements to minimize the number of transfers.',
+      'Archive completed trips to keep your active list clean.',
+    ],
+    avoidThis: [
+      'Do not delete a group with unsettled balances.',
+      'Avoid adding duplicate expenses — use edit instead.',
+      'Do not skip adding friends as members before logging expenses.',
     ],
   },
 ]
@@ -459,7 +489,7 @@ export default function Guide() {
               <p className="text-[12px] text-ink-2"><span className="font-semibold text-ink">Daily:</span> Dashboard pulse + quick capture</p>
             </div>
             <div className="mini-panel px-3 py-2.5">
-              <p className="text-[12px] text-ink-2"><span className="font-semibold text-ink">Weekly:</span> Bills check + loan settlements + reconciliation cleanup</p>
+              <p className="text-[12px] text-ink-2"><span className="font-semibold text-ink">Weekly:</span> Bills check + loan settlements + splitwise settle-ups + reconciliation cleanup</p>
             </div>
             <div className="mini-panel px-3 py-2.5">
               <p className="text-[12px] text-ink-2"><span className="font-semibold text-ink">Monthly:</span> Analytics review + export backup</p>

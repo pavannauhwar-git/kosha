@@ -11,7 +11,7 @@ import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
 import { LOAN_INVALIDATION_KEYS } from './hooks/useLoans'
 import { SPLITWISE_INVALIDATION_KEYS } from './hooks/useSplitwise'
 import AuthGuard, { RouteSkeleton } from './components/navigation/AuthGuard'
-import { House, List, CalendarDots, ChartBar, Receipt, Handshake } from '@phosphor-icons/react'
+import { House, List, CalendarDots, ChartBar, Receipt, UsersThree } from '@phosphor-icons/react'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
 import { useUserCategories } from './hooks/useUserCategories'
@@ -73,7 +73,7 @@ const NAV = [
   { path: '/monthly', label: 'Monthly', Icon: CalendarDots, match: ['/monthly'] },
   { path: '/analytics', label: 'Insights', Icon: ChartBar, match: ['/analytics'] },
   { path: '/obligations', label: 'Obligations', Icon: Receipt, match: ['/obligations', '/bills', '/loans'] },
-  { path: '/splitwise', label: 'Splitwise', Icon: Handshake, match: ['/splitwise'] },
+  { path: '/splitwise', label: 'Splitwise', Icon: UsersThree, match: ['/splitwise'] },
 ]
 
 const REALTIME_INVALIDATION_POLICIES = [

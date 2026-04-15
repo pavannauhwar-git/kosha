@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Users, ArrowRightLeft, ReceiptText, X, Link2, Trash2, ChevronLeft, Settings2, Archive } from 'lucide-react'
+import { Plus, Users, ArrowRightLeft, ReceiptText, X, Link2, Trash2, ChevronLeft, Settings2, Archive, ArchiveRestore } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Button from '../components/ui/Button'
@@ -32,6 +32,8 @@ import {
   useSplitwiseRealtime,
   leaveSplitGroupMutation,
   toggleArchiveSplitGroupMutation,
+  updateSplitGroupMutation,
+  setSplitGroupAccessRoleMutation,
 } from '../hooks/useSplitwise'
 import { fmt, fmtDate } from '../lib/utils'
 
@@ -1871,43 +1873,58 @@ export default function Splitwise() {
                   </button>
                 </div>
 
-                <div className="list-card mb-4">
-                  <label className="list-row w-full cursor-pointer">
-                    <span className="text-[14px] text-ink-3">Trip Name</span>
-                    <input
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={editGroupForm.name}
-                      onChange={(e) => setEditGroupForm((prev) => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g. Goa 2026"
-                      maxLength={50}
-                    />
-                  </label>
-                </div>
+                {!activeGroup?.is_archived && (
+                  <>
+                    <div className="list-card mb-4">
+                      <label className="list-row w-full cursor-pointer">
+                        <span className="text-[14px] text-ink-3">Trip Name</span>
+                        <input
+                          className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
+                          value={editGroupForm.name}
+                          onChange={(e) => setEditGroupForm((prev) => ({ ...prev, name: e.target.value }))}
+                          placeholder="e.g. Goa 2026"
+                          maxLength={50}
+                        />
+                      </label>
+                    </div>
 
-                <div className="space-y-2">
-                  <Button
-                    variant="primary"
-                    size="xl"
-                    fullWidth
-                    onClick={() => { void handleUpdateGroup() }}
-                    loading={saving === 'group-edit'}
-                  >
-                    Update Name
-                  </Button>
+                    <Button
+                      variant="primary"
+                      size="xl"
+                      fullWidth
+                      onClick={() => { void handleUpdateGroup() }}
+                      loading={saving === 'group-edit'}
+                      className="mb-4"
+                    >
+                      Update Name
+                    </Button>
+                  </>
+                )}
 
+                <div className="space-y-3">
                   <button
                     type="button"
                     onClick={(e) => void handleToggleArchive(e, activeGroupId, activeGroup?.is_archived)}
                     disabled={!!saving}
-                    className="flex w-full items-center gap-2 rounded-xl border border-kosha-border bg-kosha-surface-2 p-3 text-left transition-colors hover:bg-kosha-surface-hover"
+                    className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
+                      activeGroup?.is_archived
+                        ? 'border-brand/20 bg-brand/10 hover:bg-brand/20'
+                        : 'border-warning-text/20 bg-warning-text/10 hover:bg-warning-text/20'
+                    }`}
                   >
-                    <Archive size={16} className="text-ink-3" />
+                    {activeGroup?.is_archived ? (
+                      <ArchiveRestore size={20} className="text-brand shrink-0" />
+                    ) : (
+                      <Archive size={20} className="text-warning-text shrink-0" />
+                    )}
                     <div>
-                      <p className="text-[13px] font-semibold text-ink">
+                      <p className={`text-[14px] font-bold ${activeGroup?.is_archived ? 'text-brand' : 'text-warning-text'}`}>
                         {activeGroup?.is_archived ? 'Restore from Archive' : 'Archive Trip'}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-ink-3">
-                        {activeGroup?.is_archived ? 'Make this trip active again.' : 'Lock trip. Prevents adding expenses or members.'}
+                      <p className={`mt-0.5 text-[12px] leading-tight ${activeGroup?.is_archived ? 'text-brand/80' : 'text-warning-text/80'}`}>
+                        {activeGroup?.is_archived 
+                          ? 'Make this trip active again to add expenses and new members.' 
+                          : 'Lock this trip. Prevents adding new expenses or members.'}
                       </p>
                     </div>
                   </button>

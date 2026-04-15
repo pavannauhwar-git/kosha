@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Receipt, Handshake } from 'lucide-react'
+import { motion } from 'framer-motion'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Bills from '../components/obligations/Bills'
 import Loans from '../components/obligations/Loans'
 
 const TABS = [
-  { key: 'bills', label: 'Bills' },
-  { key: 'loans', label: 'Loans' },
+  { key: 'bills', label: 'Bills', icon: Receipt, hint: 'Due dates & payments' },
+  { key: 'loans', label: 'Loans', icon: Handshake, hint: 'Given & taken' },
 ]
 
 function resolveTab(value) {
@@ -18,11 +19,6 @@ export default function Obligations() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = resolveTab(searchParams.get('tab'))
 
-  const tabSubtitle = useMemo(() => {
-    if (tab === 'loans') return 'Track given/taken loans and settlements.'
-    return 'Track bills, due dates, and payment status.'
-  }, [tab])
-
   function handleTabChange(nextTab) {
     if (nextTab === tab) return
     const next = new URLSearchParams(searchParams)
@@ -32,27 +28,38 @@ export default function Obligations() {
 
   return (
     <PageHeaderPage title="Obligations">
-      <div className="sticky-toolbar mb-2">
-        <div className="grid grid-cols-2 gap-2 rounded-card bg-kosha-surface p-1">
-          {TABS.map((item) => (
+      <div className="mb-2.5 flex border-b border-kosha-border overflow-x-auto no-scrollbar relative">
+        {TABS.map((item) => {
+          const Icon = item.icon
+          const active = tab === item.key
+          return (
             <button
               key={item.key}
               type="button"
               onClick={() => handleTabChange(item.key)}
-              className={`h-9 rounded-card text-[12px] font-semibold transition-all active:scale-[0.98] ${tab === item.key
-                  ? 'bg-brand-dark text-white shadow-card'
-                  : 'text-ink-3 hover:text-ink'
-                }`}
-              aria-pressed={tab === item.key}
+              className={`relative flex-1 flex items-center justify-center gap-1.5 h-10 text-[13px] font-semibold transition-colors
+                ${active ? 'text-brand' : 'text-ink-3 hover:text-ink'}`}
+              aria-pressed={active}
             >
-              {item.label}
+              <Icon size={14} className={active ? 'text-brand' : 'text-ink-3'} />
+              <span>{item.label}</span>
+              <span className={`text-[10px] font-medium ${active ? 'text-brand/70' : 'text-ink-4'} hidden sm:inline`}>
+                · {item.hint}
+              </span>
+              {active && (
+                <motion.div
+                  layoutId="obligations-tab-indicator"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand rounded-full"
+                  initial={false}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              )}
             </button>
-          ))}
-        </div>
-        <p className="mt-2 text-[11px] text-ink-3">{tabSubtitle}</p>
+          )
+        })}
       </div>
 
-      <div className="pt-1">
+      <div className="pb-5">
         {tab === 'loans' ? <Loans embedded /> : <Bills embedded tabParam="billsTab" />}
       </div>
     </PageHeaderPage>
