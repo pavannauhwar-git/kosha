@@ -148,6 +148,8 @@ export default function Transactions() {
   const paymentTriggerRef = useRef(null)
   const toastTimeoutRef = useRef(null)
   const pendingDeleteRef = useRef(null)
+  const internalUrlUpdateRef = useRef(false)
+  const searchParamsRef = useRef(searchParams)
 
   const debouncedSearch = useDebounce(search, 300)
   const isSearchDebouncing = search !== debouncedSearch
@@ -634,6 +636,13 @@ export default function Transactions() {
   }, [])
 
   useEffect(() => {
+    searchParamsRef.current = searchParams
+    
+    if (internalUrlUpdateRef.current) {
+      internalUrlUpdateRef.current = false
+      return
+    }
+    
     const validTypeIds = new Set(TYPES.map((item) => item.id))
     const validPaymentModeIds = new Set(PAYMENT_MODES.map((item) => item.id))
 
@@ -671,6 +680,7 @@ export default function Transactions() {
   }, [searchParams])
 
   useEffect(() => {
+    const currentSearchParams = searchParamsRef.current
     const nextParams = new URLSearchParams()
 
     if (forcedDateRange?.startDate && forcedDateRange.startDate === forcedDateRange.endDate) {
@@ -689,17 +699,18 @@ export default function Transactions() {
     const query = String(debouncedSearch || '').trim()
     if (query) nextParams.set('q', query)
 
-    const focusParam = String(searchParams.get('focus') || '').trim()
+    const focusParam = String(currentSearchParams.get('focus') || '').trim()
     if (focusParam) nextParams.set('focus', focusParam)
 
-    const currentParams = new URLSearchParams(searchParams)
-    FILTER_URL_KEYS.forEach((key) => currentParams.delete(key))
+    const mergedParams = new URLSearchParams(currentSearchParams)
+    FILTER_URL_KEYS.forEach((key) => mergedParams.delete(key))
     for (const [key, value] of nextParams.entries()) {
-      currentParams.set(key, value)
+      mergedParams.set(key, value)
     }
 
-    if (currentParams.toString() !== searchParams.toString()) {
-      setSearchParams(currentParams, { replace: true })
+    if (mergedParams.toString() !== currentSearchParams.toString()) {
+      internalUrlUpdateRef.current = true
+      setSearchParams(mergedParams, { replace: true })
     }
   }, [
     typeFilter,
@@ -709,7 +720,6 @@ export default function Transactions() {
     selectedMonth,
     forcedDateRange,
     debouncedSearch,
-    searchParams,
     setSearchParams,
   ])
 
