@@ -411,7 +411,7 @@ function BottomNav() {
 
   return (
     <div
-      className="nav-float-wrap
+      className="nav-float-wrap"
       style={{
         opacity: ready ? 1 : 0,
         transition: ready ? 'opacity 100ms ease out' : 'none',
