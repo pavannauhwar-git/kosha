@@ -419,8 +419,11 @@
     border: none;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    will-change: transform;
-    transform: translateZ(0);
+    transform: transform 100ms cubic-bezeir(0.2, 0, 0, 1);
+  }
+  
+  .nav-float-item:active {
+    transform: scale(0.95);
   }
 
   .nav-icon-wrap {
