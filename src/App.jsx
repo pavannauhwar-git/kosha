@@ -379,23 +379,23 @@ function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
   const prefetchRoute = useRouteIntentPrefetch()
-  const [mounted, setMounted] = useState(false)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     let timerId
 
-    const paint = () => {
+    const reveal = () => {
       if (cancelled) return
       requestAnimationFrame(() => {
         if (cancelled) return
         requestAnimationFrame(() => {
-          if (!cancelled) setMounted(true)
+          if (!cancelled) setReady(true)
         })
       })
     }
 
-    timerId = setTimeout(paint, 50)
+    timerId = setTimeout(paint, 80)
 
     return () => {
       cancelled = true
@@ -403,7 +403,6 @@ function BottomNav() {
     }
   }, [])
   
-  if (!mounted) return null
   if (BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
 
   const active = NAV.findIndex((n) =>
@@ -411,7 +410,14 @@ function BottomNav() {
   )
 
   return (
-    <div className="nav-float-wrap">
+    <div
+      className="nav-float-wrap
+      style={{
+        opacity: ready ? 1 : 0,
+        transition: ready ? 'opacity 100ms ease out' : 'none',
+        pointerEvents: ready ? undefined : 'none',
+      }}
+    >
       <nav className="nav-float" aria-label="Main navigation">
         {NAV.map((item, i) => {
           const isActive = i === active
@@ -438,16 +444,18 @@ function BottomNav() {
               <div className="nav-icon-wrap">
                 {isActive && (
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
+                  initial={false}
                     transition={{ type: 'spring', stiffness: 460, damping: 36, mass: 0.9 }} />
                 )}
-                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.18 }}>
+                <motion.span className="nav-icon-layer" initial={false} animate={{ opacity: isActive ? 1 : 0 }} transition={{ duration: 0.18 }}>
                   <item.Icon size={21} weight="fill" color="var(--ds-primary)" />
                 </motion.span>
-                <motion.span className="nav-icon-layer" animate={{ opacity: isActive ? 0 : 1 }} transition={{ duration: 0.18 }}>
+                <motion.span className="nav-icon-layer" initial={false} animate={{ opacity: isActive ? 0 : 1 }} transition={{ duration: 0.18 }}>
                   <item.Icon size={21} weight="regular" color="var(--ds-text-tertiary)" />
                 </motion.span>
               </div>
               <motion.span className="nav-label"
+                initial={false}
                 animate={{ color: isActive ? 'var(--ds-primary)' : 'var(--ds-text-tertiary)', fontWeight: isActive ? 600 : 400, opacity: isActive ? 1 : 0.75 }}
                 transition={{ duration: 0.18 }}>
                 {item.label}
