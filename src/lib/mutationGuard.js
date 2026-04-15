@@ -34,7 +34,7 @@ const _suppressed = new Map()
  * Call this inside a mutation, BEFORE firing invalidateCache().
  * tableKey matches the table names used in REALTIME_INVALIDATION_POLICIES.
  *
- * @param {'transactions' | 'liabilities'} tableKey
+ * @param {'transactions' | 'liabilities' | 'loans' | 'splitwise'} tableKey
  */
 export function suppress(tableKey) {
   _suppressed.set(tableKey, Date.now() + SUPPRESS_TTL_MS)
@@ -44,7 +44,7 @@ export function suppress(tableKey) {
  * Called by GlobalRealtimeSync before each realtime-triggered invalidation.
  * Returns true if the invalidation should be skipped.
  *
- * @param {'transactions' | 'liabilities'} tableKey
+ * @param {'transactions' | 'liabilities' | 'loans' | 'splitwise'} tableKey
  */
 export function isSuppressed(tableKey) {
   const expiry = _suppressed.get(tableKey)

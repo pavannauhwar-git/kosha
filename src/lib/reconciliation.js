@@ -1,5 +1,5 @@
 import { getAuthUserId } from './authStore'
-import { normalizeText } from './bugReportUtils'
+import { normalizeText } from './bugReportUtils.js'
 
 const RECON_REVIEWED_KEY_PREFIX = 'kosha:reconciliation-reviewed-v1:'
 

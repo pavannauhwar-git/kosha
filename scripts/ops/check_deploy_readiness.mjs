@@ -99,6 +99,62 @@ async function main() {
     if (error) throw error
   }))
 
+  checks.push(await runCheck('split_groups table accessible', async () => {
+    const { error } = await client
+      .from('split_groups')
+      .select('id, user_id, name, updated_at', { head: true, count: 'exact' })
+      .eq('user_id', user.id)
+    if (error) throw error
+  }))
+
+  checks.push(await runCheck('split_group_members table accessible', async () => {
+    const { error } = await client
+      .from('split_group_members')
+      .select('id, group_id, user_id, display_name, is_self', { head: true, count: 'exact' })
+      .eq('user_id', user.id)
+    if (error) throw error
+  }))
+
+  checks.push(await runCheck('split_expenses table accessible', async () => {
+    const { error } = await client
+      .from('split_expenses')
+      .select('id, group_id, user_id, paid_by_member_id, amount, split_method', { head: true, count: 'exact' })
+      .eq('user_id', user.id)
+    if (error) throw error
+  }))
+
+  checks.push(await runCheck('split_expense_splits table accessible', async () => {
+    const { error } = await client
+      .from('split_expense_splits')
+      .select('id, expense_id, member_id, user_id, share', { head: true, count: 'exact' })
+      .eq('user_id', user.id)
+    if (error) throw error
+  }))
+
+  checks.push(await runCheck('split_settlements table accessible', async () => {
+    const { error } = await client
+      .from('split_settlements')
+      .select('id, group_id, user_id, payer_member_id, payee_member_id, amount', { head: true, count: 'exact' })
+      .eq('user_id', user.id)
+    if (error) throw error
+  }))
+
+  checks.push(await runCheck('split_group_access table accessible', async () => {
+    const { error } = await client
+      .from('split_group_access')
+      .select('id, group_id, user_id, role', { head: true, count: 'exact' })
+      .eq('user_id', user.id)
+    if (error) throw error
+  }))
+
+  checks.push(await runCheck('split_group_invites table accessible', async () => {
+    const { error } = await client
+      .from('split_group_invites')
+      .select('id, group_id, token, created_by, consumed_by, revoked_at', { head: true, count: 'exact' })
+      .eq('created_by', user.id)
+    if (error) throw error
+  }))
+
   checks.push(await runCheck('mark_liability_paid RPC available', async () => {
     const { error } = await client.rpc('mark_liability_paid', {
       p_liability_id: '00000000-0000-0000-0000-000000000000',
@@ -121,6 +177,94 @@ async function main() {
 
     if (!error) return
     assertNoMissingFunctionError(error, 'generate_recurring_transactions')
+    throw error
+  }))
+
+  checks.push(await runCheck('split_create_expense RPC available', async () => {
+    const { error } = await client.rpc('split_create_expense', {
+      p_group_id: '00000000-0000-0000-0000-000000000000',
+      p_paid_by_member_id: '00000000-0000-0000-0000-000000000000',
+      p_description: 'readiness probe',
+      p_amount: 1,
+      p_expense_date: '1900-01-01',
+      p_split_method: 'equal',
+      p_notes: null,
+      p_splits: [
+        {
+          member_id: '00000000-0000-0000-0000-000000000000',
+          share: 1,
+        },
+      ],
+    })
+
+    if (!error) return
+    assertNoMissingFunctionError(error, 'split_create_expense')
+    const msg = String(error.message || '')
+    if (
+      msg.includes('Split group not found') ||
+      msg.includes('Payer must be a member') ||
+      msg.includes('Authentication required')
+    ) {
+      return
+    }
+    throw error
+  }))
+
+  checks.push(await runCheck('split_record_settlement RPC available', async () => {
+    const { error } = await client.rpc('split_record_settlement', {
+      p_group_id: '00000000-0000-0000-0000-000000000000',
+      p_payer_member_id: '00000000-0000-0000-0000-000000000000',
+      p_payee_member_id: '00000000-0000-0000-0000-000000000000',
+      p_amount: 1,
+      p_settled_at: '1900-01-01',
+      p_note: 'probe',
+    })
+
+    if (!error) return
+    assertNoMissingFunctionError(error, 'split_record_settlement')
+    const msg = String(error.message || '')
+    if (
+      msg.includes('Split group not found') ||
+      msg.includes('Payer and payee cannot be the same') ||
+      msg.includes('Authentication required')
+    ) {
+      return
+    }
+    throw error
+  }))
+
+  checks.push(await runCheck('split_create_group_invite RPC available', async () => {
+    const { error } = await client.rpc('split_create_group_invite', {
+      p_group_id: '00000000-0000-0000-0000-000000000000',
+      p_role: 'viewer',
+    })
+
+    if (!error) return
+    assertNoMissingFunctionError(error, 'split_create_group_invite')
+    const msg = String(error.message || '')
+    if (
+      msg.includes('Split group not found') ||
+      msg.includes('Authentication required')
+    ) {
+      return
+    }
+    throw error
+  }))
+
+  checks.push(await runCheck('split_consume_group_invite RPC available', async () => {
+    const { error } = await client.rpc('split_consume_group_invite', {
+      p_token: 'readiness-probe-token',
+    })
+
+    if (!error) return
+    assertNoMissingFunctionError(error, 'split_consume_group_invite')
+    const msg = String(error.message || '')
+    if (
+      msg.includes('Invite not found or already used') ||
+      msg.includes('Authentication required')
+    ) {
+      return
+    }
     throw error
   }))
 

@@ -1,4 +1,4 @@
-import { normalizeText } from './bugReportUtils'
+import { normalizeText } from './bugReportUtils.js'
 
 const NOISE_TOKENS = new Set([
   'upi', 'imps', 'neft', 'rtgs', 'txn', 'ref', 'utr', 'vpa', 'bank',

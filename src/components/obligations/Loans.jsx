@@ -12,21 +12,21 @@ import {
   deleteLoanMutation,
   accruedInterest,
   loanProgress,
-} from '../hooks/useLoans'
-import { supabase } from '../lib/supabase'
-import { getAuthUserId } from '../lib/authStore'
-import { downloadCsv, toCsv } from '../lib/csv'
-import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass } from '../lib/utils'
-import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
-import { FINANCIAL_EVENT_ACTIONS } from '../lib/auditLog'
-import PageHeaderPage from '../components/layout/PageHeaderPage'
-import SkeletonLayout from '../components/common/SkeletonLayout'
-import EmptyState from '../components/common/EmptyState'
-import AppToast from '../components/common/AppToast'
-import Button from '../components/ui/Button'
-import PixelDatePicker from '../components/ui/PixelDatePicker'
-import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
-import useWindowedList from '../hooks/useWindowedList'
+} from '../../hooks/useLoans'
+import { supabase } from '../../lib/supabase'
+import { getAuthUserId } from '../../lib/authStore'
+import { downloadCsv, toCsv } from '../../lib/csv'
+import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass } from '../../lib/utils'
+import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
+import { FINANCIAL_EVENT_ACTIONS } from '../../lib/auditLog'
+import PageHeaderPage from '../layout/PageHeaderPage'
+import SkeletonLayout from '../common/SkeletonLayout'
+import EmptyState from '../common/EmptyState'
+import AppToast from '../common/AppToast'
+import Button from '../ui/Button'
+import PixelDatePicker from '../ui/PixelDatePicker'
+import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
+import useWindowedList from '../../hooks/useWindowedList'
 import { useSearchParams } from 'react-router-dom'
 
 const LOAN_COLUMNS_EXPORT =
@@ -34,7 +34,7 @@ const LOAN_COLUMNS_EXPORT =
 const DEEP_LINK_MAX_ATTEMPTS = 8
 const DEEP_LINK_RETRY_MS = 350
 
-export default function Loans() {
+export default function Loans({ embedded = false } = {}) {
   const { given, taken, settled, loading, settledLoading } = useLoans()
   const [searchParams, setSearchParams] = useSearchParams()
   const deepLinkTxnId = searchParams.get('repaymentTxn')
@@ -614,22 +614,39 @@ export default function Loans() {
   }
 
   return (
-    <PageHeaderPage title="Loans">
+    <PageHeaderPage
+      title="Loans"
+      showHeader={!embedded}
+      withHeaderOffset={!embedded}
+      pageClassName={embedded ? 'pb-5' : 'page'}
+    >
 
       {/* ── Subheader ─────────────────────────────────────────────────── */}
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <p className="text-caption text-ink-3 mt-0.5">
           {totalCount} loan{totalCount !== 1 ? 's' : ''} · {visibleGiven.length + visibleTaken.length} active
         </p>
-        {totalCount > 0 && (
-          <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={handleExportCsv}>
-            Export CSV
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {totalCount > 0 && (
+            <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={handleExportCsv}>
+              Export CSV
+            </Button>
+          )}
+          {embedded && (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Plus size={14} />}
+              onClick={() => setShowAdd(true)}
+            >
+              Add
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
-      <div className="mb-4 grid grid-cols-3 gap-2">
+      <div className="mb-2.5 grid grid-cols-3 gap-2">
         {[
           { key: 'given',   label: 'Given',   count: visibleGiven.length,   activeClass: 'bg-income-bg text-income-text border-income-border shadow-card' },
           { key: 'taken',   label: 'Taken',   count: visibleTaken.length,   activeClass: 'bg-expense-bg text-expense-text border-expense-border shadow-card' },
@@ -646,9 +663,11 @@ export default function Loans() {
         ))}
       </div>
 
+      <div className="space-y-3">
+
       {/* ── Summary card ──────────────────────────────────────────────── */}
       {(visibleGiven.length > 0 || visibleTaken.length > 0) && tab !== 'settled' && (
-        <div className="card mb-3.5 p-3.5 sm:p-4">
+        <div className="card p-3.5 sm:p-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="mini-panel px-3 py-2.5">
               <p className="text-caption text-ink-3 mb-1">You're owed</p>
@@ -662,16 +681,14 @@ export default function Loans() {
             </div>
           </div>
 
-
-        {(visibleGiven.length > 0 || visibleTaken.length > 0) && tab !== 'settled' && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3.5">
+          <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {exposureConcentrationSignal && (
-              <div className="card p-3.5 border-0">
+              <div className="mini-panel p-3.5">
                 <p className="text-[10px] text-ink-3 tracking-wide">Exposure concentration</p>
-                <p className={`text-[14px] font-semibold mt-1 ${bandTextClass(exposureConcentrationSignal.tone)}`}>
+                <p className={`text-label font-semibold mt-1 ${bandTextClass(exposureConcentrationSignal.tone)}`}>
                   {exposureConcentrationSignal.topSharePct}%
                 </p>
-                <p className="text-[12px] text-ink-2 mt-1 truncate" title={exposureConcentrationSignal.top.name}>
+                <p className="text-caption text-ink-2 mt-1 truncate" title={exposureConcentrationSignal.top.name}>
                   {exposureConcentrationSignal.top.name}
                 </p>
                 <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
@@ -681,12 +698,12 @@ export default function Loans() {
             )}
 
             {dueRiskSignal && (
-              <div className="card p-3.5 border-0">
+              <div className="mini-panel p-3.5">
                 <p className="text-[10px] text-ink-3 tracking-wide">At-risk due loans</p>
-                <p className={`text-[14px] font-semibold mt-1 ${bandTextClass(dueRiskSignal.tone)}`}>
+                <p className={`text-label font-semibold mt-1 ${bandTextClass(dueRiskSignal.tone)}`}>
                   {dueRiskSignal.count} flagged
                 </p>
-                <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
+                <p className="text-caption text-ink-2 mt-1 tabular-nums">
                   {fmt(dueRiskSignal.amountAtRisk)} at risk
                 </p>
                 <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
@@ -696,12 +713,12 @@ export default function Loans() {
             )}
 
             {settlementVelocitySignal && (
-              <div className="card p-3.5 border-0">
+              <div className="mini-panel p-3.5">
                 <p className="text-[10px] text-ink-3 tracking-wide">Settlement velocity</p>
-                <p className="text-[14px] font-semibold text-ink mt-1 tabular-nums">
+                <p className="text-label font-semibold text-ink mt-1 tabular-nums">
                   {settlementVelocitySignal.settlementPct}% settled
                 </p>
-                <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
+                <p className="text-caption text-ink-2 mt-1 tabular-nums">
                   Accrued interest {fmt(settlementVelocitySignal.accruedTotal)}
                 </p>
                 <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(settlementVelocitySignal.tone, 'text-ink-3')}`}>
@@ -712,7 +729,7 @@ export default function Loans() {
               </div>
             )}
           </div>
-        )}
+
           <div className="mt-3 mini-panel px-3 py-2.5">
             <div className="flex items-center justify-between">
               <p className="text-caption text-ink-3">Net position</p>
@@ -934,6 +951,8 @@ export default function Loans() {
           </div>
         </div>
       )}
+
+      </div>
 
       {/* ── Record Payment Sheet ──────────────────────────────────────── */}
       <AnimatePresence>
@@ -1223,9 +1242,11 @@ export default function Loans() {
       </AnimatePresence>
 
       {/* FAB */}
-      <button className="fab-loans" aria-label="Add loan" onClick={() => setShowAdd(true)}>
-        <Plus size={24} className="text-white" />
-      </button>
+      {!embedded && (
+        <button className="fab-loans" aria-label="Add loan" onClick={() => setShowAdd(true)}>
+          <Plus size={24} className="text-white" />
+        </button>
+      )}
 
       <AppToast message={errToast} onDismiss={() => setErrToast(null)} />
     </PageHeaderPage>

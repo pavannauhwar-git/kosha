@@ -10,19 +10,21 @@ export default function PageHeaderPage({
   pageStyle,
   pageProps = {},
   headerClassName = 'mb-2',
+  showHeader = true,
+  withHeaderOffset = true,
 }) {
   return (
     <div className={pageClassName} style={pageStyle} {...pageProps}>
       {beforeHeader}
-      <PageHeader
-        title={title}
-        className={headerClassName}
-        leftSlot={leftSlot}
-        rightSlot={rightSlot}
-      />
-      <div className="page-header-offset">
-        {children}
-      </div>
+      {showHeader ? (
+        <PageHeader
+          title={title}
+          className={headerClassName}
+          leftSlot={leftSlot}
+          rightSlot={rightSlot}
+        />
+      ) : null}
+      {withHeaderOffset ? <div className="page-header-offset">{children}</div> : children}
     </div>
   )
 }

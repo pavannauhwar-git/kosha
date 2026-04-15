@@ -759,7 +759,7 @@ create table if not exists public.financial_events (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users(id) on delete cascade,
   action      text not null,
-  entity_type text not null check (entity_type in ('transaction', 'liability', 'loan')),
+  entity_type text not null check (entity_type in ('transaction', 'liability', 'loan', 'split_group', 'split_group_member', 'split_expense', 'split_settlement', 'split_group_invite')),
   entity_id   uuid not null,
   metadata    jsonb,
   created_at  timestamptz not null default now()
@@ -772,7 +772,7 @@ begin
     drop constraint if exists financial_events_entity_type_check;
   alter table public.financial_events
     add constraint financial_events_entity_type_check
-    check (entity_type in ('transaction', 'liability', 'loan'));
+    check (entity_type in ('transaction', 'liability', 'loan', 'split_group', 'split_group_member', 'split_expense', 'split_settlement', 'split_group_invite'));
 exception
   when others then null;
 end $$;
@@ -1214,6 +1214,1360 @@ create trigger enforce_user_category_limit
   for each row execute function check_user_category_limit();
 
 -- ═════════════════════════════════════════════════════════════════════════════
+-- ── SPLITWISE-LIKE SHARED EXPENSES (additive) ─────────────────────────────
+-- ═════════════════════════════════════════════════════════════════════════════
+
+create table if not exists split_groups (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  is_archived boolean not null default false,
+  user_id     uuid
+);
+
+create table if not exists split_group_members (
+  id              uuid primary key default gen_random_uuid(),
+  group_id        uuid not null references split_groups(id) on delete cascade,
+  display_name    text not null,
+  is_self         boolean not null default false,
+  linked_user_id  uuid references auth.users(id) on delete set null,
+  created_at      timestamptz not null default now(),
+  user_id         uuid
+);
+
+create table if not exists split_expenses (
+  id                 uuid primary key default gen_random_uuid(),
+  group_id           uuid not null references split_groups(id) on delete cascade,
+  paid_by_member_id  uuid not null references split_group_members(id) on delete restrict,
+  description        text not null,
+  amount             numeric(12,2) not null check (amount > 0),
+  expense_date       date not null default current_date,
+  split_method       text not null check (split_method in ('equal', 'exact', 'percent', 'shares')),
+  notes              text,
+  created_at         timestamptz not null default now(),
+  user_id            uuid
+);
+
+create table if not exists split_expense_splits (
+  id          uuid primary key default gen_random_uuid(),
+  expense_id  uuid not null references split_expenses(id) on delete cascade,
+  member_id   uuid not null references split_group_members(id) on delete cascade,
+  share       numeric(12,2) not null check (share >= 0),
+  percent     numeric(9,4),
+  shares      numeric(12,4),
+  created_at  timestamptz not null default now(),
+  user_id     uuid
+);
+
+create table if not exists split_settlements (
+  id               uuid primary key default gen_random_uuid(),
+  group_id         uuid not null references split_groups(id) on delete cascade,
+  payer_member_id  uuid not null references split_group_members(id) on delete restrict,
+  payee_member_id  uuid not null references split_group_members(id) on delete restrict,
+  amount           numeric(12,2) not null check (amount > 0),
+  settled_at       date not null default current_date,
+  note             text,
+  created_at       timestamptz not null default now(),
+  user_id          uuid
+);
+
+create table if not exists split_group_access (
+  id          uuid primary key default gen_random_uuid(),
+  group_id    uuid not null references split_groups(id) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  role        text not null default 'member' check (role in ('admin', 'member', 'viewer')),
+  created_at  timestamptz not null default now(),
+  unique (group_id, user_id)
+);
+
+create table if not exists split_group_invites (
+  id           uuid primary key default gen_random_uuid(),
+  group_id     uuid not null references split_groups(id) on delete cascade,
+  token        text not null unique default encode(gen_random_bytes(12), 'hex'),
+  role         text not null default 'member' check (role in ('viewer', 'member', 'admin')),
+  created_by   uuid not null references auth.users(id) on delete cascade,
+  consumed_by  uuid references auth.users(id) on delete set null,
+  consumed_at  timestamptz,
+  revoked_at   timestamptz,
+  created_at   timestamptz not null default now()
+);
+
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'split_group_invites_role_check'
+      and conrelid = 'split_group_invites'::regclass
+  ) then
+    alter table split_group_invites
+      drop constraint split_group_invites_role_check;
+  end if;
+
+  -- Update existing data before adding the new constraint
+  update split_group_invites set role = 'admin' where role = 'owner';
+  update split_group_invites set role = 'member' where role = 'viewer';
+
+  alter table split_group_invites
+    add constraint split_group_invites_role_check
+    check (role in ('viewer', 'member', 'admin'));
+exception
+  when duplicate_object then null;
+end $$;
+
+-- Expand split_group_access role constraint to 3-tier model
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'split_group_access_role_check'
+      and conrelid = 'split_group_access'::regclass
+  ) then
+    alter table split_group_access
+      drop constraint split_group_access_role_check;
+  end if;
+
+  -- Update existing data before adding the new constraint
+  update split_group_access set role = 'admin' where role = 'owner';
+  update split_group_access set role = 'member' where role = 'viewer';
+
+  alter table split_group_access
+    add constraint split_group_access_role_check
+    check (role in ('admin', 'member', 'viewer'));
+exception
+  when duplicate_object then null;
+end $$;
+
+create index if not exists idx_split_groups_user on split_groups(user_id);
+create index if not exists idx_split_group_members_group on split_group_members(group_id);
+create index if not exists idx_split_group_members_user on split_group_members(user_id);
+create unique index if not exists idx_split_group_members_group_linked_user_unique
+  on split_group_members(group_id, linked_user_id)
+  where linked_user_id is not null;
+create unique index if not exists idx_split_group_members_group_name_unique
+  on split_group_members(group_id, lower(display_name));
+create index if not exists idx_split_expenses_group_date on split_expenses(group_id, expense_date desc);
+create index if not exists idx_split_expenses_user on split_expenses(user_id);
+create unique index if not exists idx_split_expense_splits_unique_member
+  on split_expense_splits(expense_id, member_id);
+create index if not exists idx_split_expense_splits_user on split_expense_splits(user_id);
+create index if not exists idx_split_settlements_group_date on split_settlements(group_id, settled_at desc);
+create index if not exists idx_split_settlements_user on split_settlements(user_id);
+create index if not exists idx_split_group_access_user on split_group_access(user_id);
+create index if not exists idx_split_group_access_group on split_group_access(group_id);
+create index if not exists idx_split_group_invites_group on split_group_invites(group_id);
+create index if not exists idx_split_group_invites_created_by on split_group_invites(created_by);
+create index if not exists idx_split_group_invites_token on split_group_invites(token);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_name = 'split_groups' and column_name = 'is_archived'
+  ) then
+    alter table split_groups add column is_archived boolean not null default false;
+  end if;
+end $$;
+create index if not exists idx_split_group_invites_active on split_group_invites(group_id, created_at desc)
+  where consumed_by is null and revoked_at is null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'split_groups_user_id_fkey'
+      and conrelid = 'split_groups'::regclass
+  ) then
+    alter table split_groups
+      add constraint split_groups_user_id_fkey
+      foreign key (user_id) references auth.users(id);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'split_group_members_user_id_fkey'
+      and conrelid = 'split_group_members'::regclass
+  ) then
+    alter table split_group_members
+      add constraint split_group_members_user_id_fkey
+      foreign key (user_id) references auth.users(id);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'split_expenses_user_id_fkey'
+      and conrelid = 'split_expenses'::regclass
+  ) then
+    alter table split_expenses
+      add constraint split_expenses_user_id_fkey
+      foreign key (user_id) references auth.users(id);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'split_expense_splits_user_id_fkey'
+      and conrelid = 'split_expense_splits'::regclass
+  ) then
+    alter table split_expense_splits
+      add constraint split_expense_splits_user_id_fkey
+      foreign key (user_id) references auth.users(id);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'split_settlements_user_id_fkey'
+      and conrelid = 'split_settlements'::regclass
+  ) then
+    alter table split_settlements
+      add constraint split_settlements_user_id_fkey
+      foreign key (user_id) references auth.users(id);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'split_group_invites_created_by_fkey'
+      and conrelid = 'split_group_invites'::regclass
+  ) then
+    alter table split_group_invites
+      add constraint split_group_invites_created_by_fkey
+      foreign key (created_by) references auth.users(id);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'split_group_invites_consumed_by_fkey'
+      and conrelid = 'split_group_invites'::regclass
+  ) then
+    alter table split_group_invites
+      add constraint split_group_invites_consumed_by_fkey
+      foreign key (consumed_by) references auth.users(id);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'split_groups'
+  ) then
+    alter publication supabase_realtime add table split_groups;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'split_group_members'
+  ) then
+    alter publication supabase_realtime add table split_group_members;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'split_expenses'
+  ) then
+    alter publication supabase_realtime add table split_expenses;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'split_expense_splits'
+  ) then
+    alter publication supabase_realtime add table split_expense_splits;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'split_settlements'
+  ) then
+    alter publication supabase_realtime add table split_settlements;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'split_group_access'
+  ) then
+    alter publication supabase_realtime add table split_group_access;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'split_group_invites'
+  ) then
+    alter publication supabase_realtime add table split_group_invites;
+  end if;
+exception
+  when undefined_object then null;
+end $$;
+
+alter table split_groups enable row level security;
+alter table split_group_members enable row level security;
+alter table split_expenses enable row level security;
+alter table split_expense_splits enable row level security;
+alter table split_settlements enable row level security;
+alter table split_group_access enable row level security;
+alter table split_group_invites enable row level security;
+
+-- is_split_group_owner checks for 'admin' role (renamed from 'owner')
+create or replace function public.is_split_group_owner(
+  p_group_id uuid,
+  p_user_id uuid default auth.uid()
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from split_group_access a
+    where a.group_id = p_group_id
+      and a.user_id = p_user_id
+      and a.role = 'admin'
+  );
+$$;
+
+-- is_split_group_member_or_above checks for 'admin' or 'member' role
+create or replace function public.is_split_group_member_or_above(
+  p_group_id uuid,
+  p_user_id uuid default auth.uid()
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from split_group_access a
+    where a.group_id = p_group_id
+      and a.user_id = p_user_id
+      and a.role in ('admin', 'member')
+  );
+$$;
+
+create or replace function public.has_split_group_access(
+  p_group_id uuid,
+  p_user_id uuid default auth.uid()
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from split_group_access a
+    where a.group_id = p_group_id
+      and a.user_id = p_user_id
+  );
+$$;
+
+create or replace function public.split_group_member_profiles(
+  p_group_id uuid
+)
+returns table(user_id uuid, display_name text, avatar_url text)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select distinct
+    p.id as user_id,
+    p.display_name,
+    p.avatar_url
+  from split_group_members m
+  join profiles p on p.id = m.linked_user_id
+  where m.group_id = p_group_id
+    and public.has_split_group_access(p_group_id, auth.uid());
+$$;
+
+create or replace function public.split_create_group(
+  p_name text,
+  p_self_display_name text default null
+)
+returns split_groups
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_group split_groups%rowtype;
+  v_name text := btrim(coalesce(p_name, ''));
+  v_self_name text := nullif(btrim(coalesce(p_self_display_name, '')), '');
+begin
+  if v_uid is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if v_name = '' then
+    raise exception 'Group name is required';
+  end if;
+
+  if v_self_name is null then
+    select nullif(btrim(p.display_name), '') into v_self_name
+    from profiles p
+    where p.id = v_uid;
+
+    if v_self_name is null then
+      select nullif(
+        btrim(
+          coalesce(
+            u.raw_user_meta_data ->> 'full_name',
+            split_part(u.email, '@', 1)
+          )
+        ),
+        ''
+      )
+      into v_self_name
+      from auth.users u
+      where u.id = v_uid;
+    end if;
+  end if;
+
+  v_self_name := coalesce(v_self_name, 'You');
+
+  insert into split_groups (name, user_id)
+  values (v_name, v_uid)
+  returning * into v_group;
+
+  insert into split_group_access (group_id, user_id, role)
+  values (v_group.id, v_uid, 'admin')
+  on conflict (group_id, user_id) do update
+    set role = 'admin';
+
+  insert into split_group_members (
+    group_id,
+    display_name,
+    is_self,
+    linked_user_id,
+    user_id
+  ) values (
+    v_group.id,
+    v_self_name,
+    true,
+    v_uid,
+    v_uid
+  )
+  on conflict (group_id, linked_user_id)
+  where linked_user_id is not null
+  do update set
+    display_name = excluded.display_name,
+    is_self = true,
+    user_id = excluded.user_id;
+
+  return v_group;
+end;
+$$;
+
+insert into split_group_access (group_id, user_id, role)
+select g.id, g.user_id, 'admin'
+from split_groups g
+where g.user_id is not null
+on conflict (group_id, user_id) do update
+  set role = 'admin';
+
+do $$
+declare
+  p record;
+begin
+  for p in
+    select policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'split_groups'
+  loop
+    execute format('drop policy if exists %I on split_groups', p.policyname);
+  end loop;
+end $$;
+
+create policy "split_groups: select own" on split_groups
+  for select to authenticated
+  using (public.has_split_group_access(split_groups.id));
+
+create policy "split_groups: insert own" on split_groups
+  for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+
+create policy "split_groups: update own" on split_groups
+  for update to authenticated
+  using (public.is_split_group_owner(split_groups.id))
+  with check (public.is_split_group_owner(split_groups.id));
+
+create policy "split_groups: delete own" on split_groups
+  for delete to authenticated
+  using (public.is_split_group_owner(split_groups.id));
+
+drop policy if exists "split_group_access: select own" on split_group_access;
+create policy "split_group_access: select own" on split_group_access
+  for select to authenticated
+  using (
+    ((select auth.uid()) = user_id)
+    or public.is_split_group_owner(split_group_access.group_id)
+  );
+
+drop policy if exists "split_group_access: insert owner" on split_group_access;
+create policy "split_group_access: insert owner" on split_group_access
+  for insert to authenticated
+  with check (
+    (select auth.uid()) = user_id
+    and role in ('admin', 'member', 'viewer')
+    and public.is_split_group_owner(split_group_access.group_id)
+  );
+
+drop policy if exists "split_group_access: update owner" on split_group_access;
+create policy "split_group_access: update owner" on split_group_access
+  for update to authenticated
+  using (public.is_split_group_owner(split_group_access.group_id))
+  with check (
+    role in ('admin', 'member', 'viewer')
+    and public.is_split_group_owner(split_group_access.group_id)
+  );
+
+drop policy if exists "split_group_access: delete owner" on split_group_access;
+create policy "split_group_access: delete owner" on split_group_access
+  for delete to authenticated
+  using (public.is_split_group_owner(split_group_access.group_id));
+
+drop policy if exists "split_group_members: select own" on split_group_members;
+create policy "split_group_members: select own" on split_group_members
+  for select to authenticated
+  using (public.has_split_group_access(split_group_members.group_id));
+
+drop policy if exists "split_group_members: insert own" on split_group_members;
+create policy "split_group_members: insert own" on split_group_members
+  for insert to authenticated
+  with check (
+    ((select auth.uid()) = user_id)
+    and public.is_split_group_owner(split_group_members.group_id)
+  );
+
+drop policy if exists "split_group_members: update own" on split_group_members;
+create policy "split_group_members: update own" on split_group_members
+  for update to authenticated
+  using (public.is_split_group_owner(split_group_members.group_id))
+  with check (
+    ((select auth.uid()) = user_id)
+    and public.is_split_group_owner(split_group_members.group_id)
+  );
+
+drop policy if exists "split_group_members: delete own" on split_group_members;
+create policy "split_group_members: delete own" on split_group_members
+  for delete to authenticated
+  using (public.is_split_group_owner(split_group_members.group_id));
+
+drop policy if exists "split_expenses: select own" on split_expenses;
+create policy "split_expenses: select own" on split_expenses
+  for select to authenticated
+  using (public.has_split_group_access(split_expenses.group_id));
+
+drop policy if exists "split_expenses: insert own" on split_expenses;
+create policy "split_expenses: insert own" on split_expenses
+  for insert to authenticated
+  with check (
+    ((select auth.uid()) = user_id)
+    and public.is_split_group_member_or_above(split_expenses.group_id)
+  );
+
+drop policy if exists "split_expenses: update own" on split_expenses;
+create policy "split_expenses: update own" on split_expenses
+  for update to authenticated
+  using (public.is_split_group_member_or_above(split_expenses.group_id))
+  with check (
+    ((select auth.uid()) = user_id)
+    and public.is_split_group_member_or_above(split_expenses.group_id)
+  );
+
+drop policy if exists "split_expenses: delete own" on split_expenses;
+create policy "split_expenses: delete own" on split_expenses
+  for delete to authenticated
+  using (public.is_split_group_member_or_above(split_expenses.group_id));
+
+drop policy if exists "split_expense_splits: select own" on split_expense_splits;
+create policy "split_expense_splits: select own" on split_expense_splits
+  for select to authenticated
+  using (
+    exists (
+      select 1
+      from split_expenses e
+      where e.id = split_expense_splits.expense_id
+        and public.has_split_group_access(e.group_id)
+    )
+  );
+
+drop policy if exists "split_expense_splits: insert own" on split_expense_splits;
+create policy "split_expense_splits: insert own" on split_expense_splits
+  for insert to authenticated
+  with check (
+    ((select auth.uid()) = user_id)
+    and exists (
+      select 1
+      from split_expenses e
+      where e.id = split_expense_splits.expense_id
+        and public.is_split_group_member_or_above(e.group_id)
+    )
+  );
+
+drop policy if exists "split_expense_splits: update own" on split_expense_splits;
+create policy "split_expense_splits: update own" on split_expense_splits
+  for update to authenticated
+  using (
+    exists (
+      select 1
+      from split_expenses e
+      where e.id = split_expense_splits.expense_id
+        and public.is_split_group_member_or_above(e.group_id)
+    )
+  )
+  with check (
+    ((select auth.uid()) = user_id)
+    and exists (
+      select 1
+      from split_expenses e
+      where e.id = split_expense_splits.expense_id
+        and public.is_split_group_member_or_above(e.group_id)
+    )
+  );
+
+drop policy if exists "split_expense_splits: delete own" on split_expense_splits;
+create policy "split_expense_splits: delete own" on split_expense_splits
+  for delete to authenticated
+  using (
+    exists (
+      select 1
+      from split_expenses e
+      where e.id = split_expense_splits.expense_id
+        and public.is_split_group_member_or_above(e.group_id)
+    )
+  );
+
+drop policy if exists "split_settlements: select own" on split_settlements;
+create policy "split_settlements: select own" on split_settlements
+  for select to authenticated
+  using (public.has_split_group_access(split_settlements.group_id));
+
+drop policy if exists "split_settlements: insert own" on split_settlements;
+create policy "split_settlements: insert own" on split_settlements
+  for insert to authenticated
+  with check (
+    ((select auth.uid()) = user_id)
+    and public.is_split_group_member_or_above(split_settlements.group_id)
+  );
+
+drop policy if exists "split_settlements: update own" on split_settlements;
+create policy "split_settlements: update own" on split_settlements
+  for update to authenticated
+  using (public.is_split_group_member_or_above(split_settlements.group_id))
+  with check (
+    ((select auth.uid()) = user_id)
+    and public.is_split_group_member_or_above(split_settlements.group_id)
+  );
+
+drop policy if exists "split_settlements: delete own" on split_settlements;
+create policy "split_settlements: delete own" on split_settlements
+  for delete to authenticated
+  using (public.is_split_group_member_or_above(split_settlements.group_id));
+
+drop policy if exists "split_group_invites: select own" on split_group_invites;
+create policy "split_group_invites: select own" on split_group_invites
+  for select to authenticated
+  using (
+    public.is_split_group_owner(split_group_invites.group_id)
+    or ((select auth.uid()) = consumed_by)
+  );
+
+drop policy if exists "split_group_invites: insert owner" on split_group_invites;
+create policy "split_group_invites: insert owner" on split_group_invites
+  for insert to authenticated
+  with check (
+    ((select auth.uid()) = created_by)
+    and role in ('viewer', 'member', 'admin')
+    and public.is_split_group_owner(split_group_invites.group_id)
+  );
+
+drop policy if exists "split_group_invites: update owner" on split_group_invites;
+create policy "split_group_invites: update owner" on split_group_invites
+  for update to authenticated
+  using (public.is_split_group_owner(split_group_invites.group_id))
+  with check (
+    role in ('viewer', 'member', 'admin')
+    and public.is_split_group_owner(split_group_invites.group_id)
+  );
+
+drop policy if exists "split_group_invites: delete owner" on split_group_invites;
+create policy "split_group_invites: delete owner" on split_group_invites
+  for delete to authenticated
+  using (public.is_split_group_owner(split_group_invites.group_id));
+
+create or replace function public.touch_split_group_updated_at()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+create or replace function public.ensure_split_group_user_id()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+
+  new.user_id := auth.uid();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_split_group_user_id on split_groups;
+create trigger trg_split_group_user_id
+  before insert on split_groups
+  for each row execute function public.ensure_split_group_user_id();
+
+drop trigger if exists trg_touch_split_group_updated_at on split_groups;
+create trigger trg_touch_split_group_updated_at
+  before update on split_groups
+  for each row execute function public.touch_split_group_updated_at();
+
+create or replace function public.ensure_split_group_owner_access()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.user_id is not null then
+    insert into split_group_access (group_id, user_id, role)
+    values (new.id, new.user_id, 'admin')
+    on conflict (group_id, user_id) do update
+      set role = 'admin';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_split_group_owner_access on split_groups;
+create trigger trg_split_group_owner_access
+  after insert on split_groups
+  for each row execute function public.ensure_split_group_owner_access();
+
+create or replace function public.split_create_group_invite(
+  p_group_id uuid,
+  p_role text default 'member'
+)
+returns split_group_invites
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_invite split_group_invites%rowtype;
+begin
+  if v_uid is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if not public.is_split_group_owner(p_group_id, v_uid) then
+    raise exception 'Split group not found';
+  end if;
+
+  insert into split_group_invites (
+    group_id,
+    role,
+    created_by
+  ) values (
+    p_group_id,
+    'member',
+    v_uid
+  ) returning * into v_invite;
+
+  return v_invite;
+end;
+$$;
+
+create or replace function public.split_preview_group_invite(
+  p_token text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_invite split_group_invites%rowtype;
+  v_group split_groups%rowtype;
+begin
+  if p_token is null or btrim(p_token) = '' then
+    raise exception 'Invite token is required';
+  end if;
+
+  select * into v_invite
+  from split_group_invites i
+  where i.token = btrim(p_token)
+    and i.revoked_at is null
+    and i.consumed_by is null;
+
+  if not found then
+    raise exception 'Invite not found or already used';
+  end if;
+
+  select * into v_group
+  from split_groups g
+  where g.id = v_invite.group_id;
+
+  if not found then
+    raise exception 'Split group not found';
+  end if;
+
+  return jsonb_build_object(
+    'group_id', v_group.id,
+    'group_name', v_group.name,
+    'invited_role', coalesce(v_invite.role, 'viewer')
+  );
+end;
+$$;
+
+create or replace function public.split_consume_group_invite(
+  p_token text
+)
+returns split_groups
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_invite split_group_invites%rowtype;
+  v_group split_groups%rowtype;
+  v_account_name text;
+  v_existing_member_id uuid;
+begin
+  if v_uid is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if p_token is null or btrim(p_token) = '' then
+    raise exception 'Invite token is required';
+  end if;
+
+  select * into v_invite
+  from split_group_invites i
+  where i.token = btrim(p_token)
+    and i.revoked_at is null
+    and i.consumed_by is null
+  for update;
+
+  if not found then
+    raise exception 'Invite not found or already used';
+  end if;
+
+  select * into v_group
+  from split_groups g
+  where g.id = v_invite.group_id;
+
+  if not found then
+    raise exception 'Split group not found';
+  end if;
+
+  insert into split_group_access (
+    group_id,
+    user_id,
+    role
+  ) values (
+    v_invite.group_id,
+    v_uid,
+    case
+      when v_group.user_id = v_uid then 'admin'
+      when coalesce(v_invite.role, 'member') = 'admin' then 'admin'
+      else 'member'
+    end
+  )
+  on conflict (group_id, user_id) do update
+    set role = case
+      when excluded.role = 'admin' then 'admin'
+      else split_group_access.role
+    end;
+
+  select nullif(btrim(p.display_name), '') into v_account_name
+  from profiles p
+  where p.id = v_uid;
+
+  if v_account_name is null then
+    select nullif(
+      btrim(
+        coalesce(
+          u.raw_user_meta_data ->> 'full_name',
+          split_part(u.email, '@', 1)
+        )
+      ),
+      ''
+    )
+    into v_account_name
+    from auth.users u
+    where u.id = v_uid;
+  end if;
+
+  v_account_name := coalesce(v_account_name, 'Member');
+
+  update split_group_members
+  set display_name = v_account_name,
+      user_id = v_uid,
+      linked_user_id = v_uid
+  where group_id = v_invite.group_id
+    and linked_user_id = v_uid;
+
+  if not found then
+    select m.id into v_existing_member_id
+    from split_group_members m
+    where m.group_id = v_invite.group_id
+      and lower(m.display_name) = lower(v_account_name)
+    limit 1
+    for update;
+
+    if v_existing_member_id is not null then
+      update split_group_members
+      set display_name = v_account_name,
+          user_id = v_uid,
+          linked_user_id = v_uid
+      where id = v_existing_member_id;
+    else
+      insert into split_group_members (
+        group_id,
+        display_name,
+        is_self,
+        linked_user_id,
+        user_id
+      ) values (
+        v_invite.group_id,
+        v_account_name,
+        false,
+        v_uid,
+        v_uid
+      );
+    end if;
+  end if;
+
+  update split_group_invites
+  set consumed_by = v_uid,
+      consumed_at = now()
+  where id = v_invite.id
+    and consumed_by is null;
+
+  return v_group;
+end;
+$$;
+
+create or replace function public.split_set_group_access_role(
+  p_group_id uuid,
+  p_user_id uuid,
+  p_role text
+)
+returns split_group_access
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_target split_group_access%rowtype;
+  v_admin_count integer := 0;
+  v_role text := lower(coalesce(nullif(btrim(p_role), ''), 'member'));
+begin
+  if v_uid is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if v_role not in ('admin', 'member', 'viewer') then
+    raise exception 'Role must be admin, member, or viewer';
+  end if;
+
+  if not public.is_split_group_owner(p_group_id, v_uid) then
+    raise exception 'Split group not found';
+  end if;
+
+  select * into v_target
+  from split_group_access a
+  where a.group_id = p_group_id
+    and a.user_id = p_user_id
+  for update;
+
+  if not found then
+    raise exception 'Member access not found';
+  end if;
+
+  -- Prevent removing the last admin
+  if v_target.role = 'admin' and v_role <> 'admin' then
+    select count(*)::integer into v_admin_count
+    from split_group_access a
+    where a.group_id = p_group_id
+      and a.role = 'admin';
+
+    if v_admin_count <= 1 then
+      raise exception 'At least one admin is required';
+    end if;
+  end if;
+
+  update split_group_access
+  set role = v_role
+  where id = v_target.id
+  returning * into v_target;
+
+  return v_target;
+end;
+$$;
+
+create or replace function public.split_group_balances(
+  p_group_id uuid,
+  p_user_id uuid
+)
+returns table(member_id uuid, net numeric)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  with members as (
+    select m.id
+    from split_group_members m
+    where m.group_id = p_group_id
+      and m.user_id = p_user_id
+  ),
+  paid as (
+    select e.paid_by_member_id as member_id, sum(e.amount)::numeric as total_paid
+    from split_expenses e
+    where e.group_id = p_group_id
+      and e.user_id = p_user_id
+    group by e.paid_by_member_id
+  ),
+  owed as (
+    select s.member_id, sum(s.share)::numeric as total_owed
+    from split_expense_splits s
+    join split_expenses e on e.id = s.expense_id
+    where e.group_id = p_group_id
+      and e.user_id = p_user_id
+      and s.user_id = p_user_id
+    group by s.member_id
+  ),
+  in_settle as (
+    select st.payee_member_id as member_id, sum(st.amount)::numeric as total_in
+    from split_settlements st
+    where st.group_id = p_group_id
+      and st.user_id = p_user_id
+    group by st.payee_member_id
+  ),
+  out_settle as (
+    select st.payer_member_id as member_id, sum(st.amount)::numeric as total_out
+    from split_settlements st
+    where st.group_id = p_group_id
+      and st.user_id = p_user_id
+    group by st.payer_member_id
+  )
+  select
+    m.id as member_id,
+    coalesce(p.total_paid, 0)
+    - coalesce(o.total_owed, 0)
+    - coalesce(i.total_in, 0)
+    + coalesce(ot.total_out, 0) as net
+  from members m
+  left join paid p on p.member_id = m.id
+  left join owed o on o.member_id = m.id
+  left join in_settle i on i.member_id = m.id
+  left join out_settle ot on ot.member_id = m.id;
+$$;
+
+create or replace function public.split_create_expense(
+  p_group_id uuid,
+  p_paid_by_member_id uuid,
+  p_description text,
+  p_amount numeric,
+  p_expense_date date,
+  p_split_method text,
+  p_notes text,
+  p_splits jsonb
+)
+returns split_expenses
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_group split_groups%rowtype;
+  v_expense split_expenses%rowtype;
+  v_sum numeric := 0;
+  v_item jsonb;
+  v_member_id uuid;
+  v_share numeric;
+  v_percent numeric;
+  v_shares numeric;
+begin
+  if v_uid is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'Expense amount must be positive';
+  end if;
+
+  if p_description is null or btrim(p_description) = '' then
+    raise exception 'Expense description is required';
+  end if;
+
+  if p_split_method not in ('equal', 'exact', 'percent', 'shares') then
+    raise exception 'Invalid split method';
+  end if;
+
+  select * into v_group
+  from split_groups
+  where id = p_group_id;
+
+  if not found then
+    raise exception 'Split group not found';
+  end if;
+
+  if not public.is_split_group_member_or_above(p_group_id, v_uid) then
+    raise exception 'Split group not found';
+  end if;
+
+  if not exists (
+    select 1
+    from split_group_members m
+    where m.id = p_paid_by_member_id
+      and m.group_id = p_group_id
+  ) then
+    raise exception 'Payer must be a member of the group';
+  end if;
+
+  if p_splits is null or jsonb_typeof(p_splits) <> 'array' or jsonb_array_length(p_splits) = 0 then
+    raise exception 'At least one split row is required';
+  end if;
+
+  insert into split_expenses (
+    group_id,
+    paid_by_member_id,
+    description,
+    amount,
+    expense_date,
+    split_method,
+    notes,
+    user_id
+  ) values (
+    p_group_id,
+    p_paid_by_member_id,
+    btrim(p_description),
+    p_amount,
+    coalesce(p_expense_date, current_date),
+    p_split_method,
+    nullif(btrim(coalesce(p_notes, '')), ''),
+    v_uid
+  ) returning * into v_expense;
+
+  for v_item in select * from jsonb_array_elements(p_splits)
+  loop
+    v_member_id := nullif(v_item->>'member_id', '')::uuid;
+    v_share := coalesce((v_item->>'share')::numeric, 0);
+    v_percent := nullif(v_item->>'percent', '')::numeric;
+    v_shares := nullif(v_item->>'shares', '')::numeric;
+
+    if v_member_id is null then
+      raise exception 'split member_id is required';
+    end if;
+
+    if v_share < 0 then
+      raise exception 'split share cannot be negative';
+    end if;
+
+    if not exists (
+      select 1
+      from split_group_members m
+      where m.id = v_member_id
+        and m.group_id = p_group_id
+    ) then
+      raise exception 'Split includes a member outside this group';
+    end if;
+
+    insert into split_expense_splits (
+      expense_id,
+      member_id,
+      share,
+      percent,
+      shares,
+      user_id
+    ) values (
+      v_expense.id,
+      v_member_id,
+      v_share,
+      v_percent,
+      v_shares,
+      v_uid
+    );
+
+    v_sum := v_sum + v_share;
+  end loop;
+
+  if abs(v_sum - p_amount) > 0.01 then
+    raise exception 'Split total (%) does not match amount (%)', v_sum, p_amount;
+  end if;
+
+  return v_expense;
+end;
+$$;
+
+create or replace function public.split_record_settlement(
+  p_group_id uuid,
+  p_payer_member_id uuid,
+  p_payee_member_id uuid,
+  p_amount numeric,
+  p_settled_at date default current_date,
+  p_note text default null
+)
+returns split_settlements
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_row split_settlements%rowtype;
+begin
+  if v_uid is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'Settlement amount must be positive';
+  end if;
+
+  if p_payer_member_id is null or p_payee_member_id is null then
+    raise exception 'Payer and payee are required';
+  end if;
+
+  if p_payer_member_id = p_payee_member_id then
+    raise exception 'Payer and payee cannot be the same';
+  end if;
+
+  if not public.is_split_group_member_or_above(p_group_id, v_uid) then
+    raise exception 'Split group not found';
+  end if;
+
+  if not exists (
+    select 1
+    from split_group_members m
+    where m.id = p_payer_member_id
+      and m.group_id = p_group_id
+  ) then
+    raise exception 'Payer is not in this group';
+  end if;
+
+  if not exists (
+    select 1
+    from split_group_members m
+    where m.id = p_payee_member_id
+      and m.group_id = p_group_id
+  ) then
+    raise exception 'Payee is not in this group';
+  end if;
+
+  insert into split_settlements (
+    group_id,
+    payer_member_id,
+    payee_member_id,
+    amount,
+    settled_at,
+    note,
+    user_id
+  ) values (
+    p_group_id,
+    p_payer_member_id,
+    p_payee_member_id,
+    p_amount,
+    coalesce(p_settled_at, current_date),
+    nullif(btrim(coalesce(p_note, '')), ''),
+    v_uid
+  ) returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
+-- ═════════════════════════════════════════════════════════════════════════════
 -- ── LOANS ─────────────────────────────────────────────────────────────────────
 -- ═════════════════════════════════════════════════════════════════════════════
 
@@ -1383,4 +2737,78 @@ begin
   );
 end;
 $$;
-  for each row execute function check_user_category_limit();
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- ── MEMBER DELETION & LEAVING GROUPS ─────────────────────────────────────────
+-- ═════════════════════════════════════════════════════════════════════════════
+
+create or replace function public.cleanup_access_after_member_delete()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if old.linked_user_id is not null then
+    delete from split_group_access
+    where group_id = old.group_id
+      and user_id = old.linked_user_id;
+  end if;
+  return old;
+end;
+$$;
+
+drop trigger if exists trg_cleanup_access_after_member_delete on split_group_members;
+create trigger trg_cleanup_access_after_member_delete
+  after delete on split_group_members
+  for each row execute function public.cleanup_access_after_member_delete();
+
+create or replace function public.split_leave_group(
+  p_group_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_owner_count integer := 0;
+  v_has_access boolean := false;
+begin
+  if v_uid is null then
+    raise exception 'Authentication required';
+  end if;
+
+  select exists (
+    select 1
+    from split_group_access
+    where group_id = p_group_id and user_id = v_uid
+  ) into v_has_access;
+
+  if not v_has_access then
+    raise exception 'You do not have access to this group';
+  end if;
+
+  select count(*)::integer into v_owner_count
+  from split_group_access
+  where group_id = p_group_id and role = 'admin';
+
+  if v_owner_count = 1 and exists (
+    select 1
+    from split_group_access
+    where group_id = p_group_id and user_id = v_uid and role = 'admin'
+  ) then
+    raise exception 'You must assign another admin or delete the group first';
+  end if;
+
+  delete from split_group_access
+  where group_id = p_group_id
+    and user_id = v_uid;
+
+  update split_group_members
+  set linked_user_id = null
+  where group_id = p_group_id
+    and linked_user_id = v_uid;
+end;
+$$;

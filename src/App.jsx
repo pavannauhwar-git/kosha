@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase'
 import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS, parseMonthSummaryRows } from './hooks/useTransactions'
 import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
 import { LOAN_INVALIDATION_KEYS } from './hooks/useLoans'
+import { SPLITWISE_INVALIDATION_KEYS } from './hooks/useSplitwise'
 import AuthGuard, { RouteSkeleton } from './components/navigation/AuthGuard'
 import { House, List, CalendarDots, ChartBar, Receipt, Handshake } from '@phosphor-icons/react'
 import { isSuppressed } from './lib/mutationGuard'
@@ -30,8 +31,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Monthly = lazy(() => import('./pages/Monthly'))
 const Analytics = lazy(() => import('./pages/Analytics'))
-const Bills = lazy(() => import('./pages/Bills'))
-const Loans = lazy(() => import('./pages/Loans'))
+const Obligations = lazy(() => import('./pages/Obligations'))
+const Splitwise = lazy(() => import('./pages/Splitwise'))
 const About = lazy(() => import('./pages/About'))
 const Guide = lazy(() => import('./pages/Guide'))
 const Reconciliation = lazy(() => import('./pages/Reconciliation'))
@@ -43,8 +44,8 @@ const ROUTE_PRELOADERS = {
   '/transactions': () => import('./pages/Transactions'),
   '/monthly': () => import('./pages/Monthly'),
   '/analytics': () => import('./pages/Analytics'),
-  '/bills': () => import('./pages/Bills'),
-  '/loans': () => import('./pages/Loans'),
+  '/obligations': () => import('./pages/Obligations'),
+  '/splitwise': () => import('./pages/Splitwise'),
   '/reconciliation': () => import('./pages/Reconciliation'),
 }
 
@@ -71,18 +72,25 @@ const NAV = [
   { path: '/transactions', label: 'Activity', Icon: List, match: ['/transactions'] },
   { path: '/monthly', label: 'Monthly', Icon: CalendarDots, match: ['/monthly'] },
   { path: '/analytics', label: 'Insights', Icon: ChartBar, match: ['/analytics'] },
-  { path: '/bills', label: 'Bills', Icon: Receipt, match: ['/bills'] },
-  { path: '/loans', label: 'Loans', Icon: Handshake, match: ['/loans'] },
+  { path: '/obligations', label: 'Obligations', Icon: Receipt, match: ['/obligations', '/bills', '/loans'] },
+  { path: '/splitwise', label: 'Splitwise', Icon: Handshake, match: ['/splitwise'] },
 ]
 
 const REALTIME_INVALIDATION_POLICIES = [
   { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS },
   { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
   { key: 'loans', table: 'loans', queryKeys: LOAN_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_groups', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_group_access', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_group_members', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_group_invites', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_expenses', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_expense_splits', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_settlements', queryKeys: SPLITWISE_INVALIDATION_KEYS },
 ]
 
-const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
-const BOTTOM_NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/auth', '/about', '/report-bug', '/settings', '/guide', '/reconciliation']
+const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/splitwise/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
+const BOTTOM_NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/splitwise/join', '/auth', '/about', '/report-bug', '/settings', '/guide', '/reconciliation']
 
 function useRouteIntentPrefetch() {
   const { user } = useAuth()
@@ -271,35 +279,50 @@ function useRouteIntentPrefetch() {
       return
     }
 
-    if (path === '/bills') {
-      void queryClient.prefetchQuery({
-        queryKey: ['liabilities', 'pending'],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('liabilities')
-            .select(LIABILITY_PREFETCH_COLUMNS)
-            .eq('user_id', user.id)
-            .eq('paid', false)
-            .order('due_date', { ascending: true })
-          if (error) throw error
-          return data || []
-        },
-        staleTime: 30 * 1000,
-      }).catch(() => {})
+    if (path === '/obligations' || path === '/bills' || path === '/loans') {
+      void Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['liabilities', 'pending'],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('liabilities')
+              .select(LIABILITY_PREFETCH_COLUMNS)
+              .eq('user_id', user.id)
+              .eq('paid', false)
+              .order('due_date', { ascending: true })
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['loans', 'active', 'given'],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('loans')
+              .select('id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled, created_at')
+              .eq('user_id', user.id)
+              .eq('settled', false)
+              .eq('direction', 'given')
+              .order('created_at', { ascending: false })
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => {})
       return
     }
 
-    if (path === '/loans') {
+    if (path === '/splitwise') {
       void queryClient.prefetchQuery({
-        queryKey: ['loans', 'active', 'given'],
+        queryKey: ['splitwise', 'groups'],
         queryFn: async () => {
           const { data, error } = await supabase
-            .from('loans')
-            .select('id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled, created_at')
-            .eq('user_id', user.id)
-            .eq('settled', false)
-            .eq('direction', 'given')
-            .order('created_at', { ascending: false })
+            .from('split_groups')
+            .select('id, name, created_at, updated_at, user_id')
+            .order('updated_at', { ascending: false })
+
           if (error) throw error
           return data || []
         },
@@ -507,6 +530,22 @@ function AuthCallback() {
   if (!user) return <Navigate to="/login" replace />
   if (!profile || !profile.onboarded) return <Navigate to="/onboarding" replace />
   return <Navigate to="/" replace />
+}
+
+function LegacyObligationRedirect({ tab }) {
+  const location = useLocation()
+  const next = new URLSearchParams(location.search || '')
+
+  if (tab === 'bills') {
+    const listTab = String(next.get('tab') || '').toLowerCase()
+    if (listTab === 'pending' || listTab === 'paid') {
+      next.set('billsTab', listTab)
+    }
+  }
+
+  next.set('tab', tab)
+  const query = next.toString()
+  return <Navigate to={query ? `/obligations?${query}` : '/obligations'} replace />
 }
 
 const REALTIME_CONNECT_TIMEOUT_MS = 8000
@@ -801,6 +840,7 @@ function AnimatedRoutes() {
       <Routes location={location}>
         <Route path="/login" element={<Login />} />
         <Route path="/join/:token" element={<Login />} />
+        <Route path="/splitwise/join/:splitToken" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/not-found" element={<SuspenseSkeleton pathname="/not-found"><NotFound /></SuspenseSkeleton>} />
         <Route path="/onboarding" element={<SuspenseSkeleton pathname="/onboarding"><AuthGuard><Onboarding /></AuthGuard></SuspenseSkeleton>} />
@@ -808,8 +848,10 @@ function AnimatedRoutes() {
         <Route path="/transactions" element={<SuspenseSkeleton pathname="/transactions"><AuthGuard><Transactions /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/monthly" element={<SuspenseSkeleton pathname="/monthly"><AuthGuard><Monthly /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/analytics" element={<SuspenseSkeleton pathname="/analytics"><AuthGuard><Analytics /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/bills" element={<SuspenseSkeleton pathname="/bills"><AuthGuard><Bills /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/loans" element={<SuspenseSkeleton pathname="/loans"><AuthGuard><Loans /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/obligations" element={<SuspenseSkeleton pathname="/obligations"><AuthGuard><Obligations /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/splitwise" element={<SuspenseSkeleton pathname="/splitwise"><AuthGuard><Splitwise /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/bills" element={<LegacyObligationRedirect tab="bills" />} />
+        <Route path="/loans" element={<LegacyObligationRedirect tab="loans" />} />
         <Route path="/reconciliation" element={<SuspenseSkeleton pathname="/reconciliation"><AuthGuard><Reconciliation /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/guide" element={<SuspenseSkeleton pathname="/guide"><AuthGuard><Guide /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/settings" element={<SuspenseSkeleton pathname="/settings"><AuthGuard><Settings /></AuthGuard></SuspenseSkeleton>} />
@@ -917,6 +959,27 @@ function ShellStatusBanners() {
       console.warn('[Kosha] SW register failed', error)
     },
   })
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    if (typeof window === 'undefined') return
+
+    if ('serviceWorker' in navigator) {
+      void navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          void registration.unregister()
+        }
+      })
+    }
+
+    if ('caches' in window) {
+      void caches.keys().then((keys) => {
+        for (const key of keys) {
+          void caches.delete(key)
+        }
+      })
+    }
+  }, [])
 
   const announceInstallMessage = useCallback((message, timeout = 2200) => {
     if (installMessageTimerRef.current) {

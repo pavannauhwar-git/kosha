@@ -8,21 +8,21 @@ import {
   updateLiabilityMutation,
   markLiabilityPaidMutation,
   deleteLiabilityMutation,
-} from '../hooks/useLiabilities'
-import { supabase } from '../lib/supabase'
-import { getAuthUserId } from '../lib/authStore'
-import { downloadCsv, toCsv } from '../lib/csv'
-import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../lib/utils'
-import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
-import PageHeaderPage from '../components/layout/PageHeaderPage'
-import SkeletonLayout from '../components/common/SkeletonLayout'
-import EmptyState from '../components/common/EmptyState'
-import AppToast from '../components/common/AppToast'
-import BillPaymentInsights from '../components/cards/bills/BillPaymentInsights'
-import Button from '../components/ui/Button'
-import PixelDatePicker from '../components/ui/PixelDatePicker'
-import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
-import useWindowedList from '../hooks/useWindowedList'
+} from '../../hooks/useLiabilities'
+import { supabase } from '../../lib/supabase'
+import { getAuthUserId } from '../../lib/authStore'
+import { downloadCsv, toCsv } from '../../lib/csv'
+import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../../lib/utils'
+import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
+import PageHeaderPage from '../layout/PageHeaderPage'
+import SkeletonLayout from '../common/SkeletonLayout'
+import EmptyState from '../common/EmptyState'
+import AppToast from '../common/AppToast'
+import BillPaymentInsights from '../cards/bills/BillPaymentInsights'
+import Button from '../ui/Button'
+import PixelDatePicker from '../ui/PixelDatePicker'
+import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
+import useWindowedList from '../../hooks/useWindowedList'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
@@ -52,10 +52,26 @@ function safeDaysUntilDate(dateValue) {
   }
 }
 
-export default function Bills() {
+function resolveBillsTabQuery(searchParams, tabParam) {
+  const primary = String(searchParams.get(tabParam) || '').toLowerCase()
+  if (primary === 'pending' || primary === 'paid') {
+    return { value: primary, source: tabParam }
+  }
+
+  if (tabParam !== 'tab') {
+    const legacy = String(searchParams.get('tab') || '').toLowerCase()
+    if (legacy === 'pending' || legacy === 'paid') {
+      return { value: legacy, source: 'tab' }
+    }
+  }
+
+  return { value: 'pending', source: null }
+}
+
+export default function Bills({ embedded = false, tabParam = 'tab' } = {}) {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [tab, setTab] = useState(() => (searchParams.get('tab') === 'paid' ? 'paid' : 'pending'))
+  const [tab, setTab] = useState(() => resolveBillsTabQuery(searchParams, tabParam).value)
   const { pending, paid, loading, pendingLoading, paidLoading } = useLiabilities({ includePaid: true })
   const [showAdd, setShowAdd] = useState(false)
   const [editBill, setEditBill] = useState(null)
@@ -248,7 +264,7 @@ export default function Bills() {
   const barPct = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
   const totalBills = visiblePending.length + visiblePaid.length
   const focusBillId = searchParams.get('focus')
-  const tabFromQuery = searchParams.get('tab')
+  const { value: tabFromQuery, source: tabSource } = resolveBillsTabQuery(searchParams, tabParam)
 
   useEffect(() => {
     try {
@@ -260,13 +276,13 @@ export default function Bills() {
   }, [])
 
   useEffect(() => {
-    if (tabFromQuery === 'pending' || tabFromQuery === 'paid') {
+    if (tabSource) {
       setTab(tabFromQuery)
       const next = new URLSearchParams(searchParams)
-      next.delete('tab')
+      next.delete(tabSource)
       setSearchParams(next, { replace: true })
     }
-  }, [tabFromQuery, searchParams, setSearchParams])
+  }, [tabFromQuery, tabSource, searchParams, setSearchParams])
 
   useEffect(() => {
     return () => {
@@ -495,7 +511,12 @@ export default function Bills() {
   }
 
   return (
-    <PageHeaderPage title="Bills & Dues">
+    <PageHeaderPage
+      title="Bills & Dues"
+      showHeader={!embedded}
+      withHeaderOffset={!embedded}
+      pageClassName={embedded ? 'pb-5' : 'page'}
+    >
 
       {/* ── Header ────────────────────────────────────────────────────── */}
       <div className="mb-2.5 flex items-center justify-between gap-3">
@@ -510,20 +531,32 @@ export default function Bills() {
             <p className="text-caption text-ink-3 mt-0.5">{totalBills} bill{totalBills !== 1 ? 's' : ''}</p>
           )}
         </div>
-        {totalBills > 0 && (
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Download size={14} />}
-            onClick={handleExportCsv}
-          >
-            Export CSV
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {totalBills > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Download size={14} />}
+              onClick={handleExportCsv}
+            >
+              Export CSV
+            </Button>
+          )}
+          {embedded && (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Plus size={14} />}
+              onClick={() => setShowAdd(true)}
+            >
+              Add
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="mb-4 grid grid-cols-2 gap-2">
+      <div className="mb-2.5 grid grid-cols-2 gap-2">
         <button
           onClick={() => setTab('pending')}
           className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
@@ -544,10 +577,12 @@ export default function Bills() {
         </button>
       </div>
 
+      <div className="space-y-3">
+
       {/* ── Summary card ─────────────────────────────────────────────── */}
       {tab === 'pending' && visiblePending.length > 0 && (
-        <div className="card mb-3.5 p-3.5 sm:p-4">
-          <div className="flex items-start justify-between gap-3 pb-4 border-b border-kosha-border">
+        <div className="card p-3.5 sm:p-4">
+          <div className="flex items-start justify-between gap-3 border-b border-kosha-border pb-4">
             <div>
               <p className="section-label mb-0.5">Total pending</p>
               <p className="text-value font-semibold text-ink tracking-tight tabular-nums leading-none">
@@ -593,7 +628,7 @@ export default function Bills() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
             <div className="mini-panel px-3 py-2.5">
               <p className="text-[10px] text-ink-3 uppercase tracking-wide">Due pressure</p>
-              <p className={`text-[13px] font-semibold tabular-nums mt-1 ${bandTextClass(duePressureBand)}`}>
+              <p className={`text-label font-semibold tabular-nums mt-1 ${bandTextClass(duePressureBand)}` }>
                 {duePressureIndex}/100
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
@@ -603,7 +638,7 @@ export default function Bills() {
 
             <div className="mini-panel px-3 py-2.5">
               <p className="text-[10px] text-ink-3 uppercase tracking-wide">Recurring burden</p>
-              <p className={`text-[13px] font-semibold tabular-nums mt-1 ${bandTextClass(recurringBurdenBand, 'text-ink')}`}>
+              <p className={`text-label font-semibold tabular-nums mt-1 ${bandTextClass(recurringBurdenBand, 'text-ink')}` }>
                 {recurringBurden.ratioPct}%
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
@@ -613,7 +648,7 @@ export default function Bills() {
 
             <div className="mini-panel px-3 py-2.5">
               <p className="text-[10px] text-ink-3 uppercase tracking-wide">Next 30 days</p>
-              <p className="text-[13px] font-semibold tabular-nums mt-1 text-ink">
+              <p className="text-label font-semibold tabular-nums mt-1 text-ink">
                 {fmt(forecast30Days.amount)}
               </p>
               <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
@@ -626,7 +661,7 @@ export default function Bills() {
       )}
 
       {showGuideHint && (
-        <div className="card mb-3.5 p-3.5 sm:p-4">
+        <div className="card p-3.5 sm:p-4">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 flex items-center justify-center shrink-0 border border-kosha-border">
               <BookOpen size={16} className="text-brand" />
@@ -793,6 +828,8 @@ export default function Bills() {
         </div>
       )}
 
+      </div>
+
       {/* ── Add Bill Sheet ────────────────────────────────────────────── */}
       <AnimatePresence>
         {showAdd && (
@@ -918,9 +955,11 @@ export default function Bills() {
       </AnimatePresence>
 
       {/* FAB */}
-      <button className="fab-bills" aria-label="Add bill" onClick={() => setShowAdd(true)}>
-        <Plus size={24} className="text-white" />
-      </button>
+      {!embedded && (
+        <button className="fab-bills" aria-label="Add bill" onClick={() => setShowAdd(true)}>
+          <Plus size={24} className="text-white" />
+        </button>
+      )}
 
       <AppToast
         message={undoToast || errToast}

@@ -365,7 +365,16 @@ export default function Onboarding() {
     try {
       await consumeInvite()
       await updateProfile({ onboarded: true })
-      navigate('/', { replace: true })
+
+      const hasPendingSplitInvite = (() => {
+        try {
+          return !!sessionStorage.getItem('pendingSplitGroupInviteToken')
+        } catch {
+          return false
+        }
+      })()
+
+      navigate(hasPendingSplitInvite ? '/splitwise' : '/', { replace: true })
     } catch (e) {
       console.error('[Kosha] Onboarding finish failed', e)
       setSaving(false)

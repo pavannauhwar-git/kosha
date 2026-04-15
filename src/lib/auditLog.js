@@ -12,6 +12,13 @@ export const FINANCIAL_EVENT_ACTIONS = {
   LOAN_UPDATE: 'loan_updated',
   LOAN_PAYMENT: 'loan_payment_recorded',
   LOAN_DELETE: 'loan_deleted',
+  SPLITWISE_GROUP_ADD: 'splitwise_group_added',
+  SPLITWISE_GROUP_DELETE: 'splitwise_group_deleted',
+  SPLITWISE_MEMBER_ADD: 'splitwise_member_added',
+  SPLITWISE_EXPENSE_ADD: 'splitwise_expense_added',
+  SPLITWISE_SETTLEMENT_ADD: 'splitwise_settlement_added',
+  SPLITWISE_INVITE_CREATE: 'splitwise_invite_created',
+  SPLITWISE_INVITE_CONSUME: 'splitwise_invite_consumed',
 }
 
 const AUDIT_MAX_RETRIES = 2

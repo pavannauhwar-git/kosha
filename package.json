@@ -19,6 +19,9 @@
     "test:mutation-paths": "node scripts/tests/test_mutation_paths.mjs",
     "test:mutation-integration": "node scripts/tests/test_mutation_integration_paths.mjs",
     "test:mutation-rollback": "node scripts/tests/test_mutation_rollback_contract.mjs",
+    "test:splitwise-math": "node scripts/tests/test_splitwise_math.mjs",
+    "test:splitwise-mutation-paths": "node scripts/tests/test_splitwise_mutation_paths.mjs",
+    "test:splitwise-viewer-invite-flow": "node scripts/tests/test_splitwise_viewer_invite_flow.mjs",
     "test:production-assets": "node scripts/tests/test_production_asset_integrity.mjs",
     "test:reconciliation-schema-live": "node scripts/tests/test_reconciliation_schema_live.mjs"
   },

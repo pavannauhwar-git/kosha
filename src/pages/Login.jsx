@@ -26,7 +26,7 @@ export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const { token } = useParams()
+  const { token, splitToken } = useParams()
   const {
     user,
     signInWithGoogle,
@@ -50,9 +50,20 @@ export default function Login() {
 
   const from = location.state?.from || '/'
 
+  function resolvePostAuthPath() {
+    if (splitToken) return '/splitwise'
+
+    try {
+      if (sessionStorage.getItem('pendingSplitGroupInviteToken')) return '/splitwise'
+    } catch {
+      // no-op
+    }
+    return from
+  }
+
   useEffect(() => {
-    if (user && !isRecoveryFlow) navigate(from, { replace: true })
-  }, [user, from, navigate, isRecoveryFlow])
+    if (user && !isRecoveryFlow) navigate(resolvePostAuthPath(), { replace: true })
+  }, [user, from, navigate, isRecoveryFlow, splitToken])
 
   useEffect(() => {
     setMode(isRecoveryFlow ? 'reset' : 'signin')
@@ -82,6 +93,12 @@ export default function Login() {
       sessionStorage.setItem('pendingInviteToken', token)
     }
   }, [token])
+
+  useEffect(() => {
+    if (splitToken) {
+      sessionStorage.setItem('pendingSplitGroupInviteToken', splitToken)
+    }
+  }, [splitToken])
 
   async function handleGoogle() {
     setError(null)
@@ -144,7 +161,7 @@ export default function Login() {
     try {
       if (mode === 'signin') {
         await signInWithEmail(email, password)
-        navigate(from, { replace: true })
+        navigate(resolvePostAuthPath(), { replace: true })
       } else {
         await signUpWithEmail(email, password)
         navigate('/onboarding', { replace: true })
