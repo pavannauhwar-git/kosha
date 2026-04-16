@@ -29,7 +29,7 @@ function StepDots({ current, total }) {
             width:      i === current ? 20 : 6,
             background: i === current ? C.brand : C.brandBorder,
           }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
+          transition={{ duration: 0.25, ease: [0.05, 0.7, 0.1, 1] }}
           className="h-1.5 rounded-pill"
         />
       ))}

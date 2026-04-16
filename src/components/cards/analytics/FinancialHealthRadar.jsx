@@ -190,7 +190,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
             strokeWidth="2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            transition={{ duration: 0.5, ease: [0.05, 0.7, 0.1, 1] }}
           />
 
           {/* Data points */}
@@ -242,7 +242,7 @@ export default function FinancialHealthRadar({ data, prevData, year }) {
                     style={{ background: axisColor(axis.key) }}
                     initial={{ width: 0 }}
                     animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.5, delay: i * 0.06 }}
+                    transition={{ duration: 0.4, delay: i * 0.02 }}
                   />
                 </div>
                 <span className="text-[10px] font-semibold tabular-nums text-ink shrink-0">{pct}</span>

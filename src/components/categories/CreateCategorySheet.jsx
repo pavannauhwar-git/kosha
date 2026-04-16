@@ -126,7 +126,7 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
         aria-modal="true"
         aria-label="Create category"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
       >
         <div className="sheet-handle" />

@@ -1431,7 +1431,7 @@ export default function Splitwise() {
             <motion.div
               className="sheet-panel"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
@@ -1505,7 +1505,7 @@ export default function Splitwise() {
             <motion.div
               className="sheet-panel"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
@@ -1561,7 +1561,7 @@ export default function Splitwise() {
             <motion.div
               className="sheet-panel"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
@@ -1608,7 +1608,7 @@ export default function Splitwise() {
             <motion.div
               className="sheet-panel"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
@@ -1804,7 +1804,7 @@ export default function Splitwise() {
             <motion.div
               className="sheet-panel"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
@@ -1906,7 +1906,7 @@ export default function Splitwise() {
             <motion.div
               className="sheet-panel"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
@@ -1945,7 +1945,7 @@ export default function Splitwise() {
             <motion.div
               className="sheet-panel"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />

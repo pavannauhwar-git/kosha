@@ -75,11 +75,11 @@ function SwipeManagePickerRow({
   }, [x])
 
   const snapToPeek = () => {
-    animate(x, -PICKER_PEEK_X, { type: 'spring', stiffness: 500, damping: 36 })
+    animate(x, -PICKER_PEEK_X, { type: 'spring', stiffness: 600, damping: 45 })
   }
 
   const snapToRest = () => {
-    animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
+    animate(x, 0, { type: 'spring', stiffness: 600, damping: 45 })
   }
 
   const handleDragEnd = (_, info) => {
@@ -338,7 +338,7 @@ function CategoryPicker({
         aria-modal="true"
         aria-label={title}
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
       >
         <div className="sheet-handle" />
@@ -429,7 +429,7 @@ function ModePicker({ selected, onSelect, onClose }) {
         aria-modal="true"
         aria-label="Payment mode"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
       >
         <div className="sheet-handle" />
@@ -535,7 +535,7 @@ function VehiclePicker({
         aria-modal="true"
         aria-label="Investment type"
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
         exit={{ y: '100%', transition: { duration: 0.2 } }}
       >
         <div className="sheet-handle" />
@@ -746,6 +746,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         payload,
       })
 
+      import('../../lib/haptics').then(m => m.hapticSuccess())
       onClose()
     } catch (e) {
       dispatch({
@@ -777,7 +778,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         aria-modal="true"
         aria-label={editTxn ? 'Edit transaction' : 'Add transaction'}
         initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
         exit={{ y: '100%', transition: { duration: 0.22 } }}
       >
         <div className="sheet-handle" />
@@ -1009,7 +1010,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  transition={{ duration: 0.2, ease: [0.05, 0.7, 0.1, 1] }}
                   style={{ overflow: 'hidden' }}
                 >
                   <div className="px-4 pb-3 pt-1">

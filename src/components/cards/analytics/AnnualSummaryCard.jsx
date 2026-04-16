@@ -131,7 +131,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
               style={{ background: row.color }}
               initial={{ width: 0 }}
               animate={{ width: `${Math.max(3, row.pct)}%` }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.4, ease: [0.05, 0.7, 0.1, 1] }}
             />
           ))}
         </div>
@@ -197,7 +197,7 @@ export default function AnnualSummaryCard({ data, prevData, year }) {
                   }}
                   initial={{ height: 0 }}
                   animate={{ height: `${barH}%` }}
-                  transition={{ duration: 0.4, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.35, delay: i * 0.015, ease: [0.05, 0.7, 0.1, 1] }}
                 />
               </div>
             )

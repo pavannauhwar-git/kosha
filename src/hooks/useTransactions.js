@@ -232,7 +232,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         // Filtered/short lists (dashboard widgets, search, category tabs)
         // should stay read-only for latency.
         if (!type && !category && !paymentMode && !search && !startDate && !endDate) {
-          await ensureRecurringTransactionsReady(userId)
+          await ensureRecurringTransactionsReady(getAuthUserId())
         }
         let q = supabase
           .from('transactions')

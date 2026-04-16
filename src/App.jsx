@@ -115,6 +115,8 @@ function useRouteIntentPrefetch() {
     const now = new Date()
     const year = now.getFullYear()
     const month = now.getMonth() + 1
+    const profile = queryClient.getQueryData(['user-profile', user.id]) || {}
+    const allUserIds = [user.id, ...(profile.linkedUserIds || [])]
 
     if (path === '/transactions') {
       const txnFilters = {
@@ -140,7 +142,7 @@ function useRouteIntentPrefetch() {
             const { data, error } = await supabase
               .from('transactions')
               .select(TRANSACTION_LIST_COLUMNS)
-              .eq('user_id', user.id)
+              .in('user_id', allUserIds)
               .order('date', { ascending: false })
               .order('created_at', { ascending: false })
               .limit(50)
@@ -155,7 +157,7 @@ function useRouteIntentPrefetch() {
             const { count, error } = await supabase
               .from('transactions')
               .select('id', { count: 'exact', head: true })
-              .eq('user_id', user.id)
+              .in('user_id', allUserIds)
             if (error) throw error
             return count || 0
           },
@@ -174,7 +176,7 @@ function useRouteIntentPrefetch() {
         queryKey: ['month', year, month],
         queryFn: async () => {
           const { data: rows, error } = await supabase.rpc('get_month_summary', {
-            p_user_id: user.id,
+            p_user_ids: allUserIds,
             p_year: year,
             p_month: month,
           })
@@ -208,7 +210,7 @@ function useRouteIntentPrefetch() {
         queryKey: ['year', year],
         queryFn: async () => {
           const { data: result, error } = await supabase
-            .rpc('get_year_summary', { p_user_id: user.id, p_year: year })
+            .rpc('get_year_summary', { p_user_ids: allUserIds, p_year: year })
             .maybeSingle()
           if (error) throw error
           if (!result) {
@@ -350,7 +352,7 @@ function useRouteIntentPrefetch() {
             const { data, error } = await supabase
               .from('transactions')
               .select(TRANSACTION_INSIGHTS_COLUMNS)
-              .eq('user_id', user.id)
+              .in('user_id', allUserIds)
               .order('date', { ascending: false })
               .order('created_at', { ascending: false })
               .limit(250)
@@ -420,7 +422,7 @@ function BottomNav() {
               key={item.path}
               className="nav-float-item"
               onClick={() => {
-                if (navigator.vibrate) navigator.vibrate(5)
+                import('./lib/haptics').then(m => m.hapticTap())
                 if (isActive) {
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                   return
@@ -437,12 +439,12 @@ function BottomNav() {
                 {isActive && (
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
                   initial={false}
-                    transition={{ type: 'spring', stiffness: 460, damping: 36, mass: 0.9 }} />
+                  transition={{ type: 'spring', stiffness: 500, damping: 40, mass: 1 }} />
                 )}
-                <span className="nav-icon-layer" style={{ opacity: isActive ? 1 : 0, transition: 'opacity 180ms' }}>
+                <span className="nav-icon-layer" style={{ opacity: isActive ? 1 : 0, transition: 'opacity 200ms cubic-bezier(0.2, 0, 0, 1)' }}>
                   <item.Icon size={21} weight="fill" color="var(--ds-primary)" />
                 </span>
-                <span className="nav-icon-layer" style={{ opacity: isActive ? 0 : 1, transition: 'opacity 180ms' }}>
+                <span className="nav-icon-layer" style={{ opacity: isActive ? 0 : 1, transition: 'opacity 200ms cubic-bezier(0.2, 0, 0, 1)' }}>
                   <item.Icon size={21} weight="regular" color="var(--ds-text-tertiary)" />
                 </span>
               </div>
@@ -452,7 +454,7 @@ function BottomNav() {
                 color: isActive ? 'var(--ds-primary)' : 'var(--ds-text-tertiary)',
                 fontWeight: isActive ? 600 : 400,
                 opacity: isActive ? 1 : 0.75,
-                transition: 'color 180ms, font-weight 180ms, opacity 180ms',
+                transition: 'color 200ms cubic-bezier(0.2, 0, 0, 1), font-weight 200ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms cubic-bezier(0.2, 0, 0, 1)',
                 }}
               >
                 {item.label}
@@ -694,6 +696,8 @@ function DashboardWarmPrefetch() {
     const todayISO = `${year}-${String(month).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
     const runPrefetch = async () => {
+      const profile = queryClient.getQueryData(['user-profile', user.id]) || {}
+      const allUserIds = [user.id, ...(profile.linkedUserIds || [])]
       try {
         await Promise.all([
           queryClient.prefetchQuery({
@@ -702,7 +706,7 @@ function DashboardWarmPrefetch() {
               const { data, error } = await supabase
                 .from('transactions')
                 .select(DASHBOARD_RECENT_COLUMNS)
-                .eq('user_id', user.id)
+                .in('user_id', allUserIds)
                 .order('date', { ascending: false })
                 .order('created_at', { ascending: false })
                 .limit(5)
@@ -718,7 +722,7 @@ function DashboardWarmPrefetch() {
               const { data, error } = await supabase
                 .from('transactions')
                 .select('amount')
-                .eq('user_id', user.id)
+                .in('user_id', allUserIds)
                 .eq('type', 'expense')
                 .eq('date', todayISO)
 
@@ -731,7 +735,7 @@ function DashboardWarmPrefetch() {
             queryKey: ['month', year, month],
             queryFn: async () => {
               const { data: rows, error } = await supabase.rpc('get_month_summary', {
-                p_user_id: user.id,
+                p_user_ids: allUserIds,
                 p_year: year,
                 p_month: month,
               })
@@ -745,7 +749,7 @@ function DashboardWarmPrefetch() {
             queryKey: ['balance', 2099, 12],  // Far future to avoid collisions with real month queries
             queryFn: async () => {
               const { data: balance, error } = await supabase.rpc('get_running_balance', {
-                p_user_id: user.id,
+                p_user_ids: allUserIds,
                 p_end_date: '2099-12-31',
               })
               if (error) throw error
@@ -778,7 +782,7 @@ function DashboardWarmPrefetch() {
 function AnimatedRoutes() {
   const location = useLocation()
   return (
-    <div key={location.pathname} className="min-h-dvh">
+    <div className="min-h-dvh">
       <Routes location={location}>
         <Route path="/login" element={<Login />} />
         <Route path="/join/:token" element={<InviteLanding />} />

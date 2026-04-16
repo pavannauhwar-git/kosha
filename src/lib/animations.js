@@ -1,7 +1,8 @@
-/** CRED-style smooth deceleration curve — shared across all transitions */
-const CRED_EASE = [0.22, 1, 0.36, 1]
+/** Material Design 3 (Pixel UI) smooth curves */
+const MD3_EMPHASIZED_DECELERATE = [0.05, 0.7, 0.1, 1.0]
+const MD3_STANDARD = [0.2, 0.0, 0.0, 1.0]
 
-export function createFadeUp(y = 10, duration = 0.4) {
+export function createFadeUp(y = 10, duration = 0.45) {
   return {
     hidden: { opacity: 0, y },
     show: {
@@ -9,25 +10,25 @@ export function createFadeUp(y = 10, duration = 0.4) {
       y: 0,
       transition: {
         duration,
-        ease: CRED_EASE,
+        ease: MD3_EMPHASIZED_DECELERATE,
       },
     },
   }
 }
 
-export function createStagger(staggerChildren = 0.06, delayChildren = 0.04) {
+export function createStagger(staggerChildren = 0.05, delayChildren = 0.05) {
   return {
     hidden: {},
     show: { transition: { staggerChildren, delayChildren } },
   }
 }
 
-// Premium spring config for interactive elements
-export const SPRING_PREMIUM = { type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }
-export const SPRING_GENTLE = { type: 'spring', stiffness: 300, damping: 26, mass: 1 }
+// Pixel UI / Material 3 spring configs (snappier, less bouncy than standard spring)
+export const SPRING_PREMIUM = { type: 'spring', stiffness: 500, damping: 40, mass: 1 }
+export const SPRING_GENTLE = { type: 'spring', stiffness: 350, damping: 35, mass: 1 }
 
 // Transition presets
-export const transitionBase = { duration: 0.2, ease: CRED_EASE }
-export const transitionEmphasis = { duration: 0.4, ease: CRED_EASE }
-export const sheetEnterTransition = { type: 'spring', stiffness: 400, damping: 34 }
-export const sheetExitTransition = { duration: 0.2, ease: CRED_EASE }
+export const transitionBase = { duration: 0.2, ease: MD3_STANDARD }
+export const transitionEmphasis = { duration: 0.45, ease: MD3_EMPHASIZED_DECELERATE }
+export const sheetEnterTransition = { type: 'spring', stiffness: 450, damping: 45 }
+export const sheetExitTransition = { duration: 0.2, ease: MD3_STANDARD }

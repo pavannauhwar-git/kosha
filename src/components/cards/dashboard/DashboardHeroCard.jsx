@@ -111,7 +111,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <motion.div key={s.label}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.06 * i, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.35, delay: 0.03 * i, ease: [0.05, 0.7, 0.1, 1] }}
             className="flex-1 min-w-0 px-2.5 py-2 rounded-2xl"
             style={statChipStyle}
           >
@@ -137,7 +137,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
         <div className="bar-dark-track">
           <motion.div className="bar-dark-fill"
             initial={{ width: 0 }} animate={{ width: `${rate}%` }}
-            transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.35, ease: [0.05, 0.7, 0.1, 1] }}
           />
         </div>
       </div>

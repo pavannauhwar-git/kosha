@@ -61,7 +61,7 @@ export default function KoshaErrorPage({
         <motion.section
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.24, ease: 'easeOut' }}
+          transition={{ duration: 0.24, ease: [0.05, 0.7, 0.1, 1] }}
           className="w-full max-w-[470px] max-h-full overflow-y-auto card p-6"
         >
           <div className="mb-5 flex items-center justify-between gap-3 pb-4 border-b border-kosha-border">

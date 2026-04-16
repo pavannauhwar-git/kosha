@@ -565,7 +565,7 @@ export default function Reconciliation() {
                 className="h-full rounded-pill bg-brand"
                 initial={{ width: 0 }}
                 animate={{ width: `${reviewProgress.pct}%` }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
+                transition={{ duration: 0.35, ease: [0.05, 0.7, 0.1, 1] }}
               />
             </div>
           </div>

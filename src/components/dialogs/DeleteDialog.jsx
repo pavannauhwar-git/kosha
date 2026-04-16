@@ -26,7 +26,7 @@ export default function DeleteDialog({ open, onConfirm, onCancel, label = 'this 
                   bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
                 }}
                 initial={{ y: 60, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+                    animate={{ y: 0, opacity: 1, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
                 exit={{ y: 60, opacity: 0, transition: { duration: 0.2 } }}
               >
                 <div className="flex items-center gap-3 mb-3">

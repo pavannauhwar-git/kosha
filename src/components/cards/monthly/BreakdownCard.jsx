@@ -107,7 +107,7 @@ export default function BreakdownCard({ earned, spent, invested, totalLabel = 'T
               style={{ background: seg.color }}
               initial={{ width: 0 }}
               animate={{ width: `${Math.max(3, seg.pct)}%` }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.4, ease: [0.05, 0.7, 0.1, 1] }}
             />
           ))}
         </div>

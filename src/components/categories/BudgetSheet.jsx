@@ -114,7 +114,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                   paddingBottom: 'env(safe-area-inset-bottom, 0px)',
                 }}
                 initial={{ y: '100%' }}
-                animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 36 } }}
+                animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
                 exit={{ y: '100%', transition: { duration: 0.22 } }}
               >
                 {/* Header */}

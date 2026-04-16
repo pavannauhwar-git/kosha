@@ -59,7 +59,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
               bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
             }}
             initial={{ y: 60, opacity: 0 }}
-            animate={{ y: 0, opacity: 1, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+            animate={{ y: 0, opacity: 1, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
             exit={{ y: 60, opacity: 0, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between mb-5">

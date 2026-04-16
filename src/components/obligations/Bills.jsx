@@ -620,7 +620,7 @@ export default function Bills({
                 <motion.div
                   className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-income-text'}`}
                   initial={{ width: 0 }} animate={{ width: `${barPct || 100}%` }}
-                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                  transition={{ duration: 0.4, ease: [0.05, 0.7, 0.1, 1] }}
                 />
               </div>
               <div className="flex justify-between">
@@ -854,7 +854,7 @@ export default function Bills({
               aria-modal="true"
               aria-label={editBill ? 'Edit bill' : 'Add bill'}
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.22 } }}
             >
               <div className="sheet-handle" />

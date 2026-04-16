@@ -27,6 +27,7 @@ export default function BottomSheet({
   useEffect(() => {
     if (open) {
       y.set(0)
+      import('../../lib/haptics').then(m => m.hapticTap())
     }
   }, [open, y])
 
@@ -71,7 +72,7 @@ export default function BottomSheet({
                 initial={{ y: '100%', opacity: 0.8 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', damping: 32, stiffness: 400 }}
+                transition={{ type: 'spring', damping: 40, stiffness: 500 }}
                 drag="y"
                 dragConstraints={{ top: 0 }}
                 dragElastic={0.2}

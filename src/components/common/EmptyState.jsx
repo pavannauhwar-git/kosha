@@ -3,7 +3,7 @@ import Button from '../ui/Button'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.05, 0.7, 0.1, 1] } },
 }
 
 const stagger = {

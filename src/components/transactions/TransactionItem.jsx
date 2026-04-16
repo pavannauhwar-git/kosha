@@ -90,11 +90,12 @@ function TransactionItem({
   // the parent provides a genuinely new object reference.
 
   const snapToPeek = useCallback(() => {
-    animate(x, -PEEK_X, { type: 'spring', stiffness: 500, damping: 36 })
+    import('../../lib/haptics').then(m => m.hapticHeavy())
+    animate(x, -PEEK_X, { type: 'spring', stiffness: 600, damping: 45 })
   }, [x])
 
   const snapToRest = useCallback(() => {
-    animate(x, 0, { type: 'spring', stiffness: 500, damping: 36 })
+    animate(x, 0, { type: 'spring', stiffness: 600, damping: 45 })
   }, [x])
 
   useEffect(() => {
@@ -104,10 +105,10 @@ function TransactionItem({
     let backTimer = null
 
     const startTimer = setTimeout(() => {
-      const nudgeIn = animate(x, -AUTO_NUDGE_X, { duration: 0.2, ease: 'easeOut' })
+      const nudgeIn = animate(x, -AUTO_NUDGE_X, { duration: 0.2, ease: [0.05, 0.7, 0.1, 1] })
       backTimer = setTimeout(() => {
         nudgeIn.stop()
-        animate(x, 0, { type: 'spring', stiffness: 520, damping: 36 })
+        animate(x, 0, { type: 'spring', stiffness: 620, damping: 45 })
         if (typeof onAutoNudgeDone === 'function') {
           onAutoNudgeDone()
         }
@@ -148,7 +149,7 @@ function TransactionItem({
     setDeleting(true)
     setHidden(true)
     animate(x, 0, { duration: 0.2 })
-    if (navigator.vibrate) navigator.vibrate(10)
+    import('../../lib/haptics').then(m => m.hapticTap())
 
     if (!onDelete) {
       setDeleting(false)
@@ -176,7 +177,7 @@ function TransactionItem({
   const handleDuplicateTap = useCallback(() => {
     markSwipeLearned()
     snapToRest()
-    if (navigator.vibrate) navigator.vibrate([6, 10, 6])
+    import('../../lib/haptics').then(m => m.hapticSuccess())
     setTimeout(() => onDuplicate && onDuplicate(txn), 120)
   }, [markSwipeLearned, onDuplicate, snapToRest, txn])
 
@@ -185,7 +186,7 @@ function TransactionItem({
       snapToRest()
       return
     }
-    if (navigator.vibrate) navigator.vibrate(8)
+    import('../../lib/haptics').then(m => m.hapticTap())
     onTap && onTap(txn)
   }, [onTap, snapToRest, txn, x])
 

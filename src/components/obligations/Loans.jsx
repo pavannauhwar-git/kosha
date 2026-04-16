@@ -846,7 +846,7 @@ export default function Loans({
                                 className={`h-full rounded-pill ${loan.direction === 'given' ? 'bg-income-text' : 'bg-expense-text'}`}
                                 initial={{ width: 0 }}
                                 animate={{ width: `${pct}%` }}
-                                transition={{ duration: 0.5, ease: 'easeOut' }}
+                                transition={{ duration: 0.5, ease: [0.05, 0.7, 0.1, 1] }}
                               />
                             </div>
                             <div className="flex items-center justify-between">
@@ -977,7 +977,7 @@ export default function Loans({
               aria-modal="true"
               aria-label="Record payment"
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.22 } }}
             >
               <div className="sheet-handle" />
@@ -1091,7 +1091,7 @@ export default function Loans({
               aria-modal="true"
               aria-label={editLoan ? 'Edit loan' : 'Add loan'}
               initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 400, damping: 32 } }}
+              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
               exit={{ y: '100%', transition: { duration: 0.22 } }}
             >
               <div className="sheet-handle" />
