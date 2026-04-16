@@ -1101,7 +1101,7 @@ export default function Splitwise() {
       ) : (
         <>
           <div className="relative mb-3 overflow-hidden rounded-card">
-            <div className="h-40 w-full bg-kosha-surface-2 transition-all">
+            <div className="h-40 w-full bg-kosha-surface-2">
               <img src={activeBanner.src} alt={activeBanner.name} className="h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
             </div>
@@ -1205,7 +1205,7 @@ export default function Splitwise() {
                             <button
                               type="button"
                               onClick={() => { void handleDeleteMember(member.id) }}
-                              className="rounded-full h-7 w-7 flex items-center justify-center text-danger/80 hover:bg-danger/10 hover:text-danger border border-transparent hover:border-danger/20 transition-all"
+                              className="rounded-full h-7 w-7 flex items-center justify-center text-danger/80 hover:bg-danger/10 hover:text-danger border border-transparent hover:border-danger/20 transition-[background-color,border-color,color] duration-150"
                               disabled={!!saving}
                               title="Remove member"
                             >
@@ -1237,7 +1237,7 @@ export default function Splitwise() {
                         <span className="text-[12px] text-ink-3 shrink-0 tabular-nums">{fmt(spent)}</span>
                       </div>
                       <div className="w-full bg-kosha-surface-2 rounded-full h-1.5 overflow-hidden">
-                        <div className="bg-brand h-full rounded-full transition-all" style={{ width: `${percent}%` }}></div>
+                        <div className="bg-brand h-full rounded-full transition-[width] duration-400 ease-[cubic-bezier(0.05,0.7,0.1,1)]" style={{ width: `${percent}%` }}></div>
                       </div>
                     </div>
                   )

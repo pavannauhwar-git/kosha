@@ -44,7 +44,7 @@ const AmountInput = forwardRef(function AmountInput(
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       <div
-        className="relative flex items-center rounded-2xl transition-all duration-200"
+        className="relative flex items-center rounded-2xl transition-[background-color,border-color] duration-200"
         style={{
           background: focused ? colors.bg : 'var(--ds-surface-container)',
           border: `2px solid ${focused ? colors.ring : hasError ? 'var(--ds-expense)' : 'transparent'}`,

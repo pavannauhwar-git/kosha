@@ -37,7 +37,7 @@ const Input = forwardRef(function Input(
           aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
           className={[
             'w-full rounded-xl text-body text-[var(--ds-text)] placeholder:text-[var(--ds-text-disabled)]',
-            'bg-[var(--ds-surface-container)] border transition-all duration-200',
+            'bg-[var(--ds-surface-container)] border transition-[border-color,box-shadow,background-color] duration-200',
             'focus:outline-none focus:bg-[var(--ds-surface)]',
             'min-h-[44px] py-3',
             icon ? 'pl-10 pr-4' : iconRight ? 'pl-4 pr-10' : 'px-4',

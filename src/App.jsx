@@ -406,16 +406,30 @@ function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
   const prefetchRoute = useRouteIntentPrefetch()
-  
-  if (loading) return null
-  if (BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
+
+  const shouldHide = BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))
+
+  // Render into DOM immediately (prevents layout shift) but invisible until
+  // auth resolves. Once loading is done and nav should show, fade it in.
+  // This eliminates the position jump caused by late mount.
+  const isVisible = !loading && !shouldHide
 
   const active = NAV.findIndex((n) =>
     n.match.some((path) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)))
   )
 
   return (
-    <div className="nav-float-wrap">
+    <div
+      className="nav-float-wrap"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        pointerEvents: isVisible ? 'auto' : 'none',
+        visibility: shouldHide ? 'hidden' : 'visible',
+        transition: loading ? 'none' : 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)',
+        transform: 'translateZ(0)',
+        willChange: 'opacity',
+      }}
+    >
       <nav className="nav-float" aria-label="Main navigation">
         {NAV.map((item, i) => {
           const isActive = i === active
@@ -443,10 +457,10 @@ function BottomNav() {
                   initial={false}
                   transition={{ type: 'spring', stiffness: 500, damping: 40, mass: 1 }} />
                 )}
-                <span className="nav-icon-layer" style={{ opacity: isActive ? 1 : 0, transition: 'opacity 200ms cubic-bezier(0.2, 0, 0, 1)' }}>
+                <span className="nav-icon-layer" style={{ opacity: isActive ? 1 : 0, transition: 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)' }}>
                   <item.Icon size={21} weight="fill" color="var(--ds-primary)" />
                 </span>
-                <span className="nav-icon-layer" style={{ opacity: isActive ? 0 : 1, transition: 'opacity 200ms cubic-bezier(0.2, 0, 0, 1)' }}>
+                <span className="nav-icon-layer" style={{ opacity: isActive ? 0 : 1, transition: 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)' }}>
                   <item.Icon size={21} weight="regular" color="var(--ds-text-tertiary)" />
                 </span>
               </div>
@@ -456,7 +470,7 @@ function BottomNav() {
                 color: isActive ? 'var(--ds-primary)' : 'var(--ds-text-tertiary)',
                 fontWeight: isActive ? 600 : 400,
                 opacity: isActive ? 1 : 0.75,
-                transition: 'color 200ms cubic-bezier(0.2, 0, 0, 1), font-weight 200ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms cubic-bezier(0.2, 0, 0, 1)',
+                transition: 'color 180ms cubic-bezier(0.2, 0, 0, 1), opacity 180ms cubic-bezier(0.2, 0, 0, 1)',
                 }}
               >
                 {item.label}

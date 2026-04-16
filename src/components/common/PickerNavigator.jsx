@@ -110,7 +110,7 @@ export default function PickerNavigator({
           onClick={onPrev}
           className="w-8 h-8 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2
-                     hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-all duration-150"
+                     hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-[background-color] duration-150"
         >
           <ChevronLeft size={16} className="text-ink-2" />
         </button>
@@ -128,7 +128,7 @@ export default function PickerNavigator({
           onClick={onNext}
           className="w-8 h-8 rounded-full bg-kosha-surface border border-kosha-border
                      flex items-center justify-center active:bg-kosha-surface-2
-                     hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-all duration-150"
+                     hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-[background-color] duration-150"
         >
           <ChevronRight size={16} className="text-ink-2" />
         </button>
@@ -156,7 +156,7 @@ export default function PickerNavigator({
                         type="button"
                         onClick={() => quickApplyRecentMonth(item.month, item.year)}
                         className={[
-                          'h-9 px-3 rounded-pill text-[12px] font-semibold border whitespace-nowrap transition-all duration-150',
+                          'h-9 px-3 rounded-pill text-[12px] font-semibold border whitespace-nowrap transition-[background-color,border-color,color] duration-150',
                           active
                             ? 'bg-brand-container text-brand border-brand/20'
                             : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2',
@@ -184,7 +184,7 @@ export default function PickerNavigator({
                         type="button"
                         onClick={() => quickApplyRecentYear(itemYear)}
                         className={[
-                          'h-9 px-3 rounded-pill text-[12px] font-semibold border whitespace-nowrap transition-all duration-150',
+                          'h-9 px-3 rounded-pill text-[12px] font-semibold border whitespace-nowrap transition-[background-color,border-color,color] duration-150',
                           active
                             ? 'bg-brand-container text-brand border-brand/20'
                             : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2',
@@ -229,7 +229,7 @@ export default function PickerNavigator({
                       type="button"
                       onClick={() => setDraftMonth(monthNumber)}
                       className={[
-                        'h-9 rounded-card text-[12px] font-semibold border transition-all duration-150',
+                        'h-9 rounded-card text-[12px] font-semibold border transition-[background-color,border-color,color] duration-150',
                         active
                           ? 'bg-brand-container text-brand border-brand/20'
                           : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2',

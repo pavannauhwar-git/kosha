@@ -232,7 +232,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
         <button
           type="button"
           onClick={() => setTxnType('expense')}
-          className={`h-10 rounded-card text-[12px] font-semibold border transition-all active:scale-[0.98] ${
+          className={`h-10 rounded-card text-[12px] font-semibold border transition-[background-color,border-color,color] duration-150 will-change-transform active:scale-[0.98] ${
             txnType === 'expense'
               ? 'bg-expense-bg text-expense-text border-expense-border'
               : 'bg-kosha-surface text-ink-3 border-kosha-border'
@@ -243,7 +243,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
         <button
           type="button"
           onClick={() => setTxnType('income')}
-          className={`h-10 rounded-card text-[12px] font-semibold border transition-all active:scale-[0.98] ${
+          className={`h-10 rounded-card text-[12px] font-semibold border transition-[background-color,border-color,color] duration-150 will-change-transform active:scale-[0.98] ${
             txnType === 'income'
               ? 'bg-income-bg text-income-text border-income-border'
               : 'bg-kosha-surface text-ink-3 border-kosha-border'
@@ -278,7 +278,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
             <button
               key={cat.id}
               onClick={() => setCategory(cat.id)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-card border transition-all
+              className={`flex flex-col items-center gap-1 p-2 rounded-card border transition-[background-color,border-color] duration-150 will-change-transform
                 ${category === cat.id
                   ? 'border-brand bg-brand-container'
                   : 'border-kosha-border bg-kosha-surface'}`}

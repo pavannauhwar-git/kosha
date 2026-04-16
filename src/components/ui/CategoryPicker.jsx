@@ -21,7 +21,7 @@ const CategoryPicker = memo(function CategoryPicker({ type, value, onChange, cla
             aria-checked={isSelected}
             onClick={() => onChange(cat.id)}
             className={[
-              'flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl transition-all duration-150',
+              'flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl transition-[transform,background-color,box-shadow] duration-150 will-change-transform',
               'min-h-[44px] min-w-[44px]',
               isSelected
                 ? 'bg-[var(--ds-primary-container)] ring-2 ring-[var(--ds-primary)] scale-[1.02]'

@@ -144,7 +144,7 @@ function SwipeManagePickerRow({
             type="button"
             onClick={handleEditTap}
             className="w-[70px] flex flex-col items-center justify-center gap-1 px-5
-                     bg-brand-container active:scale-[0.96] active:opacity-80 transition-all duration-150"
+                     bg-brand-container active:scale-[0.96] active:opacity-80 transition-[transform,opacity] duration-100 will-change-transform"
           >
             <PencilSimple size={20} weight="bold" color="var(--c-brand)" />
             <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
@@ -156,7 +156,7 @@ function SwipeManagePickerRow({
             type="button"
             onClick={handleDeleteTap}
             className="w-[70px] flex flex-col items-center justify-center gap-1 px-5
-                     active:scale-[0.96] active:opacity-80 transition-all duration-150"
+                     active:scale-[0.96] active:opacity-80 transition-[transform,opacity] duration-100 will-change-transform"
             style={{ backgroundColor: 'rgba(232,69,60,0.96)', color: 'rgba(255,255,255,1)' }}
           >
             <Trash size={18} weight="bold" color="currentColor" />
@@ -809,7 +809,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <button key={t.id}
                 onClick={() => setType(t.id)}
                 disabled={isSaving}
-                className={`flex-1 py-2 rounded-card text-[13px] font-semibold border transition-all
+                className={`flex-1 py-2 rounded-card text-[13px] font-semibold border transition-[background-color,border-color,color] duration-120
                   min-w-0 truncate disabled:opacity-50
                   ${type === t.id
                     ? `${t.bg} ${t.color} border-transparent`
@@ -973,7 +973,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                       type="button"
                       onClick={() => set('recurrence', option)}
                       disabled={isSaving}
-                      className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
+                      className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-[background-color,border-color,color] duration-120
                         ${recurrence === option
                           ? 'bg-brand-container text-brand border-brand/20'
                           : 'bg-kosha-surface text-ink-2 border-kosha-border'}

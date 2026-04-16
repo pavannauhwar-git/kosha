@@ -93,7 +93,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onPrimary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-[14px] font-semibold text-white transition-all duration-100 active:scale-[0.97]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-[14px] font-semibold text-white transition-[transform,opacity] duration-100 will-change-transform active:scale-[0.97]"
             >
               <PrimaryIcon size={16} />
               {primaryLabel}
@@ -102,7 +102,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onSecondary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-[14px] font-semibold text-ink transition-all duration-100 active:scale-[0.98]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-[14px] font-semibold text-ink transition-[transform,background-color] duration-100 will-change-transform active:scale-[0.98]"
             >
               <SecondaryIcon size={16} />
               {secondaryLabel}
@@ -113,7 +113,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onTertiary}
-              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-accent-text transition-all duration-100 active:scale-[0.98]"
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-accent-text transition-[transform,background-color] duration-100 will-change-transform active:scale-[0.98]"
             >
               <TertiaryIcon size={16} />
               {tertiaryLabel}

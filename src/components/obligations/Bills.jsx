@@ -567,7 +567,7 @@ export default function Bills({
       <div className="mb-2.5 grid grid-cols-2 gap-2">
         <button
           onClick={() => setTab('pending')}
-          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
+          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-[background-color,border-color,color,box-shadow] duration-120 will-change-transform active:scale-[0.97]
             ${tab === 'pending'
               ? 'bg-brand-container text-brand border border-brand shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
@@ -576,7 +576,7 @@ export default function Bills({
         </button>
         <button
           onClick={() => setTab('paid')}
-          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
+          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-[background-color,border-color,color,box-shadow] duration-120 will-change-transform active:scale-[0.97]
             ${tab === 'paid'
               ? 'bg-income-bg text-income-text border border-income-border shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
@@ -881,7 +881,7 @@ export default function Bills({
 
                 <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
                                 flex items-center gap-2 border-b-2 border-kosha-border
-                                transition-all duration-200">
+                                transition-[border-color] duration-200">
                   <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="bill-amount" placeholder="0"
@@ -910,7 +910,7 @@ export default function Bills({
                     type="button"
                     onClick={() => setForm(f => ({ ...f, is_recurring: !f.is_recurring }))}
                     className={`flex items-center gap-2 px-3 py-2 rounded-card text-sm font-medium
-                                border transition-all
+                                border transition-[background-color,border-color,color] duration-150
                       ${form.is_recurring
                         ? 'bg-brand-container text-brand border-brand/20'
                         : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
@@ -923,7 +923,7 @@ export default function Bills({
                         <button key={r}
                           type="button"
                           onClick={() => setForm(f => ({ ...f, recurrence: r }))}
-                          className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
+                          className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-[background-color,border-color,color] duration-150
                             ${form.recurrence === r
                               ? 'bg-brand-container text-brand border-brand/20'
                               : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}

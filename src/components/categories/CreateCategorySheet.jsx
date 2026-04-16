@@ -174,7 +174,7 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
                   }
                 }}
                 disabled={saving || isEditing}
-                className={`h-9 rounded-card text-[12px] font-semibold border transition-all disabled:opacity-50
+                className={`h-9 rounded-card text-[12px] font-semibold border transition-[background-color,border-color,color] duration-150 disabled:opacity-50
                   ${selectedType === option.id
                     ? option.activeClass
                     : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
@@ -199,7 +199,7 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
                   onClick={() => setIcon(iconName)}
                   disabled={saving}
                   className={`w-full aspect-square rounded-card flex items-center justify-center
-                    border transition-all disabled:opacity-50
+                    border transition-[background-color,border-color] duration-150 disabled:opacity-50
                     ${selected
                       ? ''
                       : 'bg-kosha-surface-2 border-transparent'}`}
@@ -220,7 +220,7 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
             onClick={handleCreate}
             disabled={saving || name.trim().length < 2}
             className={`w-full py-3.5 rounded-card text-[15px] font-semibold flex items-center
-                        justify-center gap-2 transition-all
+                        justify-center gap-2 transition-[transform,background-color,opacity] duration-150 will-change-transform
                         ${saving
                           ? 'bg-brand/70 text-white/90 cursor-not-allowed'
                           : 'bg-brand text-white active:scale-[0.97] disabled:opacity-50'}`}

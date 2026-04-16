@@ -419,7 +419,7 @@ export default function Guide() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`h-9 px-3 rounded-pill text-[11px] font-semibold whitespace-nowrap border transition-all
+                  className={`h-9 px-3 rounded-pill text-[11px] font-semibold whitespace-nowrap border transition-[background-color,border-color,color,box-shadow] duration-150 will-change-transform
                     ${active
                       ? 'bg-brand text-white border-brand shadow-card-sm'
                       : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-brand-container/45'}`}

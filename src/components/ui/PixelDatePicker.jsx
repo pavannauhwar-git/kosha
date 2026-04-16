@@ -155,7 +155,7 @@ export default function PixelDatePicker({
                     setOpen(false)
                   }}
                   className={[
-                    'h-9 rounded-full text-[12px] font-semibold transition-all duration-150',
+                    'h-9 rounded-full text-[12px] font-semibold transition-[transform,background-color] duration-150 will-change-transform',
                     isSelected
                       ? 'bg-brand text-white shadow-[0_4px_10px_rgba(0,127,255,0.26)]'
                       : day.inMonth

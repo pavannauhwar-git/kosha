@@ -185,6 +185,8 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
+  /* Promote to its own compositing layer immediately */
+  transform: translateZ(0);
 }
 
 body {
@@ -202,6 +204,8 @@ body {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
+  /* GPU composite layer so scroll/transform are handled by compositor thread */
+  isolation: isolate;
 }
 
 /* ── Selection ──────────────────────────────────────────────────────── */
@@ -364,6 +368,8 @@ textarea:focus-visible,
   button,
   [role="button"] {
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    cursor: pointer;
   }
 }
 
@@ -467,6 +473,10 @@ textarea:focus-visible,
     box-shadow:
       0 4px 12px rgba(17, 19, 24, 0.045),
       inset 0 0.5px 0 rgba(255, 255, 255, 0.76);
+    /* GPU compositing for fixed header */
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    contain: layout style;
   }
 
   .dark .app-topbar {
@@ -517,7 +527,12 @@ textarea:focus-visible,
   }
 
   .list-row {
-    @apply flex items-center gap-3 px-5 py-3.5 bg-kosha-surface transition-colors duration-200 cursor-pointer hover:bg-kosha-surface-2;
+    @apply flex items-center gap-3 px-5 py-3.5 bg-kosha-surface cursor-pointer hover:bg-kosha-surface-2;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1);
+    /* Ensure transitions happen on compositor */
+    will-change: background-color;
   }
 
   .list-row+.list-row {
@@ -601,6 +616,8 @@ textarea:focus-visible,
     right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
+    touch-action: manipulation;
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   .fab-bills {
@@ -610,6 +627,8 @@ textarea:focus-visible,
     right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
+    touch-action: manipulation;
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   .fab-loans {
@@ -619,6 +638,8 @@ textarea:focus-visible,
     right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
+    touch-action: manipulation;
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   /* -- Fixed bottom nav — Pixel-style anchored bar ───────────────── */
@@ -639,8 +660,11 @@ textarea:focus-visible,
     padding-bottom: constant(safe-area-inset-bottom, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     pointer-events: auto;
+    /* GPU compositing: fixed elements should always be on compositor layer */
     will-change: transform;
-    transform: translateZ(0);
+    transform: translate3d(0, 0, 0);
+    /* Prevent any layout thrashing during initial paint */
+    contain: layout style;
   }
 
   .nav-float {
@@ -676,7 +700,11 @@ textarea:focus-visible,
     border: none;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transform: transform 100ms cubic-bezeir(0.2, 0, 0, 1);
+    touch-action: manipulation;
+    /* GPU-composited: will only run on compositor thread */
+    will-change: transform;
+    transform: translateZ(0);
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
   }
   
   .nav-float-item:active {
@@ -723,7 +751,8 @@ textarea:focus-visible,
     min-width: 0;
     will-change: transform;
     transform: translateZ(0);
-    transition: all 250ms cubic-bezier(0.05, 0.7, 0.1, 1);
+    touch-action: manipulation;
+    transition: border-color 200ms cubic-bezier(0.05, 0.7, 0.1, 1), box-shadow 200ms cubic-bezier(0.05, 0.7, 0.1, 1), background-color 200ms cubic-bezier(0.05, 0.7, 0.1, 1);
   }
 
   .input:focus {
@@ -757,6 +786,11 @@ textarea:focus-visible,
     overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
     isolation: isolate;
+    /* Smooth scroll within sheet */
+    scroll-behavior: smooth;
+    /* Own compositor layer */
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   .sheet-panel::before {
@@ -842,6 +876,8 @@ textarea:focus-visible,
     @apply w-9 h-9 rounded-full flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-bg transition-all duration-150 cursor-pointer;
     will-change: transform;
     transform: translateZ(0);
+    touch-action: manipulation;
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   .close-btn:active {

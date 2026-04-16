@@ -596,7 +596,7 @@ export default function Reconciliation() {
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.12 }}
               aria-pressed={active}
-              className={`h-10 rounded-card text-[12px] font-semibold transition-all border
+              className={`h-10 rounded-card text-[12px] font-semibold transition-[background-color,border-color,color,box-shadow] duration-150 border
                 ${active
                   ? 'bg-kosha-surface text-brand border-brand/20 shadow-card-sm'
                   : 'bg-transparent text-ink-3 border-transparent hover:bg-kosha-surface'}`}

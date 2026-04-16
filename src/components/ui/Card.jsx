@@ -34,7 +34,7 @@ export default function Card({
         'rounded-card w-full text-left',
         VARIANT_CLASSES[variant],
         PADDING_CLASSES[padding],
-        isClickable ? 'cursor-pointer transition-all duration-200 hover:shadow-card-md active:scale-[0.98] focus-visible:outline-none' : '',
+        isClickable ? 'cursor-pointer transition-[transform,box-shadow] duration-150 will-change-transform hover:shadow-card-md active:scale-[0.98] focus-visible:outline-none' : '',
         className,
       ].filter(Boolean).join(' ')}
       {...(isClickable ? { type: 'button', role: 'button' } : {})}

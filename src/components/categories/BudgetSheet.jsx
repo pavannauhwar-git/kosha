@@ -249,7 +249,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                           <div className="mt-2 flex items-center gap-2">
                             <div className="flex-1 h-1.5 rounded-pill bg-kosha-border overflow-hidden">
                               <div
-                                className={`h-full rounded-pill transition-all ${
+                                className={`h-full rounded-pill transition-[width] duration-400 ease-[cubic-bezier(0.05,0.7,0.1,1)] ${
                                   pct >= 100
                                     ? 'bg-expense-text'
                                     : pct >= 80

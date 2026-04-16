@@ -662,7 +662,7 @@ export default function Loans({
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-100 active:scale-[0.97]
+            className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-[background-color,border-color,color,box-shadow] duration-120 will-change-transform active:scale-[0.97]
               ${tab === t.key ? t.activeClass : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
           >
             {t.label} ({t.count})
@@ -1015,7 +1015,7 @@ export default function Loans({
                 {/* Amount input */}
                 <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
                                 flex items-center gap-2 border-b-2 border-kosha-border
-                                transition-all duration-200">
+                                transition-[border-color] duration-200">
                   <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="payment-amount" placeholder="0"
@@ -1044,7 +1044,7 @@ export default function Loans({
                         onClick={() => setPayAmount(String(o.value))}
                         className="px-3 py-1.5 rounded-pill text-xs font-semibold border
                                    bg-kosha-surface text-ink-2 border-kosha-border
-                                   active:scale-[0.97] transition-all"
+                                   active:scale-[0.97] transition-[transform,background-color] duration-100 will-change-transform"
                       >
                         {o.label} ({fmt(o.value)})
                       </button>
@@ -1113,7 +1113,7 @@ export default function Loans({
                   <button
                     type="button"
                     onClick={() => setForm(f => ({ ...f, direction: 'given' }))}
-                    className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-all active:scale-[0.97]
+                    className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-[background-color,border-color,color] duration-150 will-change-transform active:scale-[0.97]
                       ${form.direction === 'given'
                         ? 'bg-income-bg text-income-text border-income-border'
                         : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
@@ -1123,7 +1123,7 @@ export default function Loans({
                   <button
                     type="button"
                     onClick={() => setForm(f => ({ ...f, direction: 'taken' }))}
-                    className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-all active:scale-[0.97]
+                    className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-[background-color,border-color,color] duration-150 will-change-transform active:scale-[0.97]
                       ${form.direction === 'taken'
                         ? 'bg-expense-bg text-expense-text border-expense-border'
                         : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
@@ -1150,7 +1150,7 @@ export default function Loans({
                 {/* Amount */}
                 <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
                                 flex items-center gap-2 border-b-2 border-kosha-border
-                                transition-all duration-200">
+                                transition-[border-color] duration-200">
                   <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
                     type="number" inputMode="decimal" name="loan-amount" placeholder="0"
