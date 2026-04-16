@@ -402,10 +402,12 @@ function useRouteIntentPrefetch() {
 
 // ── Mobile bottom nav ─────────────────────────────────────────────────────
 function BottomNav() {
+  const { loading } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const prefetchRoute = useRouteIntentPrefetch()
   
+  if (loading) return null
   if (BOTTOM_NAV_HIDE_ON.some(p => location.pathname.startsWith(p))) return null
 
   const active = NAV.findIndex((n) =>

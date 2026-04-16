@@ -167,8 +167,8 @@ export default function Login() {
   }
 
   return (
-    <div className="h-dvh bg-kosha-bg px-4 flex flex-col items-center justify-center overscroll-none overflow-y-auto">
-      <div className="w-full max-w-[400px] py-12">
+    <div className="min-h-dvh bg-kosha-bg px-4 py-8 flex flex-col items-center justify-center overscroll-none">
+      <div className="w-full max-w-[400px]">
         <motion.div
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
           initial="hidden"
