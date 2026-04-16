@@ -185,8 +185,7 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  /* Promote to its own compositing layer immediately */
-  transform: translateZ(0);
+  /* Do not use transform on html, it breaks position: fixed globally */
 }
 
 body {
@@ -204,8 +203,6 @@ body {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  /* GPU composite layer so scroll/transform are handled by compositor thread */
-  isolation: isolate;
 }
 
 /* ── Selection ──────────────────────────────────────────────────────── */
