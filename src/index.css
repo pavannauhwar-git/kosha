@@ -327,7 +327,7 @@ textarea:focus-visible,
     --safe-top: var(--ds-safe-top);
     --safe-bottom: var(--ds-safe-bottom);
     --header-content-height: 54px;
-    --header-total-offset: calc(var(--safe-top) + var(--header-content-height) + 0.5rem);
+    --header-total-offset: calc(var(--safe-top) + var(--header-content-height));
     --sticky-top-offset: calc(var(--safe-top) + var(--header-content-height));
     --app-shell-max: 560px;
 
@@ -384,7 +384,7 @@ textarea:focus-visible,
     @apply rounded-hero;
     border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow:
-      0 12px 32px rgba(0, 127, 255, 0.25),
+      0 6px 16px rgba(0, 0, 0, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
     position: relative;
     overflow: hidden;
@@ -840,7 +840,7 @@ textarea:focus-visible,
   /* -- Page wrapper ────────────────────────────────────────────────── */
   .page {
     @apply min-h-dvh px-4;
-    padding-top: 0;
+    padding-top: 1rem;
     padding-bottom: calc(var(--nav-height) + 1.15rem);
     max-width: var(--app-shell-max);
     margin-left: auto;
@@ -958,7 +958,7 @@ textarea:focus-visible,
   }
 
   .page {
-    padding-top: 0;
+    padding-top: 1.25rem;
     padding-left: 1rem;
     padding-right: 1rem;
     padding-bottom: calc(var(--nav-height) + 0.9rem);

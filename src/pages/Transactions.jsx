@@ -1083,11 +1083,12 @@ export default function Transactions() {
 
   return (
     <PageHeaderPage title="Transactions">
+      <div className="page-stack">
       {isNewUser && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card p-4 border-0 mb-3"
+          className="card p-4 border-0"
         >
           <p className="section-label mb-1.5">Start here</p>
           <p className="text-[14px] font-semibold text-ink">Add your first transaction to unlock your timeline.</p>
@@ -1101,7 +1102,7 @@ export default function Transactions() {
       )}
 
       {!isNewUser && (
-        <div className="card p-0 border-0 overflow-hidden mb-3">
+        <div className="card p-0 border-0 overflow-hidden">
           <div className="px-4 pt-3.5 pb-3 border-b border-kosha-border bg-kosha-surface-2">
             <p className="text-[15px] font-semibold text-ink">Find and filter</p>
             <p className="text-[12px] text-ink-3 mt-0.5">Search by merchant or note, then narrow by date, type, category, and payment mode.</p>
@@ -1351,7 +1352,7 @@ export default function Transactions() {
       )}
 
       {showGuideHint && (
-        <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
+        <div className="card p-4 border border-brand-border bg-brand-container/40">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
               <BookOpen size={16} className="text-accent-text" />
@@ -1377,7 +1378,7 @@ export default function Transactions() {
       )}
 
       {showSwipeHint && groups.length > 0 && (
-        <div className="mini-panel mb-3 px-3 py-2.5 flex items-start gap-2.5">
+        <div className="mini-panel px-3 py-2.5 flex items-start gap-2.5">
           <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
             i
           </div>
@@ -1395,7 +1396,7 @@ export default function Transactions() {
         </div>
       )}
 
-      <div className="mb-2.5">
+      <div>
         <SectionHeader
           title="Timeline"
           subtitle={hasActiveFilters ? 'Filtered rows grouped by date.' : 'Latest activity grouped by date.'}
@@ -1490,7 +1491,7 @@ export default function Transactions() {
 
       {/* Transaction workspace (Summary) moved to bottom */}
       {!isNewUser && (
-        <div className="card p-0 border-0 overflow-hidden mt-6 mb-3">
+        <div className="card p-0 border-0 overflow-hidden">
           <div className="px-4 pt-3.5 pb-3 bg-kosha-surface-2 border-b border-kosha-border">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -1640,6 +1641,7 @@ export default function Transactions() {
           </div>
         </div>
       )}
+      </div>
 
       <AppToast
         message={toast}

@@ -518,9 +518,10 @@ export default function Reconciliation() {
       )}
       contentClassName="page"
     >
+      <div className="page-stack">
 
       {/* ── Summary strip ──────────────────────────────────── */}
-      <div className="card p-0 mb-3.5 overflow-hidden">
+      <div className="card p-0 overflow-hidden">
         <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
           <div className="flex flex-col items-start text-left min-w-0">
             <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Reconciliation</p>
@@ -571,7 +572,7 @@ export default function Reconciliation() {
       </div>
 
       {confidenceDrift?.drifting && Number(confidenceDrift?.drift || 0) >= 25 && (
-        <div className="rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 mb-3.5 flex items-start gap-2">
+        <div className="rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 flex items-start gap-2">
           <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
           <div>
             <p className="text-[12px] font-semibold text-warning-text">Match quality is declining</p>
@@ -583,7 +584,7 @@ export default function Reconciliation() {
       )}
 
       {/* ── Tab bar ────────────────────────────────────────── */}
-      <div className="card-inset p-1.5 mb-3.5 grid grid-cols-3 gap-1">
+      <div className="card-inset p-1.5 grid grid-cols-3 gap-1">
         {TABS.map((t) => {
           const active = t.id === tab
           return (
@@ -825,7 +826,7 @@ export default function Reconciliation() {
 
       {/* ── TAB: Matching ──────────────────────────────────── */}
       {tab === 'matching' && (
-        <div className="space-y-3.5">
+        <>
           <div className="card p-4">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
@@ -1008,7 +1009,7 @@ export default function Reconciliation() {
               )}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* ── TAB: Overview ──────────────────────────────────── */}
@@ -1034,6 +1035,7 @@ export default function Reconciliation() {
           />
         </Suspense>
       )}
+      </div>
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
     </PageBackHeaderPage>

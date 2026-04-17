@@ -325,9 +325,9 @@ export default function Guide() {
           <Home size={16} className="text-brand" />
         </button>
       )}
-      contentClassName="px-4 pt-6 pb-24 max-w-[560px] mx-auto"
+      contentClassName="px-4 pt-5 pb-24 max-w-[560px] mx-auto"
     >
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
           <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">

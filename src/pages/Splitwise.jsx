@@ -1063,7 +1063,7 @@ export default function Splitwise() {
           onAction={() => setShowCreateGroup(true)}
         />
       ) : !activeGroup ? (
-        <div className="space-y-3.5">
+        <div className="page-stack">
           <div className="grid grid-cols-2 gap-2.5">
             <div className="card p-3">
               <p className="text-[10px] text-ink-3">Admin in</p>
@@ -1148,8 +1148,8 @@ export default function Splitwise() {
           </div>
         </div>
       ) : (
-        <>
-          <div className="relative mb-3 overflow-hidden rounded-card">
+        <div className="page-stack">
+          <div className="relative overflow-hidden rounded-card">
             <div className="h-40 w-full bg-kosha-surface-2">
               <img src={activeBanner.src} alt={activeBanner.name} className="h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
@@ -1169,7 +1169,7 @@ export default function Splitwise() {
               )}
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2.5 mb-3.5">
+          <div className="grid grid-cols-3 gap-2.5">
             <div className="card p-3">
               <p className="text-[10px] text-ink-3">You owe</p>
               <p className="mt-1 text-[15px] font-semibold amt-expense tabular-nums">{fmt(Math.max(0, -selfNet))}</p>
@@ -1184,7 +1184,7 @@ export default function Splitwise() {
             </div>
           </div>
 
-          <div className="card p-3.5 mb-3">
+          <div className="card p-3.5">
             <div className="flex items-center justify-between gap-2 mb-2">
               <p className="section-label">Members</p>
               {isGroupAdmin && !activeGroup?.is_archived && (
@@ -1274,7 +1274,7 @@ export default function Splitwise() {
             )}
           </div>
 
-          <div className="card p-3.5 mb-3">
+          <div className="card p-3.5">
             <p className="section-label mb-2">Who Paid For What</p>
             {members.length === 0 ? (
               <p className="text-[12px] text-ink-3">No members to show.</p>
@@ -1299,7 +1299,7 @@ export default function Splitwise() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               variant="primary"
               size="md"
@@ -1320,7 +1320,7 @@ export default function Splitwise() {
             </Button>
           </div>
 
-          <div className="card p-3.5 mb-3">
+          <div className="card p-3.5">
             <p className="section-label mb-2">Suggested Settlements</p>
             {suggestedTransfers.length === 0 ? (
               <div className="py-4 text-center">
@@ -1347,7 +1347,7 @@ export default function Splitwise() {
             )}
           </div>
 
-          <div className="card mb-3 overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="p-4 border-b border-kosha-border bg-kosha-surface flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ReceiptText size={16} className="text-brand" />
@@ -1472,7 +1472,7 @@ export default function Splitwise() {
               </div>
             )}
           </div>
-        </>
+        </div>
       )}
 
       <AnimatePresence>

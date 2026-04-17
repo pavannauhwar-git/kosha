@@ -121,7 +121,7 @@ export default function PickerNavigator({
           onClick={() => setOpen(true)}
         >
           <h1 className="text-value font-semibold text-ink tracking-tight leading-[1.05]">{label}</h1>
-          <p className="text-[10px] text-ink-4 text-center mt-0">Jump to</p>
+          <p className="text-[10px] text-ink-4 text-center mt-1.5">Jump to</p>
         </button>
 
         <button

@@ -335,7 +335,7 @@ export default function Analytics() {
                 <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
               )}
 
-            <div className="space-y-4">
+
               {/* ── 2. Year-over-year context ───────────────────────── */}
               {heavyReady && yoyYears.length >= 2 && (
                 <Suspense fallback={<ChartSkeleton height="h-[320px]" />}>
@@ -387,8 +387,7 @@ export default function Analytics() {
                 </Suspense>
               )}
 
-              {/* Spent-by-category section intentionally removed; yearly portfolio lives in the snapshot card above. */}
-            </div>
+
             </>
           ) : (
             <EmptyState

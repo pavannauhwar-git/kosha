@@ -116,7 +116,7 @@ export default function About() {
         </button>
       )}
     >
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
           <div className="px-4 py-5 bg-gradient-to-br from-brand-container/60 to-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">

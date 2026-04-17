@@ -38,9 +38,9 @@ export default function Obligations() {
         variants={stagger}
         initial="hidden"
         animate="show"
-        className="page-stack pt-0"
+        className="page-stack"
       >
-        <motion.div variants={fadeUp} className="mb-2.5 flex border-b border-kosha-border overflow-x-auto no-scrollbar relative">
+        <motion.div variants={fadeUp} className="flex border-b border-kosha-border overflow-x-auto no-scrollbar relative">
           {TABS.map((item) => {
             const Icon = item.icon
             const active = tab === item.key

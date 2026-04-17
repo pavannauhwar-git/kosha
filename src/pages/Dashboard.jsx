@@ -590,7 +590,7 @@ export default function Dashboard() {
         variants={stagger}
         initial="hidden"
         animate="show"
-        className="page-stack pt-0"
+        className="page-stack"
       >
         {/* ── Greeting ──────────────────────────────────────────────── */}
         <motion.div variants={fadeUp}>

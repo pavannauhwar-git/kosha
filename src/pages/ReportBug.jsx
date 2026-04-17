@@ -268,220 +268,220 @@ export default function ReportBug() {
     >
 
       {/* ── Content — constrained ──────────────────────────────────── */}
-      <div className="px-4 pt-4 pb-36 space-y-4">
-          {submitted ? (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="card p-4"
-            >
-              <div className="w-11 h-11 rounded-xl bg-income-bg text-income-text border border-income-border flex items-center justify-center mb-4">
-                <Check size={18} />
-              </div>
-              <h2 className="text-[20px] leading-tight font-bold text-ink tracking-tight">
-                {submitted.isDuplicate ? 'Matched an existing report' : 'Report submitted'}
-              </h2>
-              <p className="text-label text-ink-2 mt-2">
-                {submitted.isDuplicate
-                  ? `We linked your report to an existing issue and incremented occurrences to ${submitted.occurrenceCount}.`
-                  : 'Thank you for reporting this. We will investigate it quickly.'}
-              </p>
+      <div className="px-4 pt-4 pb-36 page-stack">
+        {submitted ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card p-4"
+          >
+            <div className="w-11 h-11 rounded-xl bg-income-bg text-income-text border border-income-border flex items-center justify-center mb-4">
+              <Check size={18} />
+            </div>
+            <h2 className="text-[20px] leading-tight font-bold text-ink tracking-tight">
+              {submitted.isDuplicate ? 'Matched an existing report' : 'Report submitted'}
+            </h2>
+            <p className="text-label text-ink-2 mt-2">
+              {submitted.isDuplicate
+                ? `We linked your report to an existing issue and incremented occurrences to ${submitted.occurrenceCount}.`
+                : 'Thank you for reporting this. We will investigate it quickly.'}
+            </p>
 
-              <div className="mt-4 mini-panel p-3">
-                <p className="text-caption text-ink-3">Reference</p>
-                <div className="mt-1.5 flex items-center justify-between gap-2">
-                  <p className="font-mono text-[13px] text-ink">#{submitted.id}</p>
-                  <Button
-                    variant="secondary"
-                    size="xs"
-                    icon={<Copy size={13} />}
-                    onClick={handleCopyReference}
-                  >
-                    {copiedRef ? 'Copied' : 'Copy ID'}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+            <div className="mt-4 mini-panel p-3">
+              <p className="text-caption text-ink-3">Reference</p>
+              <div className="mt-1.5 flex items-center justify-between gap-2">
+                <p className="font-mono text-[13px] text-ink">#{submitted.id}</p>
                 <Button
                   variant="secondary"
-                  size="md"
-                  fullWidth
-                  onClick={handleBack}
+                  size="xs"
+                  icon={<Copy size={13} />}
+                  onClick={handleCopyReference}
                 >
-                  Done
-                </Button>
-                <Button
-                  variant="primary"
-                  size="md"
-                  fullWidth
-                  onClick={goDashboard}
-                >
-                  Go to dashboard
+                  {copiedRef ? 'Copied' : 'Copy ID'}
                 </Button>
               </div>
-            </motion.div>
-          ) : (
-            <>
-              <div className="card p-0 overflow-hidden">
-                <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
-                  <div className="flex flex-col items-start text-left min-w-0">
-                    <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Help us fix this</p>
-                    <p className="text-[12px] text-ink-3 mt-1 leading-relaxed">
-                      Share what broke, what you expected, and a screenshot if possible.
-                    </p>
-                  </div>
-                  <img src="/illustrations/report_bug.png" alt="Report Bug" className="w-32 h-auto object-contain illustration shrink-0" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+              <Button
+                variant="secondary"
+                size="md"
+                fullWidth
+                onClick={handleBack}
+              >
+                Done
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                fullWidth
+                onClick={goDashboard}
+              >
+                Go to dashboard
+              </Button>
+            </div>
+          </motion.div>
+        ) : (
+          <>
+            <div className="card p-0 overflow-hidden">
+              <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+                <div className="flex flex-col items-start text-left min-w-0">
+                  <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Help us fix this</p>
+                  <p className="text-[12px] text-ink-3 mt-1 leading-relaxed">
+                    Share what broke, what you expected, and a screenshot if possible.
+                  </p>
                 </div>
-                {displayReportedScreen && (
-                  <div className="px-4 py-3 bg-kosha-surface border-t border-kosha-border">
-                    <p className="text-[11px] text-ink-3">
-                      Reported on <span className="font-mono text-ink-2">{displayReportedScreen}</span>
-                    </p>
-                  </div>
-                )}
+                <img src="/illustrations/report_bug.png" alt="Report Bug" className="w-32 h-auto object-contain illustration shrink-0" />
+              </div>
+              {displayReportedScreen && (
+                <div className="px-4 py-3 bg-kosha-surface border-t border-kosha-border">
+                  <p className="text-[11px] text-ink-3">
+                    Reported on <span className="font-mono text-ink-2">{displayReportedScreen}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <form id="report-bug-form" onSubmit={handleSubmit} className="space-y-3">
+              <Input
+                label="Title"
+                name="bug-title"
+                placeholder="Bug title"
+                value={title}
+                maxLength={160}
+                onChange={e => setTitle(e.target.value)}
+              />
+
+              <div>
+                <label htmlFor="bug-description" className="text-label font-medium text-ink-2">What happened</label>
+                <textarea
+                  id="bug-description"
+                  className="input min-h-[112px] resize-none mt-1.5"
+                  name="bug-description"
+                  placeholder="What happened?"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                />
               </div>
 
-              <form id="report-bug-form" onSubmit={handleSubmit} className="space-y-3">
-                <Input
-                  label="Title"
-                  name="bug-title"
-                  placeholder="Bug title"
-                  value={title}
-                  maxLength={160}
-                  onChange={e => setTitle(e.target.value)}
+              <div>
+                <label htmlFor="bug-steps" className="text-label font-medium text-ink-2">Steps to reproduce</label>
+                <textarea
+                  id="bug-steps"
+                  className="input min-h-[86px] resize-none mt-1.5"
+                  name="bug-steps"
+                  placeholder="Steps to reproduce (optional)"
+                  value={steps}
+                  onChange={e => setSteps(e.target.value)}
                 />
+              </div>
 
-                <div>
-                  <label htmlFor="bug-description" className="text-label font-medium text-ink-2">What happened</label>
-                  <textarea
-                    id="bug-description"
-                    className="input min-h-[112px] resize-none mt-1.5"
-                    name="bug-description"
-                    placeholder="What happened?"
-                    value={description}
-                    onChange={e => setDescription(e.target.value)}
-                  />
-                </div>
+              <Input
+                label="Contact email (optional)"
+                type="email"
+                name="bug-email"
+                placeholder="Contact email (optional)"
+                value={reporterEmail}
+                onChange={e => setReporterEmail(e.target.value)}
+              />
 
-                <div>
-                  <label htmlFor="bug-steps" className="text-label font-medium text-ink-2">Steps to reproduce</label>
-                  <textarea
-                    id="bug-steps"
-                    className="input min-h-[86px] resize-none mt-1.5"
-                    name="bug-steps"
-                    placeholder="Steps to reproduce (optional)"
-                    value={steps}
-                    onChange={e => setSteps(e.target.value)}
-                  />
-                </div>
+              <Input
+                label="Tags (optional)"
+                name="bug-tags"
+                placeholder="Tags (optional, comma-separated: ui, crash, chart)"
+                value={tagsInput}
+                onChange={e => setTagsInput(e.target.value)}
+                helperText="Comma-separated tags help grouping and triage."
+              />
 
-                <Input
-                  label="Contact email (optional)"
-                  type="email"
-                  name="bug-email"
-                  placeholder="Contact email (optional)"
-                  value={reporterEmail}
-                  onChange={e => setReporterEmail(e.target.value)}
-                />
-
-                <Input
-                  label="Tags (optional)"
-                  name="bug-tags"
-                  placeholder="Tags (optional, comma-separated: ui, crash, chart)"
-                  value={tagsInput}
-                  onChange={e => setTagsInput(e.target.value)}
-                  helperText="Comma-separated tags help grouping and triage."
-                />
-
-                {parsedTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {parsedTags.map(tag => (
-                      <span
-                        key={tag}
-                        className="text-[11px] font-semibold text-ink-2 bg-kosha-surface-2 border border-kosha-border px-2 py-0.5 rounded-pill"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mini-panel p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-semibold text-ink">Screenshot (optional)</p>
-                      {screenshot ? (
-                        <p className="text-[11px] text-ink-3 truncate">
-                          {screenshot.name} · {fileSizeLabel(screenshot.size)}
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-ink-3">Attach a screenshot to speed up triage.</p>
-                      )}
-                    </div>
-                    <label className="shrink-0 px-3 py-1.5 mini-panel text-label font-semibold text-ink cursor-pointer hover:bg-kosha-surface-2 transition-colors">
-                      {screenshot ? 'Replace' : 'Attach'}
-                      <input
-                        type="file"
-                        name="bug-screenshot"
-                        accept="image/png,image/jpeg,image/webp"
-                        className="hidden"
-                        onChange={e => setScreenshot(e.target.files?.[0] || null)}
-                      />
-                    </label>
-                  </div>
-                  {screenshot && (
-                    <button
-                      type="button"
-                      onClick={() => setScreenshot(null)}
-                      className="mt-2 text-[11px] font-semibold text-expense-text"
+              {parsedTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {parsedTags.map(tag => (
+                    <span
+                      key={tag}
+                      className="text-[11px] font-semibold text-ink-2 bg-kosha-surface-2 border border-kosha-border px-2 py-0.5 rounded-pill"
                     >
-                      Remove screenshot
-                    </button>
-                  )}
+                      {tag}
+                    </span>
+                  ))}
                 </div>
+              )}
 
-                <div>
-                  <p className="text-caption text-ink-3 mb-2">Severity</p>
-                  <div className="flex gap-2">
-                    {SEVERITIES.map(s => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => setSeverity(s.id)}
-                        className={`px-3 py-1.5 rounded-pill text-label font-semibold border transition-colors
-                          ${severity === s.id
-                            ? 'bg-brand-container text-brand border-brand/20'
-                            : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
+              <div className="mini-panel p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-ink">Screenshot (optional)</p>
+                    {screenshot ? (
+                      <p className="text-[11px] text-ink-3 truncate">
+                        {screenshot.name} · {fileSizeLabel(screenshot.size)}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-ink-3">Attach a screenshot to speed up triage.</p>
+                    )}
                   </div>
+                  <label className="shrink-0 px-3 py-1.5 mini-panel text-label font-semibold text-ink cursor-pointer hover:bg-kosha-surface-2 transition-colors">
+                    {screenshot ? 'Replace' : 'Attach'}
+                    <input
+                      type="file"
+                      name="bug-screenshot"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={e => setScreenshot(e.target.files?.[0] || null)}
+                    />
+                  </label>
                 </div>
+                {screenshot && (
+                  <button
+                    type="button"
+                    onClick={() => setScreenshot(null)}
+                    className="mt-2 text-[11px] font-semibold text-expense-text"
+                  >
+                    Remove screenshot
+                  </button>
+                )}
+              </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIncludeDiagnostics(v => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 mini-panel"
-                >
-                  <span className="text-[14px] font-medium text-ink">Include diagnostics</span>
-                  <span className={`text-caption font-semibold px-2 py-0.5 rounded-pill
+              <div>
+                <p className="text-caption text-ink-3 mb-2">Severity</p>
+                <div className="flex gap-2">
+                  {SEVERITIES.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setSeverity(s.id)}
+                      className={`px-3 py-1.5 rounded-pill text-label font-semibold border transition-colors
+                          ${severity === s.id
+                          ? 'bg-brand-container text-brand border-brand/20'
+                          : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIncludeDiagnostics(v => !v)}
+                className="w-full flex items-center justify-between px-3 py-2.5 mini-panel"
+              >
+                <span className="text-[14px] font-medium text-ink">Include diagnostics</span>
+                <span className={`text-caption font-semibold px-2 py-0.5 rounded-pill
                     ${includeDiagnostics
-                      ? 'bg-brand-container text-brand'
-                      : 'bg-kosha-surface-2 text-ink-3'}`}>
-                    {includeDiagnostics ? 'On' : 'Off'}
-                  </span>
-                </button>
+                    ? 'bg-brand-container text-brand'
+                    : 'bg-kosha-surface-2 text-ink-3'}`}>
+                  {includeDiagnostics ? 'On' : 'Off'}
+                </span>
+              </button>
 
-                <p className="text-[11px] text-ink-3 -mt-1">
-                  Includes route, browser, device type, timezone, and viewport size. No financial entries, location coordinates, or personal identity fields are attached.
-                </p>
+              <p className="text-[11px] text-ink-3 -mt-1">
+                Includes route, browser, device type, timezone, and viewport size. No financial entries, location coordinates, or personal identity fields are attached.
+              </p>
 
-                {error && <p className="text-sm text-expense-text" role="alert" aria-live="polite">{error}</p>}
-              </form>
-            </>
-          )}
+              {error && <p className="text-sm text-expense-text" role="alert" aria-live="polite">{error}</p>}
+            </form>
+          </>
+        )}
       </div>
 
       {/* ── Bottom action bar ──────────────────────────────────────── */}

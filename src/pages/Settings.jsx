@@ -5,6 +5,7 @@ import { Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, User, Copy, Moon,
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/dialogs/EditProfileNameDialog'
+import ViewProfilePhotoDialog from '../components/dialogs/ViewProfilePhotoDialog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
@@ -72,6 +73,7 @@ export default function Settings() {
   const [uploading, setUploading] = useState(false)
   const [photoError, setPhotoError] = useState('')
   const [showEditName, setShowEditName] = useState(false)
+  const [showViewPhoto, setShowViewPhoto] = useState(false)
   const [reminderPrefs, setReminderPrefsState] = useState(() => getReminderPrefs())
   const [notificationPermission, setNotificationPermission] = useState(() => getNotificationPermission())
   const [reminderMsg, setReminderMsg] = useState('')
@@ -300,7 +302,7 @@ export default function Settings() {
         </button>
       )}
     >
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
           <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">
@@ -314,12 +316,16 @@ export default function Settings() {
         </motion.div>
 
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
-          <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border">
-            <div className="flex items-center gap-4">
+          <div className="px-5 py-6 bg-kosha-surface-2 border-b border-kosha-border">
+            <div className="flex items-center gap-5">
               <div className="relative shrink-0">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-brand-container
+                <div 
+                  onClick={() => setShowViewPhoto(true)}
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-brand-container
                                   flex items-center justify-center overflow-hidden
-                                  ring-4 ring-kosha-border">
+                                  ring-[5px] ring-kosha-border shadow-md cursor-pointer
+                                  active:scale-95 transition-transform duration-200"
+                >
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
@@ -327,28 +333,28 @@ export default function Settings() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-[24px] sm:text-[28px] font-bold text-ink">{initial}</span>
+                    <span className="text-[32px] sm:text-[40px] font-bold text-ink">{initial}</span>
                   )}
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full
-                               bg-brand text-white shadow-card
+                  className="absolute bottom-0 right-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full
+                               bg-brand text-white shadow-lg
                                flex items-center justify-center
                                active:scale-90 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]
-                               disabled:opacity-60"
+                               disabled:opacity-60 ring-2 ring-kosha-surface-2"
                   aria-label="Change photo"
                 >
-                  <Camera size={12} />
+                  <Camera size={14} />
                 </button>
               </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="text-[16px] sm:text-[18px] font-bold text-ink truncate">{displayName}</p>
-                <p className="text-[12px] text-ink-3 truncate mt-0.5">{user?.email}</p>
-                <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15">
-                  <ShieldAlert size={11} /> Private profile
+              <div className="min-w-0 flex-1 py-1">
+                <p className="text-[20px] sm:text-[24px] font-bold text-ink truncate leading-tight tracking-tight">{displayName}</p>
+                <p className="text-[13px] text-ink-3 truncate mt-0.5 font-medium">{user?.email}</p>
+                <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-pill bg-brand-container text-brand border border-brand/15 uppercase tracking-wider">
+                  <ShieldAlert size={11} /> Private account
                 </div>
               </div>
             </div>
@@ -548,7 +554,7 @@ export default function Settings() {
           <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
             Linked Wallets
           </p>
-          <div className="card overflow-hidden p-0 mb-6">
+          <div className="card overflow-hidden p-0">
             {linkedProfiles.length === 0 ? (
               <div className="px-4 py-8 text-center bg-kosha-surface-2">
                 <div className="w-10 h-10 rounded-full bg-kosha-surface flex items-center justify-center mx-auto mb-3">
@@ -591,7 +597,7 @@ export default function Settings() {
           <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
             Invite to Link Wallet
           </p>
-          <div className="card overflow-hidden p-0 mb-6">
+          <div className="card overflow-hidden p-0">
             <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-ink">Generate link</p>
@@ -672,7 +678,7 @@ export default function Settings() {
           <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
             Share Kosha
           </p>
-          <div className="card p-4 flex items-center justify-between gap-4 mb-6">
+          <div className="card p-4 flex items-center justify-between gap-4">
             <div>
               <p className="text-[13px] font-semibold text-ink">Invite Friends</p>
               <p className="text-[11px] text-ink-3 mt-0.5">Help others track their finances with Kosha.</p>
@@ -711,6 +717,15 @@ export default function Settings() {
       <EditProfileNameDialog
         open={showEditName}
         onClose={() => setShowEditName(false)}
+      />
+
+      {/* View profile photo dialog */}
+      <ViewProfilePhotoDialog
+        open={showViewPhoto}
+        onClose={() => setShowViewPhoto(false)}
+        avatarUrl={avatarUrl}
+        displayName={displayName}
+        initial={initial}
       />
     </PageBackHeaderPage>
   )

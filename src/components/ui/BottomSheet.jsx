@@ -16,7 +16,7 @@ export default function BottomSheet({
 }) {
   const sheetRef = useRef(null)
   const y = useMotionValue(0)
-  const backdropOpacity = useTransform(y, [0, 300], [1, 0])
+  const backdropOpacity = useTransform(y, [0, 300], [1, 0], { clamp: true })
 
   const handleDragEnd = useCallback((_, info) => {
     if (info.offset.y > 100 || info.velocity.y > 500) {
@@ -38,17 +38,17 @@ export default function BottomSheet({
           <Dialog.Portal forceMount>
             <Dialog.Overlay asChild>
               <motion.div
-                className="fixed inset-0 z-40"
+                className="fixed inset-0 z-40 bg-black/40"
                 style={{
-                  background: 'rgba(17, 19, 24, 0.40)',
                   backdropFilter: 'blur(8px)',
                   WebkitBackdropFilter: 'blur(8px)',
                   opacity: backdropOpacity,
+                  willChange: 'opacity, backdrop-filter',
                 }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
               />
             </Dialog.Overlay>
 
@@ -68,11 +68,12 @@ export default function BottomSheet({
                   maxHeight: 'calc(100dvh - var(--ds-safe-top, 0px) - 0.5rem)',
                   paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
                   y,
+                  willChange: 'transform',
                 }}
-                initial={{ y: '100%', opacity: 0.8 }}
+                initial={{ y: 1000, opacity: 0.5 }}
                 animate={{ y: 0, opacity: 1 }}
-                exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', damping: 40, stiffness: 500 }}
+                exit={{ y: 1000, opacity: 0 }}
+                transition={{ type: 'spring', damping: 38, stiffness: 450 }}
                 drag="y"
                 dragConstraints={{ top: 0 }}
                 dragElastic={0.2}
