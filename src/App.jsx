@@ -426,7 +426,6 @@ function BottomNav() {
         pointerEvents: isVisible ? 'auto' : 'none',
         visibility: shouldHide ? 'hidden' : 'visible',
         transition: loading ? 'none' : 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)',
-        transform: 'translateZ(0)',
         willChange: 'opacity',
       }}
     >
@@ -803,7 +802,7 @@ function DashboardWarmPrefetch() {
 function AnimatedRoutes() {
   const location = useLocation()
   return (
-    <div className="min-h-dvh">
+    <div>
       <Routes location={location}>
         <Route path="/login" element={<Login />} />
         <Route path="/join/:token" element={<InviteLanding />} />
@@ -1156,10 +1155,10 @@ function ShellStatusBanners() {
 
 function AppShell() {
   return (
-    <div className="min-h-dvh bg-kosha-bg">
+    <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
       <RuntimeRouteTracker />
       <CustomCategoryLoader />
-      <main id="main-content" role="main">
+      <main id="main-content" role="main" className="flex-1">
         <ContentWrapper>
           <AnimatedRoutes />
         </ContentWrapper>

@@ -680,8 +680,6 @@ textarea:focus-visible,
     /* GPU compositing: fixed elements should always be on compositor layer */
     /* NOTE: Do NOT add contain: layout/style here — it creates a new containing block
        that breaks position: fixed, making the nav position relative to itself. */
-    will-change: transform;
-    transform: translate3d(0, 0, 0);
   }
 
   .nav-float {

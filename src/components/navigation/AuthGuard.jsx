@@ -174,20 +174,16 @@ export default function AuthGuard({ children }) {
 
   // Auth initialising — show the skeleton that matches the destination route
   if (loading || (user && profileLoading)) return (
-    <div className="min-h-dvh bg-kosha-bg">
-      <div className="route-skeleton-shell">
-        <RouteSkeleton pathname={location.pathname} />
-      </div>
+    <div className="route-skeleton-shell">
+      <RouteSkeleton pathname={location.pathname} />
     </div>
   )
 
   // Awaiting redirect — show skeleton instead of null flash
   if (!user || ((!profile || !profile.onboarded) && location.pathname !== '/onboarding')) {
     return (
-      <div className="min-h-dvh bg-kosha-bg">
-        <div className="route-skeleton-shell">
-          <RouteSkeleton pathname={location.pathname} />
-        </div>
+      <div className="route-skeleton-shell">
+        <RouteSkeleton pathname={location.pathname} />
       </div>
     )
   }
