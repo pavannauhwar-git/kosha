@@ -46,7 +46,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-50 bg-ink/30"
+            className="fixed inset-0 z-50 bg-black/40"
             style={{ backdropFilter: 'blur(2px)' }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={saving ? undefined : onClose}

@@ -93,7 +93,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
           <p className="text-label font-semibold text-ink">Portfolio snapshot</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Yearly allocation mix, concentration, and next move.</p>
         </div>
-        <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-ink/[0.06] text-ink tabular-nums">
+        <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink border border-kosha-border tabular-nums">
           {safeVehicleData.length} vehicles
         </span>
       </div>

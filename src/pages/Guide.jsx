@@ -527,7 +527,7 @@ export default function Guide() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-ink/35"
+              className="fixed inset-0 z-40 bg-black/35"
             />
 
             <div className="fixed z-50 inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] px-4 flex justify-center">

@@ -467,7 +467,7 @@ export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({
           <p className="text-label font-semibold text-ink">Money Flow Comparison</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Month by month: income, expenses, and investments side by side.</p>
         </div>
-        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-ink/[0.06] text-ink">
+        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border">
           Invest rate {deploymentRate}%
         </span>
       </div>
@@ -763,7 +763,7 @@ export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaC
           <p className="text-label font-semibold text-ink">Outflow composition trend</p>
           <p className="text-[11px] text-ink-3 mt-0.5">Stacked monthly outflow split into expense and investment, with income trend on top.</p>
         </div>
-        <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-ink/[0.06] text-ink">
+        <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink border border-kosha-border">
           Avg invest share {avgInvestShare}%
         </span>
       </div>

@@ -97,7 +97,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
           <Dialog.Portal forceMount>
             <Dialog.Overlay asChild>
               <motion.div
-                className="fixed inset-0 bg-ink/30 z-50"
+                className="fixed inset-0 bg-black/40 z-50"
                 style={{ backdropFilter: 'blur(2px)' }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

@@ -968,7 +968,7 @@ export default function Reconciliation() {
                           <p className="text-[11px] text-ink-2 truncate">{alias.merchant}</p>
                           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                             alias.qualityScore >= 90 ? 'bg-income-bg text-income-text'
-                            : alias.qualityScore >= 70 ? 'bg-ink/[0.06] text-ink'
+                            : alias.qualityScore >= 70 ? 'bg-kosha-surface-2 text-ink border border-kosha-border'
                             : 'bg-warning-bg text-warning-text'
                           }`}>
                             {alias.qualityScore}%

@@ -585,11 +585,12 @@ textarea:focus-visible,
   }
 
   .chip-neutral {
-    @apply bg-ink/[0.06] text-ink text-[11px] font-semibold px-3 py-1 rounded-pill;
+    @apply bg-kosha-surface-2 text-ink text-[11px] font-semibold px-3 py-1 rounded-pill border border-kosha-border;
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border transition-all duration-200 ease-[cubic-bezier(0.2, 0, 0, 1)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2;
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2;
+    transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
     --tw-ring-color: rgba(17, 19, 24, 0.10);
   }
 
