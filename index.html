@@ -33,9 +33,50 @@
     <!-- Managed via @fontsource in src/main.jsx -->
 
     <title>Kosha — Your Financial Sheath</title>
+    <!-- Instant Theme Application to prevent FOUC -->
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('kosha-theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var isDark = stored === 'dark' || (!stored && prefersDark);
+          if (isDark) document.documentElement.classList.add('dark');
+          else document.documentElement.classList.add('light');
+        } catch (e) {}
+      })();
+    </script>
+    
+    <style>
+      /* Pure CSS Skeleton for Instant First Paint */
+      html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        background-color: #F6F8FA; /* Default Light */
+      }
+      html.dark body { background-color: #111318; }
+      
+      .initial-loader {
+        display: flex; flex-direction: column;
+        height: 100vh; height: 100dvh;
+        justify-content: space-between;
+      }
+      .initial-nav {
+        height: calc(env(safe-area-inset-bottom, 0px) + 64px);
+        background: #FFFFFF;
+        border-top: 1px solid rgba(0,0,0,0.05);
+      }
+      html.dark .initial-nav {
+        background: #1C1F26;
+        border-top: 1px solid rgba(255,255,255,0.05);
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="initial-loader">
+        <div style="flex:1"></div>
+        <div class="initial-nav"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

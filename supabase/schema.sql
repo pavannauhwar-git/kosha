@@ -53,6 +53,82 @@ create table if not exists liabilities (
   user_id                uuid
 );
 
+-- Monthly net changes cache (for fast get_running_balance)
+create table if not exists monthly_net_changes (
+  user_id uuid not null, -- FK added later for compatibility
+  month_start date not null,
+  net_change numeric not null default 0,
+  primary key (user_id, month_start)
+);
+
+alter table monthly_net_changes enable row level security;
+drop policy if exists "Users can read own monthly net changes" on monthly_net_changes;
+create policy "Users can read own monthly net changes"
+  on monthly_net_changes for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+create or replace function public.maintain_monthly_net_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_month_start date;
+  v_amount numeric;
+begin
+  if tg_op = 'DELETE' then
+    if old.user_id is not null then
+      v_month_start := date_trunc('month', old.date)::date;
+      v_amount := case when old.type = 'income' then -old.amount else old.amount end;
+      update public.monthly_net_changes
+      set net_change = net_change + v_amount
+      where user_id = old.user_id and month_start = v_month_start;
+    end if;
+    return old;
+  end if;
+
+  if tg_op = 'INSERT' then
+    if new.user_id is not null then
+      v_month_start := date_trunc('month', new.date)::date;
+      v_amount := case when new.type = 'income' then new.amount else -new.amount end;
+      insert into public.monthly_net_changes (user_id, month_start, net_change)
+      values (new.user_id, v_month_start, v_amount)
+      on conflict (user_id, month_start)
+      do update set net_change = monthly_net_changes.net_change + excluded.net_change;
+    end if;
+    return new;
+  end if;
+
+  if tg_op = 'UPDATE' then
+    if old.date is distinct from new.date or old.amount is distinct from new.amount or old.type is distinct from new.type or old.user_id is distinct from new.user_id then
+      if old.user_id is not null then
+        v_month_start := date_trunc('month', old.date)::date;
+        v_amount := case when old.type = 'income' then -old.amount else old.amount end;
+        update public.monthly_net_changes
+        set net_change = net_change + v_amount
+        where user_id = old.user_id and month_start = v_month_start;
+      end if;
+      if new.user_id is not null then
+        v_month_start := date_trunc('month', new.date)::date;
+        v_amount := case when new.type = 'income' then new.amount else -new.amount end;
+        insert into public.monthly_net_changes (user_id, month_start, net_change)
+        values (new.user_id, v_month_start, v_amount)
+        on conflict (user_id, month_start)
+        do update set net_change = monthly_net_changes.net_change + excluded.net_change;
+      end if;
+    end if;
+    return new;
+  end if;
+end;
+$$;
+
+drop trigger if exists trg_maintain_monthly_net_change on transactions;
+create trigger trg_maintain_monthly_net_change
+after insert or update or delete on transactions
+for each row execute function maintain_monthly_net_change();
+
 -- Invite links table
 create table if not exists invites (
   id         uuid primary key default gen_random_uuid(),
@@ -630,12 +706,23 @@ security invoker
 set search_path = public
 as $$
   select coalesce(
-    sum(case when type = 'income' then amount else -amount end),
-    0
-  )
-  from transactions
-  where user_id  = any(p_user_ids)
-    and date    <= p_end_date
+    (
+      -- Sum fully completed months from the cache
+      select sum(net_change)
+      from monthly_net_changes
+      where user_id = any(p_user_ids)
+        and month_start < date_trunc('month', p_end_date)::date
+    ), 0
+  ) + coalesce(
+    (
+      -- Sum raw transactions for the current partial month up to p_end_date
+      select sum(case when type = 'income' then amount else -amount end)
+      from transactions
+      where user_id = any(p_user_ids)
+        and date >= date_trunc('month', p_end_date)::date
+        and date <= p_end_date
+    ), 0
+  );
 $$;
 
 
@@ -857,86 +944,69 @@ returns table (
   totals        json,
   top5_expenses json
 )
-language plpgsql
-volatile
+language sql
+stable
 security invoker
 set search_path = public
 as $$
-declare
-  v_start date := make_date(p_year, 1, 1);
-  v_end   date := make_date(p_year, 12, 31);
-  v_monthly  json;
-  v_category json;
-  v_vehicle  json;
-  v_totals   json;
-  v_top5     json;
-begin
-  -- Single index scan: materialize the year's transactions once in memory
-  create temp table _yr on commit drop as
+  with year_data as (
     select id, date, type, amount, description, category,
            investment_vehicle, is_repayment
     from transactions
     where user_id = any(p_user_ids)
-      and date between v_start and v_end;
-
-  -- Monthly income / expense / investment buckets
-  select json_agg(row_to_json(m) order by m.month_num)
-  into v_monthly
-  from (
+      and date between make_date(p_year, 1, 1) and make_date(p_year, 12, 31)
+  ),
+  monthly_agg as (
     select
       extract(month from date)::int as month_num,
       sum(case when type = 'income' and not is_repayment then amount else 0 end) as income,
       sum(case when type = 'expense'    then amount else 0 end)       as expense,
       sum(case when type = 'investment' then amount else 0 end)       as investment
-    from _yr
+    from year_data
     group by extract(month from date)
-  ) m;
-
-  -- Category totals (expenses only)
-  select json_object_agg(category, cat_total)
-  into v_category
-  from (
+  ),
+  category_agg as (
     select coalesce(category, 'other') as category, sum(amount) as cat_total
-    from _yr
+    from year_data
     where type = 'expense'
-    group by category
-  ) c;
-
-  -- Investment vehicle totals
-  select json_object_agg(vehicle, veh_total)
-  into v_vehicle
-  from (
+    group by coalesce(category, 'other')
+  ),
+  vehicle_agg as (
     select coalesce(investment_vehicle, 'Other') as vehicle, sum(amount) as veh_total
-    from _yr
+    from year_data
     where type = 'investment'
-    group by investment_vehicle
-  ) v;
-
-  -- Grand totals
-  select json_build_object(
-    'income',      coalesce(sum(case when type = 'income' and not is_repayment then amount end), 0),
-    'repayments',  coalesce(sum(case when type = 'income' and is_repayment     then amount end), 0),
-    'expense',     coalesce(sum(case when type = 'expense'    then amount end), 0),
-    'investment',  coalesce(sum(case when type = 'investment' then amount end), 0),
-    'count',       count(*)
-  )
-  into v_totals
-  from _yr;
-
-  -- Top 5 expenses
-  select json_agg(row_to_json(e))
-  into v_top5
-  from (
+    group by coalesce(investment_vehicle, 'Other')
+  ),
+  totals_agg as (
+    select
+      coalesce(sum(case when type = 'income' and not is_repayment then amount end), 0) as income,
+      coalesce(sum(case when type = 'income' and is_repayment     then amount end), 0) as repayments,
+      coalesce(sum(case when type = 'expense'    then amount end), 0) as expense,
+      coalesce(sum(case when type = 'investment' then amount end), 0) as investment,
+      count(*) as count
+    from year_data
+  ),
+  top5_agg as (
     select id, date, type, amount, description, category
-    from _yr
+    from year_data
     where type = 'expense'
     order by amount desc
     limit 5
-  ) e;
-
-  return query select v_monthly, v_category, v_vehicle, v_totals, v_top5;
-end;
+  )
+  select
+    (select json_agg(row_to_json(m) order by m.month_num) from monthly_agg m),
+    (select json_object_agg(category, cat_total) from category_agg),
+    (select json_object_agg(vehicle, veh_total) from vehicle_agg),
+    (select json_build_object(
+      'income',     income,
+      'repayments', repayments,
+      'expense',    expense,
+      'investment', investment,
+      'count',      count
+    ) from totals_agg),
+    (select json_agg(row_to_json(e)) from top5_agg e);
 $$;
+
 
 
 -- ── 4. mark_liability_paid ───────────────────────────────────────────────────

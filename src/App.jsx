@@ -78,9 +78,9 @@ const NAV = [
 ]
 
 const REALTIME_INVALIDATION_POLICIES = [
-  { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS },
-  { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
-  { key: 'loans', table: 'loans', queryKeys: LOAN_INVALIDATION_KEYS },
+  { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS, filterColumn: 'user_id' },
+  { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS, filterColumn: 'user_id' },
+  { key: 'loans', table: 'loans', queryKeys: LOAN_INVALIDATION_KEYS, filterColumn: 'user_id' },
   { key: 'splitwise', table: 'split_groups', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_group_access', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_group_members', queryKeys: SPLITWISE_INVALIDATION_KEYS },
@@ -631,9 +631,14 @@ function GlobalRealtimeSync() {
       let nextChannel = supabase.channel(`kosha-sync-${user.id}`)
 
       for (const policy of REALTIME_INVALIDATION_POLICIES) {
+        const config = { event: '*', schema: 'public', table: policy.table }
+        if (policy.filterColumn) {
+          config.filter = `${policy.filterColumn}=eq.${user.id}`
+        }
+        
         nextChannel = nextChannel.on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: policy.table },
+          config,
           () => scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
         )
       }
