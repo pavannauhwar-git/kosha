@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.3.1',
+    date: 'April 2026',
+    items: [
+      'Overhauled the illustration system with perfectly matched stick-figure assets for empty states and hero headers',
+      'Standardized page header layouts across Settings, About, Guide, Login, and Report Bug for premium visual consistency',
+      'Rebalanced the Settings profile card and list rows for a denser, more compact typography and layout',
+      'Separated active and archived trip counts in Splitwise admin and member dashboards',
+      'Unified list-level "Add" actions to a secondary visual weight across Dashboard, Loans, and Bills',
+    ],
+  },
+  {
     version: '1.3.0',
     date: 'April 2026',
     items: [

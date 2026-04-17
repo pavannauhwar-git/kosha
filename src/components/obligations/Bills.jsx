@@ -552,7 +552,7 @@ export default function Bills({
           )}
           {embedded && (
             <Button
-              variant="primary"
+              variant="secondary"
               size="sm"
               icon={<Plus size={14} />}
               onClick={() => setShowAdd(true)}

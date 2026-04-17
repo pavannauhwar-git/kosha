@@ -39,22 +39,22 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
       onClick={onClick}
       disabled={disabled}
       {...toggleA11yProps}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
+      className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left
                   transition-colors active:bg-kosha-surface-2
                   disabled:opacity-50
                   ${destructive ? 'text-expense-text' : 'text-ink'}`}
     >
-      <div className={`w-9 h-9 rounded-chip flex items-center justify-center shrink-0
+      <div className={`w-8 h-8 rounded-chip flex items-center justify-center shrink-0
                        ${destructive ? 'bg-expense-bg' : 'bg-brand-container'}`}>
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-[15px] font-medium leading-snug
+        <p className={`text-[13px] font-semibold leading-snug
                        ${destructive ? 'text-expense-text' : 'text-ink'}`}>
           {label}
         </p>
         {sublabel && (
-          <p className="text-[12px] text-ink-3 mt-0.5 truncate">{sublabel}</p>
+          <p className="text-[11px] text-ink-3 mt-0.5 truncate">{sublabel}</p>
         )}
       </div>
       {rightElement && (
@@ -300,7 +300,7 @@ export default function Settings() {
         </button>
       )}
     >
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
           <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">
@@ -314,10 +314,10 @@ export default function Settings() {
         </motion.div>
 
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
-          <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border">
+          <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border">
             <div className="flex items-center gap-4">
               <div className="relative shrink-0">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-container
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-brand-container
                                   flex items-center justify-center overflow-hidden
                                   ring-4 ring-kosha-border">
                   {avatarUrl ? (
@@ -327,26 +327,26 @@ export default function Settings() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-[28px] sm:text-[32px] font-bold text-ink">{initial}</span>
+                    <span className="text-[24px] sm:text-[28px] font-bold text-ink">{initial}</span>
                   )}
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full
+                  className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full
                                bg-brand text-white shadow-card
                                flex items-center justify-center
                                active:scale-90 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]
                                disabled:opacity-60"
                   aria-label="Change photo"
                 >
-                  <Camera size={14} />
+                  <Camera size={12} />
                 </button>
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="text-[18px] sm:text-[20px] font-bold text-ink truncate">{displayName}</p>
-                <p className="text-[13px] text-ink-3 truncate mt-0.5">{user?.email}</p>
+                <p className="text-[16px] sm:text-[18px] font-bold text-ink truncate">{displayName}</p>
+                <p className="text-[12px] text-ink-3 truncate mt-0.5">{user?.email}</p>
                 <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15">
                   <ShieldAlert size={11} /> Private profile
                 </div>

@@ -410,14 +410,25 @@ export default function Splitwise() {
     [expenses]
   )
 
-  const activeGroupsList = useMemo(() => groups.filter((g) => !g.is_archived), [groups])
-  
-  const ownedGroupsCount = useMemo(
-    () => activeGroupsList.filter((group) => group.my_role === 'admin' || group.user_id === authUserId).length,
-    [activeGroupsList, authUserId]
-  )
+  const groupStats = useMemo(() => {
+    let adminActive = 0
+    let adminArchived = 0
+    let memberActive = 0
+    let memberArchived = 0
 
-  const sharedGroupsCount = Math.max(0, activeGroupsList.length - ownedGroupsCount)
+    groups.forEach((group) => {
+      const isAdmin = group.my_role === 'admin' || group.user_id === authUserId
+      if (isAdmin) {
+        if (group.is_archived) adminArchived++
+        else adminActive++
+      } else {
+        if (group.is_archived) memberArchived++
+        else memberActive++
+      }
+    })
+
+    return { adminActive, adminArchived, memberActive, memberArchived }
+  }, [groups, authUserId])
 
   const schemaMissing = isSplitwiseSchemaMissing(error)
   const activeGroup = useMemo(
@@ -1045,11 +1056,21 @@ export default function Splitwise() {
           <div className="grid grid-cols-2 gap-2.5">
             <div className="card p-3">
               <p className="text-[10px] text-ink-3">Admin in</p>
-              <p className="mt-1 text-[15px] font-semibold text-ink tabular-nums">{ownedGroupsCount}</p>
+              <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
+                <p className="text-[15px] font-semibold text-ink tabular-nums">{groupStats.adminActive} active</p>
+                {groupStats.adminArchived > 0 && (
+                  <p className="text-[11px] text-ink-3 tabular-nums">· {groupStats.adminArchived} archived</p>
+                )}
+              </div>
             </div>
             <div className="card p-3">
               <p className="text-[10px] text-ink-3">Member in</p>
-              <p className="mt-1 text-[15px] font-semibold text-ink tabular-nums">{sharedGroupsCount}</p>
+              <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
+                <p className="text-[15px] font-semibold text-ink tabular-nums">{groupStats.memberActive} active</p>
+                {groupStats.memberArchived > 0 && (
+                  <p className="text-[11px] text-ink-3 tabular-nums">· {groupStats.memberArchived} archived</p>
+                )}
+              </div>
             </div>
           </div>
 

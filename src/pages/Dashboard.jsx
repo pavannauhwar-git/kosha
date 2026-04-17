@@ -716,8 +716,8 @@ export default function Dashboard() {
               <p className="text-[14px] font-semibold text-ink">Add your first transaction to unlock daily guidance.</p>
               <p className="text-[11px] text-ink-3 mt-1.5">Kosha will start showing spendable today, burn rate, and upcoming bills as soon as your month has activity.</p>
               <div className="flex gap-2 mt-3">
-                <Button variant="primary" size="sm" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
-                  Add expense
+                <Button variant="secondary" size="sm" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
+                  <Plus size={14} className="mr-1 inline" /> Add
                 </Button>
                 <Button variant="secondary" size="sm" onClick={() => navigate('/bills')}>
                   Add bill
