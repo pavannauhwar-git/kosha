@@ -125,8 +125,8 @@ export default function Reconciliation() {
   )
 
   const driftMessage = useMemo(
-    () => getDriftMessage(confidenceDrift),
-    [confidenceDrift]
+    () => (needsMatchingInsights ? getDriftMessage(confidenceDrift) : null),
+    [confidenceDrift, needsMatchingInsights]
   )
 
   const statementMatches = useMemo(

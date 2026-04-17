@@ -201,27 +201,28 @@ export default function Dashboard() {
 
   // ── Spendable today ────────────────────────────────────────────────────
   const spendableToday = useMemo(() => {
+    if (heroLoading) return { daily: 0, remaining: 0, pendingBillsTotal: 0 }
     const totalOutflow = spent + invested
     const remaining = earned - totalOutflow
     const pendingBillsTotal = bills.reduce((sum, b) => sum + Number(b.amount || 0), 0)
     const afterBills = Math.max(0, remaining - pendingBillsTotal)
     const daily = daysRemaining > 0 ? Math.round(afterBills / daysRemaining) : 0
     return { daily, remaining: afterBills, pendingBillsTotal }
-  }, [earned, spent, invested, bills, daysRemaining])
+  }, [earned, spent, invested, bills, daysRemaining, heroLoading])
 
   // ── Budget burn rate ───────────────────────────────────────────────────
   const burnRate = useMemo(() => {
-    if (earned <= 0) return null
+    if (heroLoading || earned <= 0) return null
     const totalOutflow = spent + invested
     const paceExpected = (dayOfMonth / daysInMonth) * 100
     const paceActual = Math.round((totalOutflow / earned) * 100)
     const ahead = paceActual > paceExpected + 5
     return { paceActual, paceExpected: Math.round(paceExpected), ahead }
-  }, [earned, spent, invested, dayOfMonth, daysInMonth])
+  }, [earned, spent, invested, dayOfMonth, daysInMonth, heroLoading])
 
   // ── Runway balance (days left vs money left) ───────────────────────
   const runwayBalance = useMemo(() => {
-    if (earned <= 0) return null
+    if (heroLoading || earned <= 0) return null
 
     const daysLeftPct = Math.round((daysRemaining / Math.max(1, daysInMonth)) * 100)
     const moneyLeftPctRaw = Math.round((spendableToday.remaining / earned) * 100)
@@ -235,10 +236,11 @@ export default function Dashboard() {
       gapPct,
       band,
     }
-  }, [earned, spendableToday.remaining, daysRemaining, daysInMonth])
+  }, [earned, spendableToday.remaining, daysRemaining, daysInMonth, heroLoading])
 
   // ── Category pressure signal ─────────────────────────────────────────
   const categoryPressureSignal = useMemo(() => {
+    if (heroLoading) return null
     const categoryRows = Object.entries(summary?.byCategory || {})
       .map(([categoryId, amount]) => [categoryId, Number(amount || 0)])
       .filter(([, amount]) => Number.isFinite(amount) && amount > 0)
@@ -261,7 +263,7 @@ export default function Dashboard() {
       budgetPct,
       band,
     }
-  }, [summary?.byCategory, spent, bMap, categoryLabelById])
+  }, [summary?.byCategory, spent, bMap, categoryLabelById, heroLoading])
 
   // ── Bill clustering signal ───────────────────────────────────────────
   const billClusterSignal = useMemo(() => {
@@ -671,7 +673,7 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {!heroLoading && !isNewUser && attentionItems.length === 0 && (
+        {!heroLoading && !isNewUser && attentionItems.length === 0 && (earned > 0 || spent > 0) && (
           <motion.div variants={fadeUp}>
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">

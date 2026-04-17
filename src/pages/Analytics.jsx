@@ -1,13 +1,6 @@
 import { CATEGORIES } from '../lib/categories'
-import { useState, useMemo, useEffect } from 'react'
+import { lazy, Suspense, useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import {
-  CashFlowChart,
-  CashflowWaterfallChart,
-  SurplusTrajectoryChart,
-  WhatIfSimulatorCard,
-  RunwayCoverageChart,
-} from '../components/analytics/AnalyticsCharts'
 import { useYearSummary, useYearDailyExpenseTotals } from '../hooks/useTransactions'
 import { fmt } from '../lib/utils'
 import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
@@ -17,10 +10,21 @@ import { useNavigate } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
-import YearOverYearCards from '../components/cards/analytics/YearOverYearCards'
-import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
-import InvestmentConsistencyCard from '../components/cards/analytics/InvestmentConsistencyCard'
 import CalendarHeatmap from '../components/cards/analytics/CalendarHeatmap'
+
+// Lazy-load heavy chart components to defer ~264KB charts vendor bundle
+const YearOverYearCards = lazy(() => import('../components/cards/analytics/YearOverYearCards'))
+const YearlyPortfolioSnapshotCard = lazy(() => import('../components/cards/analytics/YearlyPortfolioSnapshotCard'))
+const InvestmentConsistencyCard = lazy(() => import('../components/cards/analytics/InvestmentConsistencyCard'))
+const CashFlowChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.CashFlowChart })))
+const CashflowWaterfallChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.CashflowWaterfallChart })))
+const SurplusTrajectoryChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.SurplusTrajectoryChart })))
+const WhatIfSimulatorCard = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.WhatIfSimulatorCard })))
+const RunwayCoverageChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.RunwayCoverageChart })))
+
+function ChartSkeleton({ height = 'h-[200px]' }) {
+  return <div className={`card p-4 ${height} flex items-center justify-center`}><div className="h-3 w-32 rounded-full shimmer opacity-60" /></div>
+}
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
@@ -285,11 +289,13 @@ export default function Analytics() {
                 </p>
               </div>
 
-              <CalendarHeatmap
-                dailyTotals={yearDailyTotals}
-                year={year}
-                loading={yearDailyLoading}
-              />
+              {(yearDailyLoading || Object.keys(yearDailyTotals || {}).length > 0) && (
+                <CalendarHeatmap
+                  dailyTotals={yearDailyTotals}
+                  year={year}
+                  loading={yearDailyLoading}
+                />
+              )}
 
               {(yearHealthSignal || expenseConcentrationSignal) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -325,49 +331,61 @@ export default function Analytics() {
                 </div>
               )}
 
-              <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
+              {Number(data?.totalInvestment || 0) > 0 && (
+                <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
+              )}
 
             <div className="space-y-4">
               {/* ── 2. Year-over-year context ───────────────────────── */}
-              {heavyReady ? (
-                <YearOverYearCards years={yoyYears} currentYear={year} enabled />
-              ) : (
-                <div className="card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="section-label">Year over year trends</p>
-                    <span className="text-caption text-ink-3">Preparing</span>
-                  </div>
-                  <p className="text-[12px] text-ink-3">Preparing comparison data...</p>
-                </div>
+              {heavyReady && yoyYears.length >= 2 && (
+                <Suspense fallback={<ChartSkeleton height="h-[320px]" />}>
+                  <YearOverYearCards years={yoyYears} currentYear={year} enabled />
+                </Suspense>
               )}
 
               {/* ── 3. Performance trends ─────────────────────────────── */}
-              <CashFlowChart
-                chartData={flowTrendData}
-                totalIncome={data?.totalIncome}
-              />
-              <CashflowWaterfallChart
-                flowData={flowTrendData}
-                totalIncome={data?.totalIncome}
-                totalExpense={data?.totalExpense}
-                totalInvestment={data?.totalInvestment}
-                periodLabel="Yearly"
-              />
-              <SurplusTrajectoryChart netData={surplusData} />
+              <Suspense fallback={<ChartSkeleton height="h-[220px]" />}>
+                <CashFlowChart
+                  chartData={flowTrendData}
+                  totalIncome={data?.totalIncome}
+                />
+              </Suspense>
+              <Suspense fallback={<ChartSkeleton height="h-[220px]" />}>
+                <CashflowWaterfallChart
+                  flowData={flowTrendData}
+                  totalIncome={data?.totalIncome}
+                  totalExpense={data?.totalExpense}
+                  totalInvestment={data?.totalInvestment}
+                  periodLabel="Yearly"
+                />
+              </Suspense>
+              <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                <SurplusTrajectoryChart netData={surplusData} />
+              </Suspense>
 
-              <InvestmentConsistencyCard monthlyData={data?.monthly} year={year} />
+              {Number(data?.totalInvestment || 0) > 0 && (
+                <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                  <InvestmentConsistencyCard monthlyData={data?.monthly} year={year} />
+                </Suspense>
+              )}
 
-              <RunwayCoverageChart
-                flowData={flowTrendData}
-                annualSurplus={annualSurplus}
-              />
+              <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                <RunwayCoverageChart
+                  flowData={flowTrendData}
+                  annualSurplus={annualSurplus}
+                />
+              </Suspense>
 
-              <WhatIfSimulatorCard
-                categories={scenarioCategories}
-                totalIncome={data?.totalIncome}
-                totalExpense={data?.totalExpense}
-                totalInvestment={data?.totalInvestment}
-              />
+              {Number(data?.totalExpense || 0) > 0 && (
+                <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                  <WhatIfSimulatorCard
+                    categories={scenarioCategories}
+                    totalIncome={data?.totalIncome}
+                    totalExpense={data?.totalExpense}
+                    totalInvestment={data?.totalInvestment}
+                  />
+                </Suspense>
+              )}
 
               {/* Spent-by-category section intentionally removed; yearly portfolio lives in the snapshot card above. */}
             </div>

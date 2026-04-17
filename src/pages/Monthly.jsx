@@ -650,6 +650,7 @@ export default function Monthly() {
             </div>
           )}
 
+          {(inflow > 0 || spent > 0 || invested > 0) && (
           <div className="card p-4 border-0">
             <SectionHeader
               className="mb-2"
@@ -700,6 +701,7 @@ export default function Monthly() {
               </Button>
             </div>
           </div>
+          )}
 
           {heavyReady && (inflow > 0 || spent > 0 || invested > 0) && (
             <CashflowWaterfallChart
