@@ -530,7 +530,7 @@ export default function Reconciliation() {
                 : 'Queue clear. Your records look healthy.'}
             </p>
           </div>
-          <img src="/illustrations/reconciliation_empty.png" alt="Reconciliation" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
+          <img src="/illustrations/reconciliation_empty.png" alt="Reconciliation" className="w-32 h-auto object-contain illustration shrink-0" />
         </div>
 
         <div className="px-4 py-3.5">

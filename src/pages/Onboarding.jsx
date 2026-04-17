@@ -375,7 +375,7 @@ export default function Onboarding() {
           <KoshaLogo size={36} />
         </div>
         <div className="flex justify-center mb-2">
-          <img src="/illustrations/onboarding_hero.png" alt="Welcome to Kosha" className="w-48 h-auto mix-blend-multiply [clip-path:inset(2px)]" />
+          <img src="/illustrations/onboarding_hero.png" alt="Welcome to Kosha" className="w-48 h-auto illustration" />
         </div>
 
         <StepDots current={step} total={3} />

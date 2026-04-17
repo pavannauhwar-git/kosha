@@ -309,7 +309,7 @@ export default function Settings() {
                 Control your profile, security, and shared access.
               </p>
             </div>
-            <img src="/illustrations/settings_hero.png" alt="Settings Hero" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
+            <img src="/illustrations/settings_hero.png" alt="Settings Hero" className="w-32 h-auto object-contain illustration shrink-0" />
           </div>
         </motion.div>
 

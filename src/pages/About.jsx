@@ -131,7 +131,7 @@ export default function About() {
               <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Kosha</p>
               <p className="text-[12px] text-ink-3 mt-0.5">Your financial command center</p>
             </div>
-            <img src="/illustrations/about_hero.png" alt="About Kosha" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
+            <img src="/illustrations/about_hero.png" alt="About Kosha" className="w-32 h-auto object-contain illustration shrink-0" />
           </div>
 
           <div className="p-4">

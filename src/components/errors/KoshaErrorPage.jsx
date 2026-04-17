@@ -80,7 +80,7 @@ export default function KoshaErrorPage({
 
           {imageUrl ? (
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left mb-2">
-              <img src={imageUrl} alt="Error illustration" className="w-24 h-24 object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
+              <img src={imageUrl} alt="Error illustration" className="w-24 h-24 object-contain illustration shrink-0" />
               <div className="flex-1 min-w-0 pt-2">
                 <h1 ref={headingRef} tabIndex="-1" className="text-[20px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
                 <p className="mt-1.5 text-label leading-relaxed text-ink-2">{description}</p>

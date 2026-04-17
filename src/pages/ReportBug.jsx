@@ -331,7 +331,7 @@ export default function ReportBug() {
                       Share what broke, what you expected, and a screenshot if possible.
                     </p>
                   </div>
-                  <img src="/illustrations/report_bug.png" alt="Report Bug" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
+                  <img src="/illustrations/report_bug.png" alt="Report Bug" className="w-32 h-auto object-contain illustration shrink-0" />
                 </div>
                 {displayReportedScreen && (
                   <div className="px-4 py-3 bg-kosha-surface border-t border-kosha-border">

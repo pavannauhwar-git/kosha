@@ -1311,7 +1311,7 @@ export default function Splitwise() {
             <p className="section-label mb-2">Suggested Settlements</p>
             {suggestedTransfers.length === 0 ? (
               <div className="py-4 text-center">
-                <img src="/illustrations/coffee_chill.png" className="max-h-[100px] w-auto mx-auto mb-2 mix-blend-multiply [clip-path:inset(2px)]" alt="All caught up" />
+                <img src="/illustrations/coffee_chill.png" className="max-h-[100px] w-auto mx-auto mb-2 illustration" alt="All caught up" />
                 <p className="text-[13px] font-semibold text-ink">Everyone is settled.</p>
                 <p className="text-[11px] text-ink-3">Time to relax.</p>
               </div>

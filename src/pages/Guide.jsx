@@ -336,7 +336,7 @@ export default function Guide() {
                 Practical workflows, mistakes to avoid, and quick next actions for every page.
               </p>
             </div>
-            <img src="/illustrations/guide_hero.png" alt="Guide Hero" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
+            <img src="/illustrations/guide_hero.png" alt="Guide Hero" className="w-32 h-auto object-contain illustration shrink-0" />
           </div>
 
           <div className="p-4">

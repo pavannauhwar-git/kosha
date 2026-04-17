@@ -31,7 +31,7 @@ export default function EmptyState({
     >
       {imageUrl ? (
         <motion.div variants={fadeUp} className="mb-4 flex items-center justify-center">
-          <img src={imageUrl} alt="Empty State Illustration" className="max-h-[160px] w-auto object-contain mix-blend-multiply [clip-path:inset(2px)]" />
+          <img src={imageUrl} alt="Empty State Illustration" className="max-h-[160px] w-auto object-contain illustration" />
         </motion.div>
       ) : icon ? (
         <motion.div

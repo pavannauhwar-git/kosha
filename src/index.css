@@ -880,6 +880,17 @@ textarea:focus-visible,
     @apply bar-dark-fill;
   }
 
+  /* -- Illustration — dark-mode adaptation ────────────────────────── */
+  .illustration {
+    mix-blend-mode: multiply;
+    clip-path: inset(2px);
+  }
+
+  .dark .illustration {
+    filter: invert(1) hue-rotate(180deg);
+    mix-blend-mode: screen;
+  }
+
   /* -- Close button ────────────────────────────────────────────────── */
   .close-btn {
     @apply w-9 h-9 rounded-full flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-bg transition-all duration-150 cursor-pointer;

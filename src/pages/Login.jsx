@@ -189,7 +189,7 @@ export default function Login() {
                   </div>
                   <p className="text-[12px] text-ink-2">Personal finance, simplified</p>
                 </div>
-                <img src="/illustrations/login_hero.png" alt="Kosha login" className="w-32 h-auto shrink-0 mix-blend-multiply [clip-path:inset(2px)]" />
+                <img src="/illustrations/login_hero.png" alt="Kosha login" className="w-32 h-auto shrink-0 illustration" />
               </div>
 
               {/* ── Heading ───────────────────────────────────────────────── */}
