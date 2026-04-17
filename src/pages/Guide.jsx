@@ -515,28 +515,6 @@ export default function Guide() {
           <p className="text-label text-ink-2">{todayTip}</p>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-2">
-          <Button
-            variant="tonal"
-            size="xl"
-            fullWidth
-            onClick={() => navigate('/')}
-            icon={<ArrowLeft size={15} />}
-            className="flex-1 whitespace-nowrap"
-          >
-            Back to dashboard
-          </Button>
-          <Button
-            variant="primary"
-            size="xl"
-            fullWidth
-            onClick={() => navigate('/transactions')}
-            iconRight={<ArrowRight size={15} />}
-            className="flex-1 whitespace-nowrap"
-          >
-            Open transactions
-          </Button>
-        </motion.div>
       </motion.div>
 
       <AnimatePresence>

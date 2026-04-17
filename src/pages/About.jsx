@@ -26,7 +26,7 @@ const SUPPORT_UPI_LINK = `upi://pay?${SUPPORT_UPI_QUERY}`
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-[14px] font-semibold text-ink mb-2 px-1">
+    <p className="text-[11px] font-bold uppercase tracking-wider text-ink-3 mb-1.5 px-1">
       {children}
     </p>
   )
@@ -110,19 +110,21 @@ export default function About() {
           type="button"
           onClick={() => navigate('/')}
           aria-label="Go to dashboard"
-          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
+          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border transition-colors"
         >
           <Home size={16} className="text-ink-2" />
         </button>
       )}
     >
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
-          <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+          <div className="px-4 py-5 bg-gradient-to-br from-brand-container/60 to-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <KoshaLogo size={24} className="drop-shadow-sm" />
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center shadow-sm">
+                  <KoshaLogo size={18} />
+                </div>
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-pill bg-white/50 border border-brand/20 text-brand">
                   v{latestVersion}
                 </span>
               </div>
@@ -146,20 +148,19 @@ export default function About() {
                   <p className="text-[16px] font-semibold text-ink leading-none">{shippedItems}+</p>
                   <p className="text-[10px] text-ink-3 mt-1">Improvements</p>
                 </div>
-                <div className="mini-panel px-2.5 py-2 text-center">
-                  <p className="text-[16px] font-semibold text-ink leading-none">100%</p>
-                  <p className="text-[10px] text-ink-3 mt-1">Self-hosted data</p>
+                <div className="mini-panel px-2.5 py-2 text-center bg-brand-container/50 border-brand/20">
+                  <p className="text-[16px] font-semibold text-brand leading-none">100%</p>
+                  <p className="text-[10px] text-brand/70 mt-1">Self-hosted</p>
                 </div>
               </div>
 
               <div className="mt-4">
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   size="md"
                   fullWidth
                   onClick={() => navigate('/guide')}
                   icon={<Sparkles size={14} />}
-                  className="bg-brand text-white border-brand hover:brightness-95"
                 >
                   Open product guide
                 </Button>

@@ -521,18 +521,16 @@ export default function Reconciliation() {
 
       {/* ── Summary strip ──────────────────────────────────── */}
       <div className="card p-0 mb-3.5 overflow-hidden">
-        <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-ink">Reconciliation cockpit</p>
-            <p className="text-[11px] text-ink-3 mt-0.5">
+        <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+          <div className="flex flex-col items-start text-left min-w-0">
+            <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Reconciliation</p>
+            <p className="text-[12px] text-ink-3 mt-1 leading-relaxed">
               {reviewProgress.queue > 0
                 ? `${reviewProgress.queue} item${reviewProgress.queue > 1 ? 's' : ''} need attention`
                 : 'Queue clear. Your records look healthy.'}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-brand-container text-brand flex items-center justify-center shrink-0">
-            <ShieldCheck size={18} />
-          </div>
+          <img src="/illustrations/reconciliation_empty.png" alt="Reconciliation" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
         </div>
 
         <div className="px-4 py-3.5">

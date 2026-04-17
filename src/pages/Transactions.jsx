@@ -1079,433 +1079,276 @@ export default function Transactions() {
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
   }, [location.state, location.pathname, location.search, navigate])
 
+  const isNewUser = !txnLoading && total === 0 && !hasActiveFilters
+
   return (
     <PageHeaderPage title="Transactions">
-
-      <div className="card p-0 border-0 overflow-hidden mb-3">
-        <div className="px-4 pt-3.5 pb-3 bg-kosha-surface-2 border-b border-kosha-border">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-ink">Transaction workspace</p>
-              <p className="text-[12px] text-ink-3 mt-0.5">Quick read of loaded timeline health before you edit rows.</p>
-            </div>
-            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-pill border whitespace-nowrap ${
-              hasActiveFilters
-                ? 'bg-brand-container text-brand border-brand/20'
-                : 'bg-kosha-surface text-ink-3 border-kosha-border'
-            }`}>
-              {hasActiveFilters ? 'Filtered view' : 'Full timeline'}
-            </span>
+      {isNewUser && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card p-4 border-0 mb-3"
+        >
+          <p className="section-label mb-1.5">Start here</p>
+          <p className="text-[14px] font-semibold text-ink">Add your first transaction to unlock your timeline.</p>
+          <p className="text-[11px] text-ink-3 mt-1.5">Kosha will start analyzing your activity and showing insights here once you log your first transaction.</p>
+          <div className="flex gap-2 mt-3">
+            <Button variant="secondary" size="sm" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
+              <Plus size={14} className="mr-1 inline" /> Add
+            </Button>
           </div>
-        </div>
+        </motion.div>
+      )}
 
-        <div className="p-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <div className="mini-panel px-3 py-2.5">
-              <p className="text-[10px] uppercase tracking-wide text-ink-3">Rows</p>
-              <p className="text-[15px] font-semibold tabular-nums text-ink mt-1">{data.length}/{total}</p>
-              <p className="text-[10px] text-ink-3 mt-0.5">Loaded / matching</p>
+      {!isNewUser && (
+        <div className="card p-0 border-0 overflow-hidden mb-3">
+          <div className="px-4 pt-3.5 pb-3 border-b border-kosha-border bg-kosha-surface-2">
+            <p className="text-[15px] font-semibold text-ink">Find and filter</p>
+            <p className="text-[12px] text-ink-3 mt-0.5">Search by merchant or note, then narrow by date, type, category, and payment mode.</p>
+
+            <div className="relative mt-3">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+            <input
+              className="input pl-8 pr-8 py-2 md:py-2.5 text-[14px]"
+              name="transaction-search"
+              placeholder="Search transactions..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {isSearchDebouncing ? (
+              <Loader2 size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 animate-spin" />
+            ) : search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3"
+              >
+                <X size={13} />
+              </button>
+            )}
             </div>
-            <div className="mini-panel px-3 py-2.5">
-              <p className="text-[10px] uppercase tracking-wide text-ink-3">Range</p>
-              <p className="text-[13px] font-semibold text-ink mt-1 truncate">{activeDatePresetLabel}</p>
-              <p className="text-[10px] text-ink-3 mt-0.5">Timeline window</p>
-            </div>
-            <div className="mini-panel px-3 py-2.5">
-              <p className="text-[10px] uppercase tracking-wide text-ink-3">Income</p>
-              <p className="text-[13px] font-semibold tabular-nums text-income-text mt-1">{fmt(visibleSummary.income)}</p>
-              <p className="text-[10px] text-ink-3 mt-0.5">Loaded rows</p>
-            </div>
-            <div className="mini-panel px-3 py-2.5">
-              <p className="text-[10px] uppercase tracking-wide text-ink-3">Net flow</p>
-              <p className={`text-[13px] font-semibold tabular-nums mt-1 ${visibleSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                {visibleSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(visibleSummary.net))}
-              </p>
-              <p className="text-[10px] text-ink-3 mt-0.5">Income - outflow</p>
-            </div>
+
+            {isSearchDebouncing && (
+              <p className="text-[11px] text-ink-3 mt-1.5">Updating results…</p>
+            )}
           </div>
 
-          {(timelineActivitySignal || paymentModeSignal || expenseFrequencySignal) && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
-              {timelineActivitySignal && (
-                <div className="mini-panel px-3 py-2.5">
-                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Activity density</p>
-                  <p className="text-[13px] font-semibold text-ink mt-1 tabular-nums">
-                    {timelineActivitySignal.txnsPerActiveDay.toFixed(1)} txns / active day
-                  </p>
-                  <p className="text-[10px] text-ink-3 mt-0.5">
-                    {timelineActivitySignal.activeDays}/{timelineActivitySignal.spanDays} days active ({timelineActivitySignal.densityPct}%)
-                  </p>
-                  <p className={`text-[10px] font-semibold mt-1 ${bandTextClass(timelineActivitySignal.band)}`}>
-                    {timelineActivitySignal.band === 'healthy' ? 'Frequent logging' : timelineActivitySignal.band === 'watch' ? 'Steady logging' : 'Sparse logging'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleDatePreset('7d')}
-                    className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
-                  >
-                    Focus last 7d
-                  </button>
-                </div>
-              )}
+          <div className="px-4 py-3.5 space-y-2.5">
+          <SectionHeader
+            title="Date window"
+            subtitle="Set the time horizon for visible transaction rows."
+          />
+          <FilterRow>
+            {DATE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleDatePreset(preset.id)}
+                className={`chip-control chip-control-sm ${
+                  datePreset === preset.id
+                    ? 'bg-brand text-brand-on border-brand'
+                    : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </FilterRow>
 
-              {paymentModeSignal && (
-                <div className="mini-panel px-3 py-2.5">
-                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Payment mode mix</p>
-                  <p className={`text-[13px] font-semibold mt-1 ${bandTextClass(paymentModeSignal.band, 'text-ink')}`}>
-                    {paymentModeSignal.top.label}
-                  </p>
-                  <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
-                    {paymentModeSignal.top.pct}% of {paymentModeSignal.scopeLabel} ({paymentModeSignal.top.count})
-                  </p>
-                  {paymentModeSignal.secondary && (
-                    <p className="text-[10px] text-ink-3 mt-1">
-                      Next: {paymentModeSignal.secondary.label} ({paymentModeSignal.secondary.pct}%)
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handlePaymentModeFilter(paymentModeSignal.top.mode)}
-                    className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
-                  >
-                    Filter {paymentModeSignal.top.label}
-                  </button>
-                </div>
-              )}
-
-              {expenseFrequencySignal && (
-                <div className="mini-panel px-3 py-2.5">
-                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Expense frequency</p>
-                  <p className="text-[13px] font-semibold text-ink mt-1 truncate" title={expenseFrequencySignal.top.label}>
-                    {expenseFrequencySignal.top.label}
-                  </p>
-                  <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
-                    {expenseFrequencySignal.top.count} of {expenseFrequencySignal.expenseCount} expense rows
-                  </p>
-                  <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(expenseFrequencySignal.band, 'text-ink-3')}`}>
-                    Top-3 categories cover {expenseFrequencySignal.concentrationPct}%
-                  </p>
+          <AnimatePresence>
+            {datePreset === 'custom-month' && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+                className="mini-panel p-3"
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-[11px] uppercase tracking-wide text-ink-3">Choose month</p>
                   <button
                     type="button"
                     onClick={() => {
-                      if (typeFilter !== 'expense') {
-                        handleTypeFilter('expense')
-                      }
-                      handleCatFilter(expenseFrequencySignal.top.categoryId)
+                      const current = monthInputFromDate()
+                      setSelectedMonth(current)
+                      setDisplayCount(50)
                     }}
-                    className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                    className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
                   >
-                    Filter {expenseFrequencySignal.top.label}
+                    Current month
                   </button>
                 </div>
-              )}
-            </div>
-          )}
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border">{activeCategoryLabel}</span>
-            <span className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border">{activePaymentModeLabel}</span>
-          </div>
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
+                  <select
+                    name="transactions-month-filter-month"
+                    value={selectedMonthParts.month}
+                    onChange={(event) => updateSelectedMonth(selectedMonthParts.year, event.target.value)}
+                    className="w-full h-10 rounded-card border border-kosha-border bg-kosha-surface-2 px-3 text-[14px] text-ink focus:outline-none focus:border-brand"
+                  >
+                    {MONTH_SHORT.map((monthLabel, index) => (
+                      <option key={monthLabel} value={index + 1}>{monthLabel}</option>
+                    ))}
+                  </select>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<Plus size={14} />}
-              onClick={() => {
-                setEditTxn(null)
-                setDuplicateTxn(null)
-                setAddType('expense')
-                setShowAdd(true)
-              }}
-            >
-              Add transaction
-            </Button>
+                  <select
+                    name="transactions-month-filter-year"
+                    value={selectedMonthParts.year}
+                    onChange={(event) => updateSelectedMonth(event.target.value, selectedMonthParts.month)}
+                    className="w-full h-10 rounded-card border border-kosha-border bg-kosha-surface-2 px-3 text-[14px] text-ink focus:outline-none focus:border-brand"
+                  >
+                    {monthFilterYearOptions.map((optionYear) => (
+                      <option key={optionYear} value={optionYear}>{optionYear}</option>
+                    ))}
+                  </select>
+                </div>
 
-            {total > 0 ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<Download size={14} />}
-                onClick={exportCSV}
-              >
-                Export CSV
-              </Button>
-            ) : null}
+                <p className="text-[10px] text-ink-3 mt-1">Filtering: {formatMonthInputLabel(selectedMonth)}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            {hasActiveFilters ? (
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
-              >
-                Clear filters
-              </button>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div className="card p-0 border-0 overflow-hidden mb-3">
-        <div className="px-4 pt-3.5 pb-3 border-b border-kosha-border bg-kosha-surface-2">
-          <p className="text-[15px] font-semibold text-ink">Find and filter</p>
-          <p className="text-[12px] text-ink-3 mt-0.5">Search by merchant or note, then narrow by date, type, category, and payment mode.</p>
-
-          <div className="relative mt-3">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
-          <input
-            className="input pl-8 pr-8 py-2 md:py-2.5 text-[14px]"
-            name="transaction-search"
-            placeholder="Search transactions..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+          <SectionHeader
+            title="Type and facets"
+            subtitle="Combine type, category, and payment chips to isolate exact rows quickly."
           />
-          {isSearchDebouncing ? (
-            <Loader2 size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 animate-spin" />
-          ) : search && (
+
+          <FilterRow>
+            {TYPES.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => handleTypeFilter(t.id)}
+                className={`chip-control chip-control-sm ${typeFilter === t.id
+                  ? TYPE_CHIP[t.id]
+                  : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
+              >
+                {t.label}
+              </button>
+            ))}
+
             <button
+              ref={categoryTriggerRef}
               type="button"
-              onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3"
-            >
-              <X size={13} />
-            </button>
-          )}
-          </div>
-
-          {isSearchDebouncing && (
-            <p className="text-[11px] text-ink-3 mt-1.5">Updating results…</p>
-          )}
-        </div>
-
-        <div className="px-4 py-3.5 space-y-2.5">
-        <SectionHeader
-          title="Date window"
-          subtitle="Set the time horizon for visible transaction rows."
-        />
-        <FilterRow>
-          {DATE_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => handleDatePreset(preset.id)}
-              className={`chip-control chip-control-sm ${
-                datePreset === preset.id
-                  ? 'bg-brand text-brand-on border-brand'
-                  : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'
-              }`}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </FilterRow>
-
-        <AnimatePresence>
-          {datePreset === 'custom-month' && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.15 }}
-              className="mini-panel p-3"
-            >
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <p className="text-[11px] uppercase tracking-wide text-ink-3">Choose month</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const current = monthInputFromDate()
-                    setSelectedMonth(current)
-                    setDisplayCount(50)
-                  }}
-                  className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
-                >
-                  Current month
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
-                <select
-                  name="transactions-month-filter-month"
-                  value={selectedMonthParts.month}
-                  onChange={(event) => updateSelectedMonth(selectedMonthParts.year, event.target.value)}
-                  className="w-full h-10 rounded-card border border-kosha-border bg-kosha-surface-2 px-3 text-[14px] text-ink focus:outline-none focus:border-brand"
-                >
-                  {MONTH_SHORT.map((monthLabel, index) => (
-                    <option key={monthLabel} value={index + 1}>{monthLabel}</option>
-                  ))}
-                </select>
-
-                <select
-                  name="transactions-month-filter-year"
-                  value={selectedMonthParts.year}
-                  onChange={(event) => updateSelectedMonth(event.target.value, selectedMonthParts.month)}
-                  className="w-full h-10 rounded-card border border-kosha-border bg-kosha-surface-2 px-3 text-[14px] text-ink focus:outline-none focus:border-brand"
-                >
-                  {monthFilterYearOptions.map((optionYear) => (
-                    <option key={optionYear} value={optionYear}>{optionYear}</option>
-                  ))}
-                </select>
-              </div>
-
-              <p className="text-[10px] text-ink-3 mt-1">Filtering: {formatMonthInputLabel(selectedMonth)}</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <SectionHeader
-          title="Type and facets"
-          subtitle="Combine type, category, and payment chips to isolate exact rows quickly."
-        />
-
-        <FilterRow>
-          {TYPES.map(t => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => handleTypeFilter(t.id)}
-              className={`chip-control chip-control-sm ${typeFilter === t.id
-                ? TYPE_CHIP[t.id]
+              onClick={() => {
+                setShowCats(v => !v)
+                setShowPaymentModes(false)
+              }}
+              aria-expanded={showCats}
+              aria-controls="txn-category-filter-panel"
+              className={`chip-control chip-control-sm ${catFilter
+                ? 'bg-brand text-brand-on border-brand'
                 : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
             >
-              {t.label}
+              <SlidersHorizontal size={11} />
+              {catFilter ? getCategoryLabel(catFilter) : 'Category'}
             </button>
-          ))}
 
-          <button
-            ref={categoryTriggerRef}
-            type="button"
-            onClick={() => {
-              setShowCats(v => !v)
-              setShowPaymentModes(false)
-            }}
-            aria-expanded={showCats}
-            aria-controls="txn-category-filter-panel"
-            className={`chip-control chip-control-sm ${catFilter
-              ? 'bg-brand text-brand-on border-brand'
-              : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
-          >
-            <SlidersHorizontal size={11} />
-            {catFilter ? getCategoryLabel(catFilter) : 'Category'}
-          </button>
-
-          <button
-            ref={paymentTriggerRef}
-            type="button"
-            onClick={() => {
-              setShowPaymentModes(v => !v)
-              setShowCats(false)
-            }}
-            aria-expanded={showPaymentModes}
-            aria-controls="txn-payment-filter-panel"
-            className={`chip-control chip-control-sm ${paymentModeFilter
-              ? 'bg-brand text-brand-on border-brand'
-              : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
-          >
-            <SlidersHorizontal size={11} />
-            {paymentModeFilter
-              ? PAYMENT_MODES.find((mode) => mode.id === paymentModeFilter)?.label || 'Payment'
-              : 'Payment'}
-          </button>
-
-          {catFilter ? (
             <button
+              ref={paymentTriggerRef}
               type="button"
-              onClick={() => handleCatFilter('')}
-              className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+              onClick={() => {
+                setShowPaymentModes(v => !v)
+                setShowCats(false)
+              }}
+              aria-expanded={showPaymentModes}
+              aria-controls="txn-payment-filter-panel"
+              className={`chip-control chip-control-sm ${paymentModeFilter
+                ? 'bg-brand text-brand-on border-brand'
+                : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
             >
-              Clear category
+              <SlidersHorizontal size={11} />
+              {paymentModeFilter ? getPaymentModeLabel(paymentModeFilter) : 'Payment'}
             </button>
-          ) : null}
+          </FilterRow>
 
-          {paymentModeFilter ? (
-            <button
-              type="button"
-              onClick={() => handlePaymentModeFilter('')}
-              className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
-            >
-              Clear payment
-            </button>
-          ) : null}
-        </FilterRow>
-
-        <AnimatePresence>
-          {showCats && (
-            <motion.div
-              ref={categoryPanelRef}
-              id="txn-category-filter-panel"
-              role="region"
-              aria-label="Category filters"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.15 }}
-              className="mini-panel p-3 flex flex-wrap gap-2"
-            >
-              {filterCategories.map(c => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => {
-                    handleCatFilter(catFilter === c.id ? '' : c.id)
-                    setShowCats(false)
-                  }}
-                  className={`chip-control chip-control-sm ${catFilter === c.id
-                    ? 'bg-brand text-brand-on border-brand'
-                    : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
-                >
-                  {c.label}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCats(false)
-                  setShowCreateCategory(true)
-                }}
-                className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+          <AnimatePresence>
+            {showCats && (
+              <motion.div
+                id="txn-category-filter-panel"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+                className="mini-panel p-3"
               >
-                <Plus size={11} />
-                Create category
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-[11px] uppercase tracking-wide text-ink-3">Select Category</p>
+                  {catFilter && (
+                    <button
+                      type="button"
+                      onClick={() => { handleCatFilter(''); setShowCats(false) }}
+                      className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                    >
+                      Clear selection
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {availableCategories.map(cat => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        handleCatFilter(catFilter === cat.id ? '' : cat.id)
+                        setShowCats(false)
+                      }}
+                      className={`chip-control chip-control-sm ${catFilter === cat.id
+                        ? 'bg-brand text-brand-on border-brand'
+                        : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
 
-        <AnimatePresence>
-          {showPaymentModes && (
-            <motion.div
-              ref={paymentPanelRef}
-              id="txn-payment-filter-panel"
-              role="region"
-              aria-label="Payment mode filters"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.15 }}
-              className="mini-panel p-3 flex flex-wrap gap-2"
-            >
-              {PAYMENT_MODES.map((mode) => (
-                <button
-                  key={mode.id}
-                  type="button"
-                  onClick={() => {
-                    handlePaymentModeFilter(paymentModeFilter === mode.id ? '' : mode.id)
-                    setShowPaymentModes(false)
-                  }}
-                  className={`chip-control chip-control-sm ${paymentModeFilter === mode.id
-                    ? 'bg-brand text-brand-on border-brand'
-                    : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <div className="mt-3 pt-3 border-t border-kosha-border flex items-center justify-between">
+                  <p className="text-[10px] text-ink-3">Missing a category?</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCats(false)
+                      setShowCreateCategory(true)
+                    }}
+                    className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                  >
+                    <Plus size={11} />
+                    Add new
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {showPaymentModes && (
+              <motion.div
+                id="txn-payment-filter-panel"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+                className="mini-panel p-3 flex flex-wrap gap-2"
+              >
+                {PAYMENT_MODES.map(mode => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => {
+                      handlePaymentModeFilter(paymentModeFilter === mode.id ? '' : mode.id)
+                      setShowPaymentModes(false)
+                    }}
+                    className={`chip-control chip-control-sm ${paymentModeFilter === mode.id
+                      ? 'bg-brand text-brand-on border-brand'
+                      : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          </div>
         </div>
-      </div>
+      )}
 
       {showGuideHint && (
         <div className="card mb-4 p-4 border border-brand-border bg-brand-container/40">
@@ -1643,6 +1486,159 @@ export default function Transactions() {
         >
           Show more ({total - data.length} remaining)
         </Button>
+      )}
+
+      {/* Transaction workspace (Summary) moved to bottom */}
+      {!isNewUser && (
+        <div className="card p-0 border-0 overflow-hidden mt-6 mb-3">
+          <div className="px-4 pt-3.5 pb-3 bg-kosha-surface-2 border-b border-kosha-border">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[15px] font-semibold text-ink">Timeline summary</p>
+                <p className="text-[12px] text-ink-3 mt-0.5">Quick read of the health of your currently loaded rows.</p>
+              </div>
+              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-pill border whitespace-nowrap ${
+                hasActiveFilters
+                  ? 'bg-brand-container text-brand border-brand/20'
+                  : 'bg-kosha-surface text-ink-3 border-kosha-border'
+              }`}>
+                {hasActiveFilters ? 'Filtered view' : 'Full timeline'}
+              </span>
+            </div>
+          </div>
+
+          <div className="p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="mini-panel px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-wide text-ink-3">Rows</p>
+                <p className="text-[15px] font-semibold tabular-nums text-ink mt-1">{data.length}/{total}</p>
+                <p className="text-[10px] text-ink-3 mt-0.5">Loaded / matching</p>
+              </div>
+              <div className="mini-panel px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-wide text-ink-3">Range</p>
+                <p className="text-[13px] font-semibold text-ink mt-1 truncate">{activeDatePresetLabel}</p>
+                <p className="text-[10px] text-ink-3 mt-0.5">Timeline window</p>
+              </div>
+              <div className="mini-panel px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-wide text-ink-3">Income</p>
+                <p className="text-[13px] font-semibold tabular-nums text-income-text mt-1">{fmt(visibleSummary.income)}</p>
+                <p className="text-[10px] text-ink-3 mt-0.5">Loaded rows</p>
+              </div>
+              <div className="mini-panel px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-wide text-ink-3">Net flow</p>
+                <p className={`text-[13px] font-semibold tabular-nums mt-1 ${visibleSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                  {visibleSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(visibleSummary.net))}
+                </p>
+                <p className="text-[10px] text-ink-3 mt-0.5">Income - outflow</p>
+              </div>
+            </div>
+
+            {(timelineActivitySignal || paymentModeSignal || expenseFrequencySignal) && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
+                {timelineActivitySignal && (
+                  <div className="mini-panel px-3 py-2.5">
+                    <p className="text-[10px] uppercase tracking-wide text-ink-3">Activity density</p>
+                    <p className="text-[13px] font-semibold text-ink mt-1 tabular-nums">
+                      {timelineActivitySignal.txnsPerActiveDay.toFixed(1)} txns / active day
+                    </p>
+                    <p className="text-[10px] text-ink-3 mt-0.5">
+                      {timelineActivitySignal.activeDays}/{timelineActivitySignal.spanDays} days active ({timelineActivitySignal.densityPct}%)
+                    </p>
+                    <p className={`text-[10px] font-semibold mt-1 ${bandTextClass(timelineActivitySignal.band)}`}>
+                      {timelineActivitySignal.band === 'healthy' ? 'Frequent logging' : timelineActivitySignal.band === 'watch' ? 'Steady logging' : 'Sparse logging'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleDatePreset('7d')}
+                      className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                    >
+                      Focus last 7d
+                    </button>
+                  </div>
+                )}
+
+                {paymentModeSignal && (
+                  <div className="mini-panel px-3 py-2.5">
+                    <p className="text-[10px] uppercase tracking-wide text-ink-3">Payment mode mix</p>
+                    <p className={`text-[13px] font-semibold mt-1 ${bandTextClass(paymentModeSignal.band, 'text-ink')}`}>
+                      {paymentModeSignal.top.label}
+                    </p>
+                    <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                      {paymentModeSignal.top.pct}% of {paymentModeSignal.scopeLabel} ({paymentModeSignal.top.count})
+                    </p>
+                    {paymentModeSignal.secondary && (
+                      <p className="text-[10px] text-ink-3 mt-1">
+                        Next: {paymentModeSignal.secondary.label} ({paymentModeSignal.secondary.pct}%)
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handlePaymentModeFilter(paymentModeSignal.top.mode)}
+                      className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                    >
+                      Filter {paymentModeSignal.top.label}
+                    </button>
+                  </div>
+                )}
+
+                {expenseFrequencySignal && (
+                  <div className="mini-panel px-3 py-2.5">
+                    <p className="text-[10px] uppercase tracking-wide text-ink-3">Expense frequency</p>
+                    <p className="text-[13px] font-semibold text-ink mt-1 truncate" title={expenseFrequencySignal.top.label}>
+                      {expenseFrequencySignal.top.label}
+                    </p>
+                    <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                      {expenseFrequencySignal.top.count} of {expenseFrequencySignal.expenseCount} expense rows
+                    </p>
+                    <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(expenseFrequencySignal.band, 'text-ink-3')}`}>
+                      Top-3 categories cover {expenseFrequencySignal.concentrationPct}%
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeFilter !== 'expense') {
+                          handleTypeFilter('expense')
+                        }
+                        handleCatFilter(expenseFrequencySignal.top.categoryId)
+                      }}
+                      className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                    >
+                      Filter {expenseFrequencySignal.top.label}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border">{activeCategoryLabel}</span>
+              <span className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border">{activePaymentModeLabel}</span>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {total > 0 ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Download size={14} />}
+                  onClick={exportCSV}
+                >
+                  Export CSV
+                </Button>
+              ) : null}
+
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                >
+                  Clear filters
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
       )}
 
       <AppToast
