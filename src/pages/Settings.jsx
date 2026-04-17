@@ -39,7 +39,7 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
       onClick={onClick}
       disabled={disabled}
       {...toggleA11yProps}
-      className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left
+      className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
                   transition-colors active:bg-kosha-surface-2
                   disabled:opacity-50
                   ${destructive ? 'text-expense-text' : 'text-ink'}`}
@@ -49,12 +49,12 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-[13px] font-semibold leading-snug
+        <p className={`text-[14px] font-medium leading-snug
                        ${destructive ? 'text-expense-text' : 'text-ink'}`}>
           {label}
         </p>
         {sublabel && (
-          <p className="text-[11px] text-ink-3 mt-0.5 truncate">{sublabel}</p>
+          <p className="text-[12px] text-ink-3 mt-0.5 truncate">{sublabel}</p>
         )}
       </div>
       {rightElement && (
@@ -300,7 +300,7 @@ export default function Settings() {
         </button>
       )}
     >
-      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
           <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">
