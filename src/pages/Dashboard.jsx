@@ -604,21 +604,23 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ── Hero card ─────────────────────────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          {heroLoading ? <DashboardHeroSkeleton /> : (
-            <DashboardHeroCard
-              now={balanceHorizonDate}
-              runningBalance={runningBalance}
-              rate={rate}
-              earned={earned}
-              spent={spent}
-              invested={invested}
-              bills={bills}
-              heroMode={heroMode}
-              onSetHeroMode={handleHeroModeChange}
-            />
-          )}
-        </motion.div>
+        {!isNewUser && (
+          <motion.div variants={fadeUp}>
+            {heroLoading ? <DashboardHeroSkeleton /> : (
+              <DashboardHeroCard
+                now={balanceHorizonDate}
+                runningBalance={runningBalance}
+                rate={rate}
+                earned={earned}
+                spent={spent}
+                invested={invested}
+                bills={bills}
+                heroMode={heroMode}
+                onSetHeroMode={handleHeroModeChange}
+              />
+            )}
+          </motion.div>
+        )}
 
         {showActionQueueSection && (
           <motion.div variants={fadeUp}>

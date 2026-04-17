@@ -27,13 +27,15 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
   const rate = savingsRate(earned, spent)
   const heroAccentStrong = C.heroAccent
   const heroBadgeStyle = {
-    background: C.heroAccentBg,
-    border: '1px solid rgba(255,255,255,0.16)',
+    background: 'rgba(255,255,255,0.12)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
   }
 
   const statChipStyle = {
-    background: C.heroStatBg,
-    border: '1px solid rgba(255,255,255,0.14)',
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
   }
 
   return (
@@ -53,11 +55,11 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
       </p>
 
       <div
-        className="mt-2.5 mb-4 inline-flex items-center px-2.5 py-1 rounded-pill"
+        className="mt-2.5 mb-5 inline-flex items-center px-3 py-1.5 rounded-pill backdrop-blur-md"
         style={heroBadgeStyle}
       >
-        <span className="text-[12px] font-semibold tracking-wide" style={{ color: heroAccentStrong }}>
-          {rate}% saved this month
+        <span className="text-[12px] font-semibold tracking-wide text-white">
+          <span style={{ color: heroAccentStrong }}>{rate}%</span> saved this month
         </span>
       </div>
 
@@ -78,7 +80,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.03 * i, ease: [0.05, 0.7, 0.1, 1] }}
-            className="flex-1 min-w-0 px-2.5 py-2 rounded-2xl"
+            className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl backdrop-blur-sm"
             style={statChipStyle}
           >
             <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide" style={{ color: C.heroLabel }}>
