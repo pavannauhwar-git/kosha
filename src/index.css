@@ -678,8 +678,8 @@ textarea:focus-visible,
     padding-bottom: env(safe-area-inset-bottom, 0px);
     pointer-events: auto;
     /* GPU compositing: fixed elements should always be on compositor layer */
-    /* NOTE: Do NOT add contain: layout/style here — it creates a new containing block
-       that breaks position: fixed, making the nav position relative to itself. */
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
   .nav-float {
@@ -835,6 +835,7 @@ textarea:focus-visible,
     margin-left: auto;
     margin-right: auto;
     padding-top: var(--header-total-offset);
+    padding-bottom: calc(var(--nav-height) + 1rem);
   }
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
@@ -845,6 +846,8 @@ textarea:focus-visible,
     max-width: var(--app-shell-max);
     margin-left: auto;
     margin-right: auto;
+    /* Prevent layout shift during hydrations/transitions */
+    isolation: isolate;
   }
 
   .card.p-4 {

@@ -10,7 +10,7 @@ function S({ className }) {
 // ── Per-route skeletons ───────────────────────────────────────────────────
 function DashboardSkeleton() {
   return (
-    <div className="px-5 pt-4 pb-36 space-y-3.5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-3.5">
       {/* Hero balance card */}
       <S className="h-44 w-full" />
       {/* Stats row */}
@@ -38,7 +38,7 @@ function DashboardSkeleton() {
 
 function TransactionsSkeleton() {
   return (
-    <div className="px-5 pt-4 pb-36 space-y-5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
       {/* Search bar */}
       <S className="h-11 w-full" />
       {/* Filter chips */}
@@ -64,7 +64,7 @@ function TransactionsSkeleton() {
 
 function MonthlySkeleton() {
   return (
-    <div className="px-5 pt-4 pb-36 space-y-3.5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-3.5">
       {/* Month navigator */}
       <div className="flex items-center justify-between">
         <S className="h-8 w-8" />
@@ -94,7 +94,7 @@ function MonthlySkeleton() {
 
 function AnalyticsSkeleton() {
   return (
-    <div className="px-5 pt-4 pb-36 space-y-3.5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-3.5">
       {/* Year selector */}
       <S className="h-10 w-28 mx-auto" />
       {/* KPI cards */}
@@ -114,7 +114,7 @@ function AnalyticsSkeleton() {
 
 function BillsSkeleton() {
   return (
-    <div className="px-5 pt-4 pb-36 space-y-5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
       {/* Section label */}
       <S className="h-4 w-28" />
       {/* Bill cards */}
