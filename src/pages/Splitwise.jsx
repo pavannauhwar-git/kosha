@@ -33,6 +33,7 @@ import {
   leaveSplitGroupMutation,
   toggleArchiveSplitGroupMutation,
   updateSplitGroupMutation,
+  updateSplitGroupBannerMutation,
   setSplitGroupAccessRoleMutation,
 } from '../hooks/useSplitwise'
 import { fmt, fmtDate } from '../lib/utils'
@@ -189,15 +190,25 @@ export default function Splitwise() {
     if (activeGroupId && !groups.some((group) => group.id === activeGroupId)) {
       setActiveGroupId('')
     } else if (activeGroupId) {
-      const stored = localStorage.getItem(`kosha-trip-banner-${activeGroupId}`)
-      setSavedBannerId(stored || 'goa')
+      const activeGroupObj = groups.find(g => g.id === activeGroupId)
+      if (activeGroupObj?.banner_id) {
+        setSavedBannerId(activeGroupObj.banner_id)
+      } else {
+        const stored = localStorage.getItem(`kosha-trip-banner-${activeGroupId}`)
+        setSavedBannerId(stored || 'goa')
+      }
     }
   }, [groups, activeGroupId])
 
-  const changeBanner = (id) => {
+  const changeBanner = async (id) => {
     setSavedBannerId(id)
     if (activeGroupId) {
       localStorage.setItem(`kosha-trip-banner-${activeGroupId}`, id)
+      try {
+        await updateSplitGroupBannerMutation(activeGroupId, id)
+      } catch (error) {
+        console.error('Could not sync banner to database', error)
+      }
     }
     setShowBannerPicker(false)
   }
@@ -595,7 +606,7 @@ export default function Splitwise() {
   }
 
   async function handleSetMemberRole(member, role) {
-    if (!isGroupAdmin) {
+    if (!isGroupAdmin || activeGroup?.is_archived) {
       setToast('Only admins can change member roles.')
       return
     }
@@ -618,7 +629,7 @@ export default function Splitwise() {
   }
 
   async function handleDeleteMember(memberId) {
-    if (!isGroupAdmin || saving) return
+    if (!isGroupAdmin || activeGroup?.is_archived || saving) return
     const ok = window.confirm('Delete this member? This cannot be undone.')
     if (!ok) return
 
@@ -1094,7 +1105,7 @@ export default function Splitwise() {
                 />
               ) : groups.filter(g => showArchived ? g.is_archived : !g.is_archived).map((group) => {
                 const isAdmin = group.my_role === 'admin' || group.user_id === authUserId
-                const bgBannerId = localStorage.getItem(`kosha-trip-banner-${group.id}`) || 'goa'
+                const bgBannerId = group.banner_id || localStorage.getItem(`kosha-trip-banner-${group.id}`) || 'goa'
                 const bgBanner = BANNERS.find(b => b.id === bgBannerId) || BANNERS[0]
                 return (
                   <button
@@ -1148,12 +1159,14 @@ export default function Splitwise() {
                 <p className="text-[10px] opacity-80 uppercase tracking-widest truncate">{activeBanner.name}</p>
                 <h2 className="text-[22px] font-bold truncate">{activeGroup.name}</h2>
               </div>
-              <button
-                onClick={() => setShowBannerPicker(true)}
-                className="rounded-pill bg-white/20 backdrop-blur-md border border-white/20 px-2.5 py-1 text-[11px] text-white hover:bg-white/30"
-              >
-                Change Cover
-              </button>
+              {!activeGroup.is_archived && (
+                <button
+                  onClick={() => setShowBannerPicker(true)}
+                  className="rounded-pill bg-white/20 backdrop-blur-md border border-white/20 px-2.5 py-1 text-[11px] text-white hover:bg-white/30"
+                >
+                  Change Cover
+                </button>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2.5 mb-3.5">
@@ -1227,7 +1240,7 @@ export default function Splitwise() {
                           </p>
                         </div>
                       </div>
-                      {isGroupAdmin && !isSelfMember && (
+                      {isGroupAdmin && !isSelfMember && !activeGroup.is_archived && (
                         <div className="flex items-center gap-1.5 shrink-0">
                           {!!member.linked_user_id && (
                             <button

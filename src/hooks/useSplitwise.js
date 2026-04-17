@@ -34,7 +34,7 @@ const splitMembersKey = (groupId) => ['splitwise', 'members', groupId || 'none']
 const splitExpensesKey = (groupId) => ['splitwise', 'expenses', groupId || 'none']
 const splitSettlementsKey = (groupId) => ['splitwise', 'settlements', groupId || 'none']
 
-const GROUP_COLUMNS = 'id, name, created_at, updated_at, user_id, is_archived'
+const GROUP_COLUMNS = 'id, name, created_at, updated_at, user_id, is_archived, banner_id'
 const ACCESS_COLUMNS = 'group_id, role'
 const GROUP_ACCESS_COLUMNS = 'id, group_id, user_id, role'
 const MEMBER_COLUMNS = 'id, group_id, display_name, is_self, linked_user_id, created_at'
@@ -382,6 +382,20 @@ export async function deleteSplitGroupMutation(groupId) {
     'splitwise group delete audit'
   )
 
+  await invalidateSplitwiseCache()
+  return true
+}
+
+export async function updateSplitGroupBannerMutation(groupId, bannerId) {
+  if (!groupId) throw new Error('Group is required.')
+  if (!bannerId) throw new Error('Banner selection is required.')
+
+  const { error } = await supabase
+    .from('split_groups')
+    .update({ banner_id: bannerId, updated_at: new Date().toISOString() })
+    .eq('id', groupId)
+
+  if (error) throw error
   await invalidateSplitwiseCache()
   return true
 }

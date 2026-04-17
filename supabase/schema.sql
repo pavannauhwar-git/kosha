@@ -1287,6 +1287,7 @@ create table if not exists split_groups (
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now(),
   is_archived boolean not null default false,
+  banner_id   text,
   user_id     uuid
 );
 
@@ -1450,6 +1451,17 @@ begin
     where table_name = 'split_groups' and column_name = 'is_archived'
   ) then
     alter table split_groups add column is_archived boolean not null default false;
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_name = 'split_groups' and column_name = 'banner_id'
+  ) then
+    alter table split_groups add column banner_id text;
   end if;
 end $$;
 create index if not exists idx_split_group_invites_active on split_group_invites(group_id, created_at desc)
