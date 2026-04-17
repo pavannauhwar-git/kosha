@@ -323,20 +323,18 @@ export default function ReportBug() {
             </motion.div>
           ) : (
             <>
-              <div className="card p-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-expense-bg flex items-center justify-center shrink-0">
-                    <Bug size={18} className="text-expense-text" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[17px] font-bold text-ink leading-tight">Help us fix this</p>
-                    <p className="text-[13px] text-ink-3 mt-1 leading-relaxed">
+              <div className="card p-0 overflow-hidden">
+                <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+                  <div className="flex flex-col items-start text-left min-w-0">
+                    <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Help us fix this</p>
+                    <p className="text-[12px] text-ink-3 mt-1 leading-relaxed">
                       Share what broke, what you expected, and a screenshot if possible.
                     </p>
                   </div>
+                  <img src="/illustrations/report_bug.png" alt="Report Bug" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
                 </div>
                 {displayReportedScreen && (
-                  <div className="mt-3.5 pt-3.5 border-t border-kosha-border">
+                  <div className="px-4 py-3 bg-kosha-surface border-t border-kosha-border">
                     <p className="text-[11px] text-ink-3">
                       Reported on <span className="font-mono text-ink-2">{displayReportedScreen}</span>
                     </p>

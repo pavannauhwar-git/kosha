@@ -5,6 +5,7 @@ import TransactionItem from '../transactions/TransactionItem'
 import { fmt } from '../../lib/utils'
 import { CATEGORIES } from '../../lib/categories'
 import Button from '../ui/Button'
+import EmptyState from '../common/EmptyState'
 
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
 const SWIPE_HINT_LEARNED_KEY = 'kosha:swipe-delete-hint-learned-v1'
@@ -139,19 +140,15 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
           <p className="section-label">Latest transactions</p>
         </div>
 
-        <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2 p-6 text-center">
-          <CheckCircle2 size={22} className="mx-auto text-ink mb-2" />
-          <p className="text-[13px] font-semibold text-ink">No transactions yet</p>
-          <p className="text-[11px] text-ink-3 mt-1">Your latest activity will appear here after you add your first transaction.</p>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => navigate('/transactions')}
-            className="mt-3"
-          >
-            Go to transactions
-          </Button>
+        <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2">
+          <EmptyState
+            className="py-6"
+            imageUrl="/illustrations/empty_transactions.png"
+            title="No transactions yet"
+            description="Your latest activity will appear here after you add your first transaction."
+            actionLabel="Go to transactions"
+            onAction={() => navigate('/transactions')}
+          />
         </div>
       </div>
     )

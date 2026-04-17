@@ -567,7 +567,7 @@ export default function Bills({
       <div className="mb-2.5 grid grid-cols-2 gap-2">
         <button
           onClick={() => setTab('pending')}
-          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-[background-color,border-color,color,box-shadow] duration-120 will-change-transform active:scale-[0.97]
+          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.97]
             ${tab === 'pending'
               ? 'bg-brand-container text-brand border border-brand shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
@@ -576,7 +576,7 @@ export default function Bills({
         </button>
         <button
           onClick={() => setTab('paid')}
-          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-[background-color,border-color,color,box-shadow] duration-120 will-change-transform active:scale-[0.97]
+          className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.97]
             ${tab === 'paid'
               ? 'bg-income-bg text-income-text border border-income-border shadow-card'
               : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
@@ -708,7 +708,7 @@ export default function Bills({
             {tab === 'pending' && visiblePending.length === 0 && (
               <EmptyState
                 className="py-8"
-                icon={<Check size={24} className="text-income-text" />}
+                imageUrl="/illustrations/coffee_chill.png"
                 title="You're all clear"
                 description="No pending bills right now. Add recurring dues to keep reminders and cashflow planning accurate."
                 actionLabel="Add a bill"
@@ -730,6 +730,7 @@ export default function Bills({
             {tab === 'paid' && !paidLoading && visiblePaid.length === 0 && (
               <EmptyState
                 className="py-8"
+                imageUrl="/illustrations/settled_loans.png"
                 title="No paid bills yet"
                 description="Bills you mark as paid will show up here for history and tracking."
                 actionLabel="View pending"

@@ -662,7 +662,7 @@ export default function Loans({
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-[background-color,border-color,color,box-shadow] duration-120 will-change-transform active:scale-[0.97]
+            className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.97]
               ${tab === t.key ? t.activeClass : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}
           >
             {t.label} ({t.count})
@@ -766,7 +766,7 @@ export default function Loans({
             {tab !== 'settled' && activeLoans.length === 0 && (
               <EmptyState
                 className="py-8"
-                icon={<HandCoins size={24} className="text-brand" />}
+                imageUrl="/illustrations/empty_loans.png"
                 title={tab === 'given' ? 'No loans given' : 'No loans taken'}
                 description={tab === 'given'
                   ? 'Track money you\u2019ve lent to friends, family, or others.'
@@ -786,6 +786,7 @@ export default function Loans({
             {tab === 'settled' && !settledLoading && visibleSettled.length === 0 && (
               <EmptyState
                 className="py-8"
+                imageUrl="/illustrations/settled_loans.png"
                 title="No settled loans"
                 description="Loans you fully repay will show up here."
                 actionLabel="View active"
@@ -1044,7 +1045,7 @@ export default function Loans({
                         onClick={() => setPayAmount(String(o.value))}
                         className="px-3 py-1.5 rounded-pill text-xs font-semibold border
                                    bg-kosha-surface text-ink-2 border-kosha-border
-                                   active:scale-[0.97] transition-[transform,background-color] duration-100 will-change-transform"
+                                   active:scale-[0.97] transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform"
                       >
                         {o.label} ({fmt(o.value)})
                       </button>
@@ -1113,7 +1114,7 @@ export default function Loans({
                   <button
                     type="button"
                     onClick={() => setForm(f => ({ ...f, direction: 'given' }))}
-                    className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-[background-color,border-color,color] duration-150 will-change-transform active:scale-[0.97]
+                    className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.97]
                       ${form.direction === 'given'
                         ? 'bg-income-bg text-income-text border-income-border'
                         : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
@@ -1123,7 +1124,7 @@ export default function Loans({
                   <button
                     type="button"
                     onClick={() => setForm(f => ({ ...f, direction: 'taken' }))}
-                    className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-[background-color,border-color,color] duration-150 will-change-transform active:scale-[0.97]
+                    className={`h-11 flex items-center justify-center gap-2 rounded-card text-[13px] font-semibold border transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.97]
                       ${form.direction === 'taken'
                         ? 'bg-expense-bg text-expense-text border-expense-border'
                         : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}

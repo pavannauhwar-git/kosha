@@ -16,7 +16,7 @@ export default function PageBackHeader({
           type="button"
           onClick={onBack}
           aria-label="Go back"
-          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center active:bg-kosha-surface-2"
+          className="w-9 h-9 rounded-full bg-kosha-surface border border-kosha-border flex items-center justify-center transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-95 active:bg-kosha-surface-2"
         >
           <ArrowLeft size={16} className="text-ink-2" />
         </button>

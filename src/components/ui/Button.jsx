@@ -34,7 +34,7 @@ const Button = forwardRef(function Button(
       disabled={isDisabled}
       className={[
         'inline-flex items-center justify-center font-semibold rounded-pill select-none cursor-pointer',
-        'transition-[transform,background-color,box-shadow,opacity] duration-150 will-change-transform',
+        'transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform',
         SIZE_CLASSES[size],
         VARIANT_CLASSES[variant],
         isDisabled ? DISABLED_CLASSES : '',

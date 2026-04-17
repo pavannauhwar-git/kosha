@@ -180,13 +180,16 @@ export default function Login() {
             className="card p-6 mb-4"
           >
 
-              {/* ── Logo ──────────────────────────────────────────────────── */}
-              <div className="flex items-center gap-3 mb-5 pb-4 border-b border-kosha-border">
-                <KoshaLogo size={40} />
-                <div>
-                  <p className="text-[17px] font-bold text-ink leading-tight">Kosha</p>
-                  <p className="text-[12px] text-ink-2 mt-0.5">Personal finance, simplified</p>
+              {/* ── Illustration & Logo ──────────────────────────────────────────────────── */}
+              <div className="flex items-center justify-between gap-4 mb-6 pb-5 border-b border-kosha-border">
+                <div className="flex flex-col items-start text-left min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <KoshaLogo size={32} />
+                    <p className="text-[22px] font-bold text-ink leading-tight truncate">Kosha</p>
+                  </div>
+                  <p className="text-[12px] text-ink-2">Personal finance, simplified</p>
                 </div>
+                <img src="/illustrations/login_hero.png" alt="Kosha login" className="w-32 h-auto shrink-0 mix-blend-multiply [clip-path:inset(2px)]" />
               </div>
 
               {/* ── Heading ───────────────────────────────────────────────── */}

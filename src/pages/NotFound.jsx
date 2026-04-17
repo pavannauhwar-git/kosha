@@ -23,6 +23,7 @@ export default function NotFound() {
       title="This page slipped off the ledger"
       description="The URL may be outdated, or this screen was moved during a recent update."
       helperText="No data was changed. You can safely return to the app from here."
+      imageUrl="/illustrations/404_not_found.png"
       primaryLabel={user ? 'Go to dashboard' : 'Go to login'}
       secondaryLabel="Go back"
       onPrimary={() => navigate(homePath, { replace: true })}

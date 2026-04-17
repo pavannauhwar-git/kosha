@@ -1572,7 +1572,7 @@ export default function Transactions() {
         />
       ) : groups.length === 0 ? (
         <EmptyState
-          icon={<CheckCircle2 size={24} className="text-accent-text" />}
+          imageUrl="/illustrations/empty_transactions.png"
           title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
           description={
             hasActiveFilters

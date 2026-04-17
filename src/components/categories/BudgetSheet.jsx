@@ -225,7 +225,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                                 onClick={() => handleSave(cat.id)}
                                 disabled={isSaving}
                                 className="h-7 px-2 rounded-chip bg-brand text-white text-[10px] font-semibold
-                                           disabled:opacity-50 active:scale-95 transition-transform"
+                                           disabled:opacity-50 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
                               >
                                 {isSaving ? '…' : 'Set'}
                               </button>
@@ -236,7 +236,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                                 onClick={() => handleDelete(cat.id)}
                                 disabled={isSaving}
                                 className="h-7 px-2 rounded-chip bg-expense-bg text-expense-text text-[10px] font-semibold
-                                           disabled:opacity-50 active:scale-95 transition-transform"
+                                           disabled:opacity-50 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
                               >
                                 {isSaving ? '…' : '×'}
                               </button>

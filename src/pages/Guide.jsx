@@ -320,7 +320,7 @@ export default function Guide() {
           type="button"
           onClick={() => navigate('/')}
           aria-label="Go to dashboard"
-          className="w-9 h-9 rounded-pill flex items-center justify-center bg-brand-container border border-brand/20 active:scale-95 transition-transform"
+          className="w-9 h-9 rounded-pill flex items-center justify-center bg-brand-container border border-brand/20 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
         >
           <Home size={16} className="text-brand" />
         </button>
@@ -329,16 +329,14 @@ export default function Guide() {
     >
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-5">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
-          <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-[20px] font-bold text-ink tracking-tight leading-tight">Kosha Guide</p>
-              <p className="text-[13px] text-ink-3 mt-1 leading-relaxed">
+          <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+            <div className="flex flex-col items-start text-left min-w-0">
+              <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Kosha Guide</p>
+              <p className="text-[12px] text-ink-3 mt-1 leading-relaxed">
                 Practical workflows, mistakes to avoid, and quick next actions for every page.
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-brand-container border border-brand/15 flex items-center justify-center shrink-0">
-              <BookOpen size={18} className="text-brand" />
-            </div>
+            <img src="/illustrations/guide_hero.png" alt="Guide Hero" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
           </div>
 
           <div className="p-4">

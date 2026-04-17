@@ -19,6 +19,7 @@ export default function KoshaErrorPage({
   primaryIcon: PrimaryIcon = RotateCw,
   secondaryIcon: SecondaryIcon = Home,
   tertiaryIcon: TertiaryIcon,
+  imageUrl,
 }) {
   const [copied, setCopied] = useState(false)
   const normalizedDetail = useMemo(() => String(detail || '').trim().slice(0, 1800), [detail])
@@ -77,15 +78,25 @@ export default function KoshaErrorPage({
             </span>
           </div>
 
-          <div className="flex items-start gap-3">
-            <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
-              <AlertTriangle size={18} />
+          {imageUrl ? (
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left mb-2">
+              <img src={imageUrl} alt="Error illustration" className="w-24 h-24 object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
+              <div className="flex-1 min-w-0 pt-2">
+                <h1 ref={headingRef} tabIndex="-1" className="text-[20px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
+                <p className="mt-1.5 text-label leading-relaxed text-ink-2">{description}</p>
+              </div>
             </div>
-            <div>
-              <h1 ref={headingRef} tabIndex="-1" className="text-[20px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
-              <p className="mt-1.5 text-label leading-relaxed text-ink-2">{description}</p>
+          ) : (
+            <div className="flex items-start gap-3">
+              <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
+                <AlertTriangle size={18} />
+              </div>
+              <div>
+                <h1 ref={headingRef} tabIndex="-1" className="text-[20px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
+                <p className="mt-1.5 text-label leading-relaxed text-ink-2">{description}</p>
+              </div>
             </div>
-          </div>
+          )}
 
           <p className="mt-3 text-caption leading-relaxed text-ink-3">{helperText}</p>
 
@@ -93,7 +104,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onPrimary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-[14px] font-semibold text-white transition-[transform,opacity] duration-100 will-change-transform active:scale-[0.97]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-[14px] font-semibold text-white transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.97]"
             >
               <PrimaryIcon size={16} />
               {primaryLabel}
@@ -102,7 +113,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onSecondary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-[14px] font-semibold text-ink transition-[transform,background-color] duration-100 will-change-transform active:scale-[0.98]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-[14px] font-semibold text-ink transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.98]"
             >
               <SecondaryIcon size={16} />
               {secondaryLabel}
@@ -113,7 +124,7 @@ export default function KoshaErrorPage({
             <button
               type="button"
               onClick={onTertiary}
-              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-accent-text transition-[transform,background-color] duration-100 will-change-transform active:scale-[0.98]"
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-accent-text transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.98]"
             >
               <TertiaryIcon size={16} />
               {tertiaryLabel}

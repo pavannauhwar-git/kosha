@@ -13,6 +13,7 @@ const stagger = {
 
 export default function EmptyState({
   icon,
+  imageUrl,
   title,
   description,
   actionLabel,
@@ -28,7 +29,11 @@ export default function EmptyState({
       animate="show"
       className={`card empty-state py-10 px-6 flex flex-col items-center text-center ${className}`.trim()}
     >
-      {icon ? (
+      {imageUrl ? (
+        <motion.div variants={fadeUp} className="mb-4 flex items-center justify-center">
+          <img src={imageUrl} alt="Empty State Illustration" className="max-h-[160px] w-auto object-contain mix-blend-multiply [clip-path:inset(2px)]" />
+        </motion.div>
+      ) : icon ? (
         <motion.div
           variants={fadeUp}
           animate={{ y: [0, -3, 0] }}

@@ -234,28 +234,29 @@ export default function Splitwise() {
 
   const handleExportLedger = () => {
     if (!expenses.length && !settlements.length) return
+    const headers = ['Type', 'Date', 'Description', 'Amount', 'Paid_By', 'Paid_To']
     const rows = []
     expenses.forEach(e => {
-      rows.push({
-        Type: 'Expense',
-        Date: e.expense_date || '',
-        Description: e.description || '',
-        Amount: e.amount || 0,
-        Paid_By: members.find(m => m.id === e.paid_by_member_id)?.display_name || 'Unknown',
-        Paid_To: ''
-      })
+      rows.push([
+        'Expense',
+        e.expense_date || '',
+        e.description || '',
+        e.amount || 0,
+        members.find(m => m.id === e.paid_by_member_id)?.display_name || 'Unknown',
+        ''
+      ])
     })
     settlements.forEach(e => {
-      rows.push({
-        Type: 'Settlement',
-        Date: e.settled_at || '',
-        Description: 'Settlement Payment',
-        Amount: e.amount || 0,
-        Paid_By: members.find(m => m.id === e.payer_member_id)?.display_name || 'Unknown',
-        Paid_To: members.find(m => m.id === e.payee_member_id)?.display_name || 'Unknown'
-      })
+      rows.push([
+        'Settlement',
+        e.settled_at || '',
+        'Settlement Payment',
+        e.amount || 0,
+        members.find(m => m.id === e.payer_member_id)?.display_name || 'Unknown',
+        members.find(m => m.id === e.payee_member_id)?.display_name || 'Unknown'
+      ])
     })
-    downloadCsv(`kosha-trip-${activeGroup?.name || 'ledger'}.csv`, toCsv(rows))
+    downloadCsv(`kosha-trip-${activeGroup?.name || 'ledger'}.csv`, toCsv(headers, rows))
   }
   useEffect(() => {
     if (!members.length) {
@@ -409,12 +410,14 @@ export default function Splitwise() {
     [expenses]
   )
 
+  const activeGroupsList = useMemo(() => groups.filter((g) => !g.is_archived), [groups])
+  
   const ownedGroupsCount = useMemo(
-    () => groups.filter((group) => group.my_role === 'admin' || group.user_id === authUserId).length,
-    [groups, authUserId]
+    () => activeGroupsList.filter((group) => group.my_role === 'admin' || group.user_id === authUserId).length,
+    [activeGroupsList, authUserId]
   )
 
-  const sharedGroupsCount = Math.max(0, groups.length - ownedGroupsCount)
+  const sharedGroupsCount = Math.max(0, activeGroupsList.length - ownedGroupsCount)
 
   const schemaMissing = isSplitwiseSchemaMissing(error)
   const activeGroup = useMemo(
@@ -940,7 +943,10 @@ export default function Splitwise() {
             <div className="min-w-0 flex-1">
               <p className="text-[12px] text-ink-3">Split groups</p>
               <p className="mt-1 text-[15px] font-semibold text-ink">
-                {groups.length ? `${groups.length} active group${groups.length === 1 ? '' : 's'}` : 'Start your first group'}
+                {(() => {
+                  const activeCount = groups.filter(g => !g.is_archived).length
+                  return activeCount ? `${activeCount} active group${activeCount === 1 ? '' : 's'}` : 'Start your first group'
+                })()}
               </p>
             </div>
           )}
@@ -1028,7 +1034,7 @@ export default function Splitwise() {
       ) : groups.length === 0 ? (
         <EmptyState
           className="py-10"
-          icon={<Users size={24} className="text-brand" />}
+          imageUrl="/illustrations/splitwise_group.png"
           title="No split group yet"
           description="Create a group, invite Kosha users, and split expenses together."
           actionLabel="Create group"
@@ -1058,7 +1064,14 @@ export default function Splitwise() {
               </button>
             </div>
             <div className="space-y-2">
-              {groups.filter(g => showArchived ? g.is_archived : !g.is_archived).map((group) => {
+              {groups.filter(g => showArchived ? g.is_archived : !g.is_archived).length === 0 ? (
+                <EmptyState
+                  className="py-6"
+                  imageUrl="/illustrations/splitwise_group.png"
+                  title={showArchived ? "No archived groups" : "No active groups"}
+                  description={showArchived ? "You don't have any archived groups." : "Create or join a new group."}
+                />
+              ) : groups.filter(g => showArchived ? g.is_archived : !g.is_archived).map((group) => {
                 const isAdmin = group.my_role === 'admin' || group.user_id === authUserId
                 const bgBannerId = localStorage.getItem(`kosha-trip-banner-${group.id}`) || 'goa'
                 const bgBanner = BANNERS.find(b => b.id === bgBannerId) || BANNERS[0]
@@ -1082,12 +1095,16 @@ export default function Splitwise() {
                           </p>
                         </div>
                         <span
-                          className={`rounded-pill px-2 py-0.5 text-[10px] font-semibold border ${isAdmin
-                            ? 'bg-black/40 text-white border-white/20 backdrop-blur-md'
-                            : 'bg-black/40 text-white/70 border-white/10 backdrop-blur-md'
+                          className={`rounded-pill px-2 py-0.5 text-[10px] font-semibold border ${group.is_archived 
+                            ? 'bg-kosha-border/60 text-white/70 border-white/10 backdrop-blur-md'
+                            : isAdmin
+                              ? 'bg-black/40 text-white border-white/20 backdrop-blur-md'
+                              : 'bg-black/40 text-white/70 border-white/10 backdrop-blur-md'
                             }`}
                         >
-                          {isAdmin ? 'Admin' : group.my_role === 'member' ? 'Member' : 'Viewer'}
+                          {group.is_archived 
+                            ? `Archived · Was ${isAdmin ? 'Admin' : group.my_role === 'member' ? 'Member' : 'Viewer'}` 
+                            : (isAdmin ? 'Admin' : group.my_role === 'member' ? 'Member' : 'Viewer')}
                         </span>
                       </div>
                       <p className="text-[10px] font-medium text-white/70 shadow-sm">Tap to view balances, expenses, and settlements.</p>
@@ -1154,7 +1171,9 @@ export default function Splitwise() {
                   const netRow = balances.find((entry) => entry?.member?.id === member.id)
                   const net = round2(netRow?.net || 0)
                   const isSelfMember = member.linked_user_id === authUserId
-                  const memberRole = member.linked_user_id ? (roleByUserId.get(member.linked_user_id) || 'viewer') : 'viewer'
+                  const memberRole = member.linked_user_id 
+                    ? (member.linked_user_id === activeGroup?.user_id ? 'admin' : (roleByUserId.get(member.linked_user_id) || 'viewer')) 
+                    : 'viewer'
                   const roleBusy = saving === `member-role-${member.id}`
                   const avatarUrl = resolveMemberAvatar(member)
                   const displayName = resolveMemberName(member)
@@ -1270,7 +1289,11 @@ export default function Splitwise() {
           <div className="card p-3.5 mb-3">
             <p className="section-label mb-2">Suggested Settlements</p>
             {suggestedTransfers.length === 0 ? (
-              <p className="text-[12px] text-ink-3">Everyone is settled.</p>
+              <div className="py-4 text-center">
+                <img src="/illustrations/coffee_chill.png" className="max-h-[100px] w-auto mx-auto mb-2 mix-blend-multiply [clip-path:inset(2px)]" alt="All caught up" />
+                <p className="text-[13px] font-semibold text-ink">Everyone is settled.</p>
+                <p className="text-[11px] text-ink-3">Time to relax.</p>
+              </div>
             ) : (
               <div className="space-y-2">
                 {suggestedTransfers.map((transfer, index) => (
@@ -1922,8 +1945,7 @@ export default function Splitwise() {
                     <button
                       key={banner.id}
                       onClick={() => changeBanner(banner.id)}
-                      className={`relative flex flex-col items-start gap-1 p-1 overflow-hidden transition-transform active:scale-[0.98] rounded-card ${savedBannerId === banner.id ? 'ring-2 ring-brand ring-offset-1' : ''
-                        }`}
+                      className={`relative flex flex-col items-start gap-1 p-1 overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.98] rounded-card ${savedBannerId === banner.id ? 'ring-2 ring-brand ring-offset-1' : ''}`}
                     >
                       <div className="h-20 w-full rounded-card overflow-hidden bg-kosha-surface-2 border border-kosha-border object-cover">
                         <img src={banner.src} alt={banner.name} className="h-full w-full object-cover" loading="lazy" />

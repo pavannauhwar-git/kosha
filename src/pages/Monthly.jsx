@@ -547,6 +547,8 @@ export default function Monthly() {
         >
           {!hasMonthData ? (
             <EmptyState
+              className="py-10"
+              imageUrl="/illustrations/monthly_empty.png"
               title="No data for this month"
               description="This month is empty right now. Add transactions to unlock month-close insights and reconciliation cues."
               actionLabel={

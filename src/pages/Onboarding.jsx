@@ -232,7 +232,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
         <button
           type="button"
           onClick={() => setTxnType('expense')}
-          className={`h-10 rounded-card text-[12px] font-semibold border transition-[background-color,border-color,color] duration-150 will-change-transform active:scale-[0.98] ${
+          className={`h-10 rounded-card text-[12px] font-semibold border transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.98] ${
             txnType === 'expense'
               ? 'bg-expense-bg text-expense-text border-expense-border'
               : 'bg-kosha-surface text-ink-3 border-kosha-border'
@@ -243,7 +243,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
         <button
           type="button"
           onClick={() => setTxnType('income')}
-          className={`h-10 rounded-card text-[12px] font-semibold border transition-[background-color,border-color,color] duration-150 will-change-transform active:scale-[0.98] ${
+          className={`h-10 rounded-card text-[12px] font-semibold border transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.98] ${
             txnType === 'income'
               ? 'bg-income-bg text-income-text border-income-border'
               : 'bg-kosha-surface text-ink-3 border-kosha-border'
@@ -370,8 +370,13 @@ export default function Onboarding() {
     <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-12 pb-10">
       <div className="w-full max-w-sm mx-auto flex flex-col flex-1">
 
-        {/* Logo mark — replaces the old KOSHA text badge */}
-        <KoshaLogo size={44} />
+        {/* Logo mark and Hero Illustration */}
+        <div className="flex items-center mb-4">
+          <KoshaLogo size={36} />
+        </div>
+        <div className="flex justify-center mb-2">
+          <img src="/illustrations/onboarding_hero.png" alt="Welcome to Kosha" className="w-48 h-auto mix-blend-multiply [clip-path:inset(2px)]" />
+        </div>
 
         <StepDots current={step} total={3} />
 

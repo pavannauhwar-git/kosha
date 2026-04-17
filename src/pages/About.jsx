@@ -118,15 +118,18 @@ export default function About() {
     >
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
-          <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border flex items-center gap-3">
-              <KoshaLogo size={42} className="drop-shadow-[0_4px_10px_rgba(0,0,0,0.10)]" />
-              <div className="min-w-0 flex-1">
-                <p className="text-[20px] font-bold text-ink tracking-tight leading-tight">Kosha</p>
-                <p className="text-[12px] text-ink-3 mt-0.5">Your financial command center</p>
+          <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+            <div className="flex flex-col items-start text-left min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <KoshaLogo size={24} className="drop-shadow-sm" />
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15">
+                  v{latestVersion}
+                </span>
               </div>
-              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand border border-brand/15">
-                v{latestVersion}
-              </span>
+              <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Kosha</p>
+              <p className="text-[12px] text-ink-3 mt-0.5">Your financial command center</p>
+            </div>
+            <img src="/illustrations/about_hero.png" alt="About Kosha" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
           </div>
 
           <div className="p-4">

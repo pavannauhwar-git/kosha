@@ -85,7 +85,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         aria-controls="profile-menu-panel"
         className="w-9 h-9 rounded-full bg-kosha-surface-2
                    shadow-card flex items-center justify-center overflow-hidden
-                   active:scale-95 transition-transform duration-100"
+                   active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
         style={{ border: '1px solid var(--ds-border)' }}
       >
         {avatarUrl ? (
@@ -139,7 +139,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
 
               <MenuDivider />
 
-              {/* ── Menu items with stagger ───────────────────────── */}
               <motion.div custom={0} variants={menuItemVariants} initial="hidden" animate="show">
                 <MenuRow
                   icon={<Settings size={15} />}
@@ -147,7 +146,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                   onClick={() => { close(); navigate('/settings') }}
                 />
               </motion.div>
-              <motion.div custom={4} variants={menuItemVariants} initial="hidden" animate="show">
+              <motion.div custom={1} variants={menuItemVariants} initial="hidden" animate="show">
                 <MenuRow
                   icon={<Link2 size={15} />}
                   label="Reconciliation"
@@ -157,7 +156,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
 
               <MenuDivider />
 
-              <motion.div custom={1} variants={menuItemVariants} initial="hidden" animate="show">
+              <motion.div custom={2} variants={menuItemVariants} initial="hidden" animate="show">
                 <MenuRow
                   icon={<Bug size={15} />}
                   label="Report a Bug"
@@ -170,7 +169,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                   }}
                 />
               </motion.div>
-              <motion.div custom={2} variants={menuItemVariants} initial="hidden" animate="show">
+              <motion.div custom={3} variants={menuItemVariants} initial="hidden" animate="show">
                 <MenuRow
                   icon={<Info size={15} />}
                   label="About Kosha"
@@ -180,7 +179,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
 
               <MenuDivider />
 
-              <motion.div custom={3} variants={menuItemVariants} initial="hidden" animate="show">
+              <motion.div custom={4} variants={menuItemVariants} initial="hidden" animate="show">
                 <MenuRow
                   icon={<BookOpen size={15} />}
                   label="Setup Guide"

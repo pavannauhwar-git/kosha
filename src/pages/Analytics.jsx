@@ -374,6 +374,8 @@ export default function Analytics() {
             </>
           ) : (
             <EmptyState
+              className="py-10"
+              imageUrl="/illustrations/yearly_empty.png"
               title={`No data for ${year}`}
               description="This year is empty right now. Add transactions to unlock yearly trends, category intelligence, and YoY comparisons."
               actionLabel={year === currentYear ? 'Add transaction' : 'Go to current year'}

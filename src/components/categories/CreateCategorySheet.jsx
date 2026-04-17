@@ -223,7 +223,7 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
                         justify-center gap-2 transition-[transform,background-color,opacity] duration-150 will-change-transform
                         ${saving
                           ? 'bg-brand/70 text-white/90 cursor-not-allowed'
-                          : 'bg-brand text-white active:scale-[0.97] disabled:opacity-50'}`}
+                          : 'bg-brand text-white active:scale-[0.97] disabled:opacity-50 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]'}`}
           >
             {saving ? (
               <>

@@ -293,7 +293,7 @@ export default function Settings() {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
+          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-95 active:bg-kosha-border"
           aria-label="Go to home"
         >
           <Home size={16} className="text-ink-2" />
@@ -301,12 +301,23 @@ export default function Settings() {
       )}
     >
       <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
+        <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
+          <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+            <div className="flex flex-col items-start text-left min-w-0">
+              <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Preferences</p>
+              <p className="text-[12px] text-ink-3 mt-1 leading-relaxed">
+                Control your profile, security, and shared access.
+              </p>
+            </div>
+            <img src="/illustrations/settings_hero.png" alt="Settings Hero" className="w-32 h-auto object-contain mix-blend-multiply [clip-path:inset(2px)] shrink-0" />
+          </div>
+        </motion.div>
 
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
-          <div className="px-4 py-4 bg-kosha-surface-2 border-b border-kosha-border">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-brand-container
+          <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border">
+            <div className="flex items-center gap-4">
+              <div className="relative shrink-0">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-container
                                   flex items-center justify-center overflow-hidden
                                   ring-4 ring-kosha-border">
                   {avatarUrl ? (
@@ -316,16 +327,16 @@ export default function Settings() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-[30px] font-bold text-ink">{initial}</span>
+                    <span className="text-[28px] sm:text-[32px] font-bold text-ink">{initial}</span>
                   )}
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full
+                  className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full
                                bg-brand text-white shadow-card
                                flex items-center justify-center
-                               active:scale-90 transition-transform duration-75
+                               active:scale-90 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]
                                disabled:opacity-60"
                   aria-label="Change photo"
                 >
@@ -334,54 +345,44 @@ export default function Settings() {
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="text-[17px] font-bold text-ink truncate">{displayName}</p>
-                <p className="text-[12px] text-ink-3 truncate mt-0.5">{user?.email}</p>
-                <div className="mt-2 inline-flex items-center gap-2 text-[10px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15">
-                  <ShieldAlert size={12} /> Private profile
+                <p className="text-[18px] sm:text-[20px] font-bold text-ink truncate">{displayName}</p>
+                <p className="text-[13px] text-ink-3 truncate mt-0.5">{user?.email}</p>
+                <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15">
+                  <ShieldAlert size={11} /> Private profile
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="p-4 space-y-2.5">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="tonal"
-                size="md"
-                fullWidth
-                icon={<Pencil size={14} />}
-                onClick={() => setShowEditName(true)}
-              >
-                Edit name
-              </Button>
-
-              <Button
-                variant="primary"
-                size="md"
-                fullWidth
-                icon={<Camera size={14} />}
-                onClick={() => fileInputRef.current?.click()}
-                loading={uploading}
-              >
-                Change photo
-              </Button>
-            </div>
-
+          <div className="flex flex-col">
+            <SettingRow
+              icon={<Pencil size={16} className="text-brand" />}
+              label="Edit display name"
+              onClick={() => setShowEditName(true)}
+            />
+            <Divider />
+            <SettingRow
+              icon={<Camera size={16} className="text-brand" />}
+              label="Update profile photo"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            />
             {avatarUrl && (
-              <Button
-                variant="danger"
-                size="md"
-                fullWidth
-                icon={<Trash2 size={15} />}
-                onClick={handleDeletePhoto}
-                loading={uploading}
-              >
-                Remove photo
-              </Button>
+              <>
+                <Divider />
+                <SettingRow
+                  icon={<Trash2 size={16} className="text-expense-text" />}
+                  label="Remove photo"
+                  onClick={handleDeletePhoto}
+                  destructive
+                  disabled={uploading}
+                />
+              </>
             )}
-
             {photoError && (
-              <p className="text-[12px] text-expense-text">{photoError}</p>
+              <div className="px-4 py-3 bg-expense-bg/50 border-t border-expense-border">
+                <p className="text-[12px] text-expense-text">{photoError}</p>
+              </div>
             )}
           </div>
         </motion.div>

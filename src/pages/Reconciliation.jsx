@@ -703,7 +703,8 @@ export default function Reconciliation() {
             />
           ) : !hasTransactions && !hasActiveFilters ? (
             <EmptyState
-              icon={<History size={24} className="text-accent-text" />}
+              className="py-6"
+              imageUrl="/illustrations/reconciliation_empty.png"
               title="Nothing to reconcile yet"
               description="Add transactions first. Reconciliation checks will surface here."
               actionLabel="Go to transactions"
@@ -711,7 +712,8 @@ export default function Reconciliation() {
             />
           ) : visibleItems.length === 0 ? (
             <EmptyState
-              icon={<CheckCircle2 size={24} className="text-income-text" />}
+              className="py-6"
+              imageUrl="/illustrations/settled_loans.png"
               title={hasActiveFilters ? 'No items for selected filters' : 'Queue is clear'}
               description={
                 hasActiveFilters

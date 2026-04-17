@@ -25,7 +25,7 @@ const CategoryPicker = memo(function CategoryPicker({ type, value, onChange, cla
               'min-h-[44px] min-w-[44px]',
               isSelected
                 ? 'bg-[var(--ds-primary-container)] ring-2 ring-[var(--ds-primary)] scale-[1.02]'
-                : 'bg-[var(--ds-surface-container)] hover:bg-[var(--ds-surface-container-high)] active:scale-95',
+                : 'bg-[var(--ds-surface-container)] hover:bg-[var(--ds-surface-container-high)] transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-95',
             ].join(' ')}
           >
             <CategoryIcon id={cat.id} size={24} />

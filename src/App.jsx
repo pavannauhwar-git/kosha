@@ -912,9 +912,21 @@ function ShellStatusBanners() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegisteredSW(_, registration) {
+    onRegisteredSW(swUrl, registration) {
       if (registration) {
         setSwRegistration(registration)
+        
+        // 1. Check for updates every hour in the background
+        setInterval(() => {
+          registration.update()
+        }, 60 * 60 * 1000)
+
+        // 2. Force an aggressive check whenever the user brings the app to foreground
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            registration.update()
+          }
+        })
       }
     },
     onRegisterError(error) {
@@ -1019,7 +1031,7 @@ function ShellStatusBanners() {
 
   const navHidden = BOTTOM_NAV_HIDE_ON.some((path) => location.pathname.startsWith(path))
   const bottomClass = navHidden ? 'bottom-4' : 'bottom-[calc(var(--nav-height)+1rem)]'
-  const showUpdatePrompt = needRefresh && !updateDismissed
+  const showUpdatePrompt = needRefresh
   const showInstallPrompt = !!deferredInstallPrompt && !installDismissed
 
   async function handleAppUpdate() {
@@ -1079,25 +1091,15 @@ function ShellStatusBanners() {
           className="pointer-events-auto flex items-center gap-2 rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5 shadow-card"
         >
           <span className="flex-1 text-[12px] leading-snug text-ink-2">
-            Bug fixes and improvements are ready.
+            An update is required to continue.
           </span>
-          <button
-            type="button"
-            onClick={() => {
-              setUpdateDismissed(true)
-              setNeedRefresh(false)
-            }}
-            className="rounded-pill border border-kosha-border bg-kosha-surface-2 px-2.5 py-1 text-[11px] font-semibold text-ink-2"
-          >
-            Not now
-          </button>
           <button
             type="button"
             onClick={() => { void handleAppUpdate() }}
             disabled={updating}
             className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
           >
-            {updating ? 'Updating…' : 'Update'}
+            {updating ? 'Updating…' : 'Update Now'}
           </button>
         </motion.div>
       )}

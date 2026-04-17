@@ -570,7 +570,7 @@ textarea:focus-visible,
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2;
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2;
     --tw-ring-color: rgba(17, 19, 24, 0.10);
   }
 
@@ -749,7 +749,7 @@ textarea:focus-visible,
     will-change: transform;
     transform: translateZ(0);
     touch-action: manipulation;
-    transition: border-color 200ms cubic-bezier(0.05, 0.7, 0.1, 1), box-shadow 200ms cubic-bezier(0.05, 0.7, 0.1, 1), background-color 200ms cubic-bezier(0.05, 0.7, 0.1, 1);
+    transition: border-color 200ms cubic-bezier(0.2, 0, 0, 1), box-shadow 200ms cubic-bezier(0.2, 0, 0, 1), background-color 200ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   .input:focus {
