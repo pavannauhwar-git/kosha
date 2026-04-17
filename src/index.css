@@ -847,7 +847,6 @@ textarea:focus-visible,
     margin-left: auto;
     margin-right: auto;
     /* Prevent layout shift during hydrations/transitions */
-    isolation: isolate;
   }
 
   .card.p-4 {
