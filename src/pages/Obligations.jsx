@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Receipt, Handshake, Plus } from 'lucide-react'
+import { Receipt, Handshake, Plus } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Bills from '../components/obligations/Bills'
@@ -11,8 +11,8 @@ const fadeUp = createFadeUp(12, 0.4)
 const stagger = createStagger(0.06, 0.04)
 
 const TABS = [
-  { key: 'bills', label: 'Bills', icon: Receipt, hint: 'Due dates & payments' },
-  { key: 'loans', label: 'Loans', icon: Handshake, hint: 'Given & taken' },
+  { key: 'bills', label: 'Bills', Icon: Receipt, hint: 'Due dates & payments' },
+  { key: 'loans', label: 'Loans', Icon: Handshake, hint: 'Given & taken' },
 ]
 
 function resolveTab(value) {
@@ -40,32 +40,48 @@ export default function Obligations() {
         animate="show"
         className="page-stack"
       >
-        <motion.div variants={fadeUp} className="flex border-b border-kosha-border overflow-x-auto no-scrollbar relative">
+        <motion.div variants={fadeUp} className="bg-kosha-surface-2 px-1.5 py-1 rounded-[22px] border border-kosha-border/60 mb-3 flex items-center">
           {TABS.map((item) => {
-            const Icon = item.icon
+            const Icon = item.Icon
             const active = tab === item.key
             return (
               <button
                 key={item.key}
                 type="button"
-                onClick={() => handleTabChange(item.key)}
-                className={`relative flex-1 flex items-center justify-center gap-1.5 h-10 text-[13px] font-semibold transition-colors
-                  ${active ? 'text-brand' : 'text-ink-3 hover:text-ink'}`}
+                onClick={() => {
+                  import('../lib/haptics').then(m => m.hapticTap())
+                  handleTabChange(item.key)
+                }}
+                className="flex-1 flex flex-col items-center justify-center min-h-[54px] relative"
                 aria-pressed={active}
               >
-                <Icon size={14} className={active ? 'text-brand' : 'text-ink-3'} />
-                <span>{item.label}</span>
-                <span className={`text-[10px] font-medium ${active ? 'text-brand/70' : 'text-ink-4'} hidden sm:inline`}>
-                  · {item.hint}
+                <div className="nav-icon-wrap mb-1">
+                  {active && (
+                    <motion.div 
+                      layoutId="obligations-nav-pill" 
+                      className="nav-icon-bg"
+                      initial={false}
+                      transition={{ type: 'spring', stiffness: 500, damping: 40, mass: 1 }} 
+                    />
+                  )}
+                  <span className="nav-icon-layer" style={{ opacity: active ? 1 : 0, transition: 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)' }}>
+                    <Icon size={21} weight="fill" color="var(--ds-primary)" />
+                  </span>
+                  <span className="nav-icon-layer" style={{ opacity: active ? 0 : 1, transition: 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)' }}>
+                    <Icon size={21} weight="regular" color="var(--ds-text-tertiary)" />
+                  </span>
+                </div>
+                <span 
+                  className="nav-label"
+                  style={{
+                    color: active ? 'var(--ds-primary)' : 'var(--ds-text-tertiary)',
+                    fontWeight: active ? 600 : 400,
+                    opacity: active ? 1 : 0.75,
+                    transition: 'color 180ms cubic-bezier(0.2, 0, 0, 1), opacity 180ms cubic-bezier(0.2, 0, 0, 1)',
+                  }}
+                >
+                  {item.label}
                 </span>
-                {active && (
-                  <motion.div
-                    layoutId="obligations-tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand rounded-full"
-                    initial={false}
-                    transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                  />
-                )}
               </button>
             )
           })}

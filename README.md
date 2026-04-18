@@ -35,17 +35,16 @@ Key design principles:
 
 ## Features
 
-- **Transactions** — add, edit, delete, filter, search, CSV export, recurring engine
-- **Bills** — pending/paid states, recurring support, mark-as-paid, due date tracking
-- **Loans** — given/taken tracking, settlement progress, record payments, interest rates
-- **Dashboard** — cashflow cards, spending pace, daily heatmap, weekly digest, recent activity
-- **Analytics** — monthly and yearly breakdowns, category treemaps, savings rate trend, reconciliation confidence
-- **Reconciliation** — statement matching, review queue, confidence scoring, alias learning
-- **Monthly** — month-over-month comparison, variance analysis, projected close
-- **Settings** — shared-wallet invites, locale preferences, reminder configuration
-- **Guide** — in-app feature map, getting-started checklist, how-to playbooks
-- **Bug reporting** — in-app bug report flow with optional Slack/Discord webhook notification
-- **Installable PWA** — service worker with precaching, works offline
+- **Transactions** — Add, edit, delete, filter, and search with deterministic URL sync and CSV export.
+- **Splitwise** — Full P2P group expense management: create groups, invite members, add split expenses, and settle up with automated ledger sync.
+- **Bills & Dues** — Track recurring liabilities with due-date alerts, paid/pending states, and one-tap settlement.
+- **Loans** — Manage given/taken loans with progress tracking, interest support, and repayment history.
+- **Linked Records** — Atomic cross-references between the ledger and source modules (Bills, Loans, Splitwise) to ensure data integrity.
+- **Dashboard** — Premium "Vibrant Clarity" command center with cashflow cards, spending pace, daily heatmap, and weekly digests.
+- **Analytics** — Deep-dive monthly/yearly breakdowns, category treemaps, savings rate trends, and cashflow waterfall charts.
+- **Reconciliation** — Intelligent statement matching engine with confidence scoring, review queues, and alias learning.
+- **Design System** — Native-feeling PWA with Material 3 motion, tactile haptic feedback, and optimized gesture-based navigation.
+- **Privacy & Sync** — 100% self-hosted architecture with multi-user "Linked Wallets" sharing and real-time Supabase synchronization.
 
 ## Tech stack
 
@@ -54,11 +53,12 @@ Key design principles:
 | Framework | React 18, React Router 6 |
 | State/Data | @tanstack/react-query v5 |
 | Backend | Supabase (Postgres, Auth, Realtime, Edge Functions) |
-| Styling | Tailwind CSS 3 |
-| Animations | Framer Motion 11 |
+| Styling | Tailwind CSS 3, Vanilla CSS Design System |
+| Animations | Framer Motion 11, CSS Keyframes |
+| Haptics | Native Web Vibration API |
 | Charts | Recharts 2 |
 | Icons | Lucide React, Phosphor Icons |
-| Dialogs | Radix UI |
+| Dialogs | Radix UI, Custom Bottom Sheets |
 | Build | Vite 5, vite-plugin-pwa |
 | Deployment | Vercel |
 
@@ -88,6 +88,7 @@ Key design principles:
 │   │   ├── errors/             # Error boundary
 │   │   ├── layout/             # Page layout wrappers
 │   │   ├── navigation/         # Nav bar, auth guard, route skeleton
+│   │   ├── obligations/        # Bills and Loans specific components
 │   │   └── transactions/       # Add/edit sheet, transaction list item
 │   ├── context/
 │   │   └── AuthContext.jsx     # Supabase auth state provider
@@ -99,6 +100,7 @@ Key design principles:
 │   │   ├── useLoans.js         # Loans CRUD + payments
 │   │   ├── useReconciliationReviews.js
 │   │   ├── useScrollDirection.js
+│   │   ├── useSplitwise.js     # Splitwise group and expense logic
 │   │   ├── useTransactions.js  # Transaction CRUD + filters
 │   │   └── useUserCategories.js
 │   ├── lib/
@@ -397,3 +399,4 @@ If the webhook URL is not configured, bug submissions still succeed — the noti
 - **Service role keys** must stay server-side (Edge Functions only)
 - All database access is gated by Row Level Security (RLS) policies
 - Financial mutations are logged to an immutable audit trail
+- **Linked Integrity**: Automated transactions (Bills, Loans, Splitwise) are cryptographically linked to their sources and guarded against manual modifications to prevent ledger drift.

@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.3.2',
+    date: 'April 2026',
+    items: [
+      'Generalized financial linking architecture to atomically connect transactions with Bills and Loans',
+      'Implemented UI safeguards to block manual editing/deleting of system-linked records, ensuring ledger integrity',
+      'Upgraded Bills navigation to auto-switch tabs when focusing on settled entries from the transaction list',
+      'Added contextual "Go to Source" navigation in the unified Linked Transaction Info Sheet for Splitwise, Bills, and Loans',
+      'Resolved focus-highlight visual flicker by hardening CSS animation background states across card surfaces',
+    ],
+  },
+  {
     version: '1.3.1',
     date: 'April 2026',
     items: [
