@@ -63,13 +63,13 @@ export const TRANSACTION_INVALIDATION_KEYS = [
 ]
 
 export const TRANSACTION_LIST_COLUMNS =
-  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
+  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 
 export const TRANSACTION_INSIGHTS_COLUMNS =
-  'id, date, created_at, type, amount, description, category, payment_mode, is_repayment, is_recurring, is_auto_generated, source_transaction_id, investment_vehicle'
+  'id, date, created_at, type, amount, description, category, payment_mode, is_repayment, is_recurring, is_auto_generated, source_transaction_id, investment_vehicle, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 
 const TRANSACTION_MUTATION_COLUMNS =
-  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated'
+  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 
 const RECURRING_SYNC_COOLDOWN_MS = 60 * 1000
 const RECURRING_SYNC_WAIT_MS = 220
@@ -192,6 +192,8 @@ export async function invalidateCache() {
   suppress('transactions')
   await evictSwCacheEntries('/transactions')
   await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['transactionSignalAggregates'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
@@ -384,7 +386,7 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
   return { data, loading: isLoading, error }
 }
 
-const RECENT_TXN_COLUMNS = 'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id'
+const RECENT_TXN_COLUMNS = 'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 const DIGEST_TXN_COLUMNS = 'id, date, created_at, type, amount, category, is_repayment'
 const DAILY_EXPENSE_TOTAL_COLUMNS = 'date, amount'
 
@@ -1119,7 +1121,7 @@ function refreshTransactionCachesInBackground(invalidateFn, scope) {
   setTimeout(() => {
     runInBackground(
       (async () => {
-        await evictSwCacheEntries('/transactions')
+        import('./useSplitwise').then(m => m.invalidateSplitwiseCache()).catch(() => {})
         await Promise.all([
           invalidateFn(),
           queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),

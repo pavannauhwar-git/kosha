@@ -293,6 +293,19 @@ export default function Bills({
   }, [tabFromQuery, tabSource, searchParams, setSearchParams])
 
   useEffect(() => {
+    if (!focusBillId || pendingLoading || paidLoading) return
+
+    const isInPending = pending.some(b => b.id === focusBillId)
+    const isInPaid = paid.some(b => b.id === focusBillId)
+
+    if (tab === 'pending' && !isInPending && isInPaid) {
+      setTab('paid')
+    } else if (tab === 'paid' && !isInPaid && isInPending) {
+      setTab('pending')
+    }
+  }, [focusBillId, pending, paid, tab, pendingLoading, paidLoading])
+
+  useEffect(() => {
     return () => {
       if (undoTimerRef.current) {
         clearTimeout(undoTimerRef.current)

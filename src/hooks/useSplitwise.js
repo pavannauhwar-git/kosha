@@ -164,6 +164,7 @@ export async function invalidateSplitwiseCache() {
     evictSwCacheEntries('/split_settlements'),
   ])
   await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
+  import('./useTransactions').then(m => m.invalidateCache()).catch(() => {})
 }
 
 export function useSplitwise({ groupId, enabled = true } = {}) {
@@ -531,6 +532,7 @@ export async function addSplitExpenseMutation({
   splitMethod,
   notes,
   splits,
+  transactionCategory,
 }) {
   const userId = getAuthUserId()
   const safeAmount = round2(amount)
@@ -556,6 +558,7 @@ export async function addSplitExpenseMutation({
     p_split_method: splitMethod || 'equal',
     p_notes: notes || null,
     p_splits: payloadSplits,
+    p_transaction_category: transactionCategory || 'other',
   })
 
   if (error) throw error

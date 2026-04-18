@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, Users, ArrowRightLeft, ReceiptText, X, Link2, Trash2, ChevronLeft, Settings2, Archive, ArchiveRestore } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Button from '../components/ui/Button'
 import PixelDatePicker from '../components/ui/PixelDatePicker'
@@ -36,6 +36,8 @@ import {
   updateSplitGroupBannerMutation,
   setSplitGroupAccessRoleMutation,
 } from '../hooks/useSplitwise'
+import { getCategoriesForType } from '../lib/categories'
+import { useUserCategories } from '../hooks/useUserCategories'
 import { fmt, fmtDate } from '../lib/utils'
 
 import { downloadCsv, toCsv } from '../lib/csv'
@@ -116,6 +118,7 @@ export default function Splitwise() {
   const { user, profile } = useAuth()
   const [activeGroupId, setActiveGroupId] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
   const authUserId = getAuthUserId()
 
   const {
@@ -132,6 +135,19 @@ export default function Splitwise() {
   } = useSplitwise({ groupId: activeGroupId, enabled: true })
 
   useSplitwiseRealtime()
+  useUserCategories()
+  const expenseCategoryOptions = getCategoriesForType('expense')
+
+  // Deep-link from transaction info sheet: open a specific group
+  useEffect(() => {
+    const { openGroupId } = location.state || {}
+    if (openGroupId) {
+      setActiveGroupId(openGroupId)
+      // Clear the state so a re-render doesn't re-trigger this
+      window.history.replaceState({}, '')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [showAddExpense, setShowAddExpense] = useState(false)
@@ -168,6 +184,7 @@ export default function Splitwise() {
     paid_by_member_id: '',
     split_method: 'equal',
     notes: '',
+    transaction_category: 'other',
   })
   const [splitInputs, setSplitInputs] = useState({})
 
@@ -774,6 +791,7 @@ export default function Splitwise() {
         splitMethod: expenseForm.split_method,
         notes: expenseForm.notes,
         splits,
+        transactionCategory: expenseForm.transaction_category,
       })
 
       setExpenseForm((prev) => ({
@@ -781,6 +799,7 @@ export default function Splitwise() {
         description: '',
         amount: '',
         notes: '',
+        transaction_category: 'other',
       }))
       setEditExpense(null)
       setShowAddExpense(false)
@@ -856,6 +875,7 @@ export default function Splitwise() {
       paid_by_member_id: expense.paid_by_member_id || '',
       split_method: expense.split_method || 'equal',
       notes: expense.notes || '',
+      transaction_category: 'other', // Edit drops original category since it wasn't tracked on the split_expense itself
     })
 
     const nextSplits = {}
@@ -1713,6 +1733,21 @@ export default function Splitwise() {
                       sheetTitle="Select expense date"
                     />
                   </div>
+                </div>
+
+                <div className="list-card mb-3">
+                  <label className="list-row w-full cursor-pointer">
+                    <span className="text-[14px] text-ink-3">Category</span>
+                    <select
+                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
+                      value={expenseForm.transaction_category}
+                      onChange={(event) => setExpenseForm((prev) => ({ ...prev, transaction_category: event.target.value }))}
+                    >
+                      {expenseCategoryOptions.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.label}</option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
 
                 <div className="list-card mb-3">

@@ -1046,7 +1046,8 @@ begin
   -- Step 1: Insert the linked expense transaction
   insert into transactions (
     date, type, description, amount, category,
-    is_repayment, payment_mode, notes, user_id
+    is_repayment, payment_mode, notes, user_id,
+    linked_bill_id
   ) values (
     current_date,
     'expense',
@@ -1056,7 +1057,8 @@ begin
     false,
     'other',
     'Auto-created from bill: ' || v_liability.description,
-    p_user_id
+    p_user_id,
+    p_liability_id
   )
   returning id into v_txn_id;
 
@@ -2445,6 +2447,9 @@ as $$
   left join out_settle ot on ot.member_id = m.id;
 $$;
 
+-- Drop old signature to prevent PostgREST ambiguity
+drop function if exists public.split_create_expense(uuid, uuid, text, numeric, date, text, text, jsonb);
+
 create or replace function public.split_create_expense(
   p_group_id uuid,
   p_paid_by_member_id uuid,
@@ -2453,7 +2458,9 @@ create or replace function public.split_create_expense(
   p_expense_date date,
   p_split_method text,
   p_notes text,
-  p_splits jsonb
+  p_splits jsonb,
+  p_sync_transaction boolean default true,
+  p_transaction_category text default 'other'
 )
 returns split_expenses
 language plpgsql
@@ -2470,6 +2477,8 @@ declare
   v_share numeric;
   v_percent numeric;
   v_shares numeric;
+  v_payer_uid uuid;
+  v_txn_id uuid;
 begin
   if v_uid is null then
     raise exception 'Authentication required';
@@ -2499,7 +2508,12 @@ begin
     raise exception 'Split group not found';
   end if;
 
-  if not exists (
+  select linked_user_id into v_payer_uid
+  from split_group_members m
+  where m.id = p_paid_by_member_id
+    and m.group_id = p_group_id;
+
+  if v_payer_uid is null and not exists (
     select 1
     from split_group_members m
     where m.id = p_paid_by_member_id
@@ -2579,9 +2593,28 @@ begin
     raise exception 'Split total (%) does not match amount (%)', v_sum, p_amount;
   end if;
 
+  if p_sync_transaction and v_payer_uid = v_uid then
+    insert into public.transactions (
+      date, type, description, amount, category, user_id, linked_split_expense_id
+    ) values (
+      coalesce(p_expense_date, current_date),
+      'expense',
+      btrim(p_description),
+      p_amount,
+      coalesce(p_transaction_category, 'other'),
+      v_uid,
+      v_expense.id
+    ) returning id into v_txn_id;
+
+    update public.split_expenses set linked_transaction_id = v_txn_id where id = v_expense.id;
+  end if;
+
   return v_expense;
 end;
 $$;
+
+-- Drop old signature to prevent PostgREST ambiguity
+drop function if exists public.split_record_settlement(uuid, uuid, uuid, numeric, date, text);
 
 create or replace function public.split_record_settlement(
   p_group_id uuid,
@@ -2589,7 +2622,8 @@ create or replace function public.split_record_settlement(
   p_payee_member_id uuid,
   p_amount numeric,
   p_settled_at date default current_date,
-  p_note text default null
+  p_note text default null,
+  p_sync_transaction boolean default true
 )
 returns split_settlements
 language plpgsql
@@ -2599,6 +2633,12 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_row split_settlements%rowtype;
+  v_payer_uid uuid;
+  v_payee_uid uuid;
+  v_payer_txn_id uuid;
+  v_payee_txn_id uuid;
+  v_payer_name text;
+  v_payee_name text;
 begin
   if v_uid is null then
     raise exception 'Authentication required';
@@ -2620,20 +2660,18 @@ begin
     raise exception 'Split group not found';
   end if;
 
-  if not exists (
-    select 1
-    from split_group_members m
-    where m.id = p_payer_member_id
-      and m.group_id = p_group_id
+  select linked_user_id, display_name into v_payer_uid, v_payer_name
+  from split_group_members where id = p_payer_member_id and group_id = p_group_id;
+  if v_payer_uid is null and not exists (
+    select 1 from split_group_members m where m.id = p_payer_member_id and m.group_id = p_group_id
   ) then
     raise exception 'Payer is not in this group';
   end if;
 
-  if not exists (
-    select 1
-    from split_group_members m
-    where m.id = p_payee_member_id
-      and m.group_id = p_group_id
+  select linked_user_id, display_name into v_payee_uid, v_payee_name
+  from split_group_members where id = p_payee_member_id and group_id = p_group_id;
+  if v_payee_uid is null and not exists (
+    select 1 from split_group_members m where m.id = p_payee_member_id and m.group_id = p_group_id
   ) then
     raise exception 'Payee is not in this group';
   end if;
@@ -2655,6 +2693,28 @@ begin
     nullif(btrim(coalesce(p_note, '')), ''),
     v_uid
   ) returning * into v_row;
+
+  if p_sync_transaction then
+    -- Payer sees: "Settled with [payee name]"
+    if v_payer_uid = v_uid then
+      insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id)
+      values (coalesce(p_settled_at, current_date), 'expense', 'Settled with ' || coalesce(v_payee_name, 'member'), p_amount, 'other', v_uid, true, v_row.id)
+      returning id into v_payer_txn_id;
+    end if;
+
+    -- Payee sees: "Received from [payer name]"
+    if v_payee_uid = v_uid then
+      insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id)
+      values (coalesce(p_settled_at, current_date), 'income', 'Received from ' || coalesce(v_payer_name, 'member'), p_amount, 'other', v_uid, true, v_row.id)
+      returning id into v_payee_txn_id;
+    end if;
+
+    if v_payer_txn_id is not null or v_payee_txn_id is not null then
+      update public.split_settlements
+      set payer_transaction_id = v_payer_txn_id, payee_transaction_id = v_payee_txn_id
+      where id = v_row.id;
+    end if;
+  end if;
 
   return v_row;
 end;
@@ -2798,7 +2858,8 @@ begin
   -- Step 1: Insert linked transaction
   insert into transactions (
     date, type, description, amount, category,
-    is_repayment, payment_mode, notes, user_id
+    is_repayment, payment_mode, notes, user_id,
+    linked_loan_id
   ) values (
     current_date,
     v_txn_type,
@@ -2811,7 +2872,8 @@ begin
       when 'given' then 'Payment received from ' || v_loan.counterparty
       else 'Payment made to ' || v_loan.counterparty
     end,
-    p_user_id
+    p_user_id,
+    p_loan_id
   )
   returning id into v_txn_id;
 
@@ -2905,3 +2967,108 @@ begin
     and linked_user_id = v_uid;
 end;
 $$;
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- ── PHASE 3: DEEP SYNC PERSONAL TRANSACTIONS & SPLIT GROUPS ──────────────────
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- 1. Schema Extensions (Nullable Foreign Keys)
+alter table public.transactions
+  add column if not exists linked_split_expense_id uuid references public.split_expenses(id) on delete cascade,
+  add column if not exists linked_split_settlement_id uuid references public.split_settlements(id) on delete cascade,
+  add column if not exists linked_bill_id uuid references public.liabilities(id) on delete cascade,
+  add column if not exists linked_loan_id uuid references public.loans(id) on delete cascade;
+
+create index if not exists idx_transactions_linked_split_expense on public.transactions(linked_split_expense_id);
+create index if not exists idx_transactions_linked_split_settlement on public.transactions(linked_split_settlement_id);
+create index if not exists idx_transactions_linked_bill on public.transactions(linked_bill_id);
+create index if not exists idx_transactions_linked_loan on public.transactions(linked_loan_id);
+
+alter table public.split_expenses
+  add column if not exists linked_transaction_id uuid references public.transactions(id) on delete set null;
+
+alter table public.split_settlements
+  add column if not exists payer_transaction_id uuid references public.transactions(id) on delete set null,
+  add column if not exists payee_transaction_id uuid references public.transactions(id) on delete set null;
+
+-- Covering indexes for the new foreign keys (Resolves Performance Advisor warnings)
+create index if not exists idx_transactions_linked_split_expense on public.transactions(linked_split_expense_id);
+create index if not exists idx_transactions_linked_split_settlement on public.transactions(linked_split_settlement_id);
+create index if not exists idx_split_expenses_linked_transaction on public.split_expenses(linked_transaction_id);
+create index if not exists idx_split_settlements_payer_transaction on public.split_settlements(payer_transaction_id);
+create index if not exists idx_split_settlements_payee_transaction on public.split_settlements(payee_transaction_id);
+
+-- 2. Bidirectional Triggers for Amount/Date/Description Updates
+
+-- A: Update Split Expense when Personal Transaction is updated
+create or replace function public.sync_transaction_to_split()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.linked_split_expense_id is not null then
+    if new.amount is distinct from old.amount then
+      if current_setting('kosha.syncing_split', true) is distinct from 'true' then
+        raise exception 'Cannot change the amount of a shared expense directly. Please edit it in the Splitwise group instead.';
+      end if;
+    end if;
+
+    update public.split_expenses
+    set
+      amount = new.amount,
+      description = new.description,
+      expense_date = new.date
+    where id = new.linked_split_expense_id
+      and (amount is distinct from new.amount 
+           or description is distinct from new.description 
+           or expense_date is distinct from new.date);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_sync_tx_to_split on public.transactions;
+create trigger trg_sync_tx_to_split
+  after update on public.transactions
+  for each row
+  when (old.amount is distinct from new.amount or
+        old.description is distinct from new.description or
+        old.date is distinct from new.date)
+  execute function public.sync_transaction_to_split();
+
+
+-- B: Update Personal Transaction when Split Expense is updated
+create or replace function public.sync_split_to_transaction()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.linked_transaction_id is not null then
+    perform set_config('kosha.syncing_split', 'true', true);
+
+    update public.transactions
+    set
+      amount = new.amount,
+      description = new.description,
+      date = new.expense_date
+    where id = new.linked_transaction_id
+      and (amount is distinct from new.amount 
+           or description is distinct from new.description 
+           or date is distinct from new.expense_date);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_sync_split_to_tx on public.split_expenses;
+create trigger trg_sync_split_to_tx
+  after update on public.split_expenses
+  for each row
+  when (old.amount is distinct from new.amount or
+        old.description is distinct from new.description or
+        old.expense_date is distinct from new.expense_date)
+  execute function public.sync_split_to_transaction();

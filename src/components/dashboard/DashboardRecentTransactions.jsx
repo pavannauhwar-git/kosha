@@ -215,21 +215,24 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
       )}
 
       <div className="rounded-card bg-kosha-surface-2 overflow-hidden">
-        {visibleRecent.map((t, i) => (
-          <TransactionItem
-            key={t.id}
-            txn={t}
-            showDate
-            compact
-            isLast={i === lastIndex}
-            autoNudge={triggerSwipeNudge && i === 0}
-            onAutoNudgeDone={handleAutoNudgeDone}
-            onSwipeHintLearned={handleSwipeHintLearned}
-            onDelete={onDelete}
-            onTap={onTap}
-            onDuplicate={onDuplicate}
-          />
-        ))}
+        {visibleRecent.map((t, i) => {
+          const isLinked = !!(t.linked_split_expense_id || t.linked_split_settlement_id || t.linked_bill_id || t.linked_loan_id)
+          return (
+            <TransactionItem
+              key={t.id}
+              txn={t}
+              showDate
+              compact
+              isLast={i === lastIndex}
+              autoNudge={triggerSwipeNudge && i === 0 && !isLinked}
+              onAutoNudgeDone={handleAutoNudgeDone}
+              onSwipeHintLearned={handleSwipeHintLearned}
+              onDelete={isLinked ? undefined : onDelete}
+              onTap={onTap}
+              onDuplicate={isLinked ? undefined : onDuplicate}
+            />
+          )
+        })}
       </div>
     </div>
   )

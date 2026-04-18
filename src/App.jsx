@@ -17,7 +17,7 @@ import { recordRuntimeRoute } from './lib/runtimeMonitor'
 import { useUserCategories } from './hooks/useUserCategories'
 
 const DASHBOARD_RECENT_COLUMNS =
-  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id'
+  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 const LIABILITY_PREFETCH_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 

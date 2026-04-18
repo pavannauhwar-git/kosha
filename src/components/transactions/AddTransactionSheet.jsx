@@ -24,6 +24,8 @@ import {
 import { archiveUserCategory, useUserCategories } from '../../hooks/useUserCategories'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import CreateCategorySheet from '../categories/CreateCategorySheet'
+import { useSplitwise, addSplitExpenseMutation, buildEqualSplits } from '../../hooks/useSplitwise'
+import { supabase } from '../../lib/supabase'
 
 
 function todayStr() {
@@ -226,6 +228,10 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       recurrence: editTxn.recurrence || 'monthly',
       notes:      editTxn.notes       || '',
       showNotes:  !!(editTxn.notes),
+      isSplitwise: false,
+      splitGroupId: null,
+      linkedSplitExpenseId: editTxn.linked_split_expense_id || null,
+      isSplitwiseLinked: !!editTxn.linked_split_expense_id,
       isSaving:   false,
       error:      '',
     }
@@ -243,6 +249,10 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       recurrence: duplicateTxn.recurrence || 'monthly',
       notes:      duplicateTxn.notes       || '',
       showNotes:  !!(duplicateTxn.notes),
+      isSplitwise: false,
+      splitGroupId: null,
+      linkedSplitExpenseId: null,
+      isSplitwiseLinked: false,
       isSaving:   false,
       error:      '',
     }
@@ -259,6 +269,10 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
     recurrence: 'monthly',
     notes:     '',
     showNotes: false,
+    isSplitwise: false,
+    splitGroupId: null,
+    linkedSplitExpenseId: null,
+    isSplitwiseLinked: false,
     isSaving:  false,
     error:     '',
   }
@@ -634,10 +648,12 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   const {
     type, amount, desc, category, vehicle, mode, date,
-    isRecurring, recurrence, notes, showNotes, isSaving, error,
+    isRecurring, recurrence, notes, showNotes, isSplitwise, splitGroupId, linkedSplitExpenseId, isSplitwiseLinked, isSaving, error,
   } = state
 
   const set = (key, value) => dispatch({ type: 'SET', key, value })
+
+  const { groups } = useSplitwise({ enabled: type === 'expense' })
 
   // Load user's custom categories — registers them into the module-level store
   useUserCategories()
@@ -741,10 +757,38 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     dispatch({ type: 'SAVING_START' })
 
     try {
-      await saveTransactionMutation({
-        id: editTxn?.id,
-        payload,
-      })
+      if (isSplitwise && type === 'expense' && splitGroupId) {
+        const { data: members, error: memErr } = await supabase
+          .from('split_group_members')
+          .select('id, is_self, linked_user_id')
+          .eq('group_id', splitGroupId)
+        
+        if (memErr) throw memErr
+        
+        const { data: { user } } = await supabase.auth.getUser()
+        const selfMember = members.find(m => m.is_self || m.linked_user_id === user?.id)
+        
+        if (!selfMember) throw new Error('You must be a member of the group to add an expense.')
+        
+        const splits = buildEqualSplits(members.map(m => m.id), +amount)
+        
+        await addSplitExpenseMutation({
+          groupId: splitGroupId,
+          paidByMemberId: selfMember.id,
+          description: desc.trim(),
+          amount: +amount,
+          expenseDate: date,
+          splitMethod: 'equal',
+          notes: notes.trim() || null,
+          splits,
+          transactionCategory: category
+        })
+      } else {
+        await saveTransactionMutation({
+          id: editTxn?.id,
+          payload,
+        })
+      }
 
       import('../../lib/haptics').then(m => m.hapticSuccess())
       onClose()
@@ -827,7 +871,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               type="number" inputMode="decimal" name="txn-amount" placeholder="0.00"
               value={amount}
               onChange={e => set('amount', e.target.value)}
-              disabled={isSaving}
+              disabled={isSaving || !!linkedSplitExpenseId}
               className="min-w-0 flex-1 bg-transparent text-3xl font-bold text-ink
                          outline-none tabular-nums placeholder-ink-4 disabled:opacity-50"
             />
@@ -1030,6 +1074,56 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Splitwise Integration */}
+            {type === 'expense' && !editTxn && groups && groups.length > 0 && (
+              <div className="px-4 py-3 border-t border-kosha-border">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[14px] font-medium text-ink">Split this expense</p>
+                    <p className="text-[12px] text-ink-3">Automatically adds it to a Splitwise group.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => set('isSplitwise', !isSplitwise)}
+                    disabled={isSaving}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                      ${isSplitwise ? 'bg-brand' : 'bg-kosha-border'}
+                      ${isSaving ? 'opacity-50' : ''}`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform
+                        ${isSplitwise ? 'translate-x-5' : 'translate-x-1'}`}
+                    />
+                  </button>
+                </div>
+
+                {isSplitwise && (
+                  <div className="mt-3">
+                    <select
+                      value={splitGroupId || ''}
+                      onChange={(e) => set('splitGroupId', e.target.value)}
+                      disabled={isSaving}
+                      className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-[14px] text-ink outline-none border border-transparent focus:border-brand-border disabled:opacity-50"
+                    >
+                      <option value="" disabled>Select a group...</option>
+                      {groups.filter(g => !g.is_archived).map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {editTxn && linkedSplitExpenseId && (
+              <div className="px-4 py-2 border-t border-kosha-border flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-brand-container flex items-center justify-center shrink-0">
+                  <span className="text-[10px] text-brand font-bold">🔗</span>
+                </div>
+                <span className="text-[13px] text-ink-2 font-medium">Linked to a Splitwise group. Edits will sync automatically.</span>
+              </div>
+            )}
           </div>
 
           {/* Error message */}

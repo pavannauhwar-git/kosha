@@ -557,7 +557,7 @@ export default function Dashboard() {
   }, [extractRepaymentCounterparty, inferRepaymentTab])
 
   const handleTap = useCallback((t) => {
-    if (t?.is_repayment) {
+    if (t?.is_repayment && !t?.linked_split_settlement_id) {
       setToast('Repayments are managed from Loans.')
       setToastAction(null)
       setToastActionLabel(null)
