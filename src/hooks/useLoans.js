@@ -5,7 +5,11 @@ import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
-import { invalidateCache as invalidateTransactionCache, optimisticallyUpsertTransactionInCache } from './useTransactions'
+import {
+  invalidateCache as invalidateTransactionCache,
+  optimisticallyUpsertTransactionInCache,
+  optimisticallyDeleteTransactionsByLoanId
+} from './useTransactions'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
 export const LOAN_INVALIDATION_KEYS = [['loans']]
@@ -216,7 +220,7 @@ function restoreLoanSnapshot(snapshot) {
   }
 }
 
-function optimisticallyInsertLoan(loan) {
+export function optimisticallyInsertLoan(loan) {
   if (!loan?.id) return
   const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
   const prev = queryClient.getQueryData(key)
@@ -225,7 +229,7 @@ function optimisticallyInsertLoan(loan) {
   queryClient.setQueryData(key, [{ ...loan, settled: false }, ...deduped])
 }
 
-function optimisticallyDeleteLoan(id) {
+export function optimisticallyDeleteLoan(id) {
   if (!id) return
   for (const key of [LOAN_ACTIVE_GIVEN_KEY, LOAN_ACTIVE_TAKEN_KEY, LOAN_SETTLED_KEY]) {
     const data = queryClient.getQueryData(key)
@@ -284,6 +288,31 @@ export async function addLoanMutation(payload) {
     __optimistic: true,
   })
 
+  // Optimistically inject the disbursement transaction
+  const txnId = `optimistic-txn-disbursement-${Date.now()}`
+  optimisticallyUpsertTransactionInCache({
+    id: txnId,
+    date: payload.loan_date || nowIso.slice(0, 10),
+    created_at: nowIso,
+    type: payload.direction === 'given' ? 'expense' : 'income',
+    linked_loan_id: optimisticId,
+    amount: payload.amount,
+    description: `Loan disbursement: ${payload.counterparty}`,
+    category: 'loans',
+    investment_vehicle: null,
+    is_repayment: false,
+    payment_mode: 'other',
+    notes: payload.direction === 'given'
+      ? `Money lent to ${payload.counterparty}`
+      : `Money borrowed from ${payload.counterparty}`,
+    is_recurring: false,
+    recurrence: null,
+    next_run_date: null,
+    source_transaction_id: null,
+    is_auto_generated: false,
+    __optimistic: true,
+  })
+
   try {
     const created = await addLoan(payload)
     await queryClient.cancelQueries({ queryKey: ['loans'] })
@@ -301,7 +330,11 @@ export async function addLoanMutation(payload) {
       },
     })
 
-    refreshLoanCachesInBackground(invalidateLoanCache, 'loans post-add refresh')
+    refreshLoanAndTransactionCachesInBackground({
+      invalidateLoanFn: invalidateLoanCache,
+      invalidateTransactionFn: invalidateTransactionCache,
+      scope: 'loans post-add refresh',
+    })
     return created
   } catch (error) {
     restoreLoanSnapshot(snapshot)
@@ -368,7 +401,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
       date: new Date().toISOString().slice(0, 10),
       created_at: new Date().toISOString(),
       type: loan.direction === 'given' ? 'income' : 'expense',
-      loan_id: loan.id,
+      linked_loan_id: loan.id,
       amount: paymentAmount,
       description: `Loan payment: ${loan.counterparty}`,
       category: 'loans',
@@ -389,7 +422,15 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
       action: FINANCIAL_EVENT_ACTIONS.LOAN_PAYMENT,
       entityType: 'loan',
       entityId: loan.id,
-      metadata: { payment_amount: paymentAmount },
+      metadata: {
+        payment_amount: paymentAmount,
+        direction: loan.direction,
+        counterparty: loan.counterparty,
+        remaining_balance: Math.max(0, Number(loan.amount) - (Number(loan.amount_settled) + paymentAmount)),
+        is_full_settlement: fullSettled,
+        total_loan_amount: loan.amount,
+        loan_date: loan.loan_date,
+      },
     })
 
     refreshLoanAndTransactionCachesInBackground({
@@ -443,7 +484,11 @@ export async function updateLoanMutation(id, updates) {
       metadata: updates,
     })
 
-    refreshLoanCachesInBackground(invalidateLoanCache, 'loans post-update refresh')
+    refreshLoanAndTransactionCachesInBackground({
+      invalidateLoanFn: invalidateLoanCache,
+      invalidateTransactionFn: invalidateTransactionCache,
+      scope: 'loans post-update refresh',
+    })
     return updated
   } catch (error) {
     restoreLoanSnapshot(snapshot)
@@ -456,11 +501,13 @@ export async function deleteLoanMutation(id) {
   const snapshot = snapshotLoanCaches()
   suppress('loans')
   optimisticallyDeleteLoan(id)
+  optimisticallyDeleteTransactionsByLoanId(id)
 
   try {
     await deleteLoan(id)
     await queryClient.cancelQueries({ queryKey: ['loans'] })
     optimisticallyDeleteLoan(id)
+    optimisticallyDeleteTransactionsByLoanId(id)
 
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.LOAN_DELETE,
@@ -468,12 +515,21 @@ export async function deleteLoanMutation(id) {
       entityId: id,
       metadata: {
         counterparty: cachedLoan?.counterparty,
-        amount: cachedLoan?.amount,
+        original_amount: cachedLoan?.amount,
+        amount_settled: cachedLoan?.amount_settled,
+        settlement_progress: `${Math.round(((cachedLoan?.amount_settled || 0) / (cachedLoan?.amount || 1)) * 100)}%`,
         direction: cachedLoan?.direction,
+        loan_date: cachedLoan?.loan_date,
+        due_date: cachedLoan?.due_date,
+        impact: 'Associated disbursement and payment transactions removed from cache.',
       },
     })
 
-    refreshLoanCachesInBackground(invalidateLoanCache, 'loans post-delete refresh')
+    refreshLoanAndTransactionCachesInBackground({
+      invalidateLoanFn: invalidateLoanCache,
+      invalidateTransactionFn: invalidateTransactionCache,
+      scope: 'loans post-delete refresh',
+    })
     return true
   } catch (error) {
     restoreLoanSnapshot(snapshot)
@@ -483,9 +539,10 @@ export async function deleteLoanMutation(id) {
 
 // ── Interest helpers (client-side, simple interest) ───────────────────────
 
-export function accruedInterest(principal, annualRate, loanDate) {
+export function accruedInterest(principal, annualRate, loanDate, endDate = Date.now()) {
   if (!annualRate || annualRate <= 0 || !loanDate) return 0
-  const years = (Date.now() - new Date(loanDate).getTime()) / (365.25 * 86400000)
+  const endTs = typeof endDate === 'string' ? new Date(endDate).getTime() : endDate
+  const years = (endTs - new Date(loanDate).getTime()) / (365.25 * 86400000)
   return Number(principal) * (Number(annualRate) / 100) * Math.max(0, years)
 }
 

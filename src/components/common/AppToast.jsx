@@ -19,7 +19,7 @@ export default function AppToast({ message, onDismiss, action, actionLabel }) {
             <button
               type="button"
               onClick={action}
-              className="text-accent font-semibold text-xs shrink-0 px-2.5 py-1 rounded-pill bg-white/15 active:bg-white/25"
+              className="text-brand-mid font-semibold text-xs shrink-0 px-2.5 py-1 rounded-pill bg-white/15 active:bg-white/25"
             >
               {actionLabel || 'Undo'}
             </button>

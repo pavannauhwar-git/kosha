@@ -5,7 +5,11 @@ import { getAuthUserId } from '../lib/authStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
-import { invalidateCache as invalidateTransactionCache, optimisticallyUpsertTransactionInCache } from './useTransactions'
+import {
+  invalidateCache as invalidateTransactionCache,
+  optimisticallyUpsertTransactionInCache,
+  optimisticallyDeleteTransactionsByBillId
+} from './useTransactions'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth']]
@@ -388,7 +392,11 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
       },
     })
 
-    refreshLiabilityCachesInBackground(invalidateLiabilityFn, 'liabilities post-add refresh')
+    refreshLiabilityAndTransactionCachesInBackground({
+      invalidateLiabilityFn,
+      invalidateTransactionFn: invalidateTransactionCache,
+      scope: 'liabilities post-add refresh',
+    })
     return created
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -424,6 +432,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       date: new Date().toISOString().slice(0, 10),
       created_at: new Date().toISOString(),
       type: 'expense',
+      linked_bill_id: liability.id,
       amount: liability.amount,
       description: liability.description,
       category: 'bills',
@@ -445,6 +454,10 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       metadata: {
         description: liability.description,
         amount: liability.amount,
+        due_date: liability.due_date,
+        is_recurring: liability.is_recurring,
+        recurrence: liability.recurrence,
+        paid_at: new Date().toISOString(),
       },
     })
 
@@ -494,7 +507,11 @@ export async function updateLiabilityMutation(id, updates) {
       metadata: updates,
     })
 
-    refreshLiabilityCachesInBackground(invalidateLiabilityCache, 'liabilities post-update refresh')
+    refreshLiabilityAndTransactionCachesInBackground({
+      invalidateLiabilityFn: invalidateLiabilityCache,
+      invalidateTransactionFn: invalidateTransactionCache,
+      scope: 'liabilities post-update refresh',
+    })
     return updated
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)
@@ -507,6 +524,7 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
   const snapshot = snapshotLiabilityCaches()
   suppress('liabilities')
   optimisticallyDeleteLiabilityFromCache(id)
+  optimisticallyDeleteTransactionsByBillId(id)
 
   try {
     const deleteFn = __testOverrides?.deleteLiability || deleteLiability
@@ -516,6 +534,7 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
     await queryClient.cancelQueries({ queryKey: ['liabilities'] })
 
     optimisticallyDeleteLiabilityFromCache(id)
+    optimisticallyDeleteTransactionsByBillId(id)
 
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.BILL_DELETE,
@@ -524,10 +543,19 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
       metadata: {
         description: cachedBill?.description,
         amount: cachedBill?.amount,
+        due_date: cachedBill?.due_date,
+        paid: cachedBill?.paid,
+        is_recurring: cachedBill?.is_recurring,
+        recurrence: cachedBill?.recurrence,
+        impact: 'Associated payment transactions removed from cache.',
       },
     })
 
-    refreshLiabilityCachesInBackground(invalidateLiabilityFn, 'liabilities post-delete refresh')
+    refreshLiabilityAndTransactionCachesInBackground({
+      invalidateLiabilityFn,
+      invalidateTransactionFn: invalidateTransactionCache,
+      scope: 'liabilities post-delete refresh',
+    })
     return true
   } catch (error) {
     restoreLiabilitySnapshot(snapshot)

@@ -10,6 +10,8 @@ import {
   updateLoanMutation,
   recordLoanPaymentMutation,
   deleteLoanMutation,
+  optimisticallyInsertLoan,
+  optimisticallyDeleteLoan,
   accruedInterest,
   loanProgress,
 } from '../../hooks/useLoans'
@@ -65,6 +67,116 @@ export default function Loans({
   const [payLoan, setPayLoan] = useState(null)      // loan object being paid
   const [deletingId, setDeletingId] = useState(null)
   const [errToast, setErrToast] = useState(null)
+  const [toast, setToast] = useState(null)
+  const [toastAction, setToastAction] = useState(null)
+  const [toastActionLabel, setToastActionLabel] = useState(null)
+  const toastTimeoutRef = useRef(null)
+  const pendingDeleteRef = useRef(null)
+
+  const dismissToast = useCallback(() => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current)
+      toastTimeoutRef.current = null
+    }
+    setToast(null)
+    setToastAction(null)
+    setToastActionLabel(null)
+  }, [])
+
+  const pushToast = useCallback((message, options = {}) => {
+    const { action = null, actionLabel = 'Undo', duration = 3600 } = options
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current)
+      toastTimeoutRef.current = null
+    }
+    setToast(message)
+    if (typeof action === 'function') {
+      setToastAction(() => action)
+      setToastActionLabel(actionLabel)
+    } else {
+      setToastAction(null)
+      setToastActionLabel(null)
+    }
+    toastTimeoutRef.current = setTimeout(dismissToast, duration)
+  }, [dismissToast])
+
+  const commitPendingDelete = useCallback(async (pending) => {
+    if (!pending?.id) return
+    try {
+      await deleteLoanMutation(pending.id)
+    } catch (e) {
+      optimisticallyInsertLoan(pending.loan)
+      pushToast(e.message || 'Could not delete loan.', { duration: 4200 })
+    }
+  }, [pushToast])
+
+  async function handleDelete(id) {
+    if (!id) return false
+
+    const pendingDelete = pendingDeleteRef.current
+    if (pendingDelete?.id && pendingDelete.id !== id) {
+      if (pendingDelete.timeoutId) clearTimeout(pendingDelete.timeoutId)
+      pendingDeleteRef.current = null
+      void commitPendingDelete(pendingDelete)
+    }
+
+    const loan = [...given, ...taken, ...settled].find(l => l.id === id)
+    if (!loan) return false
+
+    const hasHistory = (loan.amount_settled || 0) > 0 || loan.settled
+    if (hasHistory) {
+      const confirmed = window.confirm(
+        `This loan has ${loan.settled ? 'been settled' : 'payment history'}. Deleting it will also remove all associated payment transactions from your history. Proceed?`
+      )
+      if (!confirmed) return false
+    }
+
+    const snapshot = { ...loan }
+    setHiddenIds(prev => { const n = new Set(prev); n.add(id); return n })
+    optimisticallyDeleteLoan(id)
+    import('../../hooks/useTransactions').then(m => m.optimisticallyDeleteTransactionsByLoanId(id))
+
+    const undoDelete = () => {
+      const pending = pendingDeleteRef.current
+      if (!pending || pending.id !== id) return
+      if (pending.timeoutId) clearTimeout(pending.timeoutId)
+      pendingDeleteRef.current = null
+      setHiddenIds(prev => { const n = new Set(prev); n.delete(id); return n })
+      optimisticallyInsertLoan(pending.loan)
+      pushToast('Deletion canceled.', { duration: 2200 })
+    }
+
+    const timeoutId = setTimeout(() => {
+      const pending = pendingDeleteRef.current
+      if (!pending || pending.id !== id) return
+      pendingDeleteRef.current = null
+      void commitPendingDelete(pending)
+    }, 4200)
+
+    pendingDeleteRef.current = { id, loan: snapshot, timeoutId }
+
+    pushToast('Loan deleted.', {
+      action: undoDelete,
+      actionLabel: 'Undo',
+      duration: 4200,
+    })
+
+    return true
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current)
+      }
+      if (pendingDeleteRef.current) {
+        const pending = pendingDeleteRef.current
+        if (pending.timeoutId) clearTimeout(pending.timeoutId)
+        void commitPendingDelete(pending)
+      }
+    }
+  }, [commitPendingDelete])
+
   const [highlightLoanId, setHighlightLoanId] = useState(null)
   const [hiddenIds, setHiddenIds] = useState(() => new Set())
   const [deepLinkRetryTick, setDeepLinkRetryTick] = useState(0)
@@ -548,21 +660,6 @@ export default function Loans({
       setErrToast(e.message || 'Could not settle loan.')
     }
   }, [])
-
-  async function handleDelete(id) {
-    if (!id || deletingId) return
-    setDeletingId(id)
-    setHiddenIds(prev => { const n = new Set(prev); n.add(id); return n })
-
-    try {
-      await deleteLoanMutation(id)
-    } catch (e) {
-      setHiddenIds(prev => { const n = new Set(prev); n.delete(id); return n })
-      setErrToast(e.message || 'Could not delete loan.')
-    } finally {
-      setDeletingId(null)
-    }
-  }
 
   function openEditLoan(loan) {
     setEditLoan(loan)
@@ -1256,7 +1353,15 @@ export default function Loans({
         </button>
       )}
 
-      <AppToast message={errToast} onDismiss={() => setErrToast(null)} />
+      <AppToast
+        message={toast || errToast}
+        onDismiss={() => {
+          dismissToast()
+          setErrToast(null)
+        }}
+        action={toastAction}
+        actionLabel={toastActionLabel}
+      />
     </PageHeaderPage>
   )
 }

@@ -1041,6 +1041,38 @@ export function optimisticallyDeleteTransactionFromCache(id) {
   }
 }
 
+export function optimisticallyDeleteTransactionsByLoanId(loanId) {
+  if (!loanId) return
+
+  const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  for (const [key, rows] of listEntries) {
+    const baseRows = Array.isArray(rows) ? rows : []
+    queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_loan_id !== loanId))
+  }
+
+  const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
+  for (const [key, rows] of recentEntries) {
+    const baseRows = Array.isArray(rows) ? rows : []
+    queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_loan_id !== loanId))
+  }
+}
+
+export function optimisticallyDeleteTransactionsByBillId(billId) {
+  if (!billId) return
+
+  const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  for (const [key, rows] of listEntries) {
+    const baseRows = Array.isArray(rows) ? rows : []
+    queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_bill_id !== billId))
+  }
+
+  const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
+  for (const [key, rows] of recentEntries) {
+    const baseRows = Array.isArray(rows) ? rows : []
+    queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_bill_id !== billId))
+  }
+}
+
 export async function deleteTransaction(id) {
   const userId = getAuthUserId()
 

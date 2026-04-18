@@ -91,11 +91,116 @@ export default function Bills({
   const [form, setForm] = useState(() => createInitialBillForm())
   const [formErr, setFormErr] = useState('')
   const [errToast, setErrToast] = useState(null)
-  const [undoToast, setUndoToast] = useState(null)
-  const [undoBill, setUndoBill] = useState(null)
+  const [toast, setToast] = useState(null)
+  const [toastAction, setToastAction] = useState(null)
+  const [toastActionLabel, setToastActionLabel] = useState(null)
+  const toastTimeoutRef = useRef(null)
+  const pendingDeleteRef = useRef(null)
+
+  const dismissToast = useCallback(() => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current)
+      toastTimeoutRef.current = null
+    }
+    setToast(null)
+    setToastAction(null)
+    setToastActionLabel(null)
+  }, [])
+
+  const pushToast = useCallback((message, options = {}) => {
+    const { action = null, actionLabel = 'Undo', duration = 3600 } = options
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current)
+      toastTimeoutRef.current = null
+    }
+    setToast(message)
+    if (typeof action === 'function') {
+      setToastAction(() => action)
+      setToastActionLabel(actionLabel)
+    } else {
+      setToastAction(null)
+      setToastActionLabel(null)
+    }
+    toastTimeoutRef.current = setTimeout(dismissToast, duration)
+  }, [dismissToast])
+
+  const commitPendingDelete = useCallback(async (pending) => {
+    if (!pending?.id) return
+    try {
+      await deleteLiabilityMutation(pending.id)
+    } catch (e) {
+      // Re-insert into appropriate cache if server delete fails
+      const method = pending.bill.paid ? 'paid' : 'pending'
+      if (method === 'pending') {
+        import('../../hooks/useLiabilities').then(m => m.optimisticallyInsertPendingLiability(pending.bill))
+      } else {
+        import('../../hooks/useLiabilities').then(m => m.optimisticallyMarkLiabilityPaid(pending.bill, { optimistic: false }))
+      }
+      pushToast(e.message || 'Could not delete bill.', { duration: 4200 })
+    }
+  }, [pushToast])
+
+  async function handleDelete(id) {
+    if (!id || payingId) return false
+
+    const pendingDelete = pendingDeleteRef.current
+    if (pendingDelete?.id && pendingDelete.id !== id) {
+      if (pendingDelete.timeoutId) clearTimeout(pendingDelete.timeoutId)
+      pendingDeleteRef.current = null
+      void commitPendingDelete(pendingDelete)
+    }
+
+    const sourceRows = tab === 'pending' ? pending : paid
+    const bill = sourceRows.find((b) => b.id === id)
+    if (!bill) return false
+
+    if (bill.paid) {
+      const confirmed = window.confirm(
+        `This bill has been marked as paid. Deleting it will also remove the associated payment transaction from your history. Proceed?`
+      )
+      if (!confirmed) return false
+    }
+
+    const snapshot = { ...bill }
+    setHiddenBillIds(prev => { const n = new Set(prev); n.add(id); return n })
+    import('../../hooks/useLiabilities').then(m => m.optimisticallyDeleteLiabilityFromCache(id))
+    import('../../hooks/useTransactions').then(m => m.optimisticallyDeleteTransactionsByBillId(id))
+
+    const undoDelete = () => {
+      const pending = pendingDeleteRef.current
+      if (!pending || pending.id !== id) return
+      if (pending.timeoutId) clearTimeout(pending.timeoutId)
+      pendingDeleteRef.current = null
+      setHiddenBillIds(prev => { const n = new Set(prev); n.delete(id); return n })
+
+      if (snapshot.paid) {
+        import('../../hooks/useLiabilities').then(m => m.optimisticallyMarkLiabilityPaid(snapshot, { optimistic: false }))
+      } else {
+        import('../../hooks/useLiabilities').then(m => m.optimisticallyInsertPendingLiability(snapshot))
+      }
+      pushToast('Deletion canceled.', { duration: 2200 })
+    }
+
+    const timeoutId = setTimeout(() => {
+      const pending = pendingDeleteRef.current
+      if (!pending || pending.id !== id) return
+      pendingDeleteRef.current = null
+      void commitPendingDelete(pending)
+    }, 4200)
+
+    pendingDeleteRef.current = { id, bill: snapshot, timeoutId }
+
+    pushToast('Bill deleted.', {
+      action: undoDelete,
+      actionLabel: 'Undo',
+      duration: 4200,
+    })
+
+    return true
+  }
+
   const [addSaving, setAddSaving] = useState(false)
   const [hiddenBillIds, setHiddenBillIds] = useState(() => new Set())
-  const undoTimerRef = useRef(null)
 
   const closeAddBillSheet = useCallback(() => {
     setShowAdd(false)
@@ -307,12 +412,17 @@ export default function Bills({
 
   useEffect(() => {
     return () => {
-      if (undoTimerRef.current) {
-        clearTimeout(undoTimerRef.current)
-        undoTimerRef.current = null
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current)
+      }
+      // Commit any pending delete if the component unmounts
+      if (pendingDeleteRef.current) {
+        const pending = pendingDeleteRef.current
+        if (pending.timeoutId) clearTimeout(pending.timeoutId)
+        void commitPendingDelete(pending)
       }
     }
-  }, [])
+  }, [commitPendingDelete])
 
   useEffect(() => {
     if (!focusBillId) return
@@ -437,77 +547,6 @@ export default function Bills({
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
     }
   }
-
-  async function handleDelete(id) {
-    if (!id || payingId || deletingId) return
-    const sourceRows = tab === 'pending' ? pending : paid
-    const snapshot = sourceRows.find((bill) => bill.id === id)
-
-    setDeletingId(id)
-    setHiddenBillIds((prev) => {
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
-    try {
-      await deleteLiabilityMutation(id)
-
-      if (snapshot) {
-        if (undoTimerRef.current) {
-          clearTimeout(undoTimerRef.current)
-          undoTimerRef.current = null
-        }
-
-        setUndoBill(snapshot)
-        setUndoToast(`Deleted "${snapshot.description}".`)
-
-        undoTimerRef.current = setTimeout(() => {
-          setUndoToast(null)
-          setUndoBill(null)
-          undoTimerRef.current = null
-        }, 6000)
-      }
-    } catch (e) {
-      setHiddenBillIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
-      setErrToast(e.message || 'Could not delete bill. Check your connection.')
-    } finally {
-      setDeletingId(null)
-    }
-  }
-
-  const handleUndoDelete = useCallback(async () => {
-    if (!undoBill) return
-
-    if (undoTimerRef.current) {
-      clearTimeout(undoTimerRef.current)
-      undoTimerRef.current = null
-    }
-
-    try {
-      await addLiabilityMutation({
-        description: undoBill.description || '',
-        amount: Number(undoBill.amount || 0),
-        due_date: undoBill.due_date || null,
-        is_recurring: !!undoBill.is_recurring,
-        recurrence: undoBill.is_recurring ? (undoBill.recurrence || 'monthly') : null,
-        paid: !!undoBill.paid,
-        linked_transaction_id: undoBill.linked_transaction_id || null,
-      })
-
-      setUndoToast(null)
-      setUndoBill(null)
-      setErrToast('Bill restored.')
-      setTimeout(() => setErrToast(null), 2600)
-    } catch (error) {
-      setUndoToast(null)
-      setErrToast(error?.message || 'Could not restore bill.')
-      setTimeout(() => setErrToast(null), 3600)
-    }
-  }, [undoBill])
 
   function openEditBill(bill) {
     setEditBill(bill)
@@ -984,18 +1023,13 @@ export default function Bills({
       )}
 
       <AppToast
-        message={undoToast || errToast}
+        message={toast || errToast}
         onDismiss={() => {
-          setUndoToast(null)
-          setUndoBill(null)
+          dismissToast()
           setErrToast(null)
-          if (undoTimerRef.current) {
-            clearTimeout(undoTimerRef.current)
-            undoTimerRef.current = null
-          }
         }}
-        action={undoToast && undoBill ? () => { void handleUndoDelete() } : undefined}
-        actionLabel="Undo"
+        action={toastAction}
+        actionLabel={toastActionLabel}
       />
 
     </PageHeaderPage>
