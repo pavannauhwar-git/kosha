@@ -93,7 +93,10 @@ async function main() {
   const actorUser = await signIn(actorClient, email, password, 'Actor session')
   await signIn(listenerClient, email, password, 'Listener session')
 
-  // Promise.all bindRealtimeAuth removed
+  await Promise.all([
+    bindRealtimeAuth(actorClient, 'Actor session'),
+    bindRealtimeAuth(listenerClient, 'Listener session'),
+  ])
 
   const channelName = `e2e-liabilities-${Date.now()}`
   let realtimeChannel = null
@@ -120,12 +123,7 @@ async function main() {
             .channel(`${channelName}-${attempt}`)
             .on(
               'postgres_changes',
-              { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'liabilities',
-                filter: `user_id=eq.${actorUser.id}` 
-              },
+              { event: 'INSERT', schema: 'public', table: 'liabilities' },
               (payload) => {
                 const payloadDescription = payload?.new?.description
                 if (!expectedDescription || payloadDescription !== expectedDescription) return

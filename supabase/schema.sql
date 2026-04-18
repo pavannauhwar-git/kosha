@@ -66,7 +66,7 @@ drop policy if exists "Users can read own monthly net changes" on monthly_net_ch
 create policy "Users can read own monthly net changes"
   on monthly_net_changes for select
   to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 create or replace function public.maintain_monthly_net_change()
 returns trigger
@@ -306,7 +306,7 @@ drop policy if exists "Users can fully manage own liabilities" on public.liabili
 drop policy if exists "profiles: select own" on profiles;
 create policy "profiles: select own" on profiles
 for select to authenticated
-using ((select auth.uid()) = id);
+using (auth.uid() = id);
 
 drop policy if exists "profiles: insert own" on profiles;
 create policy "profiles: insert own" on profiles
@@ -322,7 +322,7 @@ using ((select auth.uid()) = id);
 drop policy if exists "transactions: select own" on transactions;
 create policy "transactions: select own" on transactions
 for select to authenticated
-using ((select auth.uid()) = user_id);
+using (auth.uid() = user_id);
 
 drop policy if exists "transactions: insert own" on transactions;
 create policy "transactions: insert own" on transactions
@@ -343,7 +343,7 @@ using ((select auth.uid()) = user_id);
 drop policy if exists "liabilities: select own" on liabilities;
 create policy "liabilities: select own" on liabilities
 for select to authenticated
-using ((select auth.uid()) = user_id);
+using (auth.uid() = user_id);
 
 drop policy if exists "liabilities: insert own" on liabilities;
 create policy "liabilities: insert own" on liabilities
@@ -453,7 +453,7 @@ with check ((select auth.uid()) = user_id);
 drop policy if exists "bug_reports: select own" on public.bug_reports;
 create policy "bug_reports: select own" on public.bug_reports
 for select to authenticated
-using ((select auth.uid()) = user_id);
+using (auth.uid() = user_id);
 
 drop policy if exists "bug_reports: update own" on public.bug_reports;
 create policy "bug_reports: update own" on public.bug_reports
@@ -527,7 +527,7 @@ create policy "bug_reports_storage: read own" on storage.objects
 for select to authenticated
 using (
   bucket_id = 'bug-reports'
-  and (storage.foldername(name))[1] = (select auth.uid())::text
+  and (storage.foldername(name))[1] = auth.uid()::text
 );
 
 drop policy if exists "bug_reports_storage: delete own" on storage.objects;
@@ -868,7 +868,7 @@ alter table public.financial_events enable row level security;
 drop policy if exists "financial_events: select own" on public.financial_events;
 create policy "financial_events: select own" on public.financial_events
 for select to authenticated
-using ((select auth.uid()) = user_id);
+using (auth.uid() = user_id);
 
 drop policy if exists "financial_events: insert own" on public.financial_events;
 create policy "financial_events: insert own" on public.financial_events
@@ -1136,7 +1136,7 @@ alter table public.reconciliation_reviews enable row level security;
 drop policy if exists "reconciliation_reviews: select own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: select own" on public.reconciliation_reviews
   for select to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 drop policy if exists "reconciliation_reviews: insert own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: insert own" on public.reconciliation_reviews
@@ -1190,7 +1190,7 @@ alter table category_budgets enable row level security;
 drop policy if exists "category_budgets: select own" on category_budgets;
 create policy "category_budgets: select own" on category_budgets
   for select to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 drop policy if exists "category_budgets: insert own" on category_budgets;
 create policy "category_budgets: insert own" on category_budgets
@@ -1243,7 +1243,7 @@ alter table user_categories enable row level security;
 drop policy if exists "user_categories: select own" on user_categories;
 create policy "user_categories: select own" on user_categories
   for select to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 drop policy if exists "user_categories: insert own" on user_categories;
 create policy "user_categories: insert own" on user_categories
@@ -2782,7 +2782,7 @@ alter table loans enable row level security;
 drop policy if exists "loans: select own" on loans;
 create policy "loans: select own" on loans
   for select to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 drop policy if exists "loans: insert own" on loans;
 create policy "loans: insert own" on loans
