@@ -154,6 +154,7 @@ alter table transactions
 alter table liabilities add column if not exists user_id uuid;
 
 -- Enable Supabase Realtime for transactions table so cross-device sync works instantly
+alter table transactions replica identity full;
 do $$
 begin
   if not exists (
@@ -168,6 +169,7 @@ exception
 end $$;
 
 -- Enable Supabase Realtime for liabilities table so bills sync cross-device
+alter table liabilities replica identity full;
 do $$
 begin
   if not exists (
@@ -290,6 +292,16 @@ alter table transactions enable row level security;
 alter table liabilities  enable row level security;
 alter table invites      enable row level security;
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Phase 2 cleanup: Drop broad Phase 1 policies before creating specific ones.
+-- Having both would create "Multiple Permissive Policies" warnings and Realtime instability.
+-- ─────────────────────────────────────────────────────────────────────────────
+drop policy if exists "Users can view own profile" on public.profiles;
+drop policy if exists "Users can insert own profile" on public.profiles;
+drop policy if exists "Users can update own profile" on public.profiles;
+drop policy if exists "Users can fully manage own transactions" on public.transactions;
+drop policy if exists "Users can fully manage own liabilities" on public.liabilities;
+
 -- Profiles policies
 drop policy if exists "profiles: select own" on profiles;
 create policy "profiles: select own" on profiles
@@ -408,19 +420,6 @@ begin
       for each row execute function public.handle_new_user();
   end if;
 end $$;
-
--- ─────────────────────────────────────────────────────────────────────────────
--- Phase 2 summary (broad convenience policies, idempotent)
--- ─────────────────────────────────────────────────────────────────────────────
-
--- NOTE: The broad "Users can fully manage own X" FOR ALL policies below are intentionally
--- NOT recreated. The specific per-operation policies above already cover all access.
--- Having both would create "Multiple Permissive Policies" warnings and Realtime instability.
-drop policy if exists "Users can view own profile" on public.profiles;
-drop policy if exists "Users can insert own profile" on public.profiles;
-drop policy if exists "Users can update own profile" on public.profiles;
-drop policy if exists "Users can fully manage own transactions" on public.transactions;
-drop policy if exists "Users can fully manage own liabilities" on public.liabilities;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Phase 1: Bug reports
@@ -559,7 +558,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid uuid := (select auth.uid());
   v_existing_id uuid;
   v_existing_occ integer;
   v_priority text;
@@ -739,7 +738,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid uuid := (select auth.uid());
   v_inserted integer := 0;
   v_run_date date;
   rec record;
@@ -1669,7 +1668,7 @@ alter table split_group_invites enable row level security;
 -- is_split_group_owner checks for 'admin' role (renamed from 'owner')
 create or replace function public.is_split_group_owner(
   p_group_id uuid,
-  p_user_id uuid default auth.uid()
+  p_user_id uuid default (select auth.uid())
 )
 returns boolean
 language sql
@@ -1689,7 +1688,7 @@ $$;
 -- is_split_group_member_or_above checks for 'admin' or 'member' role
 create or replace function public.is_split_group_member_or_above(
   p_group_id uuid,
-  p_user_id uuid default auth.uid()
+  p_user_id uuid default (select auth.uid())
 )
 returns boolean
 language sql
@@ -1708,7 +1707,7 @@ $$;
 
 create or replace function public.has_split_group_access(
   p_group_id uuid,
-  p_user_id uuid default auth.uid()
+  p_user_id uuid default (select auth.uid())
 )
 returns boolean
 language sql
@@ -1740,7 +1739,7 @@ as $$
   from split_group_members m
   join profiles p on p.id = m.linked_user_id
   where m.group_id = p_group_id
-    and public.has_split_group_access(p_group_id, auth.uid());
+    and public.has_split_group_access(p_group_id, (select auth.uid()));
 $$;
 
 create or replace function public.split_create_group(
@@ -1753,7 +1752,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid uuid := (select auth.uid());
   v_group split_groups%rowtype;
   v_name text := btrim(coalesce(p_name, ''));
   v_self_name text := nullif(btrim(coalesce(p_self_display_name, '')), '');
@@ -2080,11 +2079,11 @@ security definer
 set search_path = public
 as $$
 begin
-  if auth.uid() is null then
+  if (select auth.uid()) is null then
     raise exception 'Authentication required';
   end if;
 
-  new.user_id := auth.uid();
+  new.user_id := (select auth.uid());
   return new;
 end;
 $$;
@@ -2132,7 +2131,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid uuid := (select auth.uid());
   v_invite split_group_invites%rowtype;
 begin
   if v_uid is null then
@@ -2208,7 +2207,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid uuid := (select auth.uid());
   v_invite split_group_invites%rowtype;
   v_group split_groups%rowtype;
   v_account_name text;
@@ -2340,7 +2339,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid uuid := (select auth.uid());
   v_target split_group_access%rowtype;
   v_admin_count integer := 0;
   v_role text := lower(coalesce(nullif(btrim(p_role), ''), 'member'));
@@ -2468,7 +2467,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid uuid := (select auth.uid());
   v_group split_groups%rowtype;
   v_expense split_expenses%rowtype;
   v_sum numeric := 0;
@@ -2631,7 +2630,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid uuid := (select auth.uid());
   v_row split_settlements%rowtype;
   v_payer_uid uuid;
   v_payee_uid uuid;
@@ -2927,7 +2926,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
+  v_uid uuid := (select auth.uid());
   v_owner_count integer := 0;
   v_has_access boolean := false;
 begin

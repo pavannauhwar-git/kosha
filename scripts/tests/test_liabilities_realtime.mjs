@@ -50,20 +50,23 @@ async function bindRealtimeAuth(client, label) {
   }
 }
 
-function waitForSubscribed(channel, timeoutMs = 10000) {
+function waitForSubscribed(channel, timeoutMs = 30000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error('Timed out waiting for realtime channel subscription'))
     }, timeoutMs)
 
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
+    channel.subscribe((status, err) => {
+      const normalizedStatus = status ? status.toUpperCase().trim() : ''
+      
+      if (normalizedStatus === 'SUBSCRIBED') {
         clearTimeout(timer)
         resolve()
       }
-      if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+      
+      if (['TIMED_OUT', 'CHANNEL_ERROR', 'CLOSED'].includes(normalizedStatus)) {
         clearTimeout(timer)
-        reject(new Error(`Realtime channel status: ${status}`))
+        reject(new Error(`Realtime channel status: ${normalizedStatus}${err ? ' - ' + err.message : ''}`))
       }
     })
   })
