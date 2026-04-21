@@ -42,6 +42,7 @@ import { fmt, fmtDate } from '../lib/utils'
 
 import { downloadCsv, toCsv } from '../lib/csv'
 import { shareLink } from '../lib/share'
+import useWindowedList from '../hooks/useWindowedList'
 
 const BANNERS = [
   { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.png' },
@@ -963,6 +964,26 @@ export default function Splitwise() {
     return list.sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate))
   }, [expenses, settlements])
 
+  const {
+    containerRef: txnsListRef,
+    startIndex: txnsStartIndex,
+    endIndex: txnsEndIndex,
+    topPadding: txnsTopPadding,
+    bottomPadding: txnsBottomPadding,
+    measureElement: measureTxnElement,
+  } = useWindowedList({
+    count: transactions.length,
+    estimateSize: 76,
+    overscan: 10,
+    enabled: transactions.length > 20,
+    resetKey: `${activeGroupId}:${transactions.length}`,
+  })
+
+  const renderedTransactions = useMemo(
+    () => transactions.slice(txnsStartIndex, txnsEndIndex),
+    [transactions, txnsStartIndex, txnsEndIndex]
+  )
+
   return (
     <PageHeaderPage title="Splitwise">
       {!schemaMissing && (
@@ -1395,15 +1416,27 @@ export default function Splitwise() {
                 <p className="text-[11px] text-ink-3 mt-1">Add an expense to get started.</p>
               </div>
             ) : (
-              <div className="divide-y divide-kosha-border max-h-[500px] overflow-y-auto">
-                {transactions.map((t) => {
-                  const isExpense = t.type === 'expense'
-                  const deleting = saving === (isExpense ? `expense-delete-${t.id}` : `settlement-delete-${t.id}`)
+              <div
+                ref={txnsListRef}
+                className="max-h-[500px] overflow-y-auto w-full relative scroll-smooth"
+                style={{ willChange: 'transform' }}
+              >
+                <div style={{ height: `${txnsTopPadding}px`, width: '100%', flexShrink: 0 }} />
+                <div className="divide-y divide-kosha-border w-full flex flex-col">
+                  {renderedTransactions.map((t, idx) => {
+                    const actualIndex = txnsStartIndex + idx
+                    const isExpense = t.type === 'expense'
+                    const deleting = saving === (isExpense ? `expense-delete-${t.id}` : `settlement-delete-${t.id}`)
 
-                  return (
-                    <div key={t.id} className="p-2 sm:p-2.5 bg-kosha-surface hover:bg-kosha-surface-2 transition-colors group">
-                      {isExpense ? (() => {
-                        const payer = memberById.get(t.paid_by_member_id)
+                    return (
+                      <div 
+                        key={t.id} 
+                        ref={(el) => measureTxnElement(el, actualIndex)}
+                        data-index={actualIndex}
+                        className="p-2 sm:p-2.5 bg-kosha-surface hover:bg-kosha-surface-2 transition-colors group"
+                      >
+                        {isExpense ? (() => {
+                          const payer = memberById.get(t.paid_by_member_id)
                         return (
                           <div className="flex items-start justify-between gap-2.5">
                             <div className="flex items-start gap-2.5 min-w-0">
@@ -1489,6 +1522,8 @@ export default function Splitwise() {
                     </div>
                   )
                 })}
+                </div>
+                <div style={{ height: `${txnsBottomPadding}px`, width: '100%', flexShrink: 0 }} />
               </div>
             )}
           </div>
