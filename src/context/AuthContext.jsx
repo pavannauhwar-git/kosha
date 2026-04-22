@@ -12,12 +12,7 @@ export function AuthProvider({ children }) {
     signOut, updateProfile, updateDisplayName,
   } = useAuthState()
 
-  // FIX (defect 4.1): Without this memo, AuthProvider creates a new object
-  // literal on every render, causing every component that calls useAuth() to
-  // re-render — even if none of the actual values changed. The callbacks from
-  // useAuthState are already stable via useCallback. The state values only
-  // change when auth state genuinely changes. This memo ensures the context
-  // value reference only changes when something meaningful actually changed.
+  // Memoize context value to prevent unnecessary re-renders in consumers
   const value = useMemo(() => ({
     user, profile, loading, profileLoading,
     linkedUserIds, linkedProfiles,

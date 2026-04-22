@@ -95,10 +95,7 @@ export function useAuthState() {
         const u = session?.user ?? null
 
         if (event === 'INITIAL_SESSION') {
-          // FIX (defect 2.1, 2.3): Write to authStore FIRST so any mutation
-          // that fires immediately after the app becomes interactive will find
-          // a valid user ID — even if the token is about to be refreshed.
-          // This eliminates the cold-start "Not signed in" race condition.
+          // Write to authStore first to ensure valid user ID during fast interactions
           setAuthUser(u)
 
           setUser(u)
@@ -114,10 +111,7 @@ export function useAuthState() {
         }
 
         if (event === 'TOKEN_REFRESHED') {
-          // FIX (defect 2.1): Update authStore with the new refreshed user.
-          // The old mutation code called getSession() which returned null
-          // during the refresh window. Now authStore always has the latest
-          // valid user object immediately after the token refreshes.
+          // Update authStore with the new refreshed user
           // Guard: if the refresh failed silently, u can be null — keep existing user.
           if (!u) return
           setAuthUser(u)
@@ -224,15 +218,7 @@ export function useAuthState() {
     }
   }, [])
 
-  // FIX (defect 4.5): updateProfile and updateDisplayName previously closed over
-  // the `user` state variable, meaning they were recreated as new function
-  // references on every auth event (since `user` gets a new object reference
-  // each time AuthContext re-renders). Any component with these in a useCallback
-  // dep array would also recreate its own callbacks, propagating instability.
-  //
-  // Fix: read the userId synchronously from authStore (stable module singleton)
-  // instead of from the `user` closure. The dep array becomes [] — these
-  // functions are now created once and never recreated.
+  // Read userId from authStore to avoid recreation of functions due to user object closure
   const updateProfile = useCallback(async (updates) => {
     const userId = getAuthUserId()
     const payload = {

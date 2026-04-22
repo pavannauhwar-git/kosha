@@ -293,18 +293,13 @@ export default function Transactions() {
     return found?.label || 'Custom category'
   }, [])
 
-  // FIX (defect 5.2): Replaced the useEffect that called setDisplayCount(50)
-  // when debouncedSearch/typeFilter/catFilter changed. That caused a triple
-  // render cascade per search keystroke:
-  //   render 1 → search changes
-  //   render 2 → debouncedSearch updates (from useDebounce's internal effect)
-  //   render 3 → setDisplayCount(50) from useEffect fires
-  //
-  // Fix: pass displayCount into the query key directly. When typeFilter or
-  // catFilter changes, reset displayCount in the same event handler that
-  // updates the filter — one state update, one render. Search keystrokes
-  // only trigger the debounce timer and then one re-render when it fires.
-  // No useEffect needed.
+  const getPaymentModeLabel = useCallback((modeId) => {
+    if (!modeId) return 'All payment modes'
+    const found = PAYMENT_MODES.find((item) => item.id === modeId)
+    return found?.label || 'Custom mode'
+  }, [])
+
+  // Reset display count when filter changes to avoid cascading re-renders
 
   function handleTypeFilter(id) {
     setTypeFilter(id)
@@ -1549,7 +1544,7 @@ export default function Transactions() {
                       <button
                         type="button"
                         onClick={() => handleDatePreset('7d')}
-                        className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                        className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2 truncate max-w-full block"
                       >
                         Focus last 7d
                       </button>
@@ -1573,7 +1568,7 @@ export default function Transactions() {
                       <button
                         type="button"
                         onClick={() => handlePaymentModeFilter(paymentModeSignal.top.mode)}
-                        className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                        className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2 truncate max-w-full block"
                       >
                         Filter {paymentModeSignal.top.label}
                       </button>
@@ -1600,7 +1595,7 @@ export default function Transactions() {
                           }
                           handleCatFilter(expenseFrequencySignal.top.categoryId)
                         }}
-                        className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                        className="chip-control chip-control-sm mt-2 bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2 truncate max-w-full block"
                       >
                         Filter {expenseFrequencySignal.top.label}
                       </button>
