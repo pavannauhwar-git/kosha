@@ -1285,7 +1285,7 @@ export default function Transactions() {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {availableCategories.map(cat => (
+                      {filterCategories.map(cat => (
                         <button
                           key={cat.id}
                           type="button"
