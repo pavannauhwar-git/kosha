@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { ArrowsClockwise, ArrowUDownLeft } from '@phosphor-icons/react'
+import { ArrowsClockwise, ArrowUDownLeft, Notepad } from '@phosphor-icons/react'
 import CategoryIcon from '../categories/CategoryIcon'
 import Badge from './Badge'
 import { fmt, fmtDate, amountClass } from '../../lib/utils'
@@ -60,6 +60,12 @@ const TransactionRow = memo(function TransactionRow({ transaction, onTap, classN
             <Badge variant="repayment" size="sm">
               <ArrowUDownLeft size={10} weight="bold" className="mr-0.5" />
               Repayment
+            </Badge>
+          )}
+          {transaction.notes && (
+            <Badge variant="neutral" size="sm" title={transaction.notes}>
+              <Notepad size={10} weight="bold" className="mr-0.5" />
+              Note
             </Badge>
           )}
         </div>

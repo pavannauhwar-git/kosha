@@ -1,7 +1,7 @@
 import { memo, useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence, motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
-import { ArrowUDownLeft, ArrowSquareOut, X } from '@phosphor-icons/react'
+import { ArrowUDownLeft, ArrowSquareOut, X, Notepad } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../../lib/utils'
@@ -434,6 +434,12 @@ function TransactionItem({
                     Repayment
                   </span>
                 )}
+                {txn.notes && (
+                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border font-medium shrink-0" title={txn.notes}>
+                    <Notepad size={10} weight="bold" className="text-ink-3" />
+                    Note
+                  </span>
+                )}
                 {isSplitwiseLinked && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
                     Splitwise
@@ -464,6 +470,12 @@ function TransactionItem({
                 {txn.is_repayment && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
                     Repayment
+                  </span>
+                )}
+                {txn.notes && (
+                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border font-medium shrink-0" title={txn.notes}>
+                    <Notepad size={10} weight="bold" className="text-ink-3" />
+                    Note
                   </span>
                 )}
                 {txn.is_recurring && (
