@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
+import { queryClient } from '../lib/queryClient'
+import { getAuthUserId } from '../lib/authStore'
 import { C } from '../lib/colors'
 import { saveTransactionMutation } from '../hooks/useTransactions'
 import { supabase } from '../lib/supabase'
@@ -357,6 +359,28 @@ export default function Onboarding() {
     if (saving) return
     setSaving(true)
     try {
+      // ── Optimistic cache patch ────────────────────────────────────────────
+      // Google OAuth fires a *second* SIGNED_IN event after token exchange,
+      // which triggers loadProfile() → queryClient.fetchQuery(). If that
+      // re-fetch completes after updateProfile()'s setProfile() call but
+      // reads stale DB data (onboarded: false), it silently overwrites the
+      // update and leaves the user stuck on /onboarding forever.
+      //
+      // Fix: patch the query cache with onboarded:true BEFORE the DB await.
+      // queryClient.fetchQuery without staleTime:0 returns cached data, so
+      // any concurrent loadProfile re-fetch will see this patch and bail out
+      // of the network call — the overwrite can't happen.
+      try {
+        const userId = getAuthUserId()
+        const cacheKey = ['user-profile', userId]
+        const cached = queryClient.getQueryData(cacheKey)
+        if (cached) {
+          queryClient.setQueryData(cacheKey, { ...cached, onboarded: true })
+        }
+      } catch (_) {
+        // authStore not ready — non-fatal, the DB call below still runs
+      }
+
       await updateProfile({ onboarded: true })
 
       const hasPendingSplitInvite = (() => {
@@ -367,7 +391,10 @@ export default function Onboarding() {
         }
       })()
 
-      navigate(hasPendingSplitInvite ? '/splitwise' : '/', { replace: true })
+      // Use setTimeout(0) to step past React's batching boundary so the
+      // setProfile() call inside updateProfile has committed before AuthGuard
+      // evaluates the new profile state.
+      setTimeout(() => navigate(hasPendingSplitInvite ? '/splitwise' : '/', { replace: true }), 0)
     } catch (e) {
       console.error('[Kosha] Onboarding finish failed', e)
       setSaving(false)
