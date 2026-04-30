@@ -66,7 +66,14 @@ drop policy if exists "Users can read own monthly net changes" on monthly_net_ch
 create policy "Users can read own monthly net changes"
   on monthly_net_changes for select
   to authenticated
-  using (auth.uid() = user_id);
+  using (
+    auth.uid() = user_id or
+    exists (
+      select 1 from public.invites
+      where (created_by = auth.uid() and used_by = monthly_net_changes.user_id)
+         or (used_by = auth.uid() and created_by = monthly_net_changes.user_id)
+    )
+  );
 
 create or replace function public.maintain_monthly_net_change()
 returns trigger
@@ -297,16 +304,32 @@ alter table invites      enable row level security;
 -- Having both would create "Multiple Permissive Policies" warnings and Realtime instability.
 -- ─────────────────────────────────────────────────────────────────────────────
 drop policy if exists "Users can view own profile" on public.profiles;
+drop policy if exists "Users can fully manage own profile" on public.profiles;
 drop policy if exists "Users can insert own profile" on public.profiles;
 drop policy if exists "Users can update own profile" on public.profiles;
 drop policy if exists "Users can fully manage own transactions" on public.transactions;
 drop policy if exists "Users can fully manage own liabilities" on public.liabilities;
 
+-- Shared wallet check function
+create or replace function public.is_linked(target_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select auth.uid() = target_user_id or exists (
+    select 1 from public.invites
+    where (created_by = auth.uid() and used_by = target_user_id)
+       or (used_by = auth.uid() and created_by = target_user_id)
+  );
+$$;
+
 -- Profiles policies
 drop policy if exists "profiles: select own" on profiles;
 create policy "profiles: select own" on profiles
 for select to authenticated
-using (auth.uid() = id);
+using (public.is_linked(id));
 
 drop policy if exists "profiles: insert own" on profiles;
 create policy "profiles: insert own" on profiles
@@ -322,7 +345,7 @@ using ((select auth.uid()) = id);
 drop policy if exists "transactions: select own" on transactions;
 create policy "transactions: select own" on transactions
 for select to authenticated
-using (auth.uid() = user_id);
+using (public.is_linked(user_id));
 
 drop policy if exists "transactions: insert own" on transactions;
 create policy "transactions: insert own" on transactions
@@ -343,7 +366,7 @@ using ((select auth.uid()) = user_id);
 drop policy if exists "liabilities: select own" on liabilities;
 create policy "liabilities: select own" on liabilities
 for select to authenticated
-using (auth.uid() = user_id);
+using (public.is_linked(user_id));
 
 drop policy if exists "liabilities: insert own" on liabilities;
 create policy "liabilities: insert own" on liabilities
