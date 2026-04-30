@@ -7,6 +7,7 @@ import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../../lib/utils'
 import { getCategory, INVESTMENT_VEHICLES } from '../../lib/categories'
 import { supabase } from '../../lib/supabase'
+import { getAuthUserId } from '../../lib/authStore'
 
 const PEEK_X = 140
 const SWIPE_OPEN_THRESHOLD = PEEK_X * 0.42
@@ -269,6 +270,8 @@ function TransactionItem({
     return () => unsubscribe()
   }, [x])
 
+  const canEdit = !txn?.user_id || txn.user_id === getAuthUserId()
+
   const handleDragEnd = useCallback((_, info) => {
     const ox = info.offset.x
     if (ox > 0) {
@@ -386,7 +389,7 @@ function TransactionItem({
             : 'list-row py-3 sm:py-3.5 active:bg-kosha-surface-2'
             }`}
           style={{ x }}
-          drag={isOptimistic || isExternalLinked ? false : 'x'}
+          drag={isOptimistic || isExternalLinked || !canEdit ? false : 'x'}
           dragConstraints={{ left: -PEEK_X * 1.5, right: 0 }}
           dragElastic={{ left: 0.12, right: 0.02 }}
           onDragEnd={handleDragEnd}

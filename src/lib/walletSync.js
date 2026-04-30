@@ -46,3 +46,29 @@ export async function fetchLinkedProfiles(userId) {
   if (error) throw error
   return data || []
 }
+
+/**
+ * Removes the linkage between the current user and a target partner.
+ */
+export async function unlinkPartner(currentUserId, targetUserId) {
+  if (!currentUserId || !targetUserId) throw new Error('Both currentUserId and targetUserId are required.')
+
+  // Delete where I created and they used
+  const { error: err1 } = await supabase
+    .from('invites')
+    .delete()
+    .eq('created_by', currentUserId)
+    .eq('used_by', targetUserId)
+
+  // Delete where they created and I used
+  const { error: err2 } = await supabase
+    .from('invites')
+    .delete()
+    .eq('created_by', targetUserId)
+    .eq('used_by', currentUserId)
+
+  if (err1) throw err1
+  if (err2) throw err2
+
+  return true
+}

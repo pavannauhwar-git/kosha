@@ -169,6 +169,9 @@ export default function AuthGuard({ children }) {
       navigate('/login', { replace: true, state: { from: location.pathname } })
     } else if ((!profile || !profile.onboarded) && location.pathname !== '/onboarding') {
       navigate('/onboarding', { replace: true })
+    } else if (profile?.onboarded && location.pathname === '/onboarding') {
+      // Already onboarded — send to dashboard instead of re-showing onboarding
+      navigate('/', { replace: true })
     }
   }, [loading, user, profileLoading, profile, navigate, location.pathname])
 
@@ -184,6 +187,15 @@ export default function AuthGuard({ children }) {
     return (
       <div className="route-skeleton-shell">
         <RouteSkeleton pathname={location.pathname} />
+      </div>
+    )
+  }
+
+  // Onboarding page: don't render content for already-onboarded users (redirect fires above)
+  if (profile?.onboarded && location.pathname === '/onboarding') {
+    return (
+      <div className="route-skeleton-shell">
+        <RouteSkeleton pathname="/" />
       </div>
     )
   }

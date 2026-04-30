@@ -1,7 +1,8 @@
 import { useQueries } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
-import { getAuthUserId } from '../lib/authStore'
+import { getAuthUserId } from '../lib/authStore';
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
@@ -14,9 +15,9 @@ import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
 export const LOAN_INVALIDATION_KEYS = [['loans']]
 
-const LOAN_ACTIVE_GIVEN_KEY   = ['loans', 'active', 'given']
-const LOAN_ACTIVE_TAKEN_KEY   = ['loans', 'active', 'taken']
-const LOAN_SETTLED_KEY        = ['loans', 'settled']
+const LOAN_ACTIVE_GIVEN_KEY   = (targetUserId) => ['loans', 'active', 'given', targetUserId]
+const LOAN_ACTIVE_TAKEN_KEY   = (targetUserId) => ['loans', 'active', 'taken', targetUserId]
+const LOAN_SETTLED_KEY        = (targetUserId) => ['loans', 'settled', targetUserId]
 const LOAN_COLUMNS =
   'id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled, created_at'
 
@@ -32,11 +33,10 @@ export async function invalidateLoanCache() {
   await queryClient.invalidateQueries({ queryKey: ['loans'], refetchType: 'active' })
 }
 
-async function fetchLoans(direction, settledValue) {
+async function fetchLoans(direction, settledValue, targetUserId) {
   const label = settledValue ? 'settled' : `active:${direction}`
   return traceQuery(`loans:${label}`, async () => {
-    const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
-    const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+    const allUserIds = [targetUserId]
 
     let query = supabase
       .from('loans')
@@ -57,24 +57,26 @@ async function fetchLoans(direction, settledValue) {
 }
 
 export function useLoans({ enabled = true } = {}) {
+  const targetUserId = useActiveWallet()
+  
   const [givenQuery, takenQuery, settledQuery] = useQueries({
     queries: [
       {
-        queryKey: LOAN_ACTIVE_GIVEN_KEY,
-        queryFn: () => fetchLoans('given', false),
-        enabled,
+        queryKey: LOAN_ACTIVE_GIVEN_KEY(targetUserId),
+        queryFn: () => fetchLoans('given', false, targetUserId),
+        enabled: enabled && !!targetUserId,
         placeholderData: (prev) => prev,
       },
       {
-        queryKey: LOAN_ACTIVE_TAKEN_KEY,
-        queryFn: () => fetchLoans('taken', false),
-        enabled,
+        queryKey: LOAN_ACTIVE_TAKEN_KEY(targetUserId),
+        queryFn: () => fetchLoans('taken', false, targetUserId),
+        enabled: enabled && !!targetUserId,
         placeholderData: (prev) => prev,
       },
       {
-        queryKey: LOAN_SETTLED_KEY,
-        queryFn: () => fetchLoans(null, true),
-        enabled,
+        queryKey: LOAN_SETTLED_KEY(targetUserId),
+        queryFn: () => fetchLoans(null, true, targetUserId),
+        enabled: enabled && !!targetUserId,
         placeholderData: (prev) => prev,
       },
     ],
@@ -207,10 +209,11 @@ function cloneCacheData(data) {
 }
 
 function snapshotLoanCaches() {
+  const targetUserId = getAuthUserId()
   return [
-    [LOAN_ACTIVE_GIVEN_KEY, cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_GIVEN_KEY) || [])],
-    [LOAN_ACTIVE_TAKEN_KEY, cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_TAKEN_KEY) || [])],
-    [LOAN_SETTLED_KEY,      cloneCacheData(queryClient.getQueryData(LOAN_SETTLED_KEY) || [])],
+    [LOAN_ACTIVE_GIVEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_GIVEN_KEY(targetUserId)) || [])],
+    [LOAN_ACTIVE_TAKEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_TAKEN_KEY(targetUserId)) || [])],
+    [LOAN_SETTLED_KEY(targetUserId),      cloneCacheData(queryClient.getQueryData(LOAN_SETTLED_KEY(targetUserId)) || [])],
   ]
 }
 
@@ -222,7 +225,8 @@ function restoreLoanSnapshot(snapshot) {
 
 export function optimisticallyInsertLoan(loan) {
   if (!loan?.id) return
-  const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
+  const targetUserId = getAuthUserId()
+  const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
   const prev = queryClient.getQueryData(key)
   const base = Array.isArray(prev) ? prev : []
   const deduped = base.filter((row) => row?.id !== loan.id)
@@ -231,7 +235,8 @@ export function optimisticallyInsertLoan(loan) {
 
 export function optimisticallyDeleteLoan(id) {
   if (!id) return
-  for (const key of [LOAN_ACTIVE_GIVEN_KEY, LOAN_ACTIVE_TAKEN_KEY, LOAN_SETTLED_KEY]) {
+  const targetUserId = getAuthUserId()
+  for (const key of [LOAN_ACTIVE_GIVEN_KEY(targetUserId), LOAN_ACTIVE_TAKEN_KEY(targetUserId), LOAN_SETTLED_KEY(targetUserId)]) {
     const data = queryClient.getQueryData(key)
     if (Array.isArray(data)) {
       queryClient.setQueryData(key, data.filter((row) => row?.id !== id))
@@ -241,7 +246,8 @@ export function optimisticallyDeleteLoan(id) {
 
 function getLoanFromCacheById(id) {
   if (!id) return null
-  for (const key of [LOAN_ACTIVE_GIVEN_KEY, LOAN_ACTIVE_TAKEN_KEY, LOAN_SETTLED_KEY]) {
+  const targetUserId = getAuthUserId()
+  for (const key of [LOAN_ACTIVE_GIVEN_KEY(targetUserId), LOAN_ACTIVE_TAKEN_KEY(targetUserId), LOAN_SETTLED_KEY(targetUserId)]) {
     const data = queryClient.getQueryData(key)
     if (Array.isArray(data)) {
       const found = data.find((row) => row?.id === id)
@@ -347,8 +353,8 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
   suppress('loans')
   suppress('transactions')
 
-  // Optimistically update the loan's settled amount
-  const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
+  const targetUserId = getAuthUserId()
+  const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
   const prev = queryClient.getQueryData(key)
   if (Array.isArray(prev)) {
     queryClient.setQueryData(key, prev.map((row) =>
@@ -375,9 +381,9 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
       if (Array.isArray(activeData)) {
         queryClient.setQueryData(key, activeData.filter((row) => row?.id !== loan.id))
       }
-      const settledData = queryClient.getQueryData(LOAN_SETTLED_KEY)
+      const settledData = queryClient.getQueryData(LOAN_SETTLED_KEY(targetUserId))
       if (Array.isArray(settledData)) {
-        queryClient.setQueryData(LOAN_SETTLED_KEY, [
+        queryClient.setQueryData(LOAN_SETTLED_KEY(targetUserId), [
           { ...loan, amount_settled: loan.amount, settled: true },
           ...settledData.filter((row) => row?.id !== loan.id),
         ])
@@ -453,7 +459,8 @@ export async function updateLoanMutation(id, updates) {
   // Optimistic: update in the correct cache bucket
   const cachedLoan = getLoanFromCacheById(id)
   if (cachedLoan) {
-    const key = cachedLoan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
+    const targetUserId = getAuthUserId()
+    const key = cachedLoan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
     const prev = queryClient.getQueryData(key)
     if (Array.isArray(prev)) {
       queryClient.setQueryData(key, prev.map(row => row?.id === id ? { ...row, ...updates } : row))
@@ -464,9 +471,9 @@ export async function updateLoanMutation(id, updates) {
     const updated = await updateLoan(id, updates)
     await queryClient.cancelQueries({ queryKey: ['loans'] })
 
-    // Handle direction change: may need to move between caches
-    const oldKey = cachedLoan?.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
-    const newKey = updated.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY : LOAN_ACTIVE_TAKEN_KEY
+    const targetUserId = getAuthUserId()
+    const oldKey = cachedLoan?.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
+    const newKey = updated.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
 
     if (oldKey !== newKey) {
       const oldData = queryClient.getQueryData(oldKey)

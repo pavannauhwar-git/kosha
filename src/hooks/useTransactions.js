@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
-import { getAuthUserId } from '../lib/authStore'
+import { getAuthUserId } from '../lib/authStore';
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
@@ -10,8 +11,8 @@ import { CATEGORIES } from '../lib/categories'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
 // ── Query key factories ───────────────────────────────────────────────────
-const txnListKey  = (filters) => ['transactions', filters]
-const txnCountKey = (filters) => ['txnCount', filters]
+const txnListKey  = (filters, targetUserId) => ['transactions', filters, targetUserId]
+const txnCountKey = (filters, targetUserId) => ['txnCount', filters, targetUserId]
 
 /** Shared parser for get_month_summary RPC rows — used by hook and prefetch */
 export function parseMonthSummaryRows(rows) {
@@ -220,15 +221,15 @@ export function useDebounce(value, ms = 300) {
 // ── Query hooks ───────────────────────────────────────────────────────────
 
 export function useTransactions({ type, category, paymentMode, search, limit, startDate, endDate, withCount = false, enabled = true, columns } = {}) {
+  const targetUserId = useActiveWallet()
   const selectedColumns = columns || TRANSACTION_LIST_COLUMNS
   const filters = { type, category, paymentMode, search, limit, startDate, endDate, columns: selectedColumns }
   const { data: rows, isLoading, error, refetch } = useQuery({
-    queryKey: txnListKey(filters),
-    enabled,
+    queryKey: txnListKey(filters, targetUserId),
+    enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:list', async () => {
       try {
-        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
-        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+        const allUserIds = [targetUserId]
         
         // Run recurring materialization only for broad list reads.
         // Filtered/short lists (dashboard widgets, search, category tabs)
@@ -276,8 +277,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
     enabled: shouldFetchCount,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
-        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
-        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+        const allUserIds = [targetUserId]
 
         let q = supabase
           .from('transactions')
@@ -392,14 +392,15 @@ const DAILY_EXPENSE_TOTAL_COLUMNS = 'date, amount'
 
 export function useRecentTransactions(limit = 5) {
   const safeLimit = Math.max(1, Number(limit) || 5)
+  const targetUserId = useActiveWallet()
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ['transactionsRecent', safeLimit],
+    queryKey: ['transactionsRecent', safeLimit, targetUserId],
+    enabled: !!targetUserId,
     queryFn: () => traceQuery('transactions:recent', async () => {
-      const userId = getAuthUserId()
       const { data: rows, error: qError } = await supabase
         .from('transactions')
         .select(RECENT_TXN_COLUMNS)
-        .eq('user_id', userId)
+        .eq('user_id', targetUserId)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(safeLimit)
@@ -421,16 +422,16 @@ export function useTransactionDigest(days = 14, limit = 200, options = {}) {
   const start = new Date()
   start.setDate(start.getDate() - (safeDays - 1))
   const startISO = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
+  const targetUserId = useActiveWallet()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['transactionsDigest', safeDays, safeLimit, startISO],
-    enabled,
+    queryKey: ['transactionsDigest', safeDays, safeLimit, startISO, targetUserId],
+    enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:digest', async () => {
-      const userId = getAuthUserId()
       const { data: rows, error: qError } = await supabase
         .from('transactions')
         .select(DIGEST_TXN_COLUMNS)
-        .eq('user_id', userId)
+        .eq('user_id', targetUserId)
         .gte('date', startISO)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -452,12 +453,12 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
   start.setHours(0, 0, 0, 0)
   start.setDate(start.getDate() - (safeDays - 1))
   const startISO = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
+  const targetUserId = useActiveWallet()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['dailyExpenseTotals', safeDays, startISO],
-    enabled,
+    queryKey: ['dailyExpenseTotals', safeDays, startISO, targetUserId],
+    enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:daily-expense-totals', async () => {
-      const userId = getAuthUserId()
       const pageSize = 1000
       const totalsByDate = {}
 
@@ -467,7 +468,7 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
         const { data: rows, error: qError } = await supabase
           .from('transactions')
           .select(DAILY_EXPENSE_TOTAL_COLUMNS)
-          .eq('user_id', userId)
+          .eq('user_id', targetUserId)
           .eq('type', 'expense')
           .gte('date', startISO)
           .order('date', { ascending: false })
@@ -506,12 +507,12 @@ export function useMonthExpenseDailyTotals(year, month, options = {}) {
 
   const startISO = `${validYear}-${String(validMonth).padStart(2, '0')}-01`
   const endISO = `${validYear}-${String(validMonth).padStart(2, '0')}-${String(new Date(validYear, validMonth, 0).getDate()).padStart(2, '0')}`
+  const targetUserId = useActiveWallet()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['monthExpenseDailyTotals', validYear, validMonth],
-    enabled,
+    queryKey: ['monthExpenseDailyTotals', validYear, validMonth, targetUserId],
+    enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:month-expense-daily-totals', async () => {
-      const userId = getAuthUserId()
       const pageSize = 1000
       const totalsByDate = {}
 
@@ -521,7 +522,7 @@ export function useMonthExpenseDailyTotals(year, month, options = {}) {
         const { data: rows, error: qError } = await supabase
           .from('transactions')
           .select(DAILY_EXPENSE_TOTAL_COLUMNS)
-          .eq('user_id', userId)
+          .eq('user_id', targetUserId)
           .eq('type', 'expense')
           .gte('date', startISO)
           .lte('date', endISO)
@@ -603,17 +604,17 @@ export function useTodayExpenses(options = {}) {
   const { enabled = true } = options
   const today    = new Date()
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const targetUserId = useActiveWallet()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['todayExpenses', todayISO],
-    enabled,
+    queryKey: ['todayExpenses', todayISO, targetUserId],
+    enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:today-expenses', async () => {
       try {
-        const userId = getAuthUserId()
         const { data: r, error: qError } = await supabase
           .from('transactions')
           .select('amount')
-          .eq('user_id', userId)
+          .eq('user_id', targetUserId)
           .eq('type', 'expense')
           .eq('date', todayISO)
 
@@ -631,13 +632,13 @@ export function useTodayExpenses(options = {}) {
 
 export function useMonthSummary(year, month, options = {}) {
   const { enabled = true } = options
+  const targetUserId = useActiveWallet()
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ['month', year, month],
-    enabled,
+    queryKey: ['month', year, month, targetUserId],
+    enabled: enabled && !!targetUserId,
     queryFn: async () => {
       try {
-        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
-        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+        const allUserIds = [targetUserId]
 
         const { data: rows, error: qError } = await supabase.rpc('get_month_summary', {
           p_user_ids: allUserIds,
@@ -660,14 +661,14 @@ export function useMonthSummary(year, month, options = {}) {
 
 export function useYearSummary(year, options = {}) {
   const { enabled = true } = options
+  const targetUserId = useActiveWallet()
   const { data, isLoading, error } = useQuery({
-    queryKey: ['year', year],
-    enabled,
+    queryKey: ['year', year, targetUserId],
+    enabled: enabled && !!targetUserId,
     placeholderData: (previousData) => previousData,
     queryFn: async () => {
       try {
-        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
-        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+        const allUserIds = [targetUserId]
 
         const { data: result, error: rpcError } = await supabase
           .rpc('get_year_summary', { p_user_ids: allUserIds, p_year: year })
@@ -792,12 +793,13 @@ export function useTransactionYearBounds(options = {}) {
 }
 
 export function useRunningBalance(year, month) {
+  const targetUserId = useActiveWallet()
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ['balance', year, month],
+    queryKey: ['balance', year, month, targetUserId],
+    enabled: !!targetUserId,
     queryFn: async () => {
       try {
-        const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
-        const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+        const allUserIds = [targetUserId]
         const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
         const { data: balance, error: rpcError } = await supabase.rpc(

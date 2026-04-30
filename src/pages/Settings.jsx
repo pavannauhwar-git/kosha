@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, User, Copy, Moon, Sun, Home } from 'lucide-react'
+import { Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, User, Copy, Moon, Sun, Home, Unlink } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/dialogs/EditProfileNameDialog'
@@ -18,6 +18,8 @@ import {
   requestNotificationPermission,
 } from '../lib/reminders'
 import { buildJoinInviteUrl, createInvite, deleteInvite, inviteStatusLabel, listInvites, MAX_ACTIVE_INVITES } from '../lib/invites'
+import { unlinkPartner } from '../lib/walletSync'
+import { getActiveWalletUserId, setActiveWalletUserId } from '../lib/walletStore'
 import { fmtDate } from '../lib/utils'
 import { shareLink } from '../lib/share'
 
@@ -83,6 +85,7 @@ export default function Settings() {
   const [walletMsg, setWalletMsg] = useState('')
   const [creatingInvite, setCreatingInvite] = useState(false)
   const [revokingId, setRevokingId] = useState('')
+  const [unlinkingId, setUnlinkingId] = useState('')
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
   const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [newPassword, setNewPassword] = useState('')
@@ -124,6 +127,7 @@ export default function Settings() {
   const avatarUrl = profile?.avatar_url || null
   const displayName = profile?.display_name || 'My Account'
   const pendingInviteCount = walletInvites.filter((invite) => !invite?.used_by).length
+  const joinedInviteCount = walletInvites.filter((invite) => !!invite?.used_by).length
   const inviteCapReached = pendingInviteCount >= MAX_ACTIVE_INVITES
 
   async function handleFileChange(e) {
@@ -236,6 +240,22 @@ export default function Settings() {
       setWalletError(error?.message || 'Could not create invite link.')
     } finally {
       setCreatingInvite(false)
+    }
+  }
+
+  async function handleUnlinkPartner(partnerId) {
+    if (!partnerId || unlinkingId) return
+    if (!confirm('Are you sure you want to unlink this wallet? You will no longer be able to access their data.')) return
+    setUnlinkingId(partnerId)
+    setWalletError('')
+    try {
+      await unlinkPartner(user.id, partnerId)
+      if (getActiveWalletUserId() === partnerId) setActiveWalletUserId(user.id)
+      window.location.reload()
+    } catch (error) {
+      setWalletError(error?.message || 'Could not unlink wallet.')
+    } finally {
+      setUnlinkingId('')
     }
   }
 
@@ -569,8 +589,8 @@ export default function Settings() {
               <div className="divide-y divide-kosha-border bg-white">
                 {linkedProfiles.map((lp) => (
                   <div key={lp.id} className="px-4 py-3.5 flex items-center justify-between gap-3 bg-kosha-surface-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center overflow-hidden border border-brand-border">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center overflow-hidden border border-brand-border shrink-0">
                         {lp.avatar_url ? (
                           <img src={lp.avatar_url} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -585,6 +605,16 @@ export default function Settings() {
                         </p>
                       </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<Unlink size={13} />}
+                      onClick={() => { void handleUnlinkPartner(lp.id) }}
+                      loading={unlinkingId === lp.id}
+                      className="shrink-0 text-expense-text hover:bg-expense-bg h-8 px-2.5 text-[11px] font-semibold"
+                    >
+                      Unlink
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -617,7 +647,19 @@ export default function Settings() {
             </div>
 
             <div className="px-4 py-3 space-y-2">
-              <p className="text-[12px] font-semibold text-ink-3">Recent invites ({pendingInviteCount}/{MAX_ACTIVE_INVITES} active)</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[12px] font-semibold text-ink-3">Recent invite links</p>
+                <div className="flex items-center gap-2">
+                  {joinedInviteCount > 0 && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-income-bg text-income-text">
+                      {joinedInviteCount} joined
+                    </span>
+                  )}
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-kosha-surface text-ink-3 border border-kosha-border">
+                    {pendingInviteCount}/{MAX_ACTIVE_INVITES} pending
+                  </span>
+                </div>
+              </div>
               {walletLoading ? (
                 <p className="text-[12px] text-ink-3">Loading invites…</p>
               ) : walletInvites.length === 0 ? (
@@ -635,15 +677,17 @@ export default function Settings() {
                       </div>
                       <p className="text-[11px] text-ink-2 mt-1 truncate">{buildJoinInviteUrl(invite.token)}</p>
                       <div className="flex items-center gap-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="mt-1.5 px-0 h-auto text-[11px] text-brand font-semibold"
-                          icon={<Copy size={12} />}
-                          onClick={() => { void copyInviteLink(invite.token) }}
-                        >
-                          Copy link
-                        </Button>
+                        {!invite.used_by && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-1.5 px-0 h-auto text-[11px] text-brand font-semibold"
+                            icon={<Copy size={12} />}
+                            onClick={() => { void copyInviteLink(invite.token) }}
+                          >
+                            Copy link
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -652,7 +696,7 @@ export default function Settings() {
                           onClick={() => { void handleRevokeInvite(invite.id) }}
                           loading={revokingId === invite.id}
                         >
-                          Remove link
+                          {invite.used_by ? 'Remove & Unlink' : 'Remove'}
                         </Button>
                       </div>
                     </div>

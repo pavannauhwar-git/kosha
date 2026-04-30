@@ -327,12 +327,15 @@ function StepFirstTransaction({ onFinish, onSkip }) {
 export default function Onboarding() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, updateProfile } = useAuth()
+  const { user, profile, updateProfile } = useAuth()
 
   const [step,   setStep]   = useState(0)
   const [name,   setName]   = useState('')
   const [saving, setSaving] = useState(false)
 
+  // If already onboarded (e.g. user navigated here manually), send to dashboard
+  // Use an effect so we don't navigate before render
+  // (AuthGuard also handles this, but being explicit avoids flash)
 
   async function handleNameNext(displayName) {
     setName(displayName)
@@ -340,13 +343,18 @@ export default function Onboarding() {
   }
 
   async function handleIncomeNext(monthlyIncome) {
-    setStep(2)
+    // Save profile data first, then advance — avoids a race where the profile
+    // update completes after step change and the guard sees onboarded=false.
     try {
       await updateProfile({ display_name: name, monthly_income: monthlyIncome })
-    } catch (_) {}
+    } catch (_) {
+      // Non-fatal — continue even if save fails
+    }
+    setStep(2)
   }
 
   async function finish() {
+    if (saving) return
     setSaving(true)
     try {
       await updateProfile({ onboarded: true })
@@ -370,9 +378,17 @@ export default function Onboarding() {
     <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-12 pb-10">
       <div className="w-full max-w-sm mx-auto flex flex-col flex-1">
 
-        {/* Logo mark and Hero Illustration */}
-        <div className="flex items-center mb-4">
+        {/* Header row: Logo + Skip button */}
+        <div className="flex items-center justify-between mb-4">
           <KoshaLogo size={36} />
+          <button
+            type="button"
+            onClick={finish}
+            disabled={saving}
+            className="text-[13px] font-semibold text-ink-3 hover:text-ink transition-colors duration-150 disabled:opacity-40"
+          >
+            {saving ? 'Saving…' : 'Skip to dashboard →'}
+          </button>
         </div>
         <div className="flex justify-center mb-2">
           <img src="/illustrations/onboarding_hero.png" alt="Welcome to Kosha" className="w-48 h-auto illustration" />

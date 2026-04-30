@@ -917,6 +917,11 @@ export default function Transactions() {
   }, [extractRepaymentCounterparty, inferRepaymentTab])
 
   const handleTap = useCallback((t) => {
+    if (t?.user_id && t.user_id !== getAuthUserId()) {
+      pushToast("You can only view your partner's transactions.", { duration: 3000 })
+      return
+    }
+
     if (t?.is_repayment) {
       pushToast('Repayments are managed from Loans.')
       navigate(repaymentLoanRoute(t))

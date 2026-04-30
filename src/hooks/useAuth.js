@@ -232,8 +232,14 @@ export function useAuthState() {
       .select(PROFILE_COLUMNS)
       .single()
     if (error) throw error
-    setProfile(data)
-    queryClient.setQueryData(profileQueryKey(userId), data)
+
+    // Merge with existing profile to preserve linkedUserIds, linkedProfiles, and
+    // any other fields not returned by the upsert select (e.g. monthly_income).
+    setProfile(prev => {
+      const merged = { ...(prev || {}), ...data }
+      queryClient.setQueryData(profileQueryKey(userId), merged)
+      return merged
+    })
     return data
   }, [profileQueryKey])
 
@@ -243,7 +249,7 @@ export function useAuthState() {
     const trimmedName = String(displayName || '').trim()
     if (!trimmedName) throw new Error('Display name cannot be empty')
 
-    const { data,error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .upsert({ id: userId, display_name: trimmedName }, { onConflict: 'id' })
       .select(PROFILE_COLUMNS)
@@ -251,8 +257,12 @@ export function useAuthState() {
 
     if (error) throw error
 
-    setProfile(data)
-    queryClient.setQueryData(profileQueryKey(userId), data)
+    // Merge to preserve linkedUserIds, linkedProfiles, etc.
+    setProfile(prev => {
+      const merged = { ...(prev || {}), ...data }
+      queryClient.setQueryData(profileQueryKey(userId), merged)
+      return merged
+    })
     return data
   }, [profileQueryKey])
 

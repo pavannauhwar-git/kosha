@@ -1,7 +1,8 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
-import { getAuthUserId } from '../lib/authStore'
+import { getAuthUserId } from '../lib/authStore';
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
@@ -14,8 +15,8 @@ import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth']]
 
-const LIABILITY_PENDING_QUERY_KEY = ['liabilities', 'pending']
-const LIABILITY_PAID_QUERY_KEY    = ['liabilities', 'paid']
+const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending', targetUserId]
+const LIABILITY_PAID_QUERY_KEY    = (targetUserId) => ['liabilities', 'paid', targetUserId]
 const LIABILITY_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id'
@@ -35,10 +36,9 @@ export async function invalidateLiabilityCache() {
   ])
 }
 
-async function fetchLiabilitiesByPaid(paidValue) {
+async function fetchLiabilitiesByPaid(paidValue, targetUserId) {
   return traceQuery(`liabilities:${paidValue ? 'paid' : 'pending'}`, async () => {
-    const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
-    const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+    const allUserIds = [targetUserId]
     
     const { data: rows, error } = await supabase
       .from('liabilities')
@@ -53,18 +53,20 @@ async function fetchLiabilitiesByPaid(paidValue) {
 }
 
 export function useLiabilities({ includePaid = true, enabled = true } = {}) {
+  const targetUserId = useActiveWallet()
+  
   const [pendingQuery, paidQuery] = useQueries({
     queries: [
       {
-        queryKey: LIABILITY_PENDING_QUERY_KEY,
-        queryFn:  () => fetchLiabilitiesByPaid(false),
-        enabled,
+        queryKey: LIABILITY_PENDING_QUERY_KEY(targetUserId),
+        queryFn:  () => fetchLiabilitiesByPaid(false, targetUserId),
+        enabled: enabled && !!targetUserId,
         placeholderData: (previousData) => previousData,
       },
       {
-        queryKey: LIABILITY_PAID_QUERY_KEY,
-        queryFn:  () => fetchLiabilitiesByPaid(true),
-        enabled:  enabled && includePaid,
+        queryKey: LIABILITY_PAID_QUERY_KEY(targetUserId),
+        queryFn:  () => fetchLiabilitiesByPaid(true, targetUserId),
+        enabled:  enabled && includePaid && !!targetUserId,
         placeholderData: (previousData) => previousData,
       },
     ],
@@ -95,13 +97,13 @@ function monthDateRange(year, month) {
 export function useLiabilitiesByMonth(year, month, options = {}) {
   const { enabled = true } = options
   const { startDate, endDate } = monthDateRange(year, month)
+  const targetUserId = useActiveWallet()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['liabilitiesMonth', year, month],
-    enabled: enabled && !!startDate && !!endDate,
+    queryKey: ['liabilitiesMonth', year, month, targetUserId],
+    enabled: enabled && !!startDate && !!endDate && !!targetUserId,
     queryFn: async () => traceQuery('liabilities:month', async () => {
-      const { linkedUserIds } = queryClient.getQueryData(['user-profile', getAuthUserId()]) || { linkedUserIds: [] }
-      const allUserIds = [getAuthUserId(), ...(linkedUserIds || [])]
+      const allUserIds = [targetUserId]
 
       const { data: rows, error: queryError } = await supabase
         .from('liabilities')

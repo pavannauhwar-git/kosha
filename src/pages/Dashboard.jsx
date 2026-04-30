@@ -24,6 +24,7 @@ import DashboardRecentTransactions from '../components/dashboard/DashboardRecent
 import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import AppToast from '../components/common/AppToast'
+import { getAuthUserId } from '../lib/authStore'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
 
@@ -557,6 +558,14 @@ export default function Dashboard() {
   }, [extractRepaymentCounterparty, inferRepaymentTab])
 
   const handleTap = useCallback((t) => {
+    if (t?.user_id && t.user_id !== getAuthUserId()) {
+      setToast("You can only view your partner's transactions.")
+      setToastAction(null)
+      setToastActionLabel(null)
+      setTimeout(() => setToast(null), 3000)
+      return
+    }
+
     if (t?.is_repayment && !t?.linked_split_settlement_id) {
       setToast('Repayments are managed from Loans.')
       setToastAction(null)
