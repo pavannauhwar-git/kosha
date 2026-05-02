@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { ExternalLink, Home, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ExternalLink, Home, ShieldCheck, Sparkles } from 'lucide-react'
 import {
   HeartIcon, CodeIcon, CurrencyInrIcon, CopyIcon, CheckIcon,
   GithubLogoIcon, LockIcon, StarIcon, CaretDownIcon, CaretUpIcon,
+  DeviceMobileIcon,
 } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
 import KoshaLogo from '../components/brand/KoshaLogo'
@@ -12,9 +13,13 @@ import { CHANGELOG } from '../lib/changelog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
-import BottomSheet from '../components/ui/BottomSheet'
 import Button from '../components/ui/Button'
 import { copyToClipboard } from '../lib/share'
+
+/** Returns true on Android where upi:// intents are natively handled by the OS */
+function isAndroid() {
+  return typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent)
+}
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.06, 0.04)
@@ -80,8 +85,10 @@ function ConnectRow({ href, icon, label, sublabel, tone = 'neutral' }) {
 export default function About() {
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
+  const [upiCopied, setUpiCopied] = useState(false)
   const [showAllVersions, setShowAllVersions] = useState(false)
-  const [showUpiSheet, setShowUpiSheet] = useState(false)
+  // 'idle' | 'fallback' — fallback shown on non-Android where upi:// won't work
+  const [payState, setPayState] = useState('idle')
   const currentRelease = CHANGELOG[0]
   const olderReleases = CHANGELOG.slice(1)
   const latestVersion = currentRelease?.version || '1.0.0'
@@ -95,6 +102,21 @@ export default function About() {
       setTimeout(() => setCopied(false), 2000)
     }
   }
+
+  const handlePayClick = useCallback(async (e) => {
+    if (isAndroid()) {
+      // Let the href do the work — Android OS intercepts upi:// and shows native app picker
+      return
+    }
+    // Non-Android: upi:// deep links won't work. Show fallback copy state.
+    e.preventDefault()
+    setPayState('fallback')
+    const res = await copyToClipboard(UPI_ID)
+    if (res.success) {
+      setUpiCopied(true)
+      setTimeout(() => setUpiCopied(false), 3000)
+    }
+  }, [])
 
   return (
     <PageBackHeaderPage
@@ -130,36 +152,36 @@ export default function About() {
           </div>
 
           <div className="p-4">
-              <p className="text-[13px] text-ink-2 leading-relaxed">
-                Track income, expenses, investments, bills, and loans in one place. Kosha gives you direction when you need it fast and precision when details matter.
-              </p>
+            <p className="text-[13px] text-ink-2 leading-relaxed">
+              Track income, expenses, investments, bills, and loans in one place. Kosha gives you direction when you need it fast and precision when details matter.
+            </p>
 
-              <div className="grid grid-cols-3 gap-2 mt-4">
-                <div className="mini-panel px-2.5 py-2 text-center">
-                  <p className="text-[16px] font-semibold text-ink leading-none">{releaseCount}</p>
-                  <p className="text-[10px] text-ink-3 mt-1">Releases</p>
-                </div>
-                <div className="mini-panel px-2.5 py-2 text-center">
-                  <p className="text-[16px] font-semibold text-ink leading-none">{shippedItems}+</p>
-                  <p className="text-[10px] text-ink-3 mt-1">Improvements</p>
-                </div>
-                <div className="mini-panel px-2.5 py-2 text-center bg-brand-container/40 border-brand/15">
-                  <p className="text-[16px] font-semibold text-brand leading-none">100%</p>
-                  <p className="text-[10px] text-brand/80 mt-1">Self-hosted</p>
-                </div>
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <div className="mini-panel px-2.5 py-2 text-center">
+                <p className="text-[16px] font-semibold text-ink leading-none">{releaseCount}</p>
+                <p className="text-[10px] text-ink-3 mt-1">Releases</p>
               </div>
+              <div className="mini-panel px-2.5 py-2 text-center">
+                <p className="text-[16px] font-semibold text-ink leading-none">{shippedItems}+</p>
+                <p className="text-[10px] text-ink-3 mt-1">Improvements</p>
+              </div>
+              <div className="mini-panel px-2.5 py-2 text-center bg-brand-container/40 border-brand/15">
+                <p className="text-[16px] font-semibold text-brand leading-none">100%</p>
+                <p className="text-[10px] text-brand/80 mt-1">Self-hosted</p>
+              </div>
+            </div>
 
-              <div className="mt-4">
-                <Button
-                  variant="primary"
-                  size="md"
-                  fullWidth
-                  onClick={() => navigate('/guide')}
-                  icon={<Sparkles size={14} />}
-                >
-                  Open product guide
-                </Button>
-              </div>
+            <div className="mt-4">
+              <Button
+                variant="primary"
+                size="md"
+                fullWidth
+                onClick={() => navigate('/guide')}
+                icon={<Sparkles size={14} />}
+              >
+                Open product guide
+              </Button>
+            </div>
           </div>
         </motion.div>
 
@@ -306,7 +328,7 @@ export default function About() {
                   variant="secondary"
                   size="xs"
                   onClick={copyUpi}
-                  className="shrink-0 !h-7 !px-2.5 !bg-kosha-surface !text-ink-2 !border-kosha-border"
+                  className="shrink-0"
                   icon={copied
                     ? <CheckIcon size={12} weight="bold" color={C.income} />
                     : <CopyIcon size={12} color={C.inkMuted} />}
@@ -315,17 +337,58 @@ export default function About() {
                 </Button>
               </div>
 
+              {/* Primary CTA — on Android this href fires the OS-level UPI app chooser.
+                  On iOS/desktop the click handler intercepts and shows the copy fallback. */}
               <Button
-                type="button"
+                as="a"
+                id="pay-to-support-btn"
+                href={SUPPORT_UPI_LINK}
+                onClick={handlePayClick}
                 variant="primary"
                 size="md"
                 fullWidth
-                onClick={() => setShowUpiSheet(true)}
-                icon={<HeartIcon size={14} weight="fill" />}
+                icon={<HeartIcon size={15} weight="fill" />}
                 className="mt-3"
               >
                 Pay to support
               </Button>
+
+              {/* Fallback panel — shown on iOS / desktop where upi:// is not supported */}
+              <AnimatePresence>
+                {payState === 'fallback' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                    animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="rounded-card border border-kosha-border bg-kosha-surface-2 p-3.5">
+                      <div className="flex items-start gap-2.5 mb-3">
+                        <DeviceMobileIcon size={15} weight="duotone" color={C.brand} className="shrink-0 mt-0.5" />
+                        <p className="text-[12px] text-ink-2 leading-relaxed">
+                          UPI deep links work best on <span className="font-semibold text-ink">Android</span>. On this device, open your UPI app manually and pay to:
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-kosha-surface border border-kosha-border">
+                        <p className="text-[13px] font-mono font-semibold text-ink truncate">{UPI_ID}</p>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="xs"
+                          onClick={copyUpi}
+                          className="shrink-0"
+                          icon={upiCopied
+                            ? <CheckIcon size={11} weight="bold" color={C.income} />
+                            : <CopyIcon size={11} color={C.inkMuted} />}
+                        >
+                          {upiCopied ? 'Copied!' : 'Copy'}
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </motion.div>
@@ -352,71 +415,19 @@ export default function About() {
           </div>
         </motion.div>
 
-          <motion.div variants={fadeUp}
-            className="flex items-center justify-center gap-1.5 pt-2 pb-2"
-          >
-            <p className="text-caption text-ink-3">
-              v{latestVersion} · Made with
-            </p>
-            <HeartIcon size={12} weight="fill" color={C.expense} />
-            <p className="text-caption text-ink-3">in India</p>
-          </motion.div>
+        <motion.div variants={fadeUp}
+          className="flex items-center justify-center gap-1.5 pt-2 pb-2"
+        >
+          <p className="text-caption text-ink-3">
+            v{latestVersion} · Made with
+          </p>
+          <HeartIcon size={12} weight="fill" color={C.expense} />
+          <p className="text-caption text-ink-3">in India</p>
+        </motion.div>
 
       </motion.div>
 
-      <BottomSheet
-        open={showUpiSheet}
-        onClose={() => setShowUpiSheet(false)}
-        title="Pay to support"
-        description="Choose your preferred UPI app"
-      >
-        <div className="grid grid-cols-1 gap-2 pb-8">
-          {[
-            { label: 'Google Pay', href: `gpay://upi/pay?${SUPPORT_UPI_QUERY}`, color: '#4285F4' },
-            { label: 'PhonePe', href: `phonepe://pay?${SUPPORT_UPI_QUERY}`, color: '#5f259f' },
-            { label: 'Paytm', href: `paytmmp://pay?${SUPPORT_UPI_QUERY}`, color: '#00baf2' },
-          ].map((app) => (
-            <a
-              key={app.label}
-              href={app.href}
-              className="flex items-center justify-between px-4 py-3 rounded-card border transition-all active:scale-[0.98] group"
-              style={{
-                borderColor: `color-mix(in srgb, ${app.color} 25%, transparent)`,
-                background: `color-mix(in srgb, ${app.color} 6%, var(--ds-surface))`,
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[12px] shadow-sm"
-                  style={{
-                    backgroundColor: app.color,
-                    color: '#fff',
-                  }}
-                >
-                  {app.label.charAt(0)}
-                </div>
-                <span className="font-semibold text-[14px] text-ink">
-                  {app.label}
-                </span>
-              </div>
-              <ArrowRight size={16} className="text-ink-4 group-hover:text-brand transition-colors" />
-            </a>
-          ))}
-          
-          <div className="mt-3 pt-4 border-t border-kosha-border">
-            <p className="text-[11px] text-ink-3 text-center mb-3 px-4">
-              Don't see your app? Use the selector below to choose any installed UPI app.
-            </p>
-            <a
-              href={SUPPORT_UPI_LINK}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-card bg-kosha-surface-2 text-ink-2 font-bold text-[13px] hover:bg-kosha-border active:scale-[0.98] transition-all border border-kosha-border"
-            >
-              Open UPI App Selector
-              <ExternalLink size={14} />
-            </a>
-          </div>
-        </div>
-      </BottomSheet>
+
     </PageBackHeaderPage>
   )
 }
