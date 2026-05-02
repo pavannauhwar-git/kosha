@@ -126,7 +126,7 @@ export default function Obligations() {
         {allEmpty && (
           <motion.div variants={fadeUp} className="card p-6 flex flex-col items-center text-center">
             <img
-              src="/illustrations/coffee_chill.png"
+              src="/illustrations/all_done.png"
               alt="No obligations"
               className="w-52 h-auto illustration mb-4"
             />

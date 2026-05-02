@@ -712,7 +712,7 @@ export default function Reconciliation() {
           ) : visibleItems.length === 0 ? (
             <EmptyState
               className="py-6"
-              imageUrl="/illustrations/settled_loans.png"
+              imageUrl="/illustrations/all_done.png"
               title={hasActiveFilters ? 'No items for selected filters' : 'Queue is clear'}
               description={
                 hasActiveFilters
