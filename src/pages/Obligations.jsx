@@ -81,6 +81,14 @@ export default function Obligations() {
         animate="show"
         className="page-stack"
       >
+        {!isLoading && (
+          <motion.div variants={fadeUp} className="px-0.5">
+            <p className="section-label mb-1">Your Journey</p>
+            <p className="text-[13px] text-ink-3 leading-relaxed">
+              Add a bill or loan to get started with your obligations journey.
+            </p>
+          </motion.div>
+        )}
 
         {/* ── Loading skeleton ────────────────────────────────────────── */}
         {isLoading && (

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ExternalLink, Home, ShieldCheck, Sparkles } from 'lucide-react'
+import { ExternalLink, Home, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react'
 import {
   HeartIcon, CodeIcon, CurrencyInrIcon, CopyIcon, CheckIcon,
   GithubLogoIcon, LockIcon, StarIcon, CaretDownIcon, CaretUpIcon,
@@ -370,44 +370,32 @@ export default function About() {
         title="Pay to support"
         description="Choose your preferred UPI app"
       >
-        <div className="flex flex-col gap-3 pb-4">
-          <Button
-            as="a"
-            href={`gpay://upi/pay?${SUPPORT_UPI_QUERY}`}
-            variant="secondary"
-            size="lg"
-            fullWidth
-          >
-            Google Pay
-          </Button>
-          <Button
-            as="a"
-            href={`phonepe://pay?${SUPPORT_UPI_QUERY}`}
-            variant="secondary"
-            size="lg"
-            fullWidth
-          >
-            PhonePe
-          </Button>
-          <Button
-            as="a"
-            href={`paytmmp://pay?${SUPPORT_UPI_QUERY}`}
-            variant="secondary"
-            size="lg"
-            fullWidth
-          >
-            Paytm
-          </Button>
-          <Divider />
-          <Button
-            as="a"
-            href={SUPPORT_UPI_LINK}
-            variant="ghost"
-            size="md"
-            fullWidth
-          >
-            Other UPI App
-          </Button>
+        <div className="grid grid-cols-1 gap-3 pb-6">
+          {[
+            { label: 'Google Pay', href: `gpay://upi/pay?${SUPPORT_UPI_QUERY}`, color: 'bg-[#4285F4]/10 text-[#4285F4] border-[#4285F4]/20' },
+            { label: 'PhonePe', href: `phonepe://pay?${SUPPORT_UPI_QUERY}`, color: 'bg-[#5f259f]/10 text-[#5f259f] border-[#5f259f]/20' },
+            { label: 'Paytm', href: `paytmmp://pay?${SUPPORT_UPI_QUERY}`, color: 'bg-[#00baf2]/10 text-[#00baf2] border-[#00baf2]/20' },
+          ].map((app) => (
+            <a
+              key={app.label}
+              href={app.href}
+              className={`flex items-center justify-between px-5 py-4 rounded-card border font-bold text-[15px] transition-all active:scale-[0.98] ${app.color}`}
+            >
+              {app.label}
+              <ArrowRight size={16} />
+            </a>
+          ))}
+          
+          <div className="mt-2">
+            <Divider />
+            <a
+              href={SUPPORT_UPI_LINK}
+              className="flex items-center justify-center gap-2 w-full py-4 text-ink-3 font-semibold text-[14px] hover:text-ink active:scale-[0.98] transition-all"
+            >
+              Other UPI App
+              <ExternalLink size={14} />
+            </a>
+          </div>
         </div>
       </BottomSheet>
     </PageBackHeaderPage>

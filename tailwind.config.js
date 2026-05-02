@@ -93,12 +93,12 @@ export default {
         'card-md':    'var(--ds-shadow-md)',
         'card-lg':    'var(--ds-shadow-lg)',
         'apple-card': 'var(--ds-shadow-xl)',
-        'fab':        '0 6px 20px rgba(0,127,255,0.30), 0 2px 8px rgba(0,127,255,0.15)',
+        'fab':        'var(--ds-shadow-fab)',
         'focus':      'var(--ds-focus-ring)',
         'urgent':     '0 2px 8px rgba(232,69,60,0.12)',
         'warn':       '0 2px 8px rgba(249,168,37,0.12)',
         'glass':      '0 8px 32px rgba(17,19,24,0.06), inset 0 0.5px 0 rgba(255,255,255,0.6)',
-        'hero-card':  '0 24px 64px rgba(0,127,255,0.18), 0 8px 24px rgba(17,19,24,0.12)',
+        'hero-card':  'var(--ds-shadow-hero)',
       },
 
       keyframes: {

@@ -16,8 +16,8 @@ function MenuRow({ icon, label, onClick, destructive = false, disabled = false }
       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
                   text-label font-medium transition-colors disabled:opacity-60
                   ${destructive
-                    ? 'text-expense-text hover:bg-expense-bg'
-                    : 'text-ink hover:bg-kosha-surface-2'}`}
+          ? 'text-expense-text hover:bg-expense-bg'
+          : 'text-ink hover:bg-kosha-surface-2'}`}
     >
       <span className="shrink-0 w-4 h-4 flex items-center justify-center">
         {icon}
@@ -91,14 +91,12 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
           aria-haspopup="menu"
           aria-expanded={open}
           aria-controls="profile-menu-panel"
-          className="w-9 h-9 rounded-full bg-kosha-surface-2
-                     shadow-card flex items-center justify-center overflow-hidden
-                     active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
-          style={{
-            border: isViewingPartner
-              ? '2px solid var(--ds-warning)'
-              : '1px solid var(--ds-border)',
-          }}
+          className={`w-9 h-9 rounded-full bg-kosha-surface-2
+                     flex items-center justify-center overflow-hidden
+                     active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/20
+                     border border-kosha-border shadow-sm hover:shadow-md transition-shadow
+                     ${isViewingPartner ? 'ring-2 ring-warning-text/60 ring-offset-1 ring-offset-kosha-bg' : ''}`}
         >
           {isViewingPartner && activePartner?.avatar_url ? (
             <img src={activePartner.avatar_url} alt={activePartner.display_name} className="w-full h-full object-cover" />
@@ -164,7 +162,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                   <div className="px-3 py-1.5 flex items-center justify-between">
                     <span className="text-[10px] font-bold text-ink-3 uppercase tracking-widest">Active Wallet</span>
                   </div>
-                  
+
                   <motion.div custom={0} variants={menuItemVariants} initial="hidden" animate="show">
                     <button
                       type="button"
@@ -177,7 +175,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                       <span className="flex-1 text-left truncate">My Wallet</span>
                     </button>
                   </motion.div>
-                  
+
                   {linkedProfiles.map((p, idx) => (
                     <motion.div key={p.id} custom={idx + 1} variants={menuItemVariants} initial="hidden" animate="show">
                       <div className="flex items-stretch pr-2">

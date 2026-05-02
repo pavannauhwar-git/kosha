@@ -2,7 +2,8 @@ import { useState, useCallback, useMemo } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Wallet } from '@phosphor-icons/react'
-import { EXPENSE_CATEGORIES } from '../../lib/categories'
+import { useUserCategories } from '../../hooks/useUserCategories'
+import { getCategoriesForType } from '../../lib/categories'
 import { upsertBudget, deleteBudget } from '../../hooks/useBudgets'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
@@ -10,6 +11,8 @@ import { fmt } from '../../lib/utils'
 export default function BudgetSheet({ open, onClose, budgets = [], byCategory = {} }) {
   const [saving, setSaving] = useState(null)
   const [error, setError] = useState('')
+
+  const { customCategories } = useUserCategories()
 
   const budgetMap = useMemo(() => {
     const map = new Map()
@@ -20,12 +23,13 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
   const [drafts, setDrafts] = useState({})
 
   const categories = useMemo(() => {
-    return EXPENSE_CATEGORIES.filter((c) => c.id !== 'other').map((cat) => {
+    const allExpenses = getCategoriesForType('expense')
+    return allExpenses.filter((c) => c.id !== 'other').map((cat) => {
       const existing = budgetMap.get(cat.id)
       const spent = Number(byCategory[cat.id] || 0)
       return { ...cat, budget: existing, spent }
     })
-  }, [budgetMap, byCategory])
+  }, [budgetMap, byCategory, customCategories])
 
   const getDraftValue = useCallback(
     (catId) => {

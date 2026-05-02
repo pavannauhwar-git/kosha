@@ -135,13 +135,13 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
 
   if (visibleRecent.length === 0) {
     return (
-      <div className="card p-4 border-0">
+      <div className="card p-4 !border-none">
         <div className="flex items-center justify-between mb-2.5">
           <p className="section-label">Latest transactions</p>
         </div>
 
         <EmptyState
-          className="py-6 !bg-transparent !shadow-none"
+          className="py-6 !bg-transparent !shadow-none !border-none"
           imageUrl="/illustrations/empty_transactions.png"
           title="No transactions yet"
           description="Your latest activity will appear here after you add your first transaction."
@@ -153,7 +153,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
   }
 
   return (
-    <div className="card p-4 border-0">
+    <div className="card p-4 !border-none">
       <div className="flex items-center justify-between mb-2.5">
         <p className="section-label">Latest transactions</p>
         <button

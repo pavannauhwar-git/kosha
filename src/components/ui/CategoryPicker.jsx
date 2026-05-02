@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { getCategoriesForType } from '../../lib/categories'
+import { useUserCategories } from '../../hooks/useUserCategories'
 import CategoryIcon from '../categories/CategoryIcon'
 
 /**
@@ -7,6 +8,9 @@ import CategoryIcon from '../categories/CategoryIcon'
  * @param {{ type: string, value: string, onChange: function, className?: string }} props
  */
 const CategoryPicker = memo(function CategoryPicker({ type, value, onChange, className = '' }) {
+  // We call this hook even if we don't use the 'customCategories' value directly,
+  // because this hook is what invalidates/re-renders when categories are added/updated.
+  useUserCategories()
   const categories = getCategoriesForType(type)
 
   return (

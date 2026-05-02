@@ -330,7 +330,11 @@ export default function Settings() {
               <div className="relative shrink-0">
                 <div
                   onClick={() => setShowViewPhoto(true)}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-kosha-surface flex items-center justify-center overflow-hidden ring-1 ring-ink/5 shadow-md cursor-pointer active:scale-95 transition-all duration-200"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-kosha-surface 
+                             flex items-center justify-center overflow-hidden 
+                             border-2 border-kosha-border shadow-xl cursor-pointer 
+                             active:scale-95 transition-all duration-300 
+                             hover:border-brand/30 hover:shadow-2xl"
                 >
                   {avatarUrl ? (
                     <img

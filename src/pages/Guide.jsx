@@ -239,10 +239,13 @@ export default function Guide() {
     () => navigationPool.findIndex((item) => item.id === selectedId),
     [navigationPool, selectedId]
   )
-  const viewedCount = viewed.size
+  const currentViewedCount = useMemo(() => {
+    return Array.from(viewed).filter(id => FEATURE_CARDS.some(card => card.id === id)).length
+  }, [viewed])
+
   const progressPct = useMemo(
-    () => Math.round((viewedCount / FEATURE_CARDS.length) * 100),
-    [viewedCount]
+    () => Math.round((currentViewedCount / FEATURE_CARDS.length) * 100),
+    [currentViewedCount]
   )
   const nextFeature = useMemo(
     () => FEATURE_CARDS.find((item) => !viewed.has(item.id)) || FEATURE_CARDS[0],
@@ -322,7 +325,7 @@ export default function Guide() {
                 <p className="text-[10px] text-ink-3 mt-1">Playbooks</p>
               </div>
               <div className="mini-panel px-2.5 py-2 text-center">
-                <p className="text-[16px] font-semibold text-ink leading-none">{viewedCount}</p>
+                <p className="text-[16px] font-semibold text-ink leading-none">{currentViewedCount}</p>
                 <p className="text-[10px] text-ink-3 mt-1">Viewed</p>
               </div>
               <div className="mini-panel px-2.5 py-2 text-center">
@@ -334,7 +337,7 @@ export default function Guide() {
             <div className="mb-3.5">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-[11px] font-semibold text-ink-2">Guide progress</p>
-                <p className="text-[11px] font-semibold text-brand">{viewedCount} / {FEATURE_CARDS.length}</p>
+                <p className="text-[11px] font-semibold text-brand">{currentViewedCount} / {FEATURE_CARDS.length}</p>
               </div>
               <div className="h-1.5 rounded-pill bg-kosha-border overflow-hidden">
                 <motion.div
@@ -408,7 +411,7 @@ export default function Guide() {
               {activeTab === 'all' ? 'All feature cards' : `${GUIDE_TABS.find((tab) => tab.id === activeTab)?.label || 'Filtered'} cards`}
             </p>
             <p className="text-[12px] font-semibold text-ink-2">
-              Viewed {viewedCount}/{FEATURE_CARDS.length}
+              Viewed {currentViewedCount}/{FEATURE_CARDS.length}
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 place-items-stretch">

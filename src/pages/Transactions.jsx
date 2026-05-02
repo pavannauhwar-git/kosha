@@ -15,6 +15,7 @@ import CreateCategorySheet from '../components/categories/CreateCategorySheet'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
+import { useUserCategories } from '../hooks/useUserCategories'
 import { CATEGORIES, PAYMENT_MODES, getCategoriesForType } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
@@ -275,9 +276,10 @@ export default function Transactions() {
 
   const startDate = forcedDateRange?.startDate || presetDateRange.startDate
   const endDate = forcedDateRange?.endDate || presetDateRange.endDate
+  const { customCategories } = useUserCategories()
   const filterCategories = useMemo(
     () => getCategoriesForType(typeFilter === 'all' ? undefined : typeFilter),
-    [typeFilter]
+    [typeFilter, customCategories]
   )
   const getCategoryLabel = useCallback((categoryId) => {
     if (!categoryId) return 'All categories'

@@ -75,6 +75,10 @@
   --ds-shadow-md: 0 2px 4px rgba(17, 19, 24, 0.05), 0 4px 16px rgba(17, 19, 24, 0.05);
   --ds-shadow-lg: 0 4px 8px rgba(17, 19, 24, 0.06), 0 12px 32px rgba(17, 19, 24, 0.08);
   --ds-shadow-xl: 0 8px 16px rgba(17, 19, 24, 0.08), 0 24px 48px rgba(17, 19, 24, 0.10);
+  
+  --ds-shadow-fab: 0 6px 20px rgba(0, 127, 255, 0.30), 0 2px 8px rgba(0, 127, 255, 0.15);
+  --ds-shadow-fab-hover: 0 8px 28px rgba(0, 127, 255, 0.40), 0 3px 10px rgba(0, 127, 255, 0.20);
+  --ds-shadow-hero: 0 24px 64px rgba(0, 127, 255, 0.18), 0 8px 24px rgba(17, 19, 24, 0.12);
 
   /* ── Motion ─────────────────────────── */
   --ds-motion-fast: 150ms;
@@ -117,12 +121,12 @@
   --ds-on-accent: #FFFDE0;
   --ds-accent-text: var(--ds-text-secondary);
 
-  --ds-surface: #111318;
-  --ds-surface-dim: #0D0E12;
-  --ds-surface-bright: #191C20;
-  --ds-surface-container: #1D2024;
-  --ds-surface-container-high: #272A2E;
-  --ds-surface-container-highest: #323538;
+  --ds-surface: #1A1D24;
+  --ds-surface-dim: #090B0F;
+  --ds-surface-bright: #242831;
+  --ds-surface-container: #2A2F39;
+  --ds-surface-container-high: #323844;
+  --ds-surface-container-highest: #3B4250;
 
   --ds-text: #E2E6EA;
   --ds-text-secondary: #BFC3C9;
@@ -162,6 +166,10 @@
   --ds-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.25);
   --ds-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.3);
   --ds-shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  --ds-shadow-fab: 0 6px 16px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.20);
+  --ds-shadow-fab-hover: 0 8px 24px rgba(0, 0, 0, 0.50), 0 3px 10px rgba(0, 0, 0, 0.30);
+  --ds-shadow-hero: 0 24px 64px rgba(0, 0, 0, 0.50), 0 8px 24px rgba(0, 0, 0, 0.30);
 
   --ds-shimmer-1: #1D2024;
   --ds-shimmer-2: #272A2E;
@@ -436,8 +444,8 @@ textarea:focus-visible,
 
   /* -- Cards — borderless, refined depth ──────────────────────────── */
   .card {
-    @apply bg-kosha-surface rounded-card shadow-card;
-    border: none;
+    @apply bg-kosha-surface rounded-card shadow-card border border-kosha-border;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .page-stack {
@@ -605,6 +613,10 @@ textarea:focus-visible,
     @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2;
     transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
     --tw-ring-color: rgba(17, 19, 24, 0.10);
+  }
+
+  .dark .chip-control {
+    --tw-ring-color: rgba(255, 255, 255, 0.10);
   }
 
   .chip-control-muted {
@@ -788,6 +800,10 @@ textarea:focus-visible,
     box-shadow: 0 0 0 3px rgba(0, 127, 255, 0.12), 0 4px 12px rgba(17, 19, 24, 0.06);
   }
 
+  .dark .input:focus {
+    box-shadow: 0 0 0 3px rgba(77, 166, 255, 0.25), 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
   /* -- Bottom sheet ────────────────────────────────────────────────── */
   .sheet-backdrop {
     @apply fixed inset-0 z-40;
@@ -836,6 +852,14 @@ textarea:focus-visible,
   .sheet-handle {
     @apply w-10 h-1 rounded-pill mx-auto mt-2 mb-4;
     background: rgba(17, 19, 24, 0.12);
+  }
+
+  .dark .sheet-handle {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .dark .sheet-panel {
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.50);
   }
 
   .page-header-offset {
@@ -1224,7 +1248,7 @@ textarea:focus-visible,
   .fab:hover,
   .fab-bills:hover,
   .fab-loans:hover {
-    box-shadow: 0 8px 28px rgba(0, 127, 255, 0.40), 0 3px 10px rgba(0, 127, 255, 0.20);
+    box-shadow: var(--ds-shadow-fab-hover);
     transform: translateY(-1px) translateZ(0);
     transition: transform 160ms cubic-bezier(0.2, 0, 0, 1),
                 box-shadow 160ms cubic-bezier(0.2, 0, 0, 1);
