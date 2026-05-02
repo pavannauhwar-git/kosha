@@ -33,6 +33,8 @@ const Transactions = lazy(() => import('./pages/Transactions'))
 const Monthly = lazy(() => import('./pages/Monthly'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const Obligations = lazy(() => import('./pages/Obligations'))
+const BillsPage = lazy(() => import('./pages/BillsPage'))
+const LoansPage = lazy(() => import('./pages/LoansPage'))
 const Splitwise = lazy(() => import('./pages/Splitwise'))
 const About = lazy(() => import('./pages/About'))
 const Guide = lazy(() => import('./pages/Guide'))
@@ -104,7 +106,7 @@ function useRouteIntentPrefetch() {
     if (!chunkPrefetched.current.has(path)) {
       chunkPrefetched.current.add(path)
       const preload = ROUTE_PRELOADERS[path]
-      if (preload) void preload().catch(() => {})
+      if (preload) void preload().catch(() => { })
     }
 
     if (!user?.id) return
@@ -163,7 +165,7 @@ function useRouteIntentPrefetch() {
           },
           staleTime: 30 * 1000,
         }),
-      ]).catch(() => {})
+      ]).catch(() => { })
       return
     }
 
@@ -173,17 +175,17 @@ function useRouteIntentPrefetch() {
 
       void Promise.all([
         queryClient.prefetchQuery({
-        queryKey: ['month', year, month, user.id],
-        queryFn: async () => {
-          const { data: rows, error } = await supabase.rpc('get_month_summary', {
-            p_user_ids: allUserIds,
-            p_year: year,
-            p_month: month,
-          })
-          if (error) throw error
-          return parseMonthSummaryRows(rows)
-        },
-        staleTime: 30 * 1000,
+          queryKey: ['month', year, month, user.id],
+          queryFn: async () => {
+            const { data: rows, error } = await supabase.rpc('get_month_summary', {
+              p_user_ids: allUserIds,
+              p_year: year,
+              p_month: month,
+            })
+            if (error) throw error
+            return parseMonthSummaryRows(rows)
+          },
+          staleTime: 30 * 1000,
         }),
         queryClient.prefetchQuery({
           queryKey: ['liabilitiesMonth', year, month, user.id],
@@ -201,7 +203,7 @@ function useRouteIntentPrefetch() {
           },
           staleTime: 30 * 1000,
         }),
-      ]).catch(() => {})
+      ]).catch(() => { })
       return
     }
 
@@ -258,10 +260,10 @@ function useRouteIntentPrefetch() {
           const monthsWithIncome = monthly.filter(m => m.income > 0)
           const avgSavings = monthsWithIncome.length
             ? Math.round(
-                monthsWithIncome.reduce(
-                  (sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0
-                ) / monthsWithIncome.length
-              )
+              monthsWithIncome.reduce(
+                (sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0
+              ) / monthsWithIncome.length
+            )
             : 0
 
           return {
@@ -278,7 +280,7 @@ function useRouteIntentPrefetch() {
           }
         },
         staleTime: 30 * 1000,
-      }).catch(() => {})
+      }).catch(() => { })
       return
     }
 
@@ -313,7 +315,7 @@ function useRouteIntentPrefetch() {
           },
           staleTime: 30 * 1000,
         }),
-      ]).catch(() => {})
+      ]).catch(() => { })
       return
     }
 
@@ -330,7 +332,7 @@ function useRouteIntentPrefetch() {
           return data || []
         },
         staleTime: 30 * 1000,
-      }).catch(() => {})
+      }).catch(() => { })
       return
     }
 
@@ -393,7 +395,7 @@ function useRouteIntentPrefetch() {
           },
           staleTime: 30 * 1000,
         }),
-      ]).catch(() => {})
+      ]).catch(() => { })
     }
   }, [user?.id])
 }
@@ -453,8 +455,8 @@ function BottomNav() {
               <div className="nav-icon-wrap">
                 {isActive && (
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
-                  initial={false}
-                  transition={{ type: 'spring', stiffness: 500, damping: 40, mass: 1 }} />
+                    initial={false}
+                    transition={{ type: 'spring', stiffness: 500, damping: 40, mass: 1 }} />
                 )}
                 <span className="nav-icon-layer" style={{ opacity: isActive ? 1 : 0, transition: 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)' }}>
                   <item.Icon size={21} weight="fill" color="var(--ds-primary)" />
@@ -464,12 +466,12 @@ function BottomNav() {
                 </span>
               </div>
               <span
-              className="nav-label"
-              style={{
-                color: isActive ? 'var(--ds-primary)' : 'var(--ds-text-tertiary)',
-                fontWeight: isActive ? 600 : 400,
-                opacity: isActive ? 1 : 0.75,
-                transition: 'color 180ms cubic-bezier(0.2, 0, 0, 1), opacity 180ms cubic-bezier(0.2, 0, 0, 1)',
+                className="nav-label"
+                style={{
+                  color: isActive ? 'var(--ds-primary)' : 'var(--ds-text-tertiary)',
+                  fontWeight: isActive ? 600 : 400,
+                  opacity: isActive ? 1 : 0.75,
+                  transition: 'color 180ms cubic-bezier(0.2, 0, 0, 1), opacity 180ms cubic-bezier(0.2, 0, 0, 1)',
                 }}
               >
                 {item.label}
@@ -634,7 +636,7 @@ function GlobalRealtimeSync() {
         if (policy.filterColumn) {
           config.filter = `${policy.filterColumn}=eq.${user.id}`
         }
-        
+
         nextChannel = nextChannel.on(
           'postgres_changes',
           config,
@@ -816,8 +818,8 @@ function AnimatedRoutes() {
         <Route path="/analytics" element={<SuspenseSkeleton pathname="/analytics"><AuthGuard><Analytics /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/obligations" element={<SuspenseSkeleton pathname="/obligations"><AuthGuard><Obligations /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/splitwise" element={<SuspenseSkeleton pathname="/splitwise"><AuthGuard><Splitwise /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/bills" element={<LegacyObligationRedirect tab="bills" />} />
-        <Route path="/loans" element={<LegacyObligationRedirect tab="loans" />} />
+        <Route path="/bills" element={<SuspenseSkeleton pathname="/bills"><AuthGuard><BillsPage /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/loans" element={<SuspenseSkeleton pathname="/loans"><AuthGuard><LoansPage /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/reconciliation" element={<SuspenseSkeleton pathname="/reconciliation"><AuthGuard><Reconciliation /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/guide" element={<SuspenseSkeleton pathname="/guide"><AuthGuard><Guide /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/settings" element={<SuspenseSkeleton pathname="/settings"><AuthGuard><Settings /></AuthGuard></SuspenseSkeleton>} />
@@ -919,7 +921,7 @@ function ShellStatusBanners() {
     onRegisteredSW(swUrl, registration) {
       if (registration) {
         setSwRegistration(registration)
-        
+
         // 1. Check for updates every hour in the background
         setInterval(() => {
           registration.update()

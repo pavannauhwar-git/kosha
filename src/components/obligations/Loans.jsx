@@ -467,13 +467,14 @@ export default function Loans({
   const totalCount = visibleGiven.length + visibleTaken.length + visibleSettled.length
 
   const activeExposureLoans = useMemo(() => {
-    return [...visibleGiven, ...visibleTaken]
+    const sourceList = tab === 'given' ? visibleGiven : visibleTaken
+    return sourceList
       .map((loan) => ({
         ...loan,
         remaining: Math.max(0, Number(loan.amount || 0) - Number(loan.amount_settled || 0)),
       }))
       .filter((loan) => loan.remaining > 0)
-  }, [visibleGiven, visibleTaken])
+  }, [visibleGiven, visibleTaken, tab])
 
   const exposureConcentrationSignal = useMemo(() => {
     if (!activeExposureLoans.length) return null
@@ -770,19 +771,22 @@ export default function Loans({
       <div className="space-y-3">
 
         {/* ── Summary card ──────────────────────────────────────────────── */}
-        {(visibleGiven.length > 0 || visibleTaken.length > 0) && tab !== 'settled' && (
+        {activeLoans.length > 0 && tab !== 'settled' && (
           <div className="card p-3.5 sm:p-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="mini-panel px-3 py-2.5">
-                <p className="text-caption text-ink-3 mb-1">You're owed</p>
-                <p className="text-base font-semibold amt-income tabular-nums leading-none">{fmt(totalGiven)}</p>
-                <p className="text-caption text-ink-3 mt-1">{visibleGiven.length} loan{visibleGiven.length !== 1 ? 's' : ''}</p>
-              </div>
-              <div className="mini-panel px-3 py-2.5">
-                <p className="text-caption text-ink-3 mb-1">You owe</p>
-                <p className="text-base font-semibold amt-expense tabular-nums leading-none">{fmt(totalTaken)}</p>
-                <p className="text-caption text-ink-3 mt-1">{visibleTaken.length} loan{visibleTaken.length !== 1 ? 's' : ''}</p>
-              </div>
+            <div className="grid grid-cols-1 gap-3">
+              {tab === 'given' ? (
+                <div className="mini-panel px-3 py-2.5">
+                  <p className="text-caption text-ink-3 mb-1">You're owed</p>
+                  <p className="text-base font-semibold amt-income tabular-nums leading-none">{fmt(totalGiven)}</p>
+                  <p className="text-caption text-ink-3 mt-1">{visibleGiven.length} loan{visibleGiven.length !== 1 ? 's' : ''}</p>
+                </div>
+              ) : (
+                <div className="mini-panel px-3 py-2.5">
+                  <p className="text-caption text-ink-3 mb-1">You owe</p>
+                  <p className="text-base font-semibold amt-expense tabular-nums leading-none">{fmt(totalTaken)}</p>
+                  <p className="text-caption text-ink-3 mt-1">{visibleTaken.length} loan{visibleTaken.length !== 1 ? 's' : ''}</p>
+                </div>
+              )}
             </div>
 
             <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
