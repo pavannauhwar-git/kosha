@@ -21,17 +21,17 @@ const DISABLED_CLASSES = 'opacity-45 pointer-events-none'
 
 /**
  * Button — primary interactive element
- * @param {{ variant?: 'primary'|'secondary'|'ghost'|'danger'|'success'|'tonal', size?: 'xs'|'sm'|'md'|'lg'|'xl', disabled?: boolean, loading?: boolean, icon?: React.ReactNode, iconRight?: React.ReactNode, fullWidth?: boolean, className?: string, children: React.ReactNode }} props
+ * @param {{ as?: any, variant?: 'primary'|'secondary'|'ghost'|'danger'|'success'|'tonal', size?: 'xs'|'sm'|'md'|'lg'|'xl', disabled?: boolean, loading?: boolean, icon?: React.ReactNode, iconRight?: React.ReactNode, fullWidth?: boolean, className?: string, children: React.ReactNode }} props
  */
 const Button = forwardRef(function Button(
-  { variant = 'primary', size = 'md', disabled, loading, icon, iconRight, fullWidth, className = '', children, ...rest },
+  { as: Component = 'button', variant = 'primary', size = 'md', disabled, loading, icon, iconRight, fullWidth, className = '', children, ...rest },
   ref
 ) {
   const isDisabled = disabled || loading
   return (
-    <button
+    <Component
       ref={ref}
-      disabled={isDisabled}
+      disabled={Component === 'button' ? isDisabled : undefined}
       className={[
         'inline-flex items-center justify-center font-semibold rounded-pill select-none cursor-pointer',
         'transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform',
@@ -50,7 +50,7 @@ const Button = forwardRef(function Button(
       ) : null}
       {children && <span>{children}</span>}
       {iconRight && <span className="shrink-0 flex items-center">{iconRight}</span>}
-    </button>
+    </Component>
   )
 })
 

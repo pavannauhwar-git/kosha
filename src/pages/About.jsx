@@ -94,13 +94,6 @@ export default function About() {
     }
   }
 
-  function openSupportUpi() {
-    const popup = window.open(SUPPORT_UPI_LINK, '_blank', 'noopener,noreferrer')
-    if (!popup) {
-      window.location.assign(SUPPORT_UPI_LINK)
-    }
-  }
-
   return (
     <PageBackHeaderPage
       title="About"
@@ -116,7 +109,7 @@ export default function About() {
         </button>
       )}
     >
-      <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-5 sm:gap-6">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
           <div className="px-4 py-5 bg-gradient-to-br from-brand-container/60 to-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">
@@ -321,11 +314,11 @@ export default function About() {
               </div>
 
               <Button
-                type="button"
+                as="a"
+                href={SUPPORT_UPI_LINK}
                 variant="secondary"
                 size="md"
                 fullWidth
-                onClick={openSupportUpi}
                 icon={<HeartIcon size={14} weight="fill" />}
                 className="mt-3 !bg-ink !text-white !border-ink hover:!brightness-110"
               >
