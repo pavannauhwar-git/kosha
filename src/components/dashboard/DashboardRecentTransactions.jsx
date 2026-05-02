@@ -140,7 +140,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
           <p className="section-label">Latest transactions</p>
         </div>
 
-        <div className="rounded-card border border-dashed border-kosha-border bg-kosha-surface-2">
+        <div className="rounded-card bg-kosha-surface-2">
           <EmptyState
             className="py-6"
             imageUrl="/illustrations/empty_transactions.png"
