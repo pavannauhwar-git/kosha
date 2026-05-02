@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus } from '@phosphor-icons/react'
+import { Plus } from '@phosphor-icons/react'
+import { Home } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Loans from '../components/obligations/Loans'
-import PageHeaderPage from '../components/layout/PageHeaderPage'
+import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import { createFadeUp, createStagger } from '../lib/animations'
 
 const fadeUp = createFadeUp(12, 0.4)
@@ -13,19 +14,21 @@ export default function LoansPage() {
   const navigate = useNavigate()
   const [showAdd, setShowAdd] = useState(false)
 
-  const backButton = (
-    <button
-      type="button"
-      onClick={() => navigate('/obligations')}
-      className="flex items-center justify-center w-8 h-8 rounded-xl hover:bg-kosha-surface-2 active:bg-kosha-surface-2 transition-colors"
-      aria-label="Back to Obligations"
-    >
-      <ArrowLeft size={20} weight="bold" color="var(--ds-ink)" />
-    </button>
-  )
-
   return (
-    <PageHeaderPage title="Loans" leftSlot={backButton}>
+    <PageBackHeaderPage
+      title="Loans"
+      onBack={() => navigate('/obligations')}
+      rightSlot={(
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="w-9 h-9 rounded-full flex items-center justify-center bg-kosha-surface-2 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-95 active:bg-kosha-border"
+          aria-label="Go to home"
+        >
+          <Home size={16} className="text-ink-2" />
+        </button>
+      )}
+    >
       <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack h-full">
         <motion.div variants={fadeUp} className="h-full">
           <Loans
@@ -46,6 +49,6 @@ export default function LoansPage() {
       >
         <Plus size={24} className="text-white" />
       </motion.button>
-    </PageHeaderPage>
+    </PageBackHeaderPage>
   )
 }

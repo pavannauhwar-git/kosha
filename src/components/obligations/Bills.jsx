@@ -782,7 +782,7 @@ export default function Bills({
             {tab === 'paid' && !paidLoading && visiblePaid.length === 0 && (
               <EmptyState
                 className="py-8"
-                imageUrl="/illustrations/settled_loans.png"
+                imageUrl="/illustrations/all_done.png"
                 title="No paid bills yet"
                 description="Bills you mark as paid will show up here for history and tracking."
                 actionLabel="View pending"
