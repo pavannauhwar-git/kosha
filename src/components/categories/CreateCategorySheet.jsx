@@ -203,7 +203,11 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
                     ${selected
                       ? ''
                       : 'bg-kosha-surface-2 border-transparent'}`}
-                  style={selected ? { backgroundColor: swatch.bg, borderColor: swatch.color } : undefined}
+                  style={selected ? {
+                    backgroundColor: swatch.bg,
+                    background: `color-mix(in srgb, ${swatch.color} 18%, var(--ds-surface))`,
+                    borderColor: swatch.color
+                  } : undefined}
                 >
                   <Icon size={20} weight="duotone" style={{ color: swatch.color }} />
                 </button>

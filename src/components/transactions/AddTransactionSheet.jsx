@@ -1,10 +1,3 @@
-/**
- * AddTransactionSheet.jsx
- *
- * Closes immediately after the DB write succeeds. The optimistic cache update
- * provides instant visual feedback; background invalidation reconciles later.
- */
-
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash } from '@phosphor-icons/react'
@@ -33,9 +26,9 @@ function todayStr() {
 }
 
 const TYPES = [
-  { id: 'expense',    label: 'Expense',    color: 'text-expense-text', bg: 'bg-expense-bg' },
-  { id: 'income',     label: 'Income',     color: 'text-income-text',  bg: 'bg-income-bg'  },
-  { id: 'investment', label: 'Investment', color: 'text-invest-text',  bg: 'bg-invest-bg'  },
+  { id: 'expense', label: 'Expense', color: 'text-expense-text', bg: 'bg-expense-bg' },
+  { id: 'income', label: 'Income', color: 'text-income-text', bg: 'bg-income-bg' },
+  { id: 'investment', label: 'Investment', color: 'text-invest-text', bg: 'bg-invest-bg' },
 ]
 
 const RECURRENCE_OPTIONS = ['monthly', 'quarterly', 'yearly']
@@ -217,75 +210,75 @@ function nextRecurringDate(dateStr, recurrence) {
 function buildInitialState(editTxn, duplicateTxn, initialType) {
   if (editTxn) {
     return {
-      type:       editTxn.type,
-      amount:     String(editTxn.amount),
-      desc:       editTxn.description,
-      category:   editTxn.category    || 'other',
-      vehicle:    editTxn.investment_vehicle || 'Other',
-      mode:       editTxn.payment_mode || 'upi',
-      date:       editTxn.date        || todayStr(),
+      type: editTxn.type,
+      amount: String(editTxn.amount),
+      desc: editTxn.description,
+      category: editTxn.category || 'other',
+      vehicle: editTxn.investment_vehicle || 'Other',
+      mode: editTxn.payment_mode || 'upi',
+      date: editTxn.date || todayStr(),
       isRecurring: !!editTxn.is_recurring,
       recurrence: editTxn.recurrence || 'monthly',
-      notes:      editTxn.notes       || '',
-      showNotes:  !!(editTxn.notes),
+      notes: editTxn.notes || '',
+      showNotes: !!(editTxn.notes),
       isSplitwise: false,
       splitGroupId: null,
       linkedSplitExpenseId: editTxn.linked_split_expense_id || null,
       isSplitwiseLinked: !!editTxn.linked_split_expense_id,
-      isSaving:   false,
-      error:      '',
+      isSaving: false,
+      error: '',
     }
   }
   if (duplicateTxn) {
     return {
-      type:       duplicateTxn.type,
-      amount:     String(duplicateTxn.amount),
-      desc:       duplicateTxn.description,
-      category:   duplicateTxn.category    || 'other',
-      vehicle:    duplicateTxn.investment_vehicle || 'Other',
-      mode:       duplicateTxn.payment_mode || 'upi',
-      date:       todayStr(),
+      type: duplicateTxn.type,
+      amount: String(duplicateTxn.amount),
+      desc: duplicateTxn.description,
+      category: duplicateTxn.category || 'other',
+      vehicle: duplicateTxn.investment_vehicle || 'Other',
+      mode: duplicateTxn.payment_mode || 'upi',
+      date: todayStr(),
       isRecurring: !!duplicateTxn.is_recurring,
       recurrence: duplicateTxn.recurrence || 'monthly',
-      notes:      duplicateTxn.notes       || '',
-      showNotes:  !!(duplicateTxn.notes),
+      notes: duplicateTxn.notes || '',
+      showNotes: !!(duplicateTxn.notes),
       isSplitwise: false,
       splitGroupId: null,
       linkedSplitExpenseId: null,
       isSplitwiseLinked: false,
-      isSaving:   false,
-      error:      '',
+      isSaving: false,
+      error: '',
     }
   }
   return {
-    type:      initialType || 'expense',
-    amount:    '',
-    desc:      '',
-    category:  initialType === 'income' ? 'salary' : 'other',
-    vehicle:   'Other',
-    mode:      'upi',
-    date:      todayStr(),
+    type: initialType || 'expense',
+    amount: '',
+    desc: '',
+    category: initialType === 'income' ? 'salary' : 'other',
+    vehicle: 'Other',
+    mode: 'upi',
+    date: todayStr(),
     isRecurring: false,
     recurrence: 'monthly',
-    notes:     '',
+    notes: '',
     showNotes: false,
     isSplitwise: false,
     splitGroupId: null,
     linkedSplitExpenseId: null,
     isSplitwiseLinked: false,
-    isSaving:  false,
-    error:     '',
+    isSaving: false,
+    error: '',
   }
 }
 
 function formReducer(state, action) {
   switch (action.type) {
-    case 'SET':         return { ...state, [action.key]: action.value }
+    case 'SET': return { ...state, [action.key]: action.value }
     // SAVING_START: disable all inputs immediately when user taps submit
     case 'SAVING_START': return { ...state, isSaving: true, error: '' }
     // SAVING_ERROR: re-enable inputs so user can retry
     case 'SAVING_ERROR': return { ...state, isSaving: false, error: action.value }
-    default:            return state
+    default: return state
   }
 }
 
@@ -465,7 +458,10 @@ function ModePicker({ selected, onSelect, onClose }) {
                   {Icon && (
                     <div
                       className="w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0"
-                      style={m?.bg ? { backgroundColor: m.bg } : undefined}
+                      style={m?.color ? {
+                        backgroundColor: m.bg,
+                        background: `color-mix(in srgb, ${m.color} 18%, var(--ds-surface))`
+                      } : undefined}
                     >
                       <Icon
                         size={16}
@@ -594,7 +590,10 @@ function VehiclePicker({
                   leading={Icon ? (
                     <div
                       className={`w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0 ${v.bg ? '' : 'bg-kosha-surface-2'}`}
-                      style={v.bg ? { backgroundColor: v.bg } : undefined}
+                      style={v.color ? {
+                        backgroundColor: v.bg,
+                        background: `color-mix(in srgb, ${v.color} 18%, var(--ds-surface))`
+                      } : undefined}
                     >
                       <Icon
                         size={16}
@@ -690,9 +689,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   }
 
 
-  const [showCatPicker,  setShowCatPicker]  = useReducer(v => !v, false)
+  const [showCatPicker, setShowCatPicker] = useReducer(v => !v, false)
   const [showModePicker, setShowModePicker] = useReducer(v => !v, false)
-  const [showVehPicker,  setShowVehPicker]  = useReducer(v => !v, false)
+  const [showVehPicker, setShowVehPicker] = useReducer(v => !v, false)
   const [showCreateCat, setShowCreateCat] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
 
@@ -741,15 +740,15 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     const payload = {
       type,
       description: desc.trim(),
-      amount:      +amount,
-      category:    type === 'investment' ? 'other' : normalizeCategoryForType(type, category),
+      amount: +amount,
+      category: type === 'investment' ? 'other' : normalizeCategoryForType(type, category),
       date,
       payment_mode: mode,
       is_repayment: editTxn ? !!editTxn.is_repayment : false,
       is_recurring: isRecurring,
       recurrence: isRecurring ? recurrence : null,
       next_run_date: isRecurring ? nextRecurringDate(date, recurrence) : null,
-      notes:       notes.trim() || null,
+      notes: notes.trim() || null,
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
     }
 
@@ -762,16 +761,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           .from('split_group_members')
           .select('id, is_self, linked_user_id')
           .eq('group_id', splitGroupId)
-        
+
         if (memErr) throw memErr
-        
+
         const { data: { user } } = await supabase.auth.getUser()
         const selfMember = members.find(m => m.is_self || m.linked_user_id === user?.id)
-        
+
         if (!selfMember) throw new Error('You must be a member of the group to add an expense.')
-        
+
         const splits = buildEqualSplits(members.map(m => m.id), +amount)
-        
+
         await addSplitExpenseMutation({
           groupId: splitGroupId,
           paidByMemberId: selfMember.id,
@@ -800,12 +799,12 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     }
   }
 
-  const activeType   = TYPES.find(t => t.id === type)
-  const selectedCat  = categoryOptions.find(c => c.id === category)
-                    || CATEGORIES.find(c => c.id === category)
+  const activeType = TYPES.find(t => t.id === type)
+  const selectedCat = categoryOptions.find(c => c.id === category)
+    || CATEGORIES.find(c => c.id === category)
   const selectedMode = PAYMENT_MODES.find(m => m.id === mode)
-  const selectedVeh  = investmentOptions.find(v => v.label === vehicle)
-                    || INVESTMENT_VEHICLES.find(v => v.label === vehicle)
+  const selectedVeh = investmentOptions.find(v => v.label === vehicle)
+    || INVESTMENT_VEHICLES.find(v => v.label === vehicle)
 
   return (
     <>
@@ -931,7 +930,10 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   return VehIcon ? (
                     <div
                       className={`w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0 ${selectedVeh?.bg ? '' : 'bg-kosha-surface-2'}`}
-                      style={selectedVeh?.bg ? { backgroundColor: selectedVeh.bg } : undefined}
+                      style={selectedVeh?.color ? {
+                        backgroundColor: selectedVeh.bg,
+                        background: `color-mix(in srgb, ${selectedVeh.color} 18%, var(--ds-surface))`
+                      } : undefined}
                     >
                       <VehIcon
                         size={15}
@@ -965,7 +967,10 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 return ModeIcon ? (
                   <div
                     className="w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0"
-                    style={selectedMode?.bg ? { backgroundColor: selectedMode.bg } : undefined}
+                    style={selectedMode?.color ? {
+                      backgroundColor: selectedMode.bg,
+                      background: `color-mix(in srgb, ${selectedMode.color} 18%, var(--ds-surface))`
+                    } : undefined}
                   >
                     <ModeIcon
                       size={15}
@@ -1115,7 +1120,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 )}
               </div>
             )}
-            
+
             {editTxn && linkedSplitExpenseId && (
               <div className="px-4 py-2 border-t border-kosha-border flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-brand-container flex items-center justify-center shrink-0">
@@ -1154,7 +1159,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       </motion.div>
 
       <AnimatePresence>
-        {showCatPicker  && (
+        {showCatPicker && (
           <CategoryPicker
             selected={category}
             onSelect={v => set('category', v)}
@@ -1174,8 +1179,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             onDeleteCustom={handleDeleteCustomCategory}
           />
         )}
-        {showModePicker && <ModePicker      selected={mode}     onSelect={v => set('mode', v)}     onClose={() => setShowModePicker()} />}
-        {showVehPicker  && (
+        {showModePicker && <ModePicker selected={mode} onSelect={v => set('mode', v)} onClose={() => setShowModePicker()} />}
+        {showVehPicker && (
           <VehiclePicker
             selected={vehicle}
             onSelect={v => set('vehicle', v)}
@@ -1236,9 +1241,9 @@ export default function AddTransactionSheet({
   editTxn = null, duplicateTxn = null, initialType = 'expense',
 }) {
   const sheetKey = open
-    ? editTxn      ? `edit-${editTxn.id}`
-    : duplicateTxn ? `dup-${duplicateTxn.id}`
-    : '__add__'
+    ? editTxn ? `edit-${editTxn.id}`
+      : duplicateTxn ? `dup-${duplicateTxn.id}`
+        : '__add__'
     : null
 
   return (

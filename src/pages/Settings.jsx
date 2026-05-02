@@ -417,85 +417,87 @@ export default function Settings() {
         </motion.div>
 
         {/* ── Security section ────────────────────────────────────── */}
-        <motion.div variants={fadeUp}>
-          <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
-            Security
-          </p>
-          <div className="card overflow-hidden p-0">
-            <SettingRow
-              icon={<ShieldAlert size={16} className="text-accent-text" />}
-              label="Change password"
-              sublabel="Update the password used for sign in"
-              onClick={() => {
-                setShowPasswordForm((prev) => !prev)
-                setPasswordError('')
-                setPasswordMsg('')
-              }}
-              rightElement={(
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${showPasswordForm ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
-                  {showPasswordForm ? 'OPEN' : 'CLOSED'}
-                </span>
-              )}
-            />
-
-            {showPasswordForm && (
-              <>
-                <Divider />
-                <form onSubmit={handlePasswordUpdate} className="px-4 py-3 space-y-3">
-                  <input
-                    type="email"
-                    name="username"
-                    autoComplete="username"
-                    value={user?.email || ''}
-                    readOnly
-                    tabIndex={-1}
-                    aria-hidden="true"
-                    className="sr-only"
-                  />
-
-                  <Input
-                    label="New password"
-                    name="new-password"
-                    type="password"
-                    placeholder="At least 8 characters"
-                    helperText="Min 8 characters"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    autoComplete="new-password"
-                    disabled={passwordSaving}
-                  />
-
-                  <Input
-                    label="Confirm new password"
-                    name="confirm-new-password"
-                    type="password"
-                    placeholder="Re-enter your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    autoComplete="new-password"
-                    disabled={passwordSaving}
-                  />
-
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    fullWidth
-                    loading={passwordSaving}
-                  >
-                    Update password
-                  </Button>
-                </form>
-              </>
-            )}
-          </div>
-
-          {(passwordError || passwordMsg) && (
-            <p className={`text-[12px] mt-2 px-1 ${passwordError ? 'text-expense-text' : 'text-ink-3'}`}>
-              {passwordError || passwordMsg}
+        {user?.app_metadata?.provider === 'email' && (
+          <motion.div variants={fadeUp}>
+            <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+              Security
             </p>
-          )}
-        </motion.div>
+            <div className="card overflow-hidden p-0">
+              <SettingRow
+                icon={<ShieldAlert size={16} className="text-accent-text" />}
+                label="Change password"
+                sublabel="Update the password used for sign in"
+                onClick={() => {
+                  setShowPasswordForm((prev) => !prev)
+                  setPasswordError('')
+                  setPasswordMsg('')
+                }}
+                rightElement={(
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${showPasswordForm ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                    {showPasswordForm ? 'OPEN' : 'CLOSED'}
+                  </span>
+                )}
+              />
+
+              {showPasswordForm && (
+                <>
+                  <Divider />
+                  <form onSubmit={handlePasswordUpdate} className="px-4 py-3 space-y-3">
+                    <input
+                      type="email"
+                      name="username"
+                      autoComplete="username"
+                      value={user?.email || ''}
+                      readOnly
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="sr-only"
+                    />
+
+                    <Input
+                      label="New password"
+                      name="new-password"
+                      type="password"
+                      placeholder="At least 8 characters"
+                      helperText="Min 8 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      autoComplete="new-password"
+                      disabled={passwordSaving}
+                    />
+
+                    <Input
+                      label="Confirm new password"
+                      name="confirm-new-password"
+                      type="password"
+                      placeholder="Re-enter your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
+                      disabled={passwordSaving}
+                    />
+
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="md"
+                      fullWidth
+                      loading={passwordSaving}
+                    >
+                      Update password
+                    </Button>
+                  </form>
+                </>
+              )}
+            </div>
+
+            {(passwordError || passwordMsg) && (
+              <p className={`text-[12px] mt-2 px-1 ${passwordError ? 'text-expense-text' : 'text-ink-3'}`}>
+                {passwordError || passwordMsg}
+              </p>
+            )}
+          </motion.div>
+        )}
 
         {/* ── Reminders section ───────────────────────────────────── */}
         <motion.div variants={fadeUp}>

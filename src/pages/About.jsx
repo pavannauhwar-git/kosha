@@ -370,29 +370,48 @@ export default function About() {
         title="Pay to support"
         description="Choose your preferred UPI app"
       >
-        <div className="grid grid-cols-1 gap-3 pb-6">
+        <div className="grid grid-cols-1 gap-2 pb-8">
           {[
-            { label: 'Google Pay', href: `gpay://upi/pay?${SUPPORT_UPI_QUERY}`, color: 'bg-[#4285F4]/10 text-[#4285F4] border-[#4285F4]/20' },
-            { label: 'PhonePe', href: `phonepe://pay?${SUPPORT_UPI_QUERY}`, color: 'bg-[#5f259f]/10 text-[#5f259f] border-[#5f259f]/20' },
-            { label: 'Paytm', href: `paytmmp://pay?${SUPPORT_UPI_QUERY}`, color: 'bg-[#00baf2]/10 text-[#00baf2] border-[#00baf2]/20' },
+            { label: 'Google Pay', href: `gpay://upi/pay?${SUPPORT_UPI_QUERY}`, color: '#4285F4' },
+            { label: 'PhonePe', href: `phonepe://pay?${SUPPORT_UPI_QUERY}`, color: '#5f259f' },
+            { label: 'Paytm', href: `paytmmp://pay?${SUPPORT_UPI_QUERY}`, color: '#00baf2' },
           ].map((app) => (
             <a
               key={app.label}
               href={app.href}
-              className={`flex items-center justify-between px-5 py-4 rounded-card border font-bold text-[15px] transition-all active:scale-[0.98] ${app.color}`}
+              className="flex items-center justify-between px-4 py-3 rounded-card border transition-all active:scale-[0.98] group"
+              style={{
+                borderColor: `color-mix(in srgb, ${app.color} 25%, transparent)`,
+                background: `color-mix(in srgb, ${app.color} 6%, var(--ds-surface))`,
+              }}
             >
-              {app.label}
-              <ArrowRight size={16} />
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[12px] shadow-sm"
+                  style={{
+                    backgroundColor: app.color,
+                    color: '#fff',
+                  }}
+                >
+                  {app.label.charAt(0)}
+                </div>
+                <span className="font-semibold text-[14px] text-ink">
+                  {app.label}
+                </span>
+              </div>
+              <ArrowRight size={16} className="text-ink-4 group-hover:text-brand transition-colors" />
             </a>
           ))}
           
-          <div className="mt-2">
-            <Divider />
+          <div className="mt-3 pt-4 border-t border-kosha-border">
+            <p className="text-[11px] text-ink-3 text-center mb-3 px-4">
+              Don't see your app? Use the selector below to choose any installed UPI app.
+            </p>
             <a
               href={SUPPORT_UPI_LINK}
-              className="flex items-center justify-center gap-2 w-full py-4 text-ink-3 font-semibold text-[14px] hover:text-ink active:scale-[0.98] transition-all"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-card bg-kosha-surface-2 text-ink-2 font-bold text-[13px] hover:bg-kosha-border active:scale-[0.98] transition-all border border-kosha-border"
             >
-              Other UPI App
+              Open UPI App Selector
               <ExternalLink size={14} />
             </a>
           </div>
