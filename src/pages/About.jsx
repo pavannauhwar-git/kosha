@@ -119,7 +119,7 @@ export default function About() {
                 <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center shadow-sm">
                   <KoshaLogo size={18} />
                 </div>
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-pill bg-white/50 border border-brand/20 text-brand">
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/20">
                   v{latestVersion}
                 </span>
               </div>
@@ -143,9 +143,9 @@ export default function About() {
                   <p className="text-[16px] font-semibold text-ink leading-none">{shippedItems}+</p>
                   <p className="text-[10px] text-ink-3 mt-1">Improvements</p>
                 </div>
-                <div className="mini-panel px-2.5 py-2 text-center bg-brand-container/50 border-brand/20">
+                <div className="mini-panel px-2.5 py-2 text-center bg-brand-container/40 border-brand/15">
                   <p className="text-[16px] font-semibold text-brand leading-none">100%</p>
-                  <p className="text-[10px] text-brand/70 mt-1">Self-hosted</p>
+                  <p className="text-[10px] text-brand/80 mt-1">Self-hosted</p>
                 </div>
               </div>
 
@@ -355,11 +355,11 @@ export default function About() {
           <motion.div variants={fadeUp}
             className="flex items-center justify-center gap-1.5 pt-2 pb-2"
           >
-            <p className="text-caption text-ink-4">
+            <p className="text-caption text-ink-3">
               v{latestVersion} · Made with
             </p>
             <HeartIcon size={12} weight="fill" color={C.expense} />
-            <p className="text-caption text-ink-4">in India</p>
+            <p className="text-caption text-ink-3">in India</p>
           </motion.div>
 
       </motion.div>
