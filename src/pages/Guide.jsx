@@ -29,8 +29,7 @@ const stagger = createStagger(0.05, 0.04)
 
 const START_HERE = [
   'Add 5-10 recent transactions so your Dashboard and Analytics have enough signal.',
-  'Set all upcoming bills once, then keep the paid status up to date in Bills.',
-  'Record any outstanding loans — given or taken — in Loans to track settlements.',
+  'Set upcoming bills and record active loans in Obligations to track dues and settlements.',
   'Use consistent categories for repeated spends to improve trend quality.',
   'Create a Splitwise group for your next trip or shared expense with friends.',
   'Run a quick Reconciliation pass weekly to keep summaries trustworthy.',
@@ -108,19 +107,19 @@ const FEATURE_CARDS = [
     ],
   },
   {
-    id: 'bills',
-    title: 'Bills',
-    subtitle: 'Never miss due dates',
+    id: 'obligations',
+    title: 'Obligations',
+    subtitle: 'Never miss due dates & track loans',
     icon: Receipt,
-    route: '/bills',
+    route: '/obligations',
     category: 'weekly',
     accent: 'bg-warning-bg text-warning-text',
-    summary: 'Track upcoming bills, mark paid, and run recurrence confidently.',
-    whenToUse: 'Use this at least once weekly and before month end.',
+    summary: 'Track upcoming bills, run recurrence, and manage personal loans in one place.',
+    whenToUse: 'Use this at least once weekly and before month end to track cashflow.',
     workflow: [
-      'Add each bill with due date and amount.',
-      'Set recurrence for subscriptions, rent, EMIs, and premiums.',
-      'Mark paid immediately after payment to keep due signals accurate.',
+      'Add recurring bills and subscriptions to track due dates.',
+      'Log money lent or borrowed to track partial repayments.',
+      'Mark items paid immediately to keep due signals and balances accurate.',
     ],
     doThis: [
       'Keep bill names precise and stable month to month.',
@@ -138,7 +137,7 @@ const FEATURE_CARDS = [
     icon: LineChart,
     route: '/analytics',
     category: 'monthly',
-    accent: 'bg-invest-bg text-invest-text',
+    accent: 'bg-brand-container text-brand',
     summary: 'Understand where money goes and how habits are changing.',
     whenToUse: 'Use this weekly for trend checks and monthly for decision-making.',
     workflow: [
@@ -162,7 +161,7 @@ const FEATURE_CARDS = [
     icon: Link2,
     route: '/reconciliation',
     category: 'weekly',
-    accent: 'bg-brand-bg text-ink',
+    accent: 'bg-brand-container text-ink',
     summary: 'Catch missing fields, duplicates, and bad statement matches quickly.',
     whenToUse: 'Use this weekly and before closing each month.',
     workflow: [
@@ -179,30 +178,7 @@ const FEATURE_CARDS = [
       'Avoid marking low-confidence links blindly.',
     ],
   },
-  {
-    id: 'loans',
-    title: 'Loans',
-    subtitle: 'Track money given and taken',
-    icon: Handshake,
-    route: '/loans',
-    category: 'weekly',
-    accent: 'bg-brand-container text-ink',
-    summary: 'Record personal loans in both directions, track partial settlements, and monitor interest.',
-    whenToUse: 'Use this whenever you lend money, borrow, or receive a partial repayment.',
-    workflow: [
-      'Add a loan with direction (given or taken), counterparty, amount, and optional interest rate.',
-      'Use Record Payment to log partial or full repayments against any active loan.',
-      'Check the net position card for your overall lending balance.',
-    ],
-    doThis: [
-      'Record payments immediately to keep progress bars accurate.',
-      'Set due dates so overdue loans are easy to spot.',
-    ],
-    avoidThis: [
-      'Do not leave settled loans active — they clutter the overview.',
-      'Avoid recording loan repayments as regular transactions without linking.',
-    ],
-  },
+
   {
     id: 'splitwise',
     title: 'Splitwise',
@@ -336,7 +312,7 @@ export default function Guide() {
                 Practical workflows, mistakes to avoid, and quick next actions for every page.
               </p>
             </div>
-            <img src="/illustrations/guide_hero.png" alt="Guide Hero" className="w-32 h-auto object-contain illustration shrink-0" />
+            <img src="/illustrations/guide_hero.png" alt="Guide Hero" className="w-40 h-auto object-contain illustration shrink-0" />
           </div>
 
           <div className="p-4">
@@ -435,7 +411,7 @@ export default function Guide() {
               Viewed {viewedCount}/{FEATURE_CARDS.length}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 place-items-stretch">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 place-items-stretch">
             {filteredCards.map((card) => {
               const Icon = card.icon
               const isViewed = viewed.has(card.id)
@@ -447,7 +423,7 @@ export default function Guide() {
                   whileTap={{ scale: 0.985 }}
                   transition={{ duration: 0.1 }}
                   onClick={() => openFeature(card.id)}
-                  className="card p-0 overflow-hidden text-left"
+                  className="card p-0 overflow-hidden text-left flex flex-col"
                 >
                   <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -467,11 +443,13 @@ export default function Guide() {
                     </div>
                   </div>
 
-                  <div className="p-4">
+                  <div className="p-4 flex flex-col flex-1">
                     <p className="text-[12px] text-ink-3 leading-relaxed">{card.summary}</p>
-                    <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-pill border border-kosha-border bg-kosha-surface text-ink-2 shadow-[0_1px_2px_rgba(17,19,24,0.08)]">
-                      Open details
-                      <ArrowRight size={12} />
+                    <div className="mt-auto pt-3 flex">
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-pill border border-kosha-border bg-kosha-surface text-ink-2 shadow-[0_1px_2px_rgba(17,19,24,0.08)]">
+                        Open details
+                        <ArrowRight size={12} />
+                      </div>
                     </div>
                   </div>
                 </motion.button>

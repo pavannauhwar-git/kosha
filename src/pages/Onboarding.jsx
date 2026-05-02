@@ -381,7 +381,10 @@ export default function Onboarding() {
         // authStore not ready — non-fatal, the DB call below still runs
       }
 
-      await updateProfile({ onboarded: true })
+      // If testing UI and already onboarded, skip the DB update to prevent 403 Forbidden
+      if (!profile?.onboarded) {
+        await updateProfile({ onboarded: true })
+      }
 
       const hasPendingSplitInvite = (() => {
         try {

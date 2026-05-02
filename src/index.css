@@ -894,13 +894,11 @@ textarea:focus-visible,
 
   /* -- Illustration — dark-mode adaptation ────────────────────────── */
   .illustration {
-    mix-blend-mode: multiply;
-    clip-path: inset(2px);
+    display: block;
   }
 
   .dark .illustration {
     filter: invert(1) hue-rotate(180deg);
-    mix-blend-mode: screen;
   }
 
   /* -- Close button ────────────────────────────────────────────────── */
