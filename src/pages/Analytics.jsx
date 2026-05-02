@@ -332,7 +332,9 @@ export default function Analytics() {
               )}
 
               {Number(data?.totalInvestment || 0) > 0 && (
-                <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
+                <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                  <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
+                </Suspense>
               )}
 
 

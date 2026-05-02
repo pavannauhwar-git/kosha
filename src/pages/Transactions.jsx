@@ -1083,7 +1083,12 @@ export default function Transactions() {
 
   return (
     <PageHeaderPage title="Transactions">
-      <div className="page-stack">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="page-stack"
+      >
         {isNewUser && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -1535,7 +1540,7 @@ export default function Transactions() {
               {(timelineActivitySignal || paymentModeSignal || expenseFrequencySignal) && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
                   {timelineActivitySignal && (
-                    <div className="mini-panel px-3 py-2.5">
+                     <div className="mini-panel px-3 py-2.5">
                       <p className="text-[10px] uppercase tracking-wide text-ink-3">Activity density</p>
                       <p className="text-[13px] font-semibold text-ink mt-1 tabular-nums">
                         {timelineActivitySignal.txnsPerActiveDay.toFixed(1)} txns / active day
@@ -1639,7 +1644,7 @@ export default function Transactions() {
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
 
       <AppToast
         message={toast}
