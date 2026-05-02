@@ -56,7 +56,7 @@ export default function Obligations() {
     for (let i = 0; i < given.length; i++) {
       totalGiven += (Number(given[i].amount) - Number(given[i].amount_settled))
     }
-    
+
     let totalTaken = 0
     for (let i = 0; i < taken.length; i++) {
       totalTaken += (Number(taken[i].amount) - Number(taken[i].amount_settled))

@@ -52,12 +52,12 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-[14px] font-medium leading-snug
+        <p className={`text-[13px] font-semibold leading-snug
                        ${destructive ? 'text-expense-text' : 'text-ink'}`}>
           {label}
         </p>
         {sublabel && (
-          <p className="text-[12px] text-ink-3 mt-0.5 truncate">{sublabel}</p>
+          <p className="text-[11px] text-ink-3 mt-0.5 truncate">{sublabel}</p>
         )}
       </div>
       {rightElement && (
@@ -330,7 +330,7 @@ export default function Settings() {
               <div className="relative shrink-0">
                 <div
                   onClick={() => setShowViewPhoto(true)}
-                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-kosha-surface flex items-center justify-center overflow-hidden ring-[3px] ring-brand/5 border border-brand/10 shadow-[0_2px_12px_rgba(var(--ds-primary-rgb),0.08)] cursor-pointer active:scale-95 transition-all duration-200"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-kosha-surface flex items-center justify-center overflow-hidden ring-1 ring-ink/5 shadow-md cursor-pointer active:scale-95 transition-all duration-200"
                 >
                   {avatarUrl ? (
                     <img
@@ -339,23 +339,23 @@ export default function Settings() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-[36px] sm:text-[44px] font-bold text-ink">{initial}</span>
+                    <span className="text-[28px] sm:text-[32px] font-bold text-ink">{initial}</span>
                   )}
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="absolute bottom-0 right-0 sm:bottom-0 sm:-right-1 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-kosha-surface text-ink-3 shadow-md border border-kosha-border flex items-center justify-center active:scale-90 transition-all duration-200 disabled:opacity-60 hover:text-brand hover:border-brand/30"
+                  className="absolute bottom-0 right-0 sm:bottom-0 sm:right-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-kosha-surface text-ink-3 shadow-md border border-kosha-border flex items-center justify-center active:scale-90 transition-all duration-200 disabled:opacity-60 hover:text-brand hover:border-brand/30"
                   aria-label="Change photo"
                 >
-                  <Camera size={16} />
+                  <Camera size={13} />
                 </button>
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="text-[20px] sm:text-[24px] font-bold text-ink tracking-tight truncate leading-tight">{displayName}</p>
-                <p className="text-[13px] sm:text-[14px] text-ink-3 truncate mt-0.5">{user?.email}</p>
-                <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-pill bg-brand-container text-brand border border-brand/15 uppercase tracking-wider shadow-sm">
+                <p className="text-[18px] sm:text-[22px] font-bold text-ink tracking-tight truncate leading-tight">{displayName}</p>
+                <p className="text-[12px] sm:text-[13px] text-ink-3 truncate mt-0.5">{user?.email}</p>
+                <div className="mt-2.5 inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15 uppercase tracking-wider shadow-sm">
                   <ShieldAlert size={12} /> Private account
                 </div>
               </div>

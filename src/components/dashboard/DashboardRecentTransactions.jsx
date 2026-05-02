@@ -140,16 +140,14 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
           <p className="section-label">Latest transactions</p>
         </div>
 
-        <div className="rounded-card bg-kosha-surface-2">
-          <EmptyState
-            className="py-6"
-            imageUrl="/illustrations/empty_transactions.png"
-            title="No transactions yet"
-            description="Your latest activity will appear here after you add your first transaction."
-            actionLabel="Go to transactions"
-            onAction={() => navigate('/transactions')}
-          />
-        </div>
+        <EmptyState
+          className="py-6 !bg-transparent !shadow-none"
+          imageUrl="/illustrations/empty_transactions.png"
+          title="No transactions yet"
+          description="Your latest activity will appear here after you add your first transaction."
+          actionLabel="Go to transactions"
+          onAction={() => navigate('/transactions')}
+        />
       </div>
     )
   }

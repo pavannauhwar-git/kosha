@@ -12,6 +12,7 @@ import { CHANGELOG } from '../lib/changelog'
 import Divider from '../components/common/Divider'
 import { createFadeUp, createStagger } from '../lib/animations'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
+import BottomSheet from '../components/ui/BottomSheet'
 import Button from '../components/ui/Button'
 import { copyToClipboard } from '../lib/share'
 
@@ -80,6 +81,7 @@ export default function About() {
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const [showAllVersions, setShowAllVersions] = useState(false)
+  const [showUpiSheet, setShowUpiSheet] = useState(false)
   const currentRelease = CHANGELOG[0]
   const olderReleases = CHANGELOG.slice(1)
   const latestVersion = currentRelease?.version || '1.0.0'
@@ -314,13 +316,13 @@ export default function About() {
               </div>
 
               <Button
-                as="a"
-                href={SUPPORT_UPI_LINK}
-                variant="secondary"
+                type="button"
+                variant="primary"
                 size="md"
                 fullWidth
+                onClick={() => setShowUpiSheet(true)}
                 icon={<HeartIcon size={14} weight="fill" />}
-                className="mt-3 !bg-ink !text-white !border-ink hover:!brightness-110"
+                className="mt-3"
               >
                 Pay to support
               </Button>
@@ -361,6 +363,53 @@ export default function About() {
           </motion.div>
 
       </motion.div>
+
+      <BottomSheet
+        open={showUpiSheet}
+        onClose={() => setShowUpiSheet(false)}
+        title="Pay to support"
+        description="Choose your preferred UPI app"
+      >
+        <div className="flex flex-col gap-3 pb-4">
+          <Button
+            as="a"
+            href={`gpay://upi/pay?${SUPPORT_UPI_QUERY}`}
+            variant="secondary"
+            size="lg"
+            fullWidth
+          >
+            Google Pay
+          </Button>
+          <Button
+            as="a"
+            href={`phonepe://pay?${SUPPORT_UPI_QUERY}`}
+            variant="secondary"
+            size="lg"
+            fullWidth
+          >
+            PhonePe
+          </Button>
+          <Button
+            as="a"
+            href={`paytmmp://pay?${SUPPORT_UPI_QUERY}`}
+            variant="secondary"
+            size="lg"
+            fullWidth
+          >
+            Paytm
+          </Button>
+          <Divider />
+          <Button
+            as="a"
+            href={SUPPORT_UPI_LINK}
+            variant="ghost"
+            size="md"
+            fullWidth
+          >
+            Other UPI App
+          </Button>
+        </div>
+      </BottomSheet>
     </PageBackHeaderPage>
   )
 }
