@@ -1079,7 +1079,9 @@ export default function Transactions() {
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
   }, [location.state, location.pathname, location.search, navigate])
 
-  const isNewUser = !txnLoading && total === 0 && !hasActiveFilters
+  const isInitialLoad = txnLoading && data.length === 0 && !hasActiveFilters
+  const isNewUser = !isInitialLoad && total === 0 && !hasActiveFilters
+  const showWorkspace = !isInitialLoad && !isNewUser
 
   return (
     <PageHeaderPage title="Transactions">
@@ -1089,6 +1091,17 @@ export default function Transactions() {
         transition={{ duration: 0.25 }}
         className="page-stack"
       >
+        {isInitialLoad && (
+          <SkeletonLayout
+            className="space-y-3"
+            sections={[
+              { type: 'block', height: 'h-[160px]' },
+              { type: 'block', height: 'h-[280px]' },
+              { type: 'block', height: 'h-[200px]' },
+            ]}
+          />
+        )}
+
         {isNewUser && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -1106,7 +1119,7 @@ export default function Transactions() {
           </motion.div>
         )}
 
-        {!isNewUser && (
+        {showWorkspace && (
           <div className="card p-0 border-0 overflow-hidden">
             <div className="px-4 pt-3.5 pb-3 border-b border-kosha-border bg-kosha-surface-2">
               <p className="text-[15px] font-semibold text-ink">Find and filter</p>
@@ -1400,25 +1413,19 @@ export default function Transactions() {
           </div>
         )}
 
-        <div>
-          <SectionHeader
-            title="Timeline"
-            subtitle={hasActiveFilters ? 'Filtered rows grouped by date.' : 'Latest activity grouped by date.'}
-            rightText={`${data.length} loaded`}
-          />
-        </div>
+        {!isInitialLoad && (
+          <div>
+            <SectionHeader
+              title="Timeline"
+              subtitle={hasActiveFilters ? 'Filtered rows grouped by date.' : 'Latest activity grouped by date.'}
+              rightText={`${data.length} loaded`}
+            />
+          </div>
+        )}
 
         {/* Transaction groups */}
-        {txnLoading && data.length === 0 ? (
-          <SkeletonLayout
-            className="space-y-3"
-            sections={[
-              { type: 'block', height: 'h-[280px]' },
-              { type: 'block', height: 'h-[200px]' },
-              { type: 'block', height: 'h-[160px]' },
-            ]}
-          />
-        ) : groups.length === 0 ? (
+        {!isInitialLoad && (
+          groups.length === 0 ? (
           <EmptyState
             imageUrl="/illustrations/empty_transactions.png"
             title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
@@ -1480,7 +1487,7 @@ export default function Transactions() {
             })}
             {timelineRowBottomPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowBottomPadding}px` }} />}
           </div>
-        )}
+        ))}
 
         {hasMore && (
           <Button
@@ -1494,7 +1501,7 @@ export default function Transactions() {
         )}
 
         {/* Transaction workspace (Summary) moved to bottom */}
-        {!isNewUser && (
+        {showWorkspace && (
           <div className="card p-0 border-0 overflow-hidden">
             <div className="px-4 pt-3.5 pb-3 bg-kosha-surface-2 border-b border-kosha-border">
               <div className="flex items-start justify-between gap-3">

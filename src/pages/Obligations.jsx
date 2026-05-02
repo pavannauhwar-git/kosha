@@ -82,6 +82,46 @@ export default function Obligations() {
         className="page-stack"
       >
 
+        {/* ── Loading skeleton ────────────────────────────────────────── */}
+        {isLoading && (
+          <motion.div variants={fadeUp} className="flex flex-col gap-3">
+            <div className="card p-4 overflow-hidden">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex-1 pt-1 space-y-2">
+                  <div className="h-2.5 w-16 rounded-full shimmer opacity-60" />
+                  <div className="h-5 w-32 rounded-full shimmer opacity-75" />
+                </div>
+                <div className="w-20 h-20 rounded-card shimmer opacity-50 shrink-0" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="mini-panel px-2.5 py-2 space-y-1.5">
+                    <div className="h-2 w-10 rounded-full shimmer opacity-55" />
+                    <div className="h-3.5 w-6 rounded-full shimmer opacity-70" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card p-4 overflow-hidden">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex-1 pt-1 space-y-2">
+                  <div className="h-2.5 w-12 rounded-full shimmer opacity-60" />
+                  <div className="h-5 w-28 rounded-full shimmer opacity-75" />
+                </div>
+                <div className="w-20 h-20 rounded-card shimmer opacity-50 shrink-0" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[1, 2].map(i => (
+                  <div key={i} className="mini-panel px-2.5 py-2 space-y-1.5">
+                    <div className="h-2 w-14 rounded-full shimmer opacity-55" />
+                    <div className="h-3.5 w-16 rounded-full shimmer opacity-70" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* ── All-empty hero state ───────────────────────────────────── */}
         {allEmpty && (
           <motion.div variants={fadeUp} className="card p-6 flex flex-col items-center text-center">
@@ -118,9 +158,7 @@ export default function Obligations() {
               <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0 pt-1">
                   <p className="section-label mb-1.5">Bills &amp; Dues</p>
-                  {billsLoading ? (
-                    <div className="h-5 w-28 rounded-card shimmer opacity-70" />
-                  ) : pending.length > 0 ? (
+                  {pending.length > 0 ? (
                     <p className={`text-[20px] font-bold tabular-nums leading-tight tracking-tight ${billsUrgent ? 'text-expense-text' : 'text-ink'}`}>
                       {fmt(totalPending)}
                     </p>
@@ -136,7 +174,7 @@ export default function Obligations() {
               </div>
 
               {/* Stats — only when bills exist */}
-              {!billsLoading && pending.length > 0 && (
+              {pending.length > 0 && (
                 <div className="px-4 pb-4">
                   <div className="grid grid-cols-3 gap-2 mb-2.5">
                     <div className="mini-panel px-2.5 py-2">
@@ -180,7 +218,7 @@ export default function Obligations() {
               )}
 
               {/* Empty hint */}
-              {!billsLoading && pending.length === 0 && (
+              {pending.length === 0 && (
                 <div className="px-4 pb-4">
                   <p className="text-caption text-ink-3">
                     Add bills to track due dates and cashflow.
@@ -190,11 +228,9 @@ export default function Obligations() {
 
               {/* Footer row */}
               <div className="px-4 py-2.5 border-t border-kosha-border flex items-center justify-between bg-kosha-surface-2">
-                {!billsLoading && (
-                  <span className="text-caption font-semibold text-ink-3">
-                    {pending.length} bill{pending.length !== 1 ? 's' : ''} pending
-                  </span>
-                )}
+                <span className="text-caption font-semibold text-ink-3">
+                  {pending.length} bill{pending.length !== 1 ? 's' : ''} pending
+                </span>
                 <CaretRight size={15} className="text-ink-4 ml-auto" />
               </div>
             </button>
@@ -214,9 +250,7 @@ export default function Obligations() {
               <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0 pt-1">
                   <p className="section-label mb-1.5">Loans</p>
-                  {loansLoading ? (
-                    <div className="h-5 w-24 rounded-card shimmer opacity-70" />
-                  ) : (given.length + taken.length) > 0 ? (
+                  {(given.length + taken.length) > 0 ? (
                     totalGiven >= totalTaken ? (
                       <p className="text-[20px] font-bold amt-income tabular-nums leading-tight tracking-tight">
                         {fmt(totalGiven)}
@@ -240,7 +274,7 @@ export default function Obligations() {
               </div>
 
               {/* Mini-panel grid */}
-              {!loansLoading && (given.length > 0 || taken.length > 0) && (
+              {(given.length > 0 || taken.length > 0) && (
                 <div className="px-4 pb-4">
                   <div className="grid grid-cols-2 gap-2">
                     <div className="mini-panel px-2.5 py-2">
@@ -258,7 +292,7 @@ export default function Obligations() {
               )}
 
               {/* Empty hint */}
-              {!loansLoading && given.length === 0 && taken.length === 0 && (
+              {given.length === 0 && taken.length === 0 && (
                 <div className="px-4 pb-4">
                   <p className="text-caption text-ink-3">
                     Log money lent or borrowed to track repayments.
@@ -268,11 +302,9 @@ export default function Obligations() {
 
               {/* Footer row */}
               <div className="px-4 py-2.5 border-t border-kosha-border flex items-center justify-between bg-kosha-surface-2">
-                {!loansLoading && (
-                  <span className="text-caption font-semibold text-ink-3">
-                    {given.length + taken.length} active loan{(given.length + taken.length) !== 1 ? 's' : ''}
-                  </span>
-                )}
+                <span className="text-caption font-semibold text-ink-3">
+                  {given.length + taken.length} active loan{(given.length + taken.length) !== 1 ? 's' : ''}
+                </span>
                 <CaretRight size={15} className="text-ink-4 ml-auto" />
               </div>
             </button>
