@@ -299,9 +299,9 @@ export default function Guide() {
           type="button"
           onClick={() => navigate('/')}
           aria-label="Go to dashboard"
-          className="w-9 h-9 rounded-pill flex items-center justify-center bg-brand-container border border-brand/20 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
+          className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-95 active:bg-kosha-border"
         >
-          <Home size={16} className="text-brand" />
+          <Home size={16} className="text-ink-2" />
         </button>
       )}
       contentClassName="px-4 pt-5 pb-24 max-w-[560px] mx-auto"
