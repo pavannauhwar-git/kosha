@@ -71,8 +71,12 @@ export class GlobalErrorBoundary extends React.Component {
         .join('\n\n')
         .slice(0, 1800)
 
+      const isNetworkError = err?.message?.toLowerCase().includes('failed to fetch') || err?.message?.toLowerCase().includes('network error')
+      const imageUrl = isNetworkError ? '/illustrations/no_internet.png' : undefined
+
       return (
         <KoshaErrorPage
+          imageUrl={imageUrl}
           type="runtime"
           title="Kosha hit an unexpected snag"
           description="Something broke while rendering this screen. Your financial data remains safe."
