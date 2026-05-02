@@ -76,7 +76,6 @@ export default function Obligations() {
   return (
     <PageHeaderPage title="Obligations">
       <motion.div
-        layout
         variants={stagger}
         initial="hidden"
         animate="show"
@@ -107,7 +106,7 @@ export default function Obligations() {
         )}
 
         {/* ── Bills card ─────────────────────────────────────────────── */}
-        {!allEmpty && (
+        {!isLoading && !allEmpty && (
           <motion.div variants={fadeUp}>
             <button
               type="button"
@@ -132,7 +131,7 @@ export default function Obligations() {
                 <img
                   src="/illustrations/coffee_chill.png"
                   alt="Bills"
-                  className="w-20 h-auto illustration shrink-0 -mt-1"
+                  className="w-20 h-20 object-contain illustration shrink-0 -mt-1"
                 />
               </div>
 
@@ -203,7 +202,7 @@ export default function Obligations() {
         )}
 
         {/* ── Loans card ─────────────────────────────────────────────── */}
-        {!allEmpty && (
+        {!isLoading && !allEmpty && (
           <motion.div variants={fadeUp}>
             <button
               type="button"
@@ -236,7 +235,7 @@ export default function Obligations() {
                 <img
                   src="/illustrations/empty_loans.png"
                   alt="Loans"
-                  className="w-20 h-auto illustration shrink-0 -mt-1"
+                  className="w-20 h-20 object-contain illustration shrink-0 -mt-1"
                 />
               </div>
 
