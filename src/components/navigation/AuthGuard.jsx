@@ -10,28 +10,21 @@ function S({ className }) {
 // ── Per-route skeletons ───────────────────────────────────────────────────
 function DashboardSkeleton() {
   return (
-    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-3.5">
-      {/* Hero balance card */}
-      <S className="h-44 w-full" />
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
-        <S className="h-20" />
-        <S className="h-20" />
-        <S className="h-20" />
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
+      {/* Header */}
+      <S className="h-8 w-32 mt-2 mb-6" />
+      {/* Greeting */}
+      <div className="space-y-2">
+        <S className="h-3 w-24" />
+        <S className="h-6 w-56" />
       </div>
-      {/* Section label */}
-      <S className="h-4 w-32" />
-      {/* Transaction rows */}
-      {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <S className="h-10 w-10 rounded-full flex-shrink-0" />
-          <div className="flex-1 space-y-2">
-            <S className="h-3.5 w-3/5" />
-            <S className="h-3 w-2/5" />
-          </div>
-          <S className="h-4 w-16" />
-        </div>
-      ))}
+      {/* Hero balance card */}
+      <S className="h-[210px] w-full rounded-3xl" />
+      {/* Spendable cards */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <S className="h-24 rounded-2xl" />
+        <S className="h-24 rounded-2xl" />
+      </div>
     </div>
   )
 }
@@ -39,75 +32,85 @@ function DashboardSkeleton() {
 function TransactionsSkeleton() {
   return (
     <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
+      {/* Header */}
+      <S className="h-8 w-32 mt-2 mb-6" />
       {/* Search bar */}
-      <S className="h-11 w-full" />
+      <S className="h-11 w-full rounded-xl" />
       {/* Filter chips */}
       <div className="flex gap-2">
-        <S className="h-8 w-20" />
-        <S className="h-8 w-20" />
-        <S className="h-8 w-20" />
+        <S className="h-8 w-20 rounded-pill" />
+        <S className="h-8 w-20 rounded-pill" />
+        <S className="h-8 w-20 rounded-pill" />
       </div>
       {/* Transaction rows */}
-      {[...Array(8)].map((_, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <S className="h-10 w-10 rounded-full flex-shrink-0" />
-          <div className="flex-1 space-y-2">
-            <S className="h-3.5 w-3/5" />
-            <S className="h-3 w-2/5" />
+      <div className="space-y-4 pt-2">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <S className="h-10 w-10 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <S className="h-3.5 w-3/5" />
+              <S className="h-3 w-2/5" />
+            </div>
+            <S className="h-4 w-16" />
           </div>
-          <S className="h-4 w-16" />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
 
 function MonthlySkeleton() {
   return (
-    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-3.5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
+      {/* Header */}
+      <S className="h-8 w-32 mt-2 mb-6" />
       {/* Month navigator */}
       <div className="flex items-center justify-between">
-        <S className="h-8 w-8" />
+        <S className="h-8 w-8 rounded-full" />
         <S className="h-5 w-28" />
-        <S className="h-8 w-8" />
+        <S className="h-8 w-8 rounded-full" />
       </div>
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3">
-        <S className="h-24" />
-        <S className="h-24" />
+        <S className="h-24 rounded-2xl" />
+        <S className="h-24 rounded-2xl" />
       </div>
-      {/* Section label */}
-      <S className="h-4 w-32" />
       {/* Category rows */}
-      {[...Array(6)].map((_, i) => (
-        <div key={i} className="space-y-2">
-          <div className="flex justify-between">
-            <S className="h-3.5 w-24" />
-            <S className="h-3.5 w-16" />
+      <S className="h-4 w-32 mt-4" />
+      <div className="space-y-5 mt-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="space-y-2">
+            <div className="flex justify-between">
+              <S className="h-3.5 w-24" />
+              <S className="h-3.5 w-16" />
+            </div>
+            <S className="h-2 w-full rounded-full" />
           </div>
-          <S className="h-2 w-full rounded-full" />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
 
 function AnalyticsSkeleton() {
   return (
-    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-3.5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between mt-2 mb-6">
+        <S className="h-8 w-32" />
+        <S className="h-8 w-8 rounded-full" />
+      </div>
       {/* Year selector */}
-      <S className="h-10 w-28 mx-auto" />
+      <S className="h-10 w-28 mx-auto rounded-pill" />
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-3">
-        <S className="h-24" />
-        <S className="h-24" />
-        <S className="h-24" />
-        <S className="h-24" />
+        <S className="h-20 rounded-2xl" />
+        <S className="h-20 rounded-2xl" />
+        <S className="h-20 rounded-2xl" />
+        <S className="h-20 rounded-2xl" />
       </div>
       {/* Bar chart area */}
-      <S className="h-48 w-full" />
-      {/* Donut area */}
-      <S className="h-40 w-full" />
+      <S className="h-48 w-full rounded-2xl" />
     </div>
   )
 }
@@ -115,42 +118,105 @@ function AnalyticsSkeleton() {
 function BillsSkeleton() {
   return (
     <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
-      {/* Section label */}
-      <S className="h-4 w-28" />
+      {/* Header */}
+      <S className="h-8 w-32 mt-2 mb-6" />
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <S className="h-10 w-1/2 rounded-lg" />
+        <S className="h-10 w-1/2 rounded-lg" />
+      </div>
+      {/* Summary Box */}
+      <S className="h-24 w-full rounded-2xl" />
       {/* Bill cards */}
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <div className="flex-1 space-y-2">
-            <S className="h-4 w-2/3" />
-            <S className="h-3 w-1/3" />
+      <S className="h-4 w-28 mt-4" />
+      <div className="space-y-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <S className="h-10 w-10 rounded-xl" />
+            <div className="flex-1 space-y-2">
+              <S className="h-4 w-2/3" />
+              <S className="h-3 w-1/3" />
+            </div>
+            <S className="h-8 w-16 rounded-full" />
           </div>
-          <S className="h-8 w-20" />
-        </div>
-      ))}
-      {/* Section label */}
-      <S className="h-4 w-24 mt-4" />
-      {/* Paid bill rows */}
-      {[...Array(3)].map((_, i) => (
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SimplePageSkeleton() {
+  return (
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-6">
+      {/* Header */}
+      <S className="h-8 w-40 mt-2 mb-6" />
+      <div className="space-y-4">
+        <S className="h-20 w-full rounded-2xl" />
+        <S className="h-20 w-full rounded-2xl" />
+        <S className="h-20 w-full rounded-2xl" />
+      </div>
+    </div>
+  )
+}
+
+// ── Route → skeleton map ──────────────────────────────────────────────────
+function SplitwiseSkeleton() {
+  return (
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
+      {/* Balances Hero */}
+      <S className="h-32 w-full" />
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <S className="h-10 w-1/2" />
+        <S className="h-10 w-1/2" />
+      </div>
+      {/* List items */}
+      {[...Array(5)].map((_, i) => (
         <div key={i} className="flex items-center gap-3">
+          <S className="h-12 w-12 rounded-xl flex-shrink-0" />
           <div className="flex-1 space-y-2">
             <S className="h-4 w-1/2" />
-            <S className="h-3 w-1/4" />
+            <S className="h-3 w-1/3" />
           </div>
-          <S className="h-4 w-12" />
+          <S className="h-5 w-16" />
         </div>
       ))}
     </div>
   )
 }
 
-// ── Route → skeleton map ──────────────────────────────────────────────────
+function SettingsSkeleton() {
+  return (
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-6">
+      {/* Profile Header */}
+      <div className="flex items-center gap-4">
+        <S className="h-16 w-16 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <S className="h-5 w-32" />
+          <S className="h-3 w-24" />
+        </div>
+      </div>
+      {/* Settings groups */}
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="space-y-3">
+          <S className="h-4 w-20" />
+          <S className="h-16 w-full" />
+          <S className="h-16 w-full" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function RouteSkeleton({ pathname }) {
+  if (pathname === '/' || pathname === '')  return <DashboardSkeleton />
   if (pathname.startsWith('/transactions')) return <TransactionsSkeleton />
   if (pathname.startsWith('/monthly'))      return <MonthlySkeleton />
   if (pathname.startsWith('/analytics'))    return <AnalyticsSkeleton />
-  if (pathname.startsWith('/bills'))        return <BillsSkeleton />
-  if (pathname.startsWith('/loans'))        return <BillsSkeleton />
-  return <DashboardSkeleton />
+  if (pathname.startsWith('/bills') || pathname.startsWith('/loans') || pathname.startsWith('/obligations')) return <BillsSkeleton />
+  if (pathname.startsWith('/splitwise'))    return <SplitwiseSkeleton />
+  if (pathname.startsWith('/settings'))     return <SettingsSkeleton />
+  return <SimplePageSkeleton />
 }
 
 // ── AuthGuard ─────────────────────────────────────────────────────────────
