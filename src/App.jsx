@@ -42,6 +42,7 @@ const Reconciliation = lazy(() => import('./pages/Reconciliation'))
 const ReportBug = lazy(() => import('./pages/ReportBug'))
 const Settings = lazy(() => import('./pages/Settings'))
 
+// All lazy route chunk loaders — used for both hover prefetch and eager preload
 const ROUTE_PRELOADERS = {
   '/': () => import('./pages/Dashboard'),
   '/transactions': () => import('./pages/Transactions'),
@@ -50,6 +51,11 @@ const ROUTE_PRELOADERS = {
   '/obligations': () => import('./pages/Obligations'),
   '/splitwise': () => import('./pages/Splitwise'),
   '/reconciliation': () => import('./pages/Reconciliation'),
+  '/settings': () => import('./pages/Settings'),
+  '/guide': () => import('./pages/Guide'),
+  '/about': () => import('./pages/About'),
+  '/report-bug': () => import('./pages/ReportBug'),
+  '/onboarding': () => import('./pages/Onboarding'),
 }
 
 function PageFallback({ pathname }) {
@@ -840,6 +846,44 @@ function CustomCategoryLoader() {
   return null
 }
 
+/**
+ * EagerChunkPreloader — fires all lazy route imports during browser idle time.
+ * By the time the user taps any nav item, the JS chunk is already in the
+ * module cache → zero Suspense skeleton flash on navigation.
+ */
+function EagerChunkPreloader() {
+  useEffect(() => {
+    const loaders = Object.values(ROUTE_PRELOADERS)
+    let handle = null
+
+    const run = () => {
+      // Fire all imports sequentially with tiny gaps so we don't monopolise
+      // the network on initial load. Each import() is a no-op if the chunk
+      // is already cached.
+      loaders.forEach((load, i) => {
+        setTimeout(() => void load().catch(() => {}), i * 80)
+      })
+    }
+
+    if (typeof requestIdleCallback !== 'undefined') {
+      handle = requestIdleCallback(run, { timeout: 4000 })
+    } else {
+      // Safari fallback
+      handle = setTimeout(run, 1500)
+    }
+
+    return () => {
+      if (typeof requestIdleCallback !== 'undefined' && handle) {
+        cancelIdleCallback(handle)
+      } else {
+        clearTimeout(handle)
+      }
+    }
+  }, [])
+
+  return null
+}
+
 /** Shows a non-intrusive retry bar when active queries are in error state */
 function QueryErrorRecovery() {
   const qc = useQueryClient()
@@ -1160,6 +1204,7 @@ function AppShell() {
     <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
       <RuntimeRouteTracker />
       <CustomCategoryLoader />
+      <EagerChunkPreloader />
       <main id="main-content" role="main" className="flex-1">
         <ContentWrapper>
           <AnimatedRoutes />

@@ -140,8 +140,12 @@ export default function InviteLanding() {
 
                 {/* ── Content ──────────────────────────────────────────────── */}
                 <div className="text-center">
-                  <div className="mx-auto w-16 h-16 rounded-2xl bg-brand-container flex items-center justify-center mb-4">
-                    {details.icon}
+                  <div className="flex justify-center mb-6">
+                    <img 
+                      src="/illustrations/invite_hero.png" 
+                      alt="Invitation illustration" 
+                      className="w-48 h-48 object-contain drop-shadow-xl"
+                    />
                   </div>
                   
                   <p className="text-caption text-brand font-bold uppercase tracking-widest mb-1">

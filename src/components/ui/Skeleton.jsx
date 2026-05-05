@@ -7,7 +7,7 @@ const VARIANT_MAP = {
 }
 
 /**
- * Skeleton — loading placeholder with pulse animation
+ * Skeleton — loading placeholder with premium directional shimmer
  * @param {{ variant?: 'text'|'circle'|'rect'|'card'|'row', width?: string, height?: string, count?: number, className?: string }} props
  */
 export default function Skeleton({ variant = 'rect', width, height, count = 1, className = '' }) {
@@ -26,8 +26,16 @@ export default function Skeleton({ variant = 'rect', width, height, count = 1, c
             className,
           ].join(' ')}
           style={{
-            background: `linear-gradient(90deg, var(--ds-shimmer-1) 0%, var(--ds-shimmer-2) 40%, var(--ds-shimmer-1) 80%)`,
-            backgroundSize: '800px 100%',
+            background: `linear-gradient(
+              90deg,
+              var(--ds-shimmer-1) 0%,
+              var(--ds-shimmer-2) 35%,
+              var(--ds-shimmer-highlight, var(--ds-shimmer-2)) 50%,
+              var(--ds-shimmer-2) 65%,
+              var(--ds-shimmer-1) 100%
+            )`,
+            backgroundSize: '1200px 100%',
+            animation: 'skeleton-sweep 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
           }}
           role="status"
           aria-label="Loading"

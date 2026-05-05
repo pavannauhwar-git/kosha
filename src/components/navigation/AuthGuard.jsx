@@ -3,27 +3,52 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 // ── Shimmer block primitives ──────────────────────────────────────────────
-function S({ className }) {
-  return <div className={`shimmer rounded-xl ${className}`} />
+function S({ className, delay = 0 }) {
+  return (
+    <div
+      className={`shimmer rounded-xl ${className}`}
+      style={delay ? { animationDelay: `${delay}ms` } : undefined}
+    />
+  )
 }
 
 // ── Per-route skeletons ───────────────────────────────────────────────────
 function DashboardSkeleton() {
   return (
-    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
-      {/* Header */}
-      <S className="h-8 w-32 mt-2 mb-6" />
-      {/* Greeting */}
-      <div className="space-y-2">
-        <S className="h-3 w-24" />
-        <S className="h-6 w-56" />
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-4">
+      {/* Header row */}
+      <div className="flex items-center justify-between mt-2 mb-5">
+        <div className="space-y-1.5">
+          <S className="h-3 w-20" />
+          <S className="h-6 w-44" delay={60} />
+        </div>
+        <S className="h-9 w-9 rounded-full flex-shrink-0" delay={80} />
       </div>
+
       {/* Hero balance card */}
-      <S className="h-[210px] w-full rounded-3xl" />
-      {/* Spendable cards */}
+      <S className="h-[220px] w-full rounded-3xl" delay={20} />
+
+      {/* Stat chips row */}
       <div className="grid grid-cols-2 gap-2.5">
-        <S className="h-24 rounded-2xl" />
-        <S className="h-24 rounded-2xl" />
+        <S className="h-24 rounded-2xl" delay={40} />
+        <S className="h-24 rounded-2xl" delay={80} />
+      </div>
+
+      {/* Section label */}
+      <S className="h-3 w-28 mt-5" delay={100} />
+
+      {/* Recent transactions */}
+      <div className="space-y-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-3">
+            <S className="h-10 w-10 rounded-full flex-shrink-0" delay={i * 30} />
+            <div className="flex-1 space-y-2">
+              <S className="h-3.5 w-3/5" delay={i * 30 + 20} />
+              <S className="h-3 w-2/5" delay={i * 30 + 40} />
+            </div>
+            <S className="h-4 w-14" delay={i * 30 + 10} />
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -31,27 +56,30 @@ function DashboardSkeleton() {
 
 function TransactionsSkeleton() {
   return (
-    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-4">
       {/* Header */}
-      <S className="h-8 w-32 mt-2 mb-6" />
+      <div className="flex items-center justify-between mt-2 mb-5">
+        <S className="h-7 w-32" />
+        <S className="h-8 w-8 rounded-full" delay={60} />
+      </div>
       {/* Search bar */}
       <S className="h-11 w-full rounded-xl" />
       {/* Filter chips */}
       <div className="flex gap-2">
-        <S className="h-8 w-20 rounded-pill" />
-        <S className="h-8 w-20 rounded-pill" />
-        <S className="h-8 w-20 rounded-pill" />
+        <S className="h-8 w-20 rounded-pill" delay={20} />
+        <S className="h-8 w-24 rounded-pill" delay={40} />
+        <S className="h-8 w-18 rounded-pill" delay={60} />
       </div>
       {/* Transaction rows */}
-      <div className="space-y-4 pt-2">
+      <div className="space-y-4 pt-1">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="flex items-center gap-3">
-            <S className="h-10 w-10 rounded-full flex-shrink-0" />
+            <S className="h-10 w-10 rounded-full flex-shrink-0" delay={i * 25} />
             <div className="flex-1 space-y-2">
-              <S className="h-3.5 w-3/5" />
-              <S className="h-3 w-2/5" />
+              <S className="h-3.5 w-3/5" delay={i * 25 + 15} />
+              <S className="h-3 w-2/5" delay={i * 25 + 30} />
             </div>
-            <S className="h-4 w-16" />
+            <S className="h-4 w-16" delay={i * 25 + 10} />
           </div>
         ))}
       </div>
@@ -61,30 +89,32 @@ function TransactionsSkeleton() {
 
 function MonthlySkeleton() {
   return (
-    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
-      {/* Header */}
-      <S className="h-8 w-32 mt-2 mb-6" />
-      {/* Month navigator */}
-      <div className="flex items-center justify-between">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-4">
+      {/* Month stepper */}
+      <div className="flex items-center justify-between mb-2">
         <S className="h-8 w-8 rounded-full" />
-        <S className="h-5 w-28" />
+        <S className="h-5 w-32" />
         <S className="h-8 w-8 rounded-full" />
       </div>
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <S className="h-24 rounded-2xl" />
-        <S className="h-24 rounded-2xl" />
-      </div>
-      {/* Category rows */}
-      <S className="h-4 w-32 mt-4" />
-      <div className="space-y-5 mt-4">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="space-y-2">
+
+      {/* MonthHeroCard */}
+      <S className="h-[200px] w-full rounded-3xl" delay={20} />
+
+      {/* Month-over-month snapshot */}
+      <S className="h-28 w-full rounded-2xl" delay={40} />
+
+      {/* Month close summary */}
+      <S className="h-36 w-full rounded-2xl" delay={60} />
+
+      {/* Category breakdown rows */}
+      <div className="space-y-3 pt-1">
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} className="space-y-1.5">
             <div className="flex justify-between">
-              <S className="h-3.5 w-24" />
-              <S className="h-3.5 w-16" />
+              <S className="h-3.5 w-24" delay={i * 25} />
+              <S className="h-3.5 w-14" delay={i * 25 + 15} />
             </div>
-            <S className="h-2 w-full rounded-full" />
+            <S className="h-1.5 w-full rounded-full" delay={i * 25 + 10} />
           </div>
         ))}
       </div>
@@ -94,23 +124,26 @@ function MonthlySkeleton() {
 
 function AnalyticsSkeleton() {
   return (
-    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mt-2 mb-6">
-        <S className="h-8 w-32" />
-        <S className="h-8 w-8 rounded-full" />
+      <div className="flex items-center justify-between mt-2 mb-5">
+        <S className="h-7 w-32" />
+        <S className="h-8 w-8 rounded-full" delay={60} />
       </div>
       {/* Year selector */}
       <S className="h-10 w-28 mx-auto rounded-pill" />
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-3">
-        <S className="h-20 rounded-2xl" />
-        <S className="h-20 rounded-2xl" />
-        <S className="h-20 rounded-2xl" />
-        <S className="h-20 rounded-2xl" />
+        {[0,1,2,3].map(i => <S key={i} className="h-20 rounded-2xl" delay={i * 30} />)}
       </div>
       {/* Bar chart area */}
-      <S className="h-48 w-full rounded-2xl" />
+      <S className="h-52 w-full rounded-2xl" delay={60} />
+      {/* Bottom legend */}
+      <div className="flex gap-4 justify-center">
+        <S className="h-3 w-16 rounded-pill" delay={80} />
+        <S className="h-3 w-16 rounded-pill" delay={100} />
+        <S className="h-3 w-16 rounded-pill" delay={120} />
+      </div>
     </div>
   )
 }

@@ -98,8 +98,9 @@
   --ds-shell-max: 600px;
 
   /* ── Shimmer ────────────────────────── */
-  --ds-shimmer-1: #F4F6F8;
-  --ds-shimmer-2: #E8ECF0;
+  --ds-shimmer-1: #EEF1F5;
+  --ds-shimmer-2: #D8DDE6;
+  --ds-shimmer-highlight: #FAFBFD;
 
   /* ── Focus ring ─────────────────────── */
   --ds-focus-ring: 0 0 0 3px rgba(0, 127, 255, 0.20);
@@ -171,8 +172,9 @@
   --ds-shadow-fab-hover: 0 8px 24px rgba(0, 0, 0, 0.50), 0 3px 10px rgba(0, 0, 0, 0.30);
   --ds-shadow-hero: 0 24px 64px rgba(0, 0, 0, 0.50), 0 8px 24px rgba(0, 0, 0, 0.30);
 
-  --ds-shimmer-1: #1D2024;
-  --ds-shimmer-2: #272A2E;
+  --ds-shimmer-1: #181B20;
+  --ds-shimmer-2: #252A32;
+  --ds-shimmer-highlight: #2D333D;
 
   --ds-focus-ring: 0 0 0 3px rgba(77, 166, 255, 0.25);
 }
@@ -486,10 +488,17 @@ textarea:focus-visible,
   /* -- Skeleton loader ──────────────────────────────────────────────── */
   .skeleton {
     @apply rounded-card;
-    background: linear-gradient(90deg, var(--ds-shimmer-1) 0%, var(--ds-shimmer-2) 40%, var(--ds-shimmer-1) 80%);
-    background-size: 800px 100%;
-    animation: skeleton-sweep 1.8s ease-in-out infinite;
-    will-change: background-position, opacity;
+    background: linear-gradient(
+      90deg,
+      var(--ds-shimmer-1) 0%,
+      var(--ds-shimmer-2) 35%,
+      var(--ds-shimmer-highlight) 50%,
+      var(--ds-shimmer-2) 65%,
+      var(--ds-shimmer-1) 100%
+    );
+    background-size: 1200px 100%;
+    animation: skeleton-sweep 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: background-position;
   }
 
   /* -- Frosted header glass ───────────────────────────────────────── */
@@ -806,14 +815,14 @@ textarea:focus-visible,
 
   /* -- Bottom sheet ────────────────────────────────────────────────── */
   .sheet-backdrop {
-    @apply fixed inset-0 z-40;
+    @apply fixed inset-0 bg-black/40 z-[90];
     background: rgba(17, 19, 24, 0.40);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
 
   .sheet-panel {
-    @apply fixed bottom-0 bg-kosha-surface z-50;
+    @apply fixed bottom-0 bg-kosha-surface z-[100];
     left: 0;
     right: 0;
     width: min(100%, var(--app-shell-max));
@@ -873,6 +882,12 @@ textarea:focus-visible,
     margin-right: auto;
     padding-top: var(--header-total-offset);
     padding-bottom: calc(var(--nav-height) + 1rem);
+    animation: skeleton-shell-fade 0.28s cubic-bezier(0.05, 0.7, 0.1, 1) both;
+  }
+
+  @keyframes skeleton-shell-fade {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
@@ -885,6 +900,8 @@ textarea:focus-visible,
     max-width: var(--app-shell-max);
     margin-left: auto;
     margin-right: auto;
+    /* Subtle fade-in on every page mount — no key trick needed */
+    animation: page-enter 0.2s cubic-bezier(0.05, 0.7, 0.1, 1) both;
   }
 
   @media (min-width: 600px) {
@@ -1000,6 +1017,25 @@ textarea:focus-visible,
     padding: 1.1rem;
   }
 
+  /* -- Page enter transition ───────────────────────────────────────── */
+  /* Applied to the AnimatedRoutes key-wrapper so every page navigation */
+  /* feels like a native lift — fast enough not to feel laggy (180ms)  */
+  .page-enter {
+    animation: page-enter 0.18s cubic-bezier(0.05, 0.7, 0.1, 1) both;
+    will-change: opacity, transform;
+  }
+
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* -- Progress bars ───────────────────────────────────────────────── */
   .bar-dark-track {
     @apply h-1.5 rounded-pill w-full relative overflow-hidden;
@@ -1068,13 +1104,8 @@ textarea:focus-visible,
 
 /* -- Skeleton sweep — premium directional shimmer ────────────────────── */
 @keyframes skeleton-sweep {
-  0% {
-    background-position: -800px 0;
-  }
-
-  100% {
-    background-position: 800px 0;
-  }
+  0%   { background-position: -1200px 0; }
+  100% { background-position: 1200px 0; }
 }
 
 /* -- Shimmer — perfectly synchronized native sweep ─────────────────────── */
@@ -1089,10 +1120,17 @@ textarea:focus-visible,
 }
 
 .shimmer {
-  background: linear-gradient(90deg, var(--c-shimmer-1) 0%, var(--c-shimmer-2) 40%, var(--c-shimmer-1) 80%);
+  background: linear-gradient(
+    90deg,
+    var(--c-shimmer-1) 0%,
+    var(--c-shimmer-2) 35%,
+    var(--ds-shimmer-highlight) 50%,
+    var(--c-shimmer-2) 65%,
+    var(--c-shimmer-1) 100%
+  );
   background-attachment: fixed;
-  background-size: 100vw 100%;
-  animation: shimmer 1.8s linear infinite;
+  background-size: 200vw 100%;
+  animation: shimmer 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @media (max-width: 390px) {

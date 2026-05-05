@@ -70,7 +70,7 @@ export default function KoshaErrorPage({
               <KoshaLogo size={36} />
               <div>
                 <p className="text-[15px] font-bold text-ink tracking-tight">Kosha</p>
-                <p className="text-caption font-medium text-ink-3">Recovery mode</p>
+                <p className="text-caption font-medium text-ink-3">{isNotFound ? 'Page not found' : 'Recovery mode'}</p>
               </div>
             </div>
             <span className={`rounded-pill border px-2.5 py-1 text-[11px] font-semibold ${toneClass}`}>
@@ -79,12 +79,25 @@ export default function KoshaErrorPage({
           </div>
 
           {imageUrl ? (
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left mb-2">
-              <img src={imageUrl} alt="Error illustration" className="w-24 h-24 object-contain illustration shrink-0" />
-              <div className="flex-1 min-w-0 pt-2">
-                <h1 ref={headingRef} tabIndex="-1" className="text-[20px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
-                <p className="mt-1.5 text-label leading-relaxed text-ink-2">{description}</p>
-              </div>
+            <div className="flex flex-col items-center text-center mb-6">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
+                className="mb-6"
+              >
+                <img
+                  src={imageUrl}
+                  alt="Error illustration"
+                  className="w-48 h-48 object-contain illustration drop-shadow-xl"
+                />
+              </motion.div>
+              <h1 ref={headingRef} tabIndex="-1" className="text-[24px] font-bold leading-tight tracking-tight text-ink">
+                {title}
+              </h1>
+              <p className="mt-2 text-[15px] leading-relaxed text-ink-2 max-w-[340px]">
+                {description}
+              </p>
             </div>
           ) : (
             <div className="flex items-start gap-3">
@@ -98,7 +111,8 @@ export default function KoshaErrorPage({
             </div>
           )}
 
-          <p className="mt-3 text-caption leading-relaxed text-ink-3">{helperText}</p>
+          {!isNotFound && <p className="mt-3 text-caption leading-relaxed text-ink-3">{helperText}</p>}
+          {isNotFound && helperText && <p className="mt-1 text-caption leading-relaxed text-ink-3">{helperText}</p>}
 
           <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button

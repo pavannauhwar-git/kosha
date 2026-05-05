@@ -72,7 +72,7 @@ export class GlobalErrorBoundary extends React.Component {
         .slice(0, 1800)
 
       const isNetworkError = err?.message?.toLowerCase().includes('failed to fetch') || err?.message?.toLowerCase().includes('network error')
-      const imageUrl = isNetworkError ? '/illustrations/no_internet.png' : undefined
+      const imageUrl = isNetworkError ? '/illustrations/no_internet.png' : '/illustrations/error_hero.png'
 
       return (
         <KoshaErrorPage

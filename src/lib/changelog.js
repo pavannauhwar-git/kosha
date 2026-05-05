@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.3.4',
+    date: 'May 2026',
+    items: [
+      'Overhauled the illustration system with premium hero assets for Error, 404, and Invitation pages',
+      'Implemented Eager Chunk Preloading to eliminate visual lag and "Suspense flashes" during navigation',
+      'Resolved Splitwise sheet visibility issues by optimizing z-index layering and bottom padding for mobile navigation',
+      'Unified error page layouts with a centered hero design for a more premium and cohesive recovery experience',
+      'Refined the invitation landing experience by integrating the invite_hero illustration directly into the invitation card',
+    ],
+  },
+  {
     version: '1.3.3',
     date: 'May 2026',
     items: [
