@@ -82,30 +82,23 @@ async function main() {
   let friendMemberId = null
 
   try {
-    const { data: groupRow, error: groupError } = await client
-      .from('split_groups')
-      .insert({
-        name: `${prefix}-group`,
-        user_id: user.id,
-      })
-      .select('id')
-      .single()
+    const { data: groupRow, error: groupError } = await client.rpc('split_create_group', {
+      p_name: `${prefix}-group`,
+      p_self_display_name: `${prefix}-self`
+    })
 
     if (groupError) throw new Error(`Create split group failed: ${groupError.message}`)
     groupId = groupRow.id
 
+    // The RPC creates the self member automatically, so we need to fetch its ID
     const { data: selfMember, error: selfMemberError } = await client
       .from('split_group_members')
-      .insert({
-        group_id: groupId,
-        display_name: `${prefix}-self`,
-        is_self: true,
-        user_id: user.id,
-      })
       .select('id')
+      .eq('group_id', groupId)
+      .eq('user_id', user.id)
       .single()
 
-    if (selfMemberError) throw new Error(`Create self member failed: ${selfMemberError.message}`)
+    if (selfMemberError) throw new Error(`Fetch self member failed: ${selfMemberError.message}`)
     selfMemberId = selfMember.id
 
     const { data: friendMember, error: friendMemberError } = await client

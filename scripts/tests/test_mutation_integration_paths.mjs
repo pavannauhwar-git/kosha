@@ -38,7 +38,7 @@ const rules = [
     mustExclude: ['addTransaction('],
   },
   {
-    rel: 'src/pages/Bills.jsx',
+    rel: 'src/components/obligations/Bills.jsx',
     mustInclude: ['addLiabilityMutation', 'markLiabilityPaidMutation', 'deleteLiabilityMutation'],
     mustExclude: ['addLiability(', 'markPaid(', 'deleteLiability(', 'invalidateLiabilityCache(', 'invalidateTransactionCache('],
   },

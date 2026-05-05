@@ -17,7 +17,7 @@ const targets = [
   'src/components/transactions/AddTransactionSheet.jsx',
   'src/pages/Transactions.jsx',
   'src/pages/Dashboard.jsx',
-  'src/pages/Bills.jsx',
+  'src/components/obligations/Bills.jsx',
   'src/pages/Reconciliation.jsx',
   'src/pages/Onboarding.jsx',
 ]
@@ -46,17 +46,17 @@ const checks = [
     msg: 'Dashboard page must use removeTransactionMutation',
   },
   {
-    rel: 'src/pages/Bills.jsx',
+    rel: 'src/components/obligations/Bills.jsx',
     mustInclude: 'addLiabilityMutation',
     msg: 'Bills page must use addLiabilityMutation',
   },
   {
-    rel: 'src/pages/Bills.jsx',
+    rel: 'src/components/obligations/Bills.jsx',
     mustInclude: 'markLiabilityPaidMutation',
     msg: 'Bills page must use markLiabilityPaidMutation',
   },
   {
-    rel: 'src/pages/Bills.jsx',
+    rel: 'src/components/obligations/Bills.jsx',
     mustInclude: 'deleteLiabilityMutation',
     msg: 'Bills page must use deleteLiabilityMutation',
   },

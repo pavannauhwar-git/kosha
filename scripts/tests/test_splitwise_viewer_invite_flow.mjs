@@ -71,42 +71,30 @@ async function main() {
     const groupName = `e2e-split-share-${Date.now()}`
     const hiddenGroupName = `${groupName}-hidden`
 
-    const { data: group, error: groupError } = await creatorClient
-      .from('split_groups')
-      .insert({
-        name: groupName,
-        user_id: creator.id,
-      })
-      .select('id, name, user_id')
-      .single()
+    const { data: group, error: groupError } = await creatorClient.rpc('split_create_group', {
+      p_name: groupName,
+      p_self_display_name: 'Creator'
+    })
 
     if (groupError) throw new Error(`Create group failed: ${groupError.message}`)
     sharedGroupId = group.id
 
-    const { data: hiddenGroup, error: hiddenGroupError } = await creatorClient
-      .from('split_groups')
-      .insert({
-        name: hiddenGroupName,
-        user_id: creator.id,
-      })
-      .select('id')
-      .single()
+    const { data: hiddenGroup, error: hiddenGroupError } = await creatorClient.rpc('split_create_group', {
+      p_name: hiddenGroupName,
+      p_self_display_name: 'Creator'
+    })
 
     if (hiddenGroupError) throw new Error(`Create hidden group failed: ${hiddenGroupError.message}`)
     hiddenGroupId = hiddenGroup.id
 
     const { data: creatorMember, error: creatorMemberError } = await creatorClient
       .from('split_group_members')
-      .insert({
-        group_id: sharedGroupId,
-        display_name: 'Creator',
-        is_self: true,
-        user_id: creator.id,
-      })
       .select('id')
+      .eq('group_id', sharedGroupId)
+      .eq('user_id', creator.id)
       .single()
 
-    if (creatorMemberError) throw new Error(`Create owner member failed: ${creatorMemberError.message}`)
+    if (creatorMemberError) throw new Error(`Fetch owner member failed: ${creatorMemberError.message}`)
     creatorMemberId = creatorMember.id
 
     const { error: expenseError } = await creatorClient.rpc('split_create_expense', {

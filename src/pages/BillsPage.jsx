@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus } from '@phosphor-icons/react'
-import { Home } from 'lucide-react'
+import { Home, Plus } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Bills from '../components/obligations/Bills'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'

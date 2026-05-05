@@ -1015,22 +1015,6 @@ textarea:focus-visible,
     padding: 1.1rem;
   }
 
-  /* -- Page enter transition ───────────────────────────────────────── */
-  /* Applied to the AnimatedRoutes key-wrapper so every page navigation */
-  /* feels like a native lift — fast enough not to feel laggy (180ms)  */
-  .page-enter {
-    animation: page-enter 0.18s cubic-bezier(0.05, 0.7, 0.1, 1) both;
-    will-change: opacity, transform;
-  }
-
-  @keyframes page-enter {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
 
   /* -- Progress bars ───────────────────────────────────────────────── */
   .bar-dark-track {

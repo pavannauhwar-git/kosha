@@ -1885,10 +1885,7 @@ create policy "split_groups: delete own" on split_groups
 drop policy if exists "split_group_access: select own" on split_group_access;
 create policy "split_group_access: select own" on split_group_access
   for select to authenticated
-  using (
-    ((select auth.uid()) = user_id)
-    or public.is_split_group_owner(split_group_access.group_id)
-  );
+  using (public.has_split_group_access(split_group_access.group_id));
 
 drop policy if exists "split_group_access: insert owner" on split_group_access;
 create policy "split_group_access: insert owner" on split_group_access
@@ -2171,7 +2168,7 @@ begin
     created_by
   ) values (
     p_group_id,
-    'member',
+    p_role,
     v_uid
   ) returning * into v_invite;
 
