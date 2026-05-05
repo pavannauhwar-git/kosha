@@ -534,6 +534,8 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
 
     await deleteFn(id)
     await queryClient.cancelQueries({ queryKey: ['liabilities'] })
+    await queryClient.cancelQueries({ queryKey: ['transactions'] })
+    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
     optimisticallyDeleteLiabilityFromCache(id)
     optimisticallyDeleteTransactionsByBillId(id)

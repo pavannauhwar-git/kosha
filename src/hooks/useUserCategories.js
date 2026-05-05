@@ -186,7 +186,6 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
     queryClient.setQueryData(QUERY_KEY, afterCreate)
     registerCustomCategories(afterCreate)
 
-    queryClient.invalidateQueries({ queryKey: QUERY_KEY })
     return created
   } catch (e) {
     queryClient.setQueryData(QUERY_KEY, prev)
@@ -252,7 +251,6 @@ export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
     queryClient.setQueryData(QUERY_KEY, next)
     registerCustomCategories(next)
 
-    queryClient.invalidateQueries({ queryKey: QUERY_KEY })
     return updated
   } catch (e) {
     queryClient.setQueryData(QUERY_KEY, prev)
@@ -289,7 +287,6 @@ export async function archiveUserCategory(dbId) {
 
     if (error) throw error
 
-    queryClient.invalidateQueries({ queryKey: QUERY_KEY })
   } catch (e) {
     queryClient.setQueryData(QUERY_KEY, prev)
     registerCustomCategories(prev)

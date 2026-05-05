@@ -2269,8 +2269,7 @@ begin
     v_uid,
     case
       when v_group.user_id = v_uid then 'admin'
-      when coalesce(v_invite.role, 'member') = 'admin' then 'admin'
-      else 'member'
+      else coalesce(v_invite.role, 'member')
     end
   )
   on conflict (group_id, user_id) do update
