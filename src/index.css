@@ -815,14 +815,14 @@ textarea:focus-visible,
 
   /* -- Bottom sheet ────────────────────────────────────────────────── */
   .sheet-backdrop {
-    @apply fixed inset-0 bg-black/40 z-[90];
+    @apply fixed inset-0 z-40;
     background: rgba(17, 19, 24, 0.40);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
 
   .sheet-panel {
-    @apply fixed bottom-0 bg-kosha-surface z-[100];
+    @apply fixed bottom-0 bg-kosha-surface z-50;
     left: 0;
     right: 0;
     width: min(100%, var(--app-shell-max));
@@ -900,8 +900,6 @@ textarea:focus-visible,
     max-width: var(--app-shell-max);
     margin-left: auto;
     margin-right: auto;
-    /* Subtle fade-in on every page mount — no key trick needed */
-    animation: page-enter 0.2s cubic-bezier(0.05, 0.7, 0.1, 1) both;
   }
 
   @media (min-width: 600px) {
@@ -1028,11 +1026,9 @@ textarea:focus-visible,
   @keyframes page-enter {
     from {
       opacity: 0;
-      transform: translateY(5px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 

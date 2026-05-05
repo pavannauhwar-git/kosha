@@ -825,7 +825,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         exit={{ y: '100%', transition: { duration: 0.22 } }}
       >
         <div className="sheet-handle" />
-        <div className="px-4 overflow-x-hidden">
+        <div className="px-4">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-5">

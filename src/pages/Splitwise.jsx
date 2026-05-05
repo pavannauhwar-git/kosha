@@ -1621,7 +1621,7 @@ export default function Splitwise() {
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
-              <div className="px-5 pb-28">
+              <div className="px-5">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-display font-bold text-ink">Create Group</h2>
                   <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close create group sheet">
@@ -1677,7 +1677,7 @@ export default function Splitwise() {
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
-              <div className="px-5 pb-28">
+              <div className="px-5">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-display font-bold text-ink">Add Member</h2>
                   <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close add member sheet">
@@ -1724,7 +1724,7 @@ export default function Splitwise() {
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
-              <div className="px-5 pb-28 overflow-y-auto">
+              <div className="px-5 overflow-y-auto">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-display font-bold text-ink">{editExpense ? 'Edit Expense' : 'Add Expense'}</h2>
                   <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close add expense sheet">
@@ -1935,7 +1935,7 @@ export default function Splitwise() {
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
-              <div className="px-5 pb-28 overflow-y-auto">
+              <div className="px-5 overflow-y-auto">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-display font-bold text-ink">{editSettlement ? 'Edit Settlement' : 'Record Settlement'}</h2>
                   <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close settlement sheet">
@@ -2037,7 +2037,7 @@ export default function Splitwise() {
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
-              <div className="px-5 pb-28 overflow-y-auto max-h-[85vh]">
+              <div className="px-5 pb-8 overflow-y-auto max-h-[85vh]">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-display font-bold text-ink">Trip Banner</h2>
                   <button type="button" onClick={() => setShowBannerPicker(false)} className="close-btn" aria-label="Close banner picker">
@@ -2075,7 +2075,7 @@ export default function Splitwise() {
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
-              <div className="px-5 pb-28 overflow-y-auto max-h-[85vh]">
+              <div className="px-5 pb-8 overflow-y-auto max-h-[85vh]">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-display font-bold text-ink">Trip Settings</h2>
                   <button type="button" onClick={() => setShowEditGroup(false)} className="close-btn" aria-label="Close edit group">
