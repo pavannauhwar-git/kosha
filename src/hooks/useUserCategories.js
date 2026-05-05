@@ -138,6 +138,10 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
   }
 
   const prev = queryClient.getQueryData(QUERY_KEY) || []
+  if (prev.some(c => c.id === slug)) {
+    throw new Error('A category with this name already exists')
+  }
+
   if (prev.length >= MAX_CUSTOM_CATEGORIES) {
     throw new Error(`Maximum ${MAX_CUSTOM_CATEGORIES} custom categories allowed`)
   }
@@ -165,7 +169,7 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
   try {
     const { data, error } = await supabase
       .from('user_categories')
-      .insert({
+      .upsert({
         user_id: userId,
         type,
         label: trimmed,
@@ -173,7 +177,8 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
         icon,
         color,
         bg,
-      })
+        archived: false,
+      }, { onConflict: 'user_id, slug' })
       .select(COLUMNS)
       .single()
 
