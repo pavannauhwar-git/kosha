@@ -64,13 +64,16 @@ function StepName({ onNext }) {
       </motion.p>
 
       <motion.div variants={fadeUp} className="mb-3">
-        <Input
-          placeholder="Your first name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          autoFocus
-          onKeyDown={e => e.key === 'Enter' && name.trim() && onNext(name.trim())}
-        />
+        <form onSubmit={e => { e.preventDefault(); if(name.trim()) onNext(name.trim()); }}>
+          <Input
+            placeholder="Your first name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            autoFocus
+            enterKeyHint="next"
+            onKeyDown={e => e.key === 'Enter' && name.trim() && onNext(name.trim())}
+          />
+        </form>
       </motion.div>
 
       <motion.div variants={fadeUp}>
@@ -123,14 +126,20 @@ function StepIncome({ name, onNext, onBack }) {
       </motion.p>
 
       <motion.div variants={fadeUp} className="mb-3">
-        <Input
-          type="number"
-          inputMode="numeric"
-          placeholder="0"
-          value={income}
-          onChange={e => setIncome(e.target.value)}
-          autoFocus
-        />
+        <form onSubmit={e => { e.preventDefault(); handleContinue(); }}>
+          <Input
+            type="text"
+            inputMode="decimal"
+            placeholder="0"
+            value={income}
+            onChange={e => {
+              const raw = e.target.value;
+              if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) setIncome(raw);
+            }}
+            autoFocus
+            enterKeyHint="next"
+          />
+        </form>
       </motion.div>
 
       <motion.div variants={fadeUp} className="mb-3">
@@ -256,22 +265,26 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       </motion.div>
 
       <motion.div variants={fadeUp} className="mb-3">
-        <Input
-          type="number"
-          inputMode="decimal"
-          placeholder="Amount"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-          autoFocus
-        />
-      </motion.div>
-
-      <motion.div variants={fadeUp} className="mb-3">
-        <Input
-          placeholder={txnType === 'expense' ? 'What was it for?' : 'Where did it come from?'}
-          value={desc}
-          onChange={e => setDesc(e.target.value)}
-        />
+        <form onSubmit={e => { e.preventDefault(); handleSave(); }} className="space-y-3">
+          <Input
+            type="text"
+            inputMode="decimal"
+            placeholder="Amount"
+            value={amount}
+            onChange={e => {
+              const raw = e.target.value;
+              if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) setAmount(raw);
+            }}
+            autoFocus
+            enterKeyHint="next"
+          />
+          <Input
+            placeholder={txnType === 'expense' ? 'What was it for?' : 'Where did it come from?'}
+            value={desc}
+            onChange={e => setDesc(e.target.value)}
+            enterKeyHint="done"
+          />
+        </form>
       </motion.div>
 
       {txnType === 'expense' && (
