@@ -17,6 +17,7 @@ export default function BillsPage() {
     <PageBackHeaderPage
       title="Bills & Dues"
       onBack={() => navigate('/obligations')}
+      contentClassName="page"
       rightSlot={(
         <button
           type="button"

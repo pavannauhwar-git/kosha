@@ -17,6 +17,7 @@ export default function LoansPage() {
     <PageBackHeaderPage
       title="Loans"
       onBack={() => navigate('/obligations')}
+      contentClassName="page"
       rightSlot={(
         <button
           type="button"
