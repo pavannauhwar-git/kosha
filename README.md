@@ -42,6 +42,8 @@ Key design principles:
 - **Linked Records** — Atomic cross-references between the ledger and source modules (Bills, Loans, Splitwise) to ensure data integrity.
 - **Dashboard** — Premium "Vibrant Clarity" command center with cashflow cards, spending pace, daily heatmap, and weekly digests.
 - **Analytics** — Deep-dive monthly/yearly breakdowns, category treemaps, savings rate trends, and cashflow waterfall charts.
+- **Performance** — Zero-latency navigation with route-intent prefetching and tailored per-route skeleton loaders to eliminate layout shifts.
+- **Mobile UX** — Frictionless data entry with optimized keyboard hints, decimal input modes, and native form submission patterns for rapid tracking.
 - **Reconciliation** — Intelligent statement matching engine with confidence scoring, review queues, and alias learning.
 - **Design System** — Native-feeling PWA with Material 3 motion, tactile haptic feedback, and optimized gesture-based navigation.
 - **Privacy & Sync** — 100% self-hosted architecture with multi-user "Linked Wallets" sharing and real-time Supabase synchronization.
