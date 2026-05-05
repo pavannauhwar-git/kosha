@@ -251,6 +251,7 @@ export default function Login() {
                     onChange={e => setEmail(e.target.value)}
                     autoComplete="username"
                     disabled={loading || isRedirectingAfterReset}
+                    enterKeyHint="next"
                   />
                 )}
 
@@ -278,6 +279,7 @@ export default function Login() {
                     onChange={e => setPassword(e.target.value)}
                     autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                     disabled={loading || isRedirectingAfterReset}
+                    enterKeyHint={mode === 'signin' ? 'done' : 'next'}
                   />
                 )}
 
@@ -291,6 +293,7 @@ export default function Login() {
                     onChange={e => setConfirmPassword(e.target.value)}
                     autoComplete="new-password"
                     disabled={loading || isRedirectingAfterReset}
+                    enterKeyHint="done"
                   />
                 )}
 

@@ -864,12 +864,17 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           </div>
 
           {/* Amount */}
-          <div className="bg-transparent px-1 py-2 mb-4 flex items-center gap-2 border-b-2 border-kosha-border">
+          <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="flex flex-col min-w-0 pb-2">
+            <div className="bg-transparent px-1 py-2 mb-4 flex items-center gap-2 border-b-2 border-kosha-border">
             <span className={`text-2xl font-bold ${activeType?.color}`}>₹</span>
             <input
-              type="number" inputMode="decimal" name="txn-amount" placeholder="0.00"
+              type="text" inputMode="decimal" name="txn-amount" placeholder="0.00"
+              enterKeyHint="next"
               value={amount}
-              onChange={e => set('amount', e.target.value)}
+              onChange={e => {
+                const raw = e.target.value;
+                if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) set('amount', raw);
+              }}
               disabled={isSaving || !!linkedSplitExpenseId}
               className="min-w-0 flex-1 bg-transparent text-3xl font-bold text-ink
                          outline-none tabular-nums placeholder-ink-4 disabled:opacity-50"
@@ -879,6 +884,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           {/* Description */}
           <input
             type="text" name="txn-description" placeholder="Description"
+            enterKeyHint="done"
+            autoCapitalize="sentences"
             value={desc} onChange={e => set('desc', e.target.value)}
             disabled={isSaving}
             className="input mb-3 disabled:opacity-50"
@@ -1155,6 +1162,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             </Button>
             <div className="h-2" />
           </div>
+          </form>
         </div>
       </motion.div>
 

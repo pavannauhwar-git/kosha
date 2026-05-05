@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useCallback } from 'react'
 
 const SIZE_CLASSES = {
   xs: 'h-7 px-2.5 text-[10px] gap-1',
@@ -21,17 +21,25 @@ const DISABLED_CLASSES = 'opacity-45 pointer-events-none'
 
 /**
  * Button — primary interactive element
- * @param {{ as?: any, variant?: 'primary'|'secondary'|'ghost'|'danger'|'success'|'tonal', size?: 'xs'|'sm'|'md'|'lg'|'xl', disabled?: boolean, loading?: boolean, icon?: React.ReactNode, iconRight?: React.ReactNode, fullWidth?: boolean, className?: string, children: React.ReactNode }} props
+ * @param {{ as?: any, variant?: 'primary'|'secondary'|'ghost'|'danger'|'success'|'tonal', size?: 'xs'|'sm'|'md'|'lg'|'xl', disabled?: boolean, loading?: boolean, icon?: React.ReactNode, iconRight?: React.ReactNode, fullWidth?: boolean, className?: string, children: React.ReactNode, onClick?: function }} props
  */
 const Button = forwardRef(function Button(
-  { as: Component = 'button', variant = 'primary', size = 'md', disabled, loading, icon, iconRight, fullWidth, className = '', children, ...rest },
+  { as: Component = 'button', variant = 'primary', size = 'md', disabled, loading, icon, iconRight, fullWidth, className = '', children, onClick, ...rest },
   ref
 ) {
   const isDisabled = disabled || loading
+
+  const handleClick = useCallback((e) => {
+    if (isDisabled) return
+    import('../../lib/haptics').then(m => m.hapticTap())
+    if (onClick) onClick(e)
+  }, [isDisabled, onClick])
+
   return (
     <Component
       ref={ref}
       disabled={Component === 'button' ? isDisabled : undefined}
+      onClick={handleClick}
       className={[
         'inline-flex items-center justify-center font-semibold rounded-pill select-none cursor-pointer',
         'transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform',
