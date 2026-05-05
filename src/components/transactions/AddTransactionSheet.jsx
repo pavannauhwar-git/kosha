@@ -912,6 +912,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             {/* Category */}
             {type !== 'investment' && (
               <button
+                type="button"
                 className="list-row w-full disabled:opacity-50"
                 onClick={() => setShowCatPicker()}
                 disabled={isSaving}
@@ -928,6 +929,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             {/* Investment vehicle */}
             {type === 'investment' && (
               <button
+                type="button"
                 className="list-row w-full disabled:opacity-50"
                 onClick={() => setShowVehPicker()}
                 disabled={isSaving}
@@ -965,6 +967,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
             {/* Payment mode */}
             <button
+              type="button"
               className="list-row w-full disabled:opacity-50"
               onClick={() => setShowModePicker()}
               disabled={isSaving}
@@ -1044,6 +1047,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
             {/* Notes */}
             <button
+              type="button"
               className="list-row w-full disabled:opacity-50"
               onClick={() => set('showNotes', !showNotes)}
               disabled={isSaving}
@@ -1152,6 +1156,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           */}
           <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
             <Button
+              type="submit"
               variant="primary"
               size="xl"
               fullWidth
