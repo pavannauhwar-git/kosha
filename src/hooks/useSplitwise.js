@@ -445,7 +445,7 @@ export async function createSplitGroupInviteMutation({ groupId } = {}) {
       userId,
       action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_INVITE_CREATE,
       entityType: 'split_group_invite',
-      entityId: data?.id || 'rpc',
+      entityId: data?.id || groupId,
       metadata: {
         group_id: groupId,
         role: 'owner',
@@ -492,8 +492,9 @@ export async function consumeSplitGroupInviteMutation(inviteToken) {
       userId,
       action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_INVITE_CONSUME,
       entityType: 'split_group_invite',
-      entityId: token,
+      entityId: data?.id || userId,
       metadata: {
+        token: token,
         group_id: data?.id || null,
       },
     }),
@@ -568,7 +569,7 @@ export async function addSplitExpenseMutation({
       userId,
       action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_EXPENSE_ADD,
       entityType: 'split_expense',
-      entityId: data?.id || 'rpc',
+      entityId: data?.id || groupId,
       metadata: {
         group_id: groupId,
         paid_by_member_id: paidByMemberId,
@@ -620,7 +621,7 @@ export async function recordSplitSettlementMutation({ groupId, payerMemberId, pa
       userId,
       action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_SETTLEMENT_ADD,
       entityType: 'split_settlement',
-      entityId: data?.id || 'rpc',
+      entityId: data?.id || groupId,
       metadata: {
         group_id: groupId,
         payer_member_id: payerMemberId,
@@ -686,6 +687,11 @@ export function useSplitwiseRealtime() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'split_group_members' },
+        () => { void invalidateSplitwiseCache() }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'split_group_access' },
         () => { void invalidateSplitwiseCache() }
       )
       .on(

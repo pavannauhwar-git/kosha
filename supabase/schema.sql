@@ -3204,3 +3204,7 @@ grant execute on function public.has_split_group_access(uuid, uuid) to authentic
 grant execute on function public.is_split_group_member_or_above(uuid, uuid) to authenticated;
 grant execute on function public.is_split_group_owner(uuid, uuid) to authenticated;
 grant execute on function public.split_group_member_profiles(uuid) to authenticated;
+-- Grants for RPC functions
+grant execute on function public.split_preview_group_invite(text) to anon, authenticated;
+grant execute on function public.split_consume_group_invite(text) to authenticated;
+grant execute on function public.split_create_group_invite(uuid, text) to authenticated;
