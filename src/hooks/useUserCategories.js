@@ -120,8 +120,7 @@ export function useUserCategories({ enabled = true } = {}) {
   return { customCategories: categories, loading: isLoading, error }
 }
 
-/** Key factory: call as USER_CATEGORIES_QUERY_KEY(userId) → ['userCategories', userId] */
-export const USER_CATEGORIES_QUERY_KEY = categoryQueryKey
+export const USER_CATEGORIES_QUERY_KEY = categoryQueryKey // factory: USER_CATEGORIES_QUERY_KEY(userId)
 
 /**
  * Create a new custom category for the current user.

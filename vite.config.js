@@ -51,7 +51,7 @@ export default defineConfig(({ mode }) => {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version || '0.0.0'),
   },
   build: {
-    sourcemap: true,   // required for Sentry source map uploads
+    sourcemap: isProd && !!env.SENTRY_AUTH_TOKEN, // only when Sentry will upload + delete them
     rollupOptions: {
       output: {
         manualChunks,
@@ -126,9 +126,6 @@ export default defineConfig(({ mode }) => {
         ],
       },
       }),
-      // Upload source maps to Sentry on production builds only.
-      // Requires SENTRY_AUTH_TOKEN env var — generate at:
-      // sentry.io → Settings → Auth Tokens → Create Token (scope: project:releases, org:read)
       ...(isProd && env.SENTRY_AUTH_TOKEN ? [
         sentryVitePlugin({
           org: env.SENTRY_ORG,
@@ -137,7 +134,7 @@ export default defineConfig(({ mode }) => {
           sourcemaps: {
             assets: './dist/**',
             ignore: ['node_modules'],
-            deleteFilesAfterUpload: './dist/**/*.map',  // remove maps from public bundle
+            deleteFilesAfterUpload: './dist/**/*.map',
           },
           telemetry: false,
         }),
