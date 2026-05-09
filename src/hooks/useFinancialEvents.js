@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
-import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
+import { useActiveWallet } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
 
 const EVENT_COLUMNS = 'id, action, entity_type, entity_id, metadata, created_at'

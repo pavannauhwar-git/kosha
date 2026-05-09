@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
-import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
+import { useActiveWallet } from '../lib/walletStore'
 
 const REVIEW_COLUMNS = 'transaction_id, status, statement_line, updated_at'
 
