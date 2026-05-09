@@ -28,8 +28,8 @@ export default function Obligations() {
   const activeWalletUserId = useActiveWallet()
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
 
-  const { pending, loading: billsLoading } = useLiabilities({ includePaid: false })
-  const { given, taken, loading: loansLoading } = useLoans()
+  const { pending, paid, loading: billsLoading } = useLiabilities({ includePaid: true })
+  const { given, taken, settled, loading: loansLoading } = useLoans()
 
   // ── Bills metrics ─────────────────────────────────────────────────────
   const { totalPending, overdueCount, dueSoonCount, recurringCount, billsUrgent, billsAllClear } = useMemo(() => {
@@ -71,7 +71,8 @@ export default function Obligations() {
   }, [given, taken])
 
   const isLoading = billsLoading || loansLoading
-  const allEmpty = !isLoading && pending.length === 0 && given.length === 0 && taken.length === 0
+  const hasHistory = paid.length > 0 || settled.length > 0
+  const allEmpty = !isLoading && pending.length === 0 && given.length === 0 && taken.length === 0 && !hasHistory
 
   function go(path) {
     import('../lib/haptics').then(m => m.hapticTap())
@@ -240,7 +241,9 @@ export default function Obligations() {
               {pending.length === 0 && (
                 <div className="px-4 pb-4">
                   <p className="text-caption text-ink-3">
-                    Add bills to track due dates and cashflow.
+                    {paid.length > 0
+                      ? `You have ${paid.length} paid bill${paid.length > 1 ? 's' : ''} in your history.`
+                      : 'Add bills to track due dates and cashflow.'}
                   </p>
                 </div>
               )}
@@ -314,7 +317,9 @@ export default function Obligations() {
               {given.length === 0 && taken.length === 0 && (
                 <div className="px-4 pb-4">
                   <p className="text-caption text-ink-3">
-                    Log money lent or borrowed to track repayments.
+                    {settled.length > 0
+                      ? `You have ${settled.length} settled loan${settled.length > 1 ? 's' : ''} in your history.`
+                      : 'Log money lent or borrowed to track repayments.'}
                   </p>
                 </div>
               )}

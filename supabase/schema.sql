@@ -3215,8 +3215,8 @@ $$;
 alter table public.transactions
   add column if not exists linked_split_expense_id uuid references public.split_expenses(id) on delete set null,
   add column if not exists linked_split_settlement_id uuid references public.split_settlements(id) on delete set null,
-  add column if not exists linked_bill_id uuid references public.liabilities(id) on delete set null,
-  add column if not exists linked_loan_id uuid references public.loans(id) on delete set null;
+  add column if not exists linked_bill_id uuid references public.liabilities(id) on delete cascade,
+  add column if not exists linked_loan_id uuid references public.loans(id) on delete cascade;
 
 create index if not exists idx_transactions_linked_split_expense on public.transactions(linked_split_expense_id);
 create index if not exists idx_transactions_linked_split_settlement on public.transactions(linked_split_settlement_id);

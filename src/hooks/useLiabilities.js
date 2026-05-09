@@ -214,6 +214,14 @@ export async function updateLiability(id, updates) {
 export async function deleteLiability(id, cachedBill = null) {
   const userId = getAuthUserId()
   
+  const { error: txnError } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('linked_bill_id', id)
+    .eq('user_id', userId)
+
+  if (txnError) throw txnError
+
   const { error } = await supabase
     .from('liabilities')
     .delete()

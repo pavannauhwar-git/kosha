@@ -25,7 +25,8 @@
     "test:production-assets": "node scripts/tests/test_production_asset_integrity.mjs",
     "test:reconciliation-schema-live": "node scripts/tests/test_reconciliation_schema_live.mjs",
     "test:wallet-cache-scoping": "node scripts/tests/test_wallet_cache_scoping.mjs",
-    "test:reconciliation-insights": "node scripts/tests/test_reconciliation_insights.mjs"
+    "test:reconciliation-insights": "node scripts/tests/test_reconciliation_insights.mjs",
+    "test:rls-partner-isolation": "node scripts/tests/test_rls_partner_isolation.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

@@ -175,6 +175,15 @@ async function updateLoan(id, updates) {
 
 async function deleteLoan(id, cachedLoan = null) {
   const userId = getAuthUserId()
+
+  const { error: txnError } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('linked_loan_id', id)
+    .eq('user_id', userId)
+
+  if (txnError) throw txnError
+
   const { error } = await supabase
     .from('loans')
     .delete()
