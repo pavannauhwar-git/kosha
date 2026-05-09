@@ -1638,7 +1638,7 @@ export default function Transactions() {
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                {total > 0 ? (
+                {total > 0 && !isViewingPartner ? (
                   <Button
                     variant="secondary"
                     size="sm"

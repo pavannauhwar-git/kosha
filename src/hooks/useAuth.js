@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { setAuthUser, clearAuthUser, getAuthUserId } from '../lib/authStore'
+import { setErrorReportingUser, clearErrorReportingUser } from '../lib/errorReporting'
+import { initActiveWallet } from '../lib/walletStore'
 import { fetchLinkedUserIds, fetchLinkedProfiles } from '../lib/walletSync'
 
 const USER_PROFILE_QUERY_KEY = ['user-profile']
@@ -98,6 +100,10 @@ export function useAuthState() {
         if (event === 'INITIAL_SESSION') {
           // Write to authStore first to ensure valid user ID during fast interactions
           setAuthUser(u)
+          if (u) {
+            setErrorReportingUser({ id: u.id })
+            initActiveWallet(u.id)
+          }
 
           setUser(u)
           setLoading(false)
@@ -122,6 +128,10 @@ export function useAuthState() {
 
         if (event === 'SIGNED_IN') {
           setAuthUser(u)
+          if (u) {
+            setErrorReportingUser({ id: u.id })
+            initActiveWallet(u.id)
+          }
           setUser(u)
           if (!initialised) { setLoading(false); initialised = true }
           setProfileLoading(!!u)
@@ -135,6 +145,7 @@ export function useAuthState() {
 
         if (event === 'SIGNED_OUT') {
           clearAuthUser()
+          clearErrorReportingUser()
           setUser(null)
           setProfile(null)
           setProfileLoading(false)

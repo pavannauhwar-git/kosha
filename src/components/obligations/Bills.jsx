@@ -597,7 +597,7 @@ export default function Bills({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {totalBills > 0 && (
+          {totalBills > 0 && !isViewingPartner && (
             <Button
               variant="secondary"
               size="sm"

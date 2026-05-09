@@ -1,6 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 function manualChunks(id) {
   if (!id.includes('node_modules')) return undefined
@@ -38,11 +39,19 @@ function manualChunks(id) {
   return 'vendor'
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const isProd = mode === 'production'
+
+  return {
   esbuild: {
-    drop: ['console', 'debugger'],
+    drop: isProd ? ['console', 'debugger'] : [],
+  },
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version || '0.0.0'),
   },
   build: {
+    sourcemap: true,   // required for Sentry source map uploads
     rollupOptions: {
       output: {
         manualChunks,
@@ -116,6 +125,23 @@ export default defineConfig({
           },
         ],
       },
-    }),
-  ],
+      }),
+      // Upload source maps to Sentry on production builds only.
+      // Requires SENTRY_AUTH_TOKEN env var — generate at:
+      // sentry.io → Settings → Auth Tokens → Create Token (scope: project:releases, org:read)
+      ...(isProd && env.SENTRY_AUTH_TOKEN ? [
+        sentryVitePlugin({
+          org: env.SENTRY_ORG,
+          project: env.SENTRY_PROJECT,
+          authToken: env.SENTRY_AUTH_TOKEN,
+          sourcemaps: {
+            assets: './dist/**',
+            ignore: ['node_modules'],
+            deleteFilesAfterUpload: './dist/**/*.map',  // remove maps from public bundle
+          },
+          telemetry: false,
+        }),
+      ] : []),
+    ],
+  }
 })

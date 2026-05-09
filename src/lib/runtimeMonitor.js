@@ -1,3 +1,5 @@
+import { captureError } from './errorReporting'
+
 const STORE_KEY = 'kosha:runtime-monitor-v1'
 const MAX_EVENTS = 40
 
@@ -68,12 +70,14 @@ export function startRuntimeMonitor() {
   window.addEventListener('error', (event) => {
     const message = event?.message || event?.error?.message || 'Unknown script error'
     pushEvent('window.error', message)
+    captureError(event?.error || new Error(message), { context: 'window.error' })
   })
 
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event?.reason
     const message = reason?.message || reason || 'Unhandled promise rejection'
     pushEvent('window.unhandledrejection', message)
+    captureError(reason instanceof Error ? reason : new Error(String(message)), { context: 'unhandledrejection' })
   })
 }
 

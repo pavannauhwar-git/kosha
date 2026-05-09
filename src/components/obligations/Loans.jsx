@@ -694,7 +694,7 @@ export default function Loans({
 
   async function handleExportCsv() {
     try {
-      const userId = getAuthUserId()
+      const userId = activeWalletUserId
       const { data: rows, error } = await supabase
         .from('loans')
         .select(LOAN_COLUMNS_EXPORT)
@@ -737,7 +737,7 @@ export default function Loans({
           {totalCount} loan{totalCount !== 1 ? 's' : ''} · {visibleGiven.length + visibleTaken.length} active
         </p>
         <div className="flex items-center gap-2">
-          {totalCount > 0 && (
+          {totalCount > 0 && !isViewingPartner && (
             <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={handleExportCsv}>
               Export CSV
             </Button>

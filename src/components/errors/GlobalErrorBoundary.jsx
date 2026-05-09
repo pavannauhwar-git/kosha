@@ -2,6 +2,7 @@ import React from 'react'
 import { Bug, Home, RotateCw } from 'lucide-react'
 import KoshaErrorPage from './KoshaErrorPage'
 import { getRuntimeDiagnostics } from '../../lib/runtimeMonitor'
+import { captureError } from '../../lib/errorReporting'
 
 const RUNTIME_PREFILL_KEY = 'kosha-runtime-bug-prefill'
 
@@ -17,6 +18,10 @@ export class GlobalErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Uncaught rendering error:', error, errorInfo)
+    captureError(error, {
+      context: 'GlobalErrorBoundary',
+      extra: { componentStack: errorInfo?.componentStack?.slice(0, 800) },
+    })
   }
 
   handleReload = () => {
