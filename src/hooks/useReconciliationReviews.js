@@ -16,8 +16,8 @@ function isMissingTableError(error) {
     message.includes('reconciliation_reviews') ||
     details.includes('reconciliation_reviews') ||
     hint.includes('reconciliation_reviews') ||
-    message.includes('relation') && message.includes('does not exist') ||
-    details.includes('relation') && details.includes('does not exist') ||
+    (message.includes('relation') && message.includes('does not exist')) ||
+    (details.includes('relation') && details.includes('does not exist')) ||
     code === '42P01' || // PostgreSQL undefined_table
     code === 'PGRST205' || // PostgREST relation not found
     status === 404

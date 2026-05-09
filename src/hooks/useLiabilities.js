@@ -250,9 +250,10 @@ function cloneCacheData(data) {
 }
 
 function snapshotLiabilityCaches() {
+  const targetUserId = getActiveWalletUserId()
   return [
-    [LIABILITY_PENDING_QUERY_KEY, cloneCacheData(queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY) || [])],
-    [LIABILITY_PAID_QUERY_KEY, cloneCacheData(queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY) || [])],
+    [LIABILITY_PENDING_QUERY_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId)) || [])],
+    [LIABILITY_PAID_QUERY_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY(targetUserId)) || [])],
   ]
 }
 
@@ -265,11 +266,12 @@ function restoreLiabilitySnapshot(snapshot) {
 export function optimisticallyInsertPendingLiability(liability) {
   if (!liability?.id) return
 
-  const prev = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  const targetUserId = getActiveWalletUserId()
+  const prev = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   const base = Array.isArray(prev) ? prev : []
   const deduped = base.filter((row) => row?.id !== liability.id)
   queryClient.setQueryData(
-    LIABILITY_PENDING_QUERY_KEY,
+    LIABILITY_PENDING_QUERY_KEY(targetUserId),
     sortLiabilitiesByDueDateAsc([...deduped, { ...liability, paid: false }])
   )
 }
@@ -277,10 +279,11 @@ export function optimisticallyInsertPendingLiability(liability) {
 export function optimisticallyMarkLiabilityPaid(liability, { optimistic = true } = {}) {
   if (!liability?.id) return
 
-  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  const targetUserId = getActiveWalletUserId()
+  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   if (Array.isArray(pendingData)) {
     queryClient.setQueryData(
-      LIABILITY_PENDING_QUERY_KEY,
+      LIABILITY_PENDING_QUERY_KEY(targetUserId),
       pendingData.filter((row) => row?.id !== liability.id)
     )
   }
@@ -288,26 +291,27 @@ export function optimisticallyMarkLiabilityPaid(liability, { optimistic = true }
   const paidRow = optimistic
     ? { ...liability, paid: true, __optimistic: true }
     : { ...liability, paid: true }
-  const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY)
+  const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY(targetUserId))
   if (Array.isArray(paidData)) {
     const deduped = paidData.filter((row) => row?.id !== liability.id)
     queryClient.setQueryData(
-      LIABILITY_PAID_QUERY_KEY,
+      LIABILITY_PAID_QUERY_KEY(targetUserId),
       sortLiabilitiesByDueDateAsc([...deduped, paidRow])
     )
   } else {
-    queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY, [paidRow])
+    queryClient.setQueryData(LIABILITY_PAID_QUERY_KEY(targetUserId), [paidRow])
   }
 }
 
 function getLiabilityFromCacheById(id) {
   if (!id) return null
-  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  const targetUserId = getActiveWalletUserId()
+  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   if (Array.isArray(pendingData)) {
     const found = pendingData.find((row) => row?.id === id)
     if (found) return found
   }
-  const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY)
+  const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY(targetUserId))
   if (Array.isArray(paidData)) {
     const found = paidData.find((row) => row?.id === id)
     if (found) return found
@@ -318,18 +322,19 @@ function getLiabilityFromCacheById(id) {
 export function optimisticallyDeleteLiabilityFromCache(id) {
   if (!id) return
 
-  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  const targetUserId = getActiveWalletUserId()
+  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   if (Array.isArray(pendingData)) {
     queryClient.setQueryData(
-      LIABILITY_PENDING_QUERY_KEY,
+      LIABILITY_PENDING_QUERY_KEY(targetUserId),
       pendingData.filter((row) => row?.id !== id)
     )
   }
 
-  const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY)
+  const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY(targetUserId))
   if (Array.isArray(paidData)) {
     queryClient.setQueryData(
-      LIABILITY_PAID_QUERY_KEY,
+      LIABILITY_PAID_QUERY_KEY(targetUserId),
       paidData.filter((row) => row?.id !== id)
     )
   }
@@ -348,8 +353,6 @@ function refreshLiabilityAndTransactionCachesInBackground({ invalidateLiabilityF
       evictSwCacheEntries('/transactions'),
       invalidateLiabilityFn(),
       invalidateTransactionFn(),
-      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
     ]),
     scope
   )

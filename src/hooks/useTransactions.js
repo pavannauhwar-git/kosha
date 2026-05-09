@@ -237,12 +237,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
           await ensureRecurringTransactionsReady(authUserId)
         }
         
-        // Run recurring materialization only for broad list reads.
-        // Filtered/short lists (dashboard widgets, search, category tabs)
-        // should stay read-only for latency.
-        if (!type && !category && !paymentMode && !search && !startDate && !endDate) {
-          await ensureRecurringTransactionsReady(getAuthUserId())
-        }
+
         let q = supabase
           .from('transactions')
           .select(selectedColumns)
@@ -321,69 +316,30 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
     enabled,
     queryFn: () => traceQuery('transactions:signal-aggregates', async () => {
       const userId = getActiveWalletUserId()
-      const pageSize = 1000
-      const activeDates = new Set()
-      const paymentModeCounts = {}
-      const expenseCategoryCounts = {}
 
-      let rowCount = 0
-      let expenseCount = 0
-      let minDate = null
-      let maxDate = null
-
-      for (let from = 0; ; from += pageSize) {
-        const to = from + pageSize - 1
-
-        let q = supabase
-          .from('transactions')
-          .select('date, type, category, payment_mode')
-          .eq('user_id', userId)
-          .order('date', { ascending: false })
-          .order('created_at', { ascending: false })
-          .range(from, to)
-
-        if (type) q = q.eq('type', type)
-        if (category) q = q.eq('category', category)
-        if (paymentMode) q = q.eq('payment_mode', paymentMode)
-        if (startDate) q = q.gte('date', startDate)
-        if (endDate) q = q.lte('date', endDate)
-        if (search) q = applyTransactionSearchFilter(q, search)
-
-        const { data: rows, error: qError } = await q
-        if (qError) throw qError
-
-        const batch = rows || []
-        for (const row of batch) {
-          const date = String(row?.date || '').slice(0, 10)
-          if (date) {
-            activeDates.add(date)
-            if (!minDate || date < minDate) minDate = date
-            if (!maxDate || date > maxDate) maxDate = date
-          }
-
-          const mode = String(row?.payment_mode || 'other')
-          paymentModeCounts[mode] = (paymentModeCounts[mode] || 0) + 1
-
-          rowCount += 1
-
-          if (row?.type === 'expense') {
-            const categoryId = String(row?.category || 'other')
-            expenseCategoryCounts[categoryId] = (expenseCategoryCounts[categoryId] || 0) + 1
-            expenseCount += 1
-          }
+      const { data: result, error: rpcError } = await supabase.rpc(
+        'get_transaction_signal_aggregates',
+        {
+          p_user_id:      userId,
+          p_type:         type         || null,
+          p_category:     category     || null,
+          p_payment_mode: paymentMode  || null,
+          p_search:       search       || null,
+          p_start_date:   startDate    || null,
+          p_end_date:     endDate      || null,
         }
+      )
 
-        if (batch.length < pageSize) break
-      }
+      if (rpcError) throw rpcError
 
       return {
-        rowCount,
-        activeDays: activeDates.size,
-        minDate,
-        maxDate,
-        paymentModeCounts,
-        expenseCategoryCounts,
-        expenseCount,
+        rowCount:              Number(result?.rowCount              || 0),
+        activeDays:            Number(result?.activeDays            || 0),
+        minDate:               result?.minDate  || null,
+        maxDate:               result?.maxDate  || null,
+        expenseCount:          Number(result?.expenseCount          || 0),
+        paymentModeCounts:     result?.paymentModeCounts            || {},
+        expenseCategoryCounts: result?.expenseCategoryCounts        || {},
       }
     }),
     gcTime: 5 * 60 * 1000,
@@ -1087,7 +1043,7 @@ export function optimisticallyDeleteTransactionsByBillId(billId) {
   }
 }
 
-export async function deleteTransaction(id) {
+export async function deleteTransaction(id, cachedTxn = null) {
   const userId = getAuthUserId()
 
   const { error } = await supabase
@@ -1105,7 +1061,10 @@ export async function deleteTransaction(id) {
       entityType: 'transaction',
       entityId: id,
       metadata: {
-        before: null,
+        description: cachedTxn?.description,
+        amount: cachedTxn?.amount,
+        type: cachedTxn?.type,
+        category: cachedTxn?.category,
       },
     }),
     'transactions delete audit'
@@ -1249,7 +1208,7 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
     const deleteFn = __testOverrides?.deleteTransaction || deleteTransaction
     const invalidateFn = __testOverrides?.invalidateCache || invalidateCache
 
-    await deleteFn(id)
+    await deleteFn(id, cachedTxn)
     await Promise.all([
       queryClient.cancelQueries({ queryKey: ['transactions'] }),
       queryClient.cancelQueries({ queryKey: ['transactionsRecent'] }),

@@ -418,7 +418,7 @@ export async function updateSplitGroupMutation({ groupId, name }) {
   runInBackground(
     logFinancialEvent({
       userId,
-      action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_GROUP_ADD,
+      action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_GROUP_UPDATE,
       entityType: 'split_group',
       entityId: groupId,
       metadata: { action: 'rename', name: cleanName },
@@ -449,7 +449,7 @@ export async function createSplitGroupInviteMutation({ groupId } = {}) {
       entityId: data?.id || groupId,
       metadata: {
         group_id: groupId,
-        role: 'owner',
+        role: 'member',
       },
     }),
     'splitwise invite audit'
@@ -602,10 +602,10 @@ export async function deleteSplitExpenseMutation(expenseId) {
   if (error) throw error
 
   if (expense?.linked_transaction_id) {
-    await supabase.from('transactions').delete().eq('id', expense.linked_transaction_id)
+    const { error: txnError } = await supabase.from('transactions').delete().eq('id', expense.linked_transaction_id)
+    if (txnError) throw txnError
   }
 
-  if (error) throw error
   await invalidateSplitwiseCache()
   return true
 }
@@ -667,10 +667,10 @@ export async function deleteSplitSettlementMutation(settlementId) {
 
   const txnIds = [settlement?.payer_transaction_id, settlement?.payee_transaction_id].filter(Boolean)
   if (txnIds.length > 0) {
-    await supabase.from('transactions').delete().in('id', txnIds)
+    const { error: txnError } = await supabase.from('transactions').delete().in('id', txnIds)
+    if (txnError) throw txnError
   }
 
-  if (error) throw error
   await invalidateSplitwiseCache()
   return true
 }

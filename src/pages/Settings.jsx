@@ -23,6 +23,7 @@ import { unlinkPartner } from '../lib/walletSync'
 import { getActiveWalletUserId, setActiveWalletUserId } from '../lib/walletStore'
 import { fmtDate } from '../lib/utils'
 import { shareLink } from '../lib/share'
+import { queryClient } from '../lib/queryClient'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -143,6 +144,12 @@ export default function Settings() {
       return
     }
 
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Selected file must be an image.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
     setUploading(true)
     try {
       const ext = file.name.split('.').pop() || 'jpg'
@@ -245,7 +252,7 @@ export default function Settings() {
     try {
       await unlinkPartner(user.id, partnerId)
       if (getActiveWalletUserId() === partnerId) setActiveWalletUserId(user.id)
-      window.location.reload()
+      await queryClient.invalidateQueries()
     } catch (error) {
       setWalletError(error?.message || 'Could not unlink wallet.')
     } finally {

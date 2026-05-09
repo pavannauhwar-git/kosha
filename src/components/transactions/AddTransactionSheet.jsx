@@ -1160,7 +1160,6 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               variant="primary"
               size="xl"
               fullWidth
-              onClick={handleSave}
               loading={isSaving}
             >
               {isSaving ? 'Saving...' : (editTxn ? 'Save Changes' : `Add ${activeType?.label}`)}

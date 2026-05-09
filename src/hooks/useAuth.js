@@ -199,6 +199,9 @@ export function useAuthState() {
   }, [])
 
   const updatePassword = useCallback(async (newPassword) => {
+    if (!newPassword || newPassword.length < 8) {
+      throw new Error('Password must be at least 8 characters.')
+    }
     const { data, error } = await supabase.auth.updateUser({ password: newPassword })
     if (error) throw error
     return data
@@ -221,10 +224,6 @@ export function useAuthState() {
   // Read userId from authStore to avoid recreation of functions due to user object closure
   const updateProfile = useCallback(async (updates) => {
     const userId = getAuthUserId()
-    const payload = {
-      id: userId,
-      ...updates,
-    }
 
     let result = await supabase
       .from('profiles')

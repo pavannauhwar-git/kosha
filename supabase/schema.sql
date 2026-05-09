@@ -612,6 +612,7 @@ create policy "avatars_storage: upload own" on storage.objects
 for insert to authenticated
 with check (
   bucket_id = 'avatars'
+  and name like (auth.uid()::text || '-%')
 );
 
 drop policy if exists "avatars_storage: update own" on storage.objects;
@@ -619,6 +620,7 @@ create policy "avatars_storage: update own" on storage.objects
 for update to authenticated
 using (
   bucket_id = 'avatars'
+  and name like (auth.uid()::text || '-%')
 );
 
 drop policy if exists "avatars_storage: read" on storage.objects;
@@ -633,6 +635,7 @@ create policy "avatars_storage: delete own" on storage.objects
 for delete to authenticated
 using (
   bucket_id = 'avatars'
+  and name like (auth.uid()::text || '-%')
 );
 
 create or replace function public.submit_bug_report(
@@ -1014,6 +1017,135 @@ as $$
     and date   >= make_date(p_year, p_month, 1)
     and date   <= (make_date(p_year, p_month, 1) + interval '1 month - 1 day')::date
   group by type, is_repayment, category, investment_vehicle
+$$;
+
+
+-- ── 2b. get_transaction_signal_aggregates ────────────────────────────────────
+-- Previously: the JS hook fetched raw rows in 1000-row pages client-side and
+--             manually aggregated rowCount, activeDays, minDate, maxDate,
+--             paymentModeCounts, and expenseCategoryCounts in JavaScript.
+-- Now: a single SQL call computes everything in Postgres in one pass,
+--      returning a single JSON object. Scales to millions of rows.
+--
+-- Supports the same filter set as the JS hook:
+--   p_user_id, p_type, p_category, p_payment_mode, p_search, p_start_date, p_end_date
+
+create or replace function public.get_transaction_signal_aggregates(
+  p_user_id      uuid,
+  p_type         text    default null,
+  p_category     text    default null,
+  p_payment_mode text    default null,
+  p_search       text    default null,
+  p_start_date   date    default null,
+  p_end_date     date    default null
+)
+returns json
+language plpgsql
+stable
+security invoker
+set search_path = public
+as $$
+declare
+  v_needle text;
+  v_result json;
+begin
+  -- Normalise the search needle the same way the JS client does
+  v_needle := lower(trim(regexp_replace(coalesce(p_search, ''), '[,%()]', ' ', 'g')));
+  if v_needle = '' then
+    v_needle := null;
+  end if;
+
+  select json_build_object(
+    'rowCount',              coalesce(agg.row_count, 0),
+    'activeDays',            coalesce(agg.active_days, 0),
+    'minDate',               agg.min_date,
+    'maxDate',               agg.max_date,
+    'expenseCount',          coalesce(agg.expense_count, 0),
+    'paymentModeCounts',     coalesce(pm.counts, '{}'::json),
+    'expenseCategoryCounts', coalesce(ec.counts, '{}'::json)
+  )
+  into v_result
+  from (
+    -- Core aggregates: one pass over the filtered rows
+    select
+      count(*)                                               as row_count,
+      count(distinct date)                                   as active_days,
+      min(date)::text                                        as min_date,
+      max(date)::text                                        as max_date,
+      count(*) filter (where type = 'expense')               as expense_count
+    from transactions t
+    where t.user_id = p_user_id
+      and (p_type         is null or t.type         = p_type)
+      and (p_category     is null or t.category     = p_category)
+      and (p_payment_mode is null or t.payment_mode = p_payment_mode)
+      and (p_start_date   is null or t.date        >= p_start_date)
+      and (p_end_date     is null or t.date        <= p_end_date)
+      and (
+        v_needle is null
+        or lower(t.description) like '%' || v_needle || '%'
+        or lower(coalesce(t.notes, '')) like '%' || v_needle || '%'
+        or t.category in (
+            -- mirror the JS CATEGORY_LABEL_BY_ID lookup: match category IDs
+            -- whose label contains the search needle
+            select c.id from (
+              values
+                ('food','food'),('transport','transport'),('shopping','shopping'),
+                ('entertainment','entertainment'),('health','health'),('utilities','utilities'),
+                ('travel','travel'),('education','education'),('personal','personal'),
+                ('home','home'),('insurance','insurance'),('taxes','taxes'),
+                ('gifts','gifts'),('investments','investments'),('salary','salary'),
+                ('freelance','freelance'),('business','business'),('rental','rental'),
+                ('dividends','dividends'),('other','other')
+            ) as c(id, label)
+            where lower(c.label) like '%' || v_needle || '%'
+          )
+      )
+  ) agg
+  -- Payment-mode breakdown (all types)
+  cross join lateral (
+    select json_object_agg(payment_mode, cnt) as counts
+    from (
+      select coalesce(t2.payment_mode, 'other') as payment_mode, count(*) as cnt
+      from transactions t2
+      where t2.user_id = p_user_id
+        and (p_type         is null or t2.type         = p_type)
+        and (p_category     is null or t2.category     = p_category)
+        and (p_payment_mode is null or t2.payment_mode = p_payment_mode)
+        and (p_start_date   is null or t2.date        >= p_start_date)
+        and (p_end_date     is null or t2.date        <= p_end_date)
+        and (
+          v_needle is null
+          or lower(t2.description) like '%' || v_needle || '%'
+          or lower(coalesce(t2.notes, '')) like '%' || v_needle || '%'
+        )
+      group by coalesce(t2.payment_mode, 'other')
+    ) s
+  ) pm
+  -- Expense-category breakdown (expenses only)
+  cross join lateral (
+    select json_object_agg(category, cnt) as counts
+    from (
+      select coalesce(t3.category, 'other') as category, count(*) as cnt
+      from transactions t3
+      where t3.user_id = p_user_id
+        and t3.type = 'expense'
+        and (p_payment_mode is null or t3.payment_mode = p_payment_mode)
+        and (p_start_date   is null or t3.date        >= p_start_date)
+        and (p_end_date     is null or t3.date        <= p_end_date)
+        and (
+          v_needle is null
+          or lower(t3.description) like '%' || v_needle || '%'
+          or lower(coalesce(t3.notes, '')) like '%' || v_needle || '%'
+        )
+      group by coalesce(t3.category, 'other')
+    ) s
+  ) ec;
+
+  return coalesce(v_result, json_build_object(
+    'rowCount', 0, 'activeDays', 0, 'minDate', null, 'maxDate', null,
+    'expenseCount', 0, 'paymentModeCounts', '{}'::json, 'expenseCategoryCounts', '{}'::json
+  ));
+end;
 $$;
 
 

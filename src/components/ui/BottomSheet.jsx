@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence, useMotionValue, useTransform, useDragControls } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import * as Dialog from '@radix-ui/react-dialog'
 
 /**

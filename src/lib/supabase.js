@@ -6,8 +6,11 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY
 if (!url || !key) {
   console.warn(
     '[Kosha] Missing Supabase env vars.\n' +
-    'Copy .env.example → .env and fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
+    'Copy .env.example -> .env and fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
   )
+  if (import.meta.env.DEV) {
+    throw new Error('[Kosha] Cannot start without VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+  }
 }
 
 // Safari on iOS has a known bug where it attempts to reuse stale HTTP/2 connections.

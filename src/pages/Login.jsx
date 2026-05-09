@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import AboutKoshaLink from '../components/brand/AboutKoshaLink'
@@ -26,7 +26,7 @@ export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const { token, splitToken } = useParams()
+
   const {
     user,
     signInWithGoogle,
@@ -52,8 +52,6 @@ export default function Login() {
   const from = location.state?.from || '/'
 
   function resolvePostAuthPath() {
-    if (splitToken) return '/splitwise'
-
     try {
       if (sessionStorage.getItem('pendingSplitGroupInviteToken')) return '/splitwise'
     } catch {
@@ -64,7 +62,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user && !isRecoveryFlow) navigate(resolvePostAuthPath(), { replace: true })
-  }, [user, from, navigate, isRecoveryFlow, splitToken])
+  }, [user, from, navigate, isRecoveryFlow])
 
   useEffect(() => {
     setMode(isRecoveryFlow ? 'reset' : 'signin')

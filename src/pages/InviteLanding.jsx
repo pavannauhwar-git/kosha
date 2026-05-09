@@ -89,7 +89,7 @@ export default function InviteLanding() {
       if (isSplitwise) {
         const joined = await consumeSplitGroupInviteMutation(activeToken)
         setStatus('success')
-        setTimeout(() => { window.location.href = '/splitwise' }, 1500)
+        setTimeout(() => { navigate('/splitwise', { replace: true }) }, 1500)
       } else {
         const result = await consumeInviteToken({
           supabaseClient: supabase,
@@ -98,7 +98,7 @@ export default function InviteLanding() {
         })
         if (!result.consumed) throw new Error(result.reason || 'Could not join wallet.')
         setStatus('success')
-        setTimeout(() => { window.location.href = '/' }, 1500)
+        setTimeout(() => { navigate('/', { replace: true }) }, 1500)
       }
     } catch (e) {
       const msg = e.message || ''

@@ -123,7 +123,7 @@ function useRouteIntentPrefetch() {
     const now = new Date()
     const year = now.getFullYear()
     const month = now.getMonth() + 1
-    const profile = queryClient.getQueryData(['user-profile', user.id]) || {}
+
 
     if (path === '/transactions') {
       const txnFilters = {
@@ -695,9 +695,7 @@ function GlobalRealtimeSync() {
   return null
 }
 
-function ContentWrapper({ children }) {
-  return <>{children}</>
-}
+
 
 function RuntimeRouteTracker() {
   const location = useLocation()
@@ -828,7 +826,7 @@ function AnimatedRoutes() {
         <Route path="/guide" element={<SuspenseSkeleton pathname="/guide"><AuthGuard><Guide /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/settings" element={<SuspenseSkeleton pathname="/settings"><AuthGuard><Settings /></AuthGuard></SuspenseSkeleton>} />
         <Route path="/about" element={<SuspenseSkeleton pathname="/about"><About /></SuspenseSkeleton>} />
-        <Route path="/report-bug" element={<SuspenseSkeleton pathname="/report-bug"><ReportBug /></SuspenseSkeleton>} />
+        <Route path="/report-bug" element={<SuspenseSkeleton pathname="/report-bug"><AuthGuard><ReportBug /></AuthGuard></SuspenseSkeleton>} />
         <Route path="*" element={<Navigate to="/not-found" replace />} />
       </Routes>
     </div>
@@ -941,6 +939,8 @@ function QueryErrorRecovery() {
   )
 }
 
+let swListenersAttached = false
+
 function ShellStatusBanners() {
   const location = useLocation()
   const [isOffline, setIsOffline] = useState(() => {
@@ -964,17 +964,21 @@ function ShellStatusBanners() {
       if (registration) {
         setSwRegistration(registration)
 
-        // 1. Check for updates every hour in the background
-        setInterval(() => {
-          registration.update()
-        }, 60 * 60 * 1000)
-
-        // 2. Force an aggressive check whenever the user brings the app to foreground
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') {
-            registration.update()
+        if (!swListenersAttached) {
+          const r = registration
+          if (r) {
+            setInterval(() => {
+              r.update()
+            }, 60 * 60 * 1000)
           }
-        })
+
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && r) {
+              r.update()
+            }
+          })
+          swListenersAttached = true
+        }
       }
     },
     onRegisterError(error) {
@@ -1204,9 +1208,7 @@ function AppShell() {
       <CustomCategoryLoader />
       <EagerChunkPreloader />
       <main id="main-content" role="main" className="flex-1">
-        <ContentWrapper>
-          <AnimatedRoutes />
-        </ContentWrapper>
+        <AnimatedRoutes />
       </main>
       <BottomNav />
       <QueryErrorRecovery />

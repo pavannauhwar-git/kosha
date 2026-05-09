@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
 const avatarCache = new Map();
@@ -37,6 +37,10 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
         }
 
         if (isMounted && data?.signedUrl) {
+          if (avatarCache.size > 50) {
+            const firstKey = avatarCache.keys().next().value
+            avatarCache.delete(firstKey)
+          }
           avatarCache.set(src, data.signedUrl);
           setUrl(data.signedUrl);
         }
