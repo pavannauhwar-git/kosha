@@ -339,7 +339,8 @@ with check ((select auth.uid()) = id);
 drop policy if exists "profiles: update own" on profiles;
 create policy "profiles: update own" on profiles
 for update to authenticated
-using ((select auth.uid()) = id);
+using ((select auth.uid()) = id)
+with check ((select auth.uid()) = id);
 
 -- Transactions policies
 drop policy if exists "transactions: select own" on transactions;
@@ -3090,3 +3091,34 @@ create trigger trg_sync_split_to_tx
         old.description is distinct from new.description or
         old.expense_date is distinct from new.expense_date)
   execute function public.sync_split_to_transaction();
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Migration: Fix "new row violates RLS policy for table 'profiles'" error
+-- Run in: Supabase Dashboard → SQL Editor → New query → Run
+--
+-- ROOT CAUSE:
+--   Commit 8315813 replaced the broad FOR ALL "Users can fully manage own
+--   profile" policy with per-operation policies. The new "profiles: update own"
+--   policy was missing a WITH CHECK clause. PostgreSQL evaluates WITH CHECK on
+--   the NEW row for UPDATE operations (including the ON CONFLICT DO UPDATE
+--   branch of an upsert). Without it, PostgreSQL falls back to evaluating the
+--   USING expression against the OLD row — but for an upsert that creates a
+--   brand-new row the "old" row is effectively null, so auth.uid() = null →
+--   false → RLS violation ("new row violates row-level security policy").
+--
+-- FIX:
+--   The "profiles: update own" policy above now includes WITH CHECK.
+--   Run just the two statements below to apply it to your live database.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+drop policy if exists "profiles: update own" on profiles;
+create policy "profiles: update own" on profiles
+for update to authenticated
+using ((select auth.uid()) = id)
+with check ((select auth.uid()) = id);
+
+-- Safety: recreate the new-user trigger unconditionally.
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
