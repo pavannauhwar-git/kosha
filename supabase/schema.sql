@@ -386,9 +386,13 @@ using ((select auth.uid()) = user_id);
 
 -- Invites policies
 drop policy if exists "invites: select for validation" on invites;
-create policy "invites: select for validation" on invites
+drop policy if exists "invites: select own" on invites;
+create policy "invites: select own" on invites
 for select to authenticated
-using (true);
+using (
+  (select auth.uid()) = created_by or 
+  (select auth.uid()) = used_by
+);
 
 drop policy if exists "invites: insert own" on invites;
 create policy "invites: insert own" on invites
@@ -396,24 +400,51 @@ for insert to authenticated
 with check ((select auth.uid()) = created_by);
 
 drop policy if exists "invites: update to consume" on invites;
-create policy "invites: update to consume" on invites
+drop policy if exists "invites: update own" on invites;
+create policy "invites: update own" on invites
 for update to authenticated
-using (
-  ((select auth.uid()) = created_by)
-  or (used_by is null)
-)
-with check (
-  ((select auth.uid()) = created_by)
-  or (
-    used_by = (select auth.uid())
-    and used_at is not null
-  )
-);
+using ((select auth.uid()) = created_by)
+with check ((select auth.uid()) = created_by);
  
 drop policy if exists "invites: delete own" on invites;
 create policy "invites: delete own" on invites
 for delete to authenticated
 using ((select auth.uid()) = created_by);
+
+-- RPC for consuming invites securely
+create or replace function public.consume_wallet_invite(p_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_invite record;
+begin
+  if v_uid is null then
+    return jsonb_build_object('consumed', false, 'reason', 'unauthenticated');
+  end if;
+
+  select id, created_by into v_invite
+  from public.invites
+  where token = p_token and used_by is null;
+
+  if not found then
+    return jsonb_build_object('consumed', false, 'reason', 'invite-not-found-or-used');
+  end if;
+
+  if v_invite.created_by = v_uid then
+    return jsonb_build_object('consumed', false, 'reason', 'cannot-consume-own-invite');
+  end if;
+
+  update public.invites
+  set used_by = v_uid, used_at = now()
+  where id = v_invite.id;
+
+  return jsonb_build_object('consumed', true, 'inviteId', v_invite.id);
+end;
+$$;
 
 -- Create profile row automatically when a new auth user is inserted
 create or replace function public.handle_new_user()
@@ -560,6 +591,48 @@ for delete to authenticated
 using (
   bucket_id = 'bug-reports'
   and (storage.foldername(name))[1] = (select auth.uid())::text
+);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Avatars storage
+-- ─────────────────────────────────────────────────────────────────────────────
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'avatars',
+  'avatars',
+  false,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set public = false;
+
+drop policy if exists "avatars_storage: upload own" on storage.objects;
+create policy "avatars_storage: upload own" on storage.objects
+for insert to authenticated
+with check (
+  bucket_id = 'avatars'
+);
+
+drop policy if exists "avatars_storage: update own" on storage.objects;
+create policy "avatars_storage: update own" on storage.objects
+for update to authenticated
+using (
+  bucket_id = 'avatars'
+);
+
+drop policy if exists "avatars_storage: read" on storage.objects;
+create policy "avatars_storage: read" on storage.objects
+for select to authenticated
+using (
+  bucket_id = 'avatars'
+);
+
+drop policy if exists "avatars_storage: delete own" on storage.objects;
+create policy "avatars_storage: delete own" on storage.objects
+for delete to authenticated
+using (
+  bucket_id = 'avatars'
 );
 
 create or replace function public.submit_bug_report(

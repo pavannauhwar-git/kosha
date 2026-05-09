@@ -8,6 +8,7 @@ import PixelDatePicker from '../components/ui/PixelDatePicker'
 import EmptyState from '../components/common/EmptyState'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import AppToast from '../components/common/AppToast'
+import SecureAvatar from '../components/ui/SecureAvatar'
 import { useAuth } from '../context/AuthContext'
 import { getAuthUserId } from '../lib/authStore'
 import { supabase } from '../lib/supabase'
@@ -1260,7 +1261,7 @@ export default function Splitwise() {
                           style={{ border: '1px solid var(--ds-border)' }}
                         >
                           {avatarUrl ? (
-                            <img
+                            <SecureAvatar
                               src={avatarUrl}
                               alt={displayName}
                               className="h-full w-full object-cover"

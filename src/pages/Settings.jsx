@@ -11,6 +11,7 @@ import { createFadeUp, createStagger } from '../lib/animations'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import SecureAvatar from '../components/ui/SecureAvatar'
 import {
   getReminderPrefs,
   setReminderPrefs,
@@ -152,14 +153,7 @@ export default function Settings() {
         .upload(path, file, { cacheControl: '3600', upsert: true })
       if (uploadError) throw uploadError
 
-      const { data: publicUrlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(path)
-
-      const publicUrl = publicUrlData?.publicUrl
-      if (!publicUrl) throw new Error('Could not get public URL for avatar.')
-
-      await updateProfile({ avatar_url: publicUrl })
+      await updateProfile({ avatar_url: path })
     } catch (e) {
       setPhotoError(e.message || 'Could not update photo. Try again.')
     } finally {
@@ -337,7 +331,7 @@ export default function Settings() {
                              hover:border-brand/30 hover:shadow-2xl"
                 >
                   {avatarUrl ? (
-                    <img
+                    <SecureAvatar
                       src={avatarUrl}
                       alt={displayName}
                       className="w-full h-full object-cover"
@@ -580,7 +574,7 @@ export default function Settings() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center overflow-hidden border border-brand-border shrink-0">
                         {lp.avatar_url ? (
-                          <img src={lp.avatar_url} alt="" className="w-full h-full object-cover" />
+                          <SecureAvatar src={lp.avatar_url} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <User size={16} className="text-brand" />
                         )}

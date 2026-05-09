@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { getActiveWalletUserId, setActiveWalletUserId } from '../../lib/walletStore'
 import { unlinkPartner } from '../../lib/walletSync'
 import { useLocation, useNavigate } from 'react-router-dom'
+import SecureAvatar from '../ui/SecureAvatar'
 
 function MenuRow({ icon, label, onClick, destructive = false, disabled = false }) {
   return (
@@ -99,9 +100,9 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                      ${isViewingPartner ? 'ring-2 ring-warning-text/60 ring-offset-1 ring-offset-kosha-bg' : ''}`}
         >
           {isViewingPartner && activePartner?.avatar_url ? (
-            <img src={activePartner.avatar_url} alt={activePartner.display_name} className="w-full h-full object-cover" />
+            <SecureAvatar src={activePartner.avatar_url} alt={activePartner.display_name} className="w-full h-full object-cover" />
           ) : avatarUrl ? (
-            <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+            <SecureAvatar src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
           ) : isViewingPartner && activePartner?.display_name ? (
             <span className="text-label font-semibold" style={{ color: 'var(--ds-warning)' }}>
               {activePartner.display_name[0].toUpperCase()}
@@ -145,7 +146,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                                 flex items-center justify-center overflow-hidden shrink-0"
                   style={{ border: '1px solid var(--ds-border)' }}>
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                    <SecureAvatar src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-label font-semibold text-ink">{initial}</span>
                   )}
@@ -188,7 +189,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                             {activeWalletUserId === p.id ? (
                               <div className="w-2 h-2 rounded-full bg-brand" />
                             ) : p.avatar_url ? (
-                              <img src={p.avatar_url} className="w-full h-full object-cover" alt="" />
+                              <SecureAvatar src={p.avatar_url} className="w-full h-full object-cover" alt="" />
                             ) : null}
                           </div>
                           <span className="flex-1 text-left truncate">{p.display_name}</span>

@@ -69,32 +69,20 @@ export async function consumeInviteToken({ supabaseClient, inviteToken, userId }
     return { consumed: false, reason: 'missing-token-or-user' }
   }
 
-  const { data: invite, error: selectError } = await supabaseClient
-    .from('invites')
-    .select('id')
-    .eq('token', inviteToken)
-    .is('used_by', null)
-    .single()
+  const { data, error } = await supabaseClient.rpc('consume_wallet_invite', {
+    p_token: inviteToken
+  })
 
-  if (selectError || !invite) {
-    if (selectError?.code === 'PGRST116') {
-      return { consumed: false, reason: 'invite-not-found-or-used' }
-    }
-    if (selectError) throw selectError
-    return { consumed: false, reason: 'invite-not-found-or-used' }
+  if (error) {
+    console.error('[Kosha] consume_wallet_invite error:', error)
+    throw error
   }
 
-  const { error: updateError } = await supabaseClient
-    .from('invites')
-    .update({
-      used_by: userId,
-      used_at: new Date().toISOString(),
-    })
-    .eq('id', invite.id)
+  if (!data?.consumed) {
+    return { consumed: false, reason: data?.reason || 'invite-not-found-or-used' }
+  }
 
-  if (updateError) throw updateError
-
-  return { consumed: true, inviteId: invite.id }
+  return { consumed: true, inviteId: data.inviteId }
 }
 
 export async function deleteInvite({ supabaseClient, inviteId }) {

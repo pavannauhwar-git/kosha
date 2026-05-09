@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, User } from 'lucide-react'
+import SecureAvatar from '../ui/SecureAvatar'
 
 export default function ViewProfilePhotoDialog({ open, onClose, avatarUrl, displayName, initial }) {
   return (
@@ -29,7 +30,7 @@ export default function ViewProfilePhotoDialog({ open, onClose, avatarUrl, displ
               </button>
 
               {avatarUrl ? (
-                <img
+                <SecureAvatar
                   src={avatarUrl}
                   alt={displayName}
                   className="w-full h-full object-cover"
