@@ -92,7 +92,7 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
     queries: years.map((year) => ({
       queryKey: ['yearYoy', year, targetUserId],
       queryFn: () => fetchYearSummary(year, targetUserId),
-      enabled,
+      enabled: enabled && !!targetUserId,
       staleTime: 5 * 60 * 1000,
     })),
   })
