@@ -1094,6 +1094,11 @@ function ShellStatusBanners() {
     setUpdating(true)
     try {
       await updateServiceWorker(true)
+      // Fallback: If the SW controllerchange event fails to fire (common on desktop
+      // browsers or when multiple tabs are open), forcefully reload the page.
+      setTimeout(() => {
+        window.location.reload()
+      }, 1200)
     } catch {
       setUpdating(false)
       announceInstallMessage('Could not update right now. Please retry.')

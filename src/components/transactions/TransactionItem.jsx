@@ -62,7 +62,7 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
         })
       } else if (isBill) {
         onClose()
-        navigate(`/obligations?focus=${txn.linked_bill_id}`)
+        navigate(`/bills?focus=${txn.linked_bill_id}`)
       } else if (isLoan) {
         onClose()
         navigate(`/loans?repaymentLoan=${txn.linked_loan_id}&repaymentTxn=${txn.id}`)
@@ -70,7 +70,7 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
     } catch {
       onClose()
       if (isSplitwise) navigate('/splitwise')
-      else if (isBill) navigate('/obligations')
+      else if (isBill) navigate('/bills')
       else if (isLoan) navigate('/loans')
     } finally {
       setNavigating(false)
