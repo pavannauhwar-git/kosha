@@ -10,21 +10,23 @@ export function AuthProvider({ children }) {
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
+    reloadLinkedData,
   } = useAuthState()
 
-  // Memoize context value to prevent unnecessary re-renders in consumers
   const value = useMemo(() => ({
     user, profile, loading, profileLoading,
     linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
+    reloadLinkedData,
   }), [
     user, profile, loading, profileLoading,
     linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
+    reloadLinkedData,
   ])
 
   return createElement(AuthContext.Provider, { value }, children)

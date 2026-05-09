@@ -173,7 +173,7 @@ async function updateLoan(id, updates) {
   return data
 }
 
-async function deleteLoan(id) {
+async function deleteLoan(id, cachedLoan = null) {
   const userId = getAuthUserId()
   const { error } = await supabase
     .from('loans')
@@ -189,7 +189,12 @@ async function deleteLoan(id) {
       action: FINANCIAL_EVENT_ACTIONS.LOAN_DELETE,
       entityType: 'loan',
       entityId: id,
-      metadata: {},
+      metadata: {
+        counterparty: cachedLoan?.counterparty,
+        amount: cachedLoan?.amount,
+        direction: cachedLoan?.direction,
+        loan_date: cachedLoan?.loan_date,
+      },
     }),
     'loan delete audit'
   )
@@ -268,8 +273,6 @@ function refreshLoanAndTransactionCachesInBackground({ invalidateLoanFn, invalid
       evictSwCacheEntries('/transactions'),
       invalidateLoanFn(),
       invalidateTransactionFn(),
-      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
     ]),
     scope
   )
@@ -509,7 +512,7 @@ export async function deleteLoanMutation(id) {
   optimisticallyDeleteTransactionsByLoanId(id)
 
   try {
-    await deleteLoan(id)
+    await deleteLoan(id, cachedLoan)
     await queryClient.cancelQueries({ queryKey: ['loans'] })
     optimisticallyDeleteLoan(id)
     optimisticallyDeleteTransactionsByLoanId(id)

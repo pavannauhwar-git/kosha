@@ -55,7 +55,8 @@ export function useAuthState() {
       
       // Update cache with the full enriched profile
       queryClient.setQueryData(profileQueryKey(userId), fullData)
-    } catch {
+    } catch (err) {
+      console.warn('[Kosha] loadProfile failed', err)
       setProfile(null)
       setLinkedUserIds([])
       setLinkedProfiles([])
@@ -292,5 +293,6 @@ export function useAuthState() {
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
+    reloadLinkedData: () => user?.id ? loadProfile(user.id) : Promise.resolve(),
   }
 }

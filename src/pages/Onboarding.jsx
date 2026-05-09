@@ -347,6 +347,7 @@ export default function Onboarding() {
   const [step,   setStep]   = useState(0)
   const [name,   setName]   = useState('')
   const [saving, setSaving] = useState(false)
+  const [finishError, setFinishError] = useState('')
 
   // If already onboarded (e.g. user navigated here manually), send to dashboard
   // Use an effect so we don't navigate before render
@@ -413,7 +414,7 @@ export default function Onboarding() {
       setTimeout(() => navigate(hasPendingSplitInvite ? '/splitwise' : '/', { replace: true }), 0)
     } catch (e) {
       console.error('[Kosha] Onboarding finish failed', e)
-      alert(`Failed to save profile: ${e.message}`)
+      setFinishError(e.message || 'Could not save profile. Please try again.')
       setSaving(false)
     }
   }
@@ -434,6 +435,9 @@ export default function Onboarding() {
             {saving ? 'Saving…' : 'Skip to dashboard →'}
           </button>
         </div>
+        {finishError && (
+          <p className="text-[12px] text-expense-text font-medium mb-2 text-right">{finishError}</p>
+        )}
         <div className="flex justify-center mb-2">
           <img src="/illustrations/onboarding_hero.png" alt="Welcome to Kosha" className="w-48 h-auto illustration" />
         </div>

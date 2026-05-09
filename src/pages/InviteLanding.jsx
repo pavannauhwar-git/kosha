@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { UsersThree, Handshake, ArrowRight, CheckCircle, XCircle } from '@phosphor-icons/react'
@@ -23,6 +23,11 @@ export default function InviteLanding() {
   const [details, setDetails] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const navTimerRef = useRef(null)
+
+  useEffect(() => {
+    return () => { if (navTimerRef.current) clearTimeout(navTimerRef.current) }
+  }, [])
 
   const isSplitwise = !!splitToken
   const activeToken = splitToken || token
@@ -89,7 +94,7 @@ export default function InviteLanding() {
       if (isSplitwise) {
         const joined = await consumeSplitGroupInviteMutation(activeToken)
         setStatus('success')
-        setTimeout(() => { navigate('/splitwise', { replace: true }) }, 1500)
+        navTimerRef.current = setTimeout(() => { navigate('/splitwise', { replace: true }) }, 1500)
       } else {
         const result = await consumeInviteToken({
           supabaseClient: supabase,
@@ -98,7 +103,7 @@ export default function InviteLanding() {
         })
         if (!result.consumed) throw new Error(result.reason || 'Could not join wallet.')
         setStatus('success')
-        setTimeout(() => { navigate('/', { replace: true }) }, 1500)
+        navTimerRef.current = setTimeout(() => { navigate('/', { replace: true }) }, 1500)
       }
     } catch (e) {
       const msg = e.message || ''

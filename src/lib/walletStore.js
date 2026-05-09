@@ -41,6 +41,7 @@ export function setActiveWalletUserId(userId) {
         'transactions',
         'transactionsRecent',
         'transactionsDigest',
+        'transactionSignalAggregates',
         'todayExpenses',
         'dailyExpenseTotals',
         'monthExpenseDailyTotals',

@@ -71,7 +71,7 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { user, profile, updateProfile, updatePassword, linkedProfiles } = useAuth()
+  const { user, profile, updateProfile, updatePassword, linkedProfiles, reloadLinkedData } = useAuth()
   const fileInputRef = useRef(null)
 
   const [uploading, setUploading] = useState(false)
@@ -252,7 +252,7 @@ export default function Settings() {
     try {
       await unlinkPartner(user.id, partnerId)
       if (getActiveWalletUserId() === partnerId) setActiveWalletUserId(user.id)
-      await queryClient.invalidateQueries()
+      await reloadLinkedData()
     } catch (error) {
       setWalletError(error?.message || 'Could not unlink wallet.')
     } finally {
