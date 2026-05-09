@@ -1472,7 +1472,7 @@ alter table user_categories enable row level security;
 drop policy if exists "user_categories: select own" on user_categories;
 create policy "user_categories: select own" on user_categories
   for select to authenticated
-  using (auth.uid() = user_id);
+  using (public.is_linked(user_id));
 
 drop policy if exists "user_categories: insert own" on user_categories;
 create policy "user_categories: insert own" on user_categories

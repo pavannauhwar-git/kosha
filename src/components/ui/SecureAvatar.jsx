@@ -55,7 +55,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
 
   if (!url) {
     return (
-      <div className={`flex items-center justify-center bg-gray-200 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 font-medium ${className || ''}`}>
+      <div className={`flex items-center justify-center bg-kosha-surface-2 text-ink-3 font-medium ${className || ''}`}>
         {fallbackInitial || '?'}
       </div>
     );

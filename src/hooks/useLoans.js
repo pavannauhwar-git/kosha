@@ -212,7 +212,7 @@ function cloneCacheData(data) {
 }
 
 function snapshotLoanCaches() {
-  const targetUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
   return [
     [LOAN_ACTIVE_GIVEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_GIVEN_KEY(targetUserId)) || [])],
     [LOAN_ACTIVE_TAKEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_TAKEN_KEY(targetUserId)) || [])],
@@ -228,7 +228,7 @@ function restoreLoanSnapshot(snapshot) {
 
 export function optimisticallyInsertLoan(loan) {
   if (!loan?.id) return
-  const targetUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
   const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
   const prev = queryClient.getQueryData(key)
   const base = Array.isArray(prev) ? prev : []
@@ -238,7 +238,7 @@ export function optimisticallyInsertLoan(loan) {
 
 export function optimisticallyDeleteLoan(id) {
   if (!id) return
-  const targetUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
   for (const key of [LOAN_ACTIVE_GIVEN_KEY(targetUserId), LOAN_ACTIVE_TAKEN_KEY(targetUserId), LOAN_SETTLED_KEY(targetUserId)]) {
     const data = queryClient.getQueryData(key)
     if (Array.isArray(data)) {
@@ -249,7 +249,7 @@ export function optimisticallyDeleteLoan(id) {
 
 function getLoanFromCacheById(id) {
   if (!id) return null
-  const targetUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
   for (const key of [LOAN_ACTIVE_GIVEN_KEY(targetUserId), LOAN_ACTIVE_TAKEN_KEY(targetUserId), LOAN_SETTLED_KEY(targetUserId)]) {
     const data = queryClient.getQueryData(key)
     if (Array.isArray(data)) {
@@ -354,7 +354,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
   suppress('loans')
   suppress('transactions')
 
-  const targetUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
   const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
   const prev = queryClient.getQueryData(key)
   if (Array.isArray(prev)) {
@@ -459,8 +459,8 @@ export async function updateLoanMutation(id, updates) {
 
   // Optimistic: update in the correct cache bucket
   const cachedLoan = getLoanFromCacheById(id)
+  const targetUserId = getActiveWalletUserId()
   if (cachedLoan) {
-    const targetUserId = getAuthUserId()
     const key = cachedLoan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
     const prev = queryClient.getQueryData(key)
     if (Array.isArray(prev)) {
@@ -472,7 +472,6 @@ export async function updateLoanMutation(id, updates) {
     const updated = await updateLoan(id, updates)
     await queryClient.cancelQueries({ queryKey: ['loans'] })
 
-    const targetUserId = getAuthUserId()
     const oldKey = cachedLoan?.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
     const newKey = updated.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
 

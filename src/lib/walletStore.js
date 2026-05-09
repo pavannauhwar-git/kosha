@@ -57,6 +57,7 @@ export function setActiveWalletUserId(userId) {
         'runningBalance',
         'monthSummary',
         'yearSummary',
+        'userCategories',
       ].includes(k)
     }
   })

@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
+import { getActiveWalletUserId } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
 import { registerCustomCategories } from '../lib/categories'
 
@@ -78,7 +79,7 @@ export function useUserCategories({ enabled = true } = {}) {
     enabled,
     queryFn: () =>
       traceQuery('userCategories', async () => {
-        const userId = getAuthUserId()
+        const userId = getActiveWalletUserId()
         const { data: rows, error: queryError } = await supabase
           .from('user_categories')
           .select(COLUMNS)

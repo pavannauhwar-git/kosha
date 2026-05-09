@@ -589,7 +589,7 @@ export default function Settings() {
                       <div className="min-w-0">
                         <p className="text-[13px] font-semibold text-ink leading-tight truncate">{lp.display_name}</p>
                         <p className="text-[10px] text-ink-3 mt-1 flex items-center gap-1.5 uppercase font-bold tracking-wider">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-income animate-pulse" />
                           Live Sync Active
                         </p>
                       </div>

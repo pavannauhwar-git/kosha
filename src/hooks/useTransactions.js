@@ -1126,11 +1126,7 @@ function refreshTransactionCachesInBackground(invalidateFn, scope) {
     runInBackground(
       (async () => {
         import('./useSplitwise').then(m => m.invalidateSplitwiseCache()).catch(() => {})
-        await Promise.all([
-          invalidateFn(),
-          queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
-        ])
+        await invalidateFn()
       })(),
       scope
     )

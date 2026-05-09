@@ -592,7 +592,7 @@ export async function deleteSplitExpenseMutation(expenseId) {
     .from('split_expenses')
     .select('linked_transaction_id')
     .eq('id', expenseId)
-    .single()
+    .maybeSingle()
 
   const { error } = await supabase
     .from('split_expenses')
@@ -656,7 +656,7 @@ export async function deleteSplitSettlementMutation(settlementId) {
     .from('split_settlements')
     .select('payer_transaction_id, payee_transaction_id')
     .eq('id', settlementId)
-    .single()
+    .maybeSingle()
 
   const { error } = await supabase
     .from('split_settlements')

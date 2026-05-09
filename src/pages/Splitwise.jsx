@@ -32,7 +32,6 @@ import {
   recordSplitSettlementMutation,
   round2,
   useSplitwise,
-  useSplitwiseRealtime,
   leaveSplitGroupMutation,
   toggleArchiveSplitGroupMutation,
   updateSplitGroupMutation,
@@ -140,7 +139,6 @@ export default function Splitwise() {
     error,
   } = useSplitwise({ groupId: activeGroupId, enabled: true })
 
-  useSplitwiseRealtime()
   useUserCategories()
   const expenseCategoryOptions = getCategoriesForType('expense')
 

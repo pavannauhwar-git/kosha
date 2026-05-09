@@ -32,7 +32,7 @@ const AmountInput = forwardRef(function AmountInput(
     setFocused(false)
     if (value && !isNaN(Number(value))) {
       const num = parseFloat(value)
-      if (num !== 0) {
+      if (!isNaN(num)) {
         onChange(String(num))
       }
     }

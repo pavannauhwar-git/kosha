@@ -211,7 +211,7 @@ export async function updateLiability(id, updates) {
   return data
 }
 
-export async function deleteLiability(id) {
+export async function deleteLiability(id, cachedBill = null) {
   const userId = getAuthUserId()
   
   const { error } = await supabase
@@ -229,7 +229,12 @@ export async function deleteLiability(id) {
       entityType: 'liability',
       entityId: id,
       metadata: {
-        before: null,
+        description: cachedBill?.description,
+        amount: cachedBill?.amount,
+        due_date: cachedBill?.due_date,
+        paid: cachedBill?.paid,
+        is_recurring: cachedBill?.is_recurring,
+        recurrence: cachedBill?.recurrence,
       },
     }),
     'liabilities delete audit'
@@ -480,10 +485,11 @@ export async function updateLiabilityMutation(id, updates) {
   suppress('liabilities')
 
   // Optimistically update in pending cache
-  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+  const targetUserId = getActiveWalletUserId()
+  const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   if (Array.isArray(pendingData)) {
     queryClient.setQueryData(
-      LIABILITY_PENDING_QUERY_KEY,
+      LIABILITY_PENDING_QUERY_KEY(targetUserId),
       sortLiabilitiesByDueDateAsc(pendingData.map(row => row?.id === id ? { ...row, ...updates } : row))
     )
   }
@@ -493,10 +499,10 @@ export async function updateLiabilityMutation(id, updates) {
     await queryClient.cancelQueries({ queryKey: ['liabilities'] })
 
     // Replace optimistic row with server row
-    const latestPending = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY)
+    const latestPending = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
     if (Array.isArray(latestPending)) {
       queryClient.setQueryData(
-        LIABILITY_PENDING_QUERY_KEY,
+        LIABILITY_PENDING_QUERY_KEY(targetUserId),
         sortLiabilitiesByDueDateAsc(latestPending.map(row => row?.id === id ? updated : row))
       )
     }
@@ -531,7 +537,7 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
     const deleteFn = __testOverrides?.deleteLiability || deleteLiability
     const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
 
-    await deleteFn(id)
+    await deleteFn(id, cachedBill)
     await queryClient.cancelQueries({ queryKey: ['liabilities'] })
     await queryClient.cancelQueries({ queryKey: ['transactions'] })
     await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })

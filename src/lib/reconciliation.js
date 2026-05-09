@@ -1,4 +1,4 @@
-import { getAuthUserId } from './authStore'
+import { getActiveWalletUserId } from './walletStore'
 import { normalizeText } from './bugReportUtils.js'
 
 const RECON_REVIEWED_KEY_PREFIX = 'kosha:reconciliation-reviewed-v1:'
@@ -20,7 +20,7 @@ function duplicateKey(txn) {
 }
 
 function reviewedStorageKey() {
-  return `${RECON_REVIEWED_KEY_PREFIX}${getAuthUserId()}`
+  return `${RECON_REVIEWED_KEY_PREFIX}${getActiveWalletUserId()}`
 }
 
 export function getReviewedReconciliationIds() {
