@@ -334,13 +334,13 @@ using (public.is_linked(id));
 drop policy if exists "profiles: insert own" on profiles;
 create policy "profiles: insert own" on profiles
 for insert to authenticated
-with check ((select auth.uid()) = id);
+with check (auth.uid() = id);
 
 drop policy if exists "profiles: update own" on profiles;
 create policy "profiles: update own" on profiles
 for update to authenticated
-using ((select auth.uid()) = id)
-with check ((select auth.uid()) = id);
+using (auth.uid() = id)
+with check (auth.uid() = id);
 
 -- Transactions policies
 drop policy if exists "transactions: select own" on transactions;
@@ -351,17 +351,17 @@ using (public.is_linked(user_id));
 drop policy if exists "transactions: insert own" on transactions;
 create policy "transactions: insert own" on transactions
 for insert to authenticated
-with check ((select auth.uid()) = user_id);
+with check (auth.uid() = user_id);
 
 drop policy if exists "transactions: update own" on transactions;
 create policy "transactions: update own" on transactions
 for update to authenticated
-using ((select auth.uid()) = user_id);
+using (auth.uid() = user_id);
 
 drop policy if exists "transactions: delete own" on transactions;
 create policy "transactions: delete own" on transactions
 for delete to authenticated
-using ((select auth.uid()) = user_id);
+using (auth.uid() = user_id);
 
 -- Liabilities policies
 drop policy if exists "liabilities: select own" on liabilities;
@@ -372,17 +372,17 @@ using (public.is_linked(user_id));
 drop policy if exists "liabilities: insert own" on liabilities;
 create policy "liabilities: insert own" on liabilities
 for insert to authenticated
-with check ((select auth.uid()) = user_id);
+with check (auth.uid() = user_id);
 
 drop policy if exists "liabilities: update own" on liabilities;
 create policy "liabilities: update own" on liabilities
 for update to authenticated
-using ((select auth.uid()) = user_id);
+using (auth.uid() = user_id);
 
 drop policy if exists "liabilities: delete own" on liabilities;
 create policy "liabilities: delete own" on liabilities
 for delete to authenticated
-using ((select auth.uid()) = user_id);
+using (auth.uid() = user_id);
 
 -- Invites policies
 drop policy if exists "invites: select for validation" on invites;
@@ -390,26 +390,26 @@ drop policy if exists "invites: select own" on invites;
 create policy "invites: select own" on invites
 for select to authenticated
 using (
-  (select auth.uid()) = created_by or 
-  (select auth.uid()) = used_by
+  auth.uid() = created_by or 
+  auth.uid() = used_by
 );
 
 drop policy if exists "invites: insert own" on invites;
 create policy "invites: insert own" on invites
 for insert to authenticated
-with check ((select auth.uid()) = created_by);
+with check (auth.uid() = created_by);
 
 drop policy if exists "invites: update to consume" on invites;
 drop policy if exists "invites: update own" on invites;
 create policy "invites: update own" on invites
 for update to authenticated
-using ((select auth.uid()) = created_by)
-with check ((select auth.uid()) = created_by);
+using (auth.uid() = created_by)
+with check (auth.uid() = created_by);
  
 drop policy if exists "invites: delete own" on invites;
 create policy "invites: delete own" on invites
 for delete to authenticated
-using ((select auth.uid()) = created_by);
+using (auth.uid() = created_by);
 
 -- RPC for consuming invites securely
 create or replace function public.consume_wallet_invite(p_token text)
@@ -419,7 +419,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_invite record;
 begin
   if v_uid is null then
@@ -503,7 +503,7 @@ alter table public.bug_reports enable row level security;
 drop policy if exists "bug_reports: insert own" on public.bug_reports;
 create policy "bug_reports: insert own" on public.bug_reports
 for insert to authenticated
-with check ((select auth.uid()) = user_id);
+with check (auth.uid() = user_id);
 
 drop policy if exists "bug_reports: select own" on public.bug_reports;
 create policy "bug_reports: select own" on public.bug_reports
@@ -513,8 +513,8 @@ using (auth.uid() = user_id);
 drop policy if exists "bug_reports: update own" on public.bug_reports;
 create policy "bug_reports: update own" on public.bug_reports
 for update to authenticated
-using ((select auth.uid()) = user_id)
-with check ((select auth.uid()) = user_id);
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Phase 2: Bug reporting triage, screenshots, and duplicate handling
@@ -574,7 +574,7 @@ create policy "bug_reports_storage: upload own" on storage.objects
 for insert to authenticated
 with check (
   bucket_id = 'bug-reports'
-  and (storage.foldername(name))[1] = (select auth.uid())::text
+  and (storage.foldername(name))[1] = auth.uid()::text
 );
 
 drop policy if exists "bug_reports_storage: read own" on storage.objects;
@@ -590,7 +590,7 @@ create policy "bug_reports_storage: delete own" on storage.objects
 for delete to authenticated
 using (
   bucket_id = 'bug-reports'
-  and (storage.foldername(name))[1] = (select auth.uid())::text
+  and (storage.foldername(name))[1] = auth.uid()::text
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -655,7 +655,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_existing_id uuid;
   v_existing_occ integer;
   v_priority text;
@@ -835,7 +835,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_inserted integer := 0;
   v_run_date date;
   rec record;
@@ -970,7 +970,7 @@ using (auth.uid() = user_id);
 drop policy if exists "financial_events: insert own" on public.financial_events;
 create policy "financial_events: insert own" on public.financial_events
 for insert to authenticated
-with check ((select auth.uid()) = user_id);
+with check (auth.uid() = user_id);
 
 drop policy if exists "financial_events: update none" on public.financial_events;
 create policy "financial_events: update none" on public.financial_events
@@ -1238,18 +1238,18 @@ create policy "reconciliation_reviews: select own" on public.reconciliation_revi
 drop policy if exists "reconciliation_reviews: insert own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: insert own" on public.reconciliation_reviews
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (auth.uid() = user_id);
 
 drop policy if exists "reconciliation_reviews: update own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: update own" on public.reconciliation_reviews
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 drop policy if exists "reconciliation_reviews: delete own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: delete own" on public.reconciliation_reviews
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Category Budgets — per-category monthly spending limits
@@ -1292,17 +1292,17 @@ create policy "category_budgets: select own" on category_budgets
 drop policy if exists "category_budgets: insert own" on category_budgets;
 create policy "category_budgets: insert own" on category_budgets
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (auth.uid() = user_id);
 
 drop policy if exists "category_budgets: update own" on category_budgets;
 create policy "category_budgets: update own" on category_budgets
   for update to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 drop policy if exists "category_budgets: delete own" on category_budgets;
 create policy "category_budgets: delete own" on category_budgets
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- User Custom Categories
@@ -1345,12 +1345,12 @@ create policy "user_categories: select own" on user_categories
 drop policy if exists "user_categories: insert own" on user_categories;
 create policy "user_categories: insert own" on user_categories
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (auth.uid() = user_id);
 
 drop policy if exists "user_categories: update own" on user_categories;
 create policy "user_categories: update own" on user_categories
   for update to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 -- Enforce max 15 active custom categories per user
 create or replace function check_user_category_limit()
@@ -1765,7 +1765,7 @@ alter table split_group_invites enable row level security;
 -- is_split_group_owner checks for 'admin' role (renamed from 'owner')
 create or replace function public.is_split_group_owner(
   p_group_id uuid,
-  p_user_id uuid default (select auth.uid())
+  p_user_id uuid default auth.uid()
 )
 returns boolean
 language sql
@@ -1785,7 +1785,7 @@ $$;
 -- is_split_group_member_or_above checks for 'admin' or 'member' role
 create or replace function public.is_split_group_member_or_above(
   p_group_id uuid,
-  p_user_id uuid default (select auth.uid())
+  p_user_id uuid default auth.uid()
 )
 returns boolean
 language sql
@@ -1804,7 +1804,7 @@ $$;
 
 create or replace function public.has_split_group_access(
   p_group_id uuid,
-  p_user_id uuid default (select auth.uid())
+  p_user_id uuid default auth.uid()
 )
 returns boolean
 language sql
@@ -1836,7 +1836,7 @@ as $$
   from split_group_members m
   join profiles p on p.id = m.linked_user_id
   where m.group_id = p_group_id
-    and public.has_split_group_access(p_group_id, (select auth.uid()));
+    and public.has_split_group_access(p_group_id, auth.uid());
 $$;
 
 create or replace function public.split_create_group(
@@ -1849,7 +1849,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_group split_groups%rowtype;
   v_name text := btrim(coalesce(p_name, ''));
   v_self_name text := nullif(btrim(coalesce(p_self_display_name, '')), '');
@@ -1945,7 +1945,7 @@ create policy "split_groups: select own" on split_groups
 
 create policy "split_groups: insert own" on split_groups
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (auth.uid() = user_id);
 
 create policy "split_groups: update own" on split_groups
   for update to authenticated
@@ -1965,7 +1965,7 @@ drop policy if exists "split_group_access: insert owner" on split_group_access;
 create policy "split_group_access: insert owner" on split_group_access
   for insert to authenticated
   with check (
-    (select auth.uid()) = user_id
+    auth.uid() = user_id
     and role in ('admin', 'member', 'viewer')
     and public.is_split_group_owner(split_group_access.group_id)
   );
@@ -1993,7 +1993,7 @@ drop policy if exists "split_group_members: insert own" on split_group_members;
 create policy "split_group_members: insert own" on split_group_members
   for insert to authenticated
   with check (
-    ((select auth.uid()) = user_id)
+    (auth.uid() = user_id)
     and public.is_split_group_owner(split_group_members.group_id)
   );
 
@@ -2002,7 +2002,7 @@ create policy "split_group_members: update own" on split_group_members
   for update to authenticated
   using (public.is_split_group_owner(split_group_members.group_id))
   with check (
-    ((select auth.uid()) = user_id)
+    (auth.uid() = user_id)
     and public.is_split_group_owner(split_group_members.group_id)
   );
 
@@ -2020,7 +2020,7 @@ drop policy if exists "split_expenses: insert own" on split_expenses;
 create policy "split_expenses: insert own" on split_expenses
   for insert to authenticated
   with check (
-    ((select auth.uid()) = user_id)
+    (auth.uid() = user_id)
     and public.is_split_group_member_or_above(split_expenses.group_id)
   );
 
@@ -2029,7 +2029,7 @@ create policy "split_expenses: update own" on split_expenses
   for update to authenticated
   using (public.is_split_group_member_or_above(split_expenses.group_id))
   with check (
-    ((select auth.uid()) = user_id)
+    (auth.uid() = user_id)
     and public.is_split_group_member_or_above(split_expenses.group_id)
   );
 
@@ -2054,7 +2054,7 @@ drop policy if exists "split_expense_splits: insert own" on split_expense_splits
 create policy "split_expense_splits: insert own" on split_expense_splits
   for insert to authenticated
   with check (
-    ((select auth.uid()) = user_id)
+    (auth.uid() = user_id)
     and exists (
       select 1
       from split_expenses e
@@ -2075,7 +2075,7 @@ create policy "split_expense_splits: update own" on split_expense_splits
     )
   )
   with check (
-    ((select auth.uid()) = user_id)
+    (auth.uid() = user_id)
     and exists (
       select 1
       from split_expenses e
@@ -2105,7 +2105,7 @@ drop policy if exists "split_settlements: insert own" on split_settlements;
 create policy "split_settlements: insert own" on split_settlements
   for insert to authenticated
   with check (
-    ((select auth.uid()) = user_id)
+    (auth.uid() = user_id)
     and public.is_split_group_member_or_above(split_settlements.group_id)
   );
 
@@ -2114,7 +2114,7 @@ create policy "split_settlements: update own" on split_settlements
   for update to authenticated
   using (public.is_split_group_member_or_above(split_settlements.group_id))
   with check (
-    ((select auth.uid()) = user_id)
+    (auth.uid() = user_id)
     and public.is_split_group_member_or_above(split_settlements.group_id)
   );
 
@@ -2128,14 +2128,14 @@ create policy "split_group_invites: select own" on split_group_invites
   for select to authenticated
   using (
     public.is_split_group_owner(split_group_invites.group_id)
-    or ((select auth.uid()) = consumed_by)
+    or (auth.uid() = consumed_by)
   );
 
 drop policy if exists "split_group_invites: insert owner" on split_group_invites;
 create policy "split_group_invites: insert owner" on split_group_invites
   for insert to authenticated
   with check (
-    ((select auth.uid()) = created_by)
+    (auth.uid() = created_by)
     and role in ('viewer', 'member', 'admin')
     and public.is_split_group_owner(split_group_invites.group_id)
   );
@@ -2173,11 +2173,11 @@ security definer
 set search_path = public
 as $$
 begin
-  if (select auth.uid()) is null then
+  if auth.uid() is null then
     raise exception 'Authentication required';
   end if;
 
-  new.user_id := (select auth.uid());
+  new.user_id := auth.uid();
   return new;
 end;
 $$;
@@ -2225,7 +2225,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_invite split_group_invites%rowtype;
 begin
   if v_uid is null then
@@ -2301,7 +2301,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_invite split_group_invites%rowtype;
   v_group split_groups%rowtype;
   v_account_name text;
@@ -2432,7 +2432,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_target split_group_access%rowtype;
   v_admin_count integer := 0;
   v_role text := lower(coalesce(nullif(btrim(p_role), ''), 'member'));
@@ -2560,7 +2560,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_group split_groups%rowtype;
   v_expense split_expenses%rowtype;
   v_sum numeric := 0;
@@ -2723,7 +2723,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_row split_settlements%rowtype;
   v_payer_uid uuid;
   v_payee_uid uuid;
@@ -2880,17 +2880,17 @@ create policy "loans: select own" on loans
 drop policy if exists "loans: insert own" on loans;
 create policy "loans: insert own" on loans
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (auth.uid() = user_id);
 
 drop policy if exists "loans: update own" on loans;
 create policy "loans: update own" on loans
   for update to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 drop policy if exists "loans: delete own" on loans;
 create policy "loans: delete own" on loans
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (auth.uid() = user_id);
 
 -- ── record_loan_payment — atomic partial/full repayment ──────────────────────
 -- Creates a linked transaction and updates the loan's settled amount.
@@ -3019,7 +3019,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := auth.uid();
   v_owner_count integer := 0;
   v_has_access boolean := false;
 begin
@@ -3187,8 +3187,8 @@ create trigger trg_sync_split_to_tx
 drop policy if exists "profiles: update own" on profiles;
 create policy "profiles: update own" on profiles
 for update to authenticated
-using ((select auth.uid()) = id)
-with check ((select auth.uid()) = id);
+using (auth.uid() = id)
+with check (auth.uid() = id);
 
 -- Safety: recreate the new-user trigger unconditionally.
 drop trigger if exists on_auth_user_created on auth.users;

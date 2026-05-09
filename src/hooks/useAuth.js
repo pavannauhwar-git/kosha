@@ -226,12 +226,23 @@ export function useAuthState() {
       ...updates,
     }
 
-    const { data, error } = await supabase
+    let result = await supabase
       .from('profiles')
-      .upsert(payload, { onConflict: 'id' })
+      .update(updates)
+      .eq('id', userId)
       .select(PROFILE_COLUMNS)
-      .single()
-    if (error) throw error
+      .maybeSingle()
+
+    if (!result.data && !result.error) {
+      result = await supabase
+        .from('profiles')
+        .insert({ id: userId, ...updates })
+        .select(PROFILE_COLUMNS)
+        .single()
+    }
+
+    if (result.error) throw result.error
+    const data = result.data
 
     // Merge with existing profile to preserve linkedUserIds, linkedProfiles, and
     // any other fields not returned by the upsert select (e.g. monthly_income).
@@ -249,13 +260,23 @@ export function useAuthState() {
     const trimmedName = String(displayName || '').trim()
     if (!trimmedName) throw new Error('Display name cannot be empty')
 
-    const { data, error } = await supabase
+    let result = await supabase
       .from('profiles')
-      .upsert({ id: userId, display_name: trimmedName }, { onConflict: 'id' })
+      .update({ display_name: trimmedName })
+      .eq('id', userId)
       .select(PROFILE_COLUMNS)
-      .single()
+      .maybeSingle()
 
-    if (error) throw error
+    if (!result.data && !result.error) {
+      result = await supabase
+        .from('profiles')
+        .insert({ id: userId, display_name: trimmedName })
+        .select(PROFILE_COLUMNS)
+        .single()
+    }
+
+    if (result.error) throw result.error
+    const data = result.data
 
     // Merge to preserve linkedUserIds, linkedProfiles, etc.
     setProfile(prev => {
