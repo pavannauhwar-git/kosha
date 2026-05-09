@@ -36,12 +36,10 @@ export async function invalidateLoanCache() {
 async function fetchLoans(direction, settledValue, targetUserId) {
   const label = settledValue ? 'settled' : `active:${direction}`
   return traceQuery(`loans:${label}`, async () => {
-    const allUserIds = [targetUserId]
-
     let query = supabase
       .from('loans')
       .select(LOAN_COLUMNS)
-      .in('user_id', allUserIds)
+      .eq('user_id', targetUserId)
       .eq('settled', settledValue)
 
     if (!settledValue && direction) {

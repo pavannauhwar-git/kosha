@@ -3,6 +3,7 @@ import { useQueries } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
+import { useActiveWallet } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
@@ -168,7 +169,7 @@ export async function invalidateSplitwiseCache() {
 }
 
 export function useSplitwise({ groupId, enabled = true } = {}) {
-  const userId = getAuthUserId()
+  const userId = useActiveWallet()
 
   const [groupsQuery, accessQuery, groupAccessQuery, membersQuery, expensesQuery, settlementsQuery] = useQueries({
     queries: [

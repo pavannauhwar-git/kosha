@@ -53,7 +53,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [isUnlinking, setIsUnlinking] = useState(false)
+  const [unlinkingId, setUnlinkingId] = useState('')
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
@@ -196,10 +196,10 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                         </button>
                         <button
                           type="button"
-                          disabled={isUnlinking}
+                          disabled={!!unlinkingId}
                           onClick={async () => {
                             if (confirm(`Are you sure you want to unlink ${p.display_name}? You will no longer be able to access their wallet.`)) {
-                              setIsUnlinking(true)
+                              setUnlinkingId(p.id)
                               try {
                                 await unlinkPartner(user.id, p.id)
                                 if (activeWalletUserId === p.id) setActiveWalletUserId(user.id)
@@ -207,7 +207,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                               } catch (e) {
                                 alert(e.message)
                               } finally {
-                                setIsUnlinking(false)
+                                setUnlinkingId('')
                               }
                             }
                           }}

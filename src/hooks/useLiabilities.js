@@ -38,12 +38,10 @@ export async function invalidateLiabilityCache() {
 
 async function fetchLiabilitiesByPaid(paidValue, targetUserId) {
   return traceQuery(`liabilities:${paidValue ? 'paid' : 'pending'}`, async () => {
-    const allUserIds = [targetUserId]
-    
     const { data: rows, error } = await supabase
       .from('liabilities')
       .select(LIABILITY_COLUMNS)
-      .in('user_id', allUserIds)
+      .eq('user_id', targetUserId)
       .eq('paid', paidValue)
       .order('due_date', { ascending: true })
 
@@ -103,12 +101,10 @@ export function useLiabilitiesByMonth(year, month, options = {}) {
     queryKey: ['liabilitiesMonth', year, month, targetUserId],
     enabled: enabled && !!startDate && !!endDate && !!targetUserId,
     queryFn: async () => traceQuery('liabilities:month', async () => {
-      const allUserIds = [targetUserId]
-
       const { data: rows, error: queryError } = await supabase
         .from('liabilities')
         .select(MONTH_LIABILITY_COLUMNS)
-        .in('user_id', allUserIds)
+        .eq('user_id', targetUserId)
         .gte('due_date', startDate)
         .lte('due_date', endDate)
         .order('due_date', { ascending: true })

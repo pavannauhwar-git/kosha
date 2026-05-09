@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Wallet, TrendingDown, ArrowRight } from 'lucide-react'
+import { Plus, Wallet, TrendingDown, ArrowRight, Eye } from 'lucide-react'
 import {
   useRecentTransactions,
   useMonthSummary,
@@ -25,6 +25,8 @@ import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import AppToast from '../components/common/AppToast'
 import { getAuthUserId } from '../lib/authStore'
+import { useActiveWallet } from '../lib/walletStore'
+import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
 
@@ -130,7 +132,12 @@ export default function Dashboard() {
     }
   }, [])
 
-  const { profile } = useAuth()
+  const { profile, linkedProfiles } = useAuth()
+  const activeWalletUserId = useActiveWallet()
+  const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
+  const activePartnerProfile = isViewingPartner
+    ? (linkedProfiles || []).find(p => p.id === activeWalletUserId)
+    : null
 
   const [showAdd, setShowAdd] = useState(false)
   const [editTxn, setEditTxn] = useState(null)
@@ -558,7 +565,8 @@ export default function Dashboard() {
   }, [extractRepaymentCounterparty, inferRepaymentTab])
 
   const handleTap = useCallback((t) => {
-    if (t?.user_id && t.user_id !== getAuthUserId()) {
+    // When viewing a partner's wallet, all transactions are view-only
+    if (isViewingPartner) {
       setToast("You can only view your partner's transactions.")
       setToastAction(null)
       setToastActionLabel(null)
@@ -579,7 +587,7 @@ export default function Dashboard() {
     setDuplicateTxn(null)
     setAddType(t.type)
     setShowAdd(true)
-  }, [navigate, repaymentLoanRoute])
+  }, [navigate, repaymentLoanRoute, isViewingPartner])
 
   const handleDuplicate = useCallback((txn) => {
     setEditTxn(null)
@@ -977,18 +985,24 @@ export default function Dashboard() {
         actionLabel={toastActionLabel}
       />
 
-      {/* FAB */}
-      <button className="fab" aria-label="Add transaction" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
-        <Plus size={24} className="text-white" />
-      </button>
+      {/* FAB — hidden in partner wallet view-only mode */}
+      {!isViewingPartner && (
+        <button className="fab" aria-label="Add transaction" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
+          <Plus size={24} className="text-white" />
+        </button>
+      )}
 
-      <AddTransactionSheet
-        open={showAdd}
-        duplicateTxn={duplicateTxn}
-        onClose={() => { setShowAdd(false); setDuplicateTxn(null) }}
-        editTxn={editTxn}
-        initialType={addType}
-      />
+      <PartnerViewBanner />
+
+      {!isViewingPartner && (
+        <AddTransactionSheet
+          open={showAdd}
+          duplicateTxn={duplicateTxn}
+          onClose={() => { setShowAdd(false); setDuplicateTxn(null) }}
+          editTxn={editTxn}
+          initialType={addType}
+        />
+      )}
     </PageHeaderPage>
   )
 }

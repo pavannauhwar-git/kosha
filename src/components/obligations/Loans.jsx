@@ -17,6 +17,7 @@ import {
 } from '../../hooks/useLoans'
 import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
+import { useActiveWallet } from '../../lib/walletStore'
 import { downloadCsv, toCsv } from '../../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass } from '../../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
@@ -40,7 +41,11 @@ export default function Loans({
   embedded = false,
   showAddExternal,
   onShowAddChange,
+  isViewingPartner: isViewingPartnerProp,
 } = {}) {
+  const activeWalletUserId = useActiveWallet()
+  const isViewingPartner = isViewingPartnerProp ?? (!!activeWalletUserId && activeWalletUserId !== getAuthUserId())
+
   const { given, taken, settled, loading, settledLoading } = useLoans()
   const [searchParams, setSearchParams] = useSearchParams()
   const deepLinkTxnId = searchParams.get('repaymentTxn')
@@ -737,7 +742,7 @@ export default function Loans({
               Export CSV
             </Button>
           )}
-          {embedded && (
+          {embedded && !isViewingPartner && (
             <Button
               variant="secondary"
               size="sm"
@@ -869,11 +874,11 @@ export default function Loans({
                 className="py-8"
                 imageUrl="/illustrations/empty_loans.png"
                 title={tab === 'given' ? 'No loans given' : 'No loans taken'}
-                description={tab === 'given'
-                  ? 'Track money you\u2019ve lent to friends, family, or others.'
-                  : 'Track money you\u2019ve borrowed from others.'}
-                actionLabel="Add a loan"
-                onAction={() => { setForm(f => ({ ...f, direction: tab })); setShowAdd(true) }}
+                description={isViewingPartner
+                  ? (tab === 'given' ? 'This partner has not lent any money.' : 'This partner has not borrowed any money.')
+                  : (tab === 'given' ? 'Track money you\u2019ve lent to friends, family, or others.' : 'Track money you\u2019ve borrowed from others.')}
+                actionLabel={isViewingPartner ? undefined : "Add a loan"}
+                onAction={isViewingPartner ? undefined : () => { setForm(f => ({ ...f, direction: tab })); setShowAdd(true) }}
               />
             )}
 
@@ -997,7 +1002,7 @@ export default function Loans({
                       </div>
 
                       {/* Actions */}
-                      {!loan.settled && (
+                      {!loan.settled && !isViewingPartner && (
                         <div className="flex flex-col gap-2 shrink-0">
                           <Button
                             onClick={() => openEditLoan(loan)}
@@ -1039,7 +1044,7 @@ export default function Loans({
                         </div>
                       )}
 
-                      {loan.settled && (
+                      {loan.settled && !isViewingPartner && (
                         <div className="flex flex-col gap-2 shrink-0">
                           <Button
                             onClick={() => handleDelete(loan.id)}
@@ -1351,7 +1356,7 @@ export default function Loans({
       </AnimatePresence>
 
       {/* FAB */}
-      {!embedded && (
+      {!embedded && !isViewingPartner && (
         <button className="fab-loans" aria-label="Add loan" onClick={() => setShowAdd(true)}>
           <Plus size={24} className="text-white" />
         </button>

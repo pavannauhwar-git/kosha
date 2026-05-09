@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.3.5',
+    date: 'May 2026',
+    items: [
+      'Hardened Shared Wallet infrastructure with strict RLS policies for secure, read-only visibility across partner Bills, Loans, and Transactions',
+      'Resolved Splitwise group rejoining flows and schema constraints to support seamless user re-entry without database conflicts',
+      'Refactored the core Supabase schema with atomic RPC functions and standardized SQL commands for robust onboarding and authentication',
+      'Corrected transaction-scoped mutations to ensure shared wallet actions are accurately attributed to the correct wallet owner',
+      'Aligned FAB UI components and dark mode variables with the application\'s design system for consistent visual hierarchy',
+    ],
+  },
+  {
     version: '1.3.4',
     date: 'May 2026',
     items: [

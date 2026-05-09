@@ -64,10 +64,10 @@ export const TRANSACTION_INVALIDATION_KEYS = [
 ]
 
 export const TRANSACTION_LIST_COLUMNS =
-  'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
+  'id, user_id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 
 export const TRANSACTION_INSIGHTS_COLUMNS =
-  'id, date, created_at, type, amount, description, category, payment_mode, is_repayment, is_recurring, is_auto_generated, source_transaction_id, investment_vehicle, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
+  'id, user_id, date, created_at, type, amount, description, category, payment_mode, is_repayment, is_recurring, is_auto_generated, source_transaction_id, investment_vehicle, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 
 const TRANSACTION_MUTATION_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
@@ -231,6 +231,12 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
       try {
         const allUserIds = [targetUserId]
         
+        // Background sync recurring only if we are viewing OUR OWN wallet
+        const authUserId = getAuthUserId()
+        if (authUserId === targetUserId) {
+          await ensureRecurringTransactionsReady(authUserId)
+        }
+        
         // Run recurring materialization only for broad list reads.
         // Filtered/short lists (dashboard widgets, search, category tabs)
         // should stay read-only for latency.
@@ -314,7 +320,7 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
     queryKey: ['transactionSignalAggregates', filters],
     enabled,
     queryFn: () => traceQuery('transactions:signal-aggregates', async () => {
-      const userId = getAuthUserId()
+      const userId = getActiveWalletUserId()
       const pageSize = 1000
       const activeDates = new Set()
       const paymentModeCounts = {}
@@ -386,7 +392,7 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
   return { data, loading: isLoading, error }
 }
 
-const RECENT_TXN_COLUMNS = 'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
+const RECENT_TXN_COLUMNS = 'id, user_id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 const DIGEST_TXN_COLUMNS = 'id, date, created_at, type, amount, category, is_repayment'
 const DAILY_EXPENSE_TOTAL_COLUMNS = 'date, amount'
 
@@ -428,10 +434,11 @@ export function useTransactionDigest(days = 14, limit = 200, options = {}) {
     queryKey: ['transactionsDigest', safeDays, safeLimit, startISO, targetUserId],
     enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:digest', async () => {
+      const userId = getActiveWalletUserId()
       const { data: rows, error: qError } = await supabase
         .from('transactions')
         .select(DIGEST_TXN_COLUMNS)
-        .eq('user_id', targetUserId)
+        .eq('user_id', userId)
         .gte('date', startISO)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -459,6 +466,7 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
     queryKey: ['dailyExpenseTotals', safeDays, startISO, targetUserId],
     enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:daily-expense-totals', async () => {
+      const userId = getActiveWalletUserId()
       const pageSize = 1000
       const totalsByDate = {}
 
@@ -468,7 +476,7 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
         const { data: rows, error: qError } = await supabase
           .from('transactions')
           .select(DAILY_EXPENSE_TOTAL_COLUMNS)
-          .eq('user_id', targetUserId)
+          .eq('user_id', userId)
           .eq('type', 'expense')
           .gte('date', startISO)
           .order('date', { ascending: false })
@@ -513,6 +521,7 @@ export function useMonthExpenseDailyTotals(year, month, options = {}) {
     queryKey: ['monthExpenseDailyTotals', validYear, validMonth, targetUserId],
     enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:month-expense-daily-totals', async () => {
+      const userId = getActiveWalletUserId()
       const pageSize = 1000
       const totalsByDate = {}
 
@@ -522,7 +531,7 @@ export function useMonthExpenseDailyTotals(year, month, options = {}) {
         const { data: rows, error: qError } = await supabase
           .from('transactions')
           .select(DAILY_EXPENSE_TOTAL_COLUMNS)
-          .eq('user_id', targetUserId)
+          .eq('user_id', userId)
           .eq('type', 'expense')
           .gte('date', startISO)
           .lte('date', endISO)
@@ -561,7 +570,7 @@ export function useYearDailyExpenseTotals(year, options = {}) {
     queryKey: ['yearDailyExpenseTotals', safeYear],
     enabled,
     queryFn: () => traceQuery('transactions:year-daily-expense-totals', async () => {
-      const userId = getAuthUserId()
+      const userId = getActiveWalletUserId()
       const pageSize = 1000
       const totalsByDate = {}
 
@@ -642,8 +651,8 @@ export function useMonthSummary(year, month, options = {}) {
 
         const { data: rows, error: qError } = await supabase.rpc('get_month_summary', {
           p_user_ids: allUserIds,
-          p_year:     year,
-          p_month:    month,
+          p_year:     Number(year),
+          p_month:    Number(month),
         })
 
         if (qError) throw qError
@@ -671,7 +680,7 @@ export function useYearSummary(year, options = {}) {
         const allUserIds = [targetUserId]
 
         const { data: result, error: rpcError } = await supabase
-          .rpc('get_year_summary', { p_user_ids: allUserIds, p_year: year })
+          .rpc('get_year_summary', { p_user_ids: allUserIds, p_year: Number(year) })
           .maybeSingle()
 
         if (rpcError) throw rpcError
@@ -743,11 +752,12 @@ export function useYearSummary(year, options = {}) {
 
 export function useTransactionYearBounds(options = {}) {
   const { enabled = true } = options
+  const targetUserId = useActiveWallet()
   const { data, isLoading, error } = useQuery({
-    queryKey: ['transactionYearBounds'],
+    queryKey: ['transactionYearBounds', targetUserId],
     enabled,
     queryFn: async () => {
-      const userId = getAuthUserId()
+      const userId = getActiveWalletUserId()
 
       const [{ data: oldestRows, error: oldestError }, { data: newestRows, error: newestError }] = await Promise.all([
         supabase
@@ -800,7 +810,9 @@ export function useRunningBalance(year, month) {
     queryFn: async () => {
       try {
         const allUserIds = [targetUserId]
-        const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
+        const safeYear = Number(year)
+        const safeMonth = Number(month)
+        const endDate = `${safeYear}-${String(safeMonth).padStart(2, '0')}-${new Date(safeYear, safeMonth, 0).getDate()}`
 
         const { data: balance, error: rpcError } = await supabase.rpc(
           'get_running_balance',

@@ -9,6 +9,9 @@ import BudgetSheet from '../components/categories/BudgetSheet'
 import { fmt } from '../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
 import { MONTH_NAMES } from '../lib/constants'
+import { getAuthUserId } from '../lib/authStore'
+import { useActiveWallet } from '../lib/walletStore'
+import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
@@ -19,6 +22,7 @@ import DailySpendTrend from '../components/cards/monthly/DailySpendTrend'
 import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
 import { CashflowWaterfallChart } from '../components/analytics/AnalyticsCharts'
 import Button from '../components/ui/Button'
+
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
@@ -52,6 +56,9 @@ function normalizeMerchantQuery(value) {
 
 export default function Monthly() {
   const navigate = useNavigate()
+  const activeWalletUserId = useActiveWallet()
+  const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
+
   const now = new Date()
   const currentDayOfMonth = now.getDate()
   const [year, setYear] = useState(now.getFullYear())
@@ -552,12 +559,14 @@ export default function Monthly() {
               title="No data for this month"
               description="This month is empty right now. Add transactions to unlock month-close insights and reconciliation cues."
               actionLabel={
-                year === now.getFullYear() && month === now.getMonth() + 1
-                  ? 'Add transaction'
-                  : 'Go to current month'
+                isViewingPartner
+                  ? 'Go to current month'
+                  : year === now.getFullYear() && month === now.getMonth() + 1
+                    ? 'Add transaction'
+                    : 'Go to current month'
               }
               onAction={() => {
-                if (year === now.getFullYear() && month === now.getMonth() + 1) {
+                if (!isViewingPartner && year === now.getFullYear() && month === now.getMonth() + 1) {
                   navigate('/transactions')
                   return
                 }
@@ -565,12 +574,14 @@ export default function Monthly() {
                 setMonth(now.getMonth() + 1)
               }}
               secondaryLabel={
-                year === now.getFullYear() && month === now.getMonth() + 1
+                isViewingPartner
                   ? undefined
-                  : 'Add transaction'
+                  : year === now.getFullYear() && month === now.getMonth() + 1
+                    ? undefined
+                    : 'Add transaction'
               }
               onSecondaryAction={
-                year === now.getFullYear() && month === now.getMonth() + 1
+                isViewingPartner || (year === now.getFullYear() && month === now.getMonth() + 1)
                   ? undefined
                   : () => navigate('/transactions')
               }
@@ -789,15 +800,17 @@ export default function Monthly() {
               subtitle="Ranked category share with exact spend values"
               budgetMap={bMap}
             />
-            <div className="flex justify-end -mt-1 mb-1">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowBudgetSheet(true)}
-              >
-                Manage budgets
-              </Button>
-            </div>
+            {!isViewingPartner && (
+              <div className="flex justify-end -mt-1 mb-1">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowBudgetSheet(true)}
+                >
+                  Manage budgets
+                </Button>
+              </div>
+            )}
             </>
           )}
 
@@ -812,6 +825,7 @@ export default function Monthly() {
         budgets={budgets}
         byCategory={data?.byCategory || {}}
       />
+      <PartnerViewBanner />
     </PageHeaderPage>
   )
 }

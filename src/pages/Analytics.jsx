@@ -10,7 +10,10 @@ import { useNavigate } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
+import { getAuthUserId } from '../lib/authStore'
+import { useActiveWallet } from '../lib/walletStore'
 import CalendarHeatmap from '../components/cards/analytics/CalendarHeatmap'
+import PartnerViewBanner from '../components/common/PartnerViewBanner'
 
 // Lazy-load heavy chart components to defer ~264KB charts vendor bundle
 const YearOverYearCards = lazy(() => import('../components/cards/analytics/YearOverYearCards'))
@@ -42,6 +45,8 @@ function clampNumber(value, min, max) {
 // ── Main page ─────────────────────────────────────────────────────────────
 export default function Analytics() {
   const navigate = useNavigate()
+  const activeWalletUserId = useActiveWallet()
+  const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
@@ -333,7 +338,7 @@ export default function Analytics() {
 
               {Number(data?.totalInvestment || 0) > 0 && (
                 <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
-                  <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} />
+                  <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} isViewingPartner={isViewingPartner} />
                 </Suspense>
               )}
 
@@ -395,23 +400,24 @@ export default function Analytics() {
             <EmptyState
               className="py-10"
               imageUrl="/illustrations/yearly_empty.png"
-              title={`No data for ${year}`}
-              description="This year is empty right now. Add transactions to unlock yearly trends, category intelligence, and YoY comparisons."
-              actionLabel={year === currentYear ? 'Add transaction' : 'Go to current year'}
-              onAction={() => {
+              title={isViewingPartner ? `No data found` : `No data for ${year}`}
+              description={isViewingPartner ? `This partner has no transactions for the year ${year}.` : "This year is empty right now. Add transactions to unlock yearly trends, category intelligence, and YoY comparisons."}
+              actionLabel={isViewingPartner ? undefined : (year === currentYear ? 'Add transaction' : 'Go to current year')}
+              onAction={isViewingPartner ? undefined : () => {
                 if (year === currentYear) {
                   navigate('/transactions')
                   return
                 }
                 setYear(currentYear)
               }}
-              secondaryLabel={year === currentYear ? undefined : 'Add transaction'}
-              onSecondaryAction={year === currentYear ? undefined : () => navigate('/transactions')}
+              secondaryLabel={isViewingPartner ? undefined : (year === currentYear ? undefined : 'Add transaction')}
+              onSecondaryAction={isViewingPartner ? undefined : (year === currentYear ? undefined : () => navigate('/transactions'))}
             />
           )}
 
         </motion.div>
       )}
+      <PartnerViewBanner />
     </PageHeaderPage>
   )
 }

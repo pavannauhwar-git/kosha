@@ -13,7 +13,7 @@ const ALLOCATION_PALETTE = [
   'color-mix(in srgb, var(--ds-invest) 34%, white)',
 ]
 
-export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) {
+export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [], isViewingPartner }) {
   const navigate = useNavigate()
 
   const safeVehicleData = (Array.isArray(vehicleData) ? vehicleData : [])
@@ -179,16 +179,18 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [] }) 
         <p className="text-[11px] text-ink-2 mt-1.5 leading-relaxed">{nextAction}</p>
       </div>
 
-      <div className="pt-2 border-t border-kosha-border flex items-center justify-end gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => navigate('/transactions', { state: { openAddInvestment: true } })}
-          className="shrink-0"
-        >
-          Log investment
-        </Button>
-      </div>
+      {!isViewingPartner && (
+        <div className="pt-2 border-t border-kosha-border flex items-center justify-end gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate('/transactions', { state: { openAddInvestment: true } })}
+            className="shrink-0"
+          >
+            Log investment
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

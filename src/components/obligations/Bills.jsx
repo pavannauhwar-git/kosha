@@ -11,6 +11,7 @@ import {
 } from '../../hooks/useLiabilities'
 import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
+import { useActiveWallet } from '../../lib/walletStore'
 import { downloadCsv, toCsv } from '../../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, dueShadow } from '../../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
@@ -73,7 +74,11 @@ export default function Bills({
   tabParam = 'tab',
   showAddExternal,
   onShowAddChange,
+  isViewingPartner: isViewingPartnerProp,
 } = {}) {
+  const activeWalletUserId = useActiveWallet()
+  const isViewingPartner = isViewingPartnerProp ?? (!!activeWalletUserId && activeWalletUserId !== getAuthUserId())
+
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [tab, setTab] = useState(() => resolveBillsTabQuery(searchParams, tabParam).value)
@@ -602,7 +607,7 @@ export default function Bills({
               Export CSV
             </Button>
           )}
-          {embedded && (
+          {embedded && !isViewingPartner && (
             <Button
               variant="secondary"
               size="sm"
@@ -762,9 +767,9 @@ export default function Bills({
                 className="py-8"
                 imageUrl="/illustrations/coffee_chill.png"
                 title="You're all clear"
-                description="No pending bills right now. Add recurring dues to keep reminders and cashflow planning accurate."
-                actionLabel="Add a bill"
-                onAction={() => setShowAdd(true)}
+                description={isViewingPartner ? "This partner has no pending bills." : "No pending bills right now. Add recurring dues to keep reminders and cashflow planning accurate."}
+                actionLabel={isViewingPartner ? undefined : "Add a bill"}
+                onAction={isViewingPartner ? undefined : () => setShowAdd(true)}
               />
             )}
 
@@ -846,39 +851,41 @@ export default function Bills({
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-2 shrink-0">
-                          {tab === 'pending' && (
-                            <>
-                              <Button
-                                onClick={() => openEditBill(bill)}
-                                disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                                variant="secondary"
-                                size="sm"
-                                icon={<Pencil size={13} />}
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                onClick={() => handleMarkPaid(bill)}
-                                disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                                variant="success"
-                                size="sm"
-                                icon={payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                              >
-                                {payingId === bill.id ? 'Paying…' : 'Paid'}
-                              </Button>
-                            </>
-                          )}
-                          <Button
-                            onClick={() => handleDelete(bill.id)}
-                            disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                            variant="danger"
-                            size="sm"
-                            icon={deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
-                          >
-                            {deletingId === bill.id ? 'Deleting…' : 'Delete'}
-                          </Button>
-                        </div>
+                        {!isViewingPartner && (
+                          <div className="flex flex-col gap-2 shrink-0">
+                            {tab === 'pending' && (
+                              <>
+                                <Button
+                                  onClick={() => openEditBill(bill)}
+                                  disabled={!!payingId || !!deletingId || !!bill.__optimistic}
+                                  variant="secondary"
+                                  size="sm"
+                                  icon={<Pencil size={13} />}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  onClick={() => handleMarkPaid(bill)}
+                                  disabled={!!payingId || !!deletingId || !!bill.__optimistic}
+                                  variant="success"
+                                  size="sm"
+                                  icon={payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                                >
+                                  {payingId === bill.id ? 'Paying…' : 'Paid'}
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              onClick={() => handleDelete(bill.id)}
+                              disabled={!!payingId || !!deletingId || !!bill.__optimistic}
+                              variant="danger"
+                              size="sm"
+                              icon={deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                            >
+                              {deletingId === bill.id ? 'Deleting…' : 'Delete'}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1016,7 +1023,7 @@ export default function Bills({
       </AnimatePresence>
 
       {/* FAB */}
-      {!embedded && (
+      {!embedded && !isViewingPartner && (
         <button className="fab-bills" aria-label="Add bill" onClick={() => setShowAdd(true)}>
           <Plus size={24} className="text-white" />
         </button>

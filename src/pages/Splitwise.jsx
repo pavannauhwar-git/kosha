@@ -12,6 +12,8 @@ import SecureAvatar from '../components/ui/SecureAvatar'
 import { useAuth } from '../context/AuthContext'
 import { getAuthUserId } from '../lib/authStore'
 import { supabase } from '../lib/supabase'
+import { useActiveWallet } from '../lib/walletStore'
+import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import {
   addSplitExpenseMutation,
   addSplitMemberMutation,
@@ -122,6 +124,8 @@ export default function Splitwise() {
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   const authUserId = getAuthUserId()
+  const activeWalletUserId = useActiveWallet()
+  const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== authUserId
 
   const {
     groups,
@@ -484,10 +488,10 @@ export default function Splitwise() {
     })
   }, [members, activeGroup?.user_id, roleByUserId])
 
-  const isGroupAdmin = !!activeGroup && (activeGroup.my_role === 'admin' || activeGroup.user_id === authUserId)
+  const isGroupAdmin = !!activeGroup && !isViewingPartner && (activeGroup.my_role === 'admin' || activeGroup.user_id === authUserId)
   // If a group is archived, NO ONE can manage expenses/members unless they unarchive it first
-  const canManageGroup = !!activeGroup && !activeGroup.is_archived && (activeGroup.my_role === 'admin' || activeGroup.my_role === 'member' || activeGroup.user_id === authUserId)
-  const isViewOnly = !!activeGroup && !canManageGroup
+  const canManageGroup = !!activeGroup && !activeGroup.is_archived && !isViewingPartner && (activeGroup.my_role === 'admin' || activeGroup.my_role === 'member' || activeGroup.user_id === authUserId)
+  const isViewOnly = isViewingPartner || (!!activeGroup && !canManageGroup)
   const inviteTokenFromQuery = String(searchParams.get('splitInvite') || '').trim()
 
   function clearPendingSplitInviteToken() {
@@ -1072,7 +1076,7 @@ export default function Splitwise() {
               </Button>
             )}
 
-            {!activeGroupId && (
+            {!activeGroupId && !isViewingPartner && (
               <Button
                 variant="secondary"
                 size="sm"
@@ -1119,9 +1123,9 @@ export default function Splitwise() {
           className="py-10"
           imageUrl="/illustrations/splitwise_group.png"
           title="No split group yet"
-          description="Create a group, invite Kosha users, and split expenses together."
-          actionLabel="Create group"
-          onAction={() => setShowCreateGroup(true)}
+          description={isViewingPartner ? "This partner has no split groups." : "Create a group, invite Kosha users, and split expenses together."}
+          actionLabel={isViewingPartner ? undefined : "Create group"}
+          onAction={isViewingPartner ? undefined : () => setShowCreateGroup(true)}
         />
       ) : !activeGroup ? (
         <div className="page-stack">
@@ -2197,6 +2201,7 @@ export default function Splitwise() {
       </AnimatePresence>
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
+      <PartnerViewBanner />
     </PageHeaderPage>
   )
 }

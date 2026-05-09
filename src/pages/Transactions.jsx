@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react'
+import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2, Loader2, Eye } from 'lucide-react'
 import {
   useTransactions,
   useTransactionSignalAggregates,
@@ -15,6 +15,9 @@ import CreateCategorySheet from '../components/categories/CreateCategorySheet'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
+import PartnerViewBanner from '../components/common/PartnerViewBanner'
+import { getAuthUserId } from '../lib/authStore'
+import { useActiveWallet } from '../lib/walletStore'
 import { useUserCategories } from '../hooks/useUserCategories'
 import { CATEGORIES, PAYMENT_MODES, getCategoriesForType } from '../lib/categories'
 import { supabase } from '../lib/supabase'
@@ -24,11 +27,11 @@ import { downloadCsv, toCsv } from '../lib/csv'
 import { MONTH_SHORT } from '../lib/constants'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import SectionHeader from '../components/common/SectionHeader'
-import { getAuthUserId } from '../lib/authStore'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import Button from '../components/ui/Button'
 import useWindowedList from '../hooks/useWindowedList'
+import { useAuth } from '../context/AuthContext'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
@@ -143,6 +146,12 @@ export default function Transactions() {
   const [triggerSwipeNudge, setTriggerSwipeNudge] = useState(false)
   const [showCreateCategory, setShowCreateCategory] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
+  const { linkedProfiles } = useAuth()
+  const activeWalletUserId = useActiveWallet()
+  const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
+  const activePartnerProfile = isViewingPartner
+    ? (linkedProfiles || []).find(p => p.id === activeWalletUserId)
+    : null
   const categoryPanelRef = useRef(null)
   const paymentPanelRef = useRef(null)
   const categoryTriggerRef = useRef(null)
@@ -919,7 +928,7 @@ export default function Transactions() {
   }, [extractRepaymentCounterparty, inferRepaymentTab])
 
   const handleTap = useCallback((t) => {
-    if (t?.user_id && t.user_id !== getAuthUserId()) {
+    if (isViewingPartner) {
       pushToast("You can only view your partner's transactions.", { duration: 3000 })
       return
     }
@@ -1475,12 +1484,12 @@ export default function Transactions() {
 
                   <TransactionItem
                     txn={row.txn}
-                    onDelete={(row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id) ? undefined : handleDelete}
+                    onDelete={(isViewingPartner || row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id) ? undefined : handleDelete}
                     onTap={handleTap}
                     isLast={row.isGroupLast}
-                    onDuplicate={(row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id) ? undefined : handleDuplicate}
+                    onDuplicate={(isViewingPartner || row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id) ? undefined : handleDuplicate}
                     isHighlighted={highlightedTxnId === row.txn.id}
-                    autoNudge={triggerSwipeNudge && row.groupIndex === 0 && row.isGroupFirst && !(row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id)}
+                    autoNudge={triggerSwipeNudge && !isViewingPartner && row.groupIndex === 0 && row.isGroupFirst && !(row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id)}
                     onAutoNudgeDone={handleAutoNudgeDone}
                     onSwipeHintLearned={handleSwipeHintLearned}
                   />
@@ -1662,39 +1671,24 @@ export default function Transactions() {
         actionLabel={toastActionLabel}
       />
 
-      <button className="fab" aria-label="Add transaction" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
-        <Plus size={24} className="text-white" />
-      </button>
+      {/* FAB — hidden in partner wallet view-only mode */}
+      {!isViewingPartner && (
+        <button className="fab" aria-label="Add transaction" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
+          <Plus size={24} className="text-white" />
+        </button>
+      )}
 
-      <AnimatePresence>
-        {showCreateCategory && (
-          <CreateCategorySheet
-            type={typeFilter === 'all' ? 'expense' : typeFilter}
-            onClose={() => setShowCreateCategory(false)}
-            onCreated={(createdCategory) => {
-              setShowCreateCategory(false)
+      <PartnerViewBanner />
 
-              if (!createdCategory?.id) return
-
-              const createdType = createdCategory.type || 'expense'
-              if (typeFilter !== createdType) {
-                handleTypeFilter(createdType)
-              }
-              handleCatFilter(createdCategory.id)
-              setShowCats(false)
-              pushToast(`Created ${createdCategory.label} category.`)
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      <AddTransactionSheet
-        open={showAdd}
-        duplicateTxn={duplicateTxn}
-        onClose={() => { setShowAdd(false); setEditTxn(null); setDuplicateTxn(null) }}
-        editTxn={editTxn}
-        initialType={addType}
-      />
+      {!isViewingPartner && (
+        <AddTransactionSheet
+          open={showAdd}
+          duplicateTxn={duplicateTxn}
+          onClose={() => { setShowAdd(false); setEditTxn(null); setDuplicateTxn(null) }}
+          editTxn={editTxn}
+          initialType={addType}
+        />
+      )}
     </PageHeaderPage>
   )
 }

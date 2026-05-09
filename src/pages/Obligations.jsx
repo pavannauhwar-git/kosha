@@ -7,6 +7,9 @@ import { useLiabilities } from '../hooks/useLiabilities'
 import { useLoans } from '../hooks/useLoans'
 import { fmt, daysUntil } from '../lib/utils'
 import { createFadeUp, createStagger } from '../lib/animations'
+import { getAuthUserId } from '../lib/authStore'
+import { useActiveWallet } from '../lib/walletStore'
+import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import Button from '../components/ui/Button'
 
 const fadeUp = createFadeUp(12, 0.4)
@@ -22,6 +25,8 @@ function safeDays(dateValue) {
 
 export default function Obligations() {
   const navigate = useNavigate()
+  const activeWalletUserId = useActiveWallet()
+  const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
 
   const { pending, loading: billsLoading } = useLiabilities({ includePaid: false })
   const { given, taken, loading: loansLoading } = useLoans()
@@ -81,7 +86,7 @@ export default function Obligations() {
         animate="show"
         className="page-stack"
       >
-        {!isLoading && (
+        {!isLoading && !isViewingPartner && (
           <motion.div variants={fadeUp} className="px-0.5">
             <p className="section-label mb-1">Your Journey</p>
             <p className="text-[13px] text-ink-3 leading-relaxed">
@@ -138,18 +143,24 @@ export default function Obligations() {
               alt="No obligations"
               className="w-52 h-auto illustration mb-4"
             />
-            <p className="text-[19px] font-bold text-ink tracking-tight mb-1">You're all clear</p>
-            <p className="text-[13px] text-ink-3 leading-relaxed max-w-[260px] mb-5">
-              No pending bills or active loans. Add obligations to track what you owe and what's owed to you.
+            <p className="text-[19px] font-bold text-ink tracking-tight mb-1">
+              {isViewingPartner ? "No active obligations" : "You're all clear"}
             </p>
-            <div className="flex gap-2 flex-wrap justify-center">
-              <Button variant="primary" size="sm" onClick={() => go('/bills')}>
-                Add a bill
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => go('/loans')}>
-                Log a loan
-              </Button>
-            </div>
+            <p className="text-[13px] text-ink-3 leading-relaxed max-w-[260px] mb-5">
+              {isViewingPartner
+                ? "This partner has no pending bills or active loans right now."
+                : "No pending bills or active loans. Add obligations to track what you owe and what's owed to you."}
+            </p>
+            {!isViewingPartner && (
+              <div className="flex gap-2 flex-wrap justify-center">
+                <Button variant="primary" size="sm" onClick={() => go('/bills')}>
+                  Add a bill
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => go('/loans')}>
+                  Log a loan
+                </Button>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -320,6 +331,7 @@ export default function Obligations() {
         )}
 
       </motion.div>
+      <PartnerViewBanner />
     </PageHeaderPage>
   )
 }

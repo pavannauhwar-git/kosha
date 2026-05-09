@@ -12,13 +12,12 @@ import {
 } from 'recharts'
 import { supabase } from '../../../lib/supabase'
 import { getAuthUserId } from '../../../lib/authStore'
+import { useActiveWallet } from '../../../lib/walletStore'
 import { fmt } from '../../../lib/utils'
 
-async function fetchYearSummary(year) {
-  const userId = getAuthUserId()
-
+async function fetchYearSummary(year, userId) {
   const { data: result, error } = await supabase
-    .rpc('get_year_summary', { p_user_id: userId, p_year: year })
+    .rpc('get_year_summary', { p_user_ids: [userId], p_year: Number(year) })
     .maybeSingle()
 
   if (error) throw error
@@ -88,10 +87,15 @@ function NetTooltip({ active, payload, label }) {
 }
 
 export default function YearOverYearCards({ years, currentYear, enabled = true }) {
+  const userId = getAuthUserId() // Fallback to current user if needed, but we prefer active wallet
+  // Actually, we should use useActiveWallet hook here
+  const activeWalletUserId = useActiveWallet()
+  const targetUserId = activeWalletUserId || userId
+
   const yearQueries = useQueries({
     queries: years.map((year) => ({
-      queryKey: ['yearYoy', year],
-      queryFn: () => fetchYearSummary(year),
+      queryKey: ['yearYoy', year, targetUserId],
+      queryFn: () => fetchYearSummary(year, targetUserId),
       enabled,
       staleTime: 5 * 60 * 1000,
     })),

@@ -124,7 +124,6 @@ function useRouteIntentPrefetch() {
     const year = now.getFullYear()
     const month = now.getMonth() + 1
     const profile = queryClient.getQueryData(['user-profile', user.id]) || {}
-    const allUserIds = [user.id, ...(profile.linkedUserIds || [])]
 
     if (path === '/transactions') {
       const txnFilters = {
@@ -145,12 +144,12 @@ function useRouteIntentPrefetch() {
 
       void Promise.all([
         queryClient.prefetchQuery({
-          queryKey: ['transactions', txnFilters],
+          queryKey: ['transactions', txnFilters, user.id],
           queryFn: async () => {
             const { data, error } = await supabase
               .from('transactions')
               .select(TRANSACTION_LIST_COLUMNS)
-              .in('user_id', allUserIds)
+              .eq('user_id', user.id)
               .order('date', { ascending: false })
               .order('created_at', { ascending: false })
               .limit(50)
@@ -160,12 +159,12 @@ function useRouteIntentPrefetch() {
           staleTime: 30 * 1000,
         }),
         queryClient.prefetchQuery({
-          queryKey: ['txnCount', countFilters],
+          queryKey: ['txnCount', countFilters, user.id],
           queryFn: async () => {
             const { count, error } = await supabase
               .from('transactions')
               .select('id', { count: 'exact', head: true })
-              .in('user_id', allUserIds)
+              .eq('user_id', user.id)
             if (error) throw error
             return count || 0
           },
@@ -184,7 +183,7 @@ function useRouteIntentPrefetch() {
           queryKey: ['month', year, month, user.id],
           queryFn: async () => {
             const { data: rows, error } = await supabase.rpc('get_month_summary', {
-              p_user_ids: allUserIds,
+              p_user_ids: [user.id],
               p_year: year,
               p_month: month,
             })
@@ -218,7 +217,7 @@ function useRouteIntentPrefetch() {
         queryKey: ['year', year, user.id],
         queryFn: async () => {
           const { data: result, error } = await supabase
-            .rpc('get_year_summary', { p_user_ids: allUserIds, p_year: year })
+            .rpc('get_year_summary', { p_user_ids: [user.id], p_year: Number(year) })
             .maybeSingle()
           if (error) throw error
           if (!result) {
@@ -360,7 +359,7 @@ function useRouteIntentPrefetch() {
             const { data, error } = await supabase
               .from('transactions')
               .select(TRANSACTION_INSIGHTS_COLUMNS)
-              .in('user_id', allUserIds)
+              .eq('user_id', user.id)
               .order('date', { ascending: false })
               .order('created_at', { ascending: false })
               .limit(250)
@@ -725,16 +724,15 @@ function DashboardWarmPrefetch() {
 
     const runPrefetch = async () => {
       const profile = queryClient.getQueryData(['user-profile', user.id]) || {}
-      const allUserIds = [user.id, ...(profile.linkedUserIds || [])]
       try {
         await Promise.all([
           queryClient.prefetchQuery({
-            queryKey: ['transactionsRecent', 5],
+            queryKey: ['transactionsRecent', 5, user.id],
             queryFn: async () => {
               const { data, error } = await supabase
                 .from('transactions')
                 .select(DASHBOARD_RECENT_COLUMNS)
-                .in('user_id', allUserIds)
+                .eq('user_id', user.id)
                 .order('date', { ascending: false })
                 .order('created_at', { ascending: false })
                 .limit(5)
@@ -745,12 +743,12 @@ function DashboardWarmPrefetch() {
             staleTime: 15 * 1000,
           }),
           queryClient.prefetchQuery({
-            queryKey: ['todayExpenses', todayISO],
+            queryKey: ['todayExpenses', todayISO, user.id],
             queryFn: async () => {
               const { data, error } = await supabase
                 .from('transactions')
                 .select('amount')
-                .in('user_id', allUserIds)
+                .eq('user_id', user.id)
                 .eq('type', 'expense')
                 .eq('date', todayISO)
 
@@ -763,7 +761,7 @@ function DashboardWarmPrefetch() {
             queryKey: ['month', year, month, user.id],
             queryFn: async () => {
               const { data: rows, error } = await supabase.rpc('get_month_summary', {
-                p_user_ids: allUserIds,
+                p_user_ids: [user.id],
                 p_year: year,
                 p_month: month,
               })
@@ -774,10 +772,10 @@ function DashboardWarmPrefetch() {
             staleTime: 30 * 1000,
           }),
           queryClient.prefetchQuery({
-            queryKey: ['balance', 2099, 12, user.id],  // Far future to avoid collisions with real month queries
+            queryKey: ['balance', 2099, 12, user.id],
             queryFn: async () => {
               const { data: balance, error } = await supabase.rpc('get_running_balance', {
-                p_user_ids: allUserIds,
+                p_user_ids: [user.id],
                 p_end_date: '2099-12-31',
               })
               if (error) throw error
@@ -861,7 +859,7 @@ function EagerChunkPreloader() {
       // the network on initial load. Each import() is a no-op if the chunk
       // is already cached.
       loaders.forEach((load, i) => {
-        setTimeout(() => void load().catch(() => {}), i * 80)
+        setTimeout(() => void load().catch(() => { }), i * 80)
       })
     }
 

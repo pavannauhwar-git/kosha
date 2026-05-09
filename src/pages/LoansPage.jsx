@@ -4,6 +4,9 @@ import { Home, Plus } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Loans from '../components/obligations/Loans'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
+import PartnerViewBanner from '../components/common/PartnerViewBanner'
+import { getAuthUserId } from '../lib/authStore'
+import { useActiveWallet } from '../lib/walletStore'
 import { createFadeUp, createStagger } from '../lib/animations'
 
 const fadeUp = createFadeUp(12, 0.4)
@@ -11,6 +14,8 @@ const stagger = createStagger(0.06, 0.04)
 
 export default function LoansPage() {
   const navigate = useNavigate()
+  const activeWalletUserId = useActiveWallet()
+  const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
   const [showAdd, setShowAdd] = useState(false)
 
   return (
@@ -35,20 +40,24 @@ export default function LoansPage() {
             embedded
             showAddExternal={showAdd}
             onShowAddChange={setShowAdd}
+            isViewingPartner={isViewingPartner}
           />
         </motion.div>
       </motion.div>
 
-      <motion.button
-        variants={fadeUp}
-        initial="hidden"
-        animate="show"
-        className="fab"
-        aria-label="Add loan"
-        onClick={() => setShowAdd(true)}
-      >
-        <Plus size={24} className="text-white" />
-      </motion.button>
+      {!isViewingPartner && (
+        <motion.button
+          variants={fadeUp}
+          initial="hidden"
+          animate="show"
+          className="fab"
+          aria-label="Add loan"
+          onClick={() => setShowAdd(true)}
+        >
+          <Plus size={24} className="text-white" />
+        </motion.button>
+      )}
+      <PartnerViewBanner />
     </PageBackHeaderPage>
   )
 }

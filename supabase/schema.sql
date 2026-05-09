@@ -2886,7 +2886,7 @@ alter table loans enable row level security;
 drop policy if exists "loans: select own" on loans;
 create policy "loans: select own" on loans
   for select to authenticated
-  using (auth.uid() = user_id);
+  using (public.is_linked(user_id));
 
 drop policy if exists "loans: insert own" on loans;
 create policy "loans: insert own" on loans
