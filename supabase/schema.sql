@@ -2328,7 +2328,8 @@ begin
 
   select * into v_group
   from split_groups g
-  where g.id = v_invite.group_id;
+  where g.id = v_invite.group_id
+  for update;
 
   if not found then
     raise exception 'Split group not found';
@@ -2395,19 +2396,29 @@ begin
           linked_user_id = v_uid
       where id = v_existing_member_id;
     else
-      insert into split_group_members (
-        group_id,
-        display_name,
-        is_self,
-        linked_user_id,
-        user_id
-      ) values (
-        v_invite.group_id,
-        v_account_name,
-        false,
-        v_uid,
-        v_uid
-      );
+      begin
+        insert into split_group_members (
+          group_id,
+          display_name,
+          is_self,
+          linked_user_id,
+          user_id
+        ) values (
+          v_invite.group_id,
+          v_account_name,
+          false,
+          v_uid,
+          v_uid
+        );
+      exception
+        when unique_violation then
+          -- Fallback if RLS or concurrency hid the row during select
+          update split_group_members
+          set user_id = v_uid,
+              linked_user_id = v_uid
+          where group_id = v_invite.group_id
+            and lower(display_name) = lower(v_account_name);
+      end;
     end if;
   end if;
 

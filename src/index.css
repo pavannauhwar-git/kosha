@@ -38,6 +38,12 @@
   --ds-text-tertiary: #74777F;
   --ds-text-disabled: #B0B3BA;
   --ds-text-rgb: 17, 19, 24;
+  
+  /* Legacy text aliases used by charts */
+  --ds-text-1: var(--ds-text);
+  --ds-text-2: var(--ds-text-secondary);
+  --ds-text-3: var(--ds-text-tertiary);
+  --ds-text-4: var(--ds-text-disabled);
 
   /* ── Borders ────────────────────────── */
   --ds-border: rgba(17, 19, 24, 0.08);
@@ -662,36 +668,43 @@ textarea:focus-visible,
   /* -- FAB — dark, premium ────────────────────────────────────────── */
   .fab {
     @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
-    background: var(--ds-primary);
+    background: var(--ds-primary-dark);
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
     touch-action: manipulation;
-    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms ease;
   }
 
   .fab-bills {
     @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
-    background: var(--ds-primary);
+    background: var(--ds-primary-dark);
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
     touch-action: manipulation;
-    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms ease;
   }
 
   .fab-loans {
     @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
-    background: var(--ds-primary);
+    background: var(--ds-primary-dark);
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
     transform: translateZ(0);
     touch-action: manipulation;
-    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms ease;
   }
+
+  .fab:hover,
+  .fab-bills:hover,
+  .fab-loans:hover {
+    background: var(--ds-primary);
+  }
+
 
   /* -- Fixed bottom nav — Pixel-style anchored bar ───────────────── */
   .nav-float-wrap {

@@ -465,6 +465,25 @@ export default function Splitwise() {
     () => groups.find((group) => group.id === activeGroupId) || null,
     [groups, activeGroupId]
   )
+
+  const activeMembers = useMemo(() => {
+    return (members || []).filter(member => {
+      let memberRole = 'guest'
+      if (member.linked_user_id === activeGroup?.user_id) {
+        memberRole = 'admin'
+      } else if (member.linked_user_id) {
+        const role = roleByUserId.get(member.linked_user_id)
+        memberRole = role ? role : 'left'
+      } else if (member.user_id) {
+        const creatorHasAccess = roleByUserId.has(member.user_id)
+        if (!creatorHasAccess) {
+          memberRole = 'left'
+        }
+      }
+      return memberRole !== 'left'
+    })
+  }, [members, activeGroup?.user_id, roleByUserId])
+
   const isGroupAdmin = !!activeGroup && (activeGroup.my_role === 'admin' || activeGroup.user_id === authUserId)
   // If a group is archived, NO ONE can manage expenses/members unless they unarchive it first
   const canManageGroup = !!activeGroup && !activeGroup.is_archived && (activeGroup.my_role === 'admin' || activeGroup.my_role === 'member' || activeGroup.user_id === authUserId)
@@ -1254,6 +1273,14 @@ export default function Splitwise() {
                   } else if (member.linked_user_id) {
                     const role = roleByUserId.get(member.linked_user_id)
                     memberRole = role ? role : 'left'
+                  } else if (member.user_id) {
+                    // member has no linked_user_id (either an offline guest or a user who left)
+                    // If the creator of this member (user_id) is no longer in the group access list,
+                    // it means the user was a full member who joined (user_id = self) and later left.
+                    const creatorHasAccess = roleByUserId.has(member.user_id)
+                    if (!creatorHasAccess) {
+                      memberRole = 'left'
+                    }
                   }
 
                   const roleBusy = saving === `member-role-${member.id}`
@@ -1288,7 +1315,7 @@ export default function Splitwise() {
                             )}
                           </div>
                           <p className="text-[12px] font-medium text-ink-2 mb-0.5 leading-none">
-                            {memberRole === 'admin' ? 'Admin' : memberRole === 'member' ? 'Member' : memberRole === 'viewer' ? 'Viewer' : memberRole === 'left' ? 'Left Group' : 'Guest / Offline'}
+                            {memberRole === 'admin' ? 'Admin' : memberRole === 'member' ? 'Member' : memberRole === 'viewer' ? 'Viewer' : memberRole === 'left' ? 'Left Group' : 'Guest'}
                           </p>
                           <p className={`text-[11px] tabular-nums ${net > 0.01 ? 'amt-income' : net < -0.01 ? 'amt-expense' : 'text-ink-3'}`}>
                             {net > 0.01 ? `gets ${fmt(net)}` : net < -0.01 ? `owes ${fmt(Math.abs(net))}` : 'settled'}
@@ -1331,11 +1358,11 @@ export default function Splitwise() {
 
           <div className="card p-3.5">
             <p className="section-label mb-2">Who Paid For What</p>
-            {members.length === 0 ? (
-              <p className="text-[12px] text-ink-3">No members to show.</p>
-            ) : (
-              <div className="space-y-4 pt-1">
-                {members.map(member => {
+                {activeMembers.length === 0 ? (
+                  <p className="text-[12px] text-ink-3">No members to show.</p>
+                ) : (
+                  <div className="space-y-4 pt-1">
+                    {activeMembers.map(member => {
                   const spent = (expenses || []).filter(e => e.paid_by_member_id === member.id).reduce((sum, e) => sum + Number(e.amount), 0)
                   const percent = totalExpenses > 0 ? (spent / totalExpenses) * 100 : 0
                   return (
@@ -1807,7 +1834,7 @@ export default function Splitwise() {
                       value={expenseForm.paid_by_member_id}
                       onChange={(event) => setExpenseForm((prev) => ({ ...prev, paid_by_member_id: event.target.value }))}
                     >
-                      {members.map((member) => (
+                      {activeMembers.map((member) => (
                         <option key={member.id} value={member.id}>{resolveMemberName(member)}</option>
                       ))}
                     </select>
@@ -1833,7 +1860,7 @@ export default function Splitwise() {
                 <div className="card p-3 mb-3">
                   <p className="text-[11px] text-ink-3 mb-2">Participants ({methodLabel} split)</p>
                   <div className="space-y-2">
-                    {members.map((member) => {
+                    {activeMembers.map((member) => {
                       const current = splitInputs[member.id] || defaultSplitInput()
                       return (
                         <div key={member.id} className="mini-panel px-2 py-2 flex items-center gap-2">
@@ -1965,7 +1992,7 @@ export default function Splitwise() {
                       value={settlementForm.payer_member_id}
                       onChange={(event) => setSettlementForm((prev) => ({ ...prev, payer_member_id: event.target.value }))}
                     >
-                      {members.map((member) => (
+                      {activeMembers.map((member) => (
                         <option key={member.id} value={member.id}>{resolveMemberName(member)}</option>
                       ))}
                     </select>
@@ -1980,7 +2007,7 @@ export default function Splitwise() {
                       value={settlementForm.payee_member_id}
                       onChange={(event) => setSettlementForm((prev) => ({ ...prev, payee_member_id: event.target.value }))}
                     >
-                      {members.map((member) => (
+                      {activeMembers.map((member) => (
                         <option key={member.id} value={member.id}>{resolveMemberName(member)}</option>
                       ))}
                     </select>

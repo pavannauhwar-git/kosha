@@ -37,7 +37,7 @@ const splitSettlementsKey = (groupId) => ['splitwise', 'settlements', groupId ||
 const GROUP_COLUMNS = 'id, name, created_at, updated_at, user_id, is_archived, banner_id'
 const ACCESS_COLUMNS = 'group_id, role'
 const GROUP_ACCESS_COLUMNS = 'id, group_id, user_id, role'
-const MEMBER_COLUMNS = 'id, group_id, display_name, is_self, linked_user_id, created_at'
+const MEMBER_COLUMNS = 'id, group_id, display_name, is_self, linked_user_id, user_id, created_at'
 const EXPENSE_COLUMNS =
   'id, group_id, paid_by_member_id, description, amount, expense_date, split_method, notes, created_at, split_expense_splits(id, member_id, share, percent, shares)'
 const SETTLEMENT_COLUMNS =

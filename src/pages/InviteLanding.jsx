@@ -66,7 +66,12 @@ export default function InviteLanding() {
     } catch (e) {
       console.error('Invite preview failed', e)
       setStatus('error')
-      setError(e.message || 'This invite link is invalid or has expired.')
+      const msg = e.message || ''
+      if (msg.includes('idx_split_group_members_group_name_unique')) {
+        setError('You are already a member of this group.')
+      } else {
+        setError(msg || 'This invite link is invalid or has expired.')
+      }
     }
   }
 
@@ -96,7 +101,12 @@ export default function InviteLanding() {
         setTimeout(() => { window.location.href = '/' }, 1500)
       }
     } catch (e) {
-      setError(e.message || 'Failed to accept invitation.')
+      const msg = e.message || ''
+      if (msg.includes('idx_split_group_members_group_name_unique')) {
+        setError('You are already a member of this group.')
+      } else {
+        setError(msg || 'Failed to accept invitation.')
+      }
       setStatus('error')
     } finally {
       setBusy(false)
