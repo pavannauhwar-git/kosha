@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
-import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
+import { useActiveWallet } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
 import { registerCustomCategories } from '../lib/categories'
 

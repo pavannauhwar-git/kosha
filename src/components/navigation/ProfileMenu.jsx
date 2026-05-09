@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, LogOut, Bug, Info, BookOpen, Link2, Unlink } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { getActiveWalletUserId, setActiveWalletUserId } from '../../lib/walletStore'
+import { useActiveWallet, setActiveWalletUserId } from '../../lib/walletStore'
 import { unlinkPartner } from '../../lib/walletSync'
 import { useLocation, useNavigate } from 'react-router-dom'
 import SecureAvatar from '../ui/SecureAvatar'
@@ -58,7 +58,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
   const displayName = profile?.display_name || 'My Account'
-  const activeWalletUserId = getActiveWalletUserId()
+  const activeWalletUserId = useActiveWallet()
   const { linkedProfiles } = useAuth()
   const isViewingPartner = !!activeWalletUserId && !!user?.id && activeWalletUserId !== user.id
   const activePartner = isViewingPartner ? (linkedProfiles || []).find(p => p.id === activeWalletUserId) : null
