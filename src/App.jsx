@@ -695,8 +695,6 @@ function GlobalRealtimeSync() {
   return null
 }
 
-
-
 function RuntimeRouteTracker() {
   const location = useLocation()
 

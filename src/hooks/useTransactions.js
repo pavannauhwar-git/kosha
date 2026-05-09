@@ -236,7 +236,6 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         if (authUserId === targetUserId) {
           await ensureRecurringTransactionsReady(authUserId)
         }
-        
 
         let q = supabase
           .from('transactions')
