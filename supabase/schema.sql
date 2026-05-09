@@ -3053,10 +3053,14 @@ begin
   where group_id = p_group_id
     and user_id = v_uid;
 
-  update split_group_members
-  set linked_user_id = null
-  where group_id = p_group_id
-    and linked_user_id = v_uid;
+  begin
+    delete from split_group_members
+    where group_id = p_group_id
+      and linked_user_id = v_uid;
+  exception
+    when foreign_key_violation then
+      null;
+  end;
 end;
 $$;
 
@@ -3066,10 +3070,10 @@ $$;
 
 -- 1. Schema Extensions (Nullable Foreign Keys)
 alter table public.transactions
-  add column if not exists linked_split_expense_id uuid references public.split_expenses(id) on delete cascade,
-  add column if not exists linked_split_settlement_id uuid references public.split_settlements(id) on delete cascade,
-  add column if not exists linked_bill_id uuid references public.liabilities(id) on delete cascade,
-  add column if not exists linked_loan_id uuid references public.loans(id) on delete cascade;
+  add column if not exists linked_split_expense_id uuid references public.split_expenses(id) on delete set null,
+  add column if not exists linked_split_settlement_id uuid references public.split_settlements(id) on delete set null,
+  add column if not exists linked_bill_id uuid references public.liabilities(id) on delete set null,
+  add column if not exists linked_loan_id uuid references public.loans(id) on delete set null;
 
 create index if not exists idx_transactions_linked_split_expense on public.transactions(linked_split_expense_id);
 create index if not exists idx_transactions_linked_split_settlement on public.transactions(linked_split_settlement_id);

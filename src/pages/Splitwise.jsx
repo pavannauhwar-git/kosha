@@ -1016,7 +1016,7 @@ export default function Splitwise() {
           )}
 
           <div className="flex shrink-0 items-center gap-1.5">
-            {isGroupAdmin && !activeGroup?.is_archived && (
+            {isGroupAdmin && !!activeGroupId && !activeGroup?.is_archived && (
               <Button
                 variant="secondary"
                 size="sm"
@@ -1201,7 +1201,7 @@ export default function Splitwise() {
                 <p className="text-[10px] opacity-80 uppercase tracking-widest truncate">{activeBanner.name}</p>
                 <h2 className="text-[22px] font-bold truncate">{activeGroup.name}</h2>
               </div>
-              {!activeGroup.is_archived && (
+              {!activeGroup.is_archived && isGroupAdmin && (
                 <button
                   onClick={() => setShowBannerPicker(true)}
                   className="rounded-pill bg-white/20 backdrop-blur-md border border-white/20 px-2.5 py-1 text-[11px] text-white hover:bg-white/30"
@@ -1247,9 +1247,15 @@ export default function Splitwise() {
                   const netRow = balances.find((entry) => entry?.member?.id === member.id)
                   const net = round2(netRow?.net || 0)
                   const isSelfMember = member.linked_user_id === authUserId
-                  const memberRole = member.linked_user_id 
-                    ? (member.linked_user_id === activeGroup?.user_id ? 'admin' : (roleByUserId.get(member.linked_user_id) || 'viewer')) 
-                    : 'viewer'
+                  
+                  let memberRole = 'guest'
+                  if (member.linked_user_id === activeGroup?.user_id) {
+                    memberRole = 'admin'
+                  } else if (member.linked_user_id) {
+                    const role = roleByUserId.get(member.linked_user_id)
+                    memberRole = role ? role : 'left'
+                  }
+
                   const roleBusy = saving === `member-role-${member.id}`
                   const avatarUrl = resolveMemberAvatar(member)
                   const displayName = resolveMemberName(member)
@@ -1271,11 +1277,18 @@ export default function Splitwise() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[12px] font-semibold text-ink truncate">
-                            {displayName} {isSelfMember ? '(You)' : ''}
-                          </p>
-                          <p className="text-[10px] text-ink-3 mt-0.5">
-                            {memberRole === 'admin' ? 'Admin' : memberRole === 'member' ? 'Member' : 'Viewer'}
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[12px] font-semibold text-ink truncate">
+                              {displayName} {isSelfMember ? '(You)' : ''}
+                            </p>
+                            {memberRole === 'left' && (
+                              <span className="rounded bg-rose-500/10 px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                                Left
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[12px] font-medium text-ink-2 mb-0.5 leading-none">
+                            {memberRole === 'admin' ? 'Admin' : memberRole === 'member' ? 'Member' : memberRole === 'viewer' ? 'Viewer' : memberRole === 'left' ? 'Left Group' : 'Guest / Offline'}
                           </p>
                           <p className={`text-[11px] tabular-nums ${net > 0.01 ? 'amt-income' : net < -0.01 ? 'amt-expense' : 'text-ink-3'}`}>
                             {net > 0.01 ? `gets ${fmt(net)}` : net < -0.01 ? `owes ${fmt(Math.abs(net))}` : 'settled'}
