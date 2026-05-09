@@ -3195,3 +3195,12 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ======================================================================
+-- REQUIRED PERMISSIONS FOR RLS HELPER FUNCTIONS
+-- ======================================================================
+grant execute on function public.is_linked(uuid) to authenticated;
+grant execute on function public.has_split_group_access(uuid, uuid) to authenticated;
+grant execute on function public.is_split_group_member_or_above(uuid, uuid) to authenticated;
+grant execute on function public.is_split_group_owner(uuid, uuid) to authenticated;
+grant execute on function public.split_group_member_profiles(uuid) to authenticated;
