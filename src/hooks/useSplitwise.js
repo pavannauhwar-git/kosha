@@ -587,10 +587,22 @@ export async function addSplitExpenseMutation({
 export async function deleteSplitExpenseMutation(expenseId) {
   if (!expenseId) throw new Error('Expense is required.')
 
+  const { data: expense } = await supabase
+    .from('split_expenses')
+    .select('linked_transaction_id')
+    .eq('id', expenseId)
+    .single()
+
   const { error } = await supabase
     .from('split_expenses')
     .delete()
     .eq('id', expenseId)
+
+  if (error) throw error
+
+  if (expense?.linked_transaction_id) {
+    await supabase.from('transactions').delete().eq('id', expense.linked_transaction_id)
+  }
 
   if (error) throw error
   await invalidateSplitwiseCache()
@@ -639,10 +651,23 @@ export async function recordSplitSettlementMutation({ groupId, payerMemberId, pa
 export async function deleteSplitSettlementMutation(settlementId) {
   if (!settlementId) throw new Error('Settlement is required.')
 
+  const { data: settlement } = await supabase
+    .from('split_settlements')
+    .select('payer_transaction_id, payee_transaction_id')
+    .eq('id', settlementId)
+    .single()
+
   const { error } = await supabase
     .from('split_settlements')
     .delete()
     .eq('id', settlementId)
+
+  if (error) throw error
+
+  const txnIds = [settlement?.payer_transaction_id, settlement?.payee_transaction_id].filter(Boolean)
+  if (txnIds.length > 0) {
+    await supabase.from('transactions').delete().in('id', txnIds)
+  }
 
   if (error) throw error
   await invalidateSplitwiseCache()
