@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
 
 const EVENT_COLUMNS = 'id, action, entity_type, entity_id, metadata, created_at'
@@ -36,14 +37,15 @@ export async function invalidateFinancialEvents() {
 
 export function useFinancialEvents(limit = 10, options = {}) {
   const { enabled = true } = options
+  const targetUserId = useActiveWallet()
   const safeLimit = Math.max(1, Number(limit) || 10)
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['financialEvents', safeLimit],
-    enabled,
+    queryKey: ['financialEvents', safeLimit, targetUserId],
+    enabled: enabled && !!targetUserId,
     staleTime: 10 * 60 * 1000,
     queryFn: () => traceQuery('financial-events:list', async () => {
-      const userId = getAuthUserId()
+      const userId = targetUserId
       const { data: rows, error: queryError } = await supabase
         .from('financial_events')
         .select(EVENT_COLUMNS)

@@ -58,6 +58,9 @@ export function setActiveWalletUserId(userId) {
         'monthSummary',
         'yearSummary',
         'userCategories',
+        'categoryBudgets',
+        'reconciliationReviews',
+        'financialEvents',
       ].includes(k)
     }
   })

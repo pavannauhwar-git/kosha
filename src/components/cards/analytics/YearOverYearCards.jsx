@@ -11,7 +11,6 @@ import {
   Cell,
 } from 'recharts'
 import { supabase } from '../../../lib/supabase'
-import { getAuthUserId } from '../../../lib/authStore'
 import { useActiveWallet } from '../../../lib/walletStore'
 import { fmt } from '../../../lib/utils'
 
@@ -87,10 +86,7 @@ function NetTooltip({ active, payload, label }) {
 }
 
 export default function YearOverYearCards({ years, currentYear, enabled = true }) {
-  const userId = getAuthUserId() // Fallback to current user if needed, but we prefer active wallet
-  // Actually, we should use useActiveWallet hook here
-  const activeWalletUserId = useActiveWallet()
-  const targetUserId = activeWalletUserId || userId
+  const targetUserId = useActiveWallet()
 
   const yearQueries = useQueries({
     queries: years.map((year) => ({

@@ -273,7 +273,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
   const shouldFetchCount = enabled && withCount && (!hasLimit || safeRows.length >= numericLimit)
 
   const { data: countData } = useQuery({
-    queryKey: txnCountKey({ type, category, paymentMode, search, startDate, endDate }),
+    queryKey: txnCountKey({ type, category, paymentMode, search, startDate, endDate }, targetUserId),
     enabled: shouldFetchCount,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
@@ -309,12 +309,13 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
 }
 
 export function useTransactionSignalAggregates({ type, category, paymentMode, search, startDate, endDate, enabled = true } = {}) {
+  const targetUserId = useActiveWallet()
   const filters = { type, category, paymentMode, search, startDate, endDate }
   const { data, isLoading, error } = useQuery({
-    queryKey: ['transactionSignalAggregates', filters],
-    enabled,
+    queryKey: ['transactionSignalAggregates', filters, targetUserId],
+    enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:signal-aggregates', async () => {
-      const userId = getActiveWalletUserId()
+      const userId = targetUserId
 
       const { data: result, error: rpcError } = await supabase.rpc(
         'get_transaction_signal_aggregates',
@@ -517,15 +518,16 @@ export function useMonthExpenseDailyTotals(year, month, options = {}) {
 
 export function useYearDailyExpenseTotals(year, options = {}) {
   const { enabled = true } = options
+  const targetUserId = useActiveWallet()
   const safeYear = Number(year) || new Date().getFullYear()
   const startISO = `${safeYear}-01-01`
   const endISO = `${safeYear}-12-31`
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['yearDailyExpenseTotals', safeYear],
-    enabled,
+    queryKey: ['yearDailyExpenseTotals', safeYear, targetUserId],
+    enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:year-daily-expense-totals', async () => {
-      const userId = getActiveWalletUserId()
+      const userId = targetUserId
       const pageSize = 1000
       const totalsByDate = {}
 

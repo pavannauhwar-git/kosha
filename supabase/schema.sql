@@ -968,7 +968,7 @@ alter table public.financial_events enable row level security;
 drop policy if exists "financial_events: select own" on public.financial_events;
 create policy "financial_events: select own" on public.financial_events
 for select to authenticated
-using (auth.uid() = user_id);
+using (public.is_linked(user_id));
 
 drop policy if exists "financial_events: insert own" on public.financial_events;
 create policy "financial_events: insert own" on public.financial_events
@@ -1365,7 +1365,7 @@ alter table public.reconciliation_reviews enable row level security;
 drop policy if exists "reconciliation_reviews: select own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: select own" on public.reconciliation_reviews
   for select to authenticated
-  using (auth.uid() = user_id);
+  using (public.is_linked(user_id));
 
 drop policy if exists "reconciliation_reviews: insert own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: insert own" on public.reconciliation_reviews
@@ -1419,7 +1419,7 @@ alter table category_budgets enable row level security;
 drop policy if exists "category_budgets: select own" on category_budgets;
 create policy "category_budgets: select own" on category_budgets
   for select to authenticated
-  using (auth.uid() = user_id);
+  using (public.is_linked(user_id));
 
 drop policy if exists "category_budgets: insert own" on category_budgets;
 create policy "category_budgets: insert own" on category_budgets

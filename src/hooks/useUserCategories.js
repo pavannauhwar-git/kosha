@@ -3,11 +3,11 @@ import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
-import { getActiveWalletUserId } from '../lib/walletStore'
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
 import { registerCustomCategories } from '../lib/categories'
 
-const QUERY_KEY = ['userCategories']
+const categoryQueryKey = (userId) => ['userCategories', userId]
 const COLUMNS = 'id, type, label, slug, icon, color, bg, archived, created_at'
 const MAX_CUSTOM_CATEGORIES = 15
 
@@ -74,12 +74,13 @@ function generateSlug(label) {
  * resolve them everywhere in the app.
  */
 export function useUserCategories({ enabled = true } = {}) {
+  const activeUserId = useActiveWallet()
   const { data, isLoading, error } = useQuery({
-    queryKey: QUERY_KEY,
-    enabled,
+    queryKey: categoryQueryKey(activeUserId),
+    enabled: enabled && !!activeUserId,
     queryFn: () =>
       traceQuery('userCategories', async () => {
-        const userId = getActiveWalletUserId()
+        const userId = activeUserId
         const { data: rows, error: queryError } = await supabase
           .from('user_categories')
           .select(COLUMNS)
@@ -119,7 +120,7 @@ export function useUserCategories({ enabled = true } = {}) {
   return { customCategories: categories, loading: isLoading, error }
 }
 
-export const USER_CATEGORIES_QUERY_KEY = QUERY_KEY
+export const USER_CATEGORIES_QUERY_KEY = categoryQueryKey
 
 /**
  * Create a new custom category for the current user.
@@ -138,7 +139,7 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
     throw new Error('Invalid category name')
   }
 
-  const prev = queryClient.getQueryData(QUERY_KEY) || []
+  const prev = queryClient.getQueryData(categoryQueryKey(userId)) || []
   if (prev.some(c => c.id === slug)) {
     throw new Error('A category with this name already exists')
   }
@@ -164,7 +165,7 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
     dbId: `temp-${slug}`,
   }
   const optimisticList = [...prev, optimistic]
-  queryClient.setQueryData(QUERY_KEY, optimisticList)
+  queryClient.setQueryData(categoryQueryKey(userId), optimisticList)
   registerCustomCategories(optimisticList)
 
   try {
@@ -186,15 +187,15 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
     if (error) throw error
 
     const created = toCategory(data)
-    const afterCreate = (queryClient.getQueryData(QUERY_KEY) || []).map((cat) => (
+    const afterCreate = (queryClient.getQueryData(categoryQueryKey(userId)) || []).map((cat) => (
       cat.id === slug ? created : cat
     ))
-    queryClient.setQueryData(QUERY_KEY, afterCreate)
+    queryClient.setQueryData(categoryQueryKey(userId), afterCreate)
     registerCustomCategories(afterCreate)
 
     return created
   } catch (e) {
-    queryClient.setQueryData(QUERY_KEY, prev)
+    queryClient.setQueryData(categoryQueryKey(userId), prev)
     registerCustomCategories(prev)
     const message = String(e?.message || '')
     const code = String(e?.code || '')
@@ -227,13 +228,13 @@ export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
     throw new Error('Category name must be 2–30 characters')
   }
 
-  const prev = queryClient.getQueryData(QUERY_KEY) || []
+  const prev = queryClient.getQueryData(categoryQueryKey(userId)) || []
   const optimistic = prev.map((cat) => (
     cat.dbId === dbId
       ? { ...cat, label: trimmed, icon: icon || cat.icon || 'Tag' }
       : cat
   ))
-  queryClient.setQueryData(QUERY_KEY, optimistic)
+  queryClient.setQueryData(categoryQueryKey(userId), optimistic)
   registerCustomCategories(optimistic)
 
   try {
@@ -251,15 +252,15 @@ export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
     if (error) throw error
 
     const updated = toCategory(data)
-    const next = (queryClient.getQueryData(QUERY_KEY) || []).map((cat) => (
+    const next = (queryClient.getQueryData(categoryQueryKey(userId)) || []).map((cat) => (
       cat.dbId === dbId ? updated : cat
     ))
-    queryClient.setQueryData(QUERY_KEY, next)
+    queryClient.setQueryData(categoryQueryKey(userId), next)
     registerCustomCategories(next)
 
     return updated
   } catch (e) {
-    queryClient.setQueryData(QUERY_KEY, prev)
+    queryClient.setQueryData(categoryQueryKey(userId), prev)
     registerCustomCategories(prev)
 
     const message = String(e?.message || '')
@@ -279,9 +280,9 @@ export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
  */
 export async function archiveUserCategory(dbId) {
   const userId = getAuthUserId()
-  const prev = queryClient.getQueryData(QUERY_KEY) || []
+  const prev = queryClient.getQueryData(categoryQueryKey(userId)) || []
   const next = prev.filter(c => c.dbId !== dbId)
-  queryClient.setQueryData(QUERY_KEY, next)
+  queryClient.setQueryData(categoryQueryKey(userId), next)
   registerCustomCategories(next)
 
   try {
@@ -294,7 +295,7 @@ export async function archiveUserCategory(dbId) {
     if (error) throw error
 
   } catch (e) {
-    queryClient.setQueryData(QUERY_KEY, prev)
+    queryClient.setQueryData(categoryQueryKey(userId), prev)
     registerCustomCategories(prev)
     throw e
   }

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 
 const REVIEW_COLUMNS = 'transaction_id, status, statement_line, updated_at'
 
@@ -26,11 +27,12 @@ function isMissingTableError(error) {
 
 export function useReconciliationReviews(options = {}) {
   const { enabled = true } = options
+  const targetUserId = useActiveWallet()
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['reconciliationReviews'],
-    enabled,
+    queryKey: ['reconciliationReviews', targetUserId],
+    enabled: enabled && !!targetUserId,
     queryFn: async () => {
-      const userId = getAuthUserId()
+      const userId = targetUserId
       const { data: rows, error: queryError } = await supabase
         .from('reconciliation_reviews')
         .select(REVIEW_COLUMNS)

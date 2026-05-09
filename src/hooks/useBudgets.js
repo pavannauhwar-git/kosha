@@ -2,18 +2,20 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
 
-const BUDGET_QUERY_KEY = ['categoryBudgets']
+const budgetQueryKey = (userId) => ['categoryBudgets', userId]
 const BUDGET_COLUMNS = 'id, category, monthly_limit, created_at'
 
 export function useBudgets({ enabled = true } = {}) {
+  const activeUserId = useActiveWallet()
   const { data, isLoading, error } = useQuery({
-    queryKey: BUDGET_QUERY_KEY,
-    enabled,
+    queryKey: budgetQueryKey(activeUserId),
+    enabled: enabled && !!activeUserId,
     queryFn: () =>
       traceQuery('categoryBudgets', async () => {
-        const userId = getAuthUserId()
+        const userId = activeUserId
         const { data: rows, error: queryError } = await supabase
           .from('category_budgets')
           .select(BUDGET_COLUMNS)
@@ -43,15 +45,16 @@ export function budgetMap(budgets) {
 
 export async function upsertBudget(category, monthlyLimit) {
   const userId = getAuthUserId()
+  const key = budgetQueryKey(userId)
 
   // Optimistic update
-  const prev = queryClient.getQueryData(BUDGET_QUERY_KEY)
+  const prev = queryClient.getQueryData(key)
   if (prev) {
     const idx = prev.findIndex((b) => b.category === category)
     const optimistic = idx >= 0
       ? prev.map((b, i) => i === idx ? { ...b, monthly_limit: monthlyLimit } : b)
       : [...prev, { id: `temp-${category}`, category, monthly_limit: monthlyLimit, created_at: new Date().toISOString() }]
-    queryClient.setQueryData(BUDGET_QUERY_KEY, optimistic)
+    queryClient.setQueryData(key, optimistic)
   }
 
   try {
@@ -66,21 +69,22 @@ export async function upsertBudget(category, monthlyLimit) {
 
     if (error) throw error
 
-    queryClient.invalidateQueries({ queryKey: BUDGET_QUERY_KEY })
+    queryClient.invalidateQueries({ queryKey: key })
     return data
   } catch (e) {
-    if (prev) queryClient.setQueryData(BUDGET_QUERY_KEY, prev)
+    if (prev) queryClient.setQueryData(key, prev)
     throw e
   }
 }
 
 export async function deleteBudget(id) {
   const userId = getAuthUserId()
+  const key = budgetQueryKey(userId)
 
   // Optimistic update
-  const prev = queryClient.getQueryData(BUDGET_QUERY_KEY)
+  const prev = queryClient.getQueryData(key)
   if (prev) {
-    queryClient.setQueryData(BUDGET_QUERY_KEY, prev.filter((b) => b.id !== id))
+    queryClient.setQueryData(key, prev.filter((b) => b.id !== id))
   }
 
   try {
@@ -92,10 +96,10 @@ export async function deleteBudget(id) {
 
     if (error) throw error
 
-    queryClient.invalidateQueries({ queryKey: BUDGET_QUERY_KEY })
+    queryClient.invalidateQueries({ queryKey: key })
     return true
   } catch (e) {
-    if (prev) queryClient.setQueryData(BUDGET_QUERY_KEY, prev)
+    if (prev) queryClient.setQueryData(key, prev)
     throw e
   }
 }

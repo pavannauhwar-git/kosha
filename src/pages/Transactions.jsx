@@ -954,7 +954,7 @@ export default function Transactions() {
 
   const exportCSV = useCallback(async () => {
     try {
-      const userId = getAuthUserId()
+      const userId = activeWalletUserId
       let q = supabase
         .from('transactions')
         .select('date, type, description, amount, category, investment_vehicle, payment_mode, notes, is_recurring, recurrence, is_auto_generated, source_transaction_id')
