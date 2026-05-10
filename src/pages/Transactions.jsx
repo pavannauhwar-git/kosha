@@ -391,13 +391,20 @@ export default function Transactions() {
     initialCount: 36,
   })
 
-  const renderedTimelineRows = useMemo(
-    () => timelineRows.slice(timelineRowStartIndex, timelineRowEndIndex),
-    [timelineRows, timelineRowStartIndex, timelineRowEndIndex]
-  )
-
   const hasMore = useMemo(() => total > data.length, [total, data.length])
   const focusTxnId = searchParams.get('focus')
+  const linkedLoanFilter = searchParams.get('linked_loan') || null
+
+  const renderedTimelineRows = useMemo(
+    () => {
+      const rows = linkedLoanFilter
+        ? timelineRows.filter(row => String(row.txn.linked_loan_id || '') === String(linkedLoanFilter))
+        : timelineRows
+      return rows.slice(timelineRowStartIndex, timelineRowEndIndex)
+    },
+    [timelineRows, timelineRowStartIndex, timelineRowEndIndex, linkedLoanFilter]
+  )
+
   const hasActiveFilters = typeFilter !== 'all' || !!catFilter || !!paymentModeFilter || datePreset !== 'all' || !!forcedDateRange || !!debouncedSearch
   const activeDatePresetLabel = useMemo(
     () => {
@@ -431,7 +438,10 @@ export default function Transactions() {
     []
   )
   const visibleSummary = useMemo(() => {
-    return data.reduce((acc, txn) => {
+    const rows = linkedLoanFilter
+      ? data.filter(txn => String(txn?.linked_loan_id || '') === String(linkedLoanFilter))
+      : data
+    return rows.reduce((acc, txn) => {
       const amount = Number(txn?.amount || 0)
       if (!Number.isFinite(amount) || amount <= 0) return acc
 
@@ -444,7 +454,7 @@ export default function Transactions() {
       }
       return acc
     }, { income: 0, outflow: 0, net: 0 })
-  }, [data])
+  }, [data, linkedLoanFilter])
 
   const timelineActivitySignal = useMemo(() => {
     if (signalAggregates?.rowCount >= 2) {
@@ -802,6 +812,39 @@ export default function Transactions() {
 
     return () => clearTimeout(timeoutId)
   }, [focusTxnId, data, hasMore, timelineRows, scrollTimelineRowToIndex, searchParams, setSearchParams])
+
+  // Phase 1: when loan filter activates, reset to All time so all repayments load
+  const loanFilterRangeSetRef = useRef(null)
+  useEffect(() => {
+    if (!linkedLoanFilter) {
+      loanFilterRangeSetRef.current = null
+      return
+    }
+    // Only reset to all-time if switching to a new loan filter
+    if (loanFilterRangeSetRef.current !== linkedLoanFilter) {
+      setDatePreset('all')
+      setForcedDateRange(null)
+    }
+  }, [linkedLoanFilter])
+
+  // Phase 2: once data loads, compute the actual repayment date range and apply it
+  useEffect(() => {
+    if (!linkedLoanFilter || !data.length) return
+    // Skip if we already set the range for this loan filter
+    if (loanFilterRangeSetRef.current === linkedLoanFilter) return
+
+    const repayments = data.filter(t => String(t?.linked_loan_id || '') === String(linkedLoanFilter))
+    if (!repayments.length) return
+
+    const dates = repayments.map(t => t.date).filter(Boolean).sort()
+    if (!dates.length) return
+
+    const startDate = dates[0]
+    const endDate = dates[dates.length - 1]
+    loanFilterRangeSetRef.current = linkedLoanFilter
+    setForcedDateRange({ startDate, endDate })
+    setDatePreset('all')
+  }, [linkedLoanFilter, data])
 
   const commitPendingDelete = useCallback(async (pendingDelete) => {
     if (!pendingDelete?.id) return
@@ -1289,6 +1332,22 @@ export default function Transactions() {
                   <SlidersHorizontal size={11} />
                   {paymentModeFilter ? getPaymentModeLabel(paymentModeFilter) : 'Payment'}
                 </button>
+
+                {linkedLoanFilter && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = new URLSearchParams(searchParams)
+                      next.delete('linked_loan')
+                      setSearchParams(next, { replace: true })
+                    }}
+                    className="chip-control chip-control-sm bg-brand text-brand-on border-brand flex items-center gap-1"
+                  >
+                    Loan repayments
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                )}
+
               </FilterRow>
 
               <AnimatePresence>
@@ -1428,7 +1487,7 @@ export default function Transactions() {
           <div>
             <SectionHeader
               title="Timeline"
-              subtitle={hasActiveFilters ? 'Filtered rows grouped by date.' : 'Latest activity grouped by date.'}
+              subtitle={hasActiveFilters || linkedLoanFilter ? 'Filtered rows grouped by date.' : 'Latest activity grouped by date.'}
               rightText={`${data.length} loaded`}
             />
           </div>
@@ -1520,11 +1579,11 @@ export default function Transactions() {
                   <p className="text-[15px] font-semibold text-ink">Timeline summary</p>
                   <p className="text-[12px] text-ink-3 mt-0.5">Quick read of the health of your currently loaded rows.</p>
                 </div>
-                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-pill border whitespace-nowrap ${hasActiveFilters
+                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-pill border whitespace-nowrap ${(hasActiveFilters || linkedLoanFilter)
                     ? 'bg-brand-container text-brand border-brand/20'
                     : 'bg-kosha-surface text-ink-3 border-kosha-border'
                   }`}>
-                  {hasActiveFilters ? 'Filtered view' : 'Full timeline'}
+                  {(hasActiveFilters || linkedLoanFilter) ? 'Filtered view' : 'Full timeline'}
                 </span>
               </div>
             </div>
@@ -1533,8 +1592,12 @@ export default function Transactions() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div className="mini-panel px-3 py-2.5">
                   <p className="text-[10px] uppercase tracking-wide text-ink-3">Rows</p>
-                  <p className="text-[15px] font-semibold tabular-nums text-ink mt-1">{data.length}/{total}</p>
-                  <p className="text-[10px] text-ink-3 mt-0.5">Loaded / matching</p>
+                  <p className="text-[15px] font-semibold tabular-nums text-ink mt-1">
+                    {linkedLoanFilter
+                      ? `${data.filter(t => String(t?.linked_loan_id || '') === String(linkedLoanFilter)).length}/${total}`
+                      : `${data.length}/${total}`}
+                  </p>
+                  <p className="text-[10px] text-ink-3 mt-0.5">{linkedLoanFilter ? 'Matching / all' : 'Loaded / matching'}</p>
                 </div>
                 <div className="mini-panel px-3 py-2.5">
                   <p className="text-[10px] uppercase tracking-wide text-ink-3">Range</p>
@@ -1635,6 +1698,20 @@ export default function Transactions() {
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border">{activeCategoryLabel}</span>
                 <span className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border">{activePaymentModeLabel}</span>
+                {linkedLoanFilter && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = new URLSearchParams(searchParams)
+                      next.delete('linked_loan')
+                      setSearchParams(next, { replace: true })
+                    }}
+                    className="chip-control chip-control-sm bg-brand-container text-brand border-brand/20 flex items-center gap-1"
+                  >
+                    Loan repayments
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                )}
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1649,10 +1726,15 @@ export default function Transactions() {
                   </Button>
                 ) : null}
 
-                {hasActiveFilters ? (
+                {(hasActiveFilters || linkedLoanFilter) ? (
                   <button
                     type="button"
-                    onClick={clearAllFilters}
+                    onClick={() => {
+                      clearAllFilters()
+                      const next = new URLSearchParams(searchParams)
+                      next.delete('linked_loan')
+                      setSearchParams(next, { replace: true })
+                    }}
                     className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
                   >
                     Clear filters

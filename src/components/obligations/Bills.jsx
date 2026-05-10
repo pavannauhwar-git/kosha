@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight, Pencil, CalendarDays } from 'lucide-react'
+import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight, Pencil, CalendarDays, MoreVertical, Trash2, ArrowUpRight } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useLiabilities,
@@ -101,6 +101,23 @@ export default function Bills({
   const [toastActionLabel, setToastActionLabel] = useState(null)
   const toastTimeoutRef = useRef(null)
   const pendingDeleteRef = useRef(null)
+  const [overflowBillId, setOverflowBillId] = useState(null)
+  const overflowBillRef = useRef(null)
+
+  useEffect(() => {
+    if (!overflowBillId) return
+    function handleClickOutside(e) {
+      if (overflowBillRef.current && !overflowBillRef.current.contains(e.target)) {
+        setOverflowBillId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [overflowBillId])
 
   const dismissToast = useCallback(() => {
     if (toastTimeoutRef.current) {
@@ -821,34 +838,73 @@ export default function Bills({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            {bill.is_recurring && (
-                              <Repeat size={12} className="text-ink-3 shrink-0" />
-                            )}
-                            <p className="text-[13px] sm:text-sm font-semibold text-ink truncate">
-                              {bill.description}
-                            </p>
-                          </div>
-                          <p className="text-[17px] sm:text-lg font-semibold amt-expense mb-2">{fmt(+bill.amount)}</p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {tab === 'pending' ? (
-                              <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
-                                {dueLabel(days)}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
-                                Paid {fmtDate(bill.due_date)}
-                              </span>
-                            )}
-                            {bill.is_recurring && (
-                              <span className="text-[10px] sm:text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
-                            )}
-                            {(bill.__optimistic || String(bill.id || '').startsWith('optimistic-')) && (
-                              <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
-                                Syncing...
-                              </span>
-                            )}
-                          </div>
+                          {/* ── Pending bill layout ── */}
+                          {tab === 'pending' && (
+                            <>
+                              <div className="flex items-center gap-2 mb-1">
+                                {bill.is_recurring && (
+                                  <Repeat size={12} className="text-ink-3 shrink-0" />
+                                )}
+                                <p className="text-[13px] sm:text-sm font-semibold text-ink truncate">
+                                  {bill.description}
+                                </p>
+                              </div>
+                              <p className="text-[17px] sm:text-lg font-semibold amt-expense mb-2">{fmt(+bill.amount)}</p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
+                                  {dueLabel(days)}
+                                </span>
+                                {bill.is_recurring && (
+                                  <span className="text-[10px] sm:text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
+                                )}
+                                {(bill.__optimistic || String(bill.id || '').startsWith('optimistic-')) && (
+                                  <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
+                                    Syncing...
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                          )}
+
+                          {/* ── Paid bill layout — richer info ── */}
+                          {tab === 'paid' && (
+                            <>
+                              {/* Header: description + Paid ✓ badge */}
+                              <div className="flex items-center gap-2 mb-1.5">
+                                {bill.is_recurring && (
+                                  <Repeat size={11} className="text-ink-3 shrink-0" />
+                                )}
+                                <p className="text-[13px] font-semibold text-ink truncate flex-1">
+                                  {bill.description}
+                                </p>
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-pill bg-income-bg text-income-text border border-income-border shrink-0">
+                                  Paid ✓
+                                </span>
+                              </div>
+
+                              {/* Amount + due date compact row */}
+                              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                <span className="text-[15px] font-semibold tabular-nums amt-expense">{fmt(+bill.amount)}</span>
+                                {bill.due_date && (
+                                  <span className="text-[11px] text-ink-3">· Due {fmtDate(bill.due_date)}</span>
+                                )}
+                                {bill.is_recurring && (
+                                  <span className="text-[11px] text-ink-3 capitalize">· {bill.recurrence}</span>
+                                )}
+                              </div>
+
+                              {/* View payment link */}
+                              {bill.linked_transaction_id && (
+                                <button
+                                  onClick={() => navigate(`/transactions?focus=${bill.linked_transaction_id}`)}
+                                  className="flex items-center gap-1 text-[11px] font-semibold text-brand active:opacity-60 transition-opacity w-fit"
+                                >
+                                  <ArrowUpRight size={10} />
+                                  View payment
+                                </button>
+                              )}
+                            </>
+                          )}
                         </div>
 
                         {!isViewingPartner && (
@@ -873,17 +929,48 @@ export default function Bills({
                                 >
                                   {payingId === bill.id ? 'Paying…' : 'Paid'}
                                 </Button>
+                                <Button
+                                  onClick={() => handleDelete(bill.id)}
+                                  disabled={!!payingId || !!deletingId || !!bill.__optimistic}
+                                  variant="danger"
+                                  size="sm"
+                                  icon={deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                                >
+                                  {deletingId === bill.id ? 'Deleting…' : 'Delete'}
+                                </Button>
                               </>
                             )}
-                            <Button
-                              onClick={() => handleDelete(bill.id)}
-                              disabled={!!payingId || !!deletingId || !!bill.__optimistic}
-                              variant="danger"
-                              size="sm"
-                              icon={deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
-                            >
-                              {deletingId === bill.id ? 'Deleting…' : 'Delete'}
-                            </Button>
+                            {/* Paid bills only: 3-dot warns that linked payment transaction is also removed */}
+                            {tab === 'paid' && (
+                              <div className="relative" ref={overflowBillId === bill.id ? overflowBillRef : null}>
+                                <button
+                                  onClick={() => setOverflowBillId(overflowBillId === bill.id ? null : bill.id)}
+                                  disabled={!!payingId || !!deletingId || !!bill.__optimistic}
+                                  className="w-8 h-8 flex items-center justify-center rounded-full text-ink-3 active:bg-kosha-surface-2 transition-colors disabled:opacity-40"
+                                  aria-label="More options"
+                                >
+                                  {deletingId === bill.id
+                                    ? <Loader2 size={14} className="animate-spin" />
+                                    : <MoreVertical size={16} />}
+                                </button>
+                                {overflowBillId === bill.id && (
+                                  <div className="absolute right-0 top-full mt-1 z-30 bg-kosha-surface rounded-2xl border border-kosha-border shadow-apple-card min-w-[200px] overflow-hidden">
+                                    <button
+                                      onClick={() => { setOverflowBillId(null); handleDelete(bill.id) }}
+                                      className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left active:bg-kosha-surface-2 transition-colors"
+                                    >
+                                      <Trash2 size={14} className="text-expense-text mt-0.5 shrink-0" />
+                                      <div>
+                                        <p className="text-[13px] font-semibold text-expense-text leading-snug">Delete bill</p>
+                                        <p className="text-[11px] text-ink-3 mt-0.5 leading-snug">
+                                          Linked payment transaction will also be removed
+                                        </p>
+                                      </div>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

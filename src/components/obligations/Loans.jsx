@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, X, Check, Loader2, Download, ArrowDownLeft, ArrowUpRight,
   HandCoins, Users, Percent, Calendar, CalendarDays, FileText, Pencil,
+  MoreVertical, Trash2,
 } from 'lucide-react'
 import {
   useLoans,
@@ -30,7 +31,7 @@ import Button from '../ui/Button'
 import PixelDatePicker from '../ui/PixelDatePicker'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import useWindowedList from '../../hooks/useWindowedList'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 const LOAN_COLUMNS_EXPORT =
   'id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled'
@@ -44,6 +45,7 @@ export default function Loans({
   isViewingPartner: isViewingPartnerProp,
 } = {}) {
   const activeWalletUserId = useActiveWallet()
+  const navigate = useNavigate()
   const isViewingPartner = isViewingPartnerProp ?? (!!activeWalletUserId && activeWalletUserId !== getAuthUserId())
 
   const { given, taken, settled, loading, settledLoading } = useLoans()
@@ -77,6 +79,23 @@ export default function Loans({
   const [toastActionLabel, setToastActionLabel] = useState(null)
   const toastTimeoutRef = useRef(null)
   const pendingDeleteRef = useRef(null)
+  const [overflowLoanId, setOverflowLoanId] = useState(null)
+  const overflowLoanRef = useRef(null)
+
+  useEffect(() => {
+    if (!overflowLoanId) return
+    function handleClickOutside(e) {
+      if (overflowLoanRef.current && !overflowLoanRef.current.contains(e.target)) {
+        setOverflowLoanId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [overflowLoanId])
 
   const dismissToast = useCallback(() => {
     if (toastTimeoutRef.current) {
@@ -919,34 +938,35 @@ export default function Loans({
                     className={`card p-3 sm:p-3.5 ${highlightLoanId === loan.id ? 'txn-focus-highlight' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        {/* Direction icon + counterparty */}
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0
-                        ${loan.direction === 'given' ? 'bg-income-bg' : 'bg-expense-bg'}`}>
-                            {loan.direction === 'given'
-                              ? <ArrowUpRight size={14} className="text-income-text" />
-                              : <ArrowDownLeft size={14} className="text-expense-text" />}
+                      {/* Active loan layout */}
+                      {!loan.settled && (
+                        <div className="flex-1 min-w-0">
+                          {/* Direction icon + counterparty */}
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0
+                          ${loan.direction === 'given' ? 'bg-income-bg' : 'bg-expense-bg'}`}>
+                              {loan.direction === 'given'
+                                ? <ArrowUpRight size={14} className="text-income-text" />
+                                : <ArrowDownLeft size={14} className="text-expense-text" />}
+                            </div>
+                            <p className="text-[13px] sm:text-sm font-semibold text-ink truncate">
+                              {loan.counterparty}
+                            </p>
                           </div>
-                          <p className="text-[13px] sm:text-sm font-semibold text-ink truncate">
-                            {loan.counterparty}
+
+                          {/* Amount */}
+                          <p className={`text-[17px] sm:text-lg font-semibold mb-1 ${loan.direction === 'given' ? 'amt-income' : 'amt-expense'}`}>
+                            {fmt(+loan.amount)}
                           </p>
-                        </div>
 
-                        {/* Amount */}
-                        <p className={`text-[17px] sm:text-lg font-semibold mb-1 ${loan.direction === 'given' ? 'amt-income' : 'amt-expense'}`}>
-                          {fmt(+loan.amount)}
-                        </p>
+                          {/* Interest if applicable */}
+                          {interest > 0 && (
+                            <p className="text-[11px] text-ink-3 mb-1">
+                              +{fmt(Math.round(interest * 100) / 100)} interest ({loan.interest_rate}%/yr)
+                            </p>
+                          )}
 
-                        {/* Interest if applicable */}
-                        {interest > 0 && (
-                          <p className="text-[11px] text-ink-3 mb-1">
-                            +{fmt(Math.round(interest * 100) / 100)} interest ({loan.interest_rate}%/yr)
-                          </p>
-                        )}
-
-                        {/* Progress bar (active loans only) */}
-                        {!loan.settled && (
+                          {/* Progress bar (active loans only) */}
                           <div className="mb-2">
                             <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-1">
                               <motion.div
@@ -965,41 +985,36 @@ export default function Loans({
                               </span>
                             </div>
                           </div>
-                        )}
 
-                        {/* Meta chips */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
-                            {loan.direction === 'given' ? 'Given' : 'Taken'} {fmtDate(loan.loan_date)}
-                          </span>
-                          {loan.due_date && !loan.settled && days !== null && (
-                            <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${dueChipClass(days)}`}>
-                              {dueLabel(days)}
+                          {/* Meta chips */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
+                              {loan.direction === 'given' ? 'Given' : 'Taken'} {fmtDate(loan.loan_date)}
                             </span>
-                          )}
-                          {loan.settled && (
-                            <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-income-bg text-income-text border border-income-border">
-                              Settled
-                            </span>
-                          )}
-                          {loan.interest_rate > 0 && (
-                            <span className="text-[10px] sm:text-[11px] text-ink-3">{loan.interest_rate}%/yr</span>
-                          )}
-                          {loan.interest_rate === 0 && !loan.settled && (
-                            <span className="text-[10px] sm:text-[11px] text-ink-3">0% interest</span>
-                          )}
-                          {isOptimistic && (
-                            <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
-                              Syncing…
-                            </span>
+                            {loan.due_date && days !== null && (
+                              <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${dueChipClass(days)}`}>
+                                {dueLabel(days)}
+                              </span>
+                            )}
+                            {loan.interest_rate > 0 && (
+                              <span className="text-[10px] sm:text-[11px] text-ink-3">{loan.interest_rate}%/yr</span>
+                            )}
+                            {loan.interest_rate === 0 && (
+                              <span className="text-[10px] sm:text-[11px] text-ink-3">0% interest</span>
+                            )}
+                            {isOptimistic && (
+                              <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
+                                Syncing…
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Note */}
+                          {loan.note && (
+                            <p className="text-[11px] text-ink-3 mt-1.5 truncate">{loan.note}</p>
                           )}
                         </div>
-
-                        {/* Note */}
-                        {loan.note && (
-                          <p className="text-[11px] text-ink-3 mt-1.5 truncate">{loan.note}</p>
-                        )}
-                      </div>
+                      )}
 
                       {/* Actions */}
                       {!loan.settled && !isViewingPartner && (
@@ -1044,17 +1059,109 @@ export default function Loans({
                         </div>
                       )}
 
-                      {loan.settled && !isViewingPartner && (
-                        <div className="flex flex-col gap-2 shrink-0">
-                          <Button
-                            onClick={() => handleDelete(loan.id)}
-                            disabled={!!deletingId || isOptimistic}
-                            variant="danger"
-                            size="sm"
-                            icon={deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                      {/* Settled loan — compact full-width card */}
+                      {loan.settled && (
+                        <div className="flex-1 min-w-0">
+
+                          {/* Header: icon + name + settled badge + 3-dot */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0
+                              ${loan.direction === 'given' ? 'bg-income-bg' : 'bg-expense-bg'}`}>
+                              {loan.direction === 'given'
+                                ? <ArrowUpRight size={12} className="text-income-text" />
+                                : <ArrowDownLeft size={12} className="text-expense-text" />}
+                            </div>
+                            <p className="text-[13px] font-semibold text-ink truncate flex-1">
+                              {loan.counterparty}
+                            </p>
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-pill bg-income-bg text-income-text border border-income-border shrink-0">
+                              Settled ✓
+                            </span>
+                            {!isViewingPartner && (
+                              <div className="relative shrink-0" ref={overflowLoanId === loan.id ? overflowLoanRef : null}>
+                                <button
+                                  onClick={() => setOverflowLoanId(overflowLoanId === loan.id ? null : loan.id)}
+                                  disabled={!!deletingId || isOptimistic}
+                                  className="w-7 h-7 flex items-center justify-center rounded-full text-ink-3 active:bg-kosha-surface-2 transition-colors disabled:opacity-40"
+                                  aria-label="More options"
+                                >
+                                  {deletingId === loan.id
+                                    ? <Loader2 size={14} className="animate-spin" />
+                                    : <MoreVertical size={15} />}
+                                </button>
+                                {overflowLoanId === loan.id && (
+                                  <div className="absolute right-0 top-full mt-1 z-30 bg-kosha-surface rounded-2xl border border-kosha-border shadow-apple-card min-w-[200px] overflow-hidden">
+                                    <button
+                                      onClick={() => { setOverflowLoanId(null); handleDelete(loan.id) }}
+                                      className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left active:bg-kosha-surface-2 transition-colors"
+                                    >
+                                      <Trash2 size={14} className="text-expense-text mt-0.5 shrink-0" />
+                                      <div>
+                                        <p className="text-[13px] font-semibold text-expense-text leading-snug">Delete loan</p>
+                                        <p className="text-[11px] text-ink-3 mt-0.5 leading-snug">Linked repayment transactions will also be removed</p>
+                                      </div>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Compact stats row */}
+                          <div className="flex items-center gap-2 flex-wrap mb-2">
+                            <span className={`text-[15px] font-semibold tabular-nums ${
+                              loan.direction === 'given' ? 'amt-income' : 'amt-expense'
+                            }`}>{fmt(+loan.amount)}</span>
+                            {(() => {
+                              const start = new Date(`${loan.loan_date}T00:00:00`)
+                              if (Number.isNaN(start.getTime())) return null
+                              const totalDays = Math.round((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24))
+                              const label = totalDays < 30 ? `${totalDays}d` : `~${Math.round(totalDays / 30.44)}mo`
+                              return <span className="text-[11px] text-ink-3">· {label}</span>
+                            })()}
+                            {accruedInterest(loan.amount, loan.interest_rate, loan.loan_date) > 0 && (
+                              <span className="text-[11px] text-ink-3">· +{fmt(Math.round(accruedInterest(loan.amount, loan.interest_rate, loan.loan_date) * 100) / 100)} interest</span>
+                            )}
+                            {loan.due_date && (() => {
+                              const diffDays = Math.round((new Date(`${loan.due_date}T00:00:00`).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                              if (diffDays > 3) return <span className="text-[11px] font-medium text-income-text">· Early ↑</span>
+                              if (diffDays >= -3) return <span className="text-[11px] font-medium text-ink-3">· On time</span>
+                              return <span className="text-[11px] font-medium text-expense-text">· Late {Math.abs(diffDays)}d</span>
+                            })()}
+                          </div>
+
+                          {/* Date + interest chips */}
+                          <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
+                              {loan.direction === 'given' ? 'Given' : 'Taken'} {fmtDate(loan.loan_date)}
+                            </span>
+                            {loan.due_date && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
+                                Due {fmtDate(loan.due_date)}
+                              </span>
+                            )}
+                            {loan.interest_rate > 0 && (
+                              <span className="text-[10px] text-ink-3">{loan.interest_rate}%/yr</span>
+                            )}
+                          </div>
+
+                          {/* Note */}
+                          {loan.note && (
+                            <div className="flex items-start gap-1.5 bg-kosha-surface-2 rounded-xl px-2.5 py-1.5 border border-kosha-border mb-2">
+                              <FileText size={11} className="text-ink-3 mt-0.5 shrink-0" />
+                              <p className="text-[11px] text-ink-3 leading-relaxed">{loan.note}</p>
+                            </div>
+                          )}
+
+                          {/* View history link */}
+                          <button
+                            onClick={() => navigate(`/transactions?linked_loan=${loan.id}`)}
+                            className="flex items-center gap-1 text-[11px] font-semibold text-brand active:opacity-60 transition-opacity w-fit"
                           >
-                            {deletingId === loan.id ? 'Deleting…' : 'Delete'}
-                          </Button>
+                            <Calendar size={10} />
+                            View repayment history
+                          </button>
+
                         </div>
                       )}
                     </div>

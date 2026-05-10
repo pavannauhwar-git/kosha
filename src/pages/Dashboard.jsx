@@ -134,6 +134,7 @@ export default function Dashboard() {
 
   const { profile, linkedProfiles } = useAuth()
   const activeWalletUserId = useActiveWallet()
+  const walletReady = !!activeWalletUserId
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
   const activePartnerProfile = isViewingPartner
     ? (linkedProfiles || []).find(p => p.id === activeWalletUserId)
@@ -173,8 +174,8 @@ export default function Dashboard() {
   const { budgets } = useBudgets()
   const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
 
-  const heroLoading = summaryLoading || runningBalanceLoading
-  const isBackgroundFetching = (!summaryLoading && summaryFetching) || (!runningBalanceLoading && runningBalanceFetching) || (!recentLoading && recentFetching)
+  const heroLoading = !walletReady || summaryLoading || runningBalanceLoading
+  const isBackgroundFetching = walletReady && ((!summaryLoading && summaryFetching) || (!runningBalanceLoading && runningBalanceFetching) || (!recentLoading && recentFetching))
 
   // ── Derived values ─────────────────────────────────────────────────────
   const earned = summary?.earned || 0
@@ -446,10 +447,10 @@ export default function Dashboard() {
     currentMonthParam,
   ])
 
-  const isNewUser = !heroLoading && recent.length === 0 && earned === 0 && spent === 0 && invested === 0 && bills.length === 0
+  const isNewUser = walletReady && !heroLoading && recent.length === 0 && earned === 0 && spent === 0 && invested === 0 && bills.length === 0
   const showActionQueueSection = !heroLoading && !isNewUser
   const showSpendControlSection = !heroLoading && (earned > 0 || weeklyDriftSignal?.hasData || !!categoryPressureSignal)
-  const showBillsControlSection = dueSoonCount > 0 || upcomingBills.length > 0 || !!billClusterSignal
+  const showBillsControlSection = walletReady && (dueSoonCount > 0 || upcomingBills.length > 0 || !!billClusterSignal)
 
   // ── Reminders ──────────────────────────────────────────────────────────
   useEffect(() => {

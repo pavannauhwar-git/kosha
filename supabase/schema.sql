@@ -2829,7 +2829,7 @@ begin
 
   if p_sync_transaction and v_payer_uid = v_uid then
     insert into public.transactions (
-      date, type, description, amount, category, user_id, linked_split_expense_id
+      date, type, description, amount, category, user_id, linked_split_expense_id, notes
     ) values (
       coalesce(p_expense_date, current_date),
       'expense',
@@ -2837,7 +2837,8 @@ begin
       p_amount,
       coalesce(p_transaction_category, 'other'),
       v_uid,
-      v_expense.id
+      v_expense.id,
+      nullif(btrim(coalesce(p_notes, '')), '')
     ) returning id into v_txn_id;
 
     update public.split_expenses set linked_transaction_id = v_txn_id where id = v_expense.id;
@@ -2931,15 +2932,15 @@ begin
   if p_sync_transaction then
     -- Payer sees: "Settled with [payee name]"
     if v_payer_uid = v_uid then
-      insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id)
-      values (coalesce(p_settled_at, current_date), 'expense', 'Settled with ' || coalesce(v_payee_name, 'member'), p_amount, 'other', v_uid, true, v_row.id)
+      insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id, notes)
+      values (coalesce(p_settled_at, current_date), 'expense', 'Settled with ' || coalesce(v_payee_name, 'member'), p_amount, 'other', v_uid, true, v_row.id, nullif(btrim(coalesce(p_note, '')), ''))
       returning id into v_payer_txn_id;
     end if;
 
     -- Payee sees: "Received from [payer name]"
     if v_payee_uid = v_uid then
-      insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id)
-      values (coalesce(p_settled_at, current_date), 'income', 'Received from ' || coalesce(v_payer_name, 'member'), p_amount, 'other', v_uid, true, v_row.id)
+      insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id, notes)
+      values (coalesce(p_settled_at, current_date), 'income', 'Received from ' || coalesce(v_payer_name, 'member'), p_amount, 'other', v_uid, true, v_row.id, nullif(btrim(coalesce(p_note, '')), ''))
       returning id into v_payee_txn_id;
     end if;
 
@@ -3116,7 +3117,7 @@ begin
   insert into transactions (
     date, type, description, amount, category,
     is_repayment, payment_mode, user_id,
-    linked_loan_id
+    linked_loan_id, notes
   ) values (
     coalesce(p_loan_date, current_date),
     v_txn_type,
@@ -3126,7 +3127,8 @@ begin
     false,
     'other',
     p_user_id,
-    v_loan.id
+    v_loan.id,
+    nullif(btrim(coalesce(p_note, '')), '')
   )
   returning id into v_txn_id;
 
