@@ -452,7 +452,11 @@ function BottomNav() {
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                   return
                 }
-                navigate(item.path)
+                // replace: true keeps the history stack flat — tab switches
+                // should never create back-navigable history entries so that
+                // the iOS swipe-from-left gesture only triggers meaningful
+                // navigation (e.g. modals / sub-pages), not tab hopping.
+                navigate(item.path, { replace: true })
               }}
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
