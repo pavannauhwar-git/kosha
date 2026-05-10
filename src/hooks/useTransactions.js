@@ -61,6 +61,7 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['balance'],
   ['todayExpenses'],
   ['transactionYearBounds'],
+  ['liabilities'],
 ]
 
 export const TRANSACTION_LIST_COLUMNS =

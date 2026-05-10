@@ -87,9 +87,9 @@ const NAV = [
 ]
 
 const REALTIME_INVALIDATION_POLICIES = [
-  { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS, filterColumn: 'user_id' },
-  { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS, filterColumn: 'user_id' },
-  { key: 'loans', table: 'loans', queryKeys: LOAN_INVALIDATION_KEYS, filterColumn: 'user_id' },
+  { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS },
+  { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
+  { key: 'loans', table: 'loans', queryKeys: LOAN_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_groups', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_group_access', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_group_members', queryKeys: SPLITWISE_INVALIDATION_KEYS },

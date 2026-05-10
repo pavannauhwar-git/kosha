@@ -170,11 +170,11 @@ export default function Dashboard() {
     balanceHorizonDate.getFullYear(),
     balanceHorizonDate.getMonth() + 1
   )
-  const { pending: bills = [] } = useLiabilities()
+  const { pending: bills = [], loading: billsLoading } = useLiabilities()
   const { budgets } = useBudgets()
   const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
 
-  const heroLoading = !walletReady || summaryLoading || runningBalanceLoading
+  const heroLoading = !walletReady || summaryLoading || runningBalanceLoading || recentLoading || billsLoading
   const isBackgroundFetching = walletReady && ((!summaryLoading && summaryFetching) || (!runningBalanceLoading && runningBalanceFetching) || (!recentLoading && recentFetching))
 
   // ── Derived values ─────────────────────────────────────────────────────
@@ -447,7 +447,7 @@ export default function Dashboard() {
     currentMonthParam,
   ])
 
-  const isNewUser = walletReady && !heroLoading && recent.length === 0 && earned === 0 && spent === 0 && invested === 0 && bills.length === 0
+  const isNewUser = walletReady && !heroLoading && !isBackgroundFetching && recent.length === 0 && earned === 0 && spent === 0 && invested === 0 && bills.length === 0
   const showActionQueueSection = !heroLoading && !isNewUser
   const showSpendControlSection = !heroLoading && (earned > 0 || weeklyDriftSignal?.hasData || !!categoryPressureSignal)
   const showBillsControlSection = walletReady && (dueSoonCount > 0 || upcomingBills.length > 0 || !!billClusterSignal)

@@ -13,12 +13,12 @@ import {
 } from './useTransactions'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
-export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth']]
+export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth'], ['transactions']]
 
 const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending', targetUserId]
 const LIABILITY_PAID_QUERY_KEY    = (targetUserId) => ['liabilities', 'paid', targetUserId]
 const LIABILITY_COLUMNS =
-  'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
+  'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id'
 
 function runInBackground(promise, scope) {
