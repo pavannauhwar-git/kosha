@@ -53,7 +53,7 @@ const DATE_PRESETS = [
   { id: 'custom-month', label: 'Specific month' },
 ]
 
-const FILTER_URL_KEYS = ['month', 'day', 'type', 'category', 'payment', 'q']
+const FILTER_URL_KEYS = ['month', 'day', 'type', 'category', 'payment', 'q', 'linked_loan', 'linked_bill', 'linked_split_expense', 'linked_split_settlement']
 
 const MONTH_FILTER_MIN_YEAR = 1900
 const MONTH_FILTER_MAX_YEAR = 2100
@@ -163,6 +163,11 @@ export default function Transactions() {
 
   const debouncedSearch = useDebounce(search, 300)
   const isSearchDebouncing = search !== debouncedSearch
+  const focusTxnId = searchParams.get('focus')
+  const linkedLoanFilter = searchParams.get('linked_loan') || null
+  const linkedBillFilter = searchParams.get('linked_bill') || null
+  const linkedSplitExpenseFilter = searchParams.get('linked_split_expense') || null
+  const linkedSplitSettlementFilter = searchParams.get('linked_split_settlement') || null
 
   const dismissToast = useCallback(() => {
     if (toastTimeoutRef.current) {
@@ -213,7 +218,19 @@ export default function Transactions() {
     }
   }, [])
 
+  function clearLinkedFilters() {
+    if (!linkedLoanFilter && !linkedBillFilter && !linkedSplitExpenseFilter && !linkedSplitSettlementFilter) return
+    const next = new URLSearchParams(searchParams)
+    next.delete('linked_loan')
+    next.delete('linked_bill')
+    next.delete('linked_split_expense')
+    next.delete('linked_split_settlement')
+    internalUrlUpdateRef.current = true
+    setSearchParams(next, { replace: true })
+  }
+
   function handleDatePreset(nextPreset) {
+    clearLinkedFilters()
     setDatePreset(nextPreset)
     setForcedDateRange(null)
     if (nextPreset === 'custom-month' && !parseMonthInput(selectedMonth)) {
@@ -238,6 +255,7 @@ export default function Transactions() {
   }, [])
 
   function updateSelectedMonth(nextYear, nextMonth) {
+    clearLinkedFilters()
     const safeYear = Math.min(
       MONTH_FILTER_MAX_YEAR,
       Math.max(MONTH_FILTER_MIN_YEAR, Number(nextYear) || selectedMonthParts.year)
@@ -337,6 +355,10 @@ export default function Transactions() {
     search: debouncedSearch || undefined,
     startDate,
     endDate,
+    linkedLoanId: linkedLoanFilter,
+    linkedBillId: linkedBillFilter,
+    linkedSplitExpenseId: linkedSplitExpenseFilter,
+    linkedSplitSettlementId: linkedSplitSettlementFilter,
     limit: displayCount,
     withCount: true,
   })
@@ -349,6 +371,10 @@ export default function Transactions() {
     search: debouncedSearch || undefined,
     startDate,
     endDate,
+    linkedLoanId: linkedLoanFilter,
+    linkedBillId: linkedBillFilter,
+    linkedSplitExpenseId: linkedSplitExpenseFilter,
+    linkedSplitSettlementId: linkedSplitSettlementFilter,
     enabled: shouldFetchSignalAggregates,
   })
 
@@ -387,25 +413,18 @@ export default function Transactions() {
     estimateSize: 88,
     overscan: 10,
     enabled: timelineRows.length > 40,
-    resetKey: `${typeFilter}:${catFilter}:${paymentModeFilter}:${datePreset}:${startDate || 'na'}:${endDate || 'na'}:${debouncedSearch}:${displayCount}`,
+    resetKey: `${typeFilter}:${catFilter}:${paymentModeFilter}:${datePreset}:${startDate || 'na'}:${endDate || 'na'}:${debouncedSearch}:${displayCount}:${linkedLoanFilter || 'none'}:${linkedBillFilter || 'none'}:${linkedSplitExpenseFilter || 'none'}:${linkedSplitSettlementFilter || 'none'}`,
     initialCount: 36,
   })
 
   const hasMore = useMemo(() => total > data.length, [total, data.length])
-  const focusTxnId = searchParams.get('focus')
-  const linkedLoanFilter = searchParams.get('linked_loan') || null
 
   const renderedTimelineRows = useMemo(
-    () => {
-      const rows = linkedLoanFilter
-        ? timelineRows.filter(row => String(row.txn.linked_loan_id || '') === String(linkedLoanFilter))
-        : timelineRows
-      return rows.slice(timelineRowStartIndex, timelineRowEndIndex)
-    },
-    [timelineRows, timelineRowStartIndex, timelineRowEndIndex, linkedLoanFilter]
+    () => timelineRows.slice(timelineRowStartIndex, timelineRowEndIndex),
+    [timelineRows, timelineRowStartIndex, timelineRowEndIndex]
   )
 
-  const hasActiveFilters = typeFilter !== 'all' || !!catFilter || !!paymentModeFilter || datePreset !== 'all' || !!forcedDateRange || !!debouncedSearch
+  const hasActiveFilters = typeFilter !== 'all' || !!catFilter || !!paymentModeFilter || datePreset !== 'all' || !!forcedDateRange || !!debouncedSearch || !!linkedLoanFilter || !!linkedBillFilter || !!linkedSplitExpenseFilter || !!linkedSplitSettlementFilter
   const activeDatePresetLabel = useMemo(
     () => {
       if (forcedDateRange?.startDate && forcedDateRange?.startDate === forcedDateRange?.endDate) {
@@ -438,10 +457,7 @@ export default function Transactions() {
     []
   )
   const visibleSummary = useMemo(() => {
-    const rows = linkedLoanFilter
-      ? data.filter(txn => String(txn?.linked_loan_id || '') === String(linkedLoanFilter))
-      : data
-    return rows.reduce((acc, txn) => {
+    return data.reduce((acc, txn) => {
       const amount = Number(txn?.amount || 0)
       if (!Number.isFinite(amount) || amount <= 0) return acc
 
@@ -454,7 +470,7 @@ export default function Transactions() {
       }
       return acc
     }, { income: 0, outflow: 0, net: 0 })
-  }, [data, linkedLoanFilter])
+  }, [data])
 
   const timelineActivitySignal = useMemo(() => {
     if (signalAggregates?.rowCount >= 2) {
@@ -688,8 +704,18 @@ export default function Transactions() {
       setForcedDateRange(null)
       setDatePreset('custom-month')
     } else {
-      setForcedDateRange(null)
-      setDatePreset('all')
+      // If we are in a linked entity view, we let Phase 2 manage the forcedDateRange.
+      // Otherwise, we clear it as the URL has no specific date context.
+      const hasLinkedFilter = !!(linkedLoanFilter || linkedBillFilter || linkedSplitExpenseFilter || linkedSplitSettlementFilter)
+      if (!hasLinkedFilter) {
+        setForcedDateRange(null)
+      }
+
+      // Only reset to 'all' if we were on a custom month or specific day,
+      // and the URL no longer has those specific params.
+      if (datePreset === 'custom-month' || (forcedDateRange && !hasLinkedFilter)) {
+        setDatePreset('all')
+      }
     }
 
     setDisplayCount(50)
@@ -717,6 +743,12 @@ export default function Transactions() {
 
     const focusParam = String(currentSearchParams.get('focus') || '').trim()
     if (focusParam) nextParams.set('focus', focusParam)
+
+    // Preserve linked filters if they exist (they are URL-driven)
+    if (linkedLoanFilter) nextParams.set('linked_loan', linkedLoanFilter)
+    if (linkedBillFilter) nextParams.set('linked_bill', linkedBillFilter)
+    if (linkedSplitExpenseFilter) nextParams.set('linked_split_expense', linkedSplitExpenseFilter)
+    if (linkedSplitSettlementFilter) nextParams.set('linked_split_settlement', linkedSplitSettlementFilter)
 
     const mergedParams = new URLSearchParams(currentSearchParams)
     FILTER_URL_KEYS.forEach((key) => mergedParams.delete(key))
@@ -816,35 +848,35 @@ export default function Transactions() {
   // Phase 1: when loan filter activates, reset to All time so all repayments load
   const loanFilterRangeSetRef = useRef(null)
   useEffect(() => {
-    if (!linkedLoanFilter) {
+    const activeLinkedFilter = linkedLoanFilter || linkedBillFilter || linkedSplitExpenseFilter || linkedSplitSettlementFilter
+    if (!activeLinkedFilter) {
       loanFilterRangeSetRef.current = null
       return
     }
-    // Only reset to all-time if switching to a new loan filter
-    if (loanFilterRangeSetRef.current !== linkedLoanFilter) {
+    // Only reset to all-time if switching to a new linked filter
+    if (loanFilterRangeSetRef.current !== activeLinkedFilter) {
       setDatePreset('all')
       setForcedDateRange(null)
     }
-  }, [linkedLoanFilter])
+  }, [linkedLoanFilter, linkedBillFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter])
 
   // Phase 2: once data loads, compute the actual repayment date range and apply it
   useEffect(() => {
-    if (!linkedLoanFilter || !data.length) return
-    // Skip if we already set the range for this loan filter
-    if (loanFilterRangeSetRef.current === linkedLoanFilter) return
+    const activeLinkedFilter = linkedLoanFilter || linkedBillFilter || linkedSplitExpenseFilter || linkedSplitSettlementFilter
+    if (!activeLinkedFilter || txnLoading || !data.length) return
+    // Skip if we already set the range for this linked filter
+    if (loanFilterRangeSetRef.current === activeLinkedFilter) return
 
-    const repayments = data.filter(t => String(t?.linked_loan_id || '') === String(linkedLoanFilter))
-    if (!repayments.length) return
-
-    const dates = repayments.map(t => t.date).filter(Boolean).sort()
+    const related = data
+    const dates = related.map(t => t.date).filter(Boolean).sort()
     if (!dates.length) return
 
     const startDate = dates[0]
     const endDate = dates[dates.length - 1]
-    loanFilterRangeSetRef.current = linkedLoanFilter
+    loanFilterRangeSetRef.current = activeLinkedFilter
     setForcedDateRange({ startDate, endDate })
     setDatePreset('all')
-  }, [linkedLoanFilter, data])
+  }, [linkedLoanFilter, linkedBillFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter, data])
 
   const commitPendingDelete = useCallback(async (pendingDelete) => {
     if (!pendingDelete?.id) return
@@ -1178,6 +1210,30 @@ export default function Transactions() {
             <div className="px-4 pt-3.5 pb-3 border-b border-kosha-border bg-kosha-surface-2">
               <p className="text-[15px] font-semibold text-ink">Find and filter</p>
               <p className="text-[12px] text-ink-3 mt-0.5">Search by merchant or note, then narrow by date, type, category, and payment mode.</p>
+
+              {(linkedLoanFilter || linkedBillFilter || linkedSplitExpenseFilter || linkedSplitSettlementFilter) && (
+                <div className="mt-3 flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-pill bg-brand-container text-brand border border-brand/20">
+                    <BookOpen size={13} className="shrink-0" />
+                    <span className="text-[11px] font-semibold">
+                      {linkedLoanFilter ? 'Loan history' :
+                        linkedBillFilter ? 'Bill history' :
+                        linkedSplitExpenseFilter ? 'Split expense' :
+                        'Split settlement'}
+                    </span>
+                    {total > 0 && (
+                      <span className="text-[10px] opacity-60 font-medium tabular-nums">· {total} records</span>
+                    )}
+                    <button
+                      onClick={clearLinkedFilters}
+                      className="ml-0.5 p-0.5 hover:bg-brand/10 rounded-full transition-colors flex items-center justify-center"
+                      title="Clear linked filter"
+                    >
+                      <X size={12} weight="bold" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="relative mt-3">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
@@ -1593,15 +1649,13 @@ export default function Transactions() {
                 <div className="mini-panel px-3 py-2.5">
                   <p className="text-[10px] uppercase tracking-wide text-ink-3">Rows</p>
                   <p className="text-[15px] font-semibold tabular-nums text-ink mt-1">
-                    {linkedLoanFilter
-                      ? `${data.filter(t => String(t?.linked_loan_id || '') === String(linkedLoanFilter)).length}/${total}`
-                      : `${data.length}/${total}`}
+                    {data.length}/{total}
                   </p>
-                  <p className="text-[10px] text-ink-3 mt-0.5">{linkedLoanFilter ? 'Matching / all' : 'Loaded / matching'}</p>
+                  <p className="text-[10px] text-ink-3 mt-0.5">Loaded / matching</p>
                 </div>
                 <div className="mini-panel px-3 py-2.5">
                   <p className="text-[10px] uppercase tracking-wide text-ink-3">Range</p>
-                  <p className="text-[13px] font-semibold text-ink mt-1 truncate">{activeDatePresetLabel}</p>
+                  <p className="text-[12px] sm:text-[13px] font-semibold text-ink mt-1 leading-tight">{activeDatePresetLabel}</p>
                   <p className="text-[10px] text-ink-3 mt-0.5">Timeline window</p>
                 </div>
                 <div className="mini-panel px-3 py-2.5">

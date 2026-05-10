@@ -1037,7 +1037,11 @@ create or replace function public.get_transaction_signal_aggregates(
   p_payment_mode text    default null,
   p_search       text    default null,
   p_start_date   date    default null,
-  p_end_date     date    default null
+  p_end_date     date    default null,
+  p_linked_loan_id uuid  default null,
+  p_linked_bill_id uuid  default null,
+  p_linked_split_expense_id uuid  default null,
+  p_linked_split_settlement_id uuid  default null
 )
 returns json
 language plpgsql
@@ -1080,6 +1084,10 @@ begin
       and (p_payment_mode is null or t.payment_mode = p_payment_mode)
       and (p_start_date   is null or t.date        >= p_start_date)
       and (p_end_date     is null or t.date        <= p_end_date)
+      and (p_linked_loan_id is null or t.linked_loan_id = p_linked_loan_id)
+      and (p_linked_bill_id is null or t.linked_bill_id = p_linked_bill_id)
+      and (p_linked_split_expense_id is null or t.linked_split_expense_id = p_linked_split_expense_id)
+      and (p_linked_split_settlement_id is null or t.linked_split_settlement_id = p_linked_split_settlement_id)
       and (
         v_needle is null
         or lower(t.description) like '%' || v_needle || '%'
@@ -1113,6 +1121,10 @@ begin
         and (p_payment_mode is null or t2.payment_mode = p_payment_mode)
         and (p_start_date   is null or t2.date        >= p_start_date)
         and (p_end_date     is null or t2.date        <= p_end_date)
+        and (p_linked_loan_id is null or t2.linked_loan_id = p_linked_loan_id)
+        and (p_linked_bill_id is null or t2.linked_bill_id = p_linked_bill_id)
+        and (p_linked_split_expense_id is null or t2.linked_split_expense_id = p_linked_split_expense_id)
+        and (p_linked_split_settlement_id is null or t2.linked_split_settlement_id = p_linked_split_settlement_id)
         and (
           v_needle is null
           or lower(t2.description) like '%' || v_needle || '%'
@@ -1132,6 +1144,10 @@ begin
         and (p_payment_mode is null or t3.payment_mode = p_payment_mode)
         and (p_start_date   is null or t3.date        >= p_start_date)
         and (p_end_date     is null or t3.date        <= p_end_date)
+        and (p_linked_loan_id is null or t3.linked_loan_id = p_linked_loan_id)
+        and (p_linked_bill_id is null or t3.linked_bill_id = p_linked_bill_id)
+        and (p_linked_split_expense_id is null or t3.linked_split_expense_id = p_linked_split_expense_id)
+        and (p_linked_split_settlement_id is null or t3.linked_split_settlement_id = p_linked_split_settlement_id)
         and (
           v_needle is null
           or lower(t3.description) like '%' || v_needle || '%'

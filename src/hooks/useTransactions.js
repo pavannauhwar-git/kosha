@@ -221,15 +221,16 @@ export function useDebounce(value, ms = 300) {
 
 // ── Query hooks ───────────────────────────────────────────────────────────
 
-export function useTransactions({ type, category, paymentMode, search, limit, startDate, endDate, withCount = false, enabled = true, columns } = {}) {
+export function useTransactions({ type, category, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, withCount = false, enabled = true, columns } = {}) {
   const targetUserId = useActiveWallet()
   const selectedColumns = columns || TRANSACTION_LIST_COLUMNS
-  const filters = { type, category, paymentMode, search, limit, startDate, endDate, columns: selectedColumns }
+  const filters = { type, category, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, columns: selectedColumns }
   const { data: rows, isLoading, error, refetch } = useQuery({
     queryKey: txnListKey(filters, targetUserId),
     enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:list', async () => {
       try {
+        const { type, category, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId } = filters
         const allUserIds = [targetUserId]
         
         // Background sync recurring only if we are viewing OUR OWN wallet
@@ -248,6 +249,10 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         if (type)     q = q.eq('type', type)
         if (category) q = q.eq('category', category)
         if (paymentMode) q = q.eq('payment_mode', paymentMode)
+        if (linkedLoanId) q = q.eq('linked_loan_id', linkedLoanId)
+        if (linkedBillId) q = q.eq('linked_bill_id', linkedBillId)
+        if (linkedSplitExpenseId) q = q.eq('linked_split_expense_id', linkedSplitExpenseId)
+        if (linkedSplitSettlementId) q = q.eq('linked_split_settlement_id', linkedSplitSettlementId)
         if (startDate) q = q.gte('date', startDate)
         if (endDate)   q = q.lte('date', endDate)
         if (search)   q = applyTransactionSearchFilter(q, search)
@@ -274,7 +279,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
   const shouldFetchCount = enabled && withCount && (!hasLimit || safeRows.length >= numericLimit)
 
   const { data: countData } = useQuery({
-    queryKey: txnCountKey({ type, category, paymentMode, search, startDate, endDate }, targetUserId),
+    queryKey: txnCountKey({ type, category, paymentMode, search, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId }, targetUserId),
     enabled: shouldFetchCount,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
@@ -288,6 +293,10 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         if (type)       q = q.eq('type', type)
         if (category)   q = q.eq('category', category)
         if (paymentMode) q = q.eq('payment_mode', paymentMode)
+        if (linkedLoanId) q = q.eq('linked_loan_id', linkedLoanId)
+        if (linkedBillId) q = q.eq('linked_bill_id', linkedBillId)
+        if (linkedSplitExpenseId) q = q.eq('linked_split_expense_id', linkedSplitExpenseId)
+        if (linkedSplitSettlementId) q = q.eq('linked_split_settlement_id', linkedSplitSettlementId)
         if (search)     q = applyTransactionSearchFilter(q, search)
         if (startDate)  q = q.gte('date', startDate)
         if (endDate)    q = q.lte('date', endDate)
@@ -309,9 +318,9 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
   return { data: safeRows, total, loading: isLoading, error, refetch }
 }
 
-export function useTransactionSignalAggregates({ type, category, paymentMode, search, startDate, endDate, enabled = true } = {}) {
+export function useTransactionSignalAggregates({ type, category, paymentMode, search, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, enabled = true } = {}) {
   const targetUserId = useActiveWallet()
-  const filters = { type, category, paymentMode, search, startDate, endDate }
+  const filters = { type, category, paymentMode, search, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId }
   const { data, isLoading, error } = useQuery({
     queryKey: ['transactionSignalAggregates', filters, targetUserId],
     enabled: enabled && !!targetUserId,
@@ -328,6 +337,10 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
           p_search:       search       || null,
           p_start_date:   startDate    || null,
           p_end_date:     endDate      || null,
+          p_linked_loan_id: linkedLoanId || null,
+          p_linked_bill_id: linkedBillId || null,
+          p_linked_split_expense_id: linkedSplitExpenseId || null,
+          p_linked_split_settlement_id: linkedSplitSettlementId || null,
         }
       )
 

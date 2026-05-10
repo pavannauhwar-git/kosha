@@ -893,14 +893,14 @@ export default function Bills({
                                 )}
                               </div>
 
-                              {/* View payment link */}
+                              {/* View history link */}
                               {bill.linked_transaction_id && (
                                 <button
-                                  onClick={() => navigate(`/transactions?focus=${bill.linked_transaction_id}`)}
+                                  onClick={() => navigate(`/transactions?linked_bill=${bill.id}&focus=${bill.linked_transaction_id}`)}
                                   className="flex items-center gap-1 text-[11px] font-semibold text-brand active:opacity-60 transition-opacity w-fit"
                                 >
                                   <ArrowUpRight size={10} />
-                                  View payment
+                                  View history
                                 </button>
                               )}
                             </>
