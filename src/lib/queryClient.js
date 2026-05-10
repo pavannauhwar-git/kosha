@@ -29,7 +29,7 @@ export const queryClient = new QueryClient({
 export async function invalidateQueryFamilies(queryKeys) {
   await Promise.all(
     queryKeys.map(queryKey =>
-      queryClient.invalidateQueries({ queryKey, refetchType: 'active' })
+      queryClient.invalidateQueries({ queryKey })
     )
   )
 }

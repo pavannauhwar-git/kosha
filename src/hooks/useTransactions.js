@@ -265,7 +265,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
     // search:'coffee') from piling up in cache. refetchType:'all' above would
     // otherwise re-request every combination the user tried this session.
     gcTime: 5 * 60 * 1000,
-    placeholderData: (previousData) => previousData,
+    placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
   })
 
   const safeRows = rows || []
@@ -372,7 +372,7 @@ export function useRecentTransactions(limit = 5) {
       return rows || []
     }),
     gcTime: 5 * 60 * 1000,
-    placeholderData: (previousData) => previousData,
+    placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
   })
 
   return { data: data || [], loading: isLoading, fetching: isFetching, error }
@@ -620,7 +620,7 @@ export function useMonthSummary(year, month, options = {}) {
         throw err
       }
     },
-    placeholderData: (previousData) => previousData,
+    placeholderData: (prev, query) => (query?.queryKey?.[3] === targetUserId) ? prev : undefined,
   })
 
   return { data, loading: isLoading, fetching: isFetching, error }

@@ -654,7 +654,11 @@ function GlobalRealtimeSync() {
         nextChannel = nextChannel.on(
           'postgres_changes',
           config,
-          () => scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
+          () => {
+            const tablePath = `/${policy.table}`
+            import('./lib/queryClient').then(m => m.evictSwCacheEntries(tablePath))
+            scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
+          }
         )
       }
 

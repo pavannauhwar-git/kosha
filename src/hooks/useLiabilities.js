@@ -59,13 +59,13 @@ export function useLiabilities({ includePaid = true, enabled = true } = {}) {
         queryKey: LIABILITY_PENDING_QUERY_KEY(targetUserId),
         queryFn:  () => fetchLiabilitiesByPaid(false, targetUserId),
         enabled: enabled && !!targetUserId,
-        placeholderData: (previousData) => previousData,
+        placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY(targetUserId),
         queryFn:  () => fetchLiabilitiesByPaid(true, targetUserId),
         enabled:  enabled && includePaid && !!targetUserId,
-        placeholderData: (previousData) => previousData,
+        placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
       },
     ],
   })
