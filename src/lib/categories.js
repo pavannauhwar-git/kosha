@@ -2,7 +2,7 @@
 const OTHER_CATEGORY = { id:'other', label:'Other', icon:'DotsThree', color:'#9CA3AF', bg:'#F9FAFB' }
 const REPAYMENT_CATEGORY = {
   id: 'loans',
-  label: 'Loan Repayment',
+  label: 'Loans',
   icon: 'ArrowUDownLeft',
   color: '#F57F17',
   bg: '#FFF8E1',

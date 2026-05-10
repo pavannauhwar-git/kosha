@@ -1274,7 +1274,7 @@ begin
   -- Step 1: Insert the linked expense transaction
   insert into transactions (
     date, type, description, amount, category,
-    is_repayment, payment_mode, notes, user_id,
+    is_repayment, payment_mode, user_id,
     linked_bill_id
   ) values (
     current_date,
@@ -1284,7 +1284,6 @@ begin
     'bills',
     false,
     'other',
-    'Auto-created from bill: ' || v_liability.description,
     p_user_id,
     p_liability_id
   )
@@ -3035,6 +3034,121 @@ create policy "loans: delete own" on loans
   for delete to authenticated
   using (auth.uid() = user_id);
 
+-- ── create_loan — atomic loan creation with disbursement transaction ──────────
+-- Inserts the loan record and a linked disbursement transaction in one atomic
+-- operation, so the initial cash movement always appears in the transaction log.
+--
+-- Transaction semantics:
+--   loan_given → expense for the lender (cash went out)
+--   loan_taken → income  for the borrower (cash came in)
+
+create or replace function public.create_loan(
+  p_user_id      uuid,
+  p_direction    text,
+  p_counterparty text,
+  p_amount       numeric,
+  p_interest_rate numeric default 0,
+  p_loan_date    date    default current_date,
+  p_due_date     date    default null,
+  p_note         text    default null
+)
+returns json
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_loan   loans%rowtype;
+  v_txn_id uuid;
+  v_txn_type  text;
+  v_description  text;
+  v_notes        text;
+begin
+  if auth.uid() is null or auth.uid() <> p_user_id then
+    raise exception 'Authentication required';
+  end if;
+
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'Loan amount must be positive';
+  end if;
+
+  if p_direction not in ('given', 'taken') then
+    raise exception 'Direction must be given or taken';
+  end if;
+
+  if p_counterparty is null or btrim(p_counterparty) = '' then
+    raise exception 'Counterparty name is required';
+  end if;
+
+  -- loan_given  → money left your wallet → expense
+  -- loan_taken  → money entered your wallet → income
+  v_txn_type := case p_direction when 'given' then 'expense' else 'income' end;
+
+  v_description := case p_direction
+    when 'given' then 'Loan given to ' || btrim(p_counterparty)
+    else              'Loan taken from ' || btrim(p_counterparty)
+  end;
+
+  v_notes := case p_direction
+    when 'given' then 'Money lent to ' || btrim(p_counterparty)
+    else              'Money borrowed from ' || btrim(p_counterparty)
+  end;
+
+  -- Step 1: Insert the loan
+  insert into loans (
+    direction, counterparty, amount, interest_rate,
+    loan_date, due_date, note, settled, amount_settled, user_id
+  ) values (
+    p_direction,
+    btrim(p_counterparty),
+    p_amount,
+    coalesce(p_interest_rate, 0),
+    coalesce(p_loan_date, current_date),
+    p_due_date,
+    nullif(btrim(coalesce(p_note, '')), ''),
+    false,
+    0,
+    p_user_id
+  )
+  returning * into v_loan;
+
+  -- Step 2: Insert the disbursement transaction
+  insert into transactions (
+    date, type, description, amount, category,
+    is_repayment, payment_mode, user_id,
+    linked_loan_id
+  ) values (
+    coalesce(p_loan_date, current_date),
+    v_txn_type,
+    v_description,
+    p_amount,
+    'loans',
+    false,
+    'other',
+    p_user_id,
+    v_loan.id
+  )
+  returning id into v_txn_id;
+
+  return json_build_object(
+    'loan_id',        v_loan.id,
+    'transaction_id', v_txn_id,
+    'direction',      v_loan.direction,
+    'counterparty',   v_loan.counterparty,
+    'amount',         v_loan.amount,
+    'interest_rate',  v_loan.interest_rate,
+    'loan_date',      v_loan.loan_date,
+    'due_date',       v_loan.due_date,
+    'note',           v_loan.note,
+    'settled',        v_loan.settled,
+    'amount_settled', v_loan.amount_settled,
+    'created_at',     v_loan.created_at
+  );
+end;
+$$;
+
+grant execute on function public.create_loan(uuid, text, text, numeric, numeric, date, date, text) to authenticated;
+
 -- ── record_loan_payment — atomic partial/full repayment ──────────────────────
 -- Creates a linked transaction and updates the loan's settled amount.
 -- If the payment brings amount_settled >= amount, settles the loan.
@@ -3093,7 +3207,7 @@ begin
   -- Step 1: Insert linked transaction
   insert into transactions (
     date, type, description, amount, category,
-    is_repayment, payment_mode, notes, user_id,
+    is_repayment, payment_mode, user_id,
     linked_loan_id
   ) values (
     current_date,
@@ -3103,10 +3217,6 @@ begin
     'loans',
     true,
     'other',
-    case v_loan.direction
-      when 'given' then 'Payment received from ' || v_loan.counterparty
-      else 'Payment made to ' || v_loan.counterparty
-    end,
     p_user_id,
     p_loan_id
   )

@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '1.3.6',
+    date: 'May 2026',
+    items: [
+      'Integrated loan creation with the transaction system — every new loan now atomically generates a linked disbursement transaction, ensuring the cash movement is always reflected in the activity feed',
+      'Introduced four distinct loan transaction types with unique icons and colored badges: Loan Disbursement, Loan Received, Repayment Received, and Repayment Made',
+      'Renamed the loans category label from "Loan Repayment" to "Loans" — the subtitle now states the category while colored badges communicate the specific transaction type',
+      'Removed auto-generated notes from all loan and bill transactions, eliminating misleading "Note" badges on system-created records',
+      'Standardized linked transaction subtitles across Loans, Bills, and Splitwise to always show the category name, letting badges do the contextual work',
+    ],
+  },
+  {
     version: '1.3.5',
     date: 'May 2026',
     items: [

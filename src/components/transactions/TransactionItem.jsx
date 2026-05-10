@@ -1,7 +1,7 @@
 import { memo, useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence, motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
-import { ArrowUDownLeft, ArrowSquareOut, X, Notepad } from '@phosphor-icons/react'
+import { ArrowUDownLeft, ArrowUpRight, ArrowDownLeft, ArrowSquareOut, X, Notepad } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../../lib/utils'
@@ -77,16 +77,36 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
     }
   }, [txn, navigate, onClose, isSplitwise, isBill, isLoan])
 
-  const title = isSplitwise ? 'Splitwise Transaction' : isBill ? 'Bill Payment' : 'Loan Repayment'
+  const isLoanRepayment = isLoan && txn.is_repayment
+  const isLoanDisbursement = isLoan && !txn.is_repayment
+
+  const title = isSplitwise
+    ? 'Splitwise Transaction'
+    : isBill
+      ? 'Bill Payment'
+      : isLoanRepayment
+        ? (txn.type === 'income' ? 'Repayment Received' : 'Repayment Made')
+        : txn.type === 'expense'
+          ? 'Loan Disbursement'
+          : 'Loan Received'
+
   const typeLabel = isSplitwise
     ? (txn.linked_split_settlement_id ? 'Group settlement' : 'Group expense')
-    : isBill ? 'Automated bill payment' : 'Loan settlement payment'
+    : isBill
+      ? 'Automated bill payment'
+      : isLoanRepayment
+        ? (txn.type === 'income' ? 'Borrower paid you back' : 'You repaid the lender')
+        : txn.type === 'expense'
+          ? 'Money lent out · linked to loan'
+          : 'Money borrowed · linked to loan'
 
   const infoMessage = isSplitwise
     ? 'This transaction is managed by Splitwise. To edit its amount, description, or delete it, please make the changes directly from the Splitwise group page.'
     : isBill
       ? 'This transaction was automatically created from a bill. To manage or delete it, please go to the Bills & Dues page.'
-      : 'This transaction is linked to a loan repayment. To edit or delete it, please manage it from the Loans page.'
+      : isLoanRepayment
+        ? 'This transaction is linked to a loan repayment. To edit or delete it, please manage it from the Loans page.'
+        : 'This transaction records the initial loan disbursement. To edit or delete it, please manage it from the Loans page.'
 
   const buttonLabel = isSplitwise ? 'Go to Splitwise Group' : isBill ? 'Go to Bills & Dues' : 'Go to Loans'
 
@@ -218,11 +238,7 @@ function TransactionItem({
   const isOptimistic = Boolean(txn?.__optimistic || String(txn?.id || '').startsWith('optimistic-'))
   const rowLabel = txn.type === 'investment'
     ? (investmentVehicle?.label || txn.investment_vehicle || 'Other')
-    : txn.linked_split_settlement_id
-      ? 'Settlement'
-      : txn.linked_bill_id
-        ? 'Bill Payment'
-        : (txn.is_repayment ? 'Loan Repayment' : cat.label)
+    : cat.label
 
   const isSplitwiseLinked = Boolean(txn.linked_split_expense_id || txn.linked_split_settlement_id)
   const isBillLinked = Boolean(txn.linked_bill_id)
@@ -401,7 +417,53 @@ function TransactionItem({
             className={`${compact ? 'w-8 h-8' : 'w-9 h-9'} rounded-full flex items-center justify-center shrink-0`}
             style={txn.type === 'investment' ? investmentChipStyle : undefined}
           >
-            {txn.is_repayment ? (
+            {isLoanLinked ? (
+              (() => {
+                // Loan disbursement — money went OUT (expense, is_repayment: false)
+                if (!txn.is_repayment && txn.type === 'expense') {
+                  return (
+                    <div
+                      className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
+                      style={{ background: 'color-mix(in srgb, var(--ds-expense) 16%, var(--ds-surface))' }}
+                    >
+                      <ArrowUpRight size={compact ? 16 : 18} weight="duotone" color="var(--ds-expense-text)" />
+                    </div>
+                  )
+                }
+                // Loan received — money came IN (income, is_repayment: false)
+                if (!txn.is_repayment && txn.type === 'income') {
+                  return (
+                    <div
+                      className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
+                      style={{ background: 'color-mix(in srgb, var(--ds-income) 16%, var(--ds-surface))' }}
+                    >
+                      <ArrowDownLeft size={compact ? 16 : 18} weight="duotone" color="var(--ds-income-text)" />
+                    </div>
+                  )
+                }
+                // Loan repayment received — money returned to you (income, is_repayment: true)
+                if (txn.is_repayment && txn.type === 'income') {
+                  return (
+                    <div
+                      className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
+                      style={{ background: 'color-mix(in srgb, var(--ds-repay) 16%, var(--ds-surface))' }}
+                    >
+                      <ArrowUDownLeft size={compact ? 16 : 18} weight="duotone" color="var(--ds-repay-text)" />
+                    </div>
+                  )
+                }
+                // Loan repayment made — you paid back (expense, is_repayment: true)
+                return (
+                  <div
+                    className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
+                    style={{ background: 'color-mix(in srgb, var(--ds-expense) 14%, var(--ds-surface))' }}
+                  >
+                    <ArrowUDownLeft size={compact ? 16 : 18} weight="duotone" color="var(--ds-expense-text)"
+                      style={{ transform: 'scaleX(-1)' }} />
+                  </div>
+                )
+              })()
+            ) : txn.is_repayment ? (
               <div
                 className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0"
                 style={{
@@ -432,7 +494,7 @@ function TransactionItem({
                 <span className="text-[11px] text-ink-3 truncate">
                   {showDate ? fmtDate(txn.date) : rowLabel}
                 </span>
-                {txn.is_repayment && (
+                {txn.is_repayment && !isLoanLinked && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
                     Repayment
                   </span>
@@ -453,9 +515,14 @@ function TransactionItem({
                     Bill
                   </span>
                 )}
-                {isLoanLinked && (
+                {isLoanLinked && txn.is_repayment && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
+                    {txn.type === 'income' ? 'Repayment Received' : 'Repayment Made'}
+                  </span>
+                )}
+                {isLoanLinked && !txn.is_repayment && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
-                    Loan
+                    {txn.type === 'expense' ? 'Loan Disbursement' : 'Loan Received'}
                   </span>
                 )}
               </div>
@@ -470,7 +537,7 @@ function TransactionItem({
                     {mode}
                   </span>
                 )}
-                {txn.is_repayment && (
+                {txn.is_repayment && !isLoanLinked && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
                     Repayment
                   </span>
@@ -506,9 +573,14 @@ function TransactionItem({
                     Bill
                   </span>
                 )}
-                {isLoanLinked && (
+                {isLoanLinked && txn.is_repayment && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
+                    {txn.type === 'income' ? 'Repayment Received' : 'Repayment Made'}
+                  </span>
+                )}
+                {isLoanLinked && !txn.is_repayment && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
-                    Loan
+                    {txn.type === 'expense' ? 'Loan Disbursement' : 'Loan Received'}
                   </span>
                 )}
               </div>

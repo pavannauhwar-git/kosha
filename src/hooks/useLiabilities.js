@@ -453,7 +453,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       investment_vehicle: null,
       is_repayment: false,
       payment_mode: 'other',
-      notes: `Auto-created from bill: ${liability.description}`,
+      notes: null,
       is_recurring: false,
       recurrence: null,
       next_run_date: null,

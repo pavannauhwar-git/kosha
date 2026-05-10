@@ -94,13 +94,39 @@ export function useLoans({ enabled = true } = {}) {
 
 async function addLoan(payload) {
   const userId = getAuthUserId()
-  const { data, error } = await supabase
-    .from('loans')
-    .insert([{ ...payload, user_id: userId }])
-    .select(LOAN_COLUMNS)
-    .single()
+
+  // Use the atomic RPC so the disbursement transaction is created in the same
+  // DB transaction as the loan row, guaranteeing referential consistency.
+  const { data: result, error } = await supabase.rpc('create_loan', {
+    p_user_id:      userId,
+    p_direction:    payload.direction,
+    p_counterparty: payload.counterparty,
+    p_amount:       payload.amount,
+    p_interest_rate: payload.interest_rate ?? 0,
+    p_loan_date:    payload.loan_date || null,
+    p_due_date:     payload.due_date  || null,
+    p_note:         payload.note      || null,
+  })
 
   if (error) throw error
+
+  // Shape the RPC response into the same LOAN_COLUMNS shape the rest of the
+  // app expects (the RPC returns a json object, not a row).
+  const data = {
+    id:             result.loan_id,
+    direction:      result.direction,
+    counterparty:   result.counterparty,
+    amount:         result.amount,
+    amount_settled: result.amount_settled,
+    interest_rate:  result.interest_rate,
+    loan_date:      result.loan_date,
+    due_date:       result.due_date,
+    note:           result.note,
+    settled:        result.settled,
+    created_at:     result.created_at,
+    // Stash the disbursement transaction id for the optimistic cache update.
+    _disbursement_txn_id: result.transaction_id,
+  }
 
   runInBackground(
     logFinancialEvent({
@@ -109,12 +135,13 @@ async function addLoan(payload) {
       entityType: 'loan',
       entityId: data.id,
       metadata: {
-        direction: data.direction,
-        counterparty: data.counterparty,
-        amount: data.amount,
-        interest_rate: data.interest_rate,
-        loan_date: data.loan_date,
-        due_date: data.due_date,
+        direction:      data.direction,
+        counterparty:  data.counterparty,
+        amount:         data.amount,
+        interest_rate:  data.interest_rate,
+        loan_date:      data.loan_date,
+        due_date:       data.due_date,
+        transaction_id: data._disbursement_txn_id,
       },
     }),
     'loan add audit'
@@ -292,9 +319,12 @@ function refreshLoanAndTransactionCachesInBackground({ invalidateLoanFn, invalid
 export async function addLoanMutation(payload) {
   const snapshot = snapshotLoanCaches()
   suppress('loans')
-  const optimisticId = `optimistic-loan-${Date.now()}`
+  suppress('transactions')
+  const optimisticId  = `optimistic-loan-${Date.now()}`
+  const optimisticTxnId = `optimistic-txn-disbursement-${Date.now()}`
   const nowIso = new Date().toISOString()
 
+  // ── Optimistic: loan card appears immediately ──────────────────────────────
   optimisticallyInsertLoan({
     ...payload,
     id: optimisticId,
@@ -304,23 +334,22 @@ export async function addLoanMutation(payload) {
     __optimistic: true,
   })
 
-  // Optimistically inject the disbursement transaction
-  const txnId = `optimistic-txn-disbursement-${Date.now()}`
+  // ── Optimistic: disbursement transaction appears immediately ───────────────
   optimisticallyUpsertTransactionInCache({
-    id: txnId,
+    id: optimisticTxnId,
     date: payload.loan_date || nowIso.slice(0, 10),
     created_at: nowIso,
     type: payload.direction === 'given' ? 'expense' : 'income',
     linked_loan_id: optimisticId,
     amount: payload.amount,
-    description: `Loan disbursement: ${payload.counterparty}`,
+    description: payload.direction === 'given'
+      ? `Loan given to ${payload.counterparty}`
+      : `Loan taken from ${payload.counterparty}`,
     category: 'loans',
     investment_vehicle: null,
     is_repayment: false,
     payment_mode: 'other',
-    notes: payload.direction === 'given'
-      ? `Money lent to ${payload.counterparty}`
-      : `Money borrowed from ${payload.counterparty}`,
+    notes: null,
     is_recurring: false,
     recurrence: null,
     next_run_date: null,
@@ -330,19 +359,55 @@ export async function addLoanMutation(payload) {
   })
 
   try {
+    // create_loan RPC atomically creates the loan + disbursement transaction
     const created = await addLoan(payload)
     await queryClient.cancelQueries({ queryKey: ['loans'] })
+    await queryClient.cancelQueries({ queryKey: ['transactions'] })
+    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
+
+    // Replace optimistic loan with real row
     optimisticallyDeleteLoan(optimisticId)
     optimisticallyInsertLoan(created)
+
+    // Replace optimistic disbursement txn with the real transaction_id from the RPC
+    const realTxnId = created._disbursement_txn_id
+    if (realTxnId) {
+      optimisticallyUpsertTransactionInCache({
+        id: realTxnId,
+        date: payload.loan_date || nowIso.slice(0, 10),
+        created_at: nowIso,
+        type: payload.direction === 'given' ? 'expense' : 'income',
+        linked_loan_id: created.id,
+        amount: payload.amount,
+        description: payload.direction === 'given'
+          ? `Loan given to ${payload.counterparty}`
+          : `Loan taken from ${payload.counterparty}`,
+        category: 'loans',
+        investment_vehicle: null,
+        is_repayment: false,
+        payment_mode: 'other',
+        notes: null,
+        is_recurring: false,
+        recurrence: null,
+        next_run_date: null,
+        source_transaction_id: null,
+        is_auto_generated: false,
+      })
+      // Remove the optimistic placeholder now that we have the real entry
+      import('./useTransactions').then(m => {
+        m.optimisticallyDeleteTransactionFromCache?.(optimisticTxnId)
+      })
+    }
 
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.LOAN_ADD,
       entityType: 'loan',
       entityId: created.id,
       metadata: {
-        direction: created.direction,
-        counterparty: created.counterparty,
-        amount: created.amount,
+        direction:      created.direction,
+        counterparty:  created.counterparty,
+        amount:         created.amount,
+        transaction_id: realTxnId || null,
       },
     })
 
@@ -424,9 +489,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
       investment_vehicle: null,
       is_repayment: true,
       payment_mode: 'other',
-      notes: loan.direction === 'given'
-        ? `Payment received from ${loan.counterparty}`
-        : `Payment made to ${loan.counterparty}`,
+      notes: null,
       is_recurring: false,
       recurrence: null,
       next_run_date: null,
