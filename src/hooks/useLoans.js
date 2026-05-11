@@ -94,7 +94,7 @@ export function useLoans({ enabled = true } = {}) {
 // ── CRUD helpers ──────────────────────────────────────────────────────────
 
 async function addLoan(payload) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
 
   // Use the atomic RPC so the disbursement transaction is created in the same
   // DB transaction as the loan row, guaranteeing referential consistency.
@@ -152,7 +152,7 @@ async function addLoan(payload) {
 }
 
 async function recordPayment(loanId, amount) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   const { data: result, error } = await supabase.rpc('record_loan_payment', {
     p_loan_id: loanId,
     p_user_id: userId,
@@ -176,7 +176,7 @@ async function recordPayment(loanId, amount) {
 }
 
 async function updateLoan(id, updates) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   const { data, error } = await supabase
     .from('loans')
     .update(updates)
@@ -202,7 +202,7 @@ async function updateLoan(id, updates) {
 }
 
 async function deleteLoan(id, cachedLoan = null) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
 
   const { error: txnError } = await supabase
     .from('transactions')
@@ -374,30 +374,31 @@ export async function addLoanMutation(payload) {
     // Replace optimistic disbursement txn with the real transaction_id from the RPC
     const realTxnId = created._disbursement_txn_id
     if (realTxnId) {
-      optimisticallyUpsertTransactionInCache({
-        id: realTxnId,
-        date: payload.loan_date || today,
-        created_at: nowIso,
-        type: payload.direction === 'given' ? 'expense' : 'income',
-        linked_loan_id: created.id,
-        amount: payload.amount,
-        description: payload.direction === 'given'
-          ? `Loan given to ${payload.counterparty}`
-          : `Loan taken from ${payload.counterparty}`,
-        category: 'loans',
-        investment_vehicle: null,
-        is_repayment: false,
-        payment_mode: 'other',
-        notes: payload.note || null,
-        is_recurring: false,
-        recurrence: null,
-        next_run_date: null,
-        source_transaction_id: null,
-        is_auto_generated: false,
-      })
-      // Remove the optimistic placeholder now that we have the real entry
       import('./useTransactions').then(m => {
-        m.optimisticallyDeleteTransactionFromCache?.(optimisticTxnId)
+        if (m.optimisticallyDeleteTransactionFromCache) {
+          m.optimisticallyDeleteTransactionFromCache(optimisticTxnId)
+        }
+        m.optimisticallyUpsertTransactionInCache({
+          id: realTxnId,
+          date: payload.loan_date || today,
+          created_at: nowIso,
+          type: payload.direction === 'given' ? 'expense' : 'income',
+          linked_loan_id: created.id,
+          amount: payload.amount,
+          description: payload.direction === 'given'
+            ? `Loan given to ${payload.counterparty}`
+            : `Loan taken from ${payload.counterparty}`,
+          category: 'loans',
+          investment_vehicle: null,
+          is_repayment: false,
+          payment_mode: 'other',
+          notes: payload.note || null,
+          is_recurring: false,
+          recurrence: null,
+          next_run_date: null,
+          source_transaction_id: null,
+          is_auto_generated: false,
+        })
       })
     }
 
@@ -426,11 +427,16 @@ export async function addLoanMutation(payload) {
 }
 
 export async function recordLoanPaymentMutation(loan, paymentAmount) {
-  const snapshot = snapshotLoanCaches()
-  suppress('loans')
-  suppress('transactions')
-
+  const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
+
+  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Loan payment blocked: Shared wallets are view-only.')
+    return null
+  }
+
+  const snapshot = snapshotLoanCaches()
   const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
   const prev = queryClient.getQueryData(key)
   if (Array.isArray(prev)) {

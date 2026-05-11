@@ -706,10 +706,10 @@ begin
   if v_existing_id is not null and coalesce(p_fingerprint, '') <> '' then
     update public.bug_reports
     set
-      occurrence_count = coalesce(occurrence_count, 1) + 1,
+      occurrence_count = coalesce(bug_reports.occurrence_count, 1) + 1,
       last_reported_at = now(),
       updated_at = now(),
-      steps = coalesce(nullif(btrim(coalesce(p_steps, '')), ''), steps),
+      steps = coalesce(nullif(btrim(coalesce(p_steps, '')), ''), bug_reports.steps),
       diagnostics = coalesce(p_diagnostics, diagnostics),
       environment = coalesce(p_environment, environment),
       reporter_email = coalesce(nullif(btrim(coalesce(p_reporter_email, '')), ''), reporter_email),

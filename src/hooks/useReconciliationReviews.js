@@ -76,7 +76,7 @@ export function useReconciliationReviews(options = {}) {
 }
 
 export async function upsertReconciliationReview({ transactionId, status = 'reviewed', statementLine = null }) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   const payload = {
     user_id: userId,
     transaction_id: transactionId,
@@ -100,7 +100,7 @@ export async function upsertReconciliationReview({ transactionId, status = 'revi
 }
 
 export async function clearLearnedReconciliationAliases() {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
 
   const { error } = await supabase
     .from('reconciliation_reviews')
@@ -118,7 +118,7 @@ export async function clearLearnedReconciliationAliases() {
 }
 
 export async function reportReconciliationFalsePositive({ transactionId, statementLine = null }) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   const payload = {
     user_id: userId,
     transaction_id: transactionId,

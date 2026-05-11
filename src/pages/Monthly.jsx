@@ -310,15 +310,16 @@ export default function Monthly() {
 
     const daysInMonth = new Date(year, month, 0).getDate()
     const daysElapsed = isCurrentMonth ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth
-    const projectedInflow = isCurrentMonth
-      ? (daysElapsed > 0 ? (inflow / daysElapsed) * daysInMonth : inflow)
-      : inflow
+
+    // Income is usually lumpy (one-time salary), so linear projection is often misleading.
+    // Expenses are usually daily/frequent, so linear pacing is more accurate.
+    const projectedInflow = isCurrentMonth ? inflow : inflow
     const projectedOutflow = isCurrentMonth
       ? (daysElapsed > 0 ? (totalOutflow / daysElapsed) * daysInMonth : totalOutflow)
       : totalOutflow
-    const projectedNet = projectedInflow - projectedOutflow
 
-    const health = isCurrentMonth ? (projectedNet >= 0 ? 'healthy' : 'at-risk') : (net >= 0 ? 'healthy' : 'at-risk')
+    const netAtClose = isCurrentMonth ? (projectedInflow - projectedOutflow) : net
+    const health = netAtClose >= 0 ? 'healthy' : 'at-risk'
 
     let statusLabel = health === 'healthy' ? 'On track' : 'Needs correction'
     let timelineLabel = 'Days left'
@@ -344,7 +345,7 @@ export default function Monthly() {
       }
     } else if (isCurrentMonth) {
       const daysRemaining = Math.max(0, daysInMonth - daysElapsed)
-      const overrunAmount = Math.max(0, -projectedNet)
+      const overrunAmount = Math.max(0, -netAtClose)
       const requiredDailyCorrection = daysRemaining > 0 ? overrunAmount / daysRemaining : overrunAmount
 
       if (daysElapsed < 7) {
@@ -358,12 +359,12 @@ export default function Monthly() {
         confidenceHint = 'Trend is stable enough to use for corrective planning.'
       }
 
-      if (projectedNet >= 0) {
+      if (netAtClose >= 0) {
         statusLabel = 'On track'
-        message = `At current pace you are likely to close with +${fmt(Math.abs(projectedNet))} cash flow. Keep monitoring outflow over the next ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`
+        message = `At current pace you are likely to close with +${fmt(Math.abs(netAtClose))} cash flow. Keep monitoring outflow over the next ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`
       } else {
         statusLabel = 'Needs correction'
-        message = `Current pace points to a -${fmt(Math.abs(projectedNet))} close. To recover, trim average daily outflow by about ${fmt(requiredDailyCorrection)} for the remaining ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`
+        message = `Current pace points to a -${fmt(Math.abs(netAtClose))} close. To recover, trim average daily outflow by about ${fmt(requiredDailyCorrection)} for the remaining ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`
       }
     } else if (isFutureMonth) {
       timelineLabel = 'Preview'

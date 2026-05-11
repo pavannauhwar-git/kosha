@@ -12,6 +12,7 @@ import {
   optimisticallyDeleteTransactionsByBillId
 } from './useTransactions'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
+import { todayStr } from '../lib/utils'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth'], ['transactions']]
 
@@ -125,7 +126,7 @@ export function useLiabilitiesByMonth(year, month, options = {}) {
 }
 
 export async function addLiability(payload) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   
   // 1. Strict Server Write
   const { data, error } = await supabase
@@ -157,7 +158,7 @@ export async function addLiability(payload) {
 }
 
 export async function markPaid(liability) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
 
   const { data: result, error: rpcError } = await supabase
     .rpc('mark_liability_paid', {
@@ -185,7 +186,7 @@ export async function markPaid(liability) {
 }
 
 export async function updateLiability(id, updates) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
 
   const { data, error } = await supabase
     .from('liabilities')
@@ -212,7 +213,7 @@ export async function updateLiability(id, updates) {
 }
 
 export async function deleteLiability(id, cachedBill = null) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   
   const { error: txnError } = await supabase
     .from('transactions')
@@ -372,6 +373,15 @@ function refreshLiabilityAndTransactionCachesInBackground({ invalidateLiabilityF
 }
 
 export async function addLiabilityMutation(payload, __testOverrides = null) {
+  const authUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
+
+  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+    return null
+  }
+
   const snapshot = snapshotLiabilityCaches()
   suppress('liabilities')
   const optimisticId = `optimistic-liability-${Date.now()}`
@@ -419,10 +429,16 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
 }
 
 export async function markLiabilityPaidMutation(liability, __testOverrides = null) {
+  const authUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
+
+  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+    return null
+  }
+
   const snapshot = snapshotLiabilityCaches()
-  suppress('liabilities')
-  suppress('transactions')
-  optimisticallyMarkLiabilityPaid(liability)
 
   try {
     const markPaidFn = __testOverrides?.markPaid || markPaid
@@ -443,7 +459,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
 
     optimisticallyUpsertTransactionInCache({
       id: txnId,
-      date: new Date().toISOString().slice(0, 10),
+      date: todayStr(),
       created_at: new Date().toISOString(),
       type: 'expense',
       linked_bill_id: liability.id,
@@ -489,11 +505,16 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
 }
 
 export async function updateLiabilityMutation(id, updates) {
-  const snapshot = snapshotLiabilityCaches()
-  suppress('liabilities')
-
-  // Optimistically update in pending cache
+  const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
+
+  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+    return null
+  }
+
+  const snapshot = snapshotLiabilityCaches()
   const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   if (Array.isArray(pendingData)) {
     queryClient.setQueryData(
@@ -535,6 +556,15 @@ export async function updateLiabilityMutation(id, updates) {
 }
 
 export async function deleteLiabilityMutation(id, __testOverrides = null) {
+  const authUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
+
+  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+    return null
+  }
+
   const cachedBill = getLiabilityFromCacheById(id)
   const snapshot = snapshotLiabilityCaches()
   suppress('liabilities')

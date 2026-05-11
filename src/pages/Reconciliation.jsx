@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo, useState, useEffect, useCallback } from 'react
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, ArrowRight, CheckCircle2, History, Home, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useActiveWallet } from '../lib/walletStore'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
@@ -48,6 +49,7 @@ const REVIEW_STATE_FILTERS = [
 
 export default function Reconciliation() {
   const navigate = useNavigate()
+  const targetUserId = useActiveWallet()
   const [searchParams, setSearchParams] = useSearchParams()
   const [filter, setFilter] = useState('all')
   const [reviewStateFilter, setReviewStateFilter] = useState('queue')

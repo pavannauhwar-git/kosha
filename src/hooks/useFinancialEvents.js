@@ -18,9 +18,14 @@ export function optimisticallyInsertFinancialEvent({ action, entityType, entityI
       created_at: new Date().toISOString(),
       __optimistic: true,
     }
+    const targetUserId = useActiveWallet()
     const entries = queryClient.getQueriesData({ queryKey: ['financialEvents'] })
     for (const [key, rows] of entries) {
       if (!Array.isArray(rows)) continue
+      // Ensure we only inject into the cache for the current active wallet
+      const queryTargetId = key[2]
+      if (queryTargetId && queryTargetId !== targetUserId) continue
+
       const limit = key[1] || 10
       queryClient.setQueryData(key, [event, ...rows].slice(0, limit))
     }

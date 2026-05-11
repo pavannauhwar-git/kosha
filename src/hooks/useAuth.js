@@ -118,11 +118,11 @@ export function useAuthState() {
         }
 
         if (event === 'TOKEN_REFRESHED') {
-          // Update authStore with the new refreshed user
-          // Guard: if the refresh failed silently, u can be null — keep existing user.
           if (!u) return
           setAuthUser(u)
           setUser(u)
+          // Refresh profile data to ensure local state matches the potentially updated server state
+          loadProfile(u.id)
           return
         }
 

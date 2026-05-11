@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore';
 import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
+import { todayStr } from '../lib/utils'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
@@ -809,7 +810,7 @@ export function useRunningBalance(year, month) {
 // ── Mutations — centralized pipeline ──────────────────────────────────────
 
 export async function addTransaction(payload) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
 
   const { data, error } = await supabase
     .from('transactions')
@@ -840,7 +841,7 @@ export async function addTransaction(payload) {
 }
 
 export async function updateTransaction(id, payload) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
 
   const { data, error } = await supabase
     .from('transactions')
@@ -998,9 +999,14 @@ export function optimisticallyUpsertTransactionInCache(txn) {
     queryClient.setQueryData(txnListKey(filters), seededRows)
   }
 
+  const targetUserId = getActiveWalletUserId()
   for (const [key, rows] of listEntries) {
     const baseRows = Array.isArray(rows) ? rows : []
     const filters = key?.[1] || {}
+    const queryTargetId = key?.[2]
+
+    // Ownership Guard: only inject if the query belongs to the active wallet
+    if (queryTargetId && queryTargetId !== targetUserId) continue
 
     const base = baseRows.filter((row) => row?.id !== txn.id)
     const next = matchesTransactionFilters(txn, filters)
@@ -1017,13 +1023,20 @@ export function optimisticallyDeleteTransactionFromCache(id) {
   if (!id) return
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  const targetUserId = getActiveWalletUserId()
   for (const [key, rows] of listEntries) {
+    const queryTargetId = key?.[2]
+    if (queryTargetId && queryTargetId !== targetUserId) continue
+
     const baseRows = Array.isArray(rows) ? rows : []
     queryClient.setQueryData(key, baseRows.filter((row) => row?.id !== id))
   }
 
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
   for (const [key, rows] of recentEntries) {
+    const queryTargetId = key?.[1]
+    if (queryTargetId && queryTargetId !== targetUserId) continue
+
     const baseRows = Array.isArray(rows) ? rows : []
     queryClient.setQueryData(key, baseRows.filter((row) => row?.id !== id))
   }
@@ -1033,13 +1046,20 @@ export function optimisticallyDeleteTransactionsByLoanId(loanId) {
   if (!loanId) return
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  const targetUserId = getActiveWalletUserId()
   for (const [key, rows] of listEntries) {
+    const queryTargetId = key?.[2]
+    if (queryTargetId && queryTargetId !== targetUserId) continue
+
     const baseRows = Array.isArray(rows) ? rows : []
     queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_loan_id !== loanId))
   }
 
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
   for (const [key, rows] of recentEntries) {
+    const queryTargetId = key?.[1]
+    if (queryTargetId && queryTargetId !== targetUserId) continue
+
     const baseRows = Array.isArray(rows) ? rows : []
     queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_loan_id !== loanId))
   }
@@ -1049,20 +1069,27 @@ export function optimisticallyDeleteTransactionsByBillId(billId) {
   if (!billId) return
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
+  const targetUserId = getActiveWalletUserId()
   for (const [key, rows] of listEntries) {
+    const queryTargetId = key?.[2]
+    if (queryTargetId && queryTargetId !== targetUserId) continue
+
     const baseRows = Array.isArray(rows) ? rows : []
     queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_bill_id !== billId))
   }
 
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
   for (const [key, rows] of recentEntries) {
+    const queryTargetId = key?.[1]
+    if (queryTargetId && queryTargetId !== targetUserId) continue
+
     const baseRows = Array.isArray(rows) ? rows : []
     queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_bill_id !== billId))
   }
 }
 
 export async function deleteTransaction(id, cachedTxn = null) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
 
   const { error } = await supabase
     .from('transactions')
@@ -1096,7 +1123,7 @@ function applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowI
     const optimisticBase = existingTxn || {
       id,
       created_at: nowIso,
-      date: payload?.date || nowIso.slice(0, 10),
+      date: payload?.date || todayStr(),
     }
     optimisticallyUpsertTransactionInCache({
       ...optimisticBase,
@@ -1111,13 +1138,13 @@ function applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowI
     ...payload,
     id: optimisticId,
     created_at: nowIso,
-    date: payload?.date || nowIso.slice(0, 10),
+    date: payload?.date || todayStr(),
     __optimistic: true,
   })
 }
 
 function updateTodayExpenseCache({ id, payload, existingTxn }) {
-  const todayISO = new Date().toISOString().slice(0, 10)
+  const todayISO = todayStr()
   const affectsTodayAfter = payload?.type === 'expense' && payload?.date === todayISO
   const affectsTodayBefore = existingTxn?.type === 'expense' && existingTxn?.date === todayISO
 

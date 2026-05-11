@@ -44,7 +44,7 @@ export function budgetMap(budgets) {
 }
 
 export async function upsertBudget(category, monthlyLimit) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   const key = budgetQueryKey(userId)
 
   // Optimistic update
@@ -78,7 +78,7 @@ export async function upsertBudget(category, monthlyLimit) {
 }
 
 export async function deleteBudget(id) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   const key = budgetQueryKey(userId)
 
   // Optimistic update

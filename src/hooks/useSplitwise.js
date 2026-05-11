@@ -153,19 +153,25 @@ async function fetchSettlements(groupId) {
   })
 }
 
+let invalidationTimeout = null
 export async function invalidateSplitwiseCache() {
-  suppress('splitwise')
-  await Promise.all([
-    evictSwCacheEntries('/split_groups'),
-    evictSwCacheEntries('/split_group_access'),
-    evictSwCacheEntries('/split_group_members'),
-    evictSwCacheEntries('/split_group_invites'),
-    evictSwCacheEntries('/split_expenses'),
-    evictSwCacheEntries('/split_expense_splits'),
-    evictSwCacheEntries('/split_settlements'),
-  ])
-  await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
-  import('./useTransactions').then(m => m.invalidateCache()).catch(() => {})
+  if (invalidationTimeout) return
+  
+  invalidationTimeout = setTimeout(async () => {
+    invalidationTimeout = null
+    suppress('splitwise')
+    await Promise.all([
+      evictSwCacheEntries('/split_groups'),
+      evictSwCacheEntries('/split_group_access'),
+      evictSwCacheEntries('/split_group_members'),
+      evictSwCacheEntries('/split_group_invites'),
+      evictSwCacheEntries('/split_expenses'),
+      evictSwCacheEntries('/split_expense_splits'),
+      evictSwCacheEntries('/split_settlements'),
+    ])
+    await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
+    import('./useTransactions').then(m => m.invalidateCache()).catch(() => {})
+  }, 300)
 }
 
 export function useSplitwise({ groupId, enabled = true } = {}) {
@@ -219,15 +225,16 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
     [accessRows]
   )
 
+  const authUserId = getAuthUserId()
   const groups = useMemo(
     () => (rawGroups || []).map((group) => {
       const role = accessByGroupId.get(group.id)
       return {
         ...group,
-        my_role: role || (group.user_id === userId ? 'admin' : null),
+        my_role: role || (group.user_id === authUserId ? 'admin' : null),
       }
     }),
-    [rawGroups, accessByGroupId, userId]
+    [rawGroups, accessByGroupId, authUserId]
   )
 
   const members = membersQuery.data ?? EMPTY_ROWS

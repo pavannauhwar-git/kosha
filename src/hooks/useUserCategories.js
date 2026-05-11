@@ -127,7 +127,7 @@ export const USER_CATEGORIES_QUERY_KEY = categoryQueryKey // factory: USER_CATEG
  * Returns the category object (with .id = slug).
  */
 export async function createUserCategory({ label, type, icon = 'Tag' }) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   const trimmed = label.trim()
 
   if (trimmed.length < 2 || trimmed.length > 30) {
@@ -217,7 +217,7 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
  * Slug is intentionally preserved so existing transactions keep their category id.
  */
 export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   const trimmed = label.trim()
 
   if (!dbId) {
@@ -279,7 +279,7 @@ export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
  * category value; the category just stops appearing in pickers.
  */
 export async function archiveUserCategory(dbId) {
-  const userId = getAuthUserId()
+  const userId = getActiveWalletUserId()
   const prev = queryClient.getQueryData(categoryQueryKey(userId)) || []
   const next = prev.filter(c => c.dbId !== dbId)
   queryClient.setQueryData(categoryQueryKey(userId), next)
