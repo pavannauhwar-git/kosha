@@ -194,11 +194,11 @@ async function main() {
     const { data: promotedAccessRow, error: promoteError } = await creatorClient.rpc('split_set_group_access_role', {
       p_group_id: sharedGroupId,
       p_user_id: joiner.id,
-      p_role: 'owner',
+      p_role: 'admin',
     })
 
     if (promoteError) throw new Error(`Promote member to owner failed: ${promoteError.message}`)
-    assert(promotedAccessRow?.role === 'owner', 'Role promotion RPC did not return owner role')
+    assert(promotedAccessRow?.role === 'admin', 'Role promotion RPC did not return admin role')
 
     const { data: promotedAccess, error: promotedAccessError } = await joinerClient
       .from('split_group_access')
@@ -208,7 +208,7 @@ async function main() {
       .single()
 
     if (promotedAccessError) throw new Error(`Fetch promoted access row failed: ${promotedAccessError.message}`)
-    assert(promotedAccess.role === 'owner', `Expected owner role after promotion, got ${promotedAccess.role}`)
+    assert(promotedAccess.role === 'admin', `Expected admin role after promotion, got ${promotedAccess.role}`)
 
     const { data: coOwnerInvite, error: coOwnerInviteError } = await joinerClient.rpc('split_create_group_invite', {
       p_group_id: sharedGroupId,

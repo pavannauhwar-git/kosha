@@ -5,7 +5,7 @@ export { default as Badge } from './Badge'
 export { default as Card } from './Card'
 export { default as BottomSheet } from './BottomSheet'
 export { default as Skeleton } from './Skeleton'
-export { default as EmptyState } from './EmptyState'
+
 export { default as MonthStepper } from './MonthStepper'
 export { default as CategoryPicker } from './CategoryPicker'
 export { default as TransactionRow } from './TransactionRow'

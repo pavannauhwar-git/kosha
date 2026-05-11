@@ -416,7 +416,7 @@ create or replace function public.consume_wallet_invite(p_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
@@ -655,7 +655,7 @@ create or replace function public.submit_bug_report(
 returns table(report_id uuid, is_duplicate boolean, occurrence_count integer)
 language plpgsql
 security invoker
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
@@ -835,7 +835,7 @@ create or replace function public.generate_recurring_transactions(
 returns integer
 language plpgsql
 security invoker
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
@@ -1356,6 +1356,27 @@ create table if not exists public.budgets (
 create index if not exists idx_budgets_user on public.budgets(user_id);
 
 alter table public.budgets enable row level security;
+
+drop policy if exists "budgets: select own" on public.budgets;
+create policy "budgets: select own" on public.budgets
+  for select to authenticated
+  using (public.is_linked(user_id));
+
+drop policy if exists "budgets: insert own" on public.budgets;
+create policy "budgets: insert own" on public.budgets
+  for insert to authenticated
+  with check (auth.uid() = user_id);
+
+drop policy if exists "budgets: update own" on public.budgets;
+create policy "budgets: update own" on public.budgets
+  for update to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "budgets: delete own" on public.budgets;
+create policy "budgets: delete own" on public.budgets
+  for delete to authenticated
+  using (auth.uid() = user_id);
 
 -- ── Migration 004: reconciliation review state ─────────────────────────────
 create table if not exists public.reconciliation_reviews (
@@ -3372,7 +3393,7 @@ create or replace function public.sync_transaction_to_split()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if new.linked_split_expense_id is not null then
@@ -3411,7 +3432,7 @@ create or replace function public.sync_split_to_transaction()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if new.linked_transaction_id is not null then
