@@ -734,6 +734,10 @@ export default function Settings() {
             </Button>
           </div>
         </motion.div>
+        <motion.div variants={fadeUp} className="py-6 flex flex-col items-center gap-1 opacity-50">
+          <p className="text-[10px] font-bold text-ink-3 uppercase tracking-widest">Kosha Finance</p>
+          <p className="text-[11px] text-ink-4">Version 2.4.1 (Build 1084)</p>
+        </motion.div>
       </motion.div>
 
       {/* Hidden file inputs */}

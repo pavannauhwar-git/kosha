@@ -36,7 +36,7 @@ export const ICON_MAP = {
 
 function CategoryIcon({ categoryId, id, size = 20, className = '' }) {
   const cat  = getCategory(categoryId || id)
-  const Icon = ICON_MAP[cat.icon] || Package
+  const Icon = ICON_MAP[cat.icon] || Tag
 
   return (
     <div

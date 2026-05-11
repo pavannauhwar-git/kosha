@@ -736,6 +736,26 @@ function RuntimeRouteTracker() {
   return null
 }
 
+// Case 162: Versioned Heartbeat Reload
+// Ensures that PWA instances left open for long periods eventually refresh
+// to the latest code version and schema.
+function VersionHeartbeat() {
+  useEffect(() => {
+    const HEARTBEAT_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        // If an update is waiting in the background, this forces it.
+        // If not, it just refreshes the current session logic.
+        window.location.reload()
+      }
+    }, HEARTBEAT_INTERVAL)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  return null
+}
+
 function DashboardWarmPrefetch() {
   const { user } = useAuth()
 
@@ -1258,6 +1278,7 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
           <GlobalRealtimeSync />
           <DashboardWarmPrefetch />
+          <VersionHeartbeat />
           <AppShell />
         </QueryClientProvider>
       </AuthProvider>

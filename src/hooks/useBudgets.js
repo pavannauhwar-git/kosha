@@ -2,8 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
-import { useActiveWallet } from '../lib/walletStore'
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
+import { hapticSuccess } from '../lib/haptics'
 
 const budgetQueryKey = (userId) => ['categoryBudgets', userId]
 const BUDGET_COLUMNS = 'id, category, monthly_limit, created_at'
@@ -69,6 +70,7 @@ export async function upsertBudget(category, monthlyLimit) {
 
     if (error) throw error
 
+    hapticSuccess()
     queryClient.invalidateQueries({ queryKey: key })
     return data
   } catch (e) {
@@ -96,6 +98,7 @@ export async function deleteBudget(id) {
 
     if (error) throw error
 
+    hapticSuccess()
     queryClient.invalidateQueries({ queryKey: key })
     return true
   } catch (e) {

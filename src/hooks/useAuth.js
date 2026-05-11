@@ -49,7 +49,7 @@ export function useAuthState() {
       const ids = await fetchLinkedUserIds(userId)
       const lp = ids.length > 0 ? await fetchLinkedProfiles(userId) : []
       
-      const fullData = { ...data, linkedUserIds: ids, linkedProfiles: lp }
+      const fullData = { ...data, linkedUserIds: ids, linkedProfiles: lp, _lastFetched: Date.now() }
       
       setProfile(fullData)
       setLinkedUserIds(ids)
@@ -121,8 +121,14 @@ export function useAuthState() {
           if (!u) return
           setAuthUser(u)
           setUser(u)
-          // Refresh profile data to ensure local state matches the potentially updated server state
-          loadProfile(u.id)
+          // Only refetch if the current profile is stale or missing
+          // This prevents network storms during rapid token rotations
+          setProfile(prev => {
+            if (!prev || (Date.now() - (prev._lastFetched || 0) > 30000)) {
+              loadProfile(u.id)
+            }
+            return prev
+          })
           return
         }
 
@@ -233,32 +239,18 @@ export function useAuthState() {
     }
   }, [])
 
-  // Read userId from authStore to avoid recreation of functions due to user object closure
   const updateProfile = useCallback(async (updates) => {
     const userId = getAuthUserId()
-
-    let result = await supabase
+    const { data, error } = await supabase
       .from('profiles')
-      .update(updates)
-      .eq('id', userId)
+      .upsert({ id: userId, ...updates }, { onConflict: 'id' })
       .select(PROFILE_COLUMNS)
-      .maybeSingle()
+      .single()
+    
+    if (error) throw error
 
-    if (!result.data && !result.error) {
-      result = await supabase
-        .from('profiles')
-        .insert({ id: userId, ...updates })
-        .select(PROFILE_COLUMNS)
-        .single()
-    }
-
-    if (result.error) throw result.error
-    const data = result.data
-
-    // Merge with existing profile to preserve linkedUserIds, linkedProfiles, and
-    // any other fields not returned by the upsert select (e.g. monthly_income).
     setProfile(prev => {
-      const merged = { ...(prev || {}), ...data }
+      const merged = { ...(prev || {}), ...data, _lastFetched: Date.now() }
       queryClient.setQueryData(profileQueryKey(userId), merged)
       return merged
     })
@@ -267,31 +259,19 @@ export function useAuthState() {
 
   const updateDisplayName = useCallback(async (displayName) => {
     const userId = getAuthUserId()
-
     const trimmedName = String(displayName || '').trim()
     if (!trimmedName) throw new Error('Display name cannot be empty')
 
-    let result = await supabase
+    const { data, error } = await supabase
       .from('profiles')
-      .update({ display_name: trimmedName })
-      .eq('id', userId)
+      .upsert({ id: userId, display_name: trimmedName }, { onConflict: 'id' })
       .select(PROFILE_COLUMNS)
-      .maybeSingle()
+      .single()
 
-    if (!result.data && !result.error) {
-      result = await supabase
-        .from('profiles')
-        .insert({ id: userId, display_name: trimmedName })
-        .select(PROFILE_COLUMNS)
-        .single()
-    }
+    if (error) throw error
 
-    if (result.error) throw result.error
-    const data = result.data
-
-    // Merge to preserve linkedUserIds, linkedProfiles, etc.
     setProfile(prev => {
-      const merged = { ...(prev || {}), ...data }
+      const merged = { ...(prev || {}), ...data, _lastFetched: Date.now() }
       queryClient.setQueryData(profileQueryKey(userId), merged)
       return merged
     })

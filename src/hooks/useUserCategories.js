@@ -114,8 +114,12 @@ export function useUserCategories({ enabled = true } = {}) {
 
   // Keep module-level store in sync so getCategory() works outside React
   useEffect(() => {
+    if (!activeUserId) {
+      registerCustomCategories([])
+      return
+    }
     registerCustomCategories(categories)
-  }, [categories])
+  }, [categories, activeUserId])
 
   return { customCategories: categories, loading: isLoading, error }
 }

@@ -13,6 +13,7 @@ import {
 } from './useTransactions'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 import { todayStr } from '../lib/utils'
+import { hapticSuccess } from '../lib/haptics'
 
 export const LOAN_INVALIDATION_KEYS = [['loans']]
 
@@ -96,12 +97,15 @@ export function useLoans({ enabled = true } = {}) {
 async function addLoan(payload) {
   const userId = getActiveWalletUserId()
 
+  const counterparty = String(payload.counterparty || '').trim()
+  if (!counterparty) throw new Error('Counterparty name is required')
+
   // Use the atomic RPC so the disbursement transaction is created in the same
   // DB transaction as the loan row, guaranteeing referential consistency.
   const { data: result, error } = await supabase.rpc('create_loan', {
     p_user_id:      userId,
     p_direction:    payload.direction,
-    p_counterparty: payload.counterparty,
+    p_counterparty: counterparty,
     p_amount:       payload.amount,
     p_interest_rate: payload.interest_rate ?? 0,
     p_loan_date:    payload.loan_date || null,
@@ -505,6 +509,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
       is_auto_generated: false,
     })
 
+    hapticSuccess()
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.LOAN_PAYMENT,
       entityType: 'loan',
@@ -517,6 +522,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
         is_full_settlement: fullSettled,
         total_loan_amount: loan.amount,
         loan_date: loan.loan_date,
+        is_repayment: true,
       },
     })
 
@@ -628,8 +634,9 @@ export async function deleteLoanMutation(id) {
 
 export function accruedInterest(principal, annualRate, loanDate, endDate = Date.now()) {
   if (!annualRate || annualRate <= 0 || !loanDate) return 0
-  const endTs = typeof endDate === 'string' ? new Date(endDate).getTime() : endDate
-  const years = (endTs - new Date(loanDate).getTime()) / (365 * 86400000)
+  const endTs = typeof endDate === 'string' ? new Date(`${endDate}T23:59:59`).getTime() : endDate
+  const startTs = new Date(`${loanDate}T00:00:00`).getTime()
+  const years = (endTs - startTs) / (365.25 * 86400000)
   return Number(principal) * (Number(annualRate) / 100) * Math.max(0, years)
 }
 

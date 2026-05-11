@@ -13,14 +13,15 @@ import {
 } from './useTransactions'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 import { todayStr } from '../lib/utils'
+import { hapticSuccess } from '../lib/haptics'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth'], ['transactions']]
 
 const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending', targetUserId]
 const LIABILITY_PAID_QUERY_KEY    = (targetUserId) => ['liabilities', 'paid', targetUserId]
 const LIABILITY_COLUMNS =
-  'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
-const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id'
+  'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode'
+const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id, payment_mode'
 
 function runInBackground(promise, scope) {
   void promise.catch((error) => {
@@ -405,6 +406,7 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
     optimisticallyDeleteLiabilityFromCache(optimisticId)
     optimisticallyInsertPendingLiability(created)
 
+    hapticSuccess()
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.BILL_ADD,
       entityType: 'liability',
@@ -462,14 +464,14 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       date: todayStr(),
       created_at: new Date().toISOString(),
       type: 'expense',
+      amount: Number(liability.amount || 0),
+      description: liability.description || 'Bill Payment',
+      category: liability.category || 'bills',
+      payment_mode: liability.payment_mode || 'upi',
       linked_bill_id: liability.id,
-      amount: liability.amount,
-      description: liability.description,
-      category: 'bills',
+      notes: `Paid bill: ${liability.description}`,
       investment_vehicle: null,
       is_repayment: false,
-      payment_mode: 'other',
-      notes: null,
       is_recurring: false,
       recurrence: null,
       next_run_date: null,
@@ -477,6 +479,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       is_auto_generated: false,
     })
 
+    hapticSuccess()
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.BILL_MARK_PAID,
       entityType: 'liability',
@@ -583,6 +586,7 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
     optimisticallyDeleteLiabilityFromCache(id)
     optimisticallyDeleteTransactionsByBillId(id)
 
+    hapticSuccess()
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.BILL_DELETE,
       entityType: 'liability',

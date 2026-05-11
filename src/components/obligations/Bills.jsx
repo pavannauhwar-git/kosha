@@ -26,6 +26,12 @@ import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import useWindowedList from '../../hooks/useWindowedList'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
+const PAYMENT_MODES = [
+  { id: 'upi', label: 'UPI' },
+  { id: 'cash', label: 'Cash' },
+  { id: 'bank', label: 'Bank' },
+  { id: 'card', label: 'Card' },
+]
 const BILLS_GUIDE_HINT_KEY = 'kosha:dismiss-guide-bills-v1'
 const BUCKET_LABEL_CLASS = {
   overdue: 'bg-expense-bg text-expense-text border border-expense-border',
@@ -40,6 +46,7 @@ function createInitialBillForm() {
     due_date: '',
     is_recurring: false,
     recurrence: 'monthly',
+    payment_mode: 'upi',
   }
 }
 
@@ -244,13 +251,13 @@ export default function Bills({
   const visiblePending = useMemo(() => pending.filter((bill) => !hiddenBillIds.has(bill.id)), [pending, hiddenBillIds])
   const visiblePaid = useMemo(() => paid.filter((bill) => !hiddenBillIds.has(bill.id)), [paid, hiddenBillIds])
 
-  const totalPending = useMemo(() => visiblePending.reduce((s, b) => s + +b.amount, 0), [visiblePending])
-  const dueSoonAmount = useMemo(() => visiblePending
+  const totalPending = useMemo(() => round2(visiblePending.reduce((s, b) => s + +b.amount, 0)), [visiblePending])
+  const dueSoonAmount = useMemo(() => round2(visiblePending
     .filter((bill) => {
       const days = safeDaysUntilDate(bill.due_date)
       return days !== null && days <= 7
     })
-    .reduce((s, b) => s + +b.amount, 0), [visiblePending])
+    .reduce((s, b) => s + +b.amount, 0)), [visiblePending])
   const dueSoonCount = useMemo(() => visiblePending
     .filter((bill) => {
       const days = safeDaysUntilDate(bill.due_date)
@@ -267,7 +274,7 @@ export default function Bills({
     })
     return {
       count: rows.length,
-      amount: rows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+      amount: round2(rows.reduce((sum, row) => sum + Number(row.amount || 0), 0)),
     }
   }, [visiblePending])
 
@@ -527,6 +534,7 @@ export default function Bills({
       due_date: form.due_date,
       is_recurring: form.is_recurring,
       recurrence: form.is_recurring ? form.recurrence : null,
+      payment_mode: form.payment_mode || 'upi',
       paid: false,
     }
 
@@ -578,6 +586,7 @@ export default function Bills({
       due_date: bill.due_date || '',
       is_recurring: !!bill.is_recurring,
       recurrence: bill.recurrence || 'monthly',
+      payment_mode: bill.payment_mode || 'upi',
     })
     setFormErr('')
     setShowAdd(true)
@@ -1049,6 +1058,22 @@ export default function Bills({
                       sheetTitle="Select due date"
                       disabled={addSaving}
                     />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-wide w-full">Payment Mode</p>
+                  <div className="flex flex-wrap gap-2">
+                    {PAYMENT_MODES.map(m => (
+                      <button key={m.id}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, payment_mode: m.id }))}
+                        className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-all
+                          ${form.payment_mode === m.id
+                            ? 'bg-brand-container text-brand border-brand/20'
+                            : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
+                      >{m.label}</button>
+                    ))}
                   </div>
                 </div>
 

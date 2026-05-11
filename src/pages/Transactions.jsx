@@ -1587,7 +1587,7 @@ export default function Transactions() {
                   className={`list-card overflow-hidden ${rowSpacingClass}`}
                 >
                   {row.isGroupFirst && (
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-kosha-border bg-kosha-surface-2">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-kosha-border bg-kosha-surface-2 sticky top-0 z-10">
                       <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
                         {dateLabel(row.dateKey)}
                       </span>
@@ -1607,6 +1607,7 @@ export default function Transactions() {
                     autoNudge={triggerSwipeNudge && !isViewingPartner && row.groupIndex === 0 && row.isGroupFirst && !(row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id)}
                     onAutoNudgeDone={handleAutoNudgeDone}
                     onSwipeHintLearned={handleSwipeHintLearned}
+                    searchQuery={debouncedSearch}
                   />
                 </div>
               )

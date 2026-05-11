@@ -69,7 +69,8 @@ export const WALLET_INVALIDATION_LIST = [
 
 export function setActiveWalletUserId(userId) {
   queryClient.setQueryData(ACTIVE_WALLET_KEY, userId)
-  queryClient.invalidateQueries({
+  // Reset instead of invalidate to eliminate "Ghost Flashes" of old data
+  queryClient.resetQueries({
     predicate: (query) => WALLET_INVALIDATION_LIST.includes(query.queryKey[0])
   })
 }

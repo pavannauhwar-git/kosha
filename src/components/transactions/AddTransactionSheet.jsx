@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
-import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash } from '@phosphor-icons/react'
+import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash, Info } from '@phosphor-icons/react'
 import Button from '../ui/Button'
 import PixelDatePicker from '../ui/PixelDatePicker'
 import {
@@ -22,6 +22,7 @@ import { supabase } from '../../lib/supabase'
 
 
 import { todayStr } from '../../lib/utils'
+import { hapticSuccess } from '../../lib/haptics'
 
 const TYPES = [
   { id: 'expense', label: 'Expense', color: 'text-expense-text', bg: 'bg-expense-bg' },
@@ -190,20 +191,26 @@ function nextRecurringDate(dateStr, recurrence) {
   if (Number.isNaN(d.getTime())) return null
 
   const origDay = d.getDate()
+  let next = new Date(d)
+
   if (recurrence === 'monthly') {
-    d.setMonth(d.getMonth() + 1)
-    if (d.getDate() !== origDay) d.setDate(0)
+    next.setMonth(next.getMonth() + 1)
   } else if (recurrence === 'quarterly') {
-    d.setMonth(d.getMonth() + 3)
-    if (d.getDate() !== origDay) d.setDate(0)
+    next.setMonth(next.getMonth() + 3)
   } else if (recurrence === 'yearly') {
-    d.setFullYear(d.getFullYear() + 1)
-    if (d.getDate() !== origDay) d.setDate(0)
+    next.setFullYear(next.getFullYear() + 1)
   }
 
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
+  // Anchor logic: if we were on the 31st and the next month only has 30 days,
+  // d.setMonth(d.getMonth() + 1) naturally rolls to the next month's 1st/2nd.
+  // We force it back to the last day of the intended month.
+  if (next.getDate() !== origDay) {
+    next.setDate(0)
+  }
+
+  const year = next.getFullYear()
+  const month = String(next.getMonth() + 1).padStart(2, '0')
+  const day = String(next.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
@@ -237,12 +244,13 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       desc: duplicateTxn.description,
       category: duplicateTxn.category || 'other',
       vehicle: duplicateTxn.investment_vehicle || 'Other',
-      mode: duplicateTxn.payment_mode || 'upi',
+      mode: duplicateTxn.payment_mode || (duplicateTxn.type === 'investment' ? 'bank_transfer' : 'upi'),
       date: todayStr(),
       isRecurring: !!duplicateTxn.is_recurring,
       recurrence: duplicateTxn.recurrence || 'monthly',
       notes: duplicateTxn.notes || '',
       showNotes: !!(duplicateTxn.notes),
+      isRepayment: !!duplicateTxn.is_repayment,
       isSplitwise: false,
       splitGroupId: null,
       linkedSplitExpenseId: null,
@@ -257,12 +265,13 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
     desc: '',
     category: initialType === 'income' ? 'salary' : 'other',
     vehicle: 'Other',
-    mode: 'upi',
+    mode: initialType === 'investment' ? 'bank_transfer' : 'upi',
     date: todayStr(),
     isRecurring: false,
     recurrence: 'monthly',
     notes: '',
     showNotes: false,
+    isRepayment: false,
     isSplitwise: false,
     splitGroupId: null,
     linkedSplitExpenseId: null,
@@ -651,7 +660,27 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     isRecurring, recurrence, notes, showNotes, isSplitwise, splitGroupId, linkedSplitExpenseId, isSplitwiseLinked, isSaving, error,
   } = state
 
+  const isLinkedToSplitwise = !!linkedSplitExpenseId || !!editTxn?.linked_split_expense_id
   const set = (key, value) => dispatch({ type: 'SET', key, value })
+
+  const amountRef = useRef(null)
+  const descRef = useRef(null)
+
+  // Case 166: Smart Category Memory - remembers choice per type
+  const [lastCategoryByType, setLastCategoryByType] = useState({
+    expense: type === 'expense' ? category : 'other',
+    income: type === 'income' ? category : 'salary',
+    investment: type === 'investment' ? category : 'other',
+  })
+
+  // Auto-advance logic: When a picker closes, focus the next logical field
+  const handleAdvanceFocus = () => {
+    if (!amount) {
+      amountRef.current?.focus()
+    } else if (!desc.trim()) {
+      descRef.current?.focus()
+    }
+  }
 
   const { groups } = useSplitwise({ enabled: type === 'expense' })
 
@@ -682,10 +711,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   }, [categoryOptions])
 
   function setType(nextType) {
+    if (nextType === type) return
+    // Save current category to memory before switching
+    setLastCategoryByType(prev => ({ ...prev, [type]: category }))
+    
     set('type', nextType)
     if (nextType !== 'investment') {
-      const normalized = normalizeCategoryForType(nextType, category)
-      set('category', normalized === 'other' && nextType === 'income' ? 'salary' : normalized)
+      const normalized = normalizeCategoryForType(nextType, lastCategoryByType[nextType])
+      set('category', normalized)
+    } else {
+      set('mode', 'bank_transfer')
     }
   }
 
@@ -749,9 +784,11 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       type,
       description: desc.trim(),
       amount: +amount,
-      category: type === 'investment' ? 'other' : normalizeCategoryForType(type, category),
+      category: type === 'investment' 
+        ? (investmentOptions.find(v => v.label === vehicle)?.id || 'other').toLowerCase()
+        : normalizeCategoryForType(type, category).toLowerCase(),
       date,
-      payment_mode: mode,
+      payment_mode: mode.toLowerCase(),
       is_repayment: editTxn ? !!editTxn.is_repayment : false,
       is_recurring: isRecurring,
       recurrence: isRecurring ? recurrence : null,
@@ -797,7 +834,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         })
       }
 
-      import('../../lib/haptics').then(m => m.hapticSuccess())
+      hapticSuccess()
       onClose()
     } catch (e) {
       dispatch({
@@ -854,12 +891,23 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             </div>
           </div>
 
+          {isLinkedToSplitwise && (
+            <div className="mb-5 p-3 bg-brand-container/30 border border-brand/10 rounded-card flex items-start gap-3">
+              <div className="w-5 h-5 rounded-full bg-brand text-white flex items-center justify-center shrink-0 mt-0.5">
+                <Info size={12} weight="bold" />
+              </div>
+              <p className="text-[12px] text-brand-dark leading-relaxed">
+                This record is linked to a Splitwise expense. Amount and description are managed by Splitwise.
+              </p>
+            </div>
+          )}
+
           {/* Type selector */}
           <div className="grid grid-cols-3 gap-2 mb-5 min-w-0">
             {TYPES.map(t => (
               <button key={t.id}
                 onClick={() => setType(t.id)}
-                disabled={isSaving}
+                disabled={isSaving || isLinkedToSplitwise}
                 className={`flex-1 py-2 rounded-card text-[13px] font-semibold border transition-[background-color,border-color,color] duration-120
                   min-w-0 truncate disabled:opacity-50
                   ${type === t.id
@@ -876,6 +924,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <div className="bg-transparent px-1 py-2 mb-4 flex items-center gap-2 border-b-2 border-kosha-border">
             <span className={`text-2xl font-bold ${activeType?.color}`}>₹</span>
             <input
+              ref={amountRef}
               type="text" inputMode="decimal" name="txn-amount" placeholder="0.00"
               aria-label="Transaction amount in Rupees"
               enterKeyHint="next"
@@ -892,12 +941,13 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
           {/* Description */}
           <input
+            ref={descRef}
             type="text" name="txn-description" placeholder="Description"
             aria-label="Transaction description"
             enterKeyHint="done"
             autoCapitalize="sentences"
             value={desc} onChange={e => set('desc', e.target.value)}
-            disabled={isSaving}
+            disabled={isSaving || isLinkedToSplitwise}
             className="input mb-3 disabled:opacity-50"
           />
 
@@ -924,7 +974,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <button
                 type="button"
                 className="list-row w-full disabled:opacity-50"
-                onClick={() => setShowCatPicker()}
+                onClick={() => setShowCatPicker(() => handleAdvanceFocus())}
                 disabled={isSaving}
               >
                 <CategoryIcon categoryId={category} size={16} />
@@ -941,7 +991,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <button
                 type="button"
                 className="list-row w-full disabled:opacity-50"
-                onClick={() => setShowVehPicker()}
+                onClick={() => setShowVehPicker(() => handleAdvanceFocus())}
                 disabled={isSaving}
               >
                 {(() => {
@@ -979,7 +1029,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <button
               type="button"
               className="list-row w-full disabled:opacity-50"
-              onClick={() => setShowModePicker()}
+              onClick={() => setShowModePicker(() => handleAdvanceFocus())}
               disabled={isSaving}
             >
               {(() => {

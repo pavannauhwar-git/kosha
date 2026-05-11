@@ -185,6 +185,24 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
   )
 }
 
+function HighlightText({ text, highlight }) {
+  if (!highlight || !text) return <>{text}</>
+  const parts = String(text).split(new RegExp(`(${highlight})`, 'gi'))
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === highlight.toLowerCase() ? (
+          <span key={i} className="bg-brand/15 text-brand font-bold rounded-[2px] px-0.5 -mx-0.5">
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  )
+}
+
 function TransactionItem({
   txn,
   onDelete,
@@ -197,6 +215,7 @@ function TransactionItem({
   autoNudge = false,
   onAutoNudgeDone,
   onSwipeHintLearned,
+  searchQuery = '',
 }) {
   const x = useMotionValue(0)
 
@@ -487,7 +506,7 @@ function TransactionItem({
 
           <div className="flex-1 min-w-0">
             <p className={`${compact ? 'text-[13px]' : 'text-[13px] sm:text-[14px]'} font-semibold text-ink truncate leading-snug`}>
-              {txn.description}
+              <HighlightText text={txn.description} highlight={searchQuery} />
             </p>
             {compact ? (
               <div className="flex items-center gap-1.5 mt-0.5 min-w-0">

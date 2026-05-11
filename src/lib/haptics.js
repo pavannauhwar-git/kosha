@@ -15,3 +15,21 @@ export function hapticHeavy() {
     try { navigator.vibrate(20) } catch(e){}
   }
 }
+
+export function hapticError() {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate([40, 60, 40, 60, 40]) } catch(e){}
+  }
+}
+
+export function hapticWarning() {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate([25, 40, 25]) } catch(e){}
+  }
+}
+
+export function hapticSelectionChange() {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate(5) } catch(e){}
+  }
+}

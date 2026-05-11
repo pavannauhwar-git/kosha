@@ -61,5 +61,5 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
     );
   }
 
-  return <img src={url} alt={alt} className={className} />;
+  return <img src={url} alt={alt} className={className} onError={() => setUrl(null)} />;
 }

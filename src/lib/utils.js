@@ -1,6 +1,10 @@
 import { getPreferredCurrency, getPreferredLocale } from './locale'
 
 const _locale = getPreferredLocale()
+export function round2(n) {
+  return Math.round((Number(n) || 0) * 100) / 100
+}
+
 const _currency = getPreferredCurrency()
 
 const _currencyFmt = new Intl.NumberFormat(_locale, {
@@ -16,15 +20,15 @@ const _dateLabelFmt = new Intl.DateTimeFormat(_locale, {
 })
 
 export function fmt(n, compact = false) {
-  if (n === null || n === undefined || !Number.isFinite(n)) return '-'
+  if (n === null || n === undefined || !Number.isFinite(n)) return '−'
   const abs = Math.abs(n)
   if (compact) {
-    const sign = n < 0 ? '-' : ''
-    if (abs >= 1_00_00_000) return `${sign}₹${(abs / 1_00_00_000).toFixed(2)}Cr`
-    if (abs >= 1_00_000) return `${sign}₹${(abs / 1_00_000).toFixed(1)}L`
-    if (abs >= 1_000) return `${sign}₹${(abs / 1_000).toFixed(1)}K`
+    const sign = n < 0 ? '−' : ''
+    if (abs >= 1_00_00_000) return `${sign}₹\u202F${(abs / 1_00_00_000).toFixed(2)}Cr`
+    if (abs >= 1_00_000) return `${sign}₹\u202F${(abs / 1_00_000).toFixed(2)}L`
+    if (abs >= 1_000) return `${sign}₹\u202F${(abs / 1_000).toFixed(1)}K`
   }
-  return _currencyFmt.format(n)
+  return _currencyFmt.format(n).replace('-', '−').replace('₹', '₹\u202F')
 }
 
 export function fmtFull(n) {
@@ -44,6 +48,17 @@ export function fmtDate(dateStr) {
   const d = safeParseDate(dateStr)
   if (!d) return ''
   return _dateFmt.format(d)
+}
+
+export function fmtFrequency(freq) {
+  if (!freq) return ''
+  const f = String(freq).toLowerCase()
+  if (f === 'monthly') return 'Monthly'
+  if (f === 'quarterly') return 'Quarterly'
+  if (f === 'yearly') return 'Yearly'
+  if (f === 'weekly') return 'Weekly'
+  if (f === 'daily') return 'Daily'
+  return `Every ${freq}`
 }
 
 export function todayStr() {
@@ -78,7 +93,9 @@ export function groupByDate(transactions) {
   const rows = Array.isArray(transactions) ? transactions : []
   for (const t of rows) {
     if (!t || typeof t !== 'object') continue
-    const key = String(t.date || t.created_at || '').slice(0, 10)
+    const val = t.date || t.created_at
+    if (!val) continue
+    const key = typeof val === 'string' && val.length >= 10 ? val.slice(0, 10) : String(val).slice(0, 10)
     if (!key) continue
     if (!groups[key]) groups[key] = []
     groups[key].push(t)
@@ -116,15 +133,15 @@ export function chipClass(type, isRepayment = false) {
 
 // ── Savings rate ──────────────────────────────────────────────────────────
 export function savingsRate(earned, spent) {
-  if (!earned || earned === 0) return 0
+  if (!earned || earned <= 0) return 0
   return Math.max(0, Math.min(100, Math.round(((earned - spent) / earned) * 100)))
 }
 
 // ── Bills ─────────────────────────────────────────────────────────────────
 export function daysUntil(dateStr) {
-  if (!dateStr) return NaN
-  const due = new Date(dateStr)
-  if (Number.isNaN(due.getTime())) return NaN
+  const d = safeParseDate(dateStr)
+  if (!d) return NaN
+  const due = new Date(d)
   due.setHours(0,0,0,0)
   const today = new Date(); today.setHours(0,0,0,0)
   return Math.round((due - today) / (1000 * 60 * 60 * 24))

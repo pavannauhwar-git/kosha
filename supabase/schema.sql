@@ -48,6 +48,8 @@ create table if not exists liabilities (
   is_recurring           boolean not null default false,
   recurrence             text check (recurrence in ('monthly', 'quarterly', 'yearly')),
   paid                   boolean not null default false,
+  payment_mode           text default 'upi'
+                           check (payment_mode in ('upi', 'cash', 'bank', 'card')),
   linked_transaction_id  uuid references transactions(id) on delete set null,
   created_at             timestamptz not null default now(),
   user_id                uuid
