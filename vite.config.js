@@ -51,7 +51,11 @@ export default defineConfig(({ mode }) => {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version || '0.0.0'),
   },
   build: {
-    sourcemap: isProd && !!env.SENTRY_AUTH_TOKEN, // only when Sentry will upload + delete them
+    target: 'esnext',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 600,
+    reportCompressedSize: false,
+    sourcemap: isProd && !!env.SENTRY_AUTH_TOKEN,
     rollupOptions: {
       output: {
         manualChunks,

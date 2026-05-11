@@ -869,6 +869,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <span className={`text-2xl font-bold ${activeType?.color}`}>₹</span>
             <input
               type="text" inputMode="decimal" name="txn-amount" placeholder="0.00"
+              aria-label="Transaction amount in Rupees"
               enterKeyHint="next"
               value={amount}
               onChange={e => {
@@ -884,6 +885,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           {/* Description */}
           <input
             type="text" name="txn-description" placeholder="Description"
+            aria-label="Transaction description"
             enterKeyHint="done"
             autoCapitalize="sentences"
             value={desc} onChange={e => set('desc', e.target.value)}

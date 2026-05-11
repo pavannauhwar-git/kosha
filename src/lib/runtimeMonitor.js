@@ -4,31 +4,38 @@ const STORE_KEY = 'kosha:runtime-monitor-v1'
 const MAX_EVENTS = 40
 
 let started = false
+let _memoryStore = null
 
 function nowIso() {
   return new Date().toISOString()
 }
 
 function readStore() {
+  if (_memoryStore) return _memoryStore
   try {
     const raw = sessionStorage.getItem(STORE_KEY)
-    if (!raw) return { events: [], routes: [] }
-    const parsed = JSON.parse(raw)
-    return {
-      events: Array.isArray(parsed?.events) ? parsed.events : [],
-      routes: Array.isArray(parsed?.routes) ? parsed.routes : [],
+    if (!raw) {
+      _memoryStore = { events: [], routes: [] }
+      return _memoryStore
     }
+    _memoryStore = JSON.parse(raw)
+    return _memoryStore
   } catch {
-    return { events: [], routes: [] }
+    _memoryStore = { events: [], routes: [] }
+    return _memoryStore
   }
 }
 
+let _writeTimeout = null
 function writeStore(next) {
-  try {
-    sessionStorage.setItem(STORE_KEY, JSON.stringify(next))
-  } catch {
-    // Ignore storage quota/privacy mode issues.
-  }
+  _memoryStore = next
+  if (_writeTimeout) return
+  _writeTimeout = setTimeout(() => {
+    _writeTimeout = null
+    try {
+      sessionStorage.setItem(STORE_KEY, JSON.stringify(_memoryStore))
+    } catch { }
+  }, 1000)
 }
 
 function trim(list, max = MAX_EVENTS) {

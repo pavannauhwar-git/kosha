@@ -66,14 +66,7 @@ drop policy if exists "Users can read own monthly net changes" on monthly_net_ch
 create policy "Users can read own monthly net changes"
   on monthly_net_changes for select
   to authenticated
-  using (
-    auth.uid() = user_id or
-    exists (
-      select 1 from public.invites
-      where (created_by = auth.uid() and used_by = monthly_net_changes.user_id)
-         or (used_by = auth.uid() and created_by = monthly_net_changes.user_id)
-    )
-  );
+  using (public.is_linked(user_id));
 
 create or replace function public.maintain_monthly_net_change()
 returns trigger
@@ -804,7 +797,7 @@ returns numeric
 language sql
 stable
 security invoker
-set search_path = public
+set search_path = ''
 as $$
   select coalesce(
     (

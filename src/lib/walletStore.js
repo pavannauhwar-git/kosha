@@ -41,36 +41,35 @@ export function initActiveWallet(userId) {
   }
 }
 
+export const WALLET_INVALIDATION_LIST = [
+  'transactions',
+  'transactionsRecent',
+  'transactionsDigest',
+  'transactionSignalAggregates',
+  'todayExpenses',
+  'dailyExpenseTotals',
+  'monthExpenseDailyTotals',
+  'yearDailyExpenseTotals',
+  'txnCount',
+  'liabilities',
+  'liabilitiesMonth',
+  'loans',
+  'month',
+  'year',
+  'balance',
+  'dashboard',
+  'runningBalance',
+  'monthSummary',
+  'yearSummary',
+  'userCategories',
+  'categoryBudgets',
+  'reconciliationReviews',
+  'financialEvents',
+]
+
 export function setActiveWalletUserId(userId) {
   queryClient.setQueryData(ACTIVE_WALLET_KEY, userId)
   queryClient.invalidateQueries({
-    predicate: (query) => {
-      const k = query.queryKey[0]
-      return [
-        'transactions',
-        'transactionsRecent',
-        'transactionsDigest',
-        'transactionSignalAggregates',
-        'todayExpenses',
-        'dailyExpenseTotals',
-        'monthExpenseDailyTotals',
-        'yearDailyExpenseTotals',
-        'txnCount',
-        'liabilities',
-        'liabilitiesMonth',
-        'loans',
-        'month',
-        'year',
-        'balance',
-        'dashboard',
-        'runningBalance',
-        'monthSummary',
-        'yearSummary',
-        'userCategories',
-        'categoryBudgets',
-        'reconciliationReviews',
-        'financialEvents',
-      ].includes(k)
-    }
+    predicate: (query) => WALLET_INVALIDATION_LIST.includes(query.queryKey[0])
   })
 }
