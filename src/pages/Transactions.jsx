@@ -1165,8 +1165,8 @@ export default function Transactions() {
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
   }, [location.state, location.pathname, location.search, navigate])
 
-  const isInitialLoad = txnLoading && data.length === 0 && !hasActiveFilters
-  const isNewUser = !isInitialLoad && total === 0 && !hasActiveFilters
+  const isInitialLoad = txnLoading && data.length === 0
+  const isNewUser = !txnLoading && total === 0 && !hasActiveFilters
   const showWorkspace = !isInitialLoad && !isNewUser
 
   return (

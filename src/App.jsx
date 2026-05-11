@@ -90,6 +90,7 @@ const REALTIME_INVALIDATION_POLICIES = [
   { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS },
   { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
   { key: 'loans', table: 'loans', queryKeys: LOAN_INVALIDATION_KEYS },
+  { key: 'events', table: 'financial_events', queryKeys: [['financialEvents']] },
   { key: 'splitwise', table: 'split_groups', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_group_access', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_group_members', queryKeys: SPLITWISE_INVALIDATION_KEYS },
@@ -580,7 +581,14 @@ function GlobalRealtimeSync() {
 
     function invalidateFreshness() {
       for (const policy of REALTIME_INVALIDATION_POLICIES) {
-        scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
+        scheduleInvalidate(policy.key, () => {
+          // In fallback polling mode, we MUST evict SW cache entries too,
+          // otherwise StaleWhileRevalidate will just serve us the same stale data
+          // for up to 12 hours.
+          const tablePath = `/${policy.table}`
+          import('./lib/queryClient').then(m => m.evictSwCacheEntries(tablePath))
+          invalidateQueryFamilies(policy.queryKeys)
+        })
       }
     }
 
@@ -694,6 +702,14 @@ function GlobalRealtimeSync() {
 
     subscribeToChannel()
 
+    // Trigger immediate refresh when the user returns to the app from background (focus/unlock)
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible' && active) {
+        invalidateFreshness()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       active = false
       fallbackMode = false
@@ -702,6 +718,7 @@ function GlobalRealtimeSync() {
       stopFallbackPolling()
       timeoutIds.forEach(id => clearTimeout(id))
       removeActiveChannel()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [activeUserId])
 

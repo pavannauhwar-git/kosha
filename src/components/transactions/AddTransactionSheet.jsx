@@ -21,9 +21,7 @@ import { useSplitwise, addSplitExpenseMutation, buildEqualSplits } from '../../h
 import { supabase } from '../../lib/supabase'
 
 
-function todayStr() {
-  return new Date().toISOString().slice(0, 10)
-}
+import { todayStr } from '../../lib/utils'
 
 const TYPES = [
   { id: 'expense', label: 'Expense', color: 'text-expense-text', bg: 'bg-expense-bg' },
@@ -203,7 +201,10 @@ function nextRecurringDate(dateStr, recurrence) {
     if (d.getDate() !== origDay) d.setDate(0)
   }
 
-  return d.toISOString().slice(0, 10)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 // ── Form state via useReducer ─────────────────────────────────────────────
@@ -727,9 +728,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   }
 
   async function handleSave() {
+    if (isSaving) return
+
     // Client-side validation — fast, no async
     if (!amount || !Number.isFinite(+amount) || +amount <= 0) {
       dispatch({ type: 'SAVING_ERROR', value: 'Enter a valid amount' })
+      return
+    }
+
+    if (+amount > 1_000_000_000) {
+      dispatch({ type: 'SAVING_ERROR', value: 'Amount exceeds safety limit (1 Billion)' })
       return
     }
     if (!desc.trim()) {

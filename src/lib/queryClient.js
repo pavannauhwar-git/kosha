@@ -26,8 +26,9 @@ export const queryClient = new QueryClient({
   },
 })
 
-export async function invalidateQueryFamilies(queryKeys) {
-  await Promise.all(
+export function invalidateQueryFamilies(queryKeys) {
+  if (!Array.isArray(queryKeys)) return Promise.resolve()
+  return Promise.all(
     queryKeys.map(queryKey =>
       queryClient.invalidateQueries({ queryKey })
     )

@@ -20,6 +20,7 @@ export function fmt(n, compact = false) {
   const abs = Math.abs(n)
   if (compact) {
     const sign = n < 0 ? '-' : ''
+    if (abs >= 1_00_00_000) return `${sign}₹${(abs / 1_00_00_000).toFixed(2)}Cr`
     if (abs >= 1_00_000) return `${sign}₹${(abs / 1_00_000).toFixed(1)}L`
     if (abs >= 1_000) return `${sign}₹${(abs / 1_000).toFixed(1)}K`
   }
@@ -31,15 +32,26 @@ export function fmtFull(n) {
   return _currencyFmt.format(safe)
 }
 
+function safeParseDate(dateStr) {
+  if (!dateStr) return null
+  const [y, m, d] = String(dateStr).split('-').map(Number)
+  if (y && m && d) return new Date(y, m - 1, d)
+  const parsed = new Date(dateStr)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
 export function fmtDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (Number.isNaN(d.getTime())) return ''
+  const d = safeParseDate(dateStr)
+  if (!d) return ''
   return _dateFmt.format(d)
 }
 
 export function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const _monthYearFmt = new Intl.DateTimeFormat(_locale, { month: 'long', year: 'numeric' })
@@ -49,14 +61,15 @@ export function monthStr(date = new Date()) {
 }
 
 export function dateLabel(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (Number.isNaN(d.getTime())) return ''
-  const today    = new Date(); today.setHours(0,0,0,0)
-  const yest     = new Date(today); yest.setDate(today.getDate() - 1)
-  const dLocal   = new Date(d); dLocal.setHours(0,0,0,0)
-  if (dLocal.getTime() === today.getTime())  return 'Today'
-  if (dLocal.getTime() === yest.getTime())   return 'Yesterday'
+  const d = safeParseDate(dateStr)
+  if (!d) return ''
+
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const yest = new Date(today); yest.setDate(today.getDate() - 1)
+  const dLocal = new Date(d); dLocal.setHours(0, 0, 0, 0)
+
+  if (dLocal.getTime() === today.getTime()) return 'Today'
+  if (dLocal.getTime() === yest.getTime()) return 'Yesterday'
   return _dateLabelFmt.format(d)
 }
 

@@ -83,6 +83,10 @@ export default defineConfig(({ mode }) => {
         ],
       },
       workbox: {
+        globPatterns: [
+          '**/*.{js,css,html,ico,png,svg,woff,woff2,PNG,SVG,WEBP,webp}',
+          'illustrations/*.{png,PNG,webp,WEBP,svg,SVG}'
+        ],
         // ── Caching strategy ──────────────────────────────────────────────
         // StaleWhileRevalidate: serve cached response INSTANTLY, then update
         // cache in the background. This is what makes return visits feel
@@ -103,7 +107,10 @@ export default defineConfig(({ mode }) => {
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'supabase-data',
-              expiration: { maxEntries: 100, maxAgeSeconds: 300 },
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 12 * 60 * 60, // 12 hours — robust offline support
+              },
               cacheableResponse: { statuses: [200] },
             },
           },

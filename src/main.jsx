@@ -10,12 +10,15 @@ startRuntimeMonitor()
 
 // ── Restore dark mode preference & init theme color ──────────────────
 ;(() => {
-  const metaTheme = document.createElement('meta')
-  metaTheme.name = 'theme-color'
-  document.head.appendChild(metaTheme)
+  let metaTheme = document.querySelector('meta[name="theme-color"]')
+  if (!metaTheme) {
+    metaTheme = document.createElement('meta')
+    metaTheme.name = 'theme-color'
+    document.head.appendChild(metaTheme)
+  }
 
   const applyThemeColor = (isDark) => {
-    metaTheme.content = isDark ? '#111318' : '#F6F8FA'
+    metaTheme.content = isDark ? '#0B0C0F' : '#FFFFFF'
   }
 
   const stored = localStorage.getItem('kosha-theme')
@@ -28,11 +31,12 @@ startRuntimeMonitor()
   applyThemeColor(isDark)
 
   const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
+    for (const mutation of mutations) {
       if (mutation.attributeName === 'class') {
         applyThemeColor(document.documentElement.classList.contains('dark'))
+        break
       }
-    })
+    }
   })
   observer.observe(document.documentElement, { attributes: true })
 })()

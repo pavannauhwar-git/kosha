@@ -270,7 +270,10 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
     // search:'coffee') from piling up in cache. refetchType:'all' above would
     // otherwise re-request every combination the user tried this session.
     gcTime: 5 * 60 * 1000,
-    placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
+    placeholderData: (prev, query) => {
+      const currentQueryUserId = query?.queryKey?.[2]
+      return (currentQueryUserId === targetUserId) ? prev : undefined
+    },
   })
 
   const safeRows = rows || []

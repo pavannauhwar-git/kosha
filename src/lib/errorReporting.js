@@ -14,7 +14,7 @@ if (DSN) {
         blockAllMedia: true,
       }),
     ],
-    tracesSampleRate: import.meta.env.PROD ? 0.1 : 0,
+    tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
     replaysOnErrorSampleRate: 1.0,   // capture replay on every error in prod
     replaysSessionSampleRate: 0.0,   // no session replays — privacy first
     beforeSend(event) {

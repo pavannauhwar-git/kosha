@@ -12,6 +12,7 @@ import {
   optimisticallyDeleteTransactionsByLoanId
 } from './useTransactions'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
+import { todayStr } from '../lib/utils'
 
 export const LOAN_INVALIDATION_KEYS = [['loans']]
 
@@ -323,6 +324,7 @@ export async function addLoanMutation(payload) {
   const optimisticId  = `optimistic-loan-${Date.now()}`
   const optimisticTxnId = `optimistic-txn-disbursement-${Date.now()}`
   const nowIso = new Date().toISOString()
+  const today = todayStr()
 
   // ── Optimistic: loan card appears immediately ──────────────────────────────
   optimisticallyInsertLoan({
@@ -337,7 +339,7 @@ export async function addLoanMutation(payload) {
   // ── Optimistic: disbursement transaction appears immediately ───────────────
   optimisticallyUpsertTransactionInCache({
     id: optimisticTxnId,
-    date: payload.loan_date || nowIso.slice(0, 10),
+    date: payload.loan_date || today,
     created_at: nowIso,
     type: payload.direction === 'given' ? 'expense' : 'income',
     linked_loan_id: optimisticId,
@@ -374,7 +376,7 @@ export async function addLoanMutation(payload) {
     if (realTxnId) {
       optimisticallyUpsertTransactionInCache({
         id: realTxnId,
-        date: payload.loan_date || nowIso.slice(0, 10),
+        date: payload.loan_date || today,
         created_at: nowIso,
         type: payload.direction === 'given' ? 'expense' : 'income',
         linked_loan_id: created.id,
@@ -479,7 +481,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
     const txnId = rpcRow?.transaction_id || `optimistic-txn-loan-${Date.now()}`
     optimisticallyUpsertTransactionInCache({
       id: txnId,
-      date: new Date().toISOString().slice(0, 10),
+      date: todayStr(),
       created_at: new Date().toISOString(),
       type: loan.direction === 'given' ? 'income' : 'expense',
       linked_loan_id: loan.id,
@@ -621,7 +623,7 @@ export async function deleteLoanMutation(id) {
 export function accruedInterest(principal, annualRate, loanDate, endDate = Date.now()) {
   if (!annualRate || annualRate <= 0 || !loanDate) return 0
   const endTs = typeof endDate === 'string' ? new Date(endDate).getTime() : endDate
-  const years = (endTs - new Date(loanDate).getTime()) / (365.25 * 86400000)
+  const years = (endTs - new Date(loanDate).getTime()) / (365 * 86400000)
   return Number(principal) * (Number(annualRate) / 100) * Math.max(0, years)
 }
 
