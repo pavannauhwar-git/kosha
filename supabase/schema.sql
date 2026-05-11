@@ -79,7 +79,7 @@ create or replace function public.maintain_monthly_net_change()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_month_start date;
@@ -201,7 +201,7 @@ begin
   ) then
     alter table profiles
       add constraint profiles_id_fkey
-      foreign key (id) references auth.users(id);
+      foreign key (id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -215,7 +215,7 @@ begin
   ) then
     alter table transactions
       add constraint transactions_user_id_fkey
-      foreign key (user_id) references auth.users(id);
+      foreign key (user_id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -229,7 +229,7 @@ begin
   ) then
     alter table liabilities
       add constraint liabilities_user_id_fkey
-      foreign key (user_id) references auth.users(id);
+      foreign key (user_id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -243,7 +243,7 @@ begin
   ) then
     alter table invites
       add constraint invites_created_by_fkey
-      foreign key (created_by) references auth.users(id);
+      foreign key (created_by) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -257,7 +257,7 @@ begin
   ) then
     alter table invites
       add constraint invites_used_by_fkey
-      foreign key (used_by) references auth.users(id);
+      foreign key (used_by) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -291,7 +291,9 @@ create index if not exists idx_liab_linked_txn
   on liabilities(linked_transaction_id)
   where linked_transaction_id is not null;
 
-create index if not exists idx_invite_token on invites(token);
+create index if not exists idx_invite_token      on invites(token);
+create index if not exists idx_invite_created_by on invites(created_by);
+create index if not exists idx_invite_used_by    on invites(used_by);
 
 -- Row Level Security (RLS)
 alter table profiles     enable row level security;
@@ -315,13 +317,13 @@ create or replace function public.is_linked(target_user_id uuid)
 returns boolean
 language sql
 security definer
-set search_path = public
+set search_path = ''
 stable
 as $$
-  select auth.uid() = target_user_id or exists (
+  select (select auth.uid()) = target_user_id or exists (
     select 1 from public.invites
-    where (created_by = auth.uid() and used_by = target_user_id)
-       or (used_by = auth.uid() and created_by = target_user_id)
+    where (created_by = (select auth.uid()) and used_by = target_user_id)
+       or (used_by = (select auth.uid()) and created_by = target_user_id)
   );
 $$;
 
@@ -451,7 +453,7 @@ create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   insert into public.profiles (id)
@@ -1001,10 +1003,8 @@ returns table (
   investment_vehicle text,
   total              numeric
 )
-language sql
-stable
 security invoker
-set search_path = public
+set search_path = ''
 as $$
   select
     type,
@@ -1012,7 +1012,7 @@ as $$
     coalesce(category, 'other')           as category,
     coalesce(investment_vehicle, 'Other') as investment_vehicle,
     sum(amount)                           as total
-  from transactions
+  from public.transactions
   where user_id = any(p_user_ids)
     and date   >= make_date(p_year, p_month, 1)
     and date   <= (make_date(p_year, p_month, 1) + interval '1 month - 1 day')::date
@@ -1047,7 +1047,7 @@ returns json
 language plpgsql
 stable
 security invoker
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_needle text;
@@ -1077,7 +1077,7 @@ begin
       min(date)::text                                        as min_date,
       max(date)::text                                        as max_date,
       count(*) filter (where type = 'expense')               as expense_count
-    from transactions t
+    from public.transactions t
     where t.user_id = p_user_id
       and (p_type         is null or t.type         = p_type)
       and (p_category     is null or t.category     = p_category)
@@ -1114,7 +1114,7 @@ begin
     select json_object_agg(payment_mode, cnt) as counts
     from (
       select coalesce(t2.payment_mode, 'other') as payment_mode, count(*) as cnt
-      from transactions t2
+      from public.transactions t2
       where t2.user_id = p_user_id
         and (p_type         is null or t2.type         = p_type)
         and (p_category     is null or t2.category     = p_category)
@@ -1138,7 +1138,7 @@ begin
     select json_object_agg(category, cnt) as counts
     from (
       select coalesce(t3.category, 'other') as category, count(*) as cnt
-      from transactions t3
+      from public.transactions t3
       where t3.user_id = p_user_id
         and t3.type = 'expense'
         and (p_payment_mode is null or t3.payment_mode = p_payment_mode)
@@ -1446,7 +1446,7 @@ begin
   ) then
     alter table category_budgets
       add constraint category_budgets_user_id_fkey
-      foreign key (user_id) references auth.users(id);
+      foreign key (user_id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -1500,8 +1500,10 @@ alter table if exists user_categories
   add constraint user_categories_type_check
   check (type in ('expense', 'income', 'investment'));
 
-create index if not exists idx_user_cat_user
-  on user_categories(user_id) where archived = false;
+create index if not exists idx_user_categories_user on user_categories(user_id) where archived = false;
+create unique index if not exists idx_user_categories_user_label_unique 
+  on user_categories(user_id, lower(trim(label))) 
+  where archived = false;
 
 alter table user_categories enable row level security;
 
@@ -1525,11 +1527,11 @@ create or replace function check_user_category_limit()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if (
-    select count(*) from user_categories
+    select count(*) from public.user_categories
     where user_id = NEW.user_id and archived = false
   ) >= 15 then
     raise exception 'Maximum 15 custom categories allowed per user';
@@ -1743,7 +1745,7 @@ begin
   ) then
     alter table split_groups
       add constraint split_groups_user_id_fkey
-      foreign key (user_id) references auth.users(id);
+      foreign key (user_id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -1757,7 +1759,21 @@ begin
   ) then
     alter table split_group_members
       add constraint split_group_members_user_id_fkey
-      foreign key (user_id) references auth.users(id);
+      foreign key (user_id) references auth.users(id) on delete cascade;
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'monthly_net_changes_user_id_fkey'
+      and conrelid = 'monthly_net_changes'::regclass
+  ) then
+    alter table monthly_net_changes
+      add constraint monthly_net_changes_user_id_fkey
+      foreign key (user_id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -1771,7 +1787,7 @@ begin
   ) then
     alter table split_expenses
       add constraint split_expenses_user_id_fkey
-      foreign key (user_id) references auth.users(id);
+      foreign key (user_id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -1785,7 +1801,7 @@ begin
   ) then
     alter table split_expense_splits
       add constraint split_expense_splits_user_id_fkey
-      foreign key (user_id) references auth.users(id);
+      foreign key (user_id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -1799,7 +1815,7 @@ begin
   ) then
     alter table split_settlements
       add constraint split_settlements_user_id_fkey
-      foreign key (user_id) references auth.users(id);
+      foreign key (user_id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -1813,7 +1829,7 @@ begin
   ) then
     alter table split_group_invites
       add constraint split_group_invites_created_by_fkey
-      foreign key (created_by) references auth.users(id);
+      foreign key (created_by) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -1827,7 +1843,7 @@ begin
   ) then
     alter table split_group_invites
       add constraint split_group_invites_consumed_by_fkey
-      foreign key (consumed_by) references auth.users(id);
+      foreign key (consumed_by) references auth.users(id) on delete set null;
   end if;
 end $$;
 
@@ -1939,11 +1955,11 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select exists (
     select 1
-    from split_group_access a
+    from public.split_group_access a
     where a.group_id = p_group_id
       and a.user_id = p_user_id
       and a.role = 'admin'
@@ -1959,11 +1975,11 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select exists (
     select 1
-    from split_group_access a
+    from public.split_group_access a
     where a.group_id = p_group_id
       and a.user_id = p_user_id
       and a.role in ('admin', 'member')
@@ -1978,11 +1994,11 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select exists (
     select 1
-    from split_group_access a
+    from public.split_group_access a
     where a.group_id = p_group_id
       and a.user_id = p_user_id
   );
@@ -1995,14 +2011,14 @@ returns table(user_id uuid, display_name text, avatar_url text)
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select distinct
     p.id as user_id,
     p.display_name,
     p.avatar_url
-  from split_group_members m
-  join profiles p on p.id = m.linked_user_id
+  from public.split_group_members m
+  join public.profiles p on p.id = m.linked_user_id
   where m.group_id = p_group_id
     and public.has_split_group_access(p_group_id, auth.uid());
 $$;
@@ -2014,7 +2030,7 @@ create or replace function public.split_create_group(
 returns split_groups
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
@@ -2338,7 +2354,7 @@ create or replace function public.ensure_split_group_user_id()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if auth.uid() is null then
@@ -2364,11 +2380,11 @@ create or replace function public.ensure_split_group_owner_access()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if new.user_id is not null then
-    insert into split_group_access (group_id, user_id, role)
+    insert into public.split_group_access (group_id, user_id, role)
     values (new.id, new.user_id, 'admin')
     on conflict (group_id, user_id) do update
       set role = 'admin';
@@ -2424,18 +2440,18 @@ create or replace function public.split_preview_group_invite(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
-  v_invite split_group_invites%rowtype;
-  v_group split_groups%rowtype;
+  v_invite public.split_group_invites%rowtype;
+  v_group public.split_groups%rowtype;
 begin
   if p_token is null or btrim(p_token) = '' then
     raise exception 'Invite token is required';
   end if;
 
   select * into v_invite
-  from split_group_invites i
+  from public.split_group_invites i
   where i.token = btrim(p_token)
     and i.revoked_at is null
     and i.consumed_by is null;
@@ -2445,7 +2461,7 @@ begin
   end if;
 
   select * into v_group
-  from split_groups g
+  from public.split_groups g
   where g.id = v_invite.group_id;
 
   if not found then
@@ -2463,15 +2479,15 @@ $$;
 create or replace function public.split_consume_group_invite(
   p_token text
 )
-returns split_groups
+returns public.split_groups
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_invite split_group_invites%rowtype;
-  v_group split_groups%rowtype;
+  v_invite public.split_group_invites%rowtype;
+  v_group public.split_groups%rowtype;
   v_account_name text;
   v_existing_member_id uuid;
 begin
@@ -2484,26 +2500,26 @@ begin
   end if;
 
   select * into v_invite
-  from split_group_invites i
+  from public.split_group_invites i
   where i.token = btrim(p_token)
     and i.revoked_at is null
     and i.consumed_by is null
-  for update;
+    for update;
 
   if not found then
     raise exception 'Invite not found or already used';
   end if;
 
   select * into v_group
-  from split_groups g
+  from public.split_groups g
   where g.id = v_invite.group_id
-  for update;
+    for update;
 
   if not found then
     raise exception 'Split group not found';
   end if;
 
-  insert into split_group_access (
+  insert into public.split_group_access (
     group_id,
     user_id,
     role
@@ -3032,7 +3048,7 @@ begin
   ) then
     alter table loans
       add constraint loans_user_id_fkey
-      foreign key (user_id) references auth.users(id);
+      foreign key (user_id) references auth.users(id) on delete cascade;
   end if;
 end $$;
 
@@ -3285,11 +3301,11 @@ create or replace function public.cleanup_access_after_member_delete()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   if old.linked_user_id is not null then
-    delete from split_group_access
+    delete from public.split_group_access
     where group_id = old.group_id
       and user_id = old.linked_user_id;
   end if;
@@ -3308,7 +3324,7 @@ create or replace function public.split_leave_group(
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();

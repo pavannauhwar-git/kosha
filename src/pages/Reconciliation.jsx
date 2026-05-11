@@ -54,6 +54,12 @@ export default function Reconciliation() {
   const [tab, setTab] = useState('queue')
   const [paymentModeFilter, setPaymentModeFilter] = useState('')
   const [localReviewedIds, setLocalReviewedIds] = useState(() => getReviewedReconciliationIds())
+
+  // Update local reviewed IDs if wallet switches (handles offline/missing-table fallback)
+  useEffect(() => {
+    setLocalReviewedIds(getReviewedReconciliationIds())
+  }, [targetUserId])
+
   const [savingId, setSavingId] = useState(null)
   const [resettingAliases, setResettingAliases] = useState(false)
   const [toast, setToast] = useState(null)
