@@ -1,4 +1,5 @@
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState, useRef } from 'react'
+import { hapticSelection } from '../../lib/haptics'
 import {
   BarChart, Bar,
   AreaChart, Area,
@@ -93,6 +94,14 @@ function scoreTone(score) {
 // ── Tooltips ──────────────────────────────────────────────────────────────
 
 const PulseTooltip = ({ active, payload, label }) => {
+  const prevLabelRef = useRef(null)
+  useEffect(() => {
+    if (active && label !== prevLabelRef.current) {
+      hapticSelection()
+      prevLabelRef.current = label
+    }
+  }, [active, label])
+
   if (!active || !payload?.length) return null
 
   const point = payload?.[0]?.payload || {}
@@ -150,6 +159,14 @@ const PulseTooltip = ({ active, payload, label }) => {
 }
 
 const NetTooltip = ({ active, payload, label }) => {
+  const prevLabelRef = useRef(null)
+  useEffect(() => {
+    if (active && label !== prevLabelRef.current) {
+      hapticSelection()
+      prevLabelRef.current = label
+    }
+  }, [active, label])
+
   if (!active || !payload?.length) return null
   const netPayload = payload.find((point) => point?.dataKey === 'Net') || payload[0]
   const val        = Number(netPayload?.value || 0)
@@ -403,6 +420,14 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
 })
 
 const FlowCompareTooltip = ({ active, payload, label }) => {
+  const prevLabelRef = useRef(null)
+  useEffect(() => {
+    if (active && label !== prevLabelRef.current) {
+      hapticSelection()
+      prevLabelRef.current = label
+    }
+  }, [active, label])
+
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload || {}
 
@@ -521,6 +546,14 @@ export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({
 })
 
 const WaterfallTooltip = ({ active, payload, label }) => {
+  const prevLabelRef = useRef(null)
+  useEffect(() => {
+    if (active && label !== prevLabelRef.current) {
+      hapticSelection()
+      prevLabelRef.current = label
+    }
+  }, [active, label])
+
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload || {}
   const value = toFiniteNumber(row?.displayValue)
@@ -701,6 +734,14 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
 })
 
 const CompositionTooltip = ({ active, payload, label }) => {
+  const prevLabelRef = useRef(null)
+  useEffect(() => {
+    if (active && label !== prevLabelRef.current) {
+      hapticSelection()
+      prevLabelRef.current = label
+    }
+  }, [active, label])
+
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload || {}
 

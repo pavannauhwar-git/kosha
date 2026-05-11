@@ -412,6 +412,42 @@ function useRouteIntentPrefetch() {
 // Desktop sidebar removed — mobile-first, bottom tab bar only
 
 // ── Mobile bottom nav ─────────────────────────────────────────────────────
+function WalletPrefetcher() {
+  const { linkedProfiles } = useAuth()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!linkedProfiles?.length) return
+
+    const prefetch = async () => {
+      for (const profile of linkedProfiles) {
+        if (!profile?.id) continue
+        
+        // Prefetch high-frequency dashboard data for partners
+        void queryClient.prefetchQuery({
+          queryKey: ['dashboard', profile.id],
+          staleTime: 5 * 60 * 1000
+        })
+        void queryClient.prefetchQuery({
+          queryKey: ['runningBalance', profile.id],
+          staleTime: 5 * 60 * 1000
+        })
+      }
+    }
+
+    const timer = setTimeout(prefetch, 3000) // Wait for app to settle
+    return () => clearTimeout(timer)
+  }, [linkedProfiles, queryClient])
+
+  return null
+}
+
+function AppContent() {
+  const { loading: authLoading } = useAuth()
+  if (authLoading) return <PageFallback pathname="/" />
+  return <AppShell />
+}
+
 function BottomNav() {
   const { loading } = useAuth()
   const location = useLocation()
@@ -940,7 +976,11 @@ function QueryErrorRecovery() {
       const errored = qc.getQueryCache().findAll({
         predicate: (q) => q.state.status === 'error' && q.getObserversCount() > 0,
       })
-      setHasErrors(errored.length > 0)
+      // Defer state update to ensure it happens outside the render cycle
+      // of the component triggering the invalidation.
+      setTimeout(() => {
+        setHasErrors(errored.length > 0)
+      }, 0)
     }
 
     syncErrorState()
@@ -1131,7 +1171,7 @@ function ShellStatusBanners() {
   }, [])
 
   const navHidden = BOTTOM_NAV_HIDE_ON.some((path) => location.pathname.startsWith(path))
-  const bottomClass = navHidden ? 'bottom-4' : 'bottom-[calc(var(--nav-height)+1rem)]'
+  const bottomClass = navHidden ? 'bottom-4' : 'bottom-[calc(var(--ds-nav-height)+1rem)]'
   const showUpdatePrompt = needRefresh
   const showInstallPrompt = !!deferredInstallPrompt && !installDismissed
 
@@ -1261,6 +1301,7 @@ function AppShell() {
       <RuntimeRouteTracker />
       <CustomCategoryLoader />
       <EagerChunkPreloader />
+      <WalletPrefetcher />
       <main id="main-content" role="main" className="flex-1">
         <AnimatedRoutes />
       </main>

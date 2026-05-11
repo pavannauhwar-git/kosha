@@ -33,9 +33,18 @@ function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
-async function cleanupSplitwiseGroup(client, userId, groupId) {
+async function cleanupSplitwiseGroup(client, userId, groupId, prefix) {
   if (!groupId) return
 
+  // 1. Purge linked transactions first
+  const { error: txError } = await client
+    .from('transactions')
+    .delete()
+    .ilike('description', `%${prefix}%`)
+    .eq('user_id', userId)
+  if (txError) console.warn(`WARN: transaction cleanup failed: ${txError.message}`)
+
+  // 2. Purge Splitwise-specific records
   const { error: settlementsError } = await client
     .from('split_settlements')
     .delete()
@@ -185,7 +194,7 @@ async function main() {
     console.log('PASS: splitwise create-expense and settlement mutation paths are healthy.')
   } finally {
     try {
-      await cleanupSplitwiseGroup(client, user.id, groupId)
+      await cleanupSplitwiseGroup(client, user.id, groupId, prefix)
     } catch (cleanupError) {
       console.warn(`WARN: splitwise cleanup failed: ${cleanupError.message}`)
     }

@@ -28,7 +28,7 @@ export function hapticWarning() {
   }
 }
 
-export function hapticSelectionChange() {
+export function hapticSelection() {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     try { navigator.vibrate(5) } catch(e){}
   }

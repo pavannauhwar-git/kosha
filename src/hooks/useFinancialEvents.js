@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
-import { useActiveWallet } from '../lib/walletStore'
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
 
 const EVENT_COLUMNS = 'id, action, entity_type, entity_id, metadata, created_at'
@@ -18,7 +18,7 @@ export function optimisticallyInsertFinancialEvent({ action, entityType, entityI
       created_at: new Date().toISOString(),
       __optimistic: true,
     }
-    const targetUserId = useActiveWallet()
+    const targetUserId = getActiveWalletUserId()
     const entries = queryClient.getQueriesData({ queryKey: ['financialEvents'] })
     for (const [key, rows] of entries) {
       if (!Array.isArray(rows)) continue

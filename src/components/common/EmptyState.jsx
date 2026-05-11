@@ -30,11 +30,16 @@ export default function EmptyState({
       className={`card empty-state py-10 px-6 flex flex-col items-center text-center ${className}`.trim()}
     >
       {imageUrl ? (
-        <motion.div variants={fadeUp} className="mb-4 flex items-center justify-center">
+        <motion.div
+          variants={fadeUp}
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          className="mb-4 flex items-center justify-center"
+        >
           <img
             src={imageUrl}
             alt="Empty State Illustration"
-            className="max-h-[220px] w-auto object-contain illustration"
+            className="max-h-[220px] w-auto object-contain illustration filter drop-shadow-sm"
             loading="lazy"
             decoding="async"
           />
@@ -44,14 +49,14 @@ export default function EmptyState({
           variants={fadeUp}
           animate={{ y: [0, -3, 0] }}
           transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
-          className="w-16 h-16 rounded-full bg-[var(--ds-primary-container)] flex items-center justify-center mb-4"
+          className="w-16 h-16 rounded-full bg-brand-container flex items-center justify-center mb-4 border border-brand/10"
         >
           {icon}
         </motion.div>
       ) : null}
 
-      <motion.p variants={fadeUp} className="text-[17px] font-bold text-[var(--ds-text)] mb-2">{title}</motion.p>
-      <motion.p variants={fadeUp} className="text-label text-[var(--ds-text-tertiary)] mb-5 max-w-[240px] leading-relaxed">{description}</motion.p>
+      <motion.p variants={fadeUp} className="text-[17px] font-bold text-ink mb-1.5 leading-tight">{title}</motion.p>
+      <motion.p variants={fadeUp} className="text-caption text-ink-3 mb-5 max-w-[240px] leading-relaxed">{description}</motion.p>
 
       {(actionLabel && onAction) || (secondaryLabel && onSecondaryAction) ? (
         <motion.div variants={fadeUp} className="flex items-center justify-center gap-2 flex-wrap">

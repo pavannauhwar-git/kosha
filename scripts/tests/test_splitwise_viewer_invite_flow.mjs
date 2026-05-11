@@ -31,14 +31,24 @@ function assert(condition, message) {
 async function cleanupGroup(client, userId, groupId) {
   if (!groupId) return
 
-  const { error } = await client
+  // 1. Purge linked transactions first
+  const { error: txError } = await client
+    .from('transactions')
+    .delete()
+    .eq('user_id', userId)
+    .ilike('description', 'e2e share expense')
+  
+  if (txError) console.warn(`WARN: transaction cleanup failed: ${txError.message}`)
+
+  // 2. Purge Splitwise-specific records
+  const { error: groupError } = await client
     .from('split_groups')
     .delete()
     .eq('id', groupId)
     .eq('user_id', userId)
 
-  if (error) {
-    throw new Error(`Splitwise cleanup failed: ${error.message}`)
+  if (groupError) {
+    throw new Error(`Splitwise cleanup failed: ${groupError.message}`)
   }
 }
 

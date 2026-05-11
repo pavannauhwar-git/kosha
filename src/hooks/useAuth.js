@@ -227,7 +227,10 @@ export function useAuthState() {
 
   const signOut = useCallback(async () => {
     try {
-      await supabase.auth.signOut()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        await supabase.auth.signOut()
+      }
     } catch {
       // Server sign-out failed — still clear local state
     } finally {

@@ -6,6 +6,7 @@ import PixelDatePicker from '../ui/PixelDatePicker'
 import {
   saveTransactionMutation,
 } from '../../hooks/useTransactions'
+import { useLiabilities } from '../../hooks/useLiabilities'
 import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
 import {
   CATEGORIES,
@@ -233,6 +234,7 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       splitGroupId: null,
       linkedSplitExpenseId: editTxn.linked_split_expense_id || null,
       isSplitwiseLinked: !!editTxn.linked_split_expense_id,
+      linked_bill_id: editTxn.linked_bill_id || null,
       isSaving: false,
       error: '',
     }
@@ -255,6 +257,7 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       splitGroupId: null,
       linkedSplitExpenseId: null,
       isSplitwiseLinked: false,
+      linked_bill_id: null,
       isSaving: false,
       error: '',
     }
@@ -276,6 +279,7 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
     splitGroupId: null,
     linkedSplitExpenseId: null,
     isSplitwiseLinked: false,
+    linked_bill_id: null,
     isSaving: false,
     error: '',
   }
@@ -284,6 +288,7 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
 function formReducer(state, action) {
   switch (action.type) {
     case 'SET': return { ...state, [action.key]: action.value }
+    case 'SET_FIELD': return { ...state, [action.field]: action.value }
     // SAVING_START: disable all inputs immediately when user taps submit
     case 'SAVING_START': return { ...state, isSaving: true, error: '' }
     // SAVING_ERROR: re-enable inputs so user can retry
@@ -606,7 +611,7 @@ function VehiclePicker({
                       } : undefined}
                     >
                       <Icon
-                        size={16}
+                        size={15}
                         weight="duotone"
                         className={v.color ? '' : 'text-ink-2'}
                         style={v.color ? { color: v.color } : undefined}
@@ -657,7 +662,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   const {
     type, amount, desc, category, vehicle, mode, date,
-    isRecurring, recurrence, notes, showNotes, isSplitwise, splitGroupId, linkedSplitExpenseId, isSplitwiseLinked, isSaving, error,
+    isRecurring, recurrence, notes, showNotes, isSplitwise, splitGroupId, linkedSplitExpenseId, isSplitwiseLinked, linked_bill_id, isSaving, error,
   } = state
 
   const isLinkedToSplitwise = !!linkedSplitExpenseId || !!editTxn?.linked_split_expense_id
@@ -683,6 +688,40 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   }
 
   const { groups } = useSplitwise({ enabled: type === 'expense' })
+  const { pending: pendingBills } = useLiabilities()
+  const [matchingBill, setMatchingBill] = useState(null)
+
+  // Auto-detect matching bills
+  useEffect(() => {
+    if (type !== 'expense' || !desc.trim() || linked_bill_id || !pendingBills.length) {
+      setMatchingBill(null)
+      return
+    }
+
+    const descLower = desc.toLowerCase().trim()
+    if (descLower.length < 3) {
+      setMatchingBill(null)
+      return
+    }
+
+    const match = pendingBills.find(b => 
+      b.description.toLowerCase().includes(descLower) || 
+      descLower.includes(b.description.toLowerCase())
+    )
+    setMatchingBill(match || null)
+  }, [desc, type, linked_bill_id, pendingBills])
+
+  const handleLinkMatchingBill = () => {
+    if (!matchingBill) return
+    hapticSuccess()
+    dispatch({ type: 'SET_FIELD', field: 'linked_bill_id', value: matchingBill.id })
+    dispatch({ type: 'SET_FIELD', field: 'amount', value: String(matchingBill.amount) })
+    dispatch({ type: 'SET_FIELD', field: 'desc', value: matchingBill.description })
+    if (matchingBill.payment_mode) {
+      dispatch({ type: 'SET_FIELD', field: 'mode', value: matchingBill.payment_mode })
+    }
+    setMatchingBill(null)
+  }
 
   // Load user's custom categories — registers them into the module-level store
   useUserCategories()
@@ -794,6 +833,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       recurrence: isRecurring ? recurrence : null,
       next_run_date: isRecurring ? nextRecurringDate(date, recurrence) : null,
       notes: notes.trim() || null,
+      linked_bill_id: linked_bill_id,
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
     }
 
@@ -950,6 +990,33 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             disabled={isSaving || isLinkedToSplitwise}
             className="input mb-3 disabled:opacity-50"
           />
+
+          <AnimatePresence>
+            {matchingBill && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mb-3 px-3 py-2 rounded-xl bg-brand-container/40 border border-brand/10 flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-full bg-brand-container flex items-center justify-center shrink-0">
+                    <Info size={12} weight="bold" className="text-brand" />
+                  </div>
+                  <p className="text-[11px] font-medium text-ink truncate">
+                    Link to pending bill: <span className="font-bold text-brand">{matchingBill.description}</span>?
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLinkMatchingBill}
+                  className="shrink-0 text-[11px] font-bold text-brand hover:brightness-90 active:scale-95 transition-all"
+                >
+                  Link & Auto-fill
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Field rows */}
           <div className="list-card mb-3">

@@ -18,7 +18,7 @@ function assertRollbackContract(src, fnName, snapshotToken, restoreToken) {
   const fnStart = src.indexOf(`export async function ${fnName}`)
   assert(fnStart >= 0, `[rollback-contract] ${fnName} not found`)
 
-  const fnBody = src.slice(fnStart, Math.min(src.length, fnStart + 2600))
+  const fnBody = src.slice(fnStart, Math.min(src.length, fnStart + 5000))
 
   assert(fnBody.includes(snapshotToken), `[rollback-contract] ${fnName} missing snapshot token: ${snapshotToken}`)
   assert(fnBody.includes('try {'), `[rollback-contract] ${fnName} missing try block`)

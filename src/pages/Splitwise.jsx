@@ -603,6 +603,20 @@ export default function Splitwise() {
       setSaving('')
     }
   }
+  
+  function handleSettleUpClick() {
+    if (!canManageGroup) return
+    
+    // Find if the current user owes something in the suggested transfers
+    const myDebt = suggestedTransfers.find(t => t.from?.linked_user_id === authUserId)
+    if (myDebt) {
+      applySuggestedTransfer(myDebt)
+      return
+    }
+    
+    // Fallback: just open the sheet if no specific debt detected
+    setShowSettlement(true)
+  }
 
   async function handleConfirmInviteJoin() {
     if (!invitePreview?.token || consumingInvite) return
@@ -765,7 +779,8 @@ export default function Splitwise() {
   }
 
   async function handleAddExpense() {
-    if (!canManageGroup) {
+    if (!canManageGroup || saving) {
+      if (saving) return
       setToast('You have view-only access for this group.')
       return
     }
@@ -835,7 +850,8 @@ export default function Splitwise() {
   }
 
   async function handleRecordSettlement() {
-    if (!canManageGroup) {
+    if (!canManageGroup || saving) {
+      if (saving) return
       setToast('You have view-only access for this group.')
       return
     }
@@ -1397,7 +1413,7 @@ export default function Splitwise() {
               variant="success"
               size="md"
               icon={<ArrowRightLeft size={14} />}
-              onClick={() => setShowSettlement(true)}
+              onClick={handleSettleUpClick}
               disabled={!canManageGroup}
             >
               Settle Up

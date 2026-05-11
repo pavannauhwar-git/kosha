@@ -1,6 +1,7 @@
 import { queryClient } from './queryClient'
 import { getAuthUserId, isAuthReady } from './authStore'
 import { useQuery } from '@tanstack/react-query'
+import { hapticSelection, hapticWarning } from './haptics'
 
 const ACTIVE_WALLET_KEY = ['kosha-active-wallet']
 
@@ -68,6 +69,12 @@ export const WALLET_INVALIDATION_LIST = [
 ]
 
 export function setActiveWalletUserId(userId) {
+  const authUserId = getAuthUserId()
+  if (userId === authUserId) {
+    hapticSelection()
+  } else {
+    hapticWarning()
+  }
   queryClient.setQueryData(ACTIVE_WALLET_KEY, userId)
   // Reset instead of invalidate to eliminate "Ghost Flashes" of old data
   queryClient.resetQueries({
