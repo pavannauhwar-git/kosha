@@ -17,6 +17,7 @@ import {
   upsertReconciliationReview,
 } from '../hooks/useReconciliationReviews'
 import useWindowedList from '../hooks/useWindowedList'
+import { useSafeTimeout } from '../hooks/useSafeTimeout'
 import { EXPENSE_CATEGORIES, PAYMENT_MODES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
 import {
@@ -55,6 +56,7 @@ export default function Reconciliation() {
   const [reviewStateFilter, setReviewStateFilter] = useState('queue')
   const [tab, setTab] = useState('queue')
   const [paymentModeFilter, setPaymentModeFilter] = useState('')
+  const { setSafeTimeout } = useSafeTimeout()
   const [localReviewedIds, setLocalReviewedIds] = useState(() => getReviewedReconciliationIds())
 
   // Update local reviewed IDs if wallet switches (handles offline/missing-table fallback)
@@ -439,10 +441,10 @@ export default function Reconciliation() {
     try {
       await persistReview(id, 'reviewed')
       setToast('Marked as reviewed.')
-      setTimeout(() => setToast(null), 2200)
+      setSafeTimeout(() => setToast(null), 2200)
     } catch (error) {
       setToast(error?.message || 'Could not save reviewed state.')
-      setTimeout(() => setToast(null), 3200)
+      setSafeTimeout(() => setToast(null), 3200)
     }
   }, [persistReview])
 
@@ -450,10 +452,10 @@ export default function Reconciliation() {
     try {
       await persistReview(id, 'linked', statementLine || null)
       setToast('Linked to statement line.')
-      setTimeout(() => setToast(null), 2200)
+      setSafeTimeout(() => setToast(null), 2200)
     } catch (error) {
       setToast(error?.message || 'Could not save linked state.')
-      setTimeout(() => setToast(null), 3200)
+      setSafeTimeout(() => setToast(null), 3200)
     }
   }, [persistReview])
 
@@ -465,10 +467,10 @@ export default function Reconciliation() {
       })
       if (!result?.unavailable) await refetchReviews()
       setToast('Marked as mismatch for future tuning.')
-      setTimeout(() => setToast(null), 2600)
+      setSafeTimeout(() => setToast(null), 2600)
     } catch (error) {
       setToast(error?.message || 'Could not report mismatch.')
-      setTimeout(() => setToast(null), 3200)
+      setSafeTimeout(() => setToast(null), 3200)
     }
   }, [refetchReviews])
 
@@ -479,10 +481,10 @@ export default function Reconciliation() {
       await saveTransactionMutation({ id, payload: { category } })
       await persistReview(id, 'reviewed')
       setToast('Category updated and item reconciled.')
-      setTimeout(() => setToast(null), 2600)
+      setSafeTimeout(() => setToast(null), 2600)
     } catch (error) {
       setToast(error?.message || 'Could not update category.')
-      setTimeout(() => setToast(null), 3000)
+      setSafeTimeout(() => setToast(null), 3000)
     } finally {
       setSavingId(null)
     }
@@ -495,10 +497,10 @@ export default function Reconciliation() {
       await clearLearnedReconciliationAliases()
       await refetchReviews()
       setToast('Learned aliases were reset.')
-      setTimeout(() => setToast(null), 2200)
+      setSafeTimeout(() => setToast(null), 2200)
     } catch (error) {
       setToast(error?.message || 'Could not reset learned aliases.')
-      setTimeout(() => setToast(null), 3200)
+      setSafeTimeout(() => setToast(null), 3200)
     } finally {
       setResettingAliases(false)
     }

@@ -831,7 +831,7 @@ export default function Transactions() {
     }
 
     setHighlightedTxnId(focusTxnId)
-    setTimeout(() => {
+    const scrollTimeoutId = setTimeout(() => {
       const el = document.getElementById(`txn-${focusTxnId}`)
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 70)
@@ -842,7 +842,10 @@ export default function Transactions() {
     next.delete('focus')
     setSearchParams(next, { replace: true })
 
-    return () => clearTimeout(timeoutId)
+    return () => {
+      clearTimeout(scrollTimeoutId)
+      clearTimeout(timeoutId)
+    }
   }, [focusTxnId, data, hasMore, timelineRows, scrollTimelineRowToIndex, searchParams, setSearchParams])
 
   // Phase 1: when loan filter activates, reset to All time so all repayments load

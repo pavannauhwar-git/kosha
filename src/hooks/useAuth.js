@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { setAuthUser, clearAuthUser, getAuthUserId } from '../lib/authStore'
@@ -90,6 +90,13 @@ export function useAuthState() {
     }
   }, [fetchProfileByUserId, profileQueryKey])
 
+  // Keep a ref so the auth effect never needs loadProfile in its dep array.
+  // This prevents the auth listener from being torn down & re-registered
+  // mid-session when loadProfile's identity changes (which can briefly set
+  // profile → null and trigger a profile-loading flash).
+  const loadProfileRef = useRef(loadProfile)
+  useEffect(() => { loadProfileRef.current = loadProfile }, [loadProfile])
+
   useEffect(() => {
     let initialised = false
 
@@ -98,18 +105,16 @@ export function useAuthState() {
         const u = session?.user ?? null
 
         if (event === 'INITIAL_SESSION') {
-          // Write to authStore first to ensure valid user ID during fast interactions
           setAuthUser(u)
           if (u) {
             setErrorReportingUser({ id: u.id })
             initActiveWallet(u.id)
           }
-
           setUser(u)
           setLoading(false)
           initialised = true
           setProfileLoading(!!u)
-          if (u) loadProfile(u.id)
+          if (u) loadProfileRef.current(u.id)
           else {
             setProfile(null)
             setProfileLoading(false)
@@ -121,11 +126,9 @@ export function useAuthState() {
           if (!u) return
           setAuthUser(u)
           setUser(u)
-          // Only refetch if the current profile is stale or missing
-          // This prevents network storms during rapid token rotations
           setProfile(prev => {
             if (!prev || (Date.now() - (prev._lastFetched || 0) > 30000)) {
-              loadProfile(u.id)
+              loadProfileRef.current(u.id)
             }
             return prev
           })
@@ -141,7 +144,7 @@ export function useAuthState() {
           setUser(u)
           if (!initialised) { setLoading(false); initialised = true }
           setProfileLoading(!!u)
-          if (u) loadProfile(u.id)
+          if (u) loadProfileRef.current(u.id)
           else {
             setProfile(null)
             setProfileLoading(false)
@@ -180,7 +183,8 @@ export function useAuthState() {
       subscription.unsubscribe()
       clearTimeout(safetyTimer)
     }
-  }, [loadProfile])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])  // Intentionally empty: auth listener must register exactly once
 
   const signInWithGoogle = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -234,11 +238,13 @@ export function useAuthState() {
     } catch {
       // Server sign-out failed — still clear local state
     } finally {
+      // Clear the query cache FIRST so any in-flight realtime callbacks
+      // that fire in the gap cannot store data under a null user key.
+      queryClient.clear()
       clearAuthUser()
       setUser(null)
       setProfile(null)
       setProfileLoading(false)
-      queryClient.clear()
     }
   }, [])
 

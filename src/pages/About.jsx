@@ -15,6 +15,7 @@ import { createFadeUp, createStagger } from '../lib/animations'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
 import { copyToClipboard } from '../lib/share'
+import { useSafeTimeout } from '../hooks/useSafeTimeout'
 
 /** Returns true on Android where upi:// intents are natively handled by the OS */
 function isAndroid() {
@@ -86,6 +87,7 @@ export default function About() {
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const [upiCopied, setUpiCopied] = useState(false)
+  const { setSafeTimeout } = useSafeTimeout()
   const [showAllVersions, setShowAllVersions] = useState(false)
   // 'idle' | 'fallback' — fallback shown on non-Android where upi:// won't work
   const [payState, setPayState] = useState('idle')
@@ -99,7 +101,7 @@ export default function About() {
     const res = await copyToClipboard(UPI_ID)
     if (res.success) {
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setSafeTimeout(() => setCopied(false), 2000)
     }
   }
 
@@ -114,7 +116,7 @@ export default function About() {
     const res = await copyToClipboard(UPI_ID)
     if (res.success) {
       setUpiCopied(true)
-      setTimeout(() => setUpiCopied(false), 3000)
+      setSafeTimeout(() => setUpiCopied(false), 3000)
     }
   }, [])
 

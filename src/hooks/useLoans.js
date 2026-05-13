@@ -252,8 +252,7 @@ function cloneCacheData(data) {
   return JSON.parse(JSON.stringify(data))
 }
 
-function snapshotLoanCaches() {
-  const targetUserId = getActiveWalletUserId()
+function snapshotLoanCaches(targetUserId) {
   return [
     [LOAN_ACTIVE_GIVEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_GIVEN_KEY(targetUserId)) || [])],
     [LOAN_ACTIVE_TAKEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_TAKEN_KEY(targetUserId)) || [])],
@@ -267,9 +266,8 @@ function restoreLoanSnapshot(snapshot) {
   }
 }
 
-export function optimisticallyInsertLoan(loan) {
-  if (!loan?.id) return
-  const targetUserId = getActiveWalletUserId()
+export function optimisticallyInsertLoan(loan, targetUserId) {
+  if (!loan?.id || !targetUserId) return
   const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
   const prev = queryClient.getQueryData(key)
   const base = Array.isArray(prev) ? prev : []
@@ -277,9 +275,8 @@ export function optimisticallyInsertLoan(loan) {
   queryClient.setQueryData(key, [{ ...loan, settled: false }, ...deduped])
 }
 
-export function optimisticallyDeleteLoan(id) {
-  if (!id) return
-  const targetUserId = getActiveWalletUserId()
+export function optimisticallyDeleteLoan(id, targetUserId) {
+  if (!id || !targetUserId) return
   for (const key of [LOAN_ACTIVE_GIVEN_KEY(targetUserId), LOAN_ACTIVE_TAKEN_KEY(targetUserId), LOAN_SETTLED_KEY(targetUserId)]) {
     const data = queryClient.getQueryData(key)
     if (Array.isArray(data)) {
@@ -288,9 +285,8 @@ export function optimisticallyDeleteLoan(id) {
   }
 }
 
-function getLoanFromCacheById(id) {
-  if (!id) return null
-  const targetUserId = getActiveWalletUserId()
+function getLoanFromCacheById(id, targetUserId) {
+  if (!id || !targetUserId) return null
   for (const key of [LOAN_ACTIVE_GIVEN_KEY(targetUserId), LOAN_ACTIVE_TAKEN_KEY(targetUserId), LOAN_SETTLED_KEY(targetUserId)]) {
     const data = queryClient.getQueryData(key)
     if (Array.isArray(data)) {
@@ -322,7 +318,8 @@ function refreshLoanAndTransactionCachesInBackground({ invalidateLoanFn, invalid
 // ── Mutation wrappers with optimistic updates ─────────────────────────────
 
 export async function addLoanMutation(payload) {
-  const snapshot = snapshotLoanCaches()
+  const targetUserId = getActiveWalletUserId()
+  const snapshot = snapshotLoanCaches(targetUserId)
   suppress('loans')
   suppress('transactions')
   const optimisticId  = `optimistic-loan-${Date.now()}`
@@ -338,7 +335,7 @@ export async function addLoanMutation(payload) {
     settled: false,
     created_at: nowIso,
     __optimistic: true,
-  })
+  }, targetUserId)
 
   // ── Optimistic: disbursement transaction appears immediately ───────────────
   optimisticallyUpsertTransactionInCache({
@@ -362,7 +359,7 @@ export async function addLoanMutation(payload) {
     source_transaction_id: null,
     is_auto_generated: false,
     __optimistic: true,
-  })
+  }, targetUserId)
 
   try {
     // create_loan RPC atomically creates the loan + disbursement transaction
@@ -372,15 +369,15 @@ export async function addLoanMutation(payload) {
     await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
     // Replace optimistic loan with real row
-    optimisticallyDeleteLoan(optimisticId)
-    optimisticallyInsertLoan(created)
+    optimisticallyDeleteLoan(optimisticId, targetUserId)
+    optimisticallyInsertLoan(created, targetUserId)
 
     // Replace optimistic disbursement txn with the real transaction_id from the RPC
     const realTxnId = created._disbursement_txn_id
     if (realTxnId) {
       import('./useTransactions').then(m => {
         if (m.optimisticallyDeleteTransactionFromCache) {
-          m.optimisticallyDeleteTransactionFromCache(optimisticTxnId)
+          m.optimisticallyDeleteTransactionFromCache(optimisticTxnId, targetUserId)
         }
         m.optimisticallyUpsertTransactionInCache({
           id: realTxnId,
@@ -402,7 +399,7 @@ export async function addLoanMutation(payload) {
           next_run_date: null,
           source_transaction_id: null,
           is_auto_generated: false,
-        })
+        }, targetUserId)
       })
     }
 
@@ -440,7 +437,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
     return null
   }
 
-  const snapshot = snapshotLoanCaches()
+  const snapshot = snapshotLoanCaches(targetUserId)
   const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
   const prev = queryClient.getQueryData(key)
   if (Array.isArray(prev)) {
@@ -507,7 +504,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
       next_run_date: null,
       source_transaction_id: null,
       is_auto_generated: false,
-    })
+    }, targetUserId)
 
     hapticSuccess()
     optimisticallyInsertFinancialEvent({
@@ -540,12 +537,12 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
 }
 
 export async function updateLoanMutation(id, updates) {
-  const snapshot = snapshotLoanCaches()
+  const targetUserId = getActiveWalletUserId()
+  const snapshot = snapshotLoanCaches(targetUserId)
   suppress('loans')
 
   // Optimistic: update in the correct cache bucket
-  const cachedLoan = getLoanFromCacheById(id)
-  const targetUserId = getActiveWalletUserId()
+  const cachedLoan = getLoanFromCacheById(id, targetUserId)
   if (cachedLoan) {
     const key = cachedLoan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
     const prev = queryClient.getQueryData(key)
@@ -564,7 +561,7 @@ export async function updateLoanMutation(id, updates) {
     if (oldKey !== newKey) {
       const oldData = queryClient.getQueryData(oldKey)
       if (Array.isArray(oldData)) queryClient.setQueryData(oldKey, oldData.filter(row => row?.id !== id))
-      optimisticallyInsertLoan(updated)
+      optimisticallyInsertLoan(updated, targetUserId)
     } else {
       const data = queryClient.getQueryData(newKey)
       if (Array.isArray(data)) queryClient.setQueryData(newKey, data.map(row => row?.id === id ? updated : row))
@@ -590,17 +587,18 @@ export async function updateLoanMutation(id, updates) {
 }
 
 export async function deleteLoanMutation(id) {
-  const cachedLoan = getLoanFromCacheById(id)
-  const snapshot = snapshotLoanCaches()
+  const targetUserId = getActiveWalletUserId()
+  const cachedLoan = getLoanFromCacheById(id, targetUserId)
+  const snapshot = snapshotLoanCaches(targetUserId)
   suppress('loans')
-  optimisticallyDeleteLoan(id)
-  optimisticallyDeleteTransactionsByLoanId(id)
+  optimisticallyDeleteLoan(id, targetUserId)
+  optimisticallyDeleteTransactionsByLoanId(id, targetUserId)
 
   try {
     await deleteLoan(id, cachedLoan)
     await queryClient.cancelQueries({ queryKey: ['loans'] })
-    optimisticallyDeleteLoan(id)
-    optimisticallyDeleteTransactionsByLoanId(id)
+    optimisticallyDeleteLoan(id, targetUserId)
+    optimisticallyDeleteTransactionsByLoanId(id, targetUserId)
 
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.LOAN_DELETE,

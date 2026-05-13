@@ -11,6 +11,7 @@ import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
 import { LOAN_INVALIDATION_KEYS } from './hooks/useLoans'
 import { SPLITWISE_INVALIDATION_KEYS } from './hooks/useSplitwise'
 import AuthGuard, { RouteSkeleton } from './components/navigation/AuthGuard'
+import { RouteErrorBoundary } from './components/errors/RouteErrorBoundary'
 import { House, List, CalendarDots, ChartBar, Receipt, UsersThree } from '@phosphor-icons/react'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
@@ -413,32 +414,8 @@ function useRouteIntentPrefetch() {
 
 // ── Mobile bottom nav ─────────────────────────────────────────────────────
 function WalletPrefetcher() {
-  const { linkedProfiles } = useAuth()
-  const queryClient = useQueryClient()
-
-  useEffect(() => {
-    if (!linkedProfiles?.length) return
-
-    const prefetch = async () => {
-      for (const profile of linkedProfiles) {
-        if (!profile?.id) continue
-        
-        // Prefetch high-frequency dashboard data for partners
-        void queryClient.prefetchQuery({
-          queryKey: ['dashboard', profile.id],
-          staleTime: 5 * 60 * 1000
-        })
-        void queryClient.prefetchQuery({
-          queryKey: ['runningBalance', profile.id],
-          staleTime: 5 * 60 * 1000
-        })
-      }
-    }
-
-    const timer = setTimeout(prefetch, 3000) // Wait for app to settle
-    return () => clearTimeout(timer)
-  }, [linkedProfiles, queryClient])
-
+  // Partner wallet data is prefetched on demand when the user switches wallets.
+  // The previous prefetch calls used non-existent query keys and were no-ops.
   return null
 }
 
@@ -776,19 +753,17 @@ function RuntimeRouteTracker() {
 // Ensures that PWA instances left open for long periods eventually refresh
 // to the latest code version and schema.
 function VersionHeartbeat() {
+  const qc = useQueryClient()
   useEffect(() => {
     const HEARTBEAT_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        // If an update is waiting in the background, this forces it.
-        // If not, it just refreshes the current session logic.
+      // Skip reload if a mutation is in-flight (e.g. user is mid-form / saving).
+      if (document.visibilityState === 'visible' && qc.isMutating() === 0) {
         window.location.reload()
       }
     }, HEARTBEAT_INTERVAL)
-
     return () => clearInterval(interval)
-  }, [])
-
+  }, [qc])
   return null
 }
 
@@ -874,10 +849,12 @@ function DashboardWarmPrefetch() {
       }
     }
 
-    // Yield one frame so initial route shell paints first.
+    // Yield enough time for initActiveWallet() to complete its async store
+    // init before getActiveWalletUserId() is read. 32ms was too short on
+    // slow devices; 150ms covers the async RLS check reliably.
     const timer = setTimeout(() => {
       if (!cancelled) void runPrefetch()
-    }, 32)
+    }, 150)
 
     return () => {
       cancelled = true
@@ -886,6 +863,18 @@ function DashboardWarmPrefetch() {
   }, [user?.id])
 
   return null
+}
+
+/** Wraps each lazy route with per-route error containment + Suspense skeleton */
+function SafeRoute({ pathname, guard, children }) {
+  const content = guard ? <AuthGuard>{children}</AuthGuard> : children
+  return (
+    <RouteErrorBoundary pathname={pathname}>
+      <SuspenseSkeleton pathname={pathname}>
+        {content}
+      </SuspenseSkeleton>
+    </RouteErrorBoundary>
+  )
 }
 
 function AnimatedRoutes() {
@@ -897,21 +886,21 @@ function AnimatedRoutes() {
         <Route path="/join/:token" element={<InviteLanding />} />
         <Route path="/splitwise/join/:splitToken" element={<InviteLanding />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/not-found" element={<SuspenseSkeleton pathname="/not-found"><NotFound /></SuspenseSkeleton>} />
-        <Route path="/onboarding" element={<SuspenseSkeleton pathname="/onboarding"><AuthGuard><Onboarding /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/" element={<SuspenseSkeleton pathname="/"><AuthGuard><Dashboard /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/transactions" element={<SuspenseSkeleton pathname="/transactions"><AuthGuard><Transactions /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/monthly" element={<SuspenseSkeleton pathname="/monthly"><AuthGuard><Monthly /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/analytics" element={<SuspenseSkeleton pathname="/analytics"><AuthGuard><Analytics /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/obligations" element={<SuspenseSkeleton pathname="/obligations"><AuthGuard><Obligations /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/splitwise" element={<SuspenseSkeleton pathname="/splitwise"><AuthGuard><Splitwise /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/bills" element={<SuspenseSkeleton pathname="/bills"><AuthGuard><BillsPage /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/loans" element={<SuspenseSkeleton pathname="/loans"><AuthGuard><LoansPage /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/reconciliation" element={<SuspenseSkeleton pathname="/reconciliation"><AuthGuard><Reconciliation /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/guide" element={<SuspenseSkeleton pathname="/guide"><AuthGuard><Guide /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/settings" element={<SuspenseSkeleton pathname="/settings"><AuthGuard><Settings /></AuthGuard></SuspenseSkeleton>} />
-        <Route path="/about" element={<SuspenseSkeleton pathname="/about"><About /></SuspenseSkeleton>} />
-        <Route path="/report-bug" element={<SuspenseSkeleton pathname="/report-bug"><AuthGuard><ReportBug /></AuthGuard></SuspenseSkeleton>} />
+        <Route path="/not-found" element={<SafeRoute pathname="/not-found"><NotFound /></SafeRoute>} />
+        <Route path="/onboarding" element={<SafeRoute pathname="/onboarding" guard><Onboarding /></SafeRoute>} />
+        <Route path="/" element={<SafeRoute pathname="/" guard><Dashboard /></SafeRoute>} />
+        <Route path="/transactions" element={<SafeRoute pathname="/transactions" guard><Transactions /></SafeRoute>} />
+        <Route path="/monthly" element={<SafeRoute pathname="/monthly" guard><Monthly /></SafeRoute>} />
+        <Route path="/analytics" element={<SafeRoute pathname="/analytics" guard><Analytics /></SafeRoute>} />
+        <Route path="/obligations" element={<SafeRoute pathname="/obligations" guard><Obligations /></SafeRoute>} />
+        <Route path="/splitwise" element={<SafeRoute pathname="/splitwise" guard><Splitwise /></SafeRoute>} />
+        <Route path="/bills" element={<SafeRoute pathname="/bills" guard><BillsPage /></SafeRoute>} />
+        <Route path="/loans" element={<SafeRoute pathname="/loans" guard><LoansPage /></SafeRoute>} />
+        <Route path="/reconciliation" element={<SafeRoute pathname="/reconciliation" guard><Reconciliation /></SafeRoute>} />
+        <Route path="/guide" element={<SafeRoute pathname="/guide" guard><Guide /></SafeRoute>} />
+        <Route path="/settings" element={<SafeRoute pathname="/settings" guard><Settings /></SafeRoute>} />
+        <Route path="/about" element={<SafeRoute pathname="/about"><About /></SafeRoute>} />
+        <Route path="/report-bug" element={<SafeRoute pathname="/report-bug" guard><ReportBug /></SafeRoute>} />
         <Route path="*" element={<Navigate to="/not-found" replace />} />
       </Routes>
     </div>
@@ -1028,7 +1017,7 @@ function QueryErrorRecovery() {
   )
 }
 
-let swListenersAttached = false
+let _unused_swFlag = null // removed — flag moved to useRef inside ShellStatusBanners
 
 function ShellStatusBanners() {
   const location = useLocation()
@@ -1044,6 +1033,8 @@ function ShellStatusBanners() {
   const [installing, setInstalling] = useState(false)
   const [installMessage, setInstallMessage] = useState('')
   const installMessageTimerRef = useRef(null)
+  // Guards the one-time listener registration inside onRegisteredSW callback
+  const swListenersAttachedRef = useRef(false)
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -1052,22 +1043,9 @@ function ShellStatusBanners() {
     onRegisteredSW(swUrl, registration) {
       if (registration) {
         setSwRegistration(registration)
-
-        if (!swListenersAttached) {
-          const r = registration
-          if (r) {
-            setInterval(() => {
-              r.update()
-            }, 60 * 60 * 1000)
-          }
-
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && r) {
-              r.update()
-            }
-          })
-          swListenersAttached = true
-        }
+        // No interval or visibilitychange here — both are managed by the
+        // swRegistration useEffect below, which has proper cleanup.
+        swListenersAttachedRef.current = true
       }
     },
     onRegisterError(error) {
@@ -1144,13 +1122,22 @@ function ShellStatusBanners() {
   useEffect(() => {
     if (!swRegistration) return undefined
 
-    // Poll for a fresh service worker periodically so long-running sessions
-    // receive release prompts without requiring a manual reload.
+    // Unified SW freshness manager — both the periodic check and the
+    // visibility-based check live here so they are properly torn down
+    // when swRegistration changes or the component unmounts.
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void swRegistration.update()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
     const intervalId = window.setInterval(() => {
       void swRegistration.update()
     }, 30 * 60 * 1000)
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
       window.clearInterval(intervalId)
     }
   }, [swRegistration])

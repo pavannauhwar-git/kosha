@@ -264,8 +264,7 @@ function cloneCacheData(data) {
   return JSON.parse(JSON.stringify(data))
 }
 
-function snapshotLiabilityCaches() {
-  const targetUserId = getActiveWalletUserId()
+function snapshotLiabilityCaches(targetUserId) {
   return [
     [LIABILITY_PENDING_QUERY_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId)) || [])],
     [LIABILITY_PAID_QUERY_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY(targetUserId)) || [])],
@@ -278,10 +277,8 @@ function restoreLiabilitySnapshot(snapshot) {
   }
 }
 
-export function optimisticallyInsertPendingLiability(liability) {
-  if (!liability?.id) return
-
-  const targetUserId = getActiveWalletUserId()
+export function optimisticallyInsertPendingLiability(liability, targetUserId) {
+  if (!liability?.id || !targetUserId) return
   const prev = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   const base = Array.isArray(prev) ? prev : []
   const deduped = base.filter((row) => row?.id !== liability.id)
@@ -291,10 +288,8 @@ export function optimisticallyInsertPendingLiability(liability) {
   )
 }
 
-export function optimisticallyMarkLiabilityPaid(liability, { optimistic = true } = {}) {
-  if (!liability?.id) return
-
-  const targetUserId = getActiveWalletUserId()
+export function optimisticallyMarkLiabilityPaid(liability, targetUserId, { optimistic = true } = {}) {
+  if (!liability?.id || !targetUserId) return
   const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   if (Array.isArray(pendingData)) {
     queryClient.setQueryData(
@@ -318,9 +313,8 @@ export function optimisticallyMarkLiabilityPaid(liability, { optimistic = true }
   }
 }
 
-function getLiabilityFromCacheById(id) {
-  if (!id) return null
-  const targetUserId = getActiveWalletUserId()
+function getLiabilityFromCacheById(id, targetUserId) {
+  if (!id || !targetUserId) return null
   const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   if (Array.isArray(pendingData)) {
     const found = pendingData.find((row) => row?.id === id)
@@ -334,10 +328,8 @@ function getLiabilityFromCacheById(id) {
   return null
 }
 
-export function optimisticallyDeleteLiabilityFromCache(id) {
-  if (!id) return
-
-  const targetUserId = getActiveWalletUserId()
+export function optimisticallyDeleteLiabilityFromCache(id, targetUserId) {
+  if (!id || !targetUserId) return
   const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   if (Array.isArray(pendingData)) {
     queryClient.setQueryData(
@@ -383,7 +375,7 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
     return null
   }
 
-  const snapshot = snapshotLiabilityCaches()
+  const snapshot = snapshotLiabilityCaches(targetUserId)
   suppress('liabilities')
   const optimisticId = `optimistic-liability-${Date.now()}`
   const nowIso = new Date().toISOString()
@@ -394,7 +386,7 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
     paid: false,
     created_at: nowIso,
     __optimistic: true,
-  })
+  }, targetUserId)
 
   try {
     const addFn = __testOverrides?.addLiability || addLiability
@@ -403,8 +395,8 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
     const created = await addFn(payload)
     await queryClient.cancelQueries({ queryKey: ['liabilities'] })
 
-    optimisticallyDeleteLiabilityFromCache(optimisticId)
-    optimisticallyInsertPendingLiability(created)
+    optimisticallyDeleteLiabilityFromCache(optimisticId, targetUserId)
+    optimisticallyInsertPendingLiability(created, targetUserId)
 
     hapticSuccess()
     optimisticallyInsertFinancialEvent({
@@ -440,7 +432,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     return null
   }
 
-  const snapshot = snapshotLiabilityCaches()
+  const snapshot = snapshotLiabilityCaches(targetUserId)
 
   try {
     const markPaidFn = __testOverrides?.markPaid || markPaid
@@ -454,7 +446,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     await queryClient.cancelQueries({ queryKey: ['transactions'] })
     await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
-    optimisticallyMarkLiabilityPaid(liability, { optimistic: false })
+    optimisticallyMarkLiabilityPaid(liability, targetUserId, { optimistic: false })
 
     const rpcRow = Array.isArray(result) ? result[0] : result
     const txnId = rpcRow?.transaction_id || `optimistic-txn-markpaid-${Date.now()}`
@@ -477,7 +469,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       next_run_date: null,
       source_transaction_id: null,
       is_auto_generated: false,
-    })
+    }, targetUserId)
 
     hapticSuccess()
     optimisticallyInsertFinancialEvent({
@@ -517,7 +509,7 @@ export async function updateLiabilityMutation(id, updates) {
     return null
   }
 
-  const snapshot = snapshotLiabilityCaches()
+  const snapshot = snapshotLiabilityCaches(targetUserId)
   const pendingData = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId))
   if (Array.isArray(pendingData)) {
     queryClient.setQueryData(
@@ -568,11 +560,11 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
     return null
   }
 
-  const cachedBill = getLiabilityFromCacheById(id)
-  const snapshot = snapshotLiabilityCaches()
+  const cachedBill = getLiabilityFromCacheById(id, targetUserId)
+  const snapshot = snapshotLiabilityCaches(targetUserId)
   suppress('liabilities')
-  optimisticallyDeleteLiabilityFromCache(id)
-  optimisticallyDeleteTransactionsByBillId(id)
+  optimisticallyDeleteLiabilityFromCache(id, targetUserId)
+  optimisticallyDeleteTransactionsByBillId(id, targetUserId)
 
   try {
     const deleteFn = __testOverrides?.deleteLiability || deleteLiability
@@ -583,8 +575,8 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
     await queryClient.cancelQueries({ queryKey: ['transactions'] })
     await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
-    optimisticallyDeleteLiabilityFromCache(id)
-    optimisticallyDeleteTransactionsByBillId(id)
+    optimisticallyDeleteLiabilityFromCache(id, targetUserId)
+    optimisticallyDeleteTransactionsByBillId(id, targetUserId)
 
     hapticSuccess()
     optimisticallyInsertFinancialEvent({

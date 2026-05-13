@@ -18,6 +18,7 @@ import {
   getNotificationPermission,
   requestNotificationPermission,
 } from '../lib/reminders'
+import { useSafeTimeout } from '../hooks/useSafeTimeout'
 import { buildJoinInviteUrl, createInvite, deleteInvite, inviteStatusLabel, listInvites, MAX_ACTIVE_INVITES } from '../lib/invites'
 import { unlinkPartner } from '../lib/walletSync'
 import { getActiveWalletUserId, setActiveWalletUserId } from '../lib/walletStore'
@@ -73,6 +74,7 @@ export default function Settings() {
   const navigate = useNavigate()
   const { user, profile, updateProfile, updatePassword, linkedProfiles, reloadLinkedData } = useAuth()
   const fileInputRef = useRef(null)
+  const { setSafeTimeout } = useSafeTimeout()
 
   const [uploading, setUploading] = useState(false)
   const [photoError, setPhotoError] = useState('')
@@ -197,13 +199,13 @@ export default function Settings() {
     setNotificationPermission(permission)
     if (permission === 'granted') {
       setReminderMsg('Notifications enabled for reminder alerts.')
-      setTimeout(() => setReminderMsg(''), 2500)
+      setSafeTimeout(() => setReminderMsg(''), 2500)
       return
     }
 
     if (permission === 'denied') {
       setReminderMsg('Notifications blocked. Enable them from browser settings.')
-      setTimeout(() => setReminderMsg(''), 3200)
+      setSafeTimeout(() => setReminderMsg(''), 3200)
     }
   }
 
@@ -221,11 +223,11 @@ export default function Settings() {
         // Shared via native sheet
       } else {
         setWalletMsg('Invite link copied.')
-        setTimeout(() => setWalletMsg(''), 2200)
+        setSafeTimeout(() => setWalletMsg(''), 2200)
       }
     } else if (!result.aborted) {
       setWalletMsg(url)
-      setTimeout(() => setWalletMsg(''), 5000)
+      setSafeTimeout(() => setWalletMsg(''), 5000)
     }
   }
 

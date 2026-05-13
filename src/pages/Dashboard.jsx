@@ -12,6 +12,7 @@ import {
 import { useLiabilities } from '../hooks/useLiabilities'
 import { CATEGORIES } from '../lib/categories'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
+import { useSafeTimeout } from '../hooks/useSafeTimeout'
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
@@ -100,6 +101,7 @@ function DashboardSectionCue({ title, subtitle }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { setSafeTimeout } = useSafeTimeout()
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -495,16 +497,16 @@ export default function Dashboard() {
             setToast('Transaction restored')
             setToastAction(null)
             setToastActionLabel(null)
-            setTimeout(() => setToast(null), 1600)
+            setSafeTimeout(() => setToast(null), 1600)
           } catch {
             setToast('Could not undo delete.')
             setToastAction(null)
             setToastActionLabel(null)
-            setTimeout(() => setToast(null), 1800)
+            setSafeTimeout(() => setToast(null), 1800)
           }
         })
         setToastActionLabel('Undo')
-        setTimeout(() => {
+        setSafeTimeout(() => {
           setToastAction(null)
           setToastActionLabel(null)
         }, 5000)
@@ -515,7 +517,7 @@ export default function Dashboard() {
       setToast(e.message || 'Could not delete transaction.')
       setToastAction(null)
       setToastActionLabel(null)
-      setTimeout(() => setToast(null), 4000)
+      setSafeTimeout(() => setToast(null), 4000)
       throw e
     }
   }, [recent])
@@ -571,7 +573,7 @@ export default function Dashboard() {
       setToast("You can only view your partner's transactions.")
       setToastAction(null)
       setToastActionLabel(null)
-      setTimeout(() => setToast(null), 3000)
+      setSafeTimeout(() => setToast(null), 3000)
       return
     }
 

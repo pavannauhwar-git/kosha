@@ -408,7 +408,7 @@ export function useTransactionDigest(days = 14, limit = 200, options = {}) {
     queryKey: ['transactionsDigest', safeDays, safeLimit, startISO, targetUserId],
     enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:digest', async () => {
-      const userId = getActiveWalletUserId()
+      const userId = targetUserId
       const { data: rows, error: qError } = await supabase
         .from('transactions')
         .select(DIGEST_TXN_COLUMNS)
@@ -440,11 +440,12 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
     queryKey: ['dailyExpenseTotals', safeDays, startISO, targetUserId],
     enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:daily-expense-totals', async () => {
-      const userId = getActiveWalletUserId()
+      const userId = targetUserId
       const pageSize = 1000
+      const MAX_PAGES = 50
       const totalsByDate = {}
 
-      for (let from = 0; ; from += pageSize) {
+      for (let from = 0, page = 0; page < MAX_PAGES; from += pageSize, page++) {
         const to = from + pageSize - 1
 
         const { data: rows, error: qError } = await supabase
@@ -495,11 +496,12 @@ export function useMonthExpenseDailyTotals(year, month, options = {}) {
     queryKey: ['monthExpenseDailyTotals', validYear, validMonth, targetUserId],
     enabled: enabled && !!targetUserId,
     queryFn: () => traceQuery('transactions:month-expense-daily-totals', async () => {
-      const userId = getActiveWalletUserId()
+      const userId = targetUserId
       const pageSize = 1000
+      const MAX_PAGES = 50
       const totalsByDate = {}
 
-      for (let from = 0; ; from += pageSize) {
+      for (let from = 0, page = 0; page < MAX_PAGES; from += pageSize, page++) {
         const to = from + pageSize - 1
 
         const { data: rows, error: qError } = await supabase
@@ -547,9 +549,10 @@ export function useYearDailyExpenseTotals(year, options = {}) {
     queryFn: () => traceQuery('transactions:year-daily-expense-totals', async () => {
       const userId = targetUserId
       const pageSize = 1000
+      const MAX_PAGES = 50
       const totalsByDate = {}
 
-      for (let from = 0; ; from += pageSize) {
+      for (let from = 0, page = 0; page < MAX_PAGES; from += pageSize, page++) {
         const to = from + pageSize - 1
 
         const { data: rows, error: qError } = await supabase
@@ -732,7 +735,7 @@ export function useTransactionYearBounds(options = {}) {
     queryKey: ['transactionYearBounds', targetUserId],
     enabled,
     queryFn: async () => {
-      const userId = getActiveWalletUserId()
+      const userId = targetUserId
 
       const [{ data: oldestRows, error: oldestError }, { data: newestRows, error: newestError }] = await Promise.all([
         supabase
@@ -986,8 +989,8 @@ function getTransactionFromCacheById(id) {
   return null
 }
 
-export function optimisticallyUpsertTransactionInCache(txn) {
-  if (!txn?.id) return
+export function optimisticallyUpsertTransactionInCache(txn, targetUserId) {
+  if (!txn?.id || !targetUserId) return
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
 
@@ -996,10 +999,8 @@ export function optimisticallyUpsertTransactionInCache(txn) {
     const seededRows = matchesTransactionFilters(txn, filters)
       ? applyTxnLimit([txn], filters.limit)
       : []
-    queryClient.setQueryData(txnListKey(filters), seededRows)
+    queryClient.setQueryData(txnListKey(filters, targetUserId), seededRows)
   }
-
-  const targetUserId = getActiveWalletUserId()
   for (const [key, rows] of listEntries) {
     const baseRows = Array.isArray(rows) ? rows : []
     const filters = key?.[1] || {}
@@ -1019,11 +1020,10 @@ export function optimisticallyUpsertTransactionInCache(txn) {
   upsertRecentTransactionCaches(txn)
 }
 
-export function optimisticallyDeleteTransactionFromCache(id) {
-  if (!id) return
+export function optimisticallyDeleteTransactionFromCache(id, targetUserId) {
+  if (!id || !targetUserId) return
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
-  const targetUserId = getActiveWalletUserId()
   for (const [key, rows] of listEntries) {
     const queryTargetId = key?.[2]
     if (queryTargetId && queryTargetId !== targetUserId) continue
@@ -1042,11 +1042,10 @@ export function optimisticallyDeleteTransactionFromCache(id) {
   }
 }
 
-export function optimisticallyDeleteTransactionsByLoanId(loanId) {
-  if (!loanId) return
+export function optimisticallyDeleteTransactionsByLoanId(loanId, targetUserId) {
+  if (!loanId || !targetUserId) return
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
-  const targetUserId = getActiveWalletUserId()
   for (const [key, rows] of listEntries) {
     const queryTargetId = key?.[2]
     if (queryTargetId && queryTargetId !== targetUserId) continue
@@ -1065,11 +1064,10 @@ export function optimisticallyDeleteTransactionsByLoanId(loanId) {
   }
 }
 
-export function optimisticallyDeleteTransactionsByBillId(billId) {
-  if (!billId) return
+export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId) {
+  if (!billId || !targetUserId) return
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
-  const targetUserId = getActiveWalletUserId()
   for (const [key, rows] of listEntries) {
     const queryTargetId = key?.[2]
     if (queryTargetId && queryTargetId !== targetUserId) continue
@@ -1130,7 +1128,7 @@ function applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowI
       ...payload,
       id,
       __optimistic: true,
-    })
+    }, targetUserId)
     return
   }
 
@@ -1140,7 +1138,7 @@ function applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowI
     created_at: nowIso,
     date: payload?.date || todayStr(),
     __optimistic: true,
-  })
+  }, targetUserId)
 }
 
 function updateTodayExpenseCache({ id, payload, existingTxn }) {
@@ -1210,9 +1208,9 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
     ])
 
     if (!id) {
-      optimisticallyDeleteTransactionFromCache(optimisticId)
+      optimisticallyDeleteTransactionFromCache(optimisticId, targetUserId)
     }
-    optimisticallyUpsertTransactionInCache(savedTxn)
+    optimisticallyUpsertTransactionInCache(savedTxn, targetUserId)
 
     optimisticallyInsertFinancialEvent({
       action: id ? FINANCIAL_EVENT_ACTIONS.TXN_UPDATE : FINANCIAL_EVENT_ACTIONS.TXN_ADD,
@@ -1243,7 +1241,7 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
   ])
 
   suppress('transactions')
-  optimisticallyDeleteTransactionFromCache(id)
+  optimisticallyDeleteTransactionFromCache(id, targetUserId)
 
   try {
     const deleteFn = __testOverrides?.deleteTransaction || deleteTransaction
@@ -1255,7 +1253,7 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
       queryClient.cancelQueries({ queryKey: ['transactionsRecent'] }),
     ])
 
-    optimisticallyDeleteTransactionFromCache(id)
+    optimisticallyDeleteTransactionFromCache(id, targetUserId)
 
     optimisticallyInsertFinancialEvent({
       action: FINANCIAL_EVENT_ACTIONS.TXN_DELETE,

@@ -51,14 +51,26 @@ export const C = {
   chartGrid:       'rgba(var(--ds-text-rgb),0.10)',
   chartCursor:     'rgba(var(--ds-primary-rgb),0.10)',
 
-  // ── Portfolio donut — blue shades (darkest → lightest) ────────────
+  // ── Portfolio donut — distinct jewel tones ───────────────────────
+  // Each stop is a different hue so segments are immediately distinguishable.
+  // Order: Sapphire · Emerald · Violet · Amber · Cyan · Slate
   portfolio: [
-    '#003366',
-    '#0055A3',
-    '#007FFF',
-    '#4DA6FF',
-    '#80C4FF',
-    '#B3DEFF',
+    '#007FFF',  // 0 — Sapphire  (brand anchor)
+    '#10B981',  // 1 — Emerald
+    '#8B5CF6',  // 2 — Violet
+    '#F59E0B',  // 3 — Amber
+    '#06B6D4',  // 4 — Cyan
+    '#64748B',  // 5 — Slate  (also used for "Other")
+  ],
+
+  // Dark-mode variants — slightly lighter / more saturated so they pop on dark surfaces
+  portfolioDark: [
+    '#4DA6FF',  // 0 — Sapphire light
+    '#34D399',  // 1 — Emerald light
+    '#A78BFA',  // 2 — Violet light
+    '#FCD34D',  // 3 — Amber light
+    '#22D3EE',  // 4 — Cyan light
+    '#94A3B8',  // 5 — Slate light
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────

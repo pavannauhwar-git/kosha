@@ -4,7 +4,7 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,
-      gcTime: 24 * 60 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       // After mutation invalidation, inactive pages must refresh when revisited.
       // `true` refetches only stale queries on mount (not always), preserving
       // most of the SWR/perceived-performance behavior while fixing stale lists.
