@@ -1116,7 +1116,7 @@ export async function deleteTransaction(id, cachedTxn = null) {
   return true;
 }
 
-function applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowIso }) {
+function applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowIso, targetUserId }) {
   if (id) {
     const optimisticBase = existingTxn || {
       id,
@@ -1178,6 +1178,8 @@ function refreshTransactionCachesInBackground(invalidateFn, scope) {
 }
 
 export async function saveTransactionMutation({ id, payload, __testOverrides = null }) {
+  const targetUserId = getActiveWalletUserId()
+
   const snapshot = snapshotCacheFamilies([
     ['transactions'],
     ['transactionsRecent'],
@@ -1190,7 +1192,7 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
   const optimisticId = id || `optimistic-txn-${Date.now()}`
   const existingTxn = id ? getTransactionFromCacheById(id) : null
 
-  applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowIso })
+  applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowIso, targetUserId })
   updateTodayExpenseCache({ id, payload, existingTxn })
 
   try {
@@ -1234,6 +1236,7 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
 }
 
 export async function removeTransactionMutation(id, __testOverrides = null) {
+  const targetUserId = getActiveWalletUserId()
   const cachedTxn = getTransactionFromCacheById(id)
   const snapshot = snapshotCacheFamilies([
     ['transactions'],
