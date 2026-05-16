@@ -15,6 +15,9 @@ import { useActiveWallet } from '../lib/walletStore'
 import { useSafeTimeout } from '../hooks/useSafeTimeout'
 import CalendarHeatmap from '../components/cards/analytics/CalendarHeatmap'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
+import { getReminderPrefs, maybeNotify } from '../lib/reminders'
+import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
+import AnimatedNumber from '../components/common/AnimatedNumber'
 
 // Lazy-load heavy chart components to defer ~264KB charts vendor bundle
 const YearOverYearCards = lazy(() => import('../components/cards/analytics/YearOverYearCards'))
@@ -306,7 +309,7 @@ export default function Analytics() {
               {(yearHealthSignal || expenseConcentrationSignal) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {yearHealthSignal && (
-                    <div className="card p-3.5 border-0">
+                    <div className="card p-3.5 border-0 hover-lift">
                       <p className="text-[10px] text-ink-3 tracking-wide">Year health score</p>
                       <p className={`text-[18px] font-semibold tabular-nums mt-1 ${bandTextClass(yearHealthSignal.band)}`}>
                         {yearHealthSignal.score}/100
@@ -321,7 +324,7 @@ export default function Analytics() {
                   )}
 
                   {expenseConcentrationSignal && (
-                    <div className="card p-3.5 border-0">
+                    <div className="card p-3.5 border-0 hover-lift">
                       <p className="text-[10px] text-ink-3 tracking-wide">Expense concentration</p>
                       <p className={`text-[18px] font-semibold tabular-nums mt-1 ${bandTextClass(expenseConcentrationSignal.band)}`}>
                         {expenseConcentrationSignal.topThreePct}%

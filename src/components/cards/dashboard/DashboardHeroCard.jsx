@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { fmt } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
+import AnimatedNumber from '../../common/AnimatedNumber'
 
 function getHeroAmountClass(length) {
   if (length <= 11) return 'text-[clamp(1.92rem,8.9vw,3.12rem)]'
@@ -82,7 +83,10 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       {/* Main amount — large */}
       <div>
         <p className={`${mainValueClass} font-bold text-white leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere]`}>
-          {mainValueText}
+          <AnimatedNumber 
+            value={heroMode === 'balance' ? (runningBalance || 0) : (safeToSpend || 0)} 
+            formatter={fmt} 
+          />
         </p>
       </div>
 
@@ -92,7 +96,9 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
         style={heroBadgeStyle}
       >
         <span className="text-[12px] font-semibold tracking-wide text-white">
-          <span style={{ color: C.heroAccent }}>{rate}%</span> saved this month
+          <span style={{ color: C.heroAccent }}>
+            <AnimatedNumber value={rate} formatter={(v) => `${Math.round(v)}%`} />
+          </span> saved this month
         </span>
       </div>
 
@@ -120,7 +126,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
             <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide"
               style={{ color: C.heroLabel }}>{s.label}</p>
             <p className={`${statValueClass} font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] whitespace-normal [overflow-wrap:anywhere]`}>
-              {statText}
+              <AnimatedNumber value={s.val} formatter={fmt} />
             </p>
           </motion.div>
         )})}
