@@ -192,7 +192,7 @@ export default function useWindowedList({
     }
 
     window.scrollTo({ top: Math.max(0, targetTop), behavior })
-  }, [count, getOffsetForIndex, getSize])
+  }, [count, offsets, getSize])
 
   return {
     containerRef,
