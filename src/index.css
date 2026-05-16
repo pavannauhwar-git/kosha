@@ -425,7 +425,7 @@ textarea:focus-visible,
     @apply rounded-hero;
     border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow:
-      0 12px 32px rgba(0, 0, 0, 0.15),
+      0 6px 16px rgba(0, 0, 0, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
     position: relative;
     overflow: hidden;
@@ -443,32 +443,21 @@ textarea:focus-visible,
   .card-hero::before {
     content: '';
     position: absolute;
-    top: -40%;
-    right: -10%;
-    width: 140%;
-    height: 160%;
-    background: 
-      radial-gradient(circle at 70% 20%, rgba(255, 255, 153, 0.40) 0%, transparent 40%),
-      radial-gradient(circle at 20% 80%, rgba(0, 255, 255, 0.25) 0%, transparent 45%),
-      radial-gradient(circle at 50% 50%, rgba(255, 127, 255, 0.15) 0%, transparent 50%);
+    top: -50%;
+    right: -20%;
+    width: 120%;
+    height: 150%;
+    background: radial-gradient(circle at top right, rgba(255, 255, 153, 0.25) 0%, transparent 50%),
+      radial-gradient(circle at bottom left, rgba(0, 255, 255, 0.15) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
-    mix-blend-mode: soft-light;
-    filter: blur(40px);
-    animation: hero-mesh-drift 12s infinite alternate ease-in-out;
+    mix-blend-mode: overlay;
   }
 
   .dark .card-hero::before {
-    background: 
-      radial-gradient(circle at 70% 20%, rgba(255, 255, 153, 0.20) 0%, transparent 40%),
-      radial-gradient(circle at 20% 80%, rgba(0, 255, 255, 0.12) 0%, transparent 45%),
-      radial-gradient(circle at 50% 50%, rgba(255, 127, 255, 0.08) 0%, transparent 50%);
-    mix-blend-mode: soft-light;
-  }
-
-  @keyframes hero-mesh-drift {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    100% { transform: translate(-5%, 5%) rotate(5deg); }
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at bottom left, rgba(0, 127, 255, 0.10) 0%, transparent 60%);
+    mix-blend-mode: overlay;
   }
 
   .card-hero::after {
