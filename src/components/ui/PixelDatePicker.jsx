@@ -157,7 +157,7 @@ export default function PixelDatePicker({
                   className={[
                     'h-9 rounded-full text-[12px] font-semibold transition-[transform,background-color] duration-150 will-change-transform',
                     isSelected
-                      ? 'bg-brand text-white shadow-[0_4px_10px_rgba(0,127,255,0.26)]'
+                      ? 'bg-brand text-white shadow-[0_4px_10px_rgba(var(--ds-primary-rgb), 0.26)]'
                       : day.inMonth
                         ? 'text-ink hover:bg-kosha-surface-2'
                         : 'text-ink-4 hover:bg-kosha-surface-2/70',

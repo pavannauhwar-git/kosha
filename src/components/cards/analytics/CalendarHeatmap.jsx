@@ -9,10 +9,10 @@ const MONTH_SHORT    = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 
  *  Level 0 = no spend (muted surface), 1-5 = spend intensity (brand blue ramp). */
 const CELL_STYLES = [
   { bg: 'var(--ds-surface-bright)',         border: 'var(--ds-border)' },         // 0 — empty
-  { bg: 'rgba(0,127,255,0.12)',             border: 'rgba(0,127,255,0.20)' },      // 1
-  { bg: 'rgba(0,127,255,0.28)',             border: 'rgba(0,127,255,0.38)' },      // 2
-  { bg: 'rgba(0,127,255,0.50)',             border: 'rgba(0,127,255,0.60)' },      // 3
-  { bg: 'rgba(0,127,255,0.72)',             border: 'rgba(0,127,255,0.80)' },      // 4
+  { bg: 'rgba(var(--ds-primary-rgb), 0.12)', border: 'rgba(var(--ds-primary-rgb), 0.20)' }, // 1
+  { bg: 'rgba(var(--ds-primary-rgb), 0.28)', border: 'rgba(var(--ds-primary-rgb), 0.38)' }, // 2
+  { bg: 'rgba(var(--ds-primary-rgb), 0.50)', border: 'rgba(var(--ds-primary-rgb), 0.60)' }, // 3
+  { bg: 'rgba(var(--ds-primary-rgb), 0.72)', border: 'rgba(var(--ds-primary-rgb), 0.80)' }, // 4
   { bg: 'var(--ds-primary)',               border: 'var(--ds-primary-dark)' },    // 5 — max
 ]
 

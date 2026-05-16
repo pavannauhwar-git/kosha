@@ -149,7 +149,7 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
             {driftData.median4w > 0 && (
               <ReferenceLine
                 y={driftData.median4w}
-                stroke="#007FFF"
+                stroke="var(--ds-primary)"
                 strokeOpacity={0.8}
                 strokeWidth={2}
                 strokeDasharray="4 4"
@@ -160,7 +160,7 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
               {driftData.weeks.map((row, index) => (
                 <Cell
                   key={`weekly-drift-bar-${row.label}-${index}`}
-                  fill={row.isCurrent ? '#E8453C' : 'rgba(0,127,255,0.52)'}
+                  fill={row.isCurrent ? 'var(--ds-expense)' : 'rgba(var(--ds-primary-rgb), 0.52)'}
                 />
               ))}
             </Bar>

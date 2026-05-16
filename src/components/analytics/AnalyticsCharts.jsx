@@ -63,7 +63,7 @@ function scoreTone(score) {
   if (score == null) {
     return {
       label: 'Insufficient data',
-      color: 'rgba(0,127,255,0.72)',
+      color: 'rgba(var(--ds-primary-rgb),0.72)',
       fill: 'rgba(157,170,198,0.5)',
     }
   }
@@ -111,14 +111,14 @@ const PulseTooltip = ({ active, payload, label }) => {
   const outflow = toFiniteNumber(point?.Outflow)
   const pulse = toFiniteNumber(point?.Pulse)
   const pulsePct = income > 0 ? Math.round((pulse / income) * 100) : 0
-  const pulseColor = pulse >= 0 ? C.brandMid : C.accent
+  const pulseColor = pulse >= 0 ? C.brandMid : C.accent;
 
   return (
     <div className="tooltip-enter" style={{
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
+      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
       minWidth: 176,
       border: '1px solid rgba(187,217,255,0.85)',
     }}>
@@ -150,7 +150,16 @@ const PulseTooltip = ({ active, payload, label }) => {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
         <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Pulse</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: pulseColor }}>
+        <span style={{ 
+          fontSize: 13, 
+          fontWeight: 700, 
+          color: pulseColor,
+          background: pulseColor === C.accent ? 'rgba(0,0,0,0.04)' : 'transparent',
+          padding: pulseColor === C.accent ? '1px 6px' : '0',
+          borderRadius: 6,
+          marginLeft: pulseColor === C.accent ? -4 : 0,
+          marginRight: pulseColor === C.accent ? -2 : 0,
+        }}>
           {pulse >= 0 ? '+' : '-'}{fmt(Math.abs(pulse))} ({pulsePct}%)
         </span>
       </div>
@@ -313,7 +322,10 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
       <div className="flex justify-center gap-6 pb-1 pt-1">
         {[['Surplus pulse', C.brandMid], ['Deficit pulse', C.accent]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ background: c }} />
+            <div 
+              className="w-2 h-2 rounded-full border border-black/5" 
+              style={{ background: c, borderColor: c === C.accent ? 'rgba(0,0,0,0.1)' : 'transparent' }} 
+            />
             <span className="text-[11px] text-ink-3 font-medium">{l}</span>
           </div>
         ))}
@@ -409,7 +421,10 @@ export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisM
       <div className="flex justify-center gap-6 pt-2">
         {[['Surplus', C.brandMid], ['Deficit', C.accent]].map(([label, color]) => (
           <div key={label} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ background: color }} />
+            <div 
+              className="w-2 h-2 rounded-full border border-black/5" 
+              style={{ background: color, borderColor: color === C.accent ? 'rgba(0,0,0,0.1)' : 'transparent' }} 
+            />
             <span className="text-[11px] text-ink-3">{label}</span>
           </div>
         ))}
@@ -436,7 +451,7 @@ const FlowCompareTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
+      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
       minWidth: 170,
       border: '1px solid rgba(187,217,255,0.85)',
     }}>
@@ -563,7 +578,7 @@ const WaterfallTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
+      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
       border: '1px solid rgba(187,217,255,0.85)',
       minWidth: 170,
     }}>
@@ -718,7 +733,7 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
           />
           <YAxis hide domain={[-chartLimit, chartLimit]} />
           <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(17,19,24,0.05)' }} />
-          <ReferenceLine y={0} stroke="rgba(0,127,255,0.24)" strokeWidth={1} />
+          <ReferenceLine y={0} stroke="rgba(var(--ds-primary-rgb),0.24)" strokeWidth={1} />
           <Bar dataKey="offset" stackId="waterfall" fill="transparent" isAnimationActive={false} />
           <Bar dataKey="height" stackId="waterfall" radius={[6, 6, 6, 6]} maxBarSize={34}>
             {waterfallRows.map((row) => (
@@ -750,7 +765,7 @@ const CompositionTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
+      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
       border: '1px solid rgba(187,217,255,0.85)',
       minWidth: 182,
     }}>
@@ -835,7 +850,7 @@ export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaC
             interval={0}
           />
           <YAxis hide />
-          <Tooltip content={<CompositionTooltip />} cursor={{ stroke: 'rgba(0,127,255,0.15)', strokeWidth: 1 }} />
+          <Tooltip content={<CompositionTooltip />} cursor={{ stroke: 'rgba(var(--ds-primary-rgb),0.15)', strokeWidth: 1 }} />
           <Area
             type="monotone"
             dataKey="Spent"
@@ -886,7 +901,7 @@ const SurplusTrajectoryTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
+      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
       minWidth: 168,
       border: '1px solid rgba(187,217,255,0.85)',
     }}>
@@ -966,8 +981,8 @@ export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ net
             interval={0}
           />
           <YAxis hide domain={[-axisMax, axisMax]} />
-          <Tooltip content={<SurplusTrajectoryTooltip />} cursor={{ stroke: 'rgba(0,127,255,0.16)', strokeWidth: 1 }} />
-          <ReferenceLine y={0} stroke="rgba(0,127,255,0.28)" strokeWidth={1} />
+          <Tooltip content={<SurplusTrajectoryTooltip />} cursor={{ stroke: 'rgba(var(--ds-primary-rgb),0.16)', strokeWidth: 1 }} />
+          <ReferenceLine y={0} stroke="rgba(var(--ds-primary-rgb),0.28)" strokeWidth={1} />
           <Line
             dataKey="Cumulative"
             type="monotone"
@@ -1131,7 +1146,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
                     className="h-full rounded-pill"
                     style={{
                       width: `${currentBarWidth}%`,
-                      background: currentSurplus >= 0 ? C.brandMid : C.bills,
+                      background: currentSurplus >= 0 ? 'var(--ds-primary)' : 'var(--ds-expense)',
                     }}
                   />
                 </div>
@@ -1147,7 +1162,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
                     className="h-full rounded-pill"
                     style={{
                       width: `${projectedBarWidth}%`,
-                      background: projectedSurplus >= 0 ? C.brand : C.bills,
+                      background: projectedSurplus >= 0 ? 'var(--ds-accent)' : 'var(--ds-expense)',
                     }}
                   />
                 </div>

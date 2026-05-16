@@ -10,8 +10,9 @@ export const C = {
 
   // ── Contrast Accent — Sunny yellow ───────────────────────────────
   accent:          'var(--ds-accent)',
-  accentBg:        'rgba(255,255,153,0.18)',
-  accentFill:      'var(--ds-accent-dark)',
+  accentBg:        'var(--ds-accent-container)',
+  accentFill:      'var(--ds-accent)',
+  accentText:      'var(--ds-accent-text)',
 
   // ── Income — Emerald ──────────────────────────────────────────────
   income:          'var(--ds-income)',
@@ -36,13 +37,13 @@ export const C = {
   inkMuted:        'var(--ds-text-tertiary)',
 
   // ── Hero card overlays (light text on blue hero) ──────────────────
-  heroAccent:      '#FFFF99',
-  heroAccentBg:    'rgba(255,255,153,0.15)',
-  heroAccentSolid: '#FFFF99',
-  heroLabel:       'rgba(255,255,255,0.70)',
-  heroDimmer:      'rgba(255,255,255,0.45)',
-  heroDivider:     'rgba(255,255,255,0.12)',
-  heroStatBg:      'rgba(255,255,255,0.10)',
+  heroAccent:      'var(--c-hero-accent)',
+  heroAccentBg:    'var(--c-hero-accent-bg)',
+  heroAccentSolid: 'var(--c-hero-accent-fill)',
+  heroLabel:       'var(--c-hero-label)',
+  heroDimmer:      'var(--c-hero-dimmer)',
+  heroDivider:     'var(--c-hero-divider)',
+  heroStatBg:      'var(--c-hero-stat-bg)',
 
   // ── Chart colours — vibrant clarity ───────────────────────────────
   chartIncome:     'var(--ds-income)',
@@ -55,22 +56,22 @@ export const C = {
   // Each stop is a different hue so segments are immediately distinguishable.
   // Order: Sapphire · Emerald · Violet · Amber · Cyan · Slate
   portfolio: [
-    '#007FFF',  // 0 — Sapphire  (brand anchor)
-    '#10B981',  // 1 — Emerald
-    '#8B5CF6',  // 2 — Violet
-    '#F59E0B',  // 3 — Amber
-    '#06B6D4',  // 4 — Cyan
-    '#64748B',  // 5 — Slate  (also used for "Other")
+    'var(--ds-primary)',        // 0 — Brand anchor
+    'var(--ds-accent)',         // 1 — Brand accent
+    'var(--ds-primary-light)',  // 2 — Light blue
+    'var(--ds-accent-dark)',    // 3 — High-contrast yellow
+    '#94A3B8',                  // 4 — Slate (neutral)
+    '#64748B',                  // 5 — Slate dark
   ],
 
-  // Dark-mode variants — slightly lighter / more saturated so they pop on dark surfaces
+  // Dark-mode variants — keeping consistent brand ramps
   portfolioDark: [
-    '#4DA6FF',  // 0 — Sapphire light
-    '#34D399',  // 1 — Emerald light
-    '#A78BFA',  // 2 — Violet light
-    '#FCD34D',  // 3 — Amber light
-    '#22D3EE',  // 4 — Cyan light
-    '#94A3B8',  // 5 — Slate light
+    'var(--ds-primary)',
+    'var(--ds-accent)',
+    'rgba(var(--ds-primary-rgb), 0.7)',
+    'var(--ds-accent-dark)',
+    '#94A3B8',
+    '#64748B',
   ],
 
   // ── Logo SVG ──────────────────────────────────────────────────────

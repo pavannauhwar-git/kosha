@@ -151,7 +151,7 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
               width={34}
             />
             <Tooltip content={<DailySpendTooltip />} />
-            <ReferenceLine y={dailyAvg} stroke="rgba(0,127,255,0.35)" strokeDasharray="4 4" label={false} />
+            <ReferenceLine y={dailyAvg} stroke="rgba(var(--ds-primary-rgb), 0.35)" strokeDasharray="4 4" label={false} />
             <Bar dataKey="amount" radius={[3, 3, 0, 0]} maxBarSize={12}>
               {seriesWithFlags.map((entry, index) => (
                 <Cell

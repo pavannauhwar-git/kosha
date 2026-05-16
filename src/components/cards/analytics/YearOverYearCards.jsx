@@ -206,10 +206,10 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
   const trendRows = points.map((row) => ({
     ...row,
     barColor: row.year === currentYear
-      ? '#007FFF'
+      ? 'var(--ds-primary)'
       : row.year === compareYear
-        ? '#F9A825'
-        : 'rgba(0,127,255,0.22)',
+        ? 'var(--ds-accent)'
+        : 'rgba(var(--ds-primary-rgb), 0.22)',
   }))
 
   return (
@@ -269,8 +269,8 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
               width={34}
             />
             <Tooltip content={<MetricTooltip />} />
-            <Bar dataKey="compare" name={String(compareYear)} fill="#F9A825" radius={[6, 6, 0, 0]} maxBarSize={20} />
-            <Bar dataKey="current" name={String(currentYear)} fill="#007FFF" radius={[6, 6, 0, 0]} maxBarSize={20} />
+            <Bar dataKey="compare" name={String(compareYear)} fill="var(--ds-accent)" radius={[6, 6, 0, 0]} maxBarSize={20} />
+            <Bar dataKey="current" name={String(currentYear)} fill="var(--ds-primary)" radius={[6, 6, 0, 0]} maxBarSize={20} />
           </BarChart>
         </ResponsiveContainer>
       </div>
