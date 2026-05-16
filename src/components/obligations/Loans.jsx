@@ -129,7 +129,7 @@ export default function Loans({
     try {
       await deleteLoanMutation(pending.id)
     } catch (e) {
-      optimisticallyInsertLoan(pending.loan)
+      optimisticallyInsertLoan(pending.loan, activeWalletUserId)
       pushToast(e.message || 'Could not delete loan.', { duration: 4200 })
     }
   }, [pushToast])
@@ -147,18 +147,10 @@ export default function Loans({
     const loan = [...given, ...taken, ...settled].find(l => l.id === id)
     if (!loan) return false
 
-    const hasHistory = (loan.amount_settled || 0) > 0 || loan.settled
-    if (hasHistory) {
-      const confirmed = window.confirm(
-        `This loan has ${loan.settled ? 'been settled' : 'payment history'}. Deleting it will also remove all associated payment transactions from your history. Proceed?`
-      )
-      if (!confirmed) return false
-    }
-
     const snapshot = { ...loan }
     setHiddenIds(prev => { const n = new Set(prev); n.add(id); return n })
-    optimisticallyDeleteLoan(id)
-    import('../../hooks/useTransactions').then(m => m.optimisticallyDeleteTransactionsByLoanId(id))
+    optimisticallyDeleteLoan(id, activeWalletUserId)
+    import('../../hooks/useTransactions').then(m => m.optimisticallyDeleteTransactionsByLoanId(id, activeWalletUserId))
 
     const undoDelete = () => {
       const pending = pendingDeleteRef.current
@@ -166,7 +158,7 @@ export default function Loans({
       if (pending.timeoutId) clearTimeout(pending.timeoutId)
       pendingDeleteRef.current = null
       setHiddenIds(prev => { const n = new Set(prev); n.delete(id); return n })
-      optimisticallyInsertLoan(pending.loan)
+      optimisticallyInsertLoan(pending.loan, activeWalletUserId)
       pushToast('Deletion canceled.', { duration: 2200 })
     }
 

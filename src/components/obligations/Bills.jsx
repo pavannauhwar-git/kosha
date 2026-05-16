@@ -161,9 +161,9 @@ export default function Bills({
       // Re-insert into appropriate cache if server delete fails
       const method = pending.bill.paid ? 'paid' : 'pending'
       if (method === 'pending') {
-        import('../../hooks/useLiabilities').then(m => m.optimisticallyInsertPendingLiability(pending.bill))
+        import('../../hooks/useLiabilities').then(m => m.optimisticallyInsertPendingLiability(pending.bill, activeWalletUserId))
       } else {
-        import('../../hooks/useLiabilities').then(m => m.optimisticallyMarkLiabilityPaid(pending.bill, { optimistic: false }))
+        import('../../hooks/useLiabilities').then(m => m.optimisticallyMarkLiabilityPaid(pending.bill, activeWalletUserId, { optimistic: false }))
       }
       pushToast(e.message || 'Could not delete bill.', { duration: 4200 })
     }
@@ -183,17 +183,10 @@ export default function Bills({
     const bill = sourceRows.find((b) => b.id === id)
     if (!bill) return false
 
-    if (bill.paid) {
-      const confirmed = window.confirm(
-        `This bill has been marked as paid. Deleting it will also remove the associated payment transaction from your history. Proceed?`
-      )
-      if (!confirmed) return false
-    }
-
     const snapshot = { ...bill }
     setHiddenBillIds(prev => { const n = new Set(prev); n.add(id); return n })
-    import('../../hooks/useLiabilities').then(m => m.optimisticallyDeleteLiabilityFromCache(id))
-    import('../../hooks/useTransactions').then(m => m.optimisticallyDeleteTransactionsByBillId(id))
+    import('../../hooks/useLiabilities').then(m => m.optimisticallyDeleteLiabilityFromCache(id, activeWalletUserId))
+    import('../../hooks/useTransactions').then(m => m.optimisticallyDeleteTransactionsByBillId(id, activeWalletUserId))
 
     const undoDelete = () => {
       const pending = pendingDeleteRef.current
@@ -203,9 +196,9 @@ export default function Bills({
       setHiddenBillIds(prev => { const n = new Set(prev); n.delete(id); return n })
 
       if (snapshot.paid) {
-        import('../../hooks/useLiabilities').then(m => m.optimisticallyMarkLiabilityPaid(snapshot, { optimistic: false }))
+        import('../../hooks/useLiabilities').then(m => m.optimisticallyMarkLiabilityPaid(snapshot, activeWalletUserId, { optimistic: false }))
       } else {
-        import('../../hooks/useLiabilities').then(m => m.optimisticallyInsertPendingLiability(snapshot))
+        import('../../hooks/useLiabilities').then(m => m.optimisticallyInsertPendingLiability(snapshot, activeWalletUserId))
       }
       pushToast('Deletion canceled.', { duration: 2200 })
     }

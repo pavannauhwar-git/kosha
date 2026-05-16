@@ -887,7 +887,7 @@ export default function Transactions() {
       await removeTransactionMutation(pendingDelete.id)
     } catch (e) {
       if (pendingDelete.txn) {
-        optimisticallyUpsertTransactionInCache(pendingDelete.txn)
+        optimisticallyUpsertTransactionInCache(pendingDelete.txn, activeWalletUserId)
       }
       pushToast(e.message || 'Could not delete transaction.', { duration: 4200 })
     }
@@ -929,7 +929,7 @@ export default function Transactions() {
     }
 
     const snapshot = { ...txn }
-    optimisticallyDeleteTransactionFromCache(id)
+    optimisticallyDeleteTransactionFromCache(id, activeWalletUserId)
 
     const undoDelete = () => {
       const pending = pendingDeleteRef.current
@@ -938,7 +938,7 @@ export default function Transactions() {
         clearTimeout(pending.timeoutId)
       }
       pendingDeleteRef.current = null
-      optimisticallyUpsertTransactionInCache(pending.txn)
+      optimisticallyUpsertTransactionInCache(pending.txn, activeWalletUserId)
       pushToast('Deletion canceled.', { duration: 2200 })
     }
 

@@ -47,6 +47,7 @@ export const WALLET_INVALIDATION_LIST = [
   'transactionsRecent',
   'transactionsDigest',
   'transactionSignalAggregates',
+  'transactionYearBounds',
   'todayExpenses',
   'dailyExpenseTotals',
   'monthExpenseDailyTotals',

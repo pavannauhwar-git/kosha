@@ -95,7 +95,7 @@ const REALTIME_INVALIDATION_POLICIES = [
   { key: 'splitwise', table: 'split_groups', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_group_access', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_group_members', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_group_invites', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_group_invites', filterColumn: 'created_by', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_expenses', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_expense_splits', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_settlements', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
@@ -375,7 +375,7 @@ function useRouteIntentPrefetch() {
           staleTime: 30 * 1000,
         }),
         queryClient.prefetchQuery({
-          queryKey: ['reconciliationReviews'],
+          queryKey: ['reconciliationReviews', activeUserId],
           queryFn: async () => {
             const { data, error } = await supabase
               .from('reconciliation_reviews')

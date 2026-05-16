@@ -19,6 +19,7 @@ export default function useWindowedList({
   const containerRef = useRef(null)
   const sizeByIndexRef = useRef(new Map())
   const rafRef = useRef(0)
+  const revisionRafRef = useRef(0)
   const [revision, setRevision] = useState(0)
   const [range, setRange] = useState(() => {
     const initialEnd = enabled ? Math.min(count, initialCount) : count
@@ -101,6 +102,10 @@ export default function useWindowedList({
         cancelAnimationFrame(rafRef.current)
         rafRef.current = 0
       }
+      if (revisionRafRef.current) {
+        cancelAnimationFrame(revisionRafRef.current)
+        revisionRafRef.current = 0
+      }
       window.removeEventListener('scroll', scheduleComputeRange)
       window.removeEventListener('resize', scheduleComputeRange)
     }
@@ -108,6 +113,10 @@ export default function useWindowedList({
 
   useEffect(() => {
     sizeByIndexRef.current.clear()
+    if (revisionRafRef.current) {
+      cancelAnimationFrame(revisionRafRef.current)
+      revisionRafRef.current = 0
+    }
     setRevision((value) => value + 1)
     setRange({
       start: 0,
@@ -130,7 +139,13 @@ export default function useWindowedList({
     if (previous && Math.abs(previous - height) < 1) return
 
     sizeByIndexRef.current.set(index, height)
-    setRevision((value) => value + 1)
+    
+    if (!revisionRafRef.current) {
+      revisionRafRef.current = requestAnimationFrame(() => {
+        revisionRafRef.current = 0
+        setRevision((value) => value + 1)
+      })
+    }
   }, [enabled])
 
   const totalSize = useMemo(

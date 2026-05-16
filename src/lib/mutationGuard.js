@@ -25,9 +25,11 @@
  * firing 2+ seconds after a local mutation is NOT suppressed.
  */
 
+import { getActiveWalletUserId } from './walletStore'
+
 const SUPPRESS_TTL_MS = 2000
 
-// Map of tableKey → expiry timestamp
+// Map of scopedKey → expiry timestamp
 const _suppressed = new Map()
 
 /**
@@ -37,7 +39,8 @@ const _suppressed = new Map()
  * @param {'transactions' | 'liabilities' | 'loans' | 'splitwise'} tableKey
  */
 export function suppress(tableKey) {
-  _suppressed.set(tableKey, Date.now() + SUPPRESS_TTL_MS)
+  const userId = getActiveWalletUserId() || 'anon'
+  _suppressed.set(`${tableKey}:${userId}`, Date.now() + SUPPRESS_TTL_MS)
 }
 
 /**
@@ -47,9 +50,11 @@ export function suppress(tableKey) {
  * @param {'transactions' | 'liabilities' | 'loans' | 'splitwise'} tableKey
  */
 export function isSuppressed(tableKey) {
-  const expiry = _suppressed.get(tableKey)
+  const userId = getActiveWalletUserId() || 'anon'
+  const scopedKey = `${tableKey}:${userId}`
+  const expiry = _suppressed.get(scopedKey)
   if (!expiry) return false
   if (Date.now() < expiry) return true
-  _suppressed.delete(tableKey)   // clean up expired entry
+  _suppressed.delete(scopedKey)   // clean up expired entry
   return false
 }

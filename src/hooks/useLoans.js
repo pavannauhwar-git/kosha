@@ -65,19 +65,22 @@ export function useLoans({ enabled = true } = {}) {
         queryKey: LOAN_ACTIVE_GIVEN_KEY(targetUserId),
         queryFn: () => fetchLoans('given', false, targetUserId),
         enabled: enabled && !!targetUserId,
-        placeholderData: (prev) => prev,
+        placeholderData: (prev, query) =>
+          query?.queryKey?.[3] === targetUserId ? prev : undefined,
       },
       {
         queryKey: LOAN_ACTIVE_TAKEN_KEY(targetUserId),
         queryFn: () => fetchLoans('taken', false, targetUserId),
         enabled: enabled && !!targetUserId,
-        placeholderData: (prev) => prev,
+        placeholderData: (prev, query) =>
+          query?.queryKey?.[3] === targetUserId ? prev : undefined,
       },
       {
         queryKey: LOAN_SETTLED_KEY(targetUserId),
         queryFn: () => fetchLoans(null, true, targetUserId),
         enabled: enabled && !!targetUserId,
-        placeholderData: (prev) => prev,
+        placeholderData: (prev, query) =>
+          query?.queryKey?.[2] === targetUserId ? prev : undefined,
       },
     ],
   })
@@ -318,7 +321,15 @@ function refreshLoanAndTransactionCachesInBackground({ invalidateLoanFn, invalid
 // ── Mutation wrappers with optimistic updates ─────────────────────────────
 
 export async function addLoanMutation(payload) {
+  const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
+
+  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] addLoanMutation blocked: Shared wallets are view-only.')
+    return null
+  }
+
   const snapshot = snapshotLoanCaches(targetUserId)
   suppress('loans')
   suppress('transactions')
@@ -375,32 +386,28 @@ export async function addLoanMutation(payload) {
     // Replace optimistic disbursement txn with the real transaction_id from the RPC
     const realTxnId = created._disbursement_txn_id
     if (realTxnId) {
-      import('./useTransactions').then(m => {
-        if (m.optimisticallyDeleteTransactionFromCache) {
-          m.optimisticallyDeleteTransactionFromCache(optimisticTxnId, targetUserId)
-        }
-        m.optimisticallyUpsertTransactionInCache({
-          id: realTxnId,
-          date: payload.loan_date || today,
-          created_at: nowIso,
-          type: payload.direction === 'given' ? 'expense' : 'income',
-          linked_loan_id: created.id,
-          amount: payload.amount,
-          description: payload.direction === 'given'
-            ? `Loan given to ${payload.counterparty}`
-            : `Loan taken from ${payload.counterparty}`,
-          category: 'loans',
-          investment_vehicle: null,
-          is_repayment: false,
-          payment_mode: 'other',
-          notes: payload.note || null,
-          is_recurring: false,
-          recurrence: null,
-          next_run_date: null,
-          source_transaction_id: null,
-          is_auto_generated: false,
-        }, targetUserId)
-      })
+      optimisticallyDeleteTransactionsByLoanId(optimisticId, targetUserId)
+      optimisticallyUpsertTransactionInCache({
+        id: realTxnId,
+        date: payload.loan_date || today,
+        created_at: nowIso,
+        type: payload.direction === 'given' ? 'expense' : 'income',
+        linked_loan_id: created.id,
+        amount: payload.amount,
+        description: payload.direction === 'given'
+          ? `Loan given to ${payload.counterparty}`
+          : `Loan taken from ${payload.counterparty}`,
+        category: 'loans',
+        investment_vehicle: null,
+        is_repayment: false,
+        payment_mode: 'other',
+        notes: payload.note || null,
+        is_recurring: false,
+        recurrence: null,
+        next_run_date: null,
+        source_transaction_id: null,
+        is_auto_generated: false,
+      }, targetUserId)
     }
 
     optimisticallyInsertFinancialEvent({
