@@ -783,8 +783,6 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     if (!dbId) return
 
     const label = customCategory?.label || 'this category'
-    const confirmed = window.confirm(`Delete "${label}"? Existing transactions will keep their saved category id, but this category will stop appearing in pickers.`)
-    if (!confirmed) return
 
     try {
       await archiveUserCategory(dbId)

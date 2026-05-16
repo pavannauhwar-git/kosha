@@ -206,6 +206,7 @@ export async function invalidateCache() {
     queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
+    queryClient.invalidateQueries({ queryKey: ['monthly_net_changes'], refetchType: 'active' }),
   ])
 }
 
@@ -1179,7 +1180,13 @@ function refreshTransactionCachesInBackground(invalidateFn, scope) {
 }
 
 export async function saveTransactionMutation({ id, payload, __testOverrides = null }) {
+  const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
+
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] saveTransactionMutation blocked: Shared wallets are view-only.')
+    return null
+  }
 
   const snapshot = snapshotCacheFamilies([
     ['transactions'],
@@ -1237,7 +1244,14 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
 }
 
 export async function removeTransactionMutation(id, __testOverrides = null) {
+  const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
+
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] removeTransactionMutation blocked: Shared wallets are view-only.')
+    return false
+  }
+
   const cachedTxn = getTransactionFromCacheById(id)
   const snapshot = snapshotCacheFamilies([
     ['transactions'],

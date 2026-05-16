@@ -12,6 +12,7 @@ import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
+import { useSafeTimeout } from '../hooks/useSafeTimeout'
 import CalendarHeatmap from '../components/cards/analytics/CalendarHeatmap'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
 
@@ -50,12 +51,12 @@ export default function Analytics() {
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
+  const { setSafeTimeout } = useSafeTimeout()
   const [heavyReady, setHeavyReady] = useState(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => setHeavyReady(true), 260)
-    return () => clearTimeout(timer)
-  }, [])
+    setSafeTimeout(() => setHeavyReady(true), 260)
+  }, [setSafeTimeout])
 
   const { data, loading } = useYearSummary(year)
   const { data: yearDailyTotals, loading: yearDailyLoading } = useYearDailyExpenseTotals(year)

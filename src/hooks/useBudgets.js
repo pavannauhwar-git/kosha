@@ -45,7 +45,13 @@ export function budgetMap(budgets) {
 }
 
 export async function upsertBudget(category, monthlyLimit) {
+  const authUserId = getAuthUserId()
   const userId = getActiveWalletUserId()
+  
+  if (userId !== authUserId) {
+    throw new Error('Shared wallets are view-only. You cannot modify budgets here.')
+  }
+
   const key = budgetQueryKey(userId)
 
   // Optimistic update
@@ -80,7 +86,13 @@ export async function upsertBudget(category, monthlyLimit) {
 }
 
 export async function deleteBudget(id) {
+  const authUserId = getAuthUserId()
   const userId = getActiveWalletUserId()
+
+  if (userId !== authUserId) {
+    throw new Error('Shared wallets are view-only. You cannot delete budgets here.')
+  }
+
   const key = budgetQueryKey(userId)
 
   // Optimistic update

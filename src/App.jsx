@@ -7,7 +7,7 @@ import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
 import { supabase } from './lib/supabase'
 import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS, parseMonthSummaryRows } from './hooks/useTransactions'
-import { LIABILITY_INVALIDATION_KEYS } from './hooks/useLiabilities'
+import { LIABILITY_INVALIDATION_KEYS, MONTH_LIABILITY_COLUMNS } from './hooks/useLiabilities'
 import { LOAN_INVALIDATION_KEYS } from './hooks/useLoans'
 import { SPLITWISE_INVALIDATION_KEYS } from './hooks/useSplitwise'
 import AuthGuard, { RouteSkeleton } from './components/navigation/AuthGuard'
@@ -92,13 +92,13 @@ const REALTIME_INVALIDATION_POLICIES = [
   { key: 'liabilities', table: 'liabilities', filterColumn: 'user_id', queryKeys: LIABILITY_INVALIDATION_KEYS },
   { key: 'loans', table: 'loans', filterColumn: 'user_id', queryKeys: LOAN_INVALIDATION_KEYS },
   { key: 'events', table: 'financial_events', filterColumn: 'user_id', queryKeys: [['financialEvents']] },
-  { key: 'splitwise', table: 'split_groups', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_group_access', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_group_members', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_group_invites', filterColumn: 'created_by', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_expenses', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_expense_splits', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_settlements', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_groups', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_group_access', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_group_members', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_group_invites', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_expenses', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_expense_splits', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_settlements', queryKeys: SPLITWISE_INVALIDATION_KEYS },
 ]
 
 const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/splitwise/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
@@ -108,6 +108,13 @@ function useRouteIntentPrefetch() {
   const { user } = useAuth()
   const chunkPrefetched = useRef(new Set())
   const dataPrefetched = useRef(new Set())
+  const activeUserId = getActiveWalletUserId()
+
+  // Reset prefetch tracking on session change to ensure fresh data for new user
+  useEffect(() => {
+    chunkPrefetched.current.clear()
+    dataPrefetched.current.clear()
+  }, [activeUserId])
 
   return useCallback((path) => {
     if (!path) return
@@ -118,7 +125,6 @@ function useRouteIntentPrefetch() {
       if (preload) void preload().catch(() => { })
     }
 
-    const activeUserId = getActiveWalletUserId()
     if (!activeUserId) return
     const cacheKey = `${path}-${activeUserId}`
     if (dataPrefetched.current.has(cacheKey)) return
@@ -202,7 +208,7 @@ function useRouteIntentPrefetch() {
           queryFn: async () => {
             const { data, error } = await supabase
               .from('liabilities')
-              .select('id, amount, due_date, paid')
+              .select(MONTH_LIABILITY_COLUMNS)
               .eq('user_id', activeUserId)
               .gte('due_date', monthStart)
               .lte('due_date', monthEnd)
@@ -407,7 +413,7 @@ function useRouteIntentPrefetch() {
         }),
       ]).catch(() => { })
     }
-  }, [user?.id])
+  }, [activeUserId])
 }
 
 // Desktop sidebar removed — mobile-first, bottom tab bar only

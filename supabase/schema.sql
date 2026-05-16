@@ -494,6 +494,7 @@ create table if not exists public.bug_reports (
 create index if not exists idx_bug_reports_created_at on public.bug_reports(created_at desc);
 create index if not exists idx_bug_reports_user on public.bug_reports(user_id);
 create index if not exists idx_bug_reports_status on public.bug_reports(status);
+create index if not exists idx_bug_reports_duplicate on public.bug_reports(duplicate_of);
 
 alter table public.bug_reports enable row level security;
 
@@ -1681,6 +1682,7 @@ create index if not exists idx_split_expenses_user on split_expenses(user_id);
 create unique index if not exists idx_split_expense_splits_unique_member
   on split_expense_splits(expense_id, member_id);
 create index if not exists idx_split_expense_splits_user on split_expense_splits(user_id);
+create index if not exists idx_split_expense_splits_expense on split_expense_splits(expense_id);
 create index if not exists idx_split_settlements_group_date on split_settlements(group_id, settled_at desc);
 create index if not exists idx_split_settlements_user on split_settlements(user_id);
 create index if not exists idx_split_group_access_user on split_group_access(user_id);

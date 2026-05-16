@@ -643,9 +643,6 @@ export default function Splitwise() {
   async function handleDeleteGroup() {
     if (!activeGroupId || !isGroupAdmin || saving) return
 
-    const ok = window.confirm('Delete this group permanently? This removes members, expenses, and settlements.')
-    if (!ok) return
-
     setSaving('group-delete')
     try {
       await deleteSplitGroupMutation(activeGroupId)
@@ -684,8 +681,6 @@ export default function Splitwise() {
 
   async function handleDeleteMember(memberId) {
     if (!isGroupAdmin || activeGroup?.is_archived || saving) return
-    const ok = window.confirm('Delete this member? This cannot be undone.')
-    if (!ok) return
 
     setSaving(`delete-${memberId}`)
     try {
@@ -700,8 +695,6 @@ export default function Splitwise() {
 
   async function handleLeaveGroup() {
     if (!activeGroupId || saving) return
-    const ok = window.confirm('Are you sure you want to leave this group?')
-    if (!ok) return
 
     setSaving('leave-group')
     try {
@@ -996,11 +989,20 @@ export default function Splitwise() {
 
   const transactions = useMemo(() => {
     const list = [
-      ...(expenses || []).map(e => ({ ...e, type: 'expense', sortDate: e.expense_date || e.created_at })),
-      ...(settlements || []).map(s => ({ ...s, type: 'settlement', sortDate: s.settled_at || s.created_at }))
+      ...(expenses || []).map(e => ({ ...e, type: 'expense', sortValue: new Date(e.expense_date || e.created_at).getTime() })),
+      ...(settlements || []).map(s => ({ ...s, type: 'settlement', sortValue: new Date(s.settled_at || s.created_at).getTime() }))
     ]
-    return list.sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate))
+    return list.sort((a, b) => b.sortValue - a.sortValue)
   }, [expenses, settlements])
+
+  const memberSpendingStats = useMemo(() => {
+    if (!activeMembers.length) return []
+    return activeMembers.map(member => {
+      const spent = (expenses || []).filter(e => e.paid_by_member_id === member.id).reduce((sum, e) => sum + Number(e.amount), 0)
+      const percent = totalExpenses > 0 ? (spent / totalExpenses) * 100 : 0
+      return { member, spent, percent }
+    })
+  }, [activeMembers, expenses, totalExpenses])
 
   const {
     containerRef: txnsListRef,
@@ -1376,25 +1378,24 @@ export default function Splitwise() {
 
           <div className="card p-3.5">
             <p className="section-label mb-2">Who Paid For What</p>
-                {activeMembers.length === 0 ? (
-                  <p className="text-[12px] text-ink-3">No members to show.</p>
-                ) : (
-                  <div className="space-y-4 pt-1">
-                    {activeMembers.map(member => {
-                  const spent = (expenses || []).filter(e => e.paid_by_member_id === member.id).reduce((sum, e) => sum + Number(e.amount), 0)
-                  const percent = totalExpenses > 0 ? (spent / totalExpenses) * 100 : 0
-                  return (
-                    <div key={member.id} className="w-full">
-                      <div className="flex justify-between items-end mb-1.5">
-                        <span className="text-[12px] font-semibold text-ink truncate mr-2">{resolveMemberName(member)}</span>
-                        <span className="text-[12px] text-ink-3 shrink-0 tabular-nums">{fmt(spent)}</span>
-                      </div>
-                      <div className="w-full bg-kosha-surface-2 rounded-full h-1.5 overflow-hidden">
-                        <div className="bg-brand h-full rounded-full transition-[width] duration-400 ease-[cubic-bezier(0.05,0.7,0.1,1)]" style={{ width: `${percent}%` }}></div>
-                      </div>
+            {memberSpendingStats.length === 0 ? (
+              <p className="text-[12px] text-ink-3">No members to show.</p>
+            ) : (
+              <div className="space-y-4 pt-1">
+                {memberSpendingStats.map(({ member, spent, percent }) => (
+                  <div key={member.id} className="w-full">
+                    <div className="flex justify-between items-end mb-1.5">
+                      <span className="text-[12px] font-semibold text-ink truncate mr-2">{resolveMemberName(member)}</span>
+                      <span className="text-[12px] text-ink-3 shrink-0 tabular-nums">{fmt(spent)}</span>
                     </div>
-                  )
-                })}
+                    <div className="w-full bg-kosha-surface-2 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-brand h-full rounded-full transition-[width] duration-400 ease-[cubic-bezier(0.05,0.7,0.1,1)]"
+                        style={{ width: `${percent}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -32,10 +32,14 @@ export default function useWindowedList({
     return estimateSize
   }, [estimateSize])
 
-  const getOffsetForIndex = useCallback((index) => {
-    if (index <= 0) return 0
-    return sumRange(getSize, 0, index)
-  }, [getSize])
+  const offsets = useMemo(() => {
+    const list = new Array(count + 1)
+    list[0] = 0
+    for (let i = 0; i < count; i++) {
+      list[i + 1] = list[i] + getSize(i)
+    }
+    return list
+  }, [count, getSize, revision])
 
   const computeRange = useCallback(() => {
     if (!enabled || count <= 0) {
@@ -56,23 +60,34 @@ export default function useWindowedList({
     const viewportTop = Math.max(0, window.scrollY - containerTop)
     const viewportBottom = viewportTop + window.innerHeight
 
-    let runningOffset = 0
+    // Binary search for startIndex
     let startIndex = 0
-
-    while (startIndex < count) {
-      const nextOffset = runningOffset + getSize(startIndex)
-      if (nextOffset >= viewportTop) break
-      runningOffset = nextOffset
-      startIndex += 1
+    let low = 0
+    let high = count
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2)
+      if (offsets[mid] <= viewportTop) {
+        startIndex = mid
+        low = mid + 1
+      } else {
+        high = mid - 1
+      }
     }
 
+    // Binary search for endIndex
     let endIndex = startIndex
-    let endOffset = runningOffset
-
-    while (endIndex < count && endOffset <= viewportBottom) {
-      endOffset += getSize(endIndex)
-      endIndex += 1
+    low = startIndex
+    high = count
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2)
+      if (offsets[mid] <= viewportBottom) {
+        endIndex = mid
+        low = mid + 1
+      } else {
+        high = mid - 1
+      }
     }
+    endIndex = Math.min(count, endIndex + 1)
 
     const nextStart = Math.max(0, startIndex - overscan)
     const nextEnd = Math.min(count, Math.max(nextStart, endIndex + overscan))
@@ -81,7 +96,7 @@ export default function useWindowedList({
       if (prev.start === nextStart && prev.end === nextEnd) return prev
       return { start: nextStart, end: nextEnd }
     })
-  }, [count, enabled, getSize, initialCount, overscan])
+  }, [count, enabled, initialCount, overscan, offsets])
 
   const scheduleComputeRange = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
@@ -148,20 +163,9 @@ export default function useWindowedList({
     }
   }, [enabled])
 
-  const totalSize = useMemo(
-    () => sumRange(getSize, 0, count),
-    [count, getSize, revision]
-  )
-
-  const topPadding = useMemo(
-    () => sumRange(getSize, 0, range.start),
-    [getSize, range.start, revision]
-  )
-
-  const renderedHeight = useMemo(
-    () => sumRange(getSize, range.start, range.end),
-    [getSize, range.start, range.end, revision]
-  )
+  const totalSize = offsets[count]
+  const topPadding = offsets[range.start]
+  const renderedHeight = offsets[range.end] - offsets[range.start]
 
   const bottomPadding = useMemo(
     () => Math.max(0, totalSize - topPadding - renderedHeight),
@@ -177,7 +181,7 @@ export default function useWindowedList({
     const { behavior = 'smooth', block = 'center' } = options
 
     const containerTop = containerEl.getBoundingClientRect().top + window.scrollY
-    const offset = getOffsetForIndex(index)
+    const offset = offsets[index]
     const itemSize = getSize(index)
 
     let targetTop = containerTop + offset

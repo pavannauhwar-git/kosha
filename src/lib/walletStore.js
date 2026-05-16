@@ -67,6 +67,8 @@ export const WALLET_INVALIDATION_LIST = [
   'categoryBudgets',
   'reconciliationReviews',
   'financialEvents',
+  'monthly_net_changes',
+  'splitwise',
 ]
 
 export function setActiveWalletUserId(userId) {

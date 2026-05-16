@@ -156,7 +156,7 @@ async function fetchSettlements(groupId) {
 let invalidationTimeout = null
 export async function invalidateSplitwiseCache() {
   if (invalidationTimeout) return
-  
+
   invalidationTimeout = setTimeout(async () => {
     invalidationTimeout = null
     suppress('splitwise')
@@ -170,7 +170,7 @@ export async function invalidateSplitwiseCache() {
       evictSwCacheEntries('/split_settlements'),
     ])
     await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
-    import('./useTransactions').then(m => m.invalidateCache()).catch(() => {})
+    import('./useTransactions').then(m => m.invalidateCache()).catch(() => { })
   }, 300)
 }
 
@@ -276,6 +276,9 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
 }
 
 export async function createSplitGroupMutation({ name, selfDisplayName = 'You' }) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot create Splitwise groups here.')
+  }
   const userId = await resolveMutationUserId()
   const cleanName = String(name || '').trim()
   const cleanSelfName = String(selfDisplayName || '').trim() || 'You'
@@ -322,6 +325,9 @@ export async function createSplitGroupMutation({ name, selfDisplayName = 'You' }
 }
 
 export async function addSplitMemberMutation({ groupId, displayName, linkedUserId = null, isSelf = false }) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot add members here.')
+  }
   const userId = getAuthUserId()
   const cleanName = String(displayName || '').trim()
   if (!groupId) throw new Error('Group is required.')
@@ -357,6 +363,9 @@ export async function addSplitMemberMutation({ groupId, displayName, linkedUserI
 }
 
 export async function deleteSplitMemberMutation(memberId) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot remove members here.')
+  }
   if (!memberId) throw new Error('Member is required.')
 
   const { error } = await supabase
@@ -370,6 +379,9 @@ export async function deleteSplitMemberMutation(memberId) {
 }
 
 export async function deleteSplitGroupMutation(groupId) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot delete groups here.')
+  }
   const userId = getAuthUserId()
   if (!groupId) throw new Error('Group is required.')
 
@@ -396,6 +408,9 @@ export async function deleteSplitGroupMutation(groupId) {
 }
 
 export async function updateSplitGroupBannerMutation(groupId, bannerId) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot change group settings here.')
+  }
   if (!groupId) throw new Error('Group is required.')
   if (!bannerId) throw new Error('Banner selection is required.')
 
@@ -410,6 +425,9 @@ export async function updateSplitGroupBannerMutation(groupId, bannerId) {
 }
 
 export async function updateSplitGroupMutation({ groupId, name }) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot modify groups here.')
+  }
   const userId = getAuthUserId()
   if (!groupId) throw new Error('Group is required.')
   const cleanName = String(name || '').trim()
@@ -543,6 +561,9 @@ export async function addSplitExpenseMutation({
   splits,
   transactionCategory,
 }) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot add Splitwise expenses here.')
+  }
   const userId = getAuthUserId()
   const safeAmount = round2(amount)
   if (!groupId) throw new Error('Group is required.')
@@ -593,6 +614,9 @@ export async function addSplitExpenseMutation({
 }
 
 export async function deleteSplitExpenseMutation(expenseId) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot delete Splitwise expenses here.')
+  }
   if (!expenseId) throw new Error('Expense is required.')
 
   const { data: expense } = await supabase
@@ -618,6 +642,9 @@ export async function deleteSplitExpenseMutation(expenseId) {
 }
 
 export async function recordSplitSettlementMutation({ groupId, payerMemberId, payeeMemberId, amount, settledAt, note }) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot record settlements here.')
+  }
   const userId = getAuthUserId()
   const safeAmount = round2(amount)
 
@@ -657,6 +684,9 @@ export async function recordSplitSettlementMutation({ groupId, payerMemberId, pa
 }
 
 export async function deleteSplitSettlementMutation(settlementId) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot delete settlements here.')
+  }
   if (!settlementId) throw new Error('Settlement is required.')
 
   const { data: settlement } = await supabase
@@ -683,6 +713,9 @@ export async function deleteSplitSettlementMutation(settlementId) {
 }
 
 export async function leaveSplitGroupMutation(groupId) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot leave groups here.')
+  }
   if (!groupId) throw new Error('Group ID is required.')
 
   const { error } = await supabase.rpc('split_leave_group', { p_group_id: groupId })
@@ -693,6 +726,9 @@ export async function leaveSplitGroupMutation(groupId) {
 }
 
 export async function toggleArchiveSplitGroupMutation(groupId, isArchived) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot archive groups here.')
+  }
   if (!groupId) throw new Error('Group ID is required.')
 
   const { error } = await supabase
@@ -703,49 +739,4 @@ export async function toggleArchiveSplitGroupMutation(groupId, isArchived) {
   if (error) throw error
   await invalidateSplitwiseCache()
   return true
-}
-
-export function useSplitwiseRealtime() {
-  useEffect(() => {
-    const isReady = typeof document !== 'undefined'
-    if (!isReady) return
-
-    const channel = supabase
-      .channel('splitwise-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'split_groups' },
-        () => { void invalidateSplitwiseCache() }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'split_group_members' },
-        () => { void invalidateSplitwiseCache() }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'split_group_access' },
-        () => { void invalidateSplitwiseCache() }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'split_expenses' },
-        () => { void invalidateSplitwiseCache() }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'split_expense_splits' },
-        () => { void invalidateSplitwiseCache() }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'split_settlements' },
-        () => { void invalidateSplitwiseCache() }
-      )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
-  }, [])
 }

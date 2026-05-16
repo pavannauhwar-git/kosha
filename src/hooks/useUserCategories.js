@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
-import { useActiveWallet } from '../lib/walletStore'
+import { useActiveWallet, getActiveWalletUserId } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
 import { registerCustomCategories } from '../lib/categories'
 
@@ -131,7 +131,13 @@ export const USER_CATEGORIES_QUERY_KEY = categoryQueryKey // factory: USER_CATEG
  * Returns the category object (with .id = slug).
  */
 export async function createUserCategory({ label, type, icon = 'Tag' }) {
+  const authUserId = getAuthUserId()
   const userId = getActiveWalletUserId()
+
+  if (userId !== authUserId) {
+    throw new Error('Shared wallets are view-only. You cannot create categories here.')
+  }
+
   const trimmed = label.trim()
 
   if (trimmed.length < 2 || trimmed.length > 30) {
@@ -221,7 +227,13 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
  * Slug is intentionally preserved so existing transactions keep their category id.
  */
 export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
+  const authUserId = getAuthUserId()
   const userId = getActiveWalletUserId()
+
+  if (userId !== authUserId) {
+    throw new Error('Shared wallets are view-only. You cannot edit categories here.')
+  }
+
   const trimmed = label.trim()
 
   if (!dbId) {
@@ -283,7 +295,13 @@ export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
  * category value; the category just stops appearing in pickers.
  */
 export async function archiveUserCategory(dbId) {
+  const authUserId = getAuthUserId()
   const userId = getActiveWalletUserId()
+
+  if (userId !== authUserId) {
+    throw new Error('Shared wallets are view-only. You cannot archive categories here.')
+  }
+
   const prev = queryClient.getQueryData(categoryQueryKey(userId)) || []
   const next = prev.filter(c => c.dbId !== dbId)
   queryClient.setQueryData(categoryQueryKey(userId), next)

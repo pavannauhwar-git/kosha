@@ -261,7 +261,7 @@ export default function Dashboard() {
 
     const [categoryId, amount] = categoryRows[0]
     const sharePct = Math.round((amount / spent) * 100)
-    const budgetLimit = Number(bMap?.[categoryId] || 0)
+    const budgetLimit = Number(bMap?.get(categoryId)?.monthly_limit || 0)
     const budgetPct = budgetLimit > 0 ? Math.round((amount / budgetLimit) * 100) : null
     const band = scoreRiskBand(sharePct, { high: 36, watch: 24 })
 

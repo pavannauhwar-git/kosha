@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
-import { useActiveWallet } from '../lib/walletStore'
+import { useActiveWallet, getActiveWalletUserId } from '../lib/walletStore'
 
 const REVIEW_COLUMNS = 'transaction_id, status, statement_line, updated_at'
 
@@ -76,7 +76,13 @@ export function useReconciliationReviews(options = {}) {
 }
 
 export async function upsertReconciliationReview({ transactionId, status = 'reviewed', statementLine = null }) {
+  const authUserId = getAuthUserId()
   const userId = getActiveWalletUserId()
+
+  if (userId !== authUserId) {
+    throw new Error('Shared wallets are view-only. You cannot update reconciliation state here.')
+  }
+
   const payload = {
     user_id: userId,
     transaction_id: transactionId,
@@ -100,7 +106,12 @@ export async function upsertReconciliationReview({ transactionId, status = 'revi
 }
 
 export async function clearLearnedReconciliationAliases() {
+  const authUserId = getAuthUserId()
   const userId = getActiveWalletUserId()
+
+  if (userId !== authUserId) {
+    throw new Error('Shared wallets are view-only. You cannot reset aliases here.')
+  }
 
   const { error } = await supabase
     .from('reconciliation_reviews')
@@ -118,7 +129,13 @@ export async function clearLearnedReconciliationAliases() {
 }
 
 export async function reportReconciliationFalsePositive({ transactionId, statementLine = null }) {
+  const authUserId = getAuthUserId()
   const userId = getActiveWalletUserId()
+
+  if (userId !== authUserId) {
+    throw new Error('Shared wallets are view-only. You cannot report false positives here.')
+  }
+
   const payload = {
     user_id: userId,
     transaction_id: transactionId,
