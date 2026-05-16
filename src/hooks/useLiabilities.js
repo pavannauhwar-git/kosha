@@ -21,7 +21,7 @@ const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending',
 const LIABILITY_PAID_QUERY_KEY    = (targetUserId) => ['liabilities', 'paid', targetUserId]
 const LIABILITY_COLUMNS =
   'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode'
-const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id, payment_mode'
+export const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id, payment_mode'
 
 function runInBackground(promise, scope) {
   void promise.catch((error) => {
