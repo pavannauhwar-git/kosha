@@ -313,6 +313,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         return 0
       }
     }),
+    placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
   })
 
   const total = withCount

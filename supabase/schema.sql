@@ -3515,3 +3515,63 @@ grant execute on function public.split_group_member_profiles(uuid) to authentica
 grant execute on function public.split_preview_group_invite(text) to anon, authenticated;
 grant execute on function public.split_consume_group_invite(text) to authenticated;
 grant execute on function public.split_create_group_invite(uuid, text) to authenticated;
+
+-- ======================================================================
+-- REQUIRED PERMISSIONS FOR TABLES (SUPABASE DATA API MAY 30 2026 UPDATE)
+-- ======================================================================
+grant select on public.profiles to anon;
+grant select, insert, update, delete on public.profiles to authenticated, service_role;
+
+grant select on public.transactions to anon;
+grant select, insert, update, delete on public.transactions to authenticated, service_role;
+
+grant select on public.liabilities to anon;
+grant select, insert, update, delete on public.liabilities to authenticated, service_role;
+
+grant select on public.monthly_net_changes to anon;
+grant select, insert, update, delete on public.monthly_net_changes to authenticated, service_role;
+
+grant select on public.invites to anon;
+grant select, insert, update, delete on public.invites to authenticated, service_role;
+
+grant select on public.bug_reports to anon;
+grant select, insert, update, delete on public.bug_reports to authenticated, service_role;
+
+grant select on public.financial_events to anon;
+grant select, insert, update, delete on public.financial_events to authenticated, service_role;
+
+grant select on public.budgets to anon;
+grant select, insert, update, delete on public.budgets to authenticated, service_role;
+
+grant select on public.reconciliation_reviews to anon;
+grant select, insert, update, delete on public.reconciliation_reviews to authenticated, service_role;
+
+grant select on public.category_budgets to anon;
+grant select, insert, update, delete on public.category_budgets to authenticated, service_role;
+
+grant select on public.user_categories to anon;
+grant select, insert, update, delete on public.user_categories to authenticated, service_role;
+
+grant select on public.split_groups to anon;
+grant select, insert, update, delete on public.split_groups to authenticated, service_role;
+
+grant select on public.split_group_members to anon;
+grant select, insert, update, delete on public.split_group_members to authenticated, service_role;
+
+grant select on public.split_expenses to anon;
+grant select, insert, update, delete on public.split_expenses to authenticated, service_role;
+
+grant select on public.split_expense_splits to anon;
+grant select, insert, update, delete on public.split_expense_splits to authenticated, service_role;
+
+grant select on public.split_settlements to anon;
+grant select, insert, update, delete on public.split_settlements to authenticated, service_role;
+
+grant select on public.split_group_access to anon;
+grant select, insert, update, delete on public.split_group_access to authenticated, service_role;
+
+grant select on public.split_group_invites to anon;
+grant select, insert, update, delete on public.split_group_invites to authenticated, service_role;
+
+grant select on public.loans to anon;
+grant select, insert, update, delete on public.loans to authenticated, service_role;

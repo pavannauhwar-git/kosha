@@ -88,17 +88,17 @@ const NAV = [
 ]
 
 const REALTIME_INVALIDATION_POLICIES = [
-  { key: 'transactions', table: 'transactions', queryKeys: TRANSACTION_INVALIDATION_KEYS },
-  { key: 'liabilities', table: 'liabilities', queryKeys: LIABILITY_INVALIDATION_KEYS },
-  { key: 'loans', table: 'loans', queryKeys: LOAN_INVALIDATION_KEYS },
-  { key: 'events', table: 'financial_events', queryKeys: [['financialEvents']] },
-  { key: 'splitwise', table: 'split_groups', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_group_access', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_group_members', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'transactions', table: 'transactions', filterColumn: 'user_id', queryKeys: TRANSACTION_INVALIDATION_KEYS },
+  { key: 'liabilities', table: 'liabilities', filterColumn: 'user_id', queryKeys: LIABILITY_INVALIDATION_KEYS },
+  { key: 'loans', table: 'loans', filterColumn: 'user_id', queryKeys: LOAN_INVALIDATION_KEYS },
+  { key: 'events', table: 'financial_events', filterColumn: 'user_id', queryKeys: [['financialEvents']] },
+  { key: 'splitwise', table: 'split_groups', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_group_access', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_group_members', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
   { key: 'splitwise', table: 'split_group_invites', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_expenses', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_expense_splits', queryKeys: SPLITWISE_INVALIDATION_KEYS },
-  { key: 'splitwise', table: 'split_settlements', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_expenses', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_expense_splits', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
+  { key: 'splitwise', table: 'split_settlements', filterColumn: 'user_id', queryKeys: SPLITWISE_INVALIDATION_KEYS },
 ]
 
 const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/splitwise/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
@@ -421,7 +421,8 @@ function WalletPrefetcher() {
 
 function AppContent() {
   const { loading: authLoading } = useAuth()
-  if (authLoading) return <PageFallback pathname="/" />
+  const location = useLocation()
+  if (authLoading) return <PageFallback pathname={location.pathname} />
   return <AppShell />
 }
 
@@ -1301,13 +1302,13 @@ function AppShell() {
 
 export default function App() {
   return (
-    <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <GlobalRealtimeSync />
           <DashboardWarmPrefetch />
           <VersionHeartbeat />
-          <AppShell />
+          <AppContent />
         </QueryClientProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -114,6 +114,7 @@ export function useLiabilitiesByMonth(year, month, options = {}) {
       if (queryError) throw queryError
       return rows || []
     }),
+    placeholderData: (prev, query) => (query?.queryKey?.[3] === targetUserId) ? prev : undefined,
   })
 
   const rows = data || []
