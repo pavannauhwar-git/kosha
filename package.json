@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "eslint src/ && vite build",
+    "lint": "eslint src/",
     "preview": "vite preview",
     "release:candidate-check": "node scripts/ops/release_candidate_check.mjs",
     "test:deploy-readiness": "node scripts/ops/check_deploy_readiness.mjs",
@@ -42,8 +43,13 @@
     "react-router-dom": "^6.21.0",
     "recharts": "^2.10.0"
   },
+    "@eslint/js": "^9.6.0",
   "devDependencies": {
     "@sentry/vite-plugin": "^5.2.1",
+    "eslint": "^9.6.0",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "globals": "^15.8.0",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",
