@@ -26,7 +26,8 @@
     "test:reconciliation-schema-live": "node scripts/tests/test_reconciliation_schema_live.mjs",
     "test:wallet-cache-scoping": "node scripts/tests/test_wallet_cache_scoping.mjs",
     "test:reconciliation-insights": "node scripts/tests/test_reconciliation_insights.mjs",
-    "test:rls-partner-isolation": "node scripts/tests/test_rls_partner_isolation.mjs"
+    "test:rls-partner-isolation": "node scripts/tests/test_rls_partner_isolation.mjs",
+    "lint": "eslint src/"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
@@ -43,9 +44,14 @@
     "recharts": "^2.10.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@sentry/vite-plugin": "^5.2.1",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.16",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "globals": "^15.0.0",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
     "vite": "^5.0.8",
