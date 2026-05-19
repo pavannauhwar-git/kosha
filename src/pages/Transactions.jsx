@@ -218,7 +218,7 @@ export default function Transactions() {
     }
   }, [])
 
-  function clearLinkedFilters() {
+  const clearLinkedFilters = () => {
     if (!linkedLoanFilter && !linkedBillFilter && !linkedSplitExpenseFilter && !linkedSplitSettlementFilter) return
     const next = new URLSearchParams(searchParams)
     next.delete('linked_loan')
@@ -229,7 +229,7 @@ export default function Transactions() {
     setSearchParams(next, { replace: true })
   }
 
-  function handleDatePreset(nextPreset) {
+  const handleDatePreset = (nextPreset) => {
     clearLinkedFilters()
     setDatePreset(nextPreset)
     setForcedDateRange(null)
@@ -254,7 +254,7 @@ export default function Transactions() {
     return options
   }, [])
 
-  function updateSelectedMonth(nextYear, nextMonth) {
+  const updateSelectedMonth = (nextYear, nextMonth) => {
     clearLinkedFilters()
     const safeYear = Math.min(
       MONTH_FILTER_MAX_YEAR,
@@ -330,7 +330,7 @@ export default function Transactions() {
 
   // Reset display count when filter changes to avoid cascading re-renders
 
-  function handleTypeFilter(id) {
+  const handleTypeFilter = (id) => {
     setTypeFilter(id)
     const nextCategories = getCategoriesForType(id === 'all' ? undefined : id)
     const isCurrentCategoryAllowed = !catFilter || nextCategories.some((cat) => cat.id === catFilter)
@@ -338,12 +338,12 @@ export default function Transactions() {
     setDisplayCount(50)   // reset in same event — single re-render
   }
 
-  function handleCatFilter(id) {
+  const handleCatFilter = (id) => {
     setCatFilter(id)
     setDisplayCount(50)   // reset in same event — single re-render
   }
 
-  function handlePaymentModeFilter(id) {
+  const handlePaymentModeFilter = (id) => {
     setPaymentModeFilter(id)
     setDisplayCount(50)
   }
