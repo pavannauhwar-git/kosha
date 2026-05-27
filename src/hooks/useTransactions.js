@@ -855,8 +855,9 @@ export function useRunningBalance(year, month) {
 
 // ── Mutations — centralized pipeline ──────────────────────────────────────
 
-export async function addTransaction(payload) {
-  const userId = getActiveWalletUserId()
+export async function addTransaction(payload, mutationUserId = null) {
+  const userId = mutationUserId || getActiveWalletUserId()
+  if (!userId) throw new Error('No active wallet selected.')
 
   const { data, error } = await supabase
     .from('transactions')
@@ -886,8 +887,9 @@ export async function addTransaction(payload) {
   return data;
 }
 
-export async function updateTransaction(id, payload) {
-  const userId = getActiveWalletUserId()
+export async function updateTransaction(id, payload, mutationUserId = null) {
+  const userId = mutationUserId || getActiveWalletUserId()
+  if (!userId) throw new Error('No active wallet selected.')
 
   const { data, error } = await supabase
     .from('transactions')
@@ -1133,8 +1135,9 @@ export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId) {
   }
 }
 
-export async function deleteTransaction(id, cachedTxn = null) {
-  const userId = getActiveWalletUserId()
+export async function deleteTransaction(id, cachedTxn = null, mutationUserId = null) {
+  const userId = mutationUserId || getActiveWalletUserId()
+  if (!userId) throw new Error('No active wallet selected.')
 
   const { error } = await supabase
     .from('transactions')
@@ -1254,8 +1257,8 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
     const invalidateFn = __testOverrides?.invalidateCache || invalidateCache
 
     const savedTxn = id
-      ? await updateFn(id, payload)
-      : await addFn(payload)
+      ? await updateFn(id, payload, targetUserId)
+      : await addFn(payload, targetUserId)
 
     await Promise.all([
       queryClient.cancelQueries({ queryKey: ['transactions'] }),
@@ -1310,7 +1313,7 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
     const deleteFn = __testOverrides?.deleteTransaction || deleteTransaction
     const invalidateFn = __testOverrides?.invalidateCache || invalidateCache
 
-    await deleteFn(id, cachedTxn)
+    await deleteFn(id, cachedTxn, targetUserId)
     await Promise.all([
       queryClient.cancelQueries({ queryKey: ['transactions'] }),
       queryClient.cancelQueries({ queryKey: ['transactionsRecent'] }),

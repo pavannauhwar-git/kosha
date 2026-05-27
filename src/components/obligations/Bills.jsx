@@ -24,6 +24,7 @@ import Button from '../ui/Button'
 import PixelDatePicker from '../ui/PixelDatePicker'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import useWindowedList from '../../hooks/useWindowedList'
+import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const PAYMENT_MODES = [
@@ -402,12 +403,8 @@ export default function Bills({
   const { value: tabFromQuery, source: tabSource } = resolveBillsTabQuery(searchParams, tabParam)
 
   useEffect(() => {
-    try {
-      const hidden = localStorage.getItem(BILLS_GUIDE_HINT_KEY) === '1'
-      if (hidden) setShowGuideHint(false)
-    } catch {
-      // no-op
-    }
+    const hidden = readLocalStorage(BILLS_GUIDE_HINT_KEY, '0') === '1'
+    if (hidden) setShowGuideHint(false)
   }, [])
 
   useEffect(() => {
@@ -587,11 +584,7 @@ export default function Bills({
 
   function dismissGuideHint() {
     setShowGuideHint(false)
-    try {
-      localStorage.setItem(BILLS_GUIDE_HINT_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(BILLS_GUIDE_HINT_KEY, '1')
   }
 
   return (

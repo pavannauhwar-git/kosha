@@ -33,6 +33,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import Button from '../components/ui/Button'
 import useWindowedList from '../hooks/useWindowedList'
 import { useAuth } from '../context/AuthContext'
+import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
@@ -44,12 +45,7 @@ function shouldCommitDeleteImmediately() {
   if (typeof window === 'undefined') return false
   const webdriver = typeof navigator !== 'undefined' && navigator.webdriver
   const cypress = typeof window.Cypress !== 'undefined'
-  let forced = false
-  try {
-    forced = window.localStorage?.getItem('kosha:e2e-immediate-delete') === '1'
-  } catch {
-    forced = false
-  }
+  const forced = readLocalStorage('kosha:e2e-immediate-delete', '0') === '1'
   return Boolean(webdriver || cypress || forced)
 }
 
@@ -653,26 +649,17 @@ export default function Transactions() {
   }, [signalAggregates, data, categoryLabelById])
 
   useEffect(() => {
-    try {
-      const hidden = localStorage.getItem(TXN_GUIDE_HINT_KEY) === '1'
-      if (hidden) setShowGuideHint(false)
-    } catch {
-      // no-op
-    }
+    const hidden = readLocalStorage(TXN_GUIDE_HINT_KEY, '0') === '1'
+    if (hidden) setShowGuideHint(false)
   }, [])
 
   useEffect(() => {
-    try {
-      const dismissed = localStorage.getItem(SWIPE_HINT_DISMISSED_KEY) === '1'
-      const learned = localStorage.getItem(SWIPE_HINT_LEARNED_KEY) === '1'
-      const nudged = localStorage.getItem(SWIPE_HINT_NUDGED_KEY) === '1'
+    const dismissed = readLocalStorage(SWIPE_HINT_DISMISSED_KEY, '0') === '1'
+    const learned = readLocalStorage(SWIPE_HINT_LEARNED_KEY, '0') === '1'
+    const nudged = readLocalStorage(SWIPE_HINT_NUDGED_KEY, '0') === '1'
 
-      setShowSwipeHint(!dismissed && !learned)
-      setTriggerSwipeNudge(!nudged)
-    } catch {
-      setShowSwipeHint(true)
-      setTriggerSwipeNudge(true)
-    }
+    setShowSwipeHint(!dismissed && !learned)
+    setTriggerSwipeNudge(!nudged)
   }, [])
 
   useEffect(() => {
@@ -1120,38 +1107,22 @@ export default function Transactions() {
 
   const dismissGuideHint = useCallback(() => {
     setShowGuideHint(false)
-    try {
-      localStorage.setItem(TXN_GUIDE_HINT_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(TXN_GUIDE_HINT_KEY, '1')
   }, [])
 
   const dismissSwipeHint = useCallback(() => {
     setShowSwipeHint(false)
-    try {
-      localStorage.setItem(SWIPE_HINT_DISMISSED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(SWIPE_HINT_DISMISSED_KEY, '1')
   }, [])
 
   const handleSwipeHintLearned = useCallback(() => {
     setShowSwipeHint(false)
-    try {
-      localStorage.setItem(SWIPE_HINT_LEARNED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(SWIPE_HINT_LEARNED_KEY, '1')
   }, [])
 
   const handleAutoNudgeDone = useCallback(() => {
     setTriggerSwipeNudge(false)
-    try {
-      localStorage.setItem(SWIPE_HINT_NUDGED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(SWIPE_HINT_NUDGED_KEY, '1')
   }, [])
 
   const clearAllFilters = useCallback(() => {

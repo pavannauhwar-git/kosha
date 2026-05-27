@@ -21,6 +21,7 @@ import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
+import { readLocalJson, writeLocalJson } from '../lib/safeStorage'
 
 const START_HERE = [
   'Add 5-10 recent transactions so your Dashboard and Analytics have enough signal.',
@@ -33,23 +34,13 @@ const START_HERE = [
 const GUIDE_VIEWED_KEY = 'kosha:guide:viewed:v2'
 
 function getInitialViewed() {
-  try {
-    const raw = localStorage.getItem(GUIDE_VIEWED_KEY)
-    if (!raw) return new Set()
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return new Set()
-    return new Set(parsed.map((v) => String(v)))
-  } catch {
-    return new Set()
-  }
+  const parsed = readLocalJson(GUIDE_VIEWED_KEY, [])
+  if (!Array.isArray(parsed)) return new Set()
+  return new Set(parsed.map((v) => String(v)))
 }
 
 function persistViewed(nextSet) {
-  try {
-    localStorage.setItem(GUIDE_VIEWED_KEY, JSON.stringify(Array.from(nextSet)))
-  } catch {
-    // Ignore storage restrictions.
-  }
+  writeLocalJson(GUIDE_VIEWED_KEY, Array.from(nextSet))
 }
 
 const FEATURE_CARDS = [

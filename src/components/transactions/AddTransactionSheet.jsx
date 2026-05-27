@@ -24,6 +24,7 @@ import { supabase } from '../../lib/supabase'
 
 import { todayStr } from '../../lib/utils'
 import { hapticSuccess } from '../../lib/haptics'
+import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
 
 const TYPES = [
   { id: 'expense', label: 'Expense', color: 'text-expense-text', bg: 'bg-expense-bg' },
@@ -319,31 +320,19 @@ function CategoryPicker({
       return
     }
 
-    try {
-      const dismissed = localStorage.getItem(CATEGORY_SWIPE_HINT_DISMISSED_KEY) === '1'
-      const learned = localStorage.getItem(CATEGORY_SWIPE_HINT_LEARNED_KEY) === '1'
-      setShowSwipeHint(!dismissed && !learned)
-    } catch {
-      setShowSwipeHint(true)
-    }
+    const dismissed = readLocalStorage(CATEGORY_SWIPE_HINT_DISMISSED_KEY, '0') === '1'
+    const learned = readLocalStorage(CATEGORY_SWIPE_HINT_LEARNED_KEY, '0') === '1'
+    setShowSwipeHint(!dismissed && !learned)
   }, [hasManageableCategories])
 
   const dismissSwipeHint = () => {
     setShowSwipeHint(false)
-    try {
-      localStorage.setItem(CATEGORY_SWIPE_HINT_DISMISSED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(CATEGORY_SWIPE_HINT_DISMISSED_KEY, '1')
   }
 
   const handleSwipeHintLearned = () => {
     setShowSwipeHint(false)
-    try {
-      localStorage.setItem(CATEGORY_SWIPE_HINT_LEARNED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(CATEGORY_SWIPE_HINT_LEARNED_KEY, '1')
   }
 
   return (
@@ -519,31 +508,19 @@ function VehiclePicker({
       return
     }
 
-    try {
-      const dismissed = localStorage.getItem(CATEGORY_SWIPE_HINT_DISMISSED_KEY) === '1'
-      const learned = localStorage.getItem(CATEGORY_SWIPE_HINT_LEARNED_KEY) === '1'
-      setShowSwipeHint(!dismissed && !learned)
-    } catch {
-      setShowSwipeHint(true)
-    }
+    const dismissed = readLocalStorage(CATEGORY_SWIPE_HINT_DISMISSED_KEY, '0') === '1'
+    const learned = readLocalStorage(CATEGORY_SWIPE_HINT_LEARNED_KEY, '0') === '1'
+    setShowSwipeHint(!dismissed && !learned)
   }, [hasManageableVehicles])
 
   const dismissSwipeHint = () => {
     setShowSwipeHint(false)
-    try {
-      localStorage.setItem(CATEGORY_SWIPE_HINT_DISMISSED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(CATEGORY_SWIPE_HINT_DISMISSED_KEY, '1')
   }
 
   const handleSwipeHintLearned = () => {
     setShowSwipeHint(false)
-    try {
-      localStorage.setItem(CATEGORY_SWIPE_HINT_LEARNED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(CATEGORY_SWIPE_HINT_LEARNED_KEY, '1')
   }
 
   return (

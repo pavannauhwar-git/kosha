@@ -27,6 +27,7 @@ import { fmtDate } from '../lib/utils'
 import { shareLink } from '../lib/share'
 import { queryClient } from '../lib/queryClient'
 import { CHANGELOG } from '../lib/changelog'
+import { writeLocalStorage } from '../lib/safeStorage'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -115,17 +116,15 @@ export default function Settings() {
   }
   const reminderSwitchStyle = remindersPaused
     ? {
+      // md-switch is never set to disabled state — interaction is blocked via
+      // pointer-events:none. We override the track/handle colors to convey "paused".
+      // opacity:1 opts out of Switch's automatic 0.38 fallback — the grey colors
+      // already communicate the paused state without additional dimming.
+      opacity: 1,
       '--md-switch-selected-track-color': 'var(--ds-surface-container-highest)',
       '--md-switch-selected-handle-color': 'var(--ds-text-disabled)',
       '--md-switch-track-color': 'var(--ds-surface-container-highest)',
       '--md-switch-handle-color': 'var(--ds-text-disabled)',
-      '--md-switch-disabled-track-opacity': 1,
-      '--md-switch-disabled-track-outline-color': 'var(--ds-border-strong)',
-      '--md-switch-disabled-selected-track-color': 'var(--ds-surface-container-highest)',
-      '--md-switch-disabled-selected-handle-color': 'var(--ds-text-disabled)',
-      '--md-switch-disabled-selected-handle-opacity': 1,
-      '--md-switch-disabled-handle-color': 'var(--ds-text-disabled)',
-      '--md-switch-disabled-handle-opacity': 1,
     }
     : {
       '--md-switch-selected-track-color': 'var(--ds-primary)',
@@ -226,11 +225,7 @@ export default function Settings() {
   function toggleDarkMode() {
     const next = !isDark
     document.documentElement.classList.toggle('dark', next)
-    try {
-      localStorage.setItem('kosha-theme', next ? 'dark' : 'light')
-    } catch {
-      // Ignore storage failures in restricted contexts.
-    }
+    writeLocalStorage('kosha-theme', next ? 'dark' : 'light')
     setIsDark(next)
   }
 
@@ -585,7 +580,6 @@ export default function Settings() {
                 <Switch
                   checked={reminderPrefs.bill_due}
                   onChange={() => { }}
-                  disabled={remindersPaused}
                   sx={{ pointerEvents: 'none' }}
                   style={reminderSwitchStyle}
                 />
@@ -603,7 +597,6 @@ export default function Settings() {
                 <Switch
                   checked={reminderPrefs.spending_pace}
                   onChange={() => { }}
-                  disabled={remindersPaused}
                   sx={{ pointerEvents: 'none' }}
                   style={reminderSwitchStyle}
                 />

@@ -22,6 +22,7 @@ import DailySpendTrend from '../components/cards/monthly/DailySpendTrend'
 import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
 import { CashflowWaterfallChart } from '../components/analytics/AnalyticsCharts'
 import Button from '../components/ui/Button'
+import { readLocalJson, writeLocalJson } from '../lib/safeStorage'
 
 
 const MIN_NAV_YEAR = 1900
@@ -503,19 +504,15 @@ export default function Monthly() {
   ])
 
   const trackMonthlyActionClick = useCallback((actionId) => {
-    try {
-      const storageKey = 'kosha:monthly-action-queue-clicks-v1'
-      const parsed = JSON.parse(localStorage.getItem(storageKey) || '{}')
-      const monthBucket = String(monthParam)
-      const monthClicks = parsed[monthBucket] || {}
+    const storageKey = 'kosha:monthly-action-queue-clicks-v1'
+    const parsed = readLocalJson(storageKey, {})
+    const monthBucket = String(monthParam)
+    const monthClicks = parsed[monthBucket] || {}
 
-      monthClicks[actionId] = Number(monthClicks[actionId] || 0) + 1
-      parsed[monthBucket] = monthClicks
+    monthClicks[actionId] = Number(monthClicks[actionId] || 0) + 1
+    parsed[monthBucket] = monthClicks
 
-      localStorage.setItem(storageKey, JSON.stringify(parsed))
-    } catch {
-      // no-op
-    }
+    writeLocalJson(storageKey, parsed)
   }, [monthParam])
 
   return (

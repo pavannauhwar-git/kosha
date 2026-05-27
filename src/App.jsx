@@ -702,7 +702,7 @@ function GlobalRealtimeSync() {
   useEffect(() => {
     if (!activeUserId) return
 
-    const timeoutIds = new Map()
+    const pendingInvalidations = new Map()
     let channel = null
     let connectTimerId = null
     let reconnectTimerId = null
@@ -711,13 +711,59 @@ function GlobalRealtimeSync() {
     let active = true
     let fallbackMode = false
 
-    function scheduleInvalidate(key, invalidate) {
-      if (isSuppressed(key)) return
-      clearTimeout(timeoutIds.get(key))
-      timeoutIds.set(key, setTimeout(() => {
-        timeoutIds.delete(key)
-        if (!isSuppressed(key)) void invalidate()
-      }, 300))
+    function queryKeySignature(queryKey) {
+      try {
+        return JSON.stringify(queryKey)
+      } catch {
+        return String(queryKey)
+      }
+    }
+
+    function enqueuePolicyInvalidation(policy, tablePath = `/${policy.table}`) {
+      if (!policy?.key || isSuppressed(policy.key)) return
+
+      let entry = pendingInvalidations.get(policy.key)
+      if (!entry) {
+        entry = {
+          timerId: null,
+          tablePaths: new Set(),
+          queryKeys: [],
+          queryKeySignatures: new Set(),
+        }
+        pendingInvalidations.set(policy.key, entry)
+      }
+
+      if (tablePath) {
+        entry.tablePaths.add(tablePath)
+      }
+
+      for (const queryKey of policy.queryKeys || []) {
+        const signature = queryKeySignature(queryKey)
+        if (entry.queryKeySignatures.has(signature)) continue
+        entry.queryKeySignatures.add(signature)
+        entry.queryKeys.push(queryKey)
+      }
+
+      if (entry.timerId) return
+
+      entry.timerId = setTimeout(() => {
+        entry.timerId = null
+        if (!active || isSuppressed(policy.key)) {
+          pendingInvalidations.delete(policy.key)
+          return
+        }
+
+        const tablePaths = Array.from(entry.tablePaths)
+        const queryKeys = [...entry.queryKeys]
+        pendingInvalidations.delete(policy.key)
+
+        void Promise.all(tablePaths.map((path) => evictSwCacheEntries(path)))
+          .finally(() => {
+            if (queryKeys.length > 0) {
+              void invalidateQueryFamilies(queryKeys)
+            }
+          })
+      }, 300)
     }
 
     function clearConnectTimer() {
@@ -745,14 +791,10 @@ function GlobalRealtimeSync() {
 
     function invalidateFreshness() {
       for (const policy of REALTIME_INVALIDATION_POLICIES) {
-        scheduleInvalidate(policy.key, () => {
-          // In fallback polling mode, we MUST evict SW cache entries too,
-          // otherwise StaleWhileRevalidate will just serve us the same stale data
-          // for up to 12 hours.
-          const tablePath = `/${policy.table}`
-          evictSwCacheEntries(tablePath)
-          invalidateQueryFamilies(policy.queryKeys)
-        })
+        // In fallback polling mode, we MUST evict SW cache entries too,
+        // otherwise StaleWhileRevalidate will just serve us the same stale data
+        // for up to 12 hours.
+        enqueuePolicyInvalidation(policy)
       }
     }
 
@@ -831,9 +873,7 @@ function GlobalRealtimeSync() {
               const relevant = isRelevantSplitwiseRealtimeEvent(policy.table, payload, activeUserId)
               if (!relevant) return
             }
-            const tablePath = `/${policy.table}`
-            evictSwCacheEntries(tablePath)
-            scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
+            enqueuePolicyInvalidation(policy)
           }
         )
       }
@@ -884,7 +924,10 @@ function GlobalRealtimeSync() {
       clearConnectTimer()
       clearReconnectTimer()
       stopFallbackPolling()
-      timeoutIds.forEach(id => clearTimeout(id))
+      pendingInvalidations.forEach((entry) => {
+        if (entry?.timerId) clearTimeout(entry.timerId)
+      })
+      pendingInvalidations.clear()
       removeActiveChannel()
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }

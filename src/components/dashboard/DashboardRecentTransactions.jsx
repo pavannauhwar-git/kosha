@@ -6,6 +6,7 @@ import { fmt } from '../../lib/utils'
 import { CATEGORIES } from '../../lib/categories'
 import Button from '../ui/Button'
 import EmptyState from '../common/EmptyState'
+import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
 
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
 const SWIPE_HINT_LEARNED_KEY = 'kosha:swipe-delete-hint-learned-v1'
@@ -33,44 +34,27 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
   const [triggerSwipeNudge, setTriggerSwipeNudge] = useState(false)
 
   useEffect(() => {
-    try {
-      const dismissed = localStorage.getItem(SWIPE_HINT_DISMISSED_KEY) === '1'
-      const learned = localStorage.getItem(SWIPE_HINT_LEARNED_KEY) === '1'
-      const nudged = localStorage.getItem(SWIPE_HINT_NUDGED_KEY) === '1'
+    const dismissed = readLocalStorage(SWIPE_HINT_DISMISSED_KEY, '0') === '1'
+    const learned = readLocalStorage(SWIPE_HINT_LEARNED_KEY, '0') === '1'
+    const nudged = readLocalStorage(SWIPE_HINT_NUDGED_KEY, '0') === '1'
 
-      setShowSwipeHint(!dismissed && !learned)
-      setTriggerSwipeNudge(!nudged)
-    } catch {
-      setShowSwipeHint(true)
-      setTriggerSwipeNudge(true)
-    }
+    setShowSwipeHint(!dismissed && !learned)
+    setTriggerSwipeNudge(!nudged)
   }, [])
 
   const dismissSwipeHint = useCallback(() => {
     setShowSwipeHint(false)
-    try {
-      localStorage.setItem(SWIPE_HINT_DISMISSED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(SWIPE_HINT_DISMISSED_KEY, '1')
   }, [])
 
   const handleSwipeHintLearned = useCallback(() => {
     setShowSwipeHint(false)
-    try {
-      localStorage.setItem(SWIPE_HINT_LEARNED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(SWIPE_HINT_LEARNED_KEY, '1')
   }, [])
 
   const handleAutoNudgeDone = useCallback(() => {
     setTriggerSwipeNudge(false)
-    try {
-      localStorage.setItem(SWIPE_HINT_NUDGED_KEY, '1')
-    } catch {
-      // no-op
-    }
+    writeLocalStorage(SWIPE_HINT_NUDGED_KEY, '1')
   }, [])
 
   const visibleRecent = useMemo(() => (recent || []).slice(0, 5), [recent])

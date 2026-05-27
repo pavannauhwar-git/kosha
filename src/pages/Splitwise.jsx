@@ -45,6 +45,7 @@ import { fmt, fmtDate, todayStr } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { shareLink } from '../lib/share'
 import useWindowedList from '../hooks/useWindowedList'
+import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
 
 const BANNERS = [
   { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.png' },
@@ -123,20 +124,12 @@ function bannerStorageKey(groupId) {
 
 function readBannerFromStorage(groupId) {
   if (!groupId || typeof window === 'undefined') return null
-  try {
-    return window.localStorage?.getItem(bannerStorageKey(groupId)) || null
-  } catch {
-    return null
-  }
+  return readLocalStorage(bannerStorageKey(groupId), null)
 }
 
 function writeBannerToStorage(groupId, bannerId) {
   if (!groupId || typeof window === 'undefined') return
-  try {
-    window.localStorage?.setItem(bannerStorageKey(groupId), bannerId)
-  } catch {
-    // Ignore storage failures in restricted environments.
-  }
+  writeLocalStorage(bannerStorageKey(groupId), bannerId)
 }
 
 export default function Splitwise() {

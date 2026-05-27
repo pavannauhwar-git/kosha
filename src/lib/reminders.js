@@ -1,3 +1,5 @@
+import { readLocalJson, readLocalStorage, writeLocalJson, writeLocalStorage } from './safeStorage'
+
 const REMINDER_PREFS_KEY = 'kosha:reminder-prefs-v1'
 const REMINDER_SENT_PREFIX = 'kosha:reminder-sent:'
 export const REMINDER_PREFS_EVENT = 'kosha:reminder-prefs-updated'
@@ -8,31 +10,13 @@ const DEFAULT_PREFS = {
   spending_pace: true,
 }
 
-function readJson(key) {
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return null
-    return JSON.parse(raw)
-  } catch {
-    return null
-  }
-}
-
-function writeJson(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    // ignore storage failures
-  }
-}
-
 export function getReminderPrefs() {
-  const stored = readJson(REMINDER_PREFS_KEY)
+  const stored = readLocalJson(REMINDER_PREFS_KEY, null)
   return { ...DEFAULT_PREFS, ...(stored || {}) }
 }
 
 export function setReminderPrefs(nextPrefs) {
-  writeJson(REMINDER_PREFS_KEY, nextPrefs)
+  writeLocalJson(REMINDER_PREFS_KEY, nextPrefs)
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(REMINDER_PREFS_EVENT, { detail: nextPrefs }))
   }
@@ -62,23 +46,15 @@ function reminderStorageKey(id) {
 }
 
 function wasSentWithin(id, cooldownMs) {
-  try {
-    const raw = localStorage.getItem(reminderStorageKey(id))
-    if (!raw) return false
-    const lastTs = Number(raw)
-    if (!Number.isFinite(lastTs)) return false
-    return Date.now() - lastTs < cooldownMs
-  } catch {
-    return false
-  }
+  const raw = readLocalStorage(reminderStorageKey(id), null)
+  if (!raw) return false
+  const lastTs = Number(raw)
+  if (!Number.isFinite(lastTs)) return false
+  return Date.now() - lastTs < cooldownMs
 }
 
 function markSent(id) {
-  try {
-    localStorage.setItem(reminderStorageKey(id), String(Date.now()))
-  } catch {
-    // ignore storage failures
-  }
+  writeLocalStorage(reminderStorageKey(id), String(Date.now()))
 }
 
 export function maybeNotify({ id, title, body, cooldownMs = 24 * 60 * 60 * 1000 }) {

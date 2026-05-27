@@ -42,9 +42,7 @@ const Switch = forwardRef(function Switch(
     }
   }, [checked])
 
-  // Ensure disabled state is controlled via the element property.
-  // For custom elements, relying on string attributes like disabled="false"
-  // can still produce disabled behavior because the attribute is present.
+  // Keep disabled state in sync via property (custom element boolean behavior).
   useEffect(() => {
     if (innerRef.current) {
       innerRef.current.disabled = !!disabled
@@ -58,9 +56,11 @@ const Switch = forwardRef(function Switch(
     <md-switch
       ref={setRefs}
       class={className}
+      aria-disabled={disabled ? 'true' : undefined}
       style={{
         ...style,
         pointerEvents: pointerEvents || undefined,
+        opacity: disabled && style.opacity === undefined ? 0.38 : style.opacity,
       }}
       {...props}
     />

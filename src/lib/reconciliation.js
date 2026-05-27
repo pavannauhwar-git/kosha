@@ -1,5 +1,6 @@
 import { getActiveWalletUserId } from './walletStore'
 import { normalizeText } from './bugReportUtils.js'
+import { readLocalJson, writeLocalJson } from './safeStorage'
 
 const RECON_REVIEWED_KEY_PREFIX = 'kosha:reconciliation-reviewed-v1:'
 
@@ -24,23 +25,14 @@ function reviewedStorageKey() {
 }
 
 export function getReviewedReconciliationIds() {
-  try {
-    const raw = localStorage.getItem(reviewedStorageKey())
-    const list = raw ? JSON.parse(raw) : []
-    if (!Array.isArray(list)) return new Set()
-    return new Set(list.filter(Boolean))
-  } catch {
-    return new Set()
-  }
+  const list = readLocalJson(reviewedStorageKey(), [])
+  if (!Array.isArray(list)) return new Set()
+  return new Set(list.filter(Boolean))
 }
 
 export function setReviewedReconciliationIds(nextIds) {
-  try {
-    const payload = Array.from(nextIds || []).filter(Boolean)
-    localStorage.setItem(reviewedStorageKey(), JSON.stringify(payload))
-  } catch {
-    // no-op
-  }
+  const payload = Array.from(nextIds || []).filter(Boolean)
+  writeLocalJson(reviewedStorageKey(), payload)
 }
 
 export function buildReconciliationInsights(transactions, reviewedIds = new Set()) {

@@ -53,9 +53,10 @@ export async function listInvites({ supabaseClient, userId, limit = MAX_ACTIVE_I
   return data || []
 }
 
-export function buildJoinInviteUrl(token, origin = window?.location?.origin || '') {
+export function buildJoinInviteUrl(token, origin = undefined) {
   if (!token) return ''
-  return `${origin}/join/${token}`
+  const resolvedOrigin = origin ?? (typeof window !== 'undefined' ? window.location.origin : '')
+  return `${resolvedOrigin}/join/${token}`
 }
 
 export function inviteStatusLabel(inviteRow) {

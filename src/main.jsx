@@ -14,6 +14,7 @@ import App from './App'
 import './index.css'
 import { GlobalErrorBoundary } from './components/errors/GlobalErrorBoundary'
 import { startRuntimeMonitor } from './lib/runtimeMonitor'
+import { readLocalStorage } from './lib/safeStorage'
 
 startRuntimeMonitor()
 
@@ -30,12 +31,7 @@ startRuntimeMonitor()
     metaTheme.content = isDark ? '#0B0C0F' : '#FFFFFF'
   }
 
-  let stored = null
-  try {
-    stored = window.localStorage?.getItem('kosha-theme') || null
-  } catch {
-    stored = null
-  }
+  const stored = readLocalStorage('kosha-theme', null)
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   const isDark = stored === 'dark' || (!stored && prefersDark)
   

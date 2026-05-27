@@ -32,7 +32,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [anchorEl, setAnchorEl] = useState(null)
   const [anchorPosition, setAnchorPosition] = useState(null)
   const [unlinkingId, setUnlinkingId] = useState('')
   const closeRafRef = useRef(null)
@@ -50,7 +49,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
       return
     }
     const target = event.currentTarget
-    setAnchorEl(target)
     setAnchorPosition(getAnchorPosition(target, dropUp))
     setMenuOpen(true)
   }
@@ -134,16 +132,11 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
       <Popover
         id={id}
         open={open}
-        anchorReference={anchorPosition ? 'anchorPosition' : 'anchorEl'}
+        anchorReference="anchorPosition"
         anchorPosition={anchorPosition || { top: 0, left: 0 }}
-        anchorEl={anchorEl}
         onClose={handleClose}
         disableScrollLock
         slots={{ transition: Grow }}
-        anchorOrigin={{
-          vertical: dropUp ? 'top' : 'bottom',
-          horizontal: 'right',
-        }}
         transformOrigin={{
           vertical: dropUp ? 'bottom' : 'top',
           horizontal: 'right',
