@@ -397,21 +397,16 @@ export default function About() {
             {olderReleases.length > 0 && (
               <>
                 <Divider />
-                <Button
+                <button
                   type="button"
-                  variant="secondary"
-                  size="md"
-                  fullWidth
                   onClick={() => setShowAllVersions(v => !v)}
-                  iconRight={showAllVersions
-                    ? <CaretUpIcon size={13} weight="bold" />
-                    : <CaretDownIcon size={13} weight="bold" />}
-                  className="rounded-none border-0 bg-kosha-surface-2 text-ink-2"
+                  className="w-full flex items-center justify-center gap-1.5 px-4 py-3 text-[12px] font-semibold text-ink-3 hover:text-ink hover:bg-kosha-surface-2 transition-colors duration-150"
                 >
+                  {showAllVersions ? 'Hide older releases' : `Expand older releases (${olderReleases.length})`}
                   {showAllVersions
-                    ? 'Hide older releases'
-                    : `Expand older releases (${olderReleases.length})`}
-                </Button>
+                    ? <CaretUpIcon size={12} weight="bold" />
+                    : <CaretDownIcon size={12} weight="bold" />}
+                </button>
               </>
             )}
           </div>
