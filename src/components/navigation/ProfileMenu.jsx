@@ -1,4 +1,4 @@
-import { useEffect, useState, forwardRef } from 'react'
+import { useCallback, useEffect, useState, forwardRef } from 'react'
 import Popover from '@mui/material/Popover'
 import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
@@ -121,6 +121,28 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
 
   const open = Boolean(anchorEl)
   const id = open ? 'profile-popover' : undefined
+
+  const closeOnViewportChange = useCallback(() => {
+    setAnchorEl(null)
+  }, [])
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    window.addEventListener('scroll', closeOnViewportChange, { passive: true, capture: true })
+    window.addEventListener('resize', closeOnViewportChange, { passive: true })
+
+    const visualViewport = window.visualViewport
+    visualViewport?.addEventListener('resize', closeOnViewportChange)
+    visualViewport?.addEventListener('scroll', closeOnViewportChange)
+
+    return () => {
+      window.removeEventListener('scroll', closeOnViewportChange, true)
+      window.removeEventListener('resize', closeOnViewportChange)
+      visualViewport?.removeEventListener('resize', closeOnViewportChange)
+      visualViewport?.removeEventListener('scroll', closeOnViewportChange)
+    }
+  }, [open, closeOnViewportChange])
 
   return (
     <Box className={className} sx={{ display: 'inline-block' }}>

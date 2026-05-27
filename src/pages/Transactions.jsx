@@ -1491,14 +1491,14 @@ export default function Transactions() {
         )}
 
         {showGuideHint && (
-          <div className="hint-card-accent mb-4">
+          <div className="hint-card mb-4">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
                 <BookOpen size={16} className="text-accent-text" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-body font-semibold text-ink">Transactions tips</p>
-                <p className="text-label text-ink-3 mt-0.5">Use consistent categories and recurring labels for cleaner analytics.</p>
+                <p className="text-body font-semibold text-ink">Transactions tip</p>
+                <p className="text-label text-ink-3 mt-0.5">Use consistent categories and mark repeat payments as recurring to keep analytics accurate.</p>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1522,7 +1522,7 @@ export default function Transactions() {
               i
             </div>
             <p className="text-[11px] text-ink-2 leading-relaxed flex-1 min-w-0">
-              Quick tip: swipe left on a row to Repeat or Delete.
+              Quick tip: swipe left on a transaction row to Repeat or Delete.
             </p>
             <button
               type="button"

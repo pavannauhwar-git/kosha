@@ -198,7 +198,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] text-ink-2 leading-relaxed">
-              Quick tip: swipe left on a row to Repeat or Delete.
+              Quick tip: swipe left on a transaction row to Repeat or Delete.
             </p>
           </div>
           <button

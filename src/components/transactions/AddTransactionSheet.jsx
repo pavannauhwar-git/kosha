@@ -579,7 +579,7 @@ function VehiclePicker({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] text-ink-2 leading-relaxed">
-                  Quick tip: swipe left on a custom category to Edit or Delete.
+                  Quick tip: swipe left on a custom investment type to Edit or Delete.
                 </p>
               </div>
               <button
