@@ -7,34 +7,34 @@ function manualChunks(id) {
   if (!id.includes('node_modules')) return undefined
 
   if (
-    id.includes('/react/') ||
-    id.includes('/react-dom/') ||
-    id.includes('/scheduler/')
+    id.includes('/node_modules/react/') ||
+    id.includes('/node_modules/react-dom/') ||
+    id.includes('/node_modules/scheduler/')
   ) {
     return 'react-vendor'
   }
 
   if (
-    id.includes('/react-router/') ||
-    id.includes('/react-router-dom/') ||
-    id.includes('/@remix-run/router/')
+    id.includes('/node_modules/react-router/') ||
+    id.includes('/node_modules/react-router-dom/') ||
+    id.includes('/node_modules/@remix-run/router/')
   ) {
     return 'router-vendor'
   }
 
-  if (id.includes('/framer-motion/')) return 'motion-vendor'
-  if (id.includes('/@tanstack/react-query/')) return 'query-vendor'
-  if (id.includes('/@supabase/')) return 'supabase-vendor'
+  if (id.includes('/node_modules/framer-motion/')) return 'motion-vendor'
+  if (id.includes('/node_modules/@tanstack/react-query/')) return 'query-vendor'
+  if (id.includes('/node_modules/@supabase/')) return 'supabase-vendor'
 
   if (
-    id.includes('/@phosphor-icons/react/') ||
-    id.includes('/lucide-react/')
+    id.includes('/node_modules/@phosphor-icons/react/') ||
+    id.includes('/node_modules/lucide-react/')
   ) {
     return 'icon-vendor'
   }
 
-  if (id.includes('/recharts/')) return 'charts-vendor'
-  if (id.includes('/@radix-ui/')) return 'radix-vendor'
+  if (id.includes('/node_modules/recharts/')) return 'charts-vendor'
+  if (id.includes('/node_modules/@radix-ui/')) return 'radix-vendor'
 
   return 'vendor'
 }

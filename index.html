@@ -155,21 +155,7 @@
         background: linear-gradient(90deg, transparent 0%, #A8C7FA 40%, #D3E3FD 60%, transparent 100%);
       }
 
-      /* Nav ghost at bottom */
-      .initial-nav {
-        position: absolute;
-        bottom: 0;
-        left: 0; right: 0;
-        height: calc(env(safe-area-inset-bottom, 0px) + 70px);
-        background: rgba(255,255,255,0.94);
-        border-top: 1px solid rgba(0,0,0,0.06);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-      }
-      html.dark .initial-nav {
-        background: rgba(19,19,20,0.94);
-        border-top: 1px solid rgba(255,255,255,0.07);
-      }
+
 
       @keyframes splash-rise {
         from { opacity: 0; transform: translateY(10px); }
@@ -190,8 +176,7 @@
   <body>
     <div id="root">
       <div class="initial-loader">
-        <!-- Bottom nav ghost -->
-        <div class="initial-nav"></div>
+
 
         <!-- Centered brand -->
         <div class="initial-brand">
