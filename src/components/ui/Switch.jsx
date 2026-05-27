@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef } from 'react'
+import { forwardRef, useCallback, useEffect, useRef } from 'react'
 import '@material/web/switch/switch.js'
 
 /**
@@ -9,10 +9,17 @@ const Switch = forwardRef(function Switch(
   ref
 ) {
   const innerRef = useRef(null)
-  const resolvedRef = ref || innerRef
+  const setRefs = useCallback((node) => {
+    innerRef.current = node
+    if (typeof ref === 'function') {
+      ref(node)
+    } else if (ref && typeof ref === 'object') {
+      ref.current = node
+    }
+  }, [ref])
 
   useEffect(() => {
-    const el = resolvedRef.current
+    const el = innerRef.current
     if (!el) return
 
     const handleChange = (e) => {
@@ -26,30 +33,30 @@ const Switch = forwardRef(function Switch(
 
     el.addEventListener('change', handleChange)
     return () => el.removeEventListener('change', handleChange)
-  }, [onChange, resolvedRef])
+  }, [onChange])
 
   // Sync the boolean property imperatively to avoid React boolean attribute coercion issues
   useEffect(() => {
-    if (resolvedRef.current) {
-      resolvedRef.current.selected = !!checked
+    if (innerRef.current) {
+      innerRef.current.selected = !!checked
     }
-  }, [checked, resolvedRef])
+  }, [checked])
 
   // Ensure disabled state is controlled via the element property.
   // For custom elements, relying on string attributes like disabled="false"
   // can still produce disabled behavior because the attribute is present.
   useEffect(() => {
-    if (resolvedRef.current) {
-      resolvedRef.current.disabled = !!disabled
+    if (innerRef.current) {
+      innerRef.current.disabled = !!disabled
     }
-  }, [disabled, resolvedRef])
+  }, [disabled])
 
   // Extract pointer-events from MUI style overrides sx (e.g. sx={{ pointerEvents: 'none' }})
   const pointerEvents = sx?.pointerEvents || style.pointerEvents
 
   return (
     <md-switch
-      ref={resolvedRef}
+      ref={setRefs}
       disabled={disabled ? true : undefined}
       class={className}
       style={{

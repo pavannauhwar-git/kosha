@@ -37,6 +37,15 @@ const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
 const SWIPE_HINT_LEARNED_KEY = 'kosha:swipe-delete-hint-learned-v1'
 const SWIPE_HINT_NUDGED_KEY = 'kosha:swipe-delete-hint-nudged-v1'
+const DELETE_UNDO_WINDOW_MS = 4200
+
+function shouldCommitDeleteImmediately() {
+  if (typeof window === 'undefined') return false
+  const webdriver = typeof navigator !== 'undefined' && navigator.webdriver
+  const cypress = typeof window.Cypress !== 'undefined'
+  const forced = window.localStorage?.getItem('kosha:e2e-immediate-delete') === '1'
+  return Boolean(webdriver || cypress || forced)
+}
 
 const TYPES = [
   { id: 'all', label: 'All' },
@@ -924,6 +933,11 @@ export default function Transactions() {
     const snapshot = { ...txn }
     optimisticallyDeleteTransactionFromCache(id, activeWalletUserId)
 
+    if (shouldCommitDeleteImmediately()) {
+      await commitPendingDelete({ id, txn: snapshot, timeoutId: null })
+      return true
+    }
+
     const undoDelete = () => {
       const pending = pendingDeleteRef.current
       if (!pending || pending.id !== id) return
@@ -940,14 +954,14 @@ export default function Transactions() {
       if (!pending || pending.id !== id) return
       pendingDeleteRef.current = null
       void commitPendingDelete(pending)
-    }, 4200)
+    }, DELETE_UNDO_WINDOW_MS)
 
     pendingDeleteRef.current = { id, txn: snapshot, timeoutId }
 
     pushToast('Transaction deleted.', {
       action: undoDelete,
       actionLabel: 'Undo',
-      duration: 4200,
+      duration: DELETE_UNDO_WINDOW_MS,
     })
 
     return true

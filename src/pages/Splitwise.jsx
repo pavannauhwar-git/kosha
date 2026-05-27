@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, Users, ArrowRightLeft, ReceiptText, X, Link2, Trash2, ChevronLeft, Settings2, Archive, ArchiveRestore } from 'lucide-react'
-import { useSearchParams, useLocation } from 'react-router-dom'
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Button from '../components/ui/Button'
 import PixelDatePicker from '../components/ui/PixelDatePicker'
@@ -122,6 +122,7 @@ export default function Splitwise() {
   const [activeGroupId, setActiveGroupId] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const authUserId = getAuthUserId()
   const activeWalletUserId = useActiveWallet()
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== authUserId
@@ -144,14 +145,26 @@ export default function Splitwise() {
 
   // Deep-link from transaction info sheet: open a specific group
   useEffect(() => {
-    const { openGroupId } = location.state || {}
-    if (openGroupId) {
-      setActiveGroupId(openGroupId)
-      // Clear the state so a re-render doesn't re-trigger this
-      window.history.replaceState({}, '')
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    const openGroupId = location.state?.openGroupId
+    if (!openGroupId) return
+
+    setActiveGroupId(openGroupId)
+
+    const nextState = { ...(location.state || {}) }
+    delete nextState.openGroupId
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      },
+      {
+        replace: true,
+        state: Object.keys(nextState).length ? nextState : null,
+      }
+    )
+  }, [location.hash, location.pathname, location.search, location.state, navigate])
 
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [showAddExpense, setShowAddExpense] = useState(false)

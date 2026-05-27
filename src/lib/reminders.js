@@ -1,5 +1,6 @@
 const REMINDER_PREFS_KEY = 'kosha:reminder-prefs-v1'
 const REMINDER_SENT_PREFIX = 'kosha:reminder-sent:'
+export const REMINDER_PREFS_EVENT = 'kosha:reminder-prefs-updated'
 
 const DEFAULT_PREFS = {
   enabled: false,
@@ -32,6 +33,9 @@ export function getReminderPrefs() {
 
 export function setReminderPrefs(nextPrefs) {
   writeJson(REMINDER_PREFS_KEY, nextPrefs)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(REMINDER_PREFS_EVENT, { detail: nextPrefs }))
+  }
 }
 
 export function canUseNotifications() {

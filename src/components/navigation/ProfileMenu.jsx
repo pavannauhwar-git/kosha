@@ -19,7 +19,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import SecureAvatar from '../ui/SecureAvatar'
 
 export default function ProfileMenu({ className = '', dropUp = false }) {
-  const { user, profile, signOut, linkedProfiles } = useAuth()
+  const { user, profile, signOut, linkedProfiles, reloadLinkedData } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -231,8 +231,8 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                   <ListItemIcon sx={{ minWidth: 32 }}>
                     <Box
                       sx={{
-                        w: 16,
-                        h: 16,
+                        width: 16,
+                        height: 16,
                         borderRadius: '50%',
                         border: '2px solid var(--ds-border-strong)',
                         display: 'flex',
@@ -263,7 +263,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                           try {
                             await unlinkPartner(user.id, p.id)
                             if (activeWalletUserId === p.id) setActiveWalletUserId(user.id)
-                            window.location.reload()
+                            await reloadLinkedData?.()
                           } catch (e) {
                             alert(e.message)
                           } finally {
@@ -300,8 +300,8 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                     <ListItemIcon sx={{ minWidth: 32 }}>
                       <Box
                         sx={{
-                          w: 16,
-                          h: 16,
+                          width: 16,
+                          height: 16,
                           borderRadius: '50%',
                           border: '2px solid var(--ds-border-strong)',
                           display: 'flex',

@@ -27,7 +27,7 @@ import AppToast from '../components/common/AppToast'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
-import { getReminderPrefs, maybeNotify } from '../lib/reminders'
+import { getReminderPrefs, maybeNotify, REMINDER_PREFS_EVENT } from '../lib/reminders'
 import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
 
 function DashboardRecentSkeleton() {
@@ -68,6 +68,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { setSafeTimeout } = useSafeTimeout()
   const [now, setNow] = useState(() => new Date())
+  const [reminderPrefs, setReminderPrefsState] = useState(() => getReminderPrefs())
 
   useEffect(() => {
     let intervalId = null
@@ -419,12 +420,27 @@ export default function Dashboard() {
   const showSpendControlSection = !heroLoading && (earned > 0 || weeklyDriftSignal?.hasData || !!categoryPressureSignal)
   const showBillsControlSection = walletReady && (dueSoonCount > 0 || upcomingBills.length > 0 || !!billClusterSignal)
 
+  useEffect(() => {
+    const refreshReminderPrefs = () => {
+      setReminderPrefsState(getReminderPrefs())
+    }
+
+    window.addEventListener(REMINDER_PREFS_EVENT, refreshReminderPrefs)
+    window.addEventListener('focus', refreshReminderPrefs)
+    window.addEventListener('storage', refreshReminderPrefs)
+
+    return () => {
+      window.removeEventListener(REMINDER_PREFS_EVENT, refreshReminderPrefs)
+      window.removeEventListener('focus', refreshReminderPrefs)
+      window.removeEventListener('storage', refreshReminderPrefs)
+    }
+  }, [])
+
   // ── Reminders ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const prefs = getReminderPrefs()
-    if (!prefs.enabled) return
+    if (!reminderPrefs.enabled) return
 
-    if (prefs.bill_due && dueSoonCount > 0) {
+    if (reminderPrefs.bill_due && dueSoonCount > 0) {
       maybeNotify({
         id: 'bill-due',
         title: 'Kosha reminder: bills due soon',
@@ -433,7 +449,7 @@ export default function Dashboard() {
       })
     }
 
-    if (prefs.spending_pace && weeklyDriftSignal?.hasData && weeklyDriftSignal.status === 'high') {
+    if (reminderPrefs.spending_pace && weeklyDriftSignal?.hasData && weeklyDriftSignal.status === 'high') {
       maybeNotify({
         id: 'spending-pace',
         title: 'Kosha reminder: weekly spend drift is high',
@@ -443,7 +459,7 @@ export default function Dashboard() {
         cooldownMs: 12 * 60 * 60 * 1000,
       })
     }
-  }, [dueSoonCount, weeklyDriftSignal])
+  }, [dueSoonCount, weeklyDriftSignal, reminderPrefs.enabled, reminderPrefs.bill_due, reminderPrefs.spending_pace])
 
   // ── Callbacks ──────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (id) => {
