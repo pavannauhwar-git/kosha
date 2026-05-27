@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Popover from '@mui/material/Popover'
-import Grow from '@mui/material/Grow'
+import Fade from '@mui/material/Fade'
 import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
 import Typography from '@mui/material/Typography'
@@ -22,8 +22,10 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const { user, profile, signOut, linkedProfiles } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [anchorEl, setAnchorEl] = useState(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [anchorPosition, setAnchorPosition] = useState({ top: 0, left: 0 })
   const [unlinkingId, setUnlinkingId] = useState('')
+  const closeRafRef = useRef(null)
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
@@ -33,15 +35,57 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const activePartner = isViewingPartner ? (linkedProfiles || []).find(p => p.id === activeWalletUserId) : null
 
   const handleOpen = (event) => {
-    setAnchorEl((prev) => (prev ? null : event.currentTarget))
+    if (menuOpen) {
+      setMenuOpen(false)
+      return
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect()
+    setAnchorPosition({
+      top: dropUp ? rect.top : rect.bottom,
+      left: rect.right,
+    })
+    setMenuOpen(true)
   }
 
   const handleClose = () => {
-    setAnchorEl(null)
+    setMenuOpen(false)
   }
 
-  const open = Boolean(anchorEl)
+  const open = menuOpen
   const id = open ? 'profile-popover' : undefined
+  const scheduleClose = useCallback(() => {
+    if (closeRafRef.current) return
+    closeRafRef.current = requestAnimationFrame(() => {
+      closeRafRef.current = null
+      setMenuOpen(false)
+    })
+  }, [])
+  const closeOnViewportChange = useCallback(() => {
+    scheduleClose()
+  }, [scheduleClose])
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    window.addEventListener('scroll', closeOnViewportChange, { passive: true, capture: true })
+    window.addEventListener('resize', closeOnViewportChange, { passive: true })
+
+    const visualViewport = window.visualViewport
+    visualViewport?.addEventListener('resize', closeOnViewportChange)
+    visualViewport?.addEventListener('scroll', closeOnViewportChange)
+
+    return () => {
+      if (closeRafRef.current) {
+        cancelAnimationFrame(closeRafRef.current)
+        closeRafRef.current = null
+      }
+      window.removeEventListener('scroll', closeOnViewportChange, true)
+      window.removeEventListener('resize', closeOnViewportChange)
+      visualViewport?.removeEventListener('resize', closeOnViewportChange)
+      visualViewport?.removeEventListener('scroll', closeOnViewportChange)
+    }
+  }, [open, closeOnViewportChange])
 
   return (
     <Box className={className} sx={{ display: 'inline-block' }}>
@@ -83,9 +127,11 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
       <Popover
         id={id}
         open={open}
-        anchorEl={anchorEl}
+        anchorReference="anchorPosition"
+        anchorPosition={anchorPosition}
         onClose={handleClose}
-        slots={{ transition: Grow }}
+        disableScrollLock
+        slots={{ transition: Fade }}
         anchorOrigin={{
           vertical: dropUp ? 'top' : 'bottom',
           horizontal: 'right',
@@ -95,13 +141,14 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
           horizontal: 'right',
         }}
         slotProps={{
-          transition: { timeout: 130 },
+          transition: { timeout: 140 },
           paper: {
             sx: {
               mt: 1.5,
-              mr: -2, // Shift right by 16px to align with screen edge and cover underneath blue hero card shadow/background
+              mr: -2,
               mb: dropUp ? 1.5 : 0,
               width: '300px',
+              maxWidth: 'calc(100vw - 2rem)',
               borderRadius: '28px',
               overflow: 'hidden',
               backgroundColor: 'var(--ds-surface)',
