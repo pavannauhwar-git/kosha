@@ -1,19 +1,34 @@
-const VARIANT_CLASSES = {
-  elevated: 'bg-[var(--ds-surface)] shadow-card',
-  filled:   'bg-[var(--ds-surface-container)]',
-  outlined: 'bg-[var(--ds-surface)] border border-[var(--ds-border)]',
+import { motion } from 'framer-motion'
+import MuiCard from '@mui/material/Card'
+
+const VARIANT_SX = {
+  elevated: {
+    backgroundColor: 'var(--ds-surface)',
+    boxShadow: 'var(--ds-shadow-sm)',
+    border: 'none',
+  },
+  filled: {
+    backgroundColor: 'var(--ds-surface-container)',
+    boxShadow: 'none',
+    border: 'none',
+  },
+  outlined: {
+    backgroundColor: 'var(--ds-surface)',
+    border: '1px solid var(--ds-border)',
+    boxShadow: 'none',
+  },
 }
 
-const PADDING_CLASSES = {
-  none: '',
-  sm:   'p-3',
-  md:   'p-5',
-  lg:   'p-6',
+const PADDING_SX = {
+  none: { p: 0 },
+  sm: { p: 1.5 }, // 12px
+  md: { p: 2.5 }, // 20px
+  lg: { p: 3 },   // 24px
 }
 
 /**
- * Card — container surface with optional press state
- * @param {{ variant?: 'elevated'|'filled'|'outlined', padding?: 'none'|'sm'|'md'|'lg', pressable?: boolean, onClick?: function, className?: string, children: React.ReactNode }} props
+ * Card — M3 Expressive spring interactions on pressable cards.
+ * Static cards remain pure MuiCard for minimal overhead.
  */
 export default function Card({
   variant = 'elevated',
@@ -25,22 +40,102 @@ export default function Card({
   ...rest
 }) {
   const isClickable = pressable || onClick
-  const Tag = isClickable ? 'button' : 'div'
+
+  // M3 standard Large corner radius for cards is 16px (md3-lg)
+  const baseRadius = '16px'
+
+  const customSx = {
+    borderRadius: baseRadius,
+    width: '100%',
+    textAlign: 'left',
+    display: 'block',
+    boxSizing: 'border-box',
+    ...VARIANT_SX[variant],
+    ...PADDING_SX[padding],
+  }
+
+  if (isClickable) {
+    const parentStyle = {
+      display: 'block',
+      width: '100%',
+      backgroundColor: VARIANT_SX[variant].backgroundColor,
+      border: VARIANT_SX[variant].border,
+      boxShadow: VARIANT_SX[variant].boxShadow || 'none',
+      cursor: 'pointer',
+      userSelect: 'none',
+      position: 'relative',
+      overflow: 'hidden',
+    }
+
+    // Pass transparent / borderless styles to inner MuiCard
+    const innerSx = {
+      width: '100%',
+      textAlign: 'left',
+      display: 'block',
+      boxSizing: 'border-box',
+      backgroundColor: 'transparent',
+      boxShadow: 'none',
+      border: 'none',
+      borderRadius: 'inherit', // Let inner card match the morphing parent!
+      ...PADDING_SX[padding],
+    }
+
+    return (
+      <motion.div
+        onClick={onClick}
+        className={`${className} md3-state-overlay relative`}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onClick?.(e)
+          }
+        }}
+        whileHover={{
+          borderRadius: '24px',
+          scale: 1.015,
+          boxShadow: 'var(--ds-shadow-md)',
+        }}
+        whileTap={{
+          borderRadius: '14px',
+          scale: 0.98,
+          boxShadow: 'var(--ds-shadow-sm)',
+        }}
+        initial={{
+          borderRadius: baseRadius,
+          boxShadow: VARIANT_SX[variant].boxShadow || 'none',
+        }}
+        animate={{
+          borderRadius: baseRadius,
+          boxShadow: VARIANT_SX[variant].boxShadow || 'none',
+        }}
+        transition={{
+          type: 'spring',
+          stiffness: 450,
+          damping: 32,
+        }}
+        style={parentStyle}
+      >
+        <MuiCard
+          sx={innerSx}
+          component="div"
+          {...rest}
+        >
+          {children}
+        </MuiCard>
+      </motion.div>
+    )
+  }
 
   return (
-    <Tag
-      onClick={onClick}
-      className={[
-        'rounded-card w-full text-left',
-        VARIANT_CLASSES[variant],
-        PADDING_CLASSES[padding],
-        isClickable ? 'cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform hover:shadow-card-md active:scale-[0.98] focus-visible:outline-none' : '',
-        className,
-      ].filter(Boolean).join(' ')}
-      {...(isClickable ? { type: 'button', role: 'button' } : {})}
+    <MuiCard
+      sx={customSx}
+      className={className}
+      component="div"
       {...rest}
     >
       {children}
-    </Tag>
+    </MuiCard>
   )
 }

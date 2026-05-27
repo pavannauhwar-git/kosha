@@ -1,30 +1,32 @@
 import { forwardRef, useCallback } from 'react'
-
-const SIZE_CLASSES = {
-  xs: 'h-7 px-2.5 text-[10px] gap-1',
-  sm: 'h-8 px-3 text-[11px] gap-1.5',
-  md: 'h-11 px-5 text-[13px] gap-2',
-  lg: 'h-13 px-7 text-[15px] gap-2.5',
-  xl: 'h-12 px-6 text-[14px] gap-2.5',
-}
-
-const VARIANT_CLASSES = {
-  primary:   'bg-[var(--ds-primary)] text-white shadow-fab hover:shadow-fab-hover hover:-translate-y-0.5 active:scale-[0.95] active:translate-y-0 active:shadow-fab',
-  secondary: 'bg-[var(--ds-surface)] text-[var(--ds-text-secondary)] shadow-card border border-[var(--ds-border)] hover:shadow-card-md hover:-translate-y-0.5 active:scale-[0.95] active:translate-y-0',
-  ghost:     'bg-transparent text-[var(--ds-text-secondary)] hover:bg-[var(--ds-surface-container)] active:scale-[0.95] border border-transparent',
-  danger:    'bg-[var(--ds-expense-bg)] text-[var(--ds-expense-text)] border border-[var(--ds-expense-border)] hover:brightness-95 active:scale-[0.95]',
-  success:   'bg-[var(--ds-income-bg)] text-[var(--ds-income-text)] border border-[var(--ds-income-border)] hover:brightness-95 active:scale-[0.95]',
-  tonal:     'bg-[var(--ds-primary-container)] text-[var(--ds-on-primary-container)] hover:brightness-95 active:scale-[0.95] border border-transparent',
-}
-
-const DISABLED_CLASSES = 'opacity-45 pointer-events-none'
+import '@material/web/button/filled-button.js'
+import '@material/web/button/outlined-button.js'
+import '@material/web/button/text-button.js'
+import '@material/web/button/filled-tonal-button.js'
+import '@material/web/progress/circular-progress.js'
 
 /**
- * Button — primary interactive element
- * @param {{ as?: any, variant?: 'primary'|'secondary'|'ghost'|'danger'|'success'|'tonal', size?: 'xs'|'sm'|'md'|'lg'|'xl', disabled?: boolean, loading?: boolean, icon?: React.ReactNode, iconRight?: React.ReactNode, fullWidth?: boolean, className?: string, children: React.ReactNode, onClick?: function }} props
+ * Button — Wraps official Google Material 3 Web Component buttons.
  */
 const Button = forwardRef(function Button(
-  { as: Component = 'button', variant = 'primary', size = 'md', disabled, loading, icon, iconRight, fullWidth, className = '', children, onClick, ...rest },
+  {
+    as, // preserved for API compatibility
+    variant = 'primary',
+    size = 'md',
+    disabled,
+    loading,
+    icon,
+    iconRight,
+    fullWidth,
+    className = '',
+    style = {},
+    sx, // MUI-specific styling, mapped if needed
+    children,
+    onClick,
+    href,
+    target,
+    ...rest
+  },
   ref
 ) {
   const isDisabled = disabled || loading
@@ -35,30 +37,120 @@ const Button = forwardRef(function Button(
     if (onClick) onClick(e)
   }, [isDisabled, onClick])
 
+  // Map variants to specific custom element tags
+  let Tag = 'md-filled-button'
+  if (variant === 'secondary') {
+    Tag = 'md-outlined-button'
+  } else if (variant === 'ghost') {
+    Tag = 'md-text-button'
+  } else if (variant === 'tonal') {
+    Tag = 'md-filled-tonal-button'
+  }
+
+  // Calculate size variables
+  const sizeHeights = {
+    xs: '28px',
+    sm: '32px',
+    md: '40px',
+    lg: '48px',
+    xl: '48px',
+  }
+  const heightVal = sizeHeights[size] || '40px'
+
+  // Map button styles using CSS custom properties for Material Web Components
+  const buttonStyle = {
+    display: fullWidth ? 'flex' : 'inline-flex',
+    width: fullWidth ? '100%' : 'auto',
+    verticalAlign: 'middle',
+    ...style,
+  }
+
+  // Set the height property dynamically
+  const typeKey = Tag.split('-')[1] // filled, outlined, text, filled-tonal (resolved to filled)
+  const buttonType = Tag === 'md-filled-tonal-button' ? 'filled-tonal' : typeKey
+  buttonStyle[`--md-${buttonType}-button-container-height`] = heightVal
+
+  // Color overrides for semantic buttons (danger, success, tonal).
+  // Material Web exposes SEPARATE tokens for icon vs label — both must be set.
+  if (variant === 'danger') {
+    buttonStyle['--md-filled-button-container-color']          = 'var(--ds-expense-bg)'
+    buttonStyle['--md-filled-button-label-text-color']         = 'var(--ds-expense-text)'
+    buttonStyle['--md-filled-button-hover-label-text-color']   = 'var(--ds-expense-text)'
+    buttonStyle['--md-filled-button-focus-label-text-color']   = 'var(--ds-expense-text)'
+    buttonStyle['--md-filled-button-pressed-label-text-color'] = 'var(--ds-expense-text)'
+    buttonStyle['--md-filled-button-icon-color']               = 'var(--ds-expense-text)'
+    buttonStyle['--md-filled-button-hover-icon-color']         = 'var(--ds-expense-text)'
+    buttonStyle['--md-filled-button-focus-icon-color']         = 'var(--ds-expense-text)'
+    buttonStyle['--md-filled-button-pressed-icon-color']       = 'var(--ds-expense-text)'
+    buttonStyle['--md-filled-button-hover-state-layer-color']   = 'var(--ds-expense-text)'
+    buttonStyle['--md-filled-button-pressed-state-layer-color'] = 'var(--ds-expense-text)'
+  } else if (variant === 'success') {
+    buttonStyle['--md-filled-button-container-color']          = 'var(--ds-income-bg)'
+    buttonStyle['--md-filled-button-label-text-color']         = 'var(--ds-income-text)'
+    buttonStyle['--md-filled-button-hover-label-text-color']   = 'var(--ds-income-text)'
+    buttonStyle['--md-filled-button-focus-label-text-color']   = 'var(--ds-income-text)'
+    buttonStyle['--md-filled-button-pressed-label-text-color'] = 'var(--ds-income-text)'
+    buttonStyle['--md-filled-button-icon-color']               = 'var(--ds-income-text)'
+    buttonStyle['--md-filled-button-hover-icon-color']         = 'var(--ds-income-text)'
+    buttonStyle['--md-filled-button-focus-icon-color']         = 'var(--ds-income-text)'
+    buttonStyle['--md-filled-button-pressed-icon-color']       = 'var(--ds-income-text)'
+    buttonStyle['--md-filled-button-hover-state-layer-color']   = 'var(--ds-income-text)'
+    buttonStyle['--md-filled-button-pressed-state-layer-color'] = 'var(--ds-income-text)'
+  } else if (variant === 'tonal') {
+    // Default tonal uses M3 secondary-container (gray). Override to warning amber.
+    buttonStyle['--md-filled-tonal-button-container-color']          = 'var(--ds-warning-bg)'
+    buttonStyle['--md-filled-tonal-button-label-text-color']         = 'var(--ds-warning-text)'
+    buttonStyle['--md-filled-tonal-button-hover-label-text-color']   = 'var(--ds-warning-text)'
+    buttonStyle['--md-filled-tonal-button-focus-label-text-color']   = 'var(--ds-warning-text)'
+    buttonStyle['--md-filled-tonal-button-pressed-label-text-color'] = 'var(--ds-warning-text)'
+    buttonStyle['--md-filled-tonal-button-icon-color']               = 'var(--ds-warning-text)'
+    buttonStyle['--md-filled-tonal-button-hover-icon-color']         = 'var(--ds-warning-text)'
+    buttonStyle['--md-filled-tonal-button-focus-icon-color']         = 'var(--ds-warning-text)'
+    buttonStyle['--md-filled-tonal-button-pressed-icon-color']       = 'var(--ds-warning-text)'
+    buttonStyle['--md-filled-tonal-button-hover-state-layer-color']   = 'var(--ds-warning-text)'
+    buttonStyle['--md-filled-tonal-button-pressed-state-layer-color'] = 'var(--ds-warning-text)'
+  }
+
+  // Slotted leading icon / loader
+  const leadingIcon = loading ? (
+    <md-circular-progress
+      slot="icon"
+      indeterminate
+      style={{
+        '--md-circular-progress-size': '16px',
+        '--md-circular-progress-active-indicator-width': '2px',
+        display: 'inline-flex',
+      }}
+    />
+  ) : icon ? (
+    <span slot="icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
+      {icon}
+    </span>
+  ) : null
+
+  // Slotted trailing icon
+  const trailingIcon = !loading && iconRight ? (
+    <span slot="icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
+      {iconRight}
+    </span>
+  ) : null
+
   return (
-    <Component
+    <Tag
       ref={ref}
-      disabled={Component === 'button' ? isDisabled : undefined}
+      disabled={isDisabled ? '' : undefined}
       onClick={handleClick}
-      className={[
-        'inline-flex items-center justify-center font-semibold rounded-pill select-none cursor-pointer',
-        'transition-all duration-300 ease-[var(--ds-ease-spring)] will-change-transform',
-        SIZE_CLASSES[size],
-        VARIANT_CLASSES[variant],
-        isDisabled ? DISABLED_CLASSES : '',
-        fullWidth ? 'w-full' : '',
-        className,
-      ].filter(Boolean).join(' ')}
+      href={href}
+      target={target}
+      trailing-icon={iconRight ? '' : undefined}
+      style={buttonStyle}
+      class={className}
       {...rest}
     >
-      {loading ? (
-        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" role="status" aria-label="Loading" />
-      ) : icon ? (
-        <span className="shrink-0 flex items-center">{icon}</span>
-      ) : null}
-      {children && <span>{children}</span>}
-      {iconRight && <span className="shrink-0 flex items-center">{iconRight}</span>}
-    </Component>
+      {leadingIcon}
+      {trailingIcon}
+      {children}
+    </Tag>
   )
 })
 

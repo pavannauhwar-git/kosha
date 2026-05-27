@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback, useRef, startTransition } from 'react'
 import { motion } from 'framer-motion'
+import { ThemeProvider, CssBaseline } from '@mui/material'
+import { getMuiTheme } from './lib/muiTheme'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
@@ -477,7 +479,9 @@ function BottomNav() {
                 // should never create back-navigable history entries so that
                 // the iOS swipe-from-left gesture only triggers meaningful
                 // navigation (e.g. modals / sub-pages), not tab hopping.
-                navigate(item.path, { replace: true })
+                startTransition(() => {
+                  navigate(item.path, { replace: true })
+                })
               }}
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
@@ -489,26 +493,54 @@ function BottomNav() {
                 {isActive && (
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
                     initial={false}
-                    transition={{ type: 'spring', stiffness: 500, damping: 40, mass: 1 }} />
+                    transition={{
+                      type: 'spring',
+                      stiffness: 650,
+                      damping: 52,
+                      mass: 1,
+                    }}
+                  />
                 )}
-                <span className="nav-icon-layer" style={{ opacity: isActive ? 1 : 0, transition: 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)' }}>
-                  <item.Icon size={21} weight="fill" color="var(--ds-primary)" />
-                </span>
-                <span className="nav-icon-layer" style={{ opacity: isActive ? 0 : 1, transition: 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)' }}>
+                {/* Active icon — springs in with scale overshoot */}
+                <motion.span
+                  className="nav-icon-layer"
+                  animate={{
+                    opacity: isActive ? 1 : 0,
+                    scale: isActive ? 1 : 0.7,
+                  }}
+                  transition={isActive
+                    ? { type: 'spring', stiffness: 700, damping: 60, mass: 1 }
+                    : { duration: 0.12, ease: [0.2, 0, 0, 1] }
+                  }
+                >
+                  <item.Icon size={21} weight="fill" color="var(--ds-on-primary-container)" />
+                </motion.span>
+                {/* Inactive icon — fades/scales out */}
+                <motion.span
+                  className="nav-icon-layer"
+                  animate={{
+                    opacity: isActive ? 0 : 1,
+                    scale: isActive ? 0.7 : 1,
+                  }}
+                  transition={!isActive
+                    ? { type: 'spring', stiffness: 700, damping: 60, mass: 1 }
+                    : { duration: 0.12, ease: [0.2, 0, 0, 1] }
+                  }
+                >
                   <item.Icon size={21} weight="regular" color="var(--ds-text-tertiary)" />
-                </span>
+                </motion.span>
               </div>
-              <span
+              <motion.span
                 className="nav-label"
-                style={{
-                  color: isActive ? 'var(--ds-primary)' : 'var(--ds-text-tertiary)',
+                animate={{
+                  color: isActive ? 'var(--ds-text)' : 'var(--ds-text-tertiary)',
                   fontWeight: isActive ? 600 : 400,
                   opacity: isActive ? 1 : 0.75,
-                  transition: 'color 180ms cubic-bezier(0.2, 0, 0, 1), opacity 180ms cubic-bezier(0.2, 0, 0, 1)',
                 }}
+                transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
               >
                 {item.label}
-              </span>
+              </motion.span>
             </button>
           )
         })}
@@ -886,6 +918,17 @@ function SafeRoute({ pathname, guard, children }) {
 
 function AnimatedRoutes() {
   const location = useLocation()
+
+  useEffect(() => {
+    // Reset focus on page navigation: if active element is a bottom nav item, blur it
+    // so it doesn't cause aria-hidden sibling focus blocks on the new page.
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      if (document.activeElement.classList.contains('nav-float-item')) {
+        document.activeElement.blur()
+      }
+    }
+  }, [location.pathname])
+
   return (
     <div>
       <Routes location={location}>
@@ -992,10 +1035,10 @@ function QueryErrorRecovery() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 12, scale: 0.96 }}
+      transition={{ type: 'spring', stiffness: 700, damping: 65, mass: 1 }}
       role="status"
       aria-live="polite"
       aria-atomic="true"
@@ -1307,16 +1350,30 @@ function AppShell() {
 }
 
 export default function App() {
+  const [mode, setMode] = useState(() => document.documentElement.classList.contains('dark') ? 'dark' : 'light')
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark')
+      setMode(isDark ? 'dark' : 'light')
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <GlobalRealtimeSync />
-          <DashboardWarmPrefetch />
-          <VersionHeartbeat />
-          <AppContent />
-        </QueryClientProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider theme={getMuiTheme(mode)}>
+      <CssBaseline />
+      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <GlobalRealtimeSync />
+            <DashboardWarmPrefetch />
+            <VersionHeartbeat />
+            <AppContent />
+          </QueryClientProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }

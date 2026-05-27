@@ -21,7 +21,14 @@ function isFocusableVisible(element) {
 function getFocusableElements(container) {
   return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter((node) => {
     if (!(node instanceof HTMLElement)) return false
-    if (node.getAttribute('aria-hidden') === 'true') return false
+    
+    // Traverses ancestors up to the trapped container to skip elements in any aria-hidden="true" subtrees
+    let current = node
+    while (current && current !== container) {
+      if (current.getAttribute('aria-hidden') === 'true') return false
+      current = current.parentElement
+    }
+    
     return isFocusableVisible(node)
   })
 }
@@ -39,6 +46,17 @@ export default function useOverlayFocusTrap(open, options = {}) {
   const containerRef = useRef(null)
   const previousActiveRef = useRef(null)
 
+  const onCloseRef = useRef(onClose)
+  const initialFocusSelectorRef = useRef(initialFocusSelector)
+  const restoreFocusRef = useRef(restoreFocus)
+
+  // Sync refs with the latest prop values on every render without triggering effect runs
+  useEffect(() => {
+    onCloseRef.current = onClose
+    initialFocusSelectorRef.current = initialFocusSelector
+    restoreFocusRef.current = restoreFocus
+  })
+
   useEffect(() => {
     if (!open || typeof document === 'undefined') return undefined
 
@@ -49,8 +67,8 @@ export default function useOverlayFocusTrap(open, options = {}) {
     previousActiveRef.current = previousActive
 
     const focusInitial = () => {
-      const targeted = initialFocusSelector
-        ? container.querySelector(initialFocusSelector)
+      const targeted = initialFocusSelectorRef.current
+        ? container.querySelector(initialFocusSelectorRef.current)
         : null
       const fallback = getFocusableElements(container)[0] || container
       const nextTarget = targeted instanceof HTMLElement ? targeted : fallback
@@ -59,6 +77,8 @@ export default function useOverlayFocusTrap(open, options = {}) {
       }
     }
 
+    // Shift focus synchronously to immediately prevent aria-hidden timing race conditions.
+    focusInitial()
     const rafId = window.requestAnimationFrame(focusInitial)
 
     const handleKeyDown = (event) => {
@@ -66,9 +86,10 @@ export default function useOverlayFocusTrap(open, options = {}) {
       if (!(active instanceof HTMLElement) || !container.contains(active)) return
 
       if (event.key === 'Escape') {
-        if (typeof onClose === 'function') {
+        const currentOnClose = onCloseRef.current
+        if (typeof currentOnClose === 'function') {
           event.preventDefault()
-          onClose()
+          currentOnClose()
         }
         return
       }
@@ -102,7 +123,7 @@ export default function useOverlayFocusTrap(open, options = {}) {
       document.removeEventListener('keydown', handleKeyDown)
       window.cancelAnimationFrame(rafId)
 
-      if (!restoreFocus) return
+      if (!restoreFocusRef.current) return
 
       const previous = previousActiveRef.current
       if (previous && typeof previous.focus === 'function') {
@@ -111,7 +132,7 @@ export default function useOverlayFocusTrap(open, options = {}) {
         })
       }
     }
-  }, [open, onClose, initialFocusSelector, restoreFocus])
+  }, [open])
 
   return containerRef
 }

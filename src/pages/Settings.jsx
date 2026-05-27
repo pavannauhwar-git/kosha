@@ -12,6 +12,7 @@ import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import SecureAvatar from '../components/ui/SecureAvatar'
+import Switch from '../components/ui/Switch'
 import {
   getReminderPrefs,
   setReminderPrefs,
@@ -25,10 +26,12 @@ import { getActiveWalletUserId, setActiveWalletUserId } from '../lib/walletStore
 import { fmtDate } from '../lib/utils'
 import { shareLink } from '../lib/share'
 import { queryClient } from '../lib/queryClient'
+import { CHANGELOG } from '../lib/changelog'
 
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
+const APP_VERSION = CHANGELOG[0]?.version || '—'
 
 function SettingRow({ icon, label, sublabel, onClick, destructive = false, disabled = false, rightElement, toggleState = null }) {
   const toggleA11yProps = typeof toggleState === 'boolean'
@@ -40,13 +43,15 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
     : {}
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
       disabled={disabled}
       {...toggleA11yProps}
+      whileTap={{ scale: 0.985 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
-                  transition-all duration-200 active:scale-[0.98] active:bg-kosha-surface-2
+                  transition-colors duration-150 active:bg-kosha-surface-2
                   disabled:opacity-50
                   ${destructive ? 'text-expense-text' : 'text-ink'}`}
     >
@@ -66,7 +71,7 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
       {rightElement && (
         <div className="shrink-0 text-ink-3">{rightElement}</div>
       )}
-    </button>
+    </motion.button>
   )
 }
 
@@ -414,7 +419,7 @@ export default function Settings() {
               sublabel={isDark ? 'Currently dark' : 'Currently light'}
               onClick={toggleDarkMode}
               toggleState={isDark}
-              rightElement={<span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${isDark ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>{isDark ? 'ON' : 'OFF'}</span>}
+              rightElement={<Switch checked={isDark} onChange={() => {}} sx={{ pointerEvents: 'none' }} />}
             />
           </div>
         </motion.div>
@@ -524,7 +529,7 @@ export default function Settings() {
               sublabel="Turn reminder notifications on or off"
               onClick={() => toggleReminderField('enabled')}
               toggleState={reminderPrefs.enabled}
-              rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.enabled ? 'ON' : 'OFF'}</span>}
+              rightElement={<Switch checked={reminderPrefs.enabled} onChange={() => {}} sx={{ pointerEvents: 'none' }} />}
             />
             <Divider />
             <SettingRow
@@ -534,7 +539,7 @@ export default function Settings() {
               onClick={() => toggleReminderField('bill_due')}
               disabled={!reminderPrefs.enabled}
               toggleState={reminderPrefs.bill_due}
-              rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.bill_due ? 'ON' : 'OFF'}</span>}
+              rightElement={<Switch checked={reminderPrefs.bill_due} onChange={() => {}} disabled={!reminderPrefs.enabled} sx={{ pointerEvents: 'none' }} />}
             />
             <Divider />
             <SettingRow
@@ -544,7 +549,7 @@ export default function Settings() {
               onClick={() => toggleReminderField('spending_pace')}
               disabled={!reminderPrefs.enabled}
               toggleState={reminderPrefs.spending_pace}
-              rightElement={<span className="text-[11px] font-semibold">{reminderPrefs.spending_pace ? 'ON' : 'OFF'}</span>}
+              rightElement={<Switch checked={reminderPrefs.spending_pace} onChange={() => {}} disabled={!reminderPrefs.enabled} sx={{ pointerEvents: 'none' }} />}
             />
             <Divider />
             <SettingRow
@@ -577,7 +582,7 @@ export default function Settings() {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-kosha-border bg-white">
+              <div className="divide-y divide-kosha-border">
                 {linkedProfiles.map((lp) => (
                   <div key={lp.id} className="px-4 py-3.5 flex items-center justify-between gap-3 bg-kosha-surface-2">
                     <div className="flex items-center gap-3 min-w-0">
@@ -738,7 +743,7 @@ export default function Settings() {
         </motion.div>
         <motion.div variants={fadeUp} className="py-6 flex flex-col items-center gap-1 opacity-50">
           <p className="text-[10px] font-bold text-ink-3 uppercase tracking-widest">Kosha Finance</p>
-          <p className="text-[11px] text-ink-4">Version 2.4.1 (Build 1084)</p>
+          <p className="text-[11px] text-ink-4">Version {APP_VERSION}</p>
         </motion.div>
       </motion.div>
 

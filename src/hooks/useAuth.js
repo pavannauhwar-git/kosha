@@ -136,6 +136,7 @@ export function useAuthState() {
         }
 
         if (event === 'SIGNED_IN') {
+          queryClient.clear()
           setAuthUser(u)
           if (u) {
             setErrorReportingUser({ id: u.id })

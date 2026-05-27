@@ -1,19 +1,15 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CaretRight, Warning } from '@phosphor-icons/react'
-import { motion } from 'framer-motion'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useLoans } from '../hooks/useLoans'
 import { fmt, daysUntil } from '../lib/utils'
-import { createFadeUp, createStagger } from '../lib/animations'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import Button from '../components/ui/Button'
-
-const fadeUp = createFadeUp(12, 0.4)
-const stagger = createStagger(0.06, 0.04)
+import Card from '../components/ui/Card'
 
 function safeDays(dateValue) {
   if (!dateValue) return null
@@ -81,24 +77,19 @@ export default function Obligations() {
 
   return (
     <PageHeaderPage title="Obligations">
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate="show"
-        className="page-stack"
-      >
+      <div className="page-stack">
         {!isLoading && !isViewingPartner && (
-          <motion.div variants={fadeUp} className="px-0.5">
+          <div className="fade-up fade-up-1 px-0.5">
             <p className="section-label mb-1">Your Journey</p>
             <p className="text-[13px] text-ink-3 leading-relaxed">
               Add a bill or loan to get started with your obligations journey.
             </p>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Loading skeleton ────────────────────────────────────────── */}
         {isLoading && (
-          <motion.div variants={fadeUp} className="flex flex-col gap-3">
+          <div className="fade-up fade-up-2 flex flex-col gap-3">
             <div className="card p-4 overflow-hidden">
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div className="flex-1 pt-1 space-y-2">
@@ -133,12 +124,12 @@ export default function Obligations() {
                 ))}
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* ── All-empty hero state ───────────────────────────────────── */}
         {allEmpty && (
-          <motion.div variants={fadeUp} className="card p-6 flex flex-col items-center text-center">
+          <div className="fade-up fade-up-2 card p-6 flex flex-col items-center text-center">
             <img
               src="/illustrations/all_done.png"
               alt="No obligations"
@@ -162,16 +153,18 @@ export default function Obligations() {
                 </Button>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* ── Bills card ─────────────────────────────────────────────── */}
         {!isLoading && !allEmpty && (
-          <motion.div variants={fadeUp}>
-            <button
-              type="button"
+          <div className="fade-up fade-up-2">
+            <Card
+              variant="elevated"
+              padding="none"
+              pressable
               onClick={() => go('/bills')}
-              className="card w-full text-left p-0 overflow-hidden active:scale-[0.985] transition-transform duration-150 will-change-transform"
+              className="w-full text-left overflow-hidden"
               aria-label="Open Bills & Dues"
             >
               {/* Header with illustration */}
@@ -255,17 +248,19 @@ export default function Obligations() {
                 </span>
                 <CaretRight size={15} className="text-ink-4 ml-auto" />
               </div>
-            </button>
-          </motion.div>
+            </Card>
+          </div>
         )}
 
         {/* ── Loans card ─────────────────────────────────────────────── */}
         {!isLoading && !allEmpty && (
-          <motion.div variants={fadeUp}>
-            <button
-              type="button"
+          <div className="fade-up fade-up-3">
+            <Card
+              variant="elevated"
+              padding="none"
+              pressable
               onClick={() => go('/loans')}
-              className="card w-full text-left p-0 overflow-hidden active:scale-[0.985] transition-transform duration-150 will-change-transform"
+              className="w-full text-left overflow-hidden"
               aria-label="Open Loans"
             >
               {/* Header with illustration */}
@@ -331,11 +326,11 @@ export default function Obligations() {
                 </span>
                 <CaretRight size={15} className="text-ink-4 ml-auto" />
               </div>
-            </button>
-          </motion.div>
+            </Card>
+          </div>
         )}
 
-      </motion.div>
+      </div>
       <PartnerViewBanner />
     </PageHeaderPage>
   )

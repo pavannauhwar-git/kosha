@@ -30,39 +30,6 @@ import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
 
-function DashboardHeroSkeleton() {
-  return (
-    <div className="card-hero p-5 sm:p-6 relative overflow-hidden">
-      <div className="flex items-center justify-between mb-3.5 gap-2">
-        <div className="h-3 w-24 rounded-full shimmer opacity-70" />
-        <div className="h-6 w-24 rounded-pill shimmer opacity-30" />
-      </div>
-      <div>
-        <div className="h-[3.12rem] w-48 rounded-xl shimmer opacity-80" />
-      </div>
-      <div className="mt-2.5 mb-5 h-[28px] w-32 rounded-pill shimmer opacity-60" />
-      <div className="mb-3.5 border-t border-white/10" />
-      <div className="flex justify-between gap-2">
-        {[1, 2, 3].map((slot) => (
-          <div key={slot} className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl bg-white/10">
-            <div className="h-3 w-10 rounded-full shimmer opacity-55" />
-            <div className="mt-2 h-4 w-16 rounded-full shimmer opacity-70" />
-          </div>
-        ))}
-      </div>
-      <div className="mt-3.5">
-        <div className="flex justify-between mb-2">
-          <div className="h-3 w-20 rounded-full shimmer opacity-55" />
-          <div className="h-3 w-8 rounded-full shimmer opacity-65" />
-        </div>
-        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-          <div className="h-full w-[40%] shimmer opacity-70" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function DashboardRecentSkeleton() {
   return (
     <div>
@@ -447,7 +414,7 @@ export default function Dashboard() {
     currentMonthParam,
   ])
 
-  const isNewUser = walletReady && !heroLoading && !isBackgroundFetching && recent.length === 0 && earned === 0 && spent === 0 && invested === 0 && bills.length === 0
+  const isNewUser = walletReady && !heroLoading && recent.length === 0 && earned === 0 && spent === 0 && invested === 0 && bills.length === 0
   const showActionQueueSection = !heroLoading && !isNewUser
   const showSpendControlSection = !heroLoading && (earned > 0 || weeklyDriftSignal?.hasData || !!categoryPressureSignal)
   const showBillsControlSection = walletReady && (dueSoonCount > 0 || upcomingBills.length > 0 || !!billClusterSignal)
@@ -631,24 +598,23 @@ export default function Dashboard() {
         {/* ── Hero card ─────────────────────────────────────────────── */}
         {!isNewUser && (
           <div className="fade-up fade-up-2">
-            {heroLoading ? <DashboardHeroSkeleton /> : (
-              <DashboardHeroCard
-                now={balanceHorizonDate}
-                runningBalance={runningBalance}
-                rate={rate}
-                earned={earned}
-                spent={spent}
-                invested={invested}
-                bills={bills}
-                heroMode={heroMode}
-                onSetHeroMode={handleHeroModeChange}
-              />
-            )}
+            <DashboardHeroCard
+              loading={heroLoading}
+              now={balanceHorizonDate}
+              runningBalance={runningBalance}
+              rate={rate}
+              earned={earned}
+              spent={spent}
+              invested={invested}
+              bills={bills}
+              heroMode={heroMode}
+              onSetHeroMode={handleHeroModeChange}
+            />
           </div>
         )}
 
         {showActionQueueSection && (
-          <div>
+          <div className="card-spring-in fade-up-2">
             <DashboardSectionCue
               title="Action queue"
               subtitle="Handle the highest-impact items first."
@@ -657,7 +623,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && attentionItems.length > 0 && (
-          <div className="fade-in">
+          <div className="card-spring-in fade-up-2">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
@@ -697,7 +663,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && !isNewUser && attentionItems.length === 0 && (earned > 0 || spent > 0) && (
-          <div className="fade-in">
+          <div className="card-spring-in fade-up-2">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
@@ -737,7 +703,7 @@ export default function Dashboard() {
         )}
 
         {isNewUser && (
-          <div>
+          <div className="fade-up fade-up-2">
             <div className="card p-4 border-0">
               <p className="section-label mb-1.5">Start here</p>
               <p className="text-[14px] font-semibold text-ink">Add your first transaction to unlock daily guidance.</p>
@@ -755,7 +721,7 @@ export default function Dashboard() {
         )}
 
         {showSpendControlSection && (
-          <div>
+          <div className="card-spring-in fade-up-3">
             <DashboardSectionCue
               title="Spend control"
               subtitle="Track pace, runway, and pressure before month-end."
@@ -765,7 +731,7 @@ export default function Dashboard() {
 
         {/* ── Spendable today + burn rate ───────────────────────────── */}
         {!heroLoading && earned > 0 && (
-          <div className="fade-in">
+          <div className="card-spring-in fade-up-3">
             <div className="grid grid-cols-2 gap-2.5">
               <div className="card p-3.5 border-0">
                 <div className="flex items-center gap-2 mb-2">
@@ -803,7 +769,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && (
-          <div className="fade-in">
+          <div className="card-spring-in fade-up-4">
             <SpendingPaceTracker
               dailyExpenseTotals={dailyExpenseTotals}
               now={now}
@@ -813,7 +779,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && runwayBalance && (
-          <div className="fade-in">
+          <div className="card-spring-in fade-up-5">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-[10px] text-ink-3 tracking-wide">Runway balance</p>
@@ -859,7 +825,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && categoryPressureSignal && (
-          <div className="fade-in">
+          <div className="card-spring-in fade-up-6">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -894,7 +860,7 @@ export default function Dashboard() {
         )}
 
         {showBillsControlSection && (
-          <div>
+          <div className="card-spring-in fade-up-7">
             <DashboardSectionCue
               title="Bills control"
               subtitle="Stay ahead of due dates and payment clusters."
@@ -903,7 +869,7 @@ export default function Dashboard() {
         )}
 
         {showBillsControlSection && (
-          <div className="fade-in">
+          <div className="card-spring-in fade-up-7">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>

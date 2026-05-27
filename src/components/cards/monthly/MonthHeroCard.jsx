@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { motion } from 'framer-motion'
 import { fmt, savingsRate } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 import { MONTH_NAMES } from '../../../lib/constants'
@@ -33,16 +34,16 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
     boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
   }
 
-  const statChipStyle = {
-    background: 'rgba(255,255,255,0.08)',
-    border: '1px solid rgba(255,255,255,0.15)',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-  }
 
   const barPct = Math.max(0, Math.min(100, rate)) / 100
 
   return (
-    <div className="card-hero p-5 sm:p-6 relative overflow-hidden">
+    <motion.div
+      className="card-hero p-5 sm:p-6 relative overflow-hidden"
+      initial={{ opacity: 0, y: 16, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 340, damping: 28, mass: 0.9 }}
+    >
       <div className="flex items-center justify-between mb-3.5">
         <p className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{ color: heroAccentStrong }}>
           {MONTH_NAMES[month - 1].slice(0, 3)} {year}
@@ -81,8 +82,8 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
           return (
             <div
               key={s.label}
-              className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl backdrop-blur-sm fade-in"
-              style={{ ...statChipStyle, animationDelay: STAT_DELAYS[i] }}
+              className="flex-1 min-w-0 px-3 py-2.5 hero-stat-chip fade-in"
+              style={{ animationDelay: STAT_DELAYS[i] }}
             >
               <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide" style={{ color: C.heroLabel }}>
                 {s.label}
@@ -108,7 +109,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
           />
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 })
 

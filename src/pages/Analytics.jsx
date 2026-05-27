@@ -251,14 +251,10 @@ export default function Analytics() {
           ]}
         />
       ) : (
-        <motion.div key={year}
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="page-stack"
-        >
+        <div key={year} className="page-stack">
           {hasYearData ? (
             <>
-              <div className="card p-3.5 border-0">
+              <div className="fade-up fade-up-1 card p-3.5 border-0">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
                     <p className="text-[10px] text-ink-3 tracking-wide">Year summary</p>
@@ -298,17 +294,19 @@ export default function Analytics() {
               </div>
 
               {(yearDailyLoading || Object.keys(yearDailyTotals || {}).length > 0) && (
-                <CalendarHeatmap
-                  dailyTotals={yearDailyTotals}
-                  year={year}
-                  loading={yearDailyLoading}
-                />
+                <div className="fade-up fade-up-2">
+                  <CalendarHeatmap
+                    dailyTotals={yearDailyTotals}
+                    year={year}
+                    loading={yearDailyLoading}
+                  />
+                </div>
               )}
 
               {(yearHealthSignal || expenseConcentrationSignal) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="fade-up fade-up-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {yearHealthSignal && (
-                    <div className="card p-3.5 border-0 hover-lift">
+                    <div className="card p-3.5 border-0">
                       <p className="text-[10px] text-ink-3 tracking-wide">Year health score</p>
                       <p className={`text-[18px] font-semibold tabular-nums mt-1 ${bandTextClass(yearHealthSignal.band)}`}>
                         {yearHealthSignal.score}/100
@@ -323,7 +321,7 @@ export default function Analytics() {
                   )}
 
                   {expenseConcentrationSignal && (
-                    <div className="card p-3.5 border-0 hover-lift">
+                    <div className="card p-3.5 border-0">
                       <p className="text-[10px] text-ink-3 tracking-wide">Expense concentration</p>
                       <p className={`text-[18px] font-semibold tabular-nums mt-1 ${bandTextClass(expenseConcentrationSignal.band)}`}>
                         {expenseConcentrationSignal.topThreePct}%
@@ -340,61 +338,77 @@ export default function Analytics() {
               )}
 
               {Number(data?.totalInvestment || 0) > 0 && (
-                <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
-                  <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} isViewingPartner={isViewingPartner} />
-                </Suspense>
+                <div className="fade-up fade-up-4">
+                  <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                    <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} isViewingPartner={isViewingPartner} />
+                  </Suspense>
+                </div>
               )}
 
 
               {/* ── 2. Year-over-year context ───────────────────────── */}
               {heavyReady && yoyYears.length >= 2 && (
-                <Suspense fallback={<ChartSkeleton height="h-[320px]" />}>
-                  <YearOverYearCards years={yoyYears} currentYear={year} enabled />
-                </Suspense>
+                <div className="fade-up fade-up-5">
+                  <Suspense fallback={<ChartSkeleton height="h-[320px]" />}>
+                    <YearOverYearCards years={yoyYears} currentYear={year} enabled />
+                  </Suspense>
+                </div>
               )}
 
               {/* ── 3. Performance trends ─────────────────────────────── */}
-              <Suspense fallback={<ChartSkeleton height="h-[220px]" />}>
-                <CashFlowChart
-                  chartData={flowTrendData}
-                  totalIncome={data?.totalIncome}
-                />
-              </Suspense>
-              <Suspense fallback={<ChartSkeleton height="h-[220px]" />}>
-                <CashflowWaterfallChart
-                  flowData={flowTrendData}
-                  totalIncome={data?.totalIncome}
-                  totalExpense={data?.totalExpense}
-                  totalInvestment={data?.totalInvestment}
-                  periodLabel="Yearly"
-                />
-              </Suspense>
-              <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
-                <SurplusTrajectoryChart netData={surplusData} />
-              </Suspense>
-
-              {Number(data?.totalInvestment || 0) > 0 && (
-                <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
-                  <InvestmentConsistencyCard monthlyData={data?.monthly} year={year} />
+              <div className="fade-up fade-up-6">
+                <Suspense fallback={<ChartSkeleton height="h-[220px]" />}>
+                  <CashFlowChart
+                    chartData={flowTrendData}
+                    totalIncome={data?.totalIncome}
+                  />
                 </Suspense>
-              )}
-
-              <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
-                <RunwayCoverageChart
-                  flowData={flowTrendData}
-                  annualSurplus={annualSurplus}
-                />
-              </Suspense>
-
-              {Number(data?.totalExpense || 0) > 0 && (
-                <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
-                  <WhatIfSimulatorCard
-                    categories={scenarioCategories}
+              </div>
+              <div className="fade-up fade-up-7">
+                <Suspense fallback={<ChartSkeleton height="h-[220px]" />}>
+                  <CashflowWaterfallChart
+                    flowData={flowTrendData}
                     totalIncome={data?.totalIncome}
                     totalExpense={data?.totalExpense}
                     totalInvestment={data?.totalInvestment}
+                    periodLabel="Yearly"
                   />
                 </Suspense>
+              </div>
+              <div className="fade-up fade-up-8">
+                <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                  <SurplusTrajectoryChart netData={surplusData} />
+                </Suspense>
+              </div>
+
+              {Number(data?.totalInvestment || 0) > 0 && (
+                <div className="fade-up fade-up-9">
+                  <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                    <InvestmentConsistencyCard monthlyData={data?.monthly} year={year} />
+                  </Suspense>
+                </div>
+              )}
+
+              <div className="fade-up fade-up-9">
+                <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                  <RunwayCoverageChart
+                    flowData={flowTrendData}
+                    annualSurplus={annualSurplus}
+                  />
+                </Suspense>
+              </div>
+
+              {Number(data?.totalExpense || 0) > 0 && (
+                <div className="fade-up fade-up-9">
+                  <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
+                    <WhatIfSimulatorCard
+                      categories={scenarioCategories}
+                      totalIncome={data?.totalIncome}
+                      totalExpense={data?.totalExpense}
+                      totalInvestment={data?.totalInvestment}
+                    />
+                  </Suspense>
+                </div>
               )}
 
 
@@ -418,7 +432,7 @@ export default function Analytics() {
             />
           )}
 
-        </motion.div>
+        </div>
       )}
       <PartnerViewBanner />
     </PageHeaderPage>

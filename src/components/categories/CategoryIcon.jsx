@@ -40,7 +40,7 @@ function CategoryIcon({ categoryId, id, size = 20, className = '' }) {
 
   return (
     <div
-      className={`flex items-center justify-center rounded-chip flex-shrink-0 ${className}`}
+      className={`flex items-center justify-center rounded-full flex-shrink-0 ${className}`}
       style={{
         width:  size + 12,
         height: size + 12,

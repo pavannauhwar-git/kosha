@@ -753,11 +753,12 @@ export default function Reconciliation() {
                       key={txn.id}
                       ref={(node) => measureQueueRow(rowIndex, node)}
                       id={`recon-item-${txn.id}`}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.99 }}
-                      whileHover={{ y: -1 }}
-                      transition={{ duration: 0.2 }}
+                      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                      whileHover={{ y: -2, scale: 1.005 }}
+                      whileTap={{ scale: 0.99 }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 22, mass: 0.8 }}
                       className={`card p-4 ${highlightedTxnId === txn.id ? 'txn-focus-highlight' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -1061,19 +1062,42 @@ function Metric({ label, value, tone = 'text-ink', compact }) {
   )
 }
 
+function ConfidenceBadge({ confidence }) {
+  const isHigh = confidence === 'high'
+  const isMed  = confidence === 'medium'
+
+  return (
+    <motion.span
+      layout
+      animate={isHigh ? { scale: [1, 1.08, 1] } : {}}
+      transition={isHigh ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.2 } : {}}
+      className={`text-[11px] px-2 py-1 rounded-full font-semibold whitespace-nowrap select-none ${
+        isHigh  ? 'bg-income-bg text-income-text ring-1 ring-income-text/20'
+        : isMed ? 'bg-warning-bg text-warning-text'
+        : 'bg-kosha-surface-2 text-ink-3'
+      }`}
+    >
+      {confidence}
+    </motion.span>
+  )
+}
+
 function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
-  const best = row.best
-  const entry = row.entry
+  const best    = row.best
+  const entry   = row.entry
   const isLinked = !!(best?.txn?.id && linkedIdSet?.has(best.txn.id))
 
-  const borderColor = row.confidence === 'high' ? 'border-l-income-text' 
-                     : row.confidence === 'medium' ? 'border-l-warning-text' 
-                     : 'border-l-ink-3'
+  const borderColor = row.confidence === 'high'   ? 'border-l-income-text'
+                    : row.confidence === 'medium' ? 'border-l-warning-text'
+                    : 'border-l-ink-3'
 
   return (
     <motion.div
-      whileHover={{ y: -1 }}
-      transition={{ duration: 0.14 }}
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      whileHover={{ y: -2, scale: 1.005 }}
+      whileTap={{ scale: 0.99 }}
+      transition={{ type: 'spring', stiffness: 360, damping: 20, mass: 0.8 }}
       className={`rounded-card border border-kosha-border border-l-4 ${borderColor} bg-kosha-surface p-3`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -1084,19 +1108,16 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
           </p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`text-[11px] px-2 py-1 rounded-full font-semibold whitespace-nowrap ${
-            row.confidence === 'high'
-              ? 'bg-income-bg text-income-text'
-              : row.confidence === 'medium'
-                ? 'bg-warning-bg text-warning-text'
-                : 'bg-kosha-surface-2 text-ink-3'
-          }`}>
-            {row.confidence}
-          </span>
+          <ConfidenceBadge confidence={row.confidence} />
           {isLinked && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-income-bg text-income-text font-semibold">
+            <motion.span
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+              className="text-[10px] px-1.5 py-0.5 rounded-full bg-income-bg text-income-text font-semibold"
+            >
               ✓ Linked
-            </span>
+            </motion.span>
           )}
         </div>
       </div>
@@ -1117,9 +1138,12 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
       ) : !best ? (
         <p className="text-caption text-ink-3 mt-2">No candidate found in current transactions.</p>
       ) : (
-        <div className={`mt-2 rounded-card border p-2.5 ${
-          isLinked ? 'border-income-text/30 bg-income-bg/5' : 'border-kosha-border bg-kosha-surface'
-        }`}>
+        <motion.div
+          layout
+          className={`mt-2 rounded-card border p-2.5 ${
+            isLinked ? 'border-income-text/30 bg-income-bg/5' : 'border-kosha-border bg-kosha-surface'
+          }`}
+        >
           <p className="text-caption text-ink-3">
             Best: {best.txn.description || 'No description'} · {fmt(best.txn.amount)} · {fmtDate(best.txn.date)}
           </p>
@@ -1153,7 +1177,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
               </Button>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
     </motion.div>
   )

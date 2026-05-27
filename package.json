@@ -29,7 +29,11 @@
     "test:rls-partner-isolation": "node scripts/tests/test_rls_partner_isolation.mjs"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@fontsource-variable/inter": "^5.2.8",
+    "@material/web": "^2.4.1",
+    "@mui/material": "^9.0.1",
     "@phosphor-icons/react": "^2.1.7",
     "@radix-ui/react-dialog": "^1.0.5",
     "@sentry/react": "^10.52.0",

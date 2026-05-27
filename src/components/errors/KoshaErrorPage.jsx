@@ -115,48 +115,56 @@ export default function KoshaErrorPage({
           {isNotFound && helperText && <p className="mt-1 text-caption leading-relaxed text-ink-3">{helperText}</p>}
 
           <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button
+            <motion.button
               type="button"
               onClick={onPrimary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-[14px] font-semibold text-white transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.97]"
+              whileTap={{ scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-[14px] font-semibold text-white"
             >
               <PrimaryIcon size={16} />
               {primaryLabel}
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
               type="button"
               onClick={onSecondary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-[14px] font-semibold text-ink transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.98]"
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-[14px] font-semibold text-ink"
             >
               <SecondaryIcon size={16} />
               {secondaryLabel}
-            </button>
+            </motion.button>
           </div>
 
           {tertiaryLabel && onTertiary && TertiaryIcon && (
-            <button
+            <motion.button
               type="button"
               onClick={onTertiary}
-              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-accent-text transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.98]"
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-accent-text"
             >
               <TertiaryIcon size={16} />
               {tertiaryLabel}
-            </button>
+            </motion.button>
           )}
 
           {normalizedDetail && (
             <div className="mt-4 rounded-card border border-kosha-border bg-kosha-surface-2">
               <div className="flex items-center justify-between gap-2 px-3 py-2.5">
                 <p className="text-caption font-semibold text-ink-2">Technical details</p>
-                <button
+                <motion.button
                   type="button"
                   onClick={handleCopyDetail}
-                  className="inline-flex items-center gap-1.5 rounded-pill border border-kosha-border bg-white px-2.5 py-1 text-[11px] font-semibold text-ink-2"
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 20 }}
+                  className="inline-flex items-center gap-1.5 rounded-pill border border-kosha-border bg-kosha-surface-2 px-2.5 py-1 text-[11px] font-semibold text-ink-2"
                 >
                   {copied ? <Check size={12} /> : <Copy size={12} />}
                   {copied ? 'Copied' : 'Copy'}
-                </button>
+                </motion.button>
               </div>
 
               <pre className="max-h-44 overflow-auto border-t border-kosha-border px-3 py-3 text-[11px] leading-relaxed text-ink-3 whitespace-pre-wrap break-words">

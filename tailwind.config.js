@@ -81,11 +81,21 @@ export default {
       },
 
       borderRadius: {
-        'card':    '20px',
-        'card-lg': '24px',
-        'hero':    '28px',
-        'chip':    '10px',
-        'pill':    '9999px',
+        // Official Material 3 Shape Scale
+        'md3-none': 'var(--md-sys-shape-none)',
+        'md3-xs':   'var(--md-sys-shape-xs)',
+        'md3-sm':   'var(--md-sys-shape-sm)',
+        'md3-md':   'var(--md-sys-shape-md)',
+        'md3-lg':   'var(--md-sys-shape-lg)',
+        'md3-xl':   'var(--md-sys-shape-xl)',
+        'md3-full': 'var(--md-sys-shape-full)',
+
+        // Mapping legacy aliases for zero regressions & instant visual upgrades
+        'card':    'var(--md-sys-shape-lg)',   // Replaced 20px with standard M3 Large (16px) for crisp cards
+        'card-lg': 'var(--md-sys-shape-xl)',   // Replaced 24px with standard M3 Extra Large (28px)
+        'hero':    'var(--md-sys-shape-xl)',   // 28px
+        'chip':    'var(--md-sys-shape-sm)',   // 8px
+        'pill':    'var(--md-sys-shape-full)', // 9999px
       },
 
       boxShadow: {
@@ -104,7 +114,6 @@ export default {
       keyframes: {
         'sheet-in': {
           '0%':   { transform: 'translateY(100%)' },
-          '72%':  { transform: 'translateY(-3px)' },
           '100%': { transform: 'translateY(0)' },
         },
         'fade-in': {
@@ -123,10 +132,6 @@ export default {
           '0%':   { transform: 'scale(0.96)', opacity: '0' },
           '100%': { transform: 'scale(1)',    opacity: '1' },
         },
-        'float': {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%':      { transform: 'translateY(-4px)' },
-        },
         'skeleton-pulse': {
           '0%':   { backgroundPosition: '200% 0' },
           '100%': { backgroundPosition: '-200% 0' },
@@ -137,14 +142,13 @@ export default {
         },
       },
       animation: {
-        'sheet-in':       'sheet-in 0.4s cubic-bezier(0.05,0.7,0.1,1) forwards',
-        'fade-in':        'fade-in 0.2s cubic-bezier(0.2,0,0,1) forwards',
-        'slide-up':       'slide-up 0.4s cubic-bezier(0.05,0.7,0.1,1) forwards',
-        'swipe-out':      'swipe-out 0.2s cubic-bezier(0.2,0,0,1) forwards',
-        'scale-in':       'scale-in 0.4s cubic-bezier(0.05,0.7,0.1,1) forwards',
-        'float':          'float 3s ease-in-out infinite',
-        'skeleton-pulse': 'skeleton-pulse 2s ease-in-out infinite',
-        'count-up':       'count-up 0.5s cubic-bezier(0.05,0.7,0.1,1) forwards',
+        'sheet-in':       'sheet-in var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard-decelerate) forwards',
+        'fade-in':        'fade-in var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard) forwards',
+        'slide-up':       'slide-up var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard-decelerate) forwards',
+        'swipe-out':      'swipe-out var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard-accelerate) forwards',
+        'scale-in':       'scale-in var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard-decelerate) forwards',
+        'skeleton-pulse': 'skeleton-pulse 2s linear infinite',
+        'count-up':       'count-up var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard-decelerate) forwards',
       },
     },
   },

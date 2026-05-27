@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { motion } from 'framer-motion'
 import { fmt } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 
@@ -18,6 +19,7 @@ function getHeroStatClass(length) {
 const STAT_DELAYS = ['0ms', '60ms', '120ms']
 
 const DashboardHeroCard = memo(function DashboardHeroCard({
+  loading = false,
   now,
   runningBalance,
   rate,
@@ -28,7 +30,47 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
   heroMode,
   onSetHeroMode,
 }) {
-  const safeToSpend = runningBalance !== null
+  if (loading) {
+    return (
+      <motion.div
+        className="card-hero p-5 sm:p-6 relative overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.22, ease: [0.05, 0.7, 0.1, 1] }}
+      >
+        <div className="fade-in">
+          <div className="flex items-center justify-between mb-3.5 gap-2">
+            <div className="h-3 w-24 rounded-full shimmer opacity-70" />
+            <div className="h-6 w-24 rounded-pill shimmer opacity-30" />
+          </div>
+          <div>
+            <div className="h-[3.12rem] w-48 rounded-xl shimmer opacity-80" />
+          </div>
+          <div className="mt-2.5 mb-5 h-[28px] w-32 rounded-pill shimmer opacity-60" />
+          <div className="mb-3.5 border-t border-white/10" />
+          <div className="flex justify-between gap-2">
+            {[1, 2, 3].map((slot) => (
+              <div key={slot} className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl bg-white/10">
+                <div className="h-3 w-10 rounded-full shimmer opacity-55" />
+                <div className="mt-2 h-4 w-16 rounded-full shimmer opacity-70" />
+              </div>
+            ))}
+          </div>
+          <div className="mt-3.5">
+            <div className="flex justify-between mb-2">
+              <div className="h-3 w-20 rounded-full shimmer opacity-55" />
+              <div className="h-3 w-8 rounded-full shimmer opacity-65" />
+            </div>
+            <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-full w-[40%] shimmer opacity-70" />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  const safeToSpend = runningBalance !== null && bills
     ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0))
     : null
 
@@ -43,18 +85,16 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
   }
 
-  const statChipStyle = {
-    background: 'rgba(255,255,255,0.08)',
-    border: '1px solid rgba(255,255,255,0.15)',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-  }
-
   // Clamp rate to [0, 1] for CSS custom property
   const barPct = Math.max(0, Math.min(100, rate ?? 0)) / 100
 
   return (
-    <div className="card-hero p-5 sm:p-6 relative overflow-hidden">
-
+    <motion.div
+      className="card-hero p-5 sm:p-6 relative overflow-hidden"
+      initial={{ opacity: 0, y: 16, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 340, damping: 28, mass: 0.9 }}
+    >
       {/* Top row — label + mode switch */}
       <div className="flex items-center justify-between mb-3.5 gap-2">
         <p className="text-[10px] font-semibold tracking-[0.18em] uppercase"
@@ -118,8 +158,8 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           return (
             <div
               key={s.label}
-              className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl backdrop-blur-sm fade-in"
-              style={{ ...statChipStyle, animationDelay: STAT_DELAYS[i] }}
+              className="flex-1 min-w-0 px-3 py-2.5 hero-stat-chip fade-in"
+              style={{ animationDelay: STAT_DELAYS[i] }}
             >
               <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide"
                 style={{ color: C.heroLabel }}>{s.label}</p>
@@ -148,7 +188,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           />
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 })
 

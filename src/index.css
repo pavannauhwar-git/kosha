@@ -9,35 +9,35 @@
 /* ── CSS Custom Properties ──────────────────────────────────────────── */
 :root {
   /* ── Primary ────────────────────────── */
-  --ds-primary: #007FFF;
-  --ds-primary-dark: #0066CC;
-  --ds-primary-light: #4DA6FF;
-  --ds-primary-container: #E0F0FF;
+  --ds-primary: #0B57D0;
+  --ds-primary-dark: #0842A0;
+  --ds-primary-light: #A8C7FA;
+  --ds-primary-container: #D3E3FD;
   --ds-on-primary: #FFFFFF;
-  --ds-on-primary-container: #003366;
-  --ds-primary-rgb: 0, 127, 255;
+  --ds-on-primary-container: #041E49;
+  --ds-primary-rgb: 11, 87, 208;
 
   /* ── Accent ─────────────────────────── */
-  --ds-accent: #FFE666;
-  --ds-accent-dark: #FFD600;
-  --ds-accent-container: #FFF9C4;
-  --ds-on-accent: #3D3D00;
-  --ds-accent-text: #856404;
+  --ds-accent: #FBBC05;
+  --ds-accent-dark: #F4B400;
+  --ds-accent-container: #FEF7E0;
+  --ds-on-accent: #1F1F1F;
+  --ds-accent-text: #B06000;
 
   /* ── Surfaces ───────────────────────── */
   --ds-surface: #FFFFFF;
-  --ds-surface-dim: #F4F6F8;
-  --ds-surface-bright: #FAFBFC;
-  --ds-surface-container: #EEF1F4;
-  --ds-surface-container-high: #E8ECF0;
-  --ds-surface-container-highest: #E2E6EA;
+  --ds-surface-dim: #F0F4F9;
+  --ds-surface-bright: #FFFFFF;
+  --ds-surface-container: #E9EEF6;
+  --ds-surface-container-high: #DEE3EB;
+  --ds-surface-container-highest: #D3D8E0;
 
   /* ── Text / Ink ─────────────────────── */
-  --ds-text: #111318;
-  --ds-text-secondary: #44474E;
-  --ds-text-tertiary: #74777F;
-  --ds-text-disabled: #B0B3BA;
-  --ds-text-rgb: 17, 19, 24;
+  --ds-text: #1F1F1F;
+  --ds-text-secondary: #444746;
+  --ds-text-tertiary: #747775;
+  --ds-text-disabled: #C4C7C5;
+  --ds-text-rgb: 31, 31, 31;
   
   /* Legacy text aliases used by charts */
   --ds-text-1: var(--ds-text);
@@ -46,138 +46,197 @@
   --ds-text-4: var(--ds-text-disabled);
 
   /* ── Borders ────────────────────────── */
-  --ds-border: rgba(17, 19, 24, 0.08);
-  --ds-border-strong: rgba(17, 19, 24, 0.16);
+  --ds-border: rgba(0, 0, 0, 0.08);
+  --ds-border-strong: rgba(0, 0, 0, 0.16);
 
   /* ── Status Colors ──────────────────── */
-  --ds-income: #0F9D58;
-  --ds-income-bg: #E8F5E9;
-  --ds-income-text: #0B7A42;
-  --ds-income-border: #C8E6C9;
-  --ds-expense: #E8453C;
-  --ds-expense-bg: #FDECEA;
-  --ds-expense-text: #C62828;
-  --ds-expense-border: #FFCDD2;
-  --ds-invest: #5C6BC0;
-  --ds-invest-bg: #E8EAF6;
-  --ds-invest-text: #283593;
-  --ds-invest-border: #C5CAE9;
-  --ds-repay: #F9A825;
-  --ds-repay-bg: #FFF8E1;
-  --ds-repay-text: #F57F17;
-  --ds-repay-border: #FFF9C4;
+  --ds-income: #137333;
+  --ds-income-bg: #E6F4EA;
+  --ds-income-text: #137333;
+  --ds-income-border: #CEEAD6;
+  --ds-expense: #C5221F;
+  --ds-expense-bg: #FCE8E6;
+  --ds-expense-text: #C5221F;
+  --ds-expense-border: #FAD2CF;
+  --ds-invest: #681DA8;
+  --ds-invest-bg: #F3E8FD;
+  --ds-invest-text: #681DA8;
+  --ds-invest-border: #D7AEFB;
+  --ds-repay: #B06000;
+  --ds-repay-bg: #FEEFC3;
+  --ds-repay-text: #B06000;
+  --ds-repay-border: #FDE293;
 
   /* ── Warning / Danger ───────────────── */
-  --ds-warning: #F9A825;
-  --ds-warning-bg: #FFF8E1;
-  --ds-warning-border: #FFE0B2;
-  --ds-danger: #E8453C;
-  --ds-danger-bg: #FDECEA;
-  --ds-success: #0F9D58;
-  --ds-success-bg: #E8F5E9;
+  --ds-warning: #B06000;
+  --ds-warning-bg: #FEEFC3;
+  --ds-warning-border: #FDE293;
+  --ds-danger: #C5221F;
+  --ds-danger-bg: #FCE8E6;
+  --ds-success: #137333;
+  --ds-success-bg: #E6F4EA;
 
-  /* ── Shadows ────────────────────────── */
-  --ds-shadow-sm: 0 1px 2px rgba(17, 19, 24, 0.03), 0 3px 8px -1px rgba(17, 19, 24, 0.04);
-  --ds-shadow-md: 0 4px 12px -2px rgba(17, 19, 24, 0.05), 0 12px 32px -4px rgba(17, 19, 24, 0.04);
-  --ds-shadow-lg: 0 8px 24px -4px rgba(17, 19, 24, 0.06), 0 24px 64px -8px rgba(17, 19, 24, 0.06);
-  --ds-shadow-xl: 0 12px 32px -4px rgba(17, 19, 24, 0.08), 0 48px 100px -12px rgba(17, 19, 24, 0.10);
+  /* ── Shadows (Refined Subtle Depth) ── */
+  --ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 3px 8px -1px rgba(0, 0, 0, 0.04);
+  --ds-shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 12px 32px -4px rgba(0, 0, 0, 0.04);
+  --ds-shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.06), 0 24px 64px -8px rgba(0, 0, 0, 0.06);
+  --ds-shadow-xl: 0 12px 32px -4px rgba(0, 0, 0, 0.08), 0 48px 100px -12px rgba(0, 0, 0, 0.10);
   
-  --ds-shadow-fab: 0 12px 24px -4px rgba(0, 127, 255, 0.18), 0 4px 8px -2px rgba(17, 19, 24, 0.08);
-  --ds-shadow-fab-hover: 0 16px 40px -6px rgba(0, 127, 255, 0.25), 0 6px 16px -2px rgba(17, 19, 24, 0.10);
-  --ds-shadow-hero: 0 32px 80px -16px rgba(0, 127, 255, 0.15), 0 12px 32px -8px rgba(17, 19, 24, 0.08);
+  --ds-shadow-fab: 0 12px 24px -4px rgba(11, 87, 208, 0.18), 0 4px 8px -2px rgba(0, 0, 0, 0.08);
+  --ds-shadow-fab-hover: 0 16px 40px -6px rgba(11, 87, 208, 0.25), 0 6px 16px -2px rgba(0, 0, 0, 0.10);
+  --ds-shadow-hero: 0 32px 80px -16px rgba(11, 87, 208, 0.15), 0 12px 32px -8px rgba(0, 0, 0, 0.08);
 
-  /* ── Glassmorphism ──────────────────── */
+  /* ── Glassmorphism (MD3 surface tint equivalent) ── */
   --ds-glass-bg: rgba(255, 255, 255, 0.82);
   --ds-glass-border: rgba(255, 255, 255, 0.50);
   --ds-glass-blur: blur(14px) saturate(180%);
 
-  /* ── Motion ─────────────────────────── */
-  --ds-motion-fast: 120ms;
-  --ds-motion-base: 280ms;
-  --ds-motion-slow: 450ms;
-  --ds-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --ds-ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --ds-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ds-ease-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  /* ── MD3 Motion Tokens ──────────────── */
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0.0, 0, 1.0);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1.0);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0.0, 0.8, 0.15);
+  
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0.0, 0, 1.0);
+  --md-sys-motion-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+
+  --md-sys-motion-duration-short1: 50ms;
+  --md-sys-motion-duration-short2: 100ms;
+  --md-sys-motion-duration-short3: 150ms;
+  --md-sys-motion-duration-short4: 200ms;
+  
+  --md-sys-motion-duration-medium1: 250ms;
+  --md-sys-motion-duration-medium2: 300ms;
+  --md-sys-motion-duration-medium3: 350ms;
+  --md-sys-motion-duration-medium4: 400ms;
+  
+  --md-sys-motion-duration-long1: 450ms;
+  --md-sys-motion-duration-long2: 500ms;
+
+  /* ── M3 Playful Spring Motion Tokens ── */
+  --ds-spring-fast: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ds-dur-spring-fast: 320ms;
+  --ds-spring-effects: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ds-dur-spring-effects-fast: 240ms;
+  --ds-spring-expressive: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ds-dur-spring-expressive: 550ms;
 
   /* ── Layout ─────────────────────────── */
   --ds-safe-top: env(safe-area-inset-top, 0px);
   --ds-safe-bottom: env(safe-area-inset-bottom, 0px);
-  --nav-height: calc(76px + var(--ds-safe-bottom));
+  --nav-height: calc(80px + var(--ds-safe-bottom));
   --ds-nav-height: var(--nav-height);
   --ds-content-max: 600px;
   --ds-sidebar-width: 240px;
   --ds-shell-max: 600px;
 
   /* ── Shimmer ────────────────────────── */
-  --ds-shimmer-1: #EEF1F5;
+  --ds-shimmer-1: #E9EEF6;
   --ds-shimmer-2: #D8DDE6;
   --ds-shimmer-highlight: #FAFBFD;
 
   /* ── Focus ring ─────────────────────── */
-  --ds-focus-ring: 0 0 0 3px rgba(0, 127, 255, 0.20);
+  --ds-focus-ring: 0 0 0 3px rgba(11, 87, 208, 0.20);
+
+  /* ── Material 3 System Color Mappings ── */
+  --md-sys-color-primary: var(--ds-primary);
+  --md-sys-color-on-primary: var(--ds-on-primary);
+  --md-sys-color-primary-container: var(--ds-primary-container);
+  --md-sys-color-on-primary-container: var(--ds-on-primary-container);
+  --md-sys-color-secondary: var(--ds-text-secondary);
+  --md-sys-color-on-secondary: var(--ds-surface);
+  --md-sys-color-secondary-container: var(--ds-surface-container);
+  --md-sys-color-on-secondary-container: var(--ds-text);
+  --md-sys-color-surface: var(--ds-surface);
+  --md-sys-color-on-surface: var(--ds-text);
+  --md-sys-color-surface-variant: var(--ds-surface-container);
+  --md-sys-color-on-surface-variant: var(--ds-text-secondary);
+  --md-sys-color-outline: var(--ds-text-tertiary);
+  --md-sys-color-outline-variant: var(--ds-border);
+  --md-sys-color-background: var(--ds-surface-dim);
+  --md-sys-color-on-background: var(--ds-text);
+  --md-sys-color-error: var(--ds-expense);
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: var(--ds-expense-bg);
+  --md-sys-color-on-error-container: var(--ds-expense-text);
+  --md-sys-color-surface-container: var(--ds-surface-container);
+  --md-sys-color-surface-container-high: var(--ds-surface-container-high);
+  --md-sys-color-surface-container-highest: var(--ds-surface-container-highest);
+
+  /* ── Typography reference mapping ── */
+  --md-ref-typeface-brand: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+  --md-ref-typeface-plain: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* ── Material 3 Shape Scale Tokens ── */
+  --md-sys-shape-none: 0px;
+  --md-sys-shape-xs: 4px;      /* Tooltips, text input helpers */
+  --md-sys-shape-sm: 8px;      /* Chips, small buttons, switch tracks */
+  --md-sys-shape-md: 12px;     /* Menus, dialog sub-panels, picker items */
+  --md-sys-shape-lg: 16px;     /* Standard cards, list rows, FABs */
+  --md-sys-shape-xl: 28px;     /* Dialogs, bottom sheets, overlay containers */
+  --md-sys-shape-full: 9999px;  /* Circular pills, avatars, switch thumbs */
 }
 
 /* ── Dark Mode ──────────────────────────────────────────────────────── */
 .dark {
-  --ds-primary: #007FFF;
-  --ds-primary-dark: #0066CC;
-  --ds-primary-light: #4DA6FF;
-  --ds-primary-container: #001A33;
+  --ds-primary: #3A8BFF;
+  --ds-primary-dark: #7AB4FF;
+  --ds-primary-light: #0B57D0;
+  --ds-primary-container: #003F8A;
   --ds-on-primary: #FFFFFF;
-  --ds-on-primary-container: #CCE5FF;
-  --ds-primary-rgb: 0, 127, 255;
-    --ds-accent: #FFFF99;
-    --ds-accent-dark: #FFD600;
-    --ds-accent-container: #333300;
-    --ds-on-accent: #FFFF99;
-    --ds-accent-text: #E6E600;
+  --ds-on-primary-container: #D6E8FF;
+  --ds-primary-rgb: 58, 139, 255;
+  --ds-accent: #FDE293;
+  --ds-accent-dark: #FBC005;
+  --ds-accent-container: #332A00;
+  --ds-on-accent: #E3E3E3;
+  --ds-accent-text: #FFDF7A;
 
-  --ds-surface: #0E1217;
-  --ds-surface-dim: #05070A;
-  --ds-surface-bright: #1A1F26;
-  --ds-surface-container: #15191F;
-  --ds-surface-container-high: #1E242C;
-  --ds-surface-container-highest: #282F39;
+  --ds-surface: #1E1F20;
+  --ds-surface-dim: #0F0F11;
+  --ds-surface-bright: #2A2B2D;
+  --ds-surface-container: #131314;
+  --ds-surface-container-high: #282A2D;
+  --ds-surface-container-highest: #333538;
 
-  --ds-text: #F0F2F5;
-  --ds-text-secondary: #B0B5BF;
-  --ds-text-tertiary: #7D828C;
-  --ds-text-disabled: #444952;
-  --ds-text-rgb: 240, 242, 245;
+  --ds-text: #E3E3E3;
+  --ds-text-secondary: #C4C7C5;
+  --ds-text-tertiary: #8E918F;
+  --ds-text-disabled: #444746;
+  --ds-text-rgb: 227, 227, 227;
 
   --ds-border: rgba(255, 255, 255, 0.08);
-  --ds-border-strong: rgba(255, 255, 255, 0.14);
+  --ds-border-strong: rgba(255, 255, 255, 0.16);
 
-  --ds-income: #00E676;
-  --ds-income-bg: rgba(0, 230, 118, 0.08);
-  --ds-income-text: #00E676;
-  --ds-income-border: rgba(0, 230, 118, 0.25);
+  --ds-income: #81C995;
+  --ds-income-bg: rgba(129, 201, 149, 0.12);
+  --ds-income-text: #81C995;
+  --ds-income-border: rgba(129, 201, 149, 0.25);
   
-  --ds-expense: #FF5252;
-  --ds-expense-bg: rgba(255, 82, 82, 0.08);
-  --ds-expense-text: #FF5252;
-  --ds-expense-border: rgba(255, 82, 82, 0.25);
+  --ds-expense: #F28B82;
+  --ds-expense-bg: rgba(242, 139, 130, 0.12);
+  --ds-expense-text: #F28B82;
+  --ds-expense-border: rgba(242, 139, 130, 0.25);
 
-  --ds-invest: #7C8CFD;
-  --ds-invest-bg: rgba(124, 140, 253, 0.08);
-  --ds-invest-text: #7C8CFD;
-  --ds-invest-border: rgba(124, 140, 253, 0.25);
+  --ds-invest: #C58AF9;
+  --ds-invest-bg: rgba(197, 138, 249, 0.12);
+  --ds-invest-text: #C58AF9;
+  --ds-invest-border: rgba(197, 138, 249, 0.25);
 
-  --ds-repay: #FFD740;
-  --ds-repay-bg: rgba(255, 215, 64, 0.08);
-  --ds-repay-text: #FFD740;
-  --ds-repay-border: rgba(255, 215, 64, 0.25);
+  --ds-repay: #FDD663;
+  --ds-repay-bg: rgba(253, 214, 99, 0.12);
+  --ds-repay-text: #FDD663;
+  --ds-repay-border: rgba(253, 214, 99, 0.25);
 
-  --ds-warning: #FFD740;
-  --ds-warning-bg: rgba(255, 215, 64, 0.10);
-  --ds-warning-border: rgba(255, 215, 64, 0.25);
-  --ds-danger: #FF5252;
-  --ds-danger-bg: rgba(255, 82, 82, 0.10);
-  --ds-success: #00E676;
-  --ds-success-bg: rgba(0, 230, 118, 0.10);
+  --ds-warning: #FDD663;
+  --ds-warning-bg: rgba(253, 214, 99, 0.10);
+  --ds-warning-border: rgba(253, 214, 99, 0.25);
+  --ds-danger: #F28B82;
+  --ds-danger-bg: rgba(242, 139, 130, 0.10);
+  --ds-success: #81C995;
+  --ds-success-bg: rgba(129, 201, 149, 0.10);
 
-  --ds-glass-bg: rgba(14, 18, 23, 0.72);
+  --ds-glass-bg: rgba(15, 15, 17, 0.72);
   --ds-glass-border: rgba(255, 255, 255, 0.12);
   --ds-glass-blur: blur(20px) saturate(200%);
 
@@ -190,11 +249,57 @@
   --ds-shadow-fab-hover: 0 16px 48px -6px rgba(0, 0, 0, 0.8), 0 6px 20px -2px rgba(0, 0, 0, 0.5);
   --ds-shadow-hero: 0 48px 100px -16px rgba(0, 0, 0, 0.8), 0 16px 40px -8px rgba(0, 0, 0, 0.6);
 
-  --ds-shimmer-1: #181B20;
-  --ds-shimmer-2: #252A32;
-  --ds-shimmer-highlight: #2D333D;
+  --ds-shimmer-1: #1E2024;
+  --ds-shimmer-2: #2B2E35;
+  --ds-shimmer-highlight: #333842;
 
-  --ds-focus-ring: 0 0 0 3px rgba(0, 127, 255, 0.4);
+  --ds-focus-ring: 0 0 0 3px rgba(168, 199, 250, 0.4);
+
+  /* ── Material 3 System Color Mappings ── */
+  --md-sys-color-primary: var(--ds-primary);
+  --md-sys-color-on-primary: var(--ds-on-primary);
+  --md-sys-color-primary-container: var(--ds-primary-container);
+  --md-sys-color-on-primary-container: var(--ds-on-primary-container);
+  --md-sys-color-secondary: var(--ds-text-secondary);
+  --md-sys-color-on-secondary: var(--ds-surface);
+  --md-sys-color-secondary-container: var(--ds-surface-container);
+  --md-sys-color-on-secondary-container: var(--ds-text);
+  --md-sys-color-surface: var(--ds-surface);
+  --md-sys-color-on-surface: var(--ds-text);
+  --md-sys-color-surface-variant: var(--ds-surface-container);
+  --md-sys-color-on-surface-variant: var(--ds-text-secondary);
+  --md-sys-color-outline: var(--ds-text-tertiary);
+  --md-sys-color-outline-variant: var(--ds-border);
+  --md-sys-color-background: var(--ds-surface-dim);
+  --md-sys-color-on-background: var(--ds-text);
+  --md-sys-color-error: var(--ds-expense);
+  --md-sys-color-on-error: var(--ds-on-primary);
+  --md-sys-color-error-container: var(--ds-expense-bg);
+  --md-sys-color-on-error-container: var(--ds-expense-text);
+  --md-sys-color-surface-container: var(--ds-surface-container);
+  --md-sys-color-surface-container-high: var(--ds-surface-container-high);
+  --md-sys-color-surface-container-highest: var(--ds-surface-container-highest);
+
+  /* ── Typography reference mapping ── */
+  --md-ref-typeface-brand: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+  --md-ref-typeface-plain: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* ── Material 3 Shape Scale Tokens ── */
+  --md-sys-shape-none: 0px;
+  --md-sys-shape-xs: 4px;
+  --md-sys-shape-sm: 8px;
+  --md-sys-shape-md: 12px;
+  --md-sys-shape-lg: 16px;
+  --md-sys-shape-xl: 28px;
+  --md-sys-shape-full: 9999px;
+
+  /* ── M3 Playful Spring Motion Tokens ── */
+  --ds-spring-fast: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ds-dur-spring-fast: 320ms;
+  --ds-spring-effects: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ds-dur-spring-effects-fast: 240ms;
+  --ds-spring-expressive: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ds-dur-spring-expressive: 550ms;
 }
 
 /* ── Base Resets ─────────────────────────────────────────────────────── */
@@ -350,6 +455,10 @@ textarea:focus-visible,
     overflow-x: clip;
   }
 
+  html, body, #root, .bg-kosha-bg, .card, .mini-panel, .app-topbar, .nav-float-wrap {
+    transition: background-color 300ms cubic-bezier(0.2, 0, 0, 1), border-color 300ms cubic-bezier(0.2, 0, 0, 1), color 300ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
   #root {
     width: 100%;
     max-width: 100%;
@@ -422,7 +531,7 @@ textarea:focus-visible,
   /* -- Hero card — brand blue gradient ────────────────────────────── */
   .card-hero {
     background: linear-gradient(135deg, #0A92FF 0%, #004ba0 100%);
-    @apply rounded-hero;
+    border-radius: var(--md-sys-shape-xl); /* Symmetrical M3 Extra Large (28px) rounded corners */
     border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow:
       0 6px 16px rgba(0, 0, 0, 0.12),
@@ -434,6 +543,7 @@ textarea:focus-visible,
 
   .dark .card-hero {
     background: linear-gradient(135deg, var(--ds-primary) 0%, var(--ds-primary-container) 100%);
+    border-radius: var(--md-sys-shape-xl); /* Symmetrical M3 Extra Large (28px) rounded corners */
     border: none;
     box-shadow:
       0 24px 64px rgba(0, 0, 0, 0.6),
@@ -474,6 +584,31 @@ textarea:focus-visible,
   .card-hero>* {
     position: relative;
     z-index: 1;
+  }
+
+  /* -- Hero Card Stat Chips — tactile nested M3 glassmorphism ── */
+  .hero-stat-chip {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: var(--md-sys-shape-md); /* Proportional nested 12px corners */
+    transition: background-color 200ms cubic-bezier(0.2, 0, 0, 1), transform 200ms cubic-bezier(0.2, 0, 0, 1), box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @media (hover: hover) {
+    .hero-stat-chip:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.28);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.10);
+    }
+  }
+
+  .hero-stat-chip:active {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(0) scale(0.97);
   }
 
   /* -- Cards — borderless, refined depth ──────────────────────────── */
@@ -660,20 +795,55 @@ textarea:focus-visible,
     letter-spacing: -0.01em;
   }
 
-  .hover-lift {
-    transition: transform 0.25s var(--ds-ease-spring), box-shadow 0.25s var(--ds-ease-spring);
+  /* -- MD3 State Layers (Replaces .hover-lift scaling) ─────────────── */
+  .md3-state-overlay {
+    position: relative;
+    overflow: hidden;
   }
-
-  .hover-lift:active {
-    transform: scale(0.985) translateY(0);
-    box-shadow: var(--ds-shadow-sm);
+  
+  .md3-state-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--md-sys-color-on-surface);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+    z-index: 0;
+  }
+  
+  .md3-state-overlay > * {
+    position: relative;
+    z-index: 1;
   }
 
   @media (hover: hover) {
-    .hover-lift:hover {
-      transform: translateY(-4px) scale(1.01);
-      box-shadow: var(--ds-shadow-lg);
+    .md3-state-overlay:hover::before {
+      opacity: 0.08; /* Hover state */
     }
+  }
+
+  .md3-state-overlay:active::before {
+    opacity: 0.12; /* Pressed state */
+  }
+
+  .md3-state-overlay:focus-visible::before {
+    opacity: 0.12; /* Focus state */
+  }
+
+  /* -- MD3 Elevation Shift (Replaces scale shift) ──────────────────── */
+  .md3-elevation-shift {
+    transition: box-shadow var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+  }
+
+  @media (hover: hover) {
+    .md3-elevation-shift:hover {
+      box-shadow: var(--ds-shadow-md);
+    }
+  }
+  
+  .md3-elevation-shift:active {
+    box-shadow: var(--ds-shadow-sm);
   }
 
   /* -- Type chips ──────────────────────────────────────────────────── */
@@ -698,12 +868,21 @@ textarea:focus-visible,
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2;
-    transition: transform 200ms cubic-bezier(0.2, 0, 0, 1),
-                background-color 200ms cubic-bezier(0.2, 0, 0, 1),
-                border-color 200ms cubic-bezier(0.2, 0, 0, 1),
-                opacity 200ms cubic-bezier(0.2, 0, 0, 1);
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border focus-visible:outline-none focus-visible:ring-2;
+    transition:
+      transform var(--ds-dur-spring-fast) var(--ds-spring-fast),
+      background-color 180ms var(--ds-ease-standard),
+      border-color 180ms var(--ds-ease-standard),
+      opacity 180ms var(--ds-ease-standard),
+      box-shadow 200ms var(--ds-spring-effects);
     --tw-ring-color: rgba(17, 19, 24, 0.10);
+  }
+
+  .chip-control:active {
+    transform: scale(0.92);
+    transition:
+      transform 80ms var(--ds-ease-standard),
+      background-color 80ms var(--ds-ease-standard);
   }
 
   .dark .chip-control {
@@ -742,43 +921,45 @@ textarea:focus-visible,
   }
 
   /* -- FAB — dark, premium ────────────────────────────────────────── */
-  .fab {
-    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
-    background: var(--ds-primary);
-    bottom: calc(var(--nav-height) + 1rem);
-    right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
-    will-change: transform;
-    transform: translateZ(0);
-    touch-action: manipulation;
-    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms ease;
-  }
-
-  .fab-bills {
-    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
-    background: var(--ds-primary);
-    bottom: calc(var(--nav-height) + 1rem);
-    right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
-    will-change: transform;
-    transform: translateZ(0);
-    touch-action: manipulation;
-    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms ease;
-  }
-
+  /* -- FAB — M3 Expressive spring entrance + press ───────────────── */
+  .fab,
+  .fab-bills,
   .fab-loans {
-    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center active:scale-95 transition-transform duration-100 z-40 cursor-pointer;
+    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center z-40 cursor-pointer;
     background: var(--ds-primary);
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
     will-change: transform;
-    transform: translateZ(0);
     touch-action: manipulation;
-    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms ease;
+    /* Spring transition — translate + scale use spatial spring */
+    transition:
+      transform var(--ds-dur-spring-fast) var(--ds-spring-fast),
+      box-shadow var(--ds-dur-spring-effects-fast) var(--ds-spring-effects),
+      background-color 200ms var(--ds-ease-standard);
+    /* Entrance animation — springs in with expressive overshoot */
+    animation: fab-spring-in var(--ds-dur-spring-expressive) var(--ds-spring-expressive) both;
+  }
+
+  .fab:active,
+  .fab-bills:active,
+  .fab-loans:active {
+    transform: scale(0.92);
+    transition:
+      transform 90ms var(--ds-ease-standard),
+      box-shadow 90ms var(--ds-ease-standard);
   }
 
   .fab:hover,
   .fab-bills:hover,
   .fab-loans:hover {
     background: var(--ds-primary-dark);
+  }
+
+  @keyframes fab-spring-in {
+    0%   { opacity: 0; transform: scale(0.50) translateY(20px); }
+    60%  { opacity: 1; transform: scale(1.08) translateY(-4px); }
+    80%  { transform: scale(0.97) translateY(2px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
   }
 
 
@@ -823,21 +1004,25 @@ textarea:focus-visible,
       inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
   }
 
-  /* -- CSS page entry animation — compositor-friendly fade+slide up ── */
-  /* Use .fade-up class instead of framer-motion for entry-only animations */
+  /* -- CSS page entry animation — M3 Standard Decelerate ── */
   @keyframes fade-up-in {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    0%   { opacity: 0; transform: translateY(16px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
 
   .fade-up {
-    animation: fade-up-in 0.38s cubic-bezier(0.05, 0.7, 0.1, 1) both;
+    animation: fade-up-in var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard-decelerate) both;
+    will-change: transform, opacity;
+  }
+
+  @keyframes card-spring-in {
+    0%   { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-spring-in {
+    animation: card-spring-in var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard-decelerate) both;
+    will-change: transform, opacity;
   }
 
   /* Stagger delays for sequential children */
@@ -858,7 +1043,8 @@ textarea:focus-visible,
   }
 
   .fade-in {
-    animation: fade-in 0.25s cubic-bezier(0.2, 0, 0, 1) both;
+    animation: fade-in var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard-decelerate) both;
+    will-change: opacity;
   }
 
   /* -- Hero card cross-fade — skeleton → content */
@@ -868,7 +1054,8 @@ textarea:focus-visible,
   }
 
   .hero-card-enter {
-    animation: hero-enter 0.3s cubic-bezier(0.2, 0, 0, 1) both;
+    animation: hero-enter var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard-decelerate) both;
+    will-change: opacity;
   }
 
   .nav-float-item {
@@ -888,18 +1075,19 @@ textarea:focus-visible,
     touch-action: manipulation;
     /* GPU-composited: will only run on compositor thread */
     will-change: transform;
-    transform: translateZ(0);
-    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
+    transition: transform var(--ds-dur-spring-fast) var(--ds-spring-fast);
   }
 
   .nav-float-item:active {
-    transform: scale(0.95);
+    /* Immediate squish — release spring back via the transition */
+    transform: scale(0.88);
+    transition: transform 80ms var(--ds-ease-standard);
   }
 
   .nav-icon-wrap {
     position: relative;
-    width: 46px;
-    height: 30px;
+    width: 64px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1386,19 +1574,23 @@ textarea:focus-visible,
 /*    Using (hover: hover) guard prevents ghost hover states on touch screens   */
 @media (hover: hover) and (pointer: fine) {
 
-  /* Cards used as <button> — gentle lift on hover */
+  /* Cards as <button> — M3 Expressive spring lift on hover */
   button.card:hover,
   a.card:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.008);
     box-shadow: var(--ds-shadow-md);
-    transition: transform 160ms cubic-bezier(0.2, 0, 0, 1),
-                box-shadow 160ms cubic-bezier(0.2, 0, 0, 1);
+    transition:
+      transform var(--ds-dur-spring-fast) var(--ds-spring-fast),
+      box-shadow var(--ds-dur-spring-fast) var(--ds-spring-effects);
   }
 
   button.card:active,
   a.card:active {
-    transform: translateY(0);
+    transform: scale(0.985);
     box-shadow: var(--ds-shadow-sm);
+    transition:
+      transform 80ms var(--ds-ease-standard),
+      box-shadow 80ms var(--ds-ease-standard);
   }
 
   /* List rows — subtle bg highlight on hover */
@@ -1412,14 +1604,15 @@ textarea:focus-visible,
     border-color: var(--ds-border-strong);
   }
 
-  /* FAB — glow intensifies on hover */
+  /* FAB — spring lift + glow intensifies on hover */
   .fab:hover,
   .fab-bills:hover,
   .fab-loans:hover {
     box-shadow: var(--ds-shadow-fab-hover);
-    transform: translateY(-1px) translateZ(0);
-    transition: transform 160ms cubic-bezier(0.2, 0, 0, 1),
-                box-shadow 160ms cubic-bezier(0.2, 0, 0, 1);
+    transform: translateY(-3px) scale(1.06);
+    transition:
+      transform var(--ds-dur-spring-fast) var(--ds-spring-fast),
+      box-shadow 200ms var(--ds-spring-effects);
   }
 
   /* Input — slightly elevated shadow on hover */

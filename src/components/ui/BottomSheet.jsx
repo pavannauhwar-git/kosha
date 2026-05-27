@@ -1,10 +1,12 @@
-import { useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
-import * as Dialog from '@radix-ui/react-dialog'
+import { useEffect } from 'react'
+import SwipeableDrawer from '@mui/material/SwipeableDrawer'
+import IconButton from '@mui/material/IconButton'
+import Typography from '@mui/material/Typography'
+import Box from '@mui/material/Box'
 
 /**
- * BottomSheet — gesture-dismissable on mobile, centered modal on desktop
- * @param {{ open: boolean, onClose: function, title?: string, description?: string, children: React.ReactNode, className?: string }} props
+ * BottomSheet — wraps MUI SwipeableDrawer to provide a swipe-dismissable bottom sheet
+ * on mobile and a centered modal dialog on desktop screens.
  */
 export default function BottomSheet({
   open,
@@ -14,109 +16,155 @@ export default function BottomSheet({
   children,
   className = '',
 }) {
-  const sheetRef = useRef(null)
-  const y = useMotionValue(0)
-  const backdropOpacity = useTransform(y, [0, 300], [1, 0], { clamp: true })
-
-  const handleDragEnd = useCallback((_, info) => {
-    if (info.offset.y > 100 || info.velocity.y > 500) {
-      onClose()
-    }
-  }, [onClose])
-
   useEffect(() => {
     if (open) {
-      y.set(0)
-      import('../../lib/haptics').then(m => m.hapticTap())
+      import('../../lib/haptics').then((m) => m.hapticTap())
     }
-  }, [open, y])
+  }, [open])
+
+  const ios = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
 
   return (
-    <Dialog.Root open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-      <AnimatePresence>
-        {open && (
-          <Dialog.Portal forceMount>
-            <Dialog.Overlay asChild>
-              <motion.div
-                className="fixed inset-0 z-40 bg-black/40"
-                style={{
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  opacity: backdropOpacity,
-                  willChange: 'opacity, backdrop-filter',
-                }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
+    <SwipeableDrawer
+      anchor="bottom"
+      open={open}
+      onClose={onClose}
+      onOpen={() => {}}
+      disableBackdropTransition={!ios}
+      disableDiscovery={ios}
+      transitionDuration={{
+        enter: 380, // matches --ds-dur-spring-default
+        exit: 220,
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(17, 19, 24, 0.40)',
+            // Backdrop enters with effects spring (no overshoot)
+            transition: 'opacity 280ms cubic-bezier(0.2, 0, 0.2, 1) !important',
+          },
+        },
+        paper: {
+          sx: {
+            borderTopLeftRadius: '28px',
+            borderTopRightRadius: '28px',
+            backgroundColor: 'var(--ds-surface)',
+            paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+            maxHeight: 'calc(100vh - var(--ds-safe-top, 0px) - 8px)',
+            backgroundImage: 'none',
+            boxShadow: 'var(--ds-shadow-lg)',
+            left: 0,
+            right: 0,
+            margin: '0 auto',
+            width: '100%',
+            maxWidth: 'var(--app-shell-max)',
+            // M3 Expressive spring — approximated with CSS bezier
+            // Enter: translateY(100%) → 0, ease is the spring approximation
+            transition:
+              'transform 380ms cubic-bezier(0.30, 1.38, 0.56, 1), opacity 280ms cubic-bezier(0.2, 0, 0.2, 1) !important',
+            // Desktop styling transformation
+            '@media (min-width: 600px)': {
+              bottom: 'auto',
+              top: '50%',
+              left: '50%',
+              right: 'auto',
+              transform: 'translate(-50%, -50%) !important',
+              maxWidth: '512px',
+              borderRadius: '28px',
+              height: 'auto',
+              maxHeight: 'calc(100vh - 4rem)',
+              paddingBottom: '1.5rem',
+            },
+          },
+        },
+      }}
+    >
+      {/* Drag handle for mobile */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          pt: 1.5,
+          pb: 1,
+          cursor: 'grab',
+          '&:active': { cursor: 'grabbing' },
+          '@media (min-width: 600px)': { display: 'none' },
+        }}
+        aria-hidden="true"
+      >
+        <Box
+          sx={{
+            width: '40px',
+            height: '4px',
+            borderRadius: '2px',
+            backgroundColor: 'var(--ds-border-strong)',
+          }}
+        />
+      </Box>
+
+      {/* Header */}
+      {title && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 3,
+            pb: 2,
+            pt: { xs: 0, sm: 2 },
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 'bold',
+              color: 'var(--ds-text)',
+              fontSize: '18px',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            {title}
+          </Typography>
+          <IconButton
+            onClick={onClose}
+            aria-label="Close"
+            sx={{
+              backgroundColor: 'var(--ds-surface-container)',
+              color: 'var(--ds-text-tertiary)',
+              '&:hover': {
+                backgroundColor: 'var(--ds-surface-container-high)',
+              },
+            }}
+            size="small"
+          >
+            {/* Custom vector X representing Close so we don't depend on mui icons font if it takes long to load */}
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path
+                d="M1 1L13 13M13 1L1 13"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
               />
-            </Dialog.Overlay>
+            </svg>
+          </IconButton>
+        </Box>
+      )}
 
-            <Dialog.Content asChild>
-              <motion.div
-                ref={sheetRef}
-                className={[
-                  'fixed z-50 focus:outline-none',
-                  'bottom-0 left-0 right-0 md:bottom-auto md:top-1/2 md:left-1/2',
-                  'md:-translate-x-1/2 md:-translate-y-1/2',
-                  'w-full md:max-w-lg md:rounded-2xl',
-                  'bg-[var(--ds-surface)] rounded-t-3xl md:rounded-3xl',
-                  'shadow-xl',
-                  className,
-                ].join(' ')}
-                style={{
-                  maxHeight: 'calc(100dvh - var(--ds-safe-top, 0px) - 0.5rem)',
-                  paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
-                  y,
-                  willChange: 'transform',
-                }}
-                initial={{ y: 1000, opacity: 0.5 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 1000, opacity: 0 }}
-                transition={{ type: 'spring', damping: 38, stiffness: 450 }}
-                drag="y"
-                dragConstraints={{ top: 0 }}
-                dragElastic={0.2}
-                onDragEnd={handleDragEnd}
-                aria-label={title || 'Sheet'}
-              >
-                {/* Drag handle */}
-                <div className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing md:hidden" aria-hidden="true">
-                  <div className="w-10 h-1 rounded-full bg-[var(--ds-text-disabled)]" />
-                </div>
-
-                {/* Header */}
-                {title && (
-                  <div className="flex items-center justify-between px-6 pb-4">
-                    <Dialog.Title className="text-lg font-bold text-[var(--ds-text)]">
-                      {title}
-                    </Dialog.Title>
-                    <Dialog.Close asChild>
-                      <button
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--ds-surface-container)] text-[var(--ds-text-tertiary)] hover:bg-[var(--ds-surface-container-high)] transition-colors"
-                        aria-label="Close"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                          <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                      </button>
-                    </Dialog.Close>
-                  </div>
-                )}
-
-                <Dialog.Description className="sr-only">
-                  {description}
-                </Dialog.Description>
-
-                {/* Scrollable content */}
-                <div className="overflow-y-auto px-6" style={{ maxHeight: 'calc(100dvh - 10rem)' }}>
-                  {children}
-                </div>
-              </motion.div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        )}
-      </AnimatePresence>
-    </Dialog.Root>
+      {/* Content wrapper */}
+      <Box
+        className={className}
+        sx={{
+          overflowY: 'auto',
+          px: 3,
+          py: 0.5,
+          '&::-webkit-scrollbar': { display: 'none' },
+          scrollbarWidth: 'none',
+        }}
+      >
+        {children}
+      </Box>
+    </SwipeableDrawer>
   )
 }

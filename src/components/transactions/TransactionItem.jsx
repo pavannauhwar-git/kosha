@@ -420,8 +420,8 @@ function TransactionItem({
         {/* Draggable row */}
         <motion.div
           className={`${compact
-            ? 'flex items-center gap-3 px-4 py-3 bg-kosha-surface active:bg-kosha-surface-2'
-            : 'list-row py-3 sm:py-3.5 active:bg-kosha-surface-2'
+            ? 'flex items-center gap-3 px-4 py-3 bg-kosha-surface md3-state-overlay relative overflow-hidden'
+            : 'list-row py-3 sm:py-3.5 md3-state-overlay relative overflow-hidden'
             }`}
           style={{ x }}
           drag={isOptimistic || isExternalLinked || !canEdit ? false : 'x'}
@@ -429,8 +429,6 @@ function TransactionItem({
           dragElastic={{ left: 0.12, right: 0.02 }}
           onDragEnd={handleDragEnd}
           onClick={handleTap}
-          whileTap={{ scale: 0.992 }}
-          transition={{ scale: { duration: 0.08 } }}
         >
           <div
             className={`${compact ? 'w-8 h-8' : 'w-9 h-9'} rounded-full flex items-center justify-center shrink-0`}

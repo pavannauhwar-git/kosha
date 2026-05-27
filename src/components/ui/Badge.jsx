@@ -1,36 +1,88 @@
-const VARIANT_CLASSES = {
-  recurring:  'bg-[var(--ds-primary-container)] text-[var(--ds-on-primary-container)]',
-  repayment:  'bg-[var(--ds-repay-bg)] text-[var(--ds-repay-text)]',
-  income:     'bg-[var(--ds-income-bg)] text-[var(--ds-income-text)]',
-  expense:    'bg-[var(--ds-expense-bg)] text-[var(--ds-expense-text)]',
-  invest:     'bg-[var(--ds-invest-bg)] text-[var(--ds-invest-text)]',
-  category:   'bg-[var(--ds-surface-container)] text-[var(--ds-text-secondary)]',
-  status:     'bg-[var(--ds-surface-container-high)] text-[var(--ds-text)]',
-  neutral:    'bg-[var(--ds-surface-container)] text-[var(--ds-text-tertiary)]',
+import Chip from '@mui/material/Chip'
+
+const VARIANT_SX = {
+  recurring: {
+    backgroundColor: 'var(--ds-primary-container)',
+    color: 'var(--ds-on-primary-container)',
+  },
+  repayment: {
+    backgroundColor: 'var(--ds-repay-bg)',
+    color: 'var(--ds-repay-text)',
+  },
+  income: {
+    backgroundColor: 'var(--ds-income-bg)',
+    color: 'var(--ds-income-text)',
+  },
+  expense: {
+    backgroundColor: 'var(--ds-expense-bg)',
+    color: 'var(--ds-expense-text)',
+  },
+  invest: {
+    backgroundColor: 'var(--ds-invest-bg)',
+    color: 'var(--ds-invest-text)',
+  },
+  category: {
+    backgroundColor: 'var(--ds-surface-container)',
+    color: 'var(--ds-text-secondary)',
+  },
+  status: {
+    backgroundColor: 'var(--ds-surface-container-high)',
+    color: 'var(--ds-text)',
+  },
+  neutral: {
+    backgroundColor: 'var(--ds-surface-container)',
+    color: 'var(--ds-text-tertiary)',
+  },
 }
 
-const SIZE_CLASSES = {
-  sm: 'text-[10px] px-2 py-0.5 gap-1',
-  md: 'text-[11px] px-2.5 py-1 gap-1.5',
+const SIZE_SX = {
+  sm: {
+    height: '20px',
+    fontSize: '10px',
+    px: 0.5,
+    '& .MuiChip-label': {
+      px: 1,
+    },
+  },
+  md: {
+    height: '24px',
+    fontSize: '11px',
+    px: 0.75,
+    '& .MuiChip-label': {
+      px: 1.25,
+    },
+  },
 }
 
 /**
- * Badge — small status/tag indicator
- * @param {{ variant?: string, children: React.ReactNode, icon?: React.ReactNode, size?: 'sm'|'md', className?: string }} props
+ * Badge — status indicator wrapping MUI Chip
  */
-export default function Badge({ variant = 'neutral', children, icon, size = 'sm', className = '' }) {
+export default function Badge({
+  variant = 'neutral',
+  children,
+  icon,
+  size = 'sm',
+  className = '',
+}) {
+  const customSx = {
+    fontWeight: 600,
+    borderRadius: '9999px',
+    border: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'default',
+    ...VARIANT_SX[variant],
+    ...SIZE_SX[size],
+  }
+
   return (
-    <span
-      className={[
-        'inline-flex items-center font-semibold rounded-pill whitespace-nowrap select-none',
-        SIZE_CLASSES[size],
-        VARIANT_CLASSES[variant] || VARIANT_CLASSES.neutral,
-        className,
-      ].join(' ')}
+    <Chip
+      label={children}
+      icon={icon ? <span className="shrink-0 flex items-center">{icon}</span> : undefined}
+      sx={customSx}
+      className={className}
       role="status"
-    >
-      {icon && <span className="shrink-0 flex items-center">{icon}</span>}
-      {children}
-    </span>
+    />
   )
 }

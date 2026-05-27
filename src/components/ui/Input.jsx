@@ -1,70 +1,80 @@
-import { forwardRef, useId } from 'react'
+import { forwardRef, useEffect, useRef } from 'react'
+import '@material/web/textfield/outlined-text-field.js'
 
 /**
- * Input — text input with label, validation, icons
- * @param {{ label?: string, placeholder?: string, value?: string, onChange?: function, type?: string, error?: string, helperText?: string, disabled?: boolean, icon?: React.ReactNode, iconRight?: React.ReactNode, autoFocus?: boolean, className?: string }} props
+ * Input — Wraps official Google Material 3 Web Component (<md-outlined-text-field>)
  */
 const Input = forwardRef(function Input(
-  { label, placeholder, value, onChange, type = 'text', error, helperText, disabled, icon, iconRight, autoFocus, className = '', ...rest },
+  {
+    label,
+    placeholder,
+    value,
+    onChange,
+    type = 'text',
+    error,
+    helperText,
+    disabled,
+    icon,
+    iconRight,
+    autoFocus,
+    className = '',
+    style = {},
+    sx, // MUI-specific styling, mapped if needed
+    ...rest
+  },
   ref
 ) {
-  const id = useId()
+  const innerRef = useRef(null)
+  const resolvedRef = ref || innerRef
+
+  useEffect(() => {
+    const el = resolvedRef.current
+    if (!el) return
+
+    const handleInput = (e) => {
+      // In React 18, Custom Elements do not dispatch synthetic onChange events automatically.
+      // We manually bind the native input event listener and fire onChange.
+      if (onChange) {
+        onChange(e)
+      }
+    }
+
+    el.addEventListener('input', handleInput)
+    return () => el.removeEventListener('input', handleInput)
+  }, [onChange, resolvedRef])
+
   const hasError = Boolean(error)
+  const resolvedHelperText = error || helperText
 
   return (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
-      {label && (
-        <label htmlFor={id} className="text-label font-medium text-[var(--ds-text-secondary)]">
-          {label}
-        </label>
+    <md-outlined-text-field
+      ref={resolvedRef}
+      label={label}
+      placeholder={placeholder}
+      value={value ?? ''}
+      type={type}
+      disabled={disabled ? '' : undefined}
+      error={hasError ? '' : undefined}
+      error-text={hasError ? resolvedHelperText : undefined}
+      supporting-text={!hasError ? resolvedHelperText : undefined}
+      style={{
+        width: '100%',
+        ...style,
+      }}
+      class={className}
+      {...rest}
+    >
+      {icon && (
+        <span slot="leading-icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
+          {icon}
+        </span>
       )}
-      <div className="relative">
-        {icon && (
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ds-text-tertiary)] flex items-center pointer-events-none">
-            {icon}
-          </span>
-        )}
-        <input
-          ref={ref}
-          id={id}
-          type={type}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          disabled={disabled}
-          autoFocus={autoFocus}
-          aria-invalid={hasError}
-          aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
-          className={[
-            'w-full rounded-xl text-body text-[var(--ds-text)] placeholder:text-[var(--ds-text-disabled)]',
-            'bg-[var(--ds-surface-container)] border transition-[border-color,box-shadow,background-color] duration-200',
-            'focus:outline-none focus:bg-[var(--ds-surface)]',
-            'min-h-[44px] py-3',
-            icon ? 'pl-10 pr-4' : iconRight ? 'pl-4 pr-10' : 'px-4',
-            hasError
-              ? 'border-[var(--ds-expense)] focus:ring-2 focus:ring-[var(--ds-expense)]/20'
-              : 'border-[var(--ds-border)] focus:border-[var(--ds-primary)] focus:ring-2 focus:ring-[var(--ds-primary)]/12',
-            disabled ? 'opacity-45 pointer-events-none' : '',
-          ].filter(Boolean).join(' ')}
-          {...rest}
-        />
-        {iconRight && (
-          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--ds-text-tertiary)] flex items-center">
-            {iconRight}
-          </span>
-        )}
-      </div>
-      {hasError && (
-        <p id={`${id}-error`} className="text-caption text-[var(--ds-expense-text)] flex items-center gap-1" role="alert">
-          {error}
-        </p>
+      {iconRight && (
+        <span slot="trailing-icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
+          {iconRight}
+        </span>
       )}
-      {!hasError && helperText && (
-        <p id={`${id}-helper`} className="text-caption text-[var(--ds-text-tertiary)]">
-          {helperText}
-        </p>
-      )}
-    </div>
+    </md-outlined-text-field>
   )
 })
 

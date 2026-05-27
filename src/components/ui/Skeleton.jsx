@@ -1,42 +1,48 @@
-const VARIANT_MAP = {
-  text:   'h-4 rounded',
-  circle: 'rounded-full aspect-square',
-  rect:   'rounded-xl',
-  card:   'rounded-card h-32',
-  row:    'rounded-card h-16',
+import MuiSkeleton from '@mui/material/Skeleton'
+
+const VARIANT_SX = {
+  text: { borderRadius: '4px', height: '16px' },
+  circle: { borderRadius: '50%', aspectRatio: '1/1', width: '40px' },
+  rect: { borderRadius: '12px' },
+  card: { borderRadius: '20px', height: '128px' },
+  row: { borderRadius: '20px', height: '64px' },
 }
 
 /**
- * Skeleton — loading placeholder with premium directional shimmer
- * @param {{ variant?: 'text'|'circle'|'rect'|'card'|'row', width?: string, height?: string, count?: number, className?: string }} props
+ * Skeleton — placeholder component wrapping MUI Skeleton
  */
-export default function Skeleton({ variant = 'rect', width, height, count = 1, className = '' }) {
+export default function Skeleton({
+  variant = 'rect',
+  width,
+  height,
+  count = 1,
+  className = '',
+}) {
   const items = Array.from({ length: count }, (_, i) => i)
+
+  const customSx = {
+    backgroundColor: 'var(--ds-shimmer-1)',
+    ...VARIANT_SX[variant],
+    ...(width ? { width } : {}),
+    ...(height ? { height } : {}),
+  }
+
+  // MUI variant mapping: text -> text, circle -> circular, others -> rounded
+  const muiVariant = variant === 'text'
+    ? 'text'
+    : variant === 'circle'
+      ? 'circular'
+      : 'rounded'
 
   return (
     <>
       {items.map((i) => (
-        <div
+        <MuiSkeleton
           key={i}
-          className={[
-            'animate-skeleton-pulse',
-            VARIANT_MAP[variant],
-            width || (variant === 'text' ? 'w-full' : variant === 'circle' ? 'w-10' : 'w-full'),
-            height || '',
-            className,
-          ].join(' ')}
-          style={{
-            background: `linear-gradient(
-              90deg,
-              var(--ds-shimmer-1) 0%,
-              var(--ds-shimmer-2) 35%,
-              var(--ds-shimmer-highlight, var(--ds-shimmer-2)) 50%,
-              var(--ds-shimmer-2) 65%,
-              var(--ds-shimmer-1) 100%
-            )`,
-            backgroundSize: '1200px 100%',
-            animation: 'skeleton-sweep 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          }}
+          variant={muiVariant}
+          animation="wave"
+          sx={customSx}
+          className={className}
           role="status"
           aria-label="Loading"
         />

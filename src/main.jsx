@@ -1,3 +1,12 @@
+// Suppress Lit's "dev mode" console warning emitted by @material/web components.
+// Lit checks globalThis.litIssuedWarnings before printing; adding 'dev-mode' here
+// (before any Lit module is imported) tells it the warning was already shown.
+// https://lit.dev/msg/dev-mode
+// eslint-disable-next-line no-undef
+if (import.meta.env.DEV) {
+  ;(globalThis.litIssuedWarnings ??= new Set()).add('dev-mode')
+}
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import '@fontsource-variable/inter'

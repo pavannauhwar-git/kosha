@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef, startTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2, Loader2, Eye } from 'lucide-react'
 import {
@@ -231,12 +231,14 @@ export default function Transactions() {
 
   function handleDatePreset(nextPreset) {
     clearLinkedFilters()
-    setDatePreset(nextPreset)
-    setForcedDateRange(null)
-    if (nextPreset === 'custom-month' && !parseMonthInput(selectedMonth)) {
-      setSelectedMonth(monthInputFromDate())
-    }
-    setDisplayCount(50)
+    startTransition(() => {
+      setDatePreset(nextPreset)
+      setForcedDateRange(null)
+      if (nextPreset === 'custom-month' && !parseMonthInput(selectedMonth)) {
+        setSelectedMonth(monthInputFromDate())
+      }
+      setDisplayCount(50)
+    })
   }
 
   const selectedMonthParts = useMemo(
@@ -262,9 +264,11 @@ export default function Transactions() {
     )
     const safeMonth = Math.min(12, Math.max(1, Number(nextMonth) || selectedMonthParts.month))
 
-    setSelectedMonth(`${safeYear}-${String(safeMonth).padStart(2, '0')}`)
-    setForcedDateRange(null)
-    setDisplayCount(50)
+    startTransition(() => {
+      setSelectedMonth(`${safeYear}-${String(safeMonth).padStart(2, '0')}`)
+      setForcedDateRange(null)
+      setDisplayCount(50)
+    })
   }
 
   const presetDateRange = useMemo(() => {
@@ -331,21 +335,27 @@ export default function Transactions() {
   // Reset display count when filter changes to avoid cascading re-renders
 
   function handleTypeFilter(id) {
-    setTypeFilter(id)
-    const nextCategories = getCategoriesForType(id === 'all' ? undefined : id)
-    const isCurrentCategoryAllowed = !catFilter || nextCategories.some((cat) => cat.id === catFilter)
-    if (!isCurrentCategoryAllowed) setCatFilter('')
-    setDisplayCount(50)   // reset in same event — single re-render
+    startTransition(() => {
+      setTypeFilter(id)
+      const nextCategories = getCategoriesForType(id === 'all' ? undefined : id)
+      const isCurrentCategoryAllowed = !catFilter || nextCategories.some((cat) => cat.id === catFilter)
+      if (!isCurrentCategoryAllowed) setCatFilter('')
+      setDisplayCount(50)   // reset in same event — single re-render
+    })
   }
 
   function handleCatFilter(id) {
-    setCatFilter(id)
-    setDisplayCount(50)   // reset in same event — single re-render
+    startTransition(() => {
+      setCatFilter(id)
+      setDisplayCount(50)   // reset in same event — single re-render
+    })
   }
 
   function handlePaymentModeFilter(id) {
-    setPaymentModeFilter(id)
-    setDisplayCount(50)
+    startTransition(() => {
+      setPaymentModeFilter(id)
+      setDisplayCount(50)
+    })
   }
 
   const { data, total, loading: txnLoading } = useTransactions({
@@ -383,23 +393,6 @@ export default function Transactions() {
     return grouped.map(([dateKey, txns]) => [dateKey, txns, groupNet(txns)])
   }, [data])
 
-  const timelineRows = useMemo(() => {
-    const rows = []
-    groups.forEach(([dateKey, txns, net], groupIndex) => {
-      txns.forEach((txn, txnIndex) => {
-        rows.push({
-          txn,
-          dateKey,
-          net,
-          groupIndex,
-          isGroupFirst: txnIndex === 0,
-          isGroupLast: txnIndex === txns.length - 1,
-        })
-      })
-    })
-    return rows
-  }, [groups])
-
   const {
     containerRef: timelineRowListRef,
     startIndex: timelineRowStartIndex,
@@ -409,19 +402,19 @@ export default function Transactions() {
     measureElement: measureTimelineRow,
     scrollToIndex: scrollTimelineRowToIndex,
   } = useWindowedList({
-    count: timelineRows.length,
-    estimateSize: 88,
-    overscan: 10,
-    enabled: timelineRows.length > 40,
+    count: groups.length,
+    estimateSize: 150,
+    overscan: 6,
+    enabled: groups.length > 25,
     resetKey: `${typeFilter}:${catFilter}:${paymentModeFilter}:${datePreset}:${startDate || 'na'}:${endDate || 'na'}:${debouncedSearch}:${displayCount}:${linkedLoanFilter || 'none'}:${linkedBillFilter || 'none'}:${linkedSplitExpenseFilter || 'none'}:${linkedSplitSettlementFilter || 'none'}`,
-    initialCount: 36,
+    initialCount: 15,
   })
 
   const hasMore = useMemo(() => total > data.length, [total, data.length])
 
-  const renderedTimelineRows = useMemo(
-    () => timelineRows.slice(timelineRowStartIndex, timelineRowEndIndex),
-    [timelineRows, timelineRowStartIndex, timelineRowEndIndex]
+  const renderedGroups = useMemo(
+    () => groups.slice(timelineRowStartIndex, timelineRowEndIndex),
+    [groups, timelineRowStartIndex, timelineRowEndIndex]
   )
 
   const hasActiveFilters = typeFilter !== 'all' || !!catFilter || !!paymentModeFilter || datePreset !== 'all' || !!forcedDateRange || !!debouncedSearch || !!linkedLoanFilter || !!linkedBillFilter || !!linkedSplitExpenseFilter || !!linkedSplitSettlementFilter
@@ -825,9 +818,9 @@ export default function Transactions() {
       return
     }
 
-    const focusRowIndex = timelineRows.findIndex((row) => row.txn.id === focusTxnId)
-    if (focusRowIndex >= 0) {
-      scrollTimelineRowToIndex(focusRowIndex, { behavior: 'smooth', block: 'center' })
+    const focusGroupIndex = groups.findIndex(([_, txns]) => txns.some((row) => row.id === focusTxnId))
+    if (focusGroupIndex >= 0) {
+      scrollTimelineRowToIndex(focusGroupIndex, { behavior: 'smooth', block: 'center' })
     }
 
     setHighlightedTxnId(focusTxnId)
@@ -846,7 +839,7 @@ export default function Transactions() {
       clearTimeout(scrollTimeoutId)
       clearTimeout(timeoutId)
     }
-  }, [focusTxnId, data, hasMore, timelineRows, scrollTimelineRowToIndex, searchParams, setSearchParams])
+  }, [focusTxnId, data, hasMore, groups, scrollTimelineRowToIndex, searchParams, setSearchParams])
 
   // Phase 1: when loan filter activates, reset to All time so all repayments load
   const loanFilterRangeSetRef = useRef(null)
@@ -1575,43 +1568,45 @@ export default function Transactions() {
         ) : (
           <div ref={timelineRowListRef}>
             {timelineRowTopPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowTopPadding}px` }} />}
-            {renderedTimelineRows.map((row, localRowIndex) => {
-              const rowIndex = timelineRowStartIndex + localRowIndex
-              const rowSpacingClass = row.isGroupFirst
-                ? row.groupIndex === 0
-                  ? ''
-                  : 'mt-3.5'
-                : 'mt-1'
+            {renderedGroups.map(([dateKey, txns, net], localGroupIndex) => {
+              const groupIndex = timelineRowStartIndex + localGroupIndex
+              const spacingClass = groupIndex === 0 ? '' : 'mt-4'
 
               return (
                 <div
-                  key={row.txn.id}
-                  ref={(node) => measureTimelineRow(rowIndex, node)}
-                  className={`list-card overflow-hidden ${rowSpacingClass}`}
+                  key={dateKey}
+                  ref={(node) => measureTimelineRow(groupIndex, node)}
+                  className={`list-card overflow-hidden ${spacingClass}`}
                 >
-                  {row.isGroupFirst && (
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-kosha-border bg-kosha-surface-2 sticky top-0 z-10">
-                      <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
-                        {dateLabel(row.dateKey)}
-                      </span>
-                      <span className={`text-caption font-semibold ${row.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                        {row.net >= 0 ? '+' : ''}{fmt(row.net)}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-kosha-border bg-kosha-surface-2 sticky top-0 z-10">
+                    <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
+                      {dateLabel(dateKey)}
+                    </span>
+                    <span className={`text-caption font-semibold ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                      {net >= 0 ? '+' : ''}{fmt(net)}
+                    </span>
+                  </div>
 
-                  <TransactionItem
-                    txn={row.txn}
-                    onDelete={(isViewingPartner || row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id) ? undefined : handleDelete}
-                    onTap={handleTap}
-                    isLast={row.isGroupLast}
-                    onDuplicate={(isViewingPartner || row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id) ? undefined : handleDuplicate}
-                    isHighlighted={highlightedTxnId === row.txn.id}
-                    autoNudge={triggerSwipeNudge && !isViewingPartner && row.groupIndex === 0 && row.isGroupFirst && !(row.txn.linked_split_expense_id || row.txn.linked_split_settlement_id || row.txn.linked_bill_id || row.txn.linked_loan_id)}
-                    onAutoNudgeDone={handleAutoNudgeDone}
-                    onSwipeHintLearned={handleSwipeHintLearned}
-                    searchQuery={debouncedSearch}
-                  />
+                  {txns.map((txn, txnIndex) => {
+                    const isLast = txnIndex === txns.length - 1
+                    const isFirstItemOfFirstGroup = groupIndex === 0 && txnIndex === 0
+
+                    return (
+                      <TransactionItem
+                        key={txn.id}
+                        txn={txn}
+                        onDelete={(isViewingPartner || txn.linked_split_expense_id || txn.linked_split_settlement_id || txn.linked_bill_id || txn.linked_loan_id) ? undefined : handleDelete}
+                        onTap={handleTap}
+                        isLast={isLast}
+                        onDuplicate={(isViewingPartner || txn.linked_split_expense_id || txn.linked_split_settlement_id || txn.linked_bill_id || txn.linked_loan_id) ? undefined : handleDuplicate}
+                        isHighlighted={highlightedTxnId === txn.id}
+                        autoNudge={triggerSwipeNudge && !isViewingPartner && isFirstItemOfFirstGroup && !(txn.linked_split_expense_id || txn.linked_split_settlement_id || txn.linked_bill_id || txn.linked_loan_id)}
+                        onAutoNudgeDone={handleAutoNudgeDone}
+                        onSwipeHintLearned={handleSwipeHintLearned}
+                        searchQuery={debouncedSearch}
+                      />
+                    )
+                  })}
                 </div>
               )
             })}

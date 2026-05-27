@@ -1,12 +1,13 @@
 import { memo } from 'react'
+import { motion } from 'framer-motion'
 import { ArrowsClockwise, ArrowUDownLeft, Notepad } from '@phosphor-icons/react'
 import CategoryIcon from '../categories/CategoryIcon'
 import Badge from './Badge'
 import { fmt, fmtDate, amountClass } from '../../lib/utils'
 
 /**
- * TransactionRow — single transaction in list with category icon, badges, and amount
- * @param {{ transaction: object, onTap?: function, onDelete?: function, onDuplicate?: function, className?: string }} props
+ * TransactionRow — M3 strict list row.
+ * Uses md3-state-overlay for standard MD3 interaction feedback.
  */
 const TransactionRow = memo(function TransactionRow({ transaction, onTap, className = '' }) {
   const { type, amount, description, category, date, is_recurring, is_repayment, investment_vehicle } = transaction
@@ -15,23 +16,24 @@ const TransactionRow = memo(function TransactionRow({ transaction, onTap, classN
   const displayCategory = type === 'investment' ? (investment_vehicle || category) : category
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={() => onTap?.(transaction)}
       className={[
         'flex items-center gap-3 w-full px-5 py-3.5 text-left',
-        'bg-[var(--ds-surface)] hover:bg-[var(--ds-surface-bright)] transition-colors duration-150',
-        'min-h-[56px] active:bg-[var(--ds-surface-container)]',
-        'focus-visible:outline-none',
+        'bg-[var(--ds-surface)]',
+        'min-h-[56px]',
+        'focus-visible:outline-none md3-state-overlay relative overflow-hidden',
         className,
       ].join(' ')}
+      style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
       aria-label={`${description || displayCategory}: ${prefix}${fmt(amount)}`}
     >
       {/* Category icon */}
       <div className="shrink-0">
         {is_repayment ? (
           <div
-            className="w-[48px] h-[48px] rounded-chip flex items-center justify-center"
+            className="w-[48px] h-[48px] rounded-full flex items-center justify-center"
             style={{
               backgroundColor: 'var(--ds-repay-bg)',
               background: 'color-mix(in srgb, var(--ds-repay) 16%, var(--ds-surface))',
@@ -79,7 +81,7 @@ const TransactionRow = memo(function TransactionRow({ transaction, onTap, classN
       <span className={`text-body font-semibold shrink-0 tabular-nums ${amountCls}`}>
         {prefix}{fmt(amount)}
       </span>
-    </button>
+    </motion.button>
   )
 })
 

@@ -187,27 +187,42 @@ function applyTransactionSearchFilter(query, search) {
 }
 
 
-// ── Cache invalidation (exported for cross-hook use) ──────────────────────
+let invalidateTimeout = null
 
 export async function invalidateCache() {
   // Suppress the realtime double-fetch that would otherwise fire
   // ~300-500ms later for the same mutation.
   suppress('transactions')
   await evictSwCacheEntries('/transactions')
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['transactionSignalAggregates'], refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
-    queryClient.invalidateQueries({ queryKey: ['monthly_net_changes'], refetchType: 'active' }),
-  ])
+
+  if (invalidateTimeout) {
+    clearTimeout(invalidateTimeout)
+  }
+
+  return new Promise((resolve) => {
+    invalidateTimeout = setTimeout(async () => {
+      invalidateTimeout = null
+      try {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['transactionSignalAggregates'], refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['monthly_net_changes'], refetchType: 'active' }),
+        ])
+        resolve()
+      } catch (err) {
+        resolve()
+      }
+    }, 80)
+  })
 }
 
 // ── Debounce hook ─────────────────────────────────────────────────────────

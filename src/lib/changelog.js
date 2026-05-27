@@ -1,79 +1,42 @@
 export const CHANGELOG = [
   {
-    version: '1.3.6',
+    version: '2.4.1',
     date: 'May 2026',
     items: [
-      'Integrated loan creation with the transaction system — every new loan now atomically generates a linked disbursement transaction, ensuring the cash movement is always reflected in the activity feed',
-      'Introduced four distinct loan transaction types with unique icons and colored badges: Loan Disbursement, Loan Received, Repayment Received, and Repayment Made',
-      'Renamed the loans category label from "Loan Repayment" to "Loans" — the subtitle now states the category while colored badges communicate the specific transaction type',
-      'Removed auto-generated notes from all loan and bill transactions, eliminating misleading "Note" badges on system-created records',
-      'Standardized linked transaction subtitles across Loans, Bills, and Splitwise to always show the category name, letting badges do the contextual work',
+      'Unified Material Design 3 spring-physics animations across all pages — card entry, hover, and tap interactions now follow the same elastic M3 motion curve',
+      'Fixed empty-state flash on dashboard: new users no longer see a momentary data blip before the onboarding empty state appears',
+      'Eliminated ghost data flash on profile switch by switching from resetQueries to removeQueries for wallet-scoped cache invalidation',
+      'Fixed hardcoded bg-white on linked wallets list breaking dark mode; Settings SettingRow upgraded to spring-physics motion button',
     ],
   },
   {
-    version: '1.3.5',
+    version: '2.4.0',
+    date: 'May 2026',
+    items: [
+      'Integrated loan creation with the transaction system — every new loan now atomically generates a linked disbursement transaction',
+      'Introduced four distinct loan transaction types with unique icons and colored badges: Loan Disbursement, Loan Received, Repayment Received, and Repayment Made',
+      'Removed auto-generated notes from all loan and bill transactions, eliminating misleading "Note" badges on system-created records',
+      'Standardized linked transaction subtitles across Loans, Bills, and Splitwise to always show the category name',
+    ],
+  },
+  {
+    version: '2.3.9',
     date: 'May 2026',
     items: [
       'Hardened Shared Wallet infrastructure with strict RLS policies for secure, read-only visibility across partner Bills, Loans, and Transactions',
       'Resolved Splitwise group rejoining flows and schema constraints to support seamless user re-entry without database conflicts',
-      'Refactored the core Supabase schema with atomic RPC functions and standardized SQL commands for robust onboarding and authentication',
+      'Refactored the core Supabase schema with atomic RPC functions for robust onboarding and authentication',
       'Corrected transaction-scoped mutations to ensure shared wallet actions are accurately attributed to the correct wallet owner',
-      'Aligned FAB UI components and dark mode variables with the application\'s design system for consistent visual hierarchy',
     ],
   },
   {
-    version: '1.3.4',
+    version: '2.3.8',
     date: 'May 2026',
     items: [
       'Overhauled the illustration system with premium hero assets for Error, 404, and Invitation pages',
-      'Implemented Eager Chunk Preloading to eliminate visual lag and "Suspense flashes" during navigation',
+      'Implemented Eager Chunk Preloading to eliminate visual lag and Suspense flashes during navigation',
       'Resolved Splitwise sheet visibility issues by optimizing z-index layering and bottom padding for mobile navigation',
       'Unified error page layouts with a centered hero design for a more premium and cohesive recovery experience',
-      'Refined the invitation landing experience by integrating the invite_hero illustration directly into the invitation card',
-    ],
-  },
-  {
-    version: '1.3.3',
-    date: 'May 2026',
-    items: [
-      'Overhauled the Obligations hub with a descriptive onboarding experience and refined navigation card layout',
-      'Enhanced dark mode elevation with improved surface contrast and subtle card borders for better visual separation',
-      'Standardized the profile avatar system across the app with refined borders and shadows for a premium, cohesive look',
-      'Integrated useUserCategories across Transaction filters, Budgeting, and Category Pickers for instant reactivity',
-      'Improved Dashboard stability and resolved specificity conflicts between custom card styles and Tailwind utilities',
-    ],
-  },
-  {
-    version: '1.3.2',
-    date: 'April 2026',
-    items: [
-      'Generalized financial linking architecture to atomically connect transactions with Bills and Loans',
-      'Implemented UI safeguards to block manual editing/deleting of system-linked records, ensuring ledger integrity',
-      'Upgraded Bills navigation to auto-switch tabs when focusing on settled entries from the transaction list',
-      'Added contextual "Go to Source" navigation in the unified Linked Transaction Info Sheet for Splitwise, Bills, and Loans',
-      'Resolved focus-highlight visual flicker by hardening CSS animation background states across card surfaces',
-    ],
-  },
-  {
-    version: '1.3.1',
-    date: 'April 2026',
-    items: [
-      'Overhauled the illustration system with perfectly matched stick-figure assets for empty states and hero headers',
-      'Standardized page header layouts across Settings, About, Guide, Login, and Report Bug for premium visual consistency',
-      'Rebalanced the Settings profile card and list rows for a denser, more compact typography and layout',
-      'Separated active and archived trip counts in Splitwise admin and member dashboards',
-      'Unified list-level "Add" actions to a secondary visual weight across Dashboard, Loans, and Bills',
-    ],
-  },
-  {
-    version: '1.3.0',
-    date: 'April 2026',
-    items: [
-      'Implemented end-to-end Linked Wallets sharing, enabling multi-user visibility for transactions, bills, and loans via unified identity management',
-      'Upgraded core server-side functions (Balance, Month/Year Summaries) to automatically aggregate financial data across all linked partner accounts',
-      'Integrated linked-user discovery into the global authentication lifecycle, ensuring instant data synchronization and cache awareness upon login',
-      'Rebuilt the Settings UX with distinct sections for Active Sync partners, Invite Token management, and a dedicated Social App Sharing area',
-      'Hardened automated join-flow test suites with improved record-cleanup logic and explicit verification for multi-user data-access paths',
     ],
   },
 ]

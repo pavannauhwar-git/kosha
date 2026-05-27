@@ -240,28 +240,32 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       </motion.p>
 
       <motion.div variants={fadeUp} className="grid grid-cols-2 gap-2 mb-3">
-        <button
+        <motion.button
           type="button"
           onClick={() => setTxnType('expense')}
-          className={`h-10 rounded-card text-[12px] font-semibold border transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.98] ${
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+          className={`h-10 rounded-card text-[12px] font-semibold border transition-colors duration-150 ${
             txnType === 'expense'
               ? 'bg-expense-bg text-expense-text border-expense-border'
               : 'bg-kosha-surface text-ink-3 border-kosha-border'
           }`}
         >
           I spent
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           type="button"
           onClick={() => setTxnType('income')}
-          className={`h-10 rounded-card text-[12px] font-semibold border transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.98] ${
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+          className={`h-10 rounded-card text-[12px] font-semibold border transition-colors duration-150 ${
             txnType === 'income'
               ? 'bg-income-bg text-income-text border-income-border'
               : 'bg-kosha-surface text-ink-3 border-kosha-border'
           }`}
         >
           I received
-        </button>
+        </motion.button>
       </motion.div>
 
       <motion.div variants={fadeUp} className="mb-3">
@@ -290,10 +294,14 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       {txnType === 'expense' && (
         <motion.div variants={fadeUp} className="grid grid-cols-4 gap-2 mb-5 max-h-64 overflow-y-auto">
           {EXPENSE_CATS.map(cat => (
-            <button
+            <motion.button
               key={cat.id}
+              type="button"
               onClick={() => setCategory(cat.id)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-card border transition-[background-color,border-color] duration-150 will-change-transform
+              whileTap={{ scale: 0.93 }}
+              animate={category === cat.id ? { scale: [1, 1.1, 1] } : { scale: 1 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+              className={`flex flex-col items-center gap-1 p-2 rounded-card border transition-colors duration-150
                 ${category === cat.id
                   ? 'border-brand bg-brand-container'
                   : 'border-kosha-border bg-kosha-surface'}`}
@@ -302,7 +310,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
               <span className="text-[10px] font-medium text-ink-3 text-center leading-tight truncate w-full">
                 {cat.label.split(' ')[0]}
               </span>
-            </button>
+            </motion.button>
           ))}
         </motion.div>
       )}

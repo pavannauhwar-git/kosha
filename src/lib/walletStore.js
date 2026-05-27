@@ -79,8 +79,8 @@ export function setActiveWalletUserId(userId) {
     hapticWarning()
   }
   queryClient.setQueryData(ACTIVE_WALLET_KEY, userId)
-  // Reset instead of invalidate to eliminate "Ghost Flashes" of old data
-  queryClient.resetQueries({
+  // Remove instead of reset to instantly eliminate "Ghost Flashes" of old data
+  queryClient.removeQueries({
     predicate: (query) => WALLET_INVALIDATION_LIST.includes(query.queryKey[0])
   })
 }

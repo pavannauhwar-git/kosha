@@ -546,13 +546,7 @@ export default function Monthly() {
           ]}
         />
       ) : (
-        <motion.div
-          key={`${year}-${month}`}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="page-stack"
-        >
+        <div key={`${year}-${month}`} className="page-stack">
           {!hasMonthData ? (
             <EmptyState
               className="py-10"
@@ -589,12 +583,12 @@ export default function Monthly() {
             />
           ) : (
           <>
-          <div className="mb-3">
+          <div className="fade-up fade-up-1 mb-3">
             <MonthHeroCard month={month} year={year} data={data} />
           </div>
 
           {monthOverMonthSignal && (
-            <div className="card p-3.5 border-0">
+            <div className="fade-up fade-up-2 card p-3.5 border-0">
               <SectionHeader
                 className="mb-2"
                 title="Month-over-month snapshot"
@@ -625,7 +619,7 @@ export default function Monthly() {
           )}
 
           {monthlyActionQueue.length > 0 && (
-            <div className="card p-3.5 border-0">
+            <div className="fade-up fade-up-3 card p-3.5 border-0">
               <SectionHeader
                 className="mb-2"
                 title="Monthly action queue"
@@ -663,7 +657,7 @@ export default function Monthly() {
           )}
 
           {(inflow > 0 || spent > 0 || invested > 0) && (
-          <div className="card p-4 border-0">
+          <div className="fade-up fade-up-4 card p-4 border-0">
             <SectionHeader
               className="mb-2"
               title="Month close summary"
@@ -716,16 +710,18 @@ export default function Monthly() {
           )}
 
           {heavyReady && (inflow > 0 || spent > 0 || invested > 0) && (
-            <CashflowWaterfallChart
-              totalIncome={inflow}
-              totalExpense={spent}
-              totalInvestment={invested}
-              periodLabel="Monthly"
-            />
+            <div className="fade-up fade-up-5">
+              <CashflowWaterfallChart
+                totalIncome={inflow}
+                totalExpense={spent}
+                totalInvestment={invested}
+                periodLabel="Monthly"
+              />
+            </div>
           )}
 
           {heavyReady && (categoryVelocitySignal || budgetPressureSignal || dailyVariabilitySignal) && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="fade-up fade-up-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {categoryVelocitySignal && (
                 <div className="card p-3.5 border-0">
                   <p className="text-[10px] text-ink-3 tracking-wide">Highest category velocity</p>
@@ -774,50 +770,54 @@ export default function Monthly() {
           )}
 
           {heavyReady && !monthlyExpenseTotalsLoading && Object.keys(monthlyExpenseDailyTotals).length > 0 && (
-            <DailySpendTrend
-              dailyTotals={monthlyExpenseDailyTotals}
-              year={year}
-              month={month}
-              onReviewExpenses={() => navigate(`/transactions?month=${monthParam}&type=expense`)}
-              onReviewPeakDay={(dateISO) => navigate(`/transactions?month=${monthParam}&type=expense&day=${encodeURIComponent(dateISO)}`)}
-            />
+            <div className="fade-up fade-up-7">
+              <DailySpendTrend
+                dailyTotals={monthlyExpenseDailyTotals}
+                year={year}
+                month={month}
+                onReviewExpenses={() => navigate(`/transactions?month=${monthParam}&type=expense`)}
+                onReviewPeakDay={(dateISO) => navigate(`/transactions?month=${monthParam}&type=expense&day=${encodeURIComponent(dateISO)}`)}
+              />
+            </div>
           )}
 
           {heavyReady && merchantRows.length > 0 && (
-            <MerchantIntelCard
-              txnRows={merchantRows}
-              onReviewExpenses={() => navigate(`/transactions?month=${monthParam}&type=expense`)}
-              onReviewMerchant={(merchant) => navigate(`/transactions?month=${monthParam}&type=expense&q=${encodeURIComponent(merchant?.queryText || merchant?.label || '')}`)}
-            />
+            <div className="fade-up fade-up-8">
+              <MerchantIntelCard
+                txnRows={merchantRows}
+                onReviewExpenses={() => navigate(`/transactions?month=${monthParam}&type=expense`)}
+                onReviewMerchant={(merchant) => navigate(`/transactions?month=${monthParam}&type=expense&q=${encodeURIComponent(merchant?.queryText || merchant?.label || '')}`)}
+              />
+            </div>
           )}
 
           {heavyReady && allCatEntries.length > 0 && (
-            <>
-            <CategorySpendingChart
-              entries={allCatEntries}
-              total={categoryTotal}
-              month={month}
-              year={year}
-              subtitle="Ranked category share with exact spend values"
-              budgetMap={bMap}
-            />
-            {!isViewingPartner && (
-              <div className="flex justify-end -mt-1 mb-1">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowBudgetSheet(true)}
-                >
-                  Manage budgets
-                </Button>
-              </div>
-            )}
-            </>
+            <div className="fade-up fade-up-9">
+              <CategorySpendingChart
+                entries={allCatEntries}
+                total={categoryTotal}
+                month={month}
+                year={year}
+                subtitle="Ranked category share with exact spend values"
+                budgetMap={bMap}
+              />
+              {!isViewingPartner && (
+                <div className="flex justify-end -mt-1 mb-1">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowBudgetSheet(true)}
+                  >
+                    Manage budgets
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
 
           </>
           )}
-        </motion.div>
+        </div>
       )}
 
       <BudgetSheet

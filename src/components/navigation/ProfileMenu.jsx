@@ -1,97 +1,136 @@
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, LogOut, Bug, Info, BookOpen, Link2, Unlink } from 'lucide-react'
+import { useEffect, useState, forwardRef } from 'react'
+import Popover from '@mui/material/Popover'
+import Box from '@mui/material/Box'
+import Avatar from '@mui/material/Avatar'
+import Typography from '@mui/material/Typography'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import ListItemText from '@mui/material/ListItemText'
+import Divider from '@mui/material/Divider'
+import MuiButton from '@mui/material/Button'
+import { LogOut, Bug, Info, BookOpen, Link2, Unlink } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useActiveWallet, setActiveWalletUserId } from '../../lib/walletStore'
 import { unlinkPartner } from '../../lib/walletSync'
 import { useLocation, useNavigate } from 'react-router-dom'
 import SecureAvatar from '../ui/SecureAvatar'
+import { motion, AnimatePresence, useAnimate } from 'framer-motion'
+import React from 'react'
 
-function MenuRow({ icon, label, onClick, destructive = false, disabled = false }) {
-  return (
-    <button
-      type="button"
-      role="menuitem"
-      onClick={onClick}
-      disabled={disabled}
-      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip
-                  text-label font-medium transition-colors disabled:opacity-60
-                  ${destructive
-          ? 'text-expense-text hover:bg-expense-bg'
-          : 'text-ink hover:bg-kosha-surface-2'}`}
-    >
-      <span className="shrink-0 w-4 h-4 flex items-center justify-center">
-        {icon}
-      </span>
-      {label}
-    </button>
-  )
-}
+// M3 Expressive spring — scale + opacity menu reveal from anchor.
+// MUI passes internal Transition lifecycle props (appear, timeout, onEnter*, onExit*,
+// addEndListener) to TransitionComponent — we must discard them so they don't land on
+// the motion.div DOM node and trigger React's unknown-prop warning.
+const SpringPopoverTransition = forwardRef(function SpringPopoverTransition(
+  {
+    children,
+    in: inProp,
+    appear,
+    enter,
+    exit,
+    timeout,
+    addEndListener,
+    onEnter,
+    onEntered,
+    onEntering,
+    onExit,
+    onExited,
+    onExiting,
+    TransitionComponent,
+    ownerState,
+    ...domProps
+  },
+  ref,
+) {
+  const [scope, animate] = useAnimate()
+  const hasEntered = React.useRef(false)
 
-function MenuDivider() {
-  return <div className="my-1 h-px bg-kosha-border mx-1" />
-}
+  useEffect(() => {
+    if (!scope.current) return
 
-const MENU_ITEMS = [
-  { id: 'settings', icon: <Settings size={15} />, label: 'Account Settings', path: '/settings' },
-  { id: 'bug', icon: <Bug size={15} />, label: 'Report a Bug', path: '/report-bug', usesState: true },
-  { id: 'about', icon: <Info size={15} />, label: 'About Kosha', path: '/about' },
-  { id: 'guide', icon: <BookOpen size={15} />, label: 'Setup Guide', path: '/guide' },
-]
+    if (inProp) {
+      hasEntered.current = true
+      onEntering?.(scope.current, true)
+      onEntered?.(scope.current, true) // Fire immediately to shift focus and prevent aria-hidden warning
+      
+      animate(scope.current, { opacity: 1, scale: 1, y: 0 }, {
+        type: 'spring',
+        stiffness: 600,
+        damping: 52,
+        mass: 1,
+      })
+    } else {
+      onExiting?.(scope.current)
+      
+      animate(scope.current, { opacity: 0, scale: 0.92, y: -6 }, {
+        type: 'spring',
+        stiffness: 600,
+        damping: 52,
+        mass: 1,
+      }).then(() => {
+        onExited?.(scope.current)
+      })
+    }
+  }, [inProp, animate, scope, onEntering, onExited, onEntered, onExiting])
 
-const menuItemVariants = {
-  hidden: { opacity: 0, x: -6 },
-  show: (i) => ({
-    opacity: 1,
-    x: 0,
-    transition: { delay: 0.06 + i * 0.04, duration: 0.18, ease: [0.05, 0.7, 0.1, 1] },
-  }),
-}
+  const isInitial = inProp && !hasEntered.current
+
+  return React.cloneElement(children, {
+    ref: (node) => {
+      scope.current = node
+      const childRef = children.ref
+      if (typeof childRef === 'function') childRef(node)
+      else if (childRef) childRef.current = node
+      
+      if (typeof ref === 'function') ref(node)
+      else if (ref) ref.current = node
+    },
+    tabIndex: children.props.tabIndex !== undefined ? children.props.tabIndex : -1,
+    style: {
+      ...children.props.style,
+      ...(isInitial ? { opacity: 0, transform: 'scale(0.88) translateY(-8px)' } : {}),
+      ...domProps.style,
+    },
+    className: `${children.props.className || ''} ${domProps.className || ''}`.trim(),
+  })
+})
 
 export default function ProfileMenu({ className = '', dropUp = false }) {
-  const { user, profile, signOut } = useAuth()
+  const { user, profile, signOut, linkedProfiles } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
+  const [anchorEl, setAnchorEl] = useState(null)
   const [unlinkingId, setUnlinkingId] = useState('')
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
   const avatarUrl = profile?.avatar_url || null
   const displayName = profile?.display_name || 'My Account'
   const activeWalletUserId = useActiveWallet()
-  const { linkedProfiles } = useAuth()
   const isViewingPartner = !!activeWalletUserId && !!user?.id && activeWalletUserId !== user.id
   const activePartner = isViewingPartner ? (linkedProfiles || []).find(p => p.id === activeWalletUserId) : null
 
-  function close() {
-    setOpen(false)
+  const handleOpen = (event) => {
+    setAnchorEl(event.currentTarget)
   }
 
-  useEffect(() => {
-    if (!open) return
+  const handleClose = () => {
+    setAnchorEl(null)
+  }
 
-    function onKeyDown(event) {
-      if (event.key === 'Escape') {
-        close()
-      }
-    }
-
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [open])
+  const open = Boolean(anchorEl)
+  const id = open ? 'profile-popover' : undefined
 
   return (
-    <div className={`relative ${className}`.trim()}>
-      {/* ── Avatar button ────────────────────────────────────────── */}
-      <div className="relative">
+    <Box className={className} sx={{ display: 'inline-block' }}>
+      {/* ── Trigger Avatar Button ────────────────────────────────── */}
+      <Box sx={{ position: 'relative' }}>
         <button
           type="button"
-          onClick={() => setOpen(v => !v)}
-          id="profile-menu-trigger"
+          onClick={handleOpen}
+          aria-describedby={id}
           aria-label={open ? 'Close profile menu' : 'Open profile menu'}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          aria-controls="profile-menu-panel"
           className={`w-9 h-9 rounded-full bg-kosha-surface-2
                      flex items-center justify-center overflow-hidden
                      active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]
@@ -117,172 +156,310 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
             style={{ background: 'var(--ds-warning)' }}
           />
         )}
-      </div>
+      </Box>
 
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop */}
-            <div className="fixed inset-0 z-30" onClick={close} />
-
-            <motion.div
-              id="profile-menu-panel"
-              role="menu"
-              aria-labelledby="profile-menu-trigger"
-              initial={{ opacity: 0, scale: 0.96, y: dropUp ? 8 : -8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: dropUp ? 8 : -8 }}
-              transition={{ duration: 0.15, ease: [0.05, 0.7, 0.1, 1] }}
-              className={`absolute z-40 w-60 card p-1.5 ring-1 ring-black/5 shadow-card-lg ${dropUp ? 'bottom-[calc(100%+0.6rem)] left-0' : 'top-[calc(100%+0.6rem)] right-0'}`}
+      {/* ── MUI Popover with M3 Expressive spring entrance ───────────── */}
+      <Popover
+        id={id}
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        slots={{ transition: SpringPopoverTransition }}
+        transitionDuration={0}
+        anchorOrigin={{
+          vertical: dropUp ? 'top' : 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: dropUp ? 'bottom' : 'top',
+          horizontal: 'right',
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1.5,
+              mb: dropUp ? 1.5 : 0,
+              width: '280px',
+              borderRadius: '28px',
+              overflow: 'hidden',
+              backgroundColor: 'var(--ds-surface)',
+              border: '1px solid var(--ds-border)',
+              boxShadow: 'var(--ds-shadow-lg)',
+              backgroundImage: 'none',
+            },
+          },
+        }}
+      >
+        {/* Identity Section (Centered Header Card) */}
+        <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <Box sx={{ position: 'relative', mb: 1.5 }}>
+            <Avatar
+              sx={{
+                width: 72,
+                height: 72,
+                fontSize: '28px',
+                fontWeight: 'bold',
+                backgroundColor: 'var(--ds-primary-container)',
+                color: 'var(--ds-on-primary-container)',
+                border: '1px solid var(--ds-border)',
+              }}
             >
-              {/* ── Identity header ───────────────────────────────── */}
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.04, duration: 0.18, ease: [0.05, 0.7, 0.1, 1] }}
-                className="flex items-center gap-2.5 px-3 py-2.5 mb-1"
-              >
-                <div className="w-9 h-9 rounded-full bg-kosha-surface-2
-                                flex items-center justify-center overflow-hidden shrink-0"
-                  style={{ border: '1px solid var(--ds-border)' }}>
-                  {avatarUrl ? (
-                    <SecureAvatar src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-label font-semibold text-ink">{initial}</span>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-label font-semibold text-ink truncate">{displayName}</p>
-                  <p className="text-caption text-ink-3 truncate">{user?.email}</p>
-                </div>
-              </motion.div>
-
-              {linkedProfiles && linkedProfiles.length > 0 && (
-                <>
-                  <MenuDivider />
-                  <div className="px-3 py-1.5 flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-ink-3 uppercase tracking-widest">Active Wallet</span>
-                  </div>
-
-                  <motion.div custom={0} variants={menuItemVariants} initial="hidden" animate="show">
-                    <button
-                      type="button"
-                      onClick={() => { close(); setActiveWalletUserId(user?.id) }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-chip text-label font-medium transition-colors ${activeWalletUserId === user?.id ? 'bg-brand-container text-brand' : 'text-ink hover:bg-kosha-surface-2'}`}
-                    >
-                      <div className="w-4 h-4 rounded-full bg-kosha-surface-2 flex items-center justify-center shrink-0">
-                        {activeWalletUserId === user?.id && <div className="w-2 h-2 rounded-full bg-brand" />}
-                      </div>
-                      <span className="flex-1 text-left truncate">My Wallet</span>
-                    </button>
-                  </motion.div>
-
-                  {linkedProfiles.map((p, idx) => (
-                    <motion.div key={p.id} custom={idx + 1} variants={menuItemVariants} initial="hidden" animate="show">
-                      <div className="flex items-stretch pr-2">
-                        <button
-                          type="button"
-                          onClick={() => { close(); setActiveWalletUserId(p.id) }}
-                          className={`flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-l-chip text-label font-medium transition-colors ${activeWalletUserId === p.id ? 'bg-brand-container text-brand' : 'text-ink hover:bg-kosha-surface-2'}`}
-                        >
-                          <div className="w-4 h-4 rounded-full bg-kosha-surface-2 flex items-center justify-center shrink-0 overflow-hidden">
-                            {activeWalletUserId === p.id ? (
-                              <div className="w-2 h-2 rounded-full bg-brand" />
-                            ) : p.avatar_url ? (
-                              <SecureAvatar src={p.avatar_url} className="w-full h-full object-cover" alt="" />
-                            ) : null}
-                          </div>
-                          <span className="flex-1 text-left truncate">{p.display_name}</span>
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!!unlinkingId}
-                          onClick={async () => {
-                            if (confirm(`Are you sure you want to unlink ${p.display_name}? You will no longer be able to access their wallet.`)) {
-                              setUnlinkingId(p.id)
-                              try {
-                                await unlinkPartner(user.id, p.id)
-                                if (activeWalletUserId === p.id) setActiveWalletUserId(user.id)
-                                window.location.reload()
-                              } catch (e) {
-                                alert(e.message)
-                              } finally {
-                                setUnlinkingId('')
-                              }
-                            }
-                          }}
-                          className="flex items-center justify-center px-3 rounded-r-chip text-expense-text hover:bg-expense-bg transition-colors disabled:opacity-50"
-                          title={`Unlink ${p.display_name}`}
-                        >
-                          <Unlink size={14} />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </>
+              {avatarUrl ? (
+                <SecureAvatar src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                initial
               )}
+            </Avatar>
+          </Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'var(--ds-text)', lineHeight: 1.2 }}>
+            {displayName}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'var(--ds-text-tertiary)', mb: 1.5 }}>
+            {user?.email}
+          </Typography>
+          <MuiButton
+            variant="outlined"
+            onClick={() => {
+              handleClose()
+              navigate('/settings')
+            }}
+            sx={{
+              borderRadius: '9999px',
+              px: 3,
+              py: 0.75,
+              borderColor: 'var(--ds-border)',
+              color: 'var(--ds-text-secondary)',
+              fontSize: '12px',
+              fontWeight: 500,
+              '&:hover': {
+                borderColor: 'var(--ds-border-strong)',
+                backgroundColor: 'var(--ds-surface-container)',
+              },
+            }}
+          >
+            Manage your Account
+          </MuiButton>
+        </Box>
 
-              <MenuDivider />
+        <Divider />
 
-              <motion.div custom={linkedProfiles?.length ? linkedProfiles.length + 1 : 0} variants={menuItemVariants} initial="hidden" animate="show">
-                <MenuRow
-                  icon={<Settings size={15} />}
-                  label="Account Settings"
-                  onClick={() => { close(); navigate('/settings') }}
-                />
-              </motion.div>
-              <motion.div custom={linkedProfiles?.length ? linkedProfiles.length + 2 : 1} variants={menuItemVariants} initial="hidden" animate="show">
-                <MenuRow
-                  icon={<Link2 size={15} />}
-                  label="Reconciliation"
-                  onClick={() => { close(); navigate('/reconciliation') }}
-                />
-              </motion.div>
-
-              <MenuDivider />
-
-              <motion.div custom={linkedProfiles?.length ? linkedProfiles.length + 3 : 2} variants={menuItemVariants} initial="hidden" animate="show">
-                <MenuRow
-                  icon={<Bug size={15} />}
-                  label="Report a Bug"
+        {/* Wallets & Sync Section (if partner linked) */}
+        {linkedProfiles && linkedProfiles.length > 0 && (
+          <Box sx={{ px: 2, py: 1.5 }}>
+            <Typography variant="overline" sx={{ px: 1.5, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--ds-text-tertiary)' }}>
+              Active Wallet
+            </Typography>
+            <List dense disablePadding>
+              <ListItem disablePadding sx={{ mb: 0.5 }}>
+                <ListItemButton
                   onClick={() => {
-                    close()
-                    const currentPath = `${location.pathname}${location.search || ''}`
-                    navigate('/report-bug', {
-                      state: { source: 'profile-menu', returnTo: currentPath, reportedRoute: currentPath },
-                    })
+                    handleClose()
+                    setActiveWalletUserId(user?.id)
                   }}
-                />
-              </motion.div>
-              <motion.div custom={linkedProfiles?.length ? linkedProfiles.length + 4 : 3} variants={menuItemVariants} initial="hidden" animate="show">
-                <MenuRow
-                  icon={<Info size={15} />}
-                  label="About Kosha"
-                  onClick={() => { close(); navigate('/about') }}
-                />
-              </motion.div>
+                  sx={{
+                    borderRadius: '12px',
+                    backgroundColor: activeWalletUserId === user?.id ? 'var(--ds-primary-container)' : 'transparent',
+                    color: activeWalletUserId === user?.id ? 'var(--ds-on-primary-container)' : 'var(--ds-text)',
+                    '&:hover': {
+                      backgroundColor: activeWalletUserId === user?.id ? 'var(--ds-primary-container)' : 'var(--ds-surface-container)',
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <Box
+                      sx={{
+                        w: 16,
+                        h: 16,
+                        borderRadius: '50%',
+                        border: '2px solid var(--ds-border-strong)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {activeWalletUserId === user?.id && (
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--ds-primary)' }} />
+                      )}
+                    </Box>
+                  </ListItemIcon>
+                  <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 600 }}>My Wallet</Typography>} />
+                </ListItemButton>
+              </ListItem>
 
-              <MenuDivider />
-
-              <motion.div custom={linkedProfiles?.length ? linkedProfiles.length + 5 : 4} variants={menuItemVariants} initial="hidden" animate="show">
-                <MenuRow
-                  icon={<BookOpen size={15} />}
-                  label="Setup Guide"
-                  onClick={() => { close(); navigate('/guide') }}
-                />
-              </motion.div>
-              <motion.div custom={linkedProfiles?.length ? linkedProfiles.length + 6 : 5} variants={menuItemVariants} initial="hidden" animate="show">
-                <MenuRow
-                  icon={<LogOut size={15} />}
-                  label="Sign Out"
-                  onClick={() => { close(); signOut() }}
-                  destructive
-                />
-              </motion.div>
-            </motion.div>
-          </>
+              {linkedProfiles.map((p) => (
+                <ListItem
+                  key={p.id}
+                  disablePadding
+                  secondaryAction={
+                    <MuiButton
+                      size="small"
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        if (confirm(`Unlink ${p.display_name}? You will no longer access their wallet.`)) {
+                          setUnlinkingId(p.id)
+                          try {
+                            await unlinkPartner(user.id, p.id)
+                            if (activeWalletUserId === p.id) setActiveWalletUserId(user.id)
+                            window.location.reload()
+                          } catch (e) {
+                            alert(e.message)
+                          } finally {
+                            setUnlinkingId('')
+                          }
+                        }
+                      }}
+                      sx={{
+                        color: 'var(--ds-expense-text)',
+                        minWidth: 'auto',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        '&:hover': { backgroundColor: 'var(--ds-expense-bg)' },
+                      }}
+                    >
+                      Unlink
+                    </MuiButton>
+                  }
+                >
+                  <ListItemButton
+                    onClick={() => {
+                      handleClose()
+                      setActiveWalletUserId(p.id)
+                    }}
+                    sx={{
+                      borderRadius: '12px',
+                      backgroundColor: activeWalletUserId === p.id ? 'var(--ds-primary-container)' : 'transparent',
+                      color: activeWalletUserId === p.id ? 'var(--ds-on-primary-container)' : 'var(--ds-text)',
+                      '&:hover': {
+                        backgroundColor: activeWalletUserId === p.id ? 'var(--ds-primary-container)' : 'var(--ds-surface-container)',
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <Box
+                        sx={{
+                          w: 16,
+                          h: 16,
+                          borderRadius: '50%',
+                          border: '2px solid var(--ds-border-strong)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {activeWalletUserId === p.id ? (
+                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--ds-primary)' }} />
+                        ) : p.avatar_url ? (
+                          <SecureAvatar src={p.avatar_url} className="w-full h-full object-cover" alt="" />
+                        ) : null}
+                      </Box>
+                    </ListItemIcon>
+                    <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 600 }}>{p.display_name}</Typography>} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+            <Divider sx={{ my: 1.5 }} />
+          </Box>
         )}
-      </AnimatePresence>
-    </div>
+
+        {/* Drawer Options List */}
+        <Box sx={{ px: 1, pb: 1 }}>
+          <List dense disablePadding>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  handleClose()
+                  navigate('/reconciliation')
+                }}
+                sx={{ borderRadius: '12px', color: 'var(--ds-text)' }}
+              >
+                <ListItemIcon sx={{ minWidth: 36, color: 'var(--ds-text-secondary)' }}>
+                  <Link2 size={16} />
+                </ListItemIcon>
+                <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 500 }}>Reconciliation</Typography>} />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  handleClose()
+                  const currentPath = `${location.pathname}${location.search || ''}`
+                  navigate('/report-bug', {
+                    state: { source: 'profile-menu', returnTo: currentPath, reportedRoute: currentPath },
+                  })
+                }}
+                sx={{ borderRadius: '12px', color: 'var(--ds-text)' }}
+              >
+                <ListItemIcon sx={{ minWidth: 36, color: 'var(--ds-text-secondary)' }}>
+                  <Bug size={16} />
+                </ListItemIcon>
+                <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 500 }}>Report a Bug</Typography>} />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  handleClose()
+                  navigate('/about')
+                }}
+                sx={{ borderRadius: '12px', color: 'var(--ds-text)' }}
+              >
+                <ListItemIcon sx={{ minWidth: 36, color: 'var(--ds-text-secondary)' }}>
+                  <Info size={16} />
+                </ListItemIcon>
+                <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 500 }}>About Kosha</Typography>} />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  handleClose()
+                  navigate('/guide')
+                }}
+                sx={{ borderRadius: '12px', color: 'var(--ds-text)' }}
+              >
+                <ListItemIcon sx={{ minWidth: 36, color: 'var(--ds-text-secondary)' }}>
+                  <BookOpen size={16} />
+                </ListItemIcon>
+                <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 500 }}>Setup Guide</Typography>} />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Box>
+
+        <Divider />
+
+        {/* Footer Center Signout Button */}
+        <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'center' }}>
+          <MuiButton
+            onClick={() => {
+              handleClose()
+              signOut()
+            }}
+            variant="outlined"
+            startIcon={<LogOut size={15} />}
+            sx={{
+              borderRadius: '9999px',
+              borderColor: 'var(--ds-border)',
+              color: 'var(--ds-expense-text)',
+              fontSize: '12px',
+              fontWeight: 600,
+              width: '100%',
+              py: 1,
+              '&:hover': {
+                borderColor: 'var(--ds-expense-border)',
+                backgroundColor: 'var(--ds-expense-bg)',
+              },
+            }}
+          >
+            Sign out of your account
+          </MuiButton>
+        </Box>
+      </Popover>
+    </Box>
   )
 }

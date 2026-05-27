@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   Home,
   Sparkles,
   ShieldCheck,
@@ -12,20 +11,16 @@ import {
   Receipt,
   Wallet,
   Link2,
-  Handshake,
   Users,
   X,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { createFadeUp, createStagger } from '../lib/animations'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
 import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
-
-const fadeUp = createFadeUp(4, 0.18)
-const stagger = createStagger(0.05, 0.04)
 
 const START_HERE = [
   'Add 5-10 recent transactions so your Dashboard and Analytics have enough signal.',
@@ -306,8 +301,8 @@ export default function Guide() {
       )}
       contentClassName="px-4 pt-5 pb-24 max-w-[560px] mx-auto"
     >
-      <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack">
-        <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
+      <div className="page-stack">
+        <div className="fade-up fade-up-1 card p-0 overflow-hidden">
           <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">
               <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Kosha Guide</p>
@@ -370,9 +365,9 @@ export default function Guide() {
               </Button>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.section variants={fadeUp} className="w-full">
+        <section className="fade-up fade-up-2 w-full">
           <p className="section-label mb-1.5">Start here</p>
           <div className="card p-3.5 space-y-2">
             {START_HERE.map((step, i) => (
@@ -384,9 +379,9 @@ export default function Guide() {
               </div>
             ))}
           </div>
-        </motion.section>
+        </section>
 
-        <motion.section variants={fadeUp} className="w-full">
+        <section className="fade-up fade-up-3 w-full">
           <p className="section-label mb-1.5">Feature explorer</p>
           <div className="card-inset p-1.5 rounded-card flex gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-3">
             {GUIDE_TABS.map((tab) => {
@@ -419,20 +414,18 @@ export default function Guide() {
               const Icon = card.icon
               const isViewed = viewed.has(card.id)
               return (
-                <motion.button
+                <Card
                   key={card.id}
-                  type="button"
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.985 }}
-                  transition={{ duration: 0.1 }}
+                  pressable
+                  padding="none"
                   onClick={() => openFeature(card.id)}
-                  className="card p-0 overflow-hidden text-left flex flex-col"
+                  className="text-left flex flex-col"
                 >
                   <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-pill font-semibold ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
-                          {isViewed ? 'Viewed' : 'New'}
+                           {isViewed ? 'Viewed' : 'New'}
                         </span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded-pill font-semibold bg-kosha-surface text-ink-3 border border-kosha-border capitalize">
                           {card.category}
@@ -455,13 +448,13 @@ export default function Guide() {
                       </div>
                     </div>
                   </div>
-                </motion.button>
+                </Card>
               )
             })}
           </div>
-        </motion.section>
+        </section>
 
-        <motion.section variants={fadeUp} className="w-full">
+        <section className="fade-up fade-up-4 w-full">
           <p className="section-label mb-1.5">Playbook cadence</p>
           <div className="card p-3.5 space-y-2">
             <div className="mini-panel px-3 py-2.5">
@@ -474,9 +467,9 @@ export default function Guide() {
               <p className="text-[12px] text-ink-2"><span className="font-semibold text-ink">Monthly:</span> Analytics review + export backup</p>
             </div>
           </div>
-        </motion.section>
+        </section>
 
-        <motion.section variants={fadeUp} className="w-full">
+        <section className="fade-up fade-up-5 w-full">
           <p className="section-label mb-1.5">Trust and privacy</p>
           <div className="card p-4 space-y-2.5">
             <div className="flex items-start gap-2">
@@ -486,17 +479,17 @@ export default function Guide() {
             <p className="text-label text-ink-3">Use monthly CSV export as a simple external backup ritual.</p>
             <p className="text-label text-ink-3">If network conditions are unstable, sync may slow down, but data can still be refreshed safely.</p>
           </div>
-        </motion.section>
+        </section>
 
-        <motion.div variants={fadeUp} className="card p-4 bg-brand-container border border-brand/20">
+        <div className="fade-up fade-up-6 card p-4 bg-brand-container border border-brand/20">
           <div className="flex items-center gap-2 mb-1">
             <Sparkles size={15} className="text-brand" />
             <p className="text-body font-semibold text-ink">Today tip</p>
           </div>
           <p className="text-label text-ink-2">{todayTip}</p>
-        </motion.div>
+        </div>
 
-      </motion.div>
+      </div>
 
       <AnimatePresence>
         {selectedFeature && (

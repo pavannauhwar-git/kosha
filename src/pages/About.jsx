@@ -140,9 +140,7 @@ export default function About() {
           <div className="px-4 py-5 bg-gradient-to-br from-brand-container/60 to-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">
               <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center shadow-sm">
-                  <KoshaLogo size={18} />
-                </div>
+                <KoshaLogo size={28} />
                 <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/20">
                   v{latestVersion}
                 </span>
@@ -229,7 +227,7 @@ export default function About() {
                     </div>
                   </div>
                   <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand border border-brand/15">
-                    Current
+                    Latest
                   </span>
                 </div>
                 <Divider />
@@ -258,15 +256,15 @@ export default function About() {
                     </div>
                   </div>
                   <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-kosha-surface-2 text-ink-2 border border-kosha-border">
-                    Archived
+                    Previous
                   </span>
                 </div>
                 <Divider />
                 <div className="px-4 py-3.5 space-y-2.5">
                   {release.items.map((item, i) => (
                     <div key={i} className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-ink-2 mt-[6px] shrink-0" />
-                      <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
+                      <div className="w-1.5 h-1.5 rounded-full bg-ink-3 mt-[6px] shrink-0" />
+                      <p className="text-[13px] text-ink-3 leading-snug">{item}</p>
                     </div>
                   ))}
                 </div>
