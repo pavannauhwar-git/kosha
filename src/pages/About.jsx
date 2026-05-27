@@ -211,88 +211,7 @@ export default function About() {
           </div>
         </motion.div>
 
-        <motion.div variants={fadeUp}>
-          <SectionLabel>Release Timeline</SectionLabel>
-          <div className="card overflow-hidden p-0">
-            {currentRelease && (
-              <div>
-                <div className="flex items-center justify-between px-4 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-brand-container border border-brand/15 flex items-center justify-center shrink-0">
-                      <StarIcon size={17} weight="duotone" color={C.brand} />
-                    </div>
-                    <div>
-                      <p className="text-[15px] font-semibold text-ink">v{currentRelease.version}</p>
-                      <p className="text-[12px] text-ink-3 mt-0.5">{currentRelease.date}</p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand border border-brand/15">
-                    Latest
-                  </span>
-                </div>
-                <Divider />
-                <div className="px-4 py-3.5 space-y-2.5">
-                  {currentRelease.items.map((item, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-ink-2 mt-[6px] shrink-0" />
-                      <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {showAllVersions && olderReleases.map((release) => (
-              <div key={release.version}>
-                <Divider />
-                <div className="flex items-center justify-between px-4 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
-                      <StarIcon size={17} weight="duotone" color={C.inkMuted} />
-                    </div>
-                    <div>
-                      <p className="text-[15px] font-semibold text-ink">v{release.version}</p>
-                      <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-kosha-surface-2 text-ink-2 border border-kosha-border">
-                    Previous
-                  </span>
-                </div>
-                <Divider />
-                <div className="px-4 py-3.5 space-y-2.5">
-                  {release.items.map((item, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-ink-3 mt-[6px] shrink-0" />
-                      <p className="text-[13px] text-ink-3 leading-snug">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            {olderReleases.length > 0 && (
-              <>
-                <Divider />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="md"
-                  fullWidth
-                  onClick={() => setShowAllVersions(v => !v)}
-                  iconRight={showAllVersions
-                    ? <CaretUpIcon size={13} weight="bold" />
-                    : <CaretDownIcon size={13} weight="bold" />}
-                  className="rounded-none border-0 bg-kosha-surface-2 text-ink-2"
-                >
-                  {showAllVersions
-                    ? 'Hide older releases'
-                    : `Expand older releases (${olderReleases.length})`}
-                </Button>
-              </>
-            )}
-          </div>
-        </motion.div>
 
         <motion.div variants={fadeUp}>
           <SectionLabel>Connect</SectionLabel>
@@ -412,6 +331,89 @@ export default function About() {
                 Built with React, Supabase, Vite, Tailwind, and Framer Motion for fast interaction and clear information density.
               </p>
             </div>
+          </div>
+        </motion.div>
+
+        <motion.div variants={fadeUp}>
+          <SectionLabel>Release Timeline</SectionLabel>
+          <div className="card overflow-hidden p-0">
+            {currentRelease && (
+              <div>
+                <div className="flex items-center justify-between px-4 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-brand-container border border-brand/15 flex items-center justify-center shrink-0">
+                      <StarIcon size={17} weight="duotone" color={C.brand} />
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-semibold text-ink">v{currentRelease.version}</p>
+                      <p className="text-[12px] text-ink-3 mt-0.5">{currentRelease.date}</p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand border border-brand/15">
+                    Latest
+                  </span>
+                </div>
+                <Divider />
+                <div className="px-4 py-3.5 space-y-2.5">
+                  {currentRelease.items.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-ink-2 mt-[6px] shrink-0" />
+                      <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {showAllVersions && olderReleases.map((release) => (
+              <div key={release.version}>
+                <Divider />
+                <div className="flex items-center justify-between px-4 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                      <StarIcon size={17} weight="duotone" color={C.inkMuted} />
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-semibold text-ink">v{release.version}</p>
+                      <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-kosha-surface-2 text-ink-2 border border-kosha-border">
+                    Previous
+                  </span>
+                </div>
+                <Divider />
+                <div className="px-4 py-3.5 space-y-2.5">
+                  {release.items.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-ink-3 mt-[6px] shrink-0" />
+                      <p className="text-[13px] text-ink-3 leading-snug">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {olderReleases.length > 0 && (
+              <>
+                <Divider />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  fullWidth
+                  onClick={() => setShowAllVersions(v => !v)}
+                  iconRight={showAllVersions
+                    ? <CaretUpIcon size={13} weight="bold" />
+                    : <CaretDownIcon size={13} weight="bold" />}
+                  className="rounded-none border-0 bg-kosha-surface-2 text-ink-2"
+                >
+                  {showAllVersions
+                    ? 'Hide older releases'
+                    : `Expand older releases (${olderReleases.length})`}
+                </Button>
+              </>
+            )}
           </div>
         </motion.div>
 
