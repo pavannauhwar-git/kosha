@@ -18,12 +18,22 @@ import { unlinkPartner } from '../../lib/walletSync'
 import { useLocation, useNavigate } from 'react-router-dom'
 import SecureAvatar from '../ui/SecureAvatar'
 
+function getAnchorPosition(anchorNode, dropUp) {
+  if (!anchorNode || typeof anchorNode.getBoundingClientRect !== 'function') return null
+  const rect = anchorNode.getBoundingClientRect()
+  return {
+    top: dropUp ? rect.top : rect.bottom,
+    left: rect.right,
+  }
+}
+
 export default function ProfileMenu({ className = '', dropUp = false }) {
   const { user, profile, signOut, linkedProfiles, reloadLinkedData } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState(null)
+  const [anchorPosition, setAnchorPosition] = useState(null)
   const [unlinkingId, setUnlinkingId] = useState('')
   const closeRafRef = useRef(null)
 
@@ -39,7 +49,9 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
       setMenuOpen(false)
       return
     }
-    setAnchorEl(event.currentTarget)
+    const target = event.currentTarget
+    setAnchorEl(target)
+    setAnchorPosition(getAnchorPosition(target, dropUp))
     setMenuOpen(true)
   }
 
@@ -122,6 +134,8 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
       <Popover
         id={id}
         open={open}
+        anchorReference={anchorPosition ? 'anchorPosition' : 'anchorEl'}
+        anchorPosition={anchorPosition || { top: 0, left: 0 }}
         anchorEl={anchorEl}
         onClose={handleClose}
         disableScrollLock

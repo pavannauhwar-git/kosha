@@ -117,6 +117,28 @@ function defaultSplitInput() {
   }
 }
 
+function bannerStorageKey(groupId) {
+  return `kosha-trip-banner-${groupId}`
+}
+
+function readBannerFromStorage(groupId) {
+  if (!groupId || typeof window === 'undefined') return null
+  try {
+    return window.localStorage?.getItem(bannerStorageKey(groupId)) || null
+  } catch {
+    return null
+  }
+}
+
+function writeBannerToStorage(groupId, bannerId) {
+  if (!groupId || typeof window === 'undefined') return
+  try {
+    window.localStorage?.setItem(bannerStorageKey(groupId), bannerId)
+  } catch {
+    // Ignore storage failures in restricted environments.
+  }
+}
+
 export default function Splitwise() {
   const { user, profile } = useAuth()
   const [activeGroupId, setActiveGroupId] = useState('')
@@ -228,7 +250,7 @@ export default function Splitwise() {
       if (activeGroupObj?.banner_id) {
         setSavedBannerId(activeGroupObj.banner_id)
       } else {
-        const stored = localStorage.getItem(`kosha-trip-banner-${activeGroupId}`)
+        const stored = readBannerFromStorage(activeGroupId)
         setSavedBannerId(stored || 'goa')
       }
     }
@@ -237,7 +259,7 @@ export default function Splitwise() {
   const changeBanner = async (id) => {
     setSavedBannerId(id)
     if (activeGroupId) {
-      localStorage.setItem(`kosha-trip-banner-${activeGroupId}`, id)
+      writeBannerToStorage(activeGroupId, id)
       try {
         await updateSplitGroupBannerMutation(activeGroupId, id)
       } catch (error) {
@@ -248,6 +270,10 @@ export default function Splitwise() {
   }
 
   const activeBanner = useMemo(() => BANNERS.find(b => b.id === savedBannerId) || BANNERS[0], [savedBannerId])
+  const visibleGroups = useMemo(
+    () => groups.filter((group) => (showArchived ? group.is_archived : !group.is_archived)),
+    [groups, showArchived]
+  )
 
   const handleUpdateGroup = async () => {
     if (!editGroupForm.name.trim()) return setToast('Name is required.')
@@ -1190,16 +1216,16 @@ export default function Splitwise() {
               </button>
             </div>
             <div className="space-y-2">
-              {groups.filter(g => showArchived ? g.is_archived : !g.is_archived).length === 0 ? (
+              {visibleGroups.length === 0 ? (
                 <EmptyState
                   className="py-6"
                   imageUrl="/illustrations/splitwise_group.png"
                   title={showArchived ? "No archived groups" : "No active groups"}
                   description={showArchived ? "You don't have any archived groups." : "Create or join a new group."}
                 />
-              ) : groups.filter(g => showArchived ? g.is_archived : !g.is_archived).map((group) => {
+              ) : visibleGroups.map((group) => {
                 const isAdmin = group.my_role === 'admin' || group.user_id === authUserId
-                const bgBannerId = group.banner_id || localStorage.getItem(`kosha-trip-banner-${group.id}`) || 'goa'
+                const bgBannerId = group.banner_id || readBannerFromStorage(group.id) || 'goa'
                 const bgBanner = BANNERS.find(b => b.id === bgBannerId) || BANNERS[0]
                 return (
                   <button
@@ -1631,7 +1657,7 @@ export default function Splitwise() {
                 <div className="relative mb-4 overflow-hidden rounded-card">
                   <div className="h-32 w-full bg-kosha-surface-2">
                     <img
-                      src={(BANNERS.find(b => b.id === (localStorage.getItem(`kosha-trip-banner-${invitePreview.groupId}`) || 'goa')) || BANNERS[0]).src}
+                      src={(BANNERS.find(b => b.id === (readBannerFromStorage(invitePreview.groupId) || 'goa')) || BANNERS[0]).src}
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />

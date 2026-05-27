@@ -7,6 +7,7 @@ import {
   removeTransactionMutation,
   optimisticallyDeleteTransactionFromCache,
   optimisticallyUpsertTransactionInCache,
+  buildTransactionSearchOrClause,
   useDebounce,
 } from '../hooks/useTransactions'
 import TransactionItem from '../components/transactions/TransactionItem'
@@ -1056,12 +1057,9 @@ export default function Transactions() {
       if (catFilter) q = q.eq('category', catFilter)
       if (paymentModeFilter) q = q.eq('payment_mode', paymentModeFilter)
       if (debouncedSearch) {
-        const searchNeedle = String(debouncedSearch)
-          .trim()
-          .replace(/[,%()]/g, ' ')
-          .replace(/\s+/g, ' ')
-        if (searchNeedle) {
-          q = q.or(`description.ilike.%${searchNeedle}%,notes.ilike.%${searchNeedle}%`)
+        const clause = buildTransactionSearchOrClause(debouncedSearch)
+        if (clause) {
+          q = q.or(clause)
         }
       }
       if (startDate) q = q.gte('date', startDate)

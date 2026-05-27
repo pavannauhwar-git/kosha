@@ -226,7 +226,11 @@ export default function Settings() {
   function toggleDarkMode() {
     const next = !isDark
     document.documentElement.classList.toggle('dark', next)
-    localStorage.setItem('kosha-theme', next ? 'dark' : 'light')
+    try {
+      localStorage.setItem('kosha-theme', next ? 'dark' : 'light')
+    } catch {
+      // Ignore storage failures in restricted contexts.
+    }
     setIsDark(next)
   }
 

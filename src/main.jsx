@@ -30,7 +30,12 @@ startRuntimeMonitor()
     metaTheme.content = isDark ? '#0B0C0F' : '#FFFFFF'
   }
 
-  const stored = localStorage.getItem('kosha-theme')
+  let stored = null
+  try {
+    stored = window.localStorage?.getItem('kosha-theme') || null
+  } catch {
+    stored = null
+  }
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   const isDark = stored === 'dark' || (!stored && prefersDark)
   

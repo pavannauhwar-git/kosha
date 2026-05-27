@@ -593,6 +593,103 @@ const REALTIME_CONNECT_TIMEOUT_MS = 8000
 const REALTIME_FALLBACK_POLL_MS = 30000
 const REALTIME_RETRY_DELAYS_MS = [15000, 30000, 60000]
 
+function normalizeRealtimeValue(value) {
+  if (value == null) return ''
+  return String(value).trim()
+}
+
+function hasSplitwiseUserBinding(row, activeUserId) {
+  const uid = normalizeRealtimeValue(activeUserId)
+  if (!uid || !row || typeof row !== 'object') return false
+
+  const userColumns = [
+    row.user_id,
+    row.linked_user_id,
+    row.created_by_user_id,
+    row.accepted_by_user_id,
+    row.member_user_id,
+  ]
+
+  return userColumns.some((value) => normalizeRealtimeValue(value) === uid)
+}
+
+function getKnownSplitwiseGroupIds() {
+  const groupIds = new Set()
+  const groupQueries = queryClient.getQueriesData({ queryKey: ['splitwise', 'groups'] })
+  const accessQueries = queryClient.getQueriesData({ queryKey: ['splitwise', 'group-access'] })
+
+  for (const [, rows] of groupQueries) {
+    if (!Array.isArray(rows)) continue
+    for (const row of rows) {
+      const id = normalizeRealtimeValue(row?.id)
+      if (id) groupIds.add(id)
+    }
+  }
+
+  for (const [, rows] of accessQueries) {
+    if (!Array.isArray(rows)) continue
+    for (const row of rows) {
+      const id = normalizeRealtimeValue(row?.group_id)
+      if (id) groupIds.add(id)
+    }
+  }
+
+  return groupIds
+}
+
+function getKnownSplitwiseExpenseGroupMap() {
+  const expenseToGroup = new Map()
+  const expenseQueries = queryClient.getQueriesData({ queryKey: ['splitwise', 'expenses'] })
+  for (const [, rows] of expenseQueries) {
+    if (!Array.isArray(rows)) continue
+    for (const row of rows) {
+      const expenseId = normalizeRealtimeValue(row?.id)
+      const groupId = normalizeRealtimeValue(row?.group_id)
+      if (!expenseId || !groupId) continue
+      expenseToGroup.set(expenseId, groupId)
+    }
+  }
+  return expenseToGroup
+}
+
+function isRelevantSplitwiseRealtimeEvent(table, payload, activeUserId) {
+  const next = payload?.new || payload?.record || {}
+  const prev = payload?.old || {}
+  const eventType = normalizeRealtimeValue(payload?.eventType).toUpperCase()
+
+  if (hasSplitwiseUserBinding(next, activeUserId) || hasSplitwiseUserBinding(prev, activeUserId)) {
+    return true
+  }
+
+  const knownGroupIds = getKnownSplitwiseGroupIds()
+
+  let groupId = ''
+  if (table === 'split_groups') {
+    groupId = normalizeRealtimeValue(next?.id || prev?.id)
+  } else {
+    groupId = normalizeRealtimeValue(next?.group_id || prev?.group_id)
+  }
+
+  if (!groupId && table === 'split_expense_splits') {
+    const expenseId = normalizeRealtimeValue(next?.expense_id || prev?.expense_id)
+    if (expenseId) {
+      groupId = getKnownSplitwiseExpenseGroupMap().get(expenseId) || ''
+    }
+  }
+
+  if (groupId && knownGroupIds.has(groupId)) return true
+
+  // Delete payloads may omit relational columns unless replica identity is full.
+  // Fall back to invalidation to avoid stale UI after deletions.
+  if (!groupId && eventType === 'DELETE') return true
+
+  // If we don't have splitwise groups cached yet, only process rows that directly
+  // bind to this user to avoid global cross-tenant invalidation churn.
+  if (knownGroupIds.size === 0) return false
+
+  return false
+}
+
 // ── Global Realtime Sync ──────────────────────────────────────────────────
 // Realtime is a freshness enhancer, not a source of truth.
 // If the socket is unavailable, fall back to periodic invalidation of active
@@ -729,7 +826,11 @@ function GlobalRealtimeSync() {
         nextChannel = nextChannel.on(
           'postgres_changes',
           config,
-          () => {
+          (payload) => {
+            if (policy.key === 'splitwise') {
+              const relevant = isRelevantSplitwiseRealtimeEvent(policy.table, payload, activeUserId)
+              if (!relevant) return
+            }
             const tablePath = `/${policy.table}`
             evictSwCacheEntries(tablePath)
             scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
@@ -803,16 +904,43 @@ function RuntimeRouteTracker() {
   return null
 }
 
+// Pure DOM queries — no component state dependency, so defined at module scope
+// to avoid recreation on every VersionHeartbeat render.
+function hasActiveTextEditing() {
+  const activeEl = document.activeElement
+  if (!activeEl || !(activeEl instanceof HTMLElement)) return false
+  const tag = activeEl.tagName
+  return (
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT' ||
+    activeEl.isContentEditable
+  )
+}
+
+function hasOpenDialogSurface() {
+  return Boolean(
+    document.querySelector('[aria-modal="true"]') ||
+    document.querySelector('.sheet-panel')
+  )
+}
+
 // Case 162: Versioned Heartbeat Reload
 // Ensures that PWA instances left open for long periods eventually refresh
 // to the latest code version and schema.
 function VersionHeartbeat() {
   const qc = useQueryClient()
+
   useEffect(() => {
     const HEARTBEAT_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
     const interval = setInterval(() => {
       // Skip reload if a mutation is in-flight (e.g. user is mid-form / saving).
-      if (document.visibilityState === 'visible' && qc.isMutating() === 0) {
+      if (
+        document.visibilityState === 'visible' &&
+        qc.isMutating() === 0 &&
+        !hasActiveTextEditing() &&
+        !hasOpenDialogSurface()
+      ) {
         window.location.reload()
       }
     }, HEARTBEAT_INTERVAL)

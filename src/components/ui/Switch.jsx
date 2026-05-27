@@ -57,7 +57,6 @@ const Switch = forwardRef(function Switch(
   return (
     <md-switch
       ref={setRefs}
-      disabled={disabled ? true : undefined}
       class={className}
       style={{
         ...style,

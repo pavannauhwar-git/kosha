@@ -1,7 +1,11 @@
 function isQueryTraceEnabled() {
   if (!import.meta.env.DEV) return false
   if (typeof window === 'undefined') return false
-  return window.localStorage?.getItem('kosha:trace-queries') === '1'
+  try {
+    return window.localStorage?.getItem('kosha:trace-queries') === '1'
+  } catch {
+    return false
+  }
 }
 
 export async function traceQuery(label, fn) {

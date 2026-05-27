@@ -8,7 +8,7 @@ import { todayStr } from '../lib/utils'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
-import { CATEGORIES } from '../lib/categories'
+import { CATEGORIES, getCategoriesForType } from '../lib/categories'
 import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 
 // ── Query key factories ───────────────────────────────────────────────────
@@ -56,6 +56,7 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['transactionSignalAggregates'],
   ['dailyExpenseTotals'],
   ['monthExpenseDailyTotals'],
+  ['yearDailyExpenseTotals'],
   ['txnCount'],
   ['month'],
   ['year'],
@@ -149,22 +150,46 @@ function logQueryError(scope, error) {
   console.error(`[Kosha] ${scope} query failed`, error)
 }
 
-const CATEGORY_LABEL_BY_ID = new Map(
-  CATEGORIES.map((category) => [category.id, String(category?.label || '').toLowerCase()])
-)
+const POSTGREST_RESERVED_CHARS_RE = /[,%().:"\\_*]/g
 
-function normalizeSearchNeedle(search) {
+// Lazily built once at first search — categories are static module-level constants
+// so there's no need to rebuild this Map on every keystroke.
+let _categoryLabelById = null
+function getCategoryLabelById() {
+  if (_categoryLabelById) return _categoryLabelById
+
+  const map = new Map()
+  const categories = [
+    ...CATEGORIES,
+    ...getCategoriesForType('expense'),
+    ...getCategoriesForType('income'),
+    ...getCategoriesForType('investment'),
+  ]
+
+  for (const category of categories) {
+    const id = String(category?.id || '').trim()
+    const label = String(category?.label || '').trim().toLowerCase()
+    if (!id || !label || map.has(id)) continue
+    map.set(id, label)
+  }
+
+  _categoryLabelById = map
+  return map
+}
+
+export function sanitizeTransactionSearchNeedle(search) {
   return String(search || '')
     .trim()
-    .replace(/[,%()]/g, ' ')
+    .replace(POSTGREST_RESERVED_CHARS_RE, ' ')
     .replace(/\s+/g, ' ')
     .toLowerCase()
     .trim()
 }
 
-function buildTransactionSearchOrClause(search) {
-  const needle = normalizeSearchNeedle(search)
+export function buildTransactionSearchOrClause(search) {
+  const needle = sanitizeTransactionSearchNeedle(search)
   if (!needle) return ''
+  const categoryLabelById = getCategoryLabelById()
 
   const ilikePattern = `%${needle}%`
   const conditions = [
@@ -172,7 +197,7 @@ function buildTransactionSearchOrClause(search) {
     `notes.ilike.${ilikePattern}`,
   ]
 
-  for (const [categoryId, categoryLabel] of CATEGORY_LABEL_BY_ID.entries()) {
+  for (const [categoryId, categoryLabel] of categoryLabelById.entries()) {
     if (!categoryLabel.includes(needle)) continue
     conditions.push(`category.eq.${categoryId}`)
   }
@@ -212,6 +237,7 @@ export async function invalidateCache() {
           queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
           queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
           queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
+          queryClient.invalidateQueries({ queryKey: ['yearDailyExpenseTotals'], refetchType: 'active' }),
           queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
           queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
           queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
