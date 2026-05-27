@@ -536,22 +536,21 @@ textarea:focus-visible,
   /* -- Frosted header glass ───────────────────────────────────────── */
   .header-frosted {
     background: rgba(244, 246, 248, 0.88);
-    backdrop-filter: saturate(175%) blur(18px);
-    -webkit-backdrop-filter: saturate(175%) blur(18px);
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
     border-bottom: 1px solid var(--ds-border);
   }
 
   .app-topbar {
     @apply fixed top-0 left-0 right-0 z-20 border-b border-kosha-border;
     background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: saturate(175%) blur(18px);
-    -webkit-backdrop-filter: saturate(175%) blur(18px);
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
     border-bottom-color: rgba(17, 19, 24, 0.08);
     box-shadow:
       0 4px 12px rgba(17, 19, 24, 0.045),
       inset 0 0.5px 0 rgba(255, 255, 255, 0.76);
     /* GPU compositing for fixed header */
-    will-change: transform;
     transform: translate3d(0, 0, 0);
     contain: layout style;
   }
@@ -609,8 +608,6 @@ textarea:focus-visible,
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1);
-    /* Ensure transitions happen on compositor */
-    will-change: background-color;
   }
 
   .list-row+.list-row {
@@ -668,7 +665,10 @@ textarea:focus-visible,
 
   .chip-control {
     @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2;
-    transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+    transition: transform 200ms cubic-bezier(0.2, 0, 0, 1),
+                background-color 200ms cubic-bezier(0.2, 0, 0, 1),
+                border-color 200ms cubic-bezier(0.2, 0, 0, 1),
+                opacity 200ms cubic-bezier(0.2, 0, 0, 1);
     --tw-ring-color: rgba(17, 19, 24, 0.10);
   }
 
@@ -757,8 +757,8 @@ textarea:focus-visible,
     z-index: 30;
     border-top: 1px solid var(--ds-border);
     background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: saturate(175%) blur(18px);
-    -webkit-backdrop-filter: saturate(175%) blur(18px);
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
     border-top-color: rgba(17, 19, 24, 0.08);
     box-shadow:
       0 -4px 12px rgba(17, 19, 24, 0.05),
@@ -766,8 +766,7 @@ textarea:focus-visible,
     padding-bottom: constant(safe-area-inset-bottom, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     pointer-events: auto;
-    /* GPU compositing: fixed elements should always be on compositor layer */
-    will-change: transform, opacity;
+    /* GPU compositing: fixed position only — no will-change needed for opacity */
     transform: translateZ(0);
   }
 
@@ -788,6 +787,54 @@ textarea:focus-visible,
     box-shadow:
       0 -4px 12px rgba(0, 0, 0, 0.22),
       inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* -- CSS page entry animation — compositor-friendly fade+slide up ── */
+  /* Use .fade-up class instead of framer-motion for entry-only animations */
+  @keyframes fade-up-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fade-up {
+    animation: fade-up-in 0.38s cubic-bezier(0.05, 0.7, 0.1, 1) both;
+  }
+
+  /* Stagger delays for sequential children */
+  .fade-up-1 { animation-delay: 0ms; }
+  .fade-up-2 { animation-delay: 55ms; }
+  .fade-up-3 { animation-delay: 110ms; }
+  .fade-up-4 { animation-delay: 165ms; }
+  .fade-up-5 { animation-delay: 220ms; }
+  .fade-up-6 { animation-delay: 275ms; }
+  .fade-up-7 { animation-delay: 330ms; }
+  .fade-up-8 { animation-delay: 385ms; }
+  .fade-up-9 { animation-delay: 440ms; }
+
+  /* -- CSS opacity-only fade — for data-gated sections (no translate = no CLS) */
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .fade-in {
+    animation: fade-in 0.25s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  /* -- Hero card cross-fade — skeleton → content */
+  @keyframes hero-enter {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .hero-card-enter {
+    animation: hero-enter 0.3s cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   .nav-float-item {
@@ -853,8 +900,6 @@ textarea:focus-visible,
     @apply w-full max-w-full bg-kosha-surface-2 rounded-card px-4 py-3.5 text-ink placeholder-ink-4 text-[15px] focus:outline-none focus:bg-kosha-surface;
     border: 1px solid var(--ds-border);
     min-width: 0;
-    will-change: transform;
-    transform: translateZ(0);
     touch-action: manipulation;
     transition: border-color 200ms cubic-bezier(0.2, 0, 0, 1), box-shadow 200ms cubic-bezier(0.2, 0, 0, 1), background-color 200ms cubic-bezier(0.2, 0, 0, 1);
   }
@@ -1071,16 +1116,20 @@ textarea:focus-visible,
   }
 
 
-  /* -- Progress bars ───────────────────────────────────────────────── */
+  /* -- Progress bars ──────────────────────────────────────────────────── */
+  /* Uses scaleX instead of width — scaleX is compositor-accelerated,
+     width triggers layout recalculation on every animation frame. */
   .bar-dark-track {
     @apply h-1.5 rounded-pill w-full relative overflow-hidden;
     background: rgba(255, 255, 255, 0.12);
   }
 
   .bar-dark-fill {
-    @apply h-full rounded-pill absolute inset-y-0 left-0;
+    @apply h-full rounded-pill absolute inset-y-0 left-0 w-full;
     background: var(--c-hero-accent-fill);
-    transition: width 0.6s cubic-bezier(0.05, 0.7, 0.1, 1);
+    transform-origin: left center;
+    transform: scaleX(var(--bar-pct, 0));
+    transition: transform 0.45s cubic-bezier(0.05, 0.7, 0.1, 1);
   }
 
   .bar-light-track {
@@ -1089,9 +1138,11 @@ textarea:focus-visible,
   }
 
   .bar-light-fill {
-    @apply h-full rounded-pill absolute inset-y-0 left-0;
+    @apply h-full rounded-pill absolute inset-y-0 left-0 w-full;
     background: var(--c-income);
-    transition: width 0.6s cubic-bezier(0.05, 0.7, 0.1, 1);
+    transform-origin: left center;
+    transform: scaleX(var(--bar-pct, 0));
+    transition: transform 0.45s cubic-bezier(0.05, 0.7, 0.1, 1);
   }
 
   .savings-track {
@@ -1100,6 +1151,18 @@ textarea:focus-visible,
 
   .savings-fill {
     @apply bar-dark-fill;
+  }
+
+  /* Reduced-motion overrides for new animation classes */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in,
+    .hero-card-enter {
+      animation-duration: 1ms !important;
+    }
+    .bar-dark-fill,
+    .bar-light-fill {
+      transition-duration: 1ms !important;
+    }
   }
 
   /* -- Illustration — dark-mode adaptation ────────────────────────── */
@@ -1113,9 +1176,7 @@ textarea:focus-visible,
 
   /* -- Close button ────────────────────────────────────────────────── */
   .close-btn {
-    @apply w-9 h-9 rounded-full flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-bg transition-all duration-150 cursor-pointer;
-    will-change: transform;
-    transform: translateZ(0);
+    @apply w-9 h-9 rounded-full flex items-center justify-center bg-kosha-surface-2 cursor-pointer;
     touch-action: manipulation;
     transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms cubic-bezier(0.2, 0, 0, 1);
   }
@@ -1163,7 +1224,7 @@ textarea:focus-visible,
     var(--c-shimmer-2) 65%,
     var(--c-shimmer-1) 100%
   );
-  background-attachment: fixed;
+  /* background-attachment: fixed removed — caused full repaints on every scroll frame */
   background-size: 200vw 100%;
   animation: shimmer 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -1397,9 +1458,11 @@ textarea:focus-visible,
   .fab-bills,
   .fab-loans,
   .close-btn,
-  .input {
+  .input,
+  .fade-up {
     transition-duration: 1ms !important;
     animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
   }
 
   button.card:hover,

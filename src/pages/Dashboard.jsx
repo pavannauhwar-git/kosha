@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, Wallet, TrendingDown, ArrowRight, Eye } from 'lucide-react'
+
+import { Plus, Wallet, TrendingDown, ArrowRight } from 'lucide-react'
 import {
   useRecentTransactions,
   useMonthSummary,
@@ -18,7 +18,6 @@ import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
 import { useNavigate } from 'react-router-dom'
-import { createFadeUp, createStagger } from '../lib/animations'
 import Button from '../components/ui/Button'
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
@@ -30,9 +29,6 @@ import { useActiveWallet } from '../lib/walletStore'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
-
-const fadeUp = createFadeUp(12, 0.4)
-const stagger = createStagger(0.06, 0.04)
 
 function DashboardHeroSkeleton() {
   return (
@@ -606,28 +602,33 @@ export default function Dashboard() {
 
   return (
     <PageHeaderPage title="Dashboard">
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate="show"
-        className="page-stack"
-      >
-        {/* ── Greeting ──────────────────────────────────────────────── */}
-        <motion.div variants={fadeUp}>
+      <div className="page-stack">
+        {/* ── Greeting ────────────────────────────────────────────── */}
+        <div className="fade-up fade-up-1 relative">
           <p className="text-[11px] text-ink-3 tracking-wide">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           <h1 className="text-[22px] font-semibold text-ink tracking-tight mt-1">
             {greetingMeta.text}{firstName ? `, ${firstName}` : ''} {greetingMeta.emoji}
           </h1>
-          {isBackgroundFetching && (
-            <p className="text-[10px] text-ink-4 mt-1.5 tracking-wide">Syncing latest data...</p>
-          )}
-        </motion.div>
+          {/* Absolutely positioned — takes zero layout space, no shift */}
+          <p
+            className="absolute right-0 top-0 text-[10px] text-ink-4 tracking-wide"
+            style={{
+              opacity: isBackgroundFetching ? 1 : 0,
+              transition: 'opacity 200ms cubic-bezier(0.2, 0, 0, 1)',
+              pointerEvents: 'none',
+              userSelect: 'none',
+            }}
+            aria-hidden={!isBackgroundFetching}
+          >
+            Syncing...
+          </p>
+        </div>
 
         {/* ── Hero card ─────────────────────────────────────────────── */}
         {!isNewUser && (
-          <motion.div variants={fadeUp}>
+          <div className="fade-up fade-up-2">
             {heroLoading ? <DashboardHeroSkeleton /> : (
               <DashboardHeroCard
                 now={balanceHorizonDate}
@@ -641,20 +642,20 @@ export default function Dashboard() {
                 onSetHeroMode={handleHeroModeChange}
               />
             )}
-          </motion.div>
+          </div>
         )}
 
         {showActionQueueSection && (
-          <motion.div variants={fadeUp}>
+          <div>
             <DashboardSectionCue
               title="Action queue"
               subtitle="Handle the highest-impact items first."
             />
-          </motion.div>
+          </div>
         )}
 
         {!heroLoading && attentionItems.length > 0 && (
-          <motion.div variants={fadeUp}>
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
@@ -690,11 +691,11 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {!heroLoading && !isNewUser && attentionItems.length === 0 && (earned > 0 || spent > 0) && (
-          <motion.div variants={fadeUp}>
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
@@ -730,11 +731,11 @@ export default function Dashboard() {
                 </Button>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {isNewUser && (
-          <motion.div variants={fadeUp}>
+          <div>
             <div className="card p-4 border-0">
               <p className="section-label mb-1.5">Start here</p>
               <p className="text-[14px] font-semibold text-ink">Add your first transaction to unlock daily guidance.</p>
@@ -748,21 +749,21 @@ export default function Dashboard() {
                 </Button>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {showSpendControlSection && (
-          <motion.div variants={fadeUp}>
+          <div>
             <DashboardSectionCue
               title="Spend control"
               subtitle="Track pace, runway, and pressure before month-end."
             />
-          </motion.div>
+          </div>
         )}
 
-        {/* ── Spendable today + burn rate ────────────────────────────── */}
+        {/* ── Spendable today + burn rate ───────────────────────────── */}
         {!heroLoading && earned > 0 && (
-          <motion.div variants={fadeUp}>
+          <div className="fade-in">
             <div className="grid grid-cols-2 gap-2.5">
               <div className="card p-3.5 border-0">
                 <div className="flex items-center gap-2 mb-2">
@@ -796,21 +797,21 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {!heroLoading && (
-          <motion.div variants={fadeUp}>
+          <div className="fade-in">
             <SpendingPaceTracker
               dailyExpenseTotals={dailyExpenseTotals}
               now={now}
               driftData={weeklyDriftSignal}
             />
-          </motion.div>
+          </div>
         )}
 
         {!heroLoading && runwayBalance && (
-          <motion.div variants={fadeUp}>
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-[10px] text-ink-3 tracking-wide">Runway balance</p>
@@ -852,11 +853,11 @@ export default function Dashboard() {
                     : 'Money runway is aligned with days left. Current pace is sustainable.'}
               </p>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {!heroLoading && categoryPressureSignal && (
-          <motion.div variants={fadeUp}>
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -887,20 +888,20 @@ export default function Dashboard() {
                 </p>
               )}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {showBillsControlSection && (
-          <motion.div variants={fadeUp}>
+          <div>
             <DashboardSectionCue
               title="Bills control"
               subtitle="Stay ahead of due dates and payment clusters."
             />
-          </motion.div>
+          </div>
         )}
 
         {showBillsControlSection && (
-          <motion.div variants={fadeUp}>
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
@@ -960,11 +961,11 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
-        {/* ── Recent transactions ───────────────────────────────────── */}
-        <motion.div variants={fadeUp}>
+        {/* ── Recent transactions ───────────────────────────────── */}
+        <div className="fade-up fade-up-3">
           {recentLoading ? <DashboardRecentSkeleton /> : (
             <DashboardRecentTransactions
               recent={recent}
@@ -973,9 +974,9 @@ export default function Dashboard() {
               onDuplicate={handleDuplicate}
             />
           )}
-        </motion.div>
+        </div>
 
-      </motion.div>
+      </div>
 
       <AppToast
         message={toast}

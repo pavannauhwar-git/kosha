@@ -1,8 +1,6 @@
 import { memo } from 'react'
-import { motion } from 'framer-motion'
 import { fmt } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
-import AnimatedNumber from '../../common/AnimatedNumber'
 
 function getHeroAmountClass(length) {
   if (length <= 11) return 'text-[clamp(1.92rem,8.9vw,3.12rem)]'
@@ -16,6 +14,8 @@ function getHeroStatClass(length) {
   if (length <= 13) return 'text-[clamp(0.76rem,2.95vw,0.94rem)] sm:text-[13px]'
   return 'text-[clamp(0.7rem,2.7vw,0.88rem)] sm:text-[12px]'
 }
+
+const STAT_DELAYS = ['0ms', '60ms', '120ms']
 
 const DashboardHeroCard = memo(function DashboardHeroCard({
   now,
@@ -49,8 +49,11 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
   }
 
+  // Clamp rate to [0, 1] for CSS custom property
+  const barPct = Math.max(0, Math.min(100, rate ?? 0)) / 100
+
   return (
-    <motion.div className="card-hero p-5 sm:p-6 relative overflow-hidden">
+    <div className="card-hero p-5 sm:p-6 relative overflow-hidden">
 
       {/* Top row — label + mode switch */}
       <div className="flex items-center justify-between mb-3.5 gap-2">
@@ -83,10 +86,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       {/* Main amount — large */}
       <div>
         <p className={`${mainValueClass} font-bold text-white leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere]`}>
-          <AnimatedNumber 
-            value={heroMode === 'balance' ? (runningBalance || 0) : (safeToSpend || 0)} 
-            formatter={fmt} 
-          />
+          {mainValueText}
         </p>
       </div>
 
@@ -97,7 +97,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       >
         <span className="text-[12px] font-semibold tracking-wide text-white">
           <span style={{ color: C.heroAccent }}>
-            <AnimatedNumber value={rate} formatter={(v) => `${Math.round(v)}%`} />
+            {rate}%
           </span> saved this month
         </span>
       </div>
@@ -105,7 +105,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       {/* Divider */}
       <div className="mb-3.5" style={{ borderTop: `1px solid ${C.heroDivider}` }} />
 
-      {/* Stat chips */}
+      {/* Stat chips — CSS stagger, no JS animation */}
       <div className="flex justify-between gap-2">
         {[
           { label: 'Earned',   val: earned   },
@@ -116,23 +116,22 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           const statValueClass = getHeroStatClass(statText.length)
 
           return (
-          <motion.div key={s.label}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.03 * i, ease: [0.05, 0.7, 0.1, 1] }}
-            className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl backdrop-blur-sm"
-            style={statChipStyle}
-          >
-            <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide"
-              style={{ color: C.heroLabel }}>{s.label}</p>
-            <p className={`${statValueClass} font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] whitespace-normal [overflow-wrap:anywhere]`}>
-              <AnimatedNumber value={s.val} formatter={fmt} />
-            </p>
-          </motion.div>
-        )})}
+            <div
+              key={s.label}
+              className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl backdrop-blur-sm fade-in"
+              style={{ ...statChipStyle, animationDelay: STAT_DELAYS[i] }}
+            >
+              <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide"
+                style={{ color: C.heroLabel }}>{s.label}</p>
+              <p className={`${statValueClass} font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] whitespace-normal [overflow-wrap:anywhere]`}>
+                {statText}
+              </p>
+            </div>
+          )
+        })}
       </div>
 
-      {/* Savings progress bar */}
+      {/* Savings progress bar — scaleX (compositor-accelerated) */}
       <div className="mt-3.5">
         <div className="flex justify-between mb-2">
           <span className="text-[11px] tracking-wide" style={{ color: C.heroLabel }}>
@@ -143,13 +142,13 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           </span>
         </div>
         <div className="bar-dark-track">
-          <motion.div className="bar-dark-fill"
-            initial={{ width: 0 }} animate={{ width: `${rate}%` }}
-            transition={{ duration: 0.35, ease: [0.05, 0.7, 0.1, 1] }}
+          <div
+            className="bar-dark-fill"
+            style={{ '--bar-pct': barPct }}
           />
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 })
 

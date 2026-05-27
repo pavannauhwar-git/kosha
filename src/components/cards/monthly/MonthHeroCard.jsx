@@ -1,5 +1,4 @@
 import { memo } from 'react'
-import { motion } from 'framer-motion'
 import { fmt, savingsRate } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 import { MONTH_NAMES } from '../../../lib/constants'
@@ -16,6 +15,8 @@ function getHeroStatClass(length) {
   if (length <= 13) return 'text-[clamp(0.76rem,2.95vw,0.94rem)] sm:text-[13px]'
   return 'text-[clamp(0.7rem,2.7vw,0.88rem)] sm:text-[12px]'
 }
+
+const STAT_DELAYS = ['0ms', '60ms', '120ms']
 
 const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
   const earned = data?.earned || 0
@@ -37,6 +38,8 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
     border: '1px solid rgba(255,255,255,0.15)',
     boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
   }
+
+  const barPct = Math.max(0, Math.min(100, rate)) / 100
 
   return (
     <div className="card-hero p-5 sm:p-6 relative overflow-hidden">
@@ -65,45 +68,43 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
 
       <div className="mb-3.5" style={{ borderTop: `1px solid ${C.heroDivider}` }} />
 
+      {/* Stat chips — CSS stagger, no JS animation */}
       <div className="flex justify-between gap-2">
         {[
-          { label: 'Earned', val: earned },
-          { label: 'Spent', val: spent },
+          { label: 'Earned',   val: earned   },
+          { label: 'Spent',    val: spent    },
           { label: 'Invested', val: invested },
         ].map((s, i) => {
           const statText = fmt(s.val)
           const statValueClass = getHeroStatClass(statText.length)
 
           return (
-          <motion.div
-            key={s.label}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.03 * i, ease: [0.05, 0.7, 0.1, 1] }}
-            className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl backdrop-blur-sm"
-            style={statChipStyle}
-          >
-            <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide" style={{ color: C.heroLabel }}>
-              {s.label}
-            </p>
-            <p className={`${statValueClass} font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] whitespace-normal [overflow-wrap:anywhere]`}>
-              {statText}
-            </p>
-          </motion.div>
-        )})}
+            <div
+              key={s.label}
+              className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl backdrop-blur-sm fade-in"
+              style={{ ...statChipStyle, animationDelay: STAT_DELAYS[i] }}
+            >
+              <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide" style={{ color: C.heroLabel }}>
+                {s.label}
+              </p>
+              <p className={`${statValueClass} font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] whitespace-normal [overflow-wrap:anywhere]`}>
+                {statText}
+              </p>
+            </div>
+          )
+        })}
       </div>
 
+      {/* Savings progress bar — scaleX (compositor-accelerated) */}
       <div className="mt-3.5">
         <div className="flex justify-between mb-2">
           <span className="text-[11px] tracking-wide" style={{ color: C.heroLabel }}>Savings rate</span>
           <span className="text-[12px] font-semibold" style={{ color: heroAccentStrong }}>{rate}%</span>
         </div>
         <div className="bar-dark-track">
-          <motion.div
+          <div
             className="bar-dark-fill"
-            initial={{ width: 0 }}
-            animate={{ width: `${rate}%` }}
-            transition={{ duration: 0.35, ease: [0.05, 0.7, 0.1, 1] }}
+            style={{ '--bar-pct': barPct }}
           />
         </div>
       </div>
