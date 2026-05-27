@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState, forwardRef } from 'react'
+import { useState } from 'react'
 import Popover from '@mui/material/Popover'
+import Grow from '@mui/material/Grow'
 import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
 import Typography from '@mui/material/Typography'
@@ -16,86 +17,6 @@ import { useActiveWallet, setActiveWalletUserId } from '../../lib/walletStore'
 import { unlinkPartner } from '../../lib/walletSync'
 import { useLocation, useNavigate } from 'react-router-dom'
 import SecureAvatar from '../ui/SecureAvatar'
-import { motion, AnimatePresence, useAnimate } from 'framer-motion'
-import React from 'react'
-
-// M3 Expressive spring — scale + opacity menu reveal from anchor.
-// MUI passes internal Transition lifecycle props (appear, timeout, onEnter*, onExit*,
-// addEndListener) to TransitionComponent — we must discard them so they don't land on
-// the motion.div DOM node and trigger React's unknown-prop warning.
-const SpringPopoverTransition = forwardRef(function SpringPopoverTransition(
-  {
-    children,
-    in: inProp,
-    appear,
-    enter,
-    exit,
-    timeout,
-    addEndListener,
-    onEnter,
-    onEntered,
-    onEntering,
-    onExit,
-    onExited,
-    onExiting,
-    TransitionComponent,
-    ownerState,
-    ...domProps
-  },
-  ref,
-) {
-  const [scope, animate] = useAnimate()
-  const hasEntered = React.useRef(false)
-
-  useEffect(() => {
-    if (!scope.current) return
-
-    if (inProp) {
-      hasEntered.current = true
-      onEntering?.(scope.current, true)
-      onEntered?.(scope.current, true) // Fire immediately to shift focus and prevent aria-hidden warning
-      
-      animate(scope.current, { opacity: 1, scale: 1, y: 0 }, {
-        type: 'spring',
-        stiffness: 600,
-        damping: 52,
-        mass: 1,
-      })
-    } else {
-      onExiting?.(scope.current)
-      
-      animate(scope.current, { opacity: 0, scale: 0.92, y: -6 }, {
-        type: 'spring',
-        stiffness: 600,
-        damping: 52,
-        mass: 1,
-      }).then(() => {
-        onExited?.(scope.current)
-      })
-    }
-  }, [inProp, animate, scope, onEntering, onExited, onEntered, onExiting])
-
-  const isInitial = inProp && !hasEntered.current
-
-  return React.cloneElement(children, {
-    ref: (node) => {
-      scope.current = node
-      const childRef = children.ref
-      if (typeof childRef === 'function') childRef(node)
-      else if (childRef) childRef.current = node
-      
-      if (typeof ref === 'function') ref(node)
-      else if (ref) ref.current = node
-    },
-    tabIndex: children.props.tabIndex !== undefined ? children.props.tabIndex : -1,
-    style: {
-      ...children.props.style,
-      ...(isInitial ? { opacity: 0, transform: 'scale(0.88) translateY(-8px)' } : {}),
-      ...domProps.style,
-    },
-    className: `${children.props.className || ''} ${domProps.className || ''}`.trim(),
-  })
-})
 
 export default function ProfileMenu({ className = '', dropUp = false }) {
   const { user, profile, signOut, linkedProfiles } = useAuth()
@@ -112,7 +33,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const activePartner = isViewingPartner ? (linkedProfiles || []).find(p => p.id === activeWalletUserId) : null
 
   const handleOpen = (event) => {
-    setAnchorEl(event.currentTarget)
+    setAnchorEl((prev) => (prev ? null : event.currentTarget))
   }
 
   const handleClose = () => {
@@ -121,28 +42,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
 
   const open = Boolean(anchorEl)
   const id = open ? 'profile-popover' : undefined
-
-  const closeOnViewportChange = useCallback(() => {
-    setAnchorEl(null)
-  }, [])
-
-  useEffect(() => {
-    if (!open) return undefined
-
-    window.addEventListener('scroll', closeOnViewportChange, { passive: true, capture: true })
-    window.addEventListener('resize', closeOnViewportChange, { passive: true })
-
-    const visualViewport = window.visualViewport
-    visualViewport?.addEventListener('resize', closeOnViewportChange)
-    visualViewport?.addEventListener('scroll', closeOnViewportChange)
-
-    return () => {
-      window.removeEventListener('scroll', closeOnViewportChange, true)
-      window.removeEventListener('resize', closeOnViewportChange)
-      visualViewport?.removeEventListener('resize', closeOnViewportChange)
-      visualViewport?.removeEventListener('scroll', closeOnViewportChange)
-    }
-  }, [open, closeOnViewportChange])
 
   return (
     <Box className={className} sx={{ display: 'inline-block' }}>
@@ -180,15 +79,13 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         )}
       </Box>
 
-      {/* ── MUI Popover with M3 Expressive spring entrance ───────────── */}
+      {/* ── Profile popover ───────────────────────────────────────────── */}
       <Popover
         id={id}
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
-        disableScrollLock
-        slots={{ transition: SpringPopoverTransition }}
-        transitionDuration={0}
+        slots={{ transition: Grow }}
         anchorOrigin={{
           vertical: dropUp ? 'top' : 'bottom',
           horizontal: 'right',
@@ -198,6 +95,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
           horizontal: 'right',
         }}
         slotProps={{
+          transition: { timeout: 130 },
           paper: {
             sx: {
               mt: 1.5,

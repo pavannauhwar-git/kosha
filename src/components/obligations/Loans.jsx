@@ -20,7 +20,7 @@ import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
 import { useActiveWallet } from '../../lib/walletStore'
 import { downloadCsv, toCsv } from '../../lib/csv'
-import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass } from '../../lib/utils'
+import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, todayStr } from '../../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
 import { FINANCIAL_EVENT_ACTIONS } from '../../lib/auditLog'
 import PageHeaderPage from '../layout/PageHeaderPage'
@@ -212,7 +212,7 @@ export default function Loans({
   // ── Form state ──────────────────────────────────────────────────────
   const [form, setForm] = useState({
     direction: 'given', counterparty: '', amount: '', interest_rate: '',
-    loan_date: new Date().toISOString().slice(0, 10), due_date: '', note: '',
+    loan_date: todayStr(), due_date: '', note: '',
   })
   const [formErr, setFormErr] = useState('')
   const [addSaving, setAddSaving] = useState(false)
@@ -588,7 +588,7 @@ export default function Loans({
   const resetForm = useCallback(() => {
     setForm({
       direction: 'given', counterparty: '', amount: '', interest_rate: '',
-      loan_date: new Date().toISOString().slice(0, 10), due_date: '', note: '',
+      loan_date: todayStr(), due_date: '', note: '',
     })
     setFormErr('')
   }, [])
@@ -685,7 +685,7 @@ export default function Loans({
       counterparty: loan.counterparty || '',
       amount: String(loan.amount || ''),
       interest_rate: loan.interest_rate ? String(loan.interest_rate) : '',
-      loan_date: loan.loan_date || new Date().toISOString().slice(0, 10),
+      loan_date: loan.loan_date || todayStr(),
       due_date: loan.due_date || '',
       note: loan.note || '',
     })
@@ -726,7 +726,7 @@ export default function Loans({
         r.settled ? 'yes' : 'no',
       ])
       const csv = toCsv(headers, csvRows)
-      const date = new Date().toISOString().slice(0, 10)
+      const date = todayStr()
       downloadCsv(`kosha-loans-${date}.csv`, csv)
     } catch (e) {
       setErrToast(e.message || 'Could not export CSV.')

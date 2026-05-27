@@ -14,6 +14,7 @@ import KoshaLogo from '../components/brand/KoshaLogo'
 import { createFadeUp, createStagger } from '../lib/animations'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import { todayStr } from '../lib/utils'
 
 const fadeUp = createFadeUp(8, 0.2)
 const stepStagger = createStagger(0.07, 0)
@@ -206,7 +207,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
     try {
       await saveTransactionMutation({
         payload: {
-          date:         new Date().toISOString().slice(0, 10),
+          date:         todayStr(),
           type:         txnType,
           description:  desc.trim(),
           amount:       parseFloat(amount),

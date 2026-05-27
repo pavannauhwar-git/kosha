@@ -6,7 +6,7 @@ import { getMuiTheme } from './lib/muiTheme'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
-import { queryClient, invalidateQueryFamilies } from './lib/queryClient'
+import { queryClient, evictSwCacheEntries, invalidateQueryFamilies } from './lib/queryClient'
 import { supabase } from './lib/supabase'
 import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS, parseMonthSummaryRows } from './hooks/useTransactions'
 import { LIABILITY_INVALIDATION_KEYS, MONTH_LIABILITY_COLUMNS } from './hooks/useLiabilities'
@@ -338,19 +338,34 @@ function useRouteIntentPrefetch() {
     }
 
     if (path === '/splitwise') {
-      void queryClient.prefetchQuery({
-        queryKey: ['splitwise', 'groups'],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('split_groups')
-            .select('id, name, created_at, updated_at, user_id')
-            .order('updated_at', { ascending: false })
+      void Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['splitwise', 'groups', activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('split_groups')
+              .select('id, name, created_at, updated_at, user_id, is_archived, banner_id')
+              .order('updated_at', { ascending: false })
 
-          if (error) throw error
-          return data || []
-        },
-        staleTime: 30 * 1000,
-      }).catch(() => { })
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['splitwise', 'group-access', activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('split_group_access')
+              .select('group_id, role')
+              .eq('user_id', activeUserId)
+
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => { })
       return
     }
 
@@ -638,7 +653,7 @@ function GlobalRealtimeSync() {
           // otherwise StaleWhileRevalidate will just serve us the same stale data
           // for up to 12 hours.
           const tablePath = `/${policy.table}`
-          import('./lib/queryClient').then(m => m.evictSwCacheEntries(tablePath))
+          evictSwCacheEntries(tablePath)
           invalidateQueryFamilies(policy.queryKeys)
         })
       }
@@ -716,7 +731,7 @@ function GlobalRealtimeSync() {
           config,
           () => {
             const tablePath = `/${policy.table}`
-            import('./lib/queryClient').then(m => m.evictSwCacheEntries(tablePath))
+            evictSwCacheEntries(tablePath)
             scheduleInvalidate(policy.key, () => invalidateQueryFamilies(policy.queryKeys))
           }
         )

@@ -13,7 +13,7 @@ import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
 import { useActiveWallet } from '../../lib/walletStore'
 import { downloadCsv, toCsv } from '../../lib/csv'
-import { fmt, fmtDate, round2, daysUntil, dueLabel, dueChipClass, dueShadow } from '../../lib/utils'
+import { fmt, fmtDate, round2, daysUntil, dueLabel, dueChipClass, dueShadow, todayStr } from '../../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
 import PageHeaderPage from '../layout/PageHeaderPage'
 import SkeletonLayout from '../common/SkeletonLayout'
@@ -508,7 +508,7 @@ export default function Bills({
       ])
 
       const csv = toCsv(headers, csvRows)
-      const date = new Date().toISOString().slice(0, 10)
+      const date = todayStr()
       downloadCsv(`kosha-${tab}-bills-${date}.csv`, csv)
     } catch (e) {
       setErrToast(e.message || 'Could not export bills CSV.')
@@ -745,7 +745,7 @@ export default function Bills({
         )}
 
         {showGuideHint && (
-          <div className="card p-3.5 sm:p-4">
+          <div className="hint-card">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 flex items-center justify-center shrink-0 border border-kosha-border">
                 <BookOpen size={16} className="text-brand" />

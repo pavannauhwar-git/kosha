@@ -544,7 +544,15 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
 }
 
 export async function updateLoanMutation(id, updates) {
+  const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
+
+  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Loan update blocked: Shared wallets are view-only.')
+    return null
+  }
+
   const snapshot = snapshotLoanCaches(targetUserId)
   suppress('loans')
 
@@ -594,7 +602,15 @@ export async function updateLoanMutation(id, updates) {
 }
 
 export async function deleteLoanMutation(id) {
+  const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
+
+  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Loan delete blocked: Shared wallets are view-only.')
+    return false
+  }
+
   const cachedLoan = getLoanFromCacheById(id, targetUserId)
   const snapshot = snapshotLoanCaches(targetUserId)
   suppress('loans')

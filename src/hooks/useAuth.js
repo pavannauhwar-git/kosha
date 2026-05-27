@@ -158,6 +158,8 @@ export function useAuthState() {
           clearErrorReportingUser()
           setUser(null)
           setProfile(null)
+          setLinkedUserIds([])
+          setLinkedProfiles([])
           setProfileLoading(false)
           if (!initialised) { setLoading(false); initialised = true }
           return
@@ -245,6 +247,8 @@ export function useAuthState() {
       clearAuthUser()
       setUser(null)
       setProfile(null)
+      setLinkedUserIds([])
+      setLinkedProfiles([])
       setProfileLoading(false)
     }
   }, [])

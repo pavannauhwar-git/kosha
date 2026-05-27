@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 
 const avatarCache = new Map();
 
 export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
   const [url, setUrl] = useState(null);
+  const [retryNonce, setRetryNonce] = useState(0);
+  const retryCountRef = useRef(0);
+
+  useEffect(() => {
+    retryCountRef.current = 0
+  }, [src])
 
   useEffect(() => {
     if (!src) {
@@ -51,7 +57,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
 
     fetchSignedUrl();
     return () => { isMounted = false; };
-  }, [src]);
+  }, [src, retryNonce]);
 
   if (!url) {
     return (
@@ -61,5 +67,23 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
     );
   }
 
-  return <img src={url} alt={alt} className={className} onError={() => setUrl(null)} />;
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className={className}
+      onError={() => {
+        if (!src || retryCountRef.current >= 1) {
+          setUrl(null)
+          return
+        }
+        retryCountRef.current += 1
+        if (!src.startsWith('http')) {
+          avatarCache.delete(src)
+        }
+        setUrl(null)
+        setRetryNonce((n) => n + 1)
+      }}
+    />
+  );
 }

@@ -750,7 +750,7 @@ export function useTransactionYearBounds(options = {}) {
   const targetUserId = useActiveWallet()
   const { data, isLoading, error } = useQuery({
     queryKey: ['transactionYearBounds', targetUserId],
-    enabled,
+    enabled: enabled && !!targetUserId,
     queryFn: async () => {
       const userId = targetUserId
 
@@ -944,15 +944,19 @@ function defaultTxnListFilters() {
   }
 }
 
-function upsertRecentTransactionCaches(txn) {
+function upsertRecentTransactionCaches(txn, targetUserId) {
+  if (!targetUserId) return
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
 
   if (recentEntries.length === 0) {
-    queryClient.setQueryData(['transactionsRecent', 5], applyTxnLimit([txn], 5))
+    queryClient.setQueryData(['transactionsRecent', 5, targetUserId], applyTxnLimit([txn], 5))
     return
   }
 
   for (const [key, rows] of recentEntries) {
+    const queryTargetId = key?.[2]
+    if (queryTargetId && queryTargetId !== targetUserId) continue
+
     const base = Array.isArray(rows) ? rows : []
     const limit = Number(key?.[1]) || 5
     const next = applyTxnLimit(
@@ -1034,7 +1038,7 @@ export function optimisticallyUpsertTransactionInCache(txn, targetUserId) {
     queryClient.setQueryData(key, next)
   }
 
-  upsertRecentTransactionCaches(txn)
+  upsertRecentTransactionCaches(txn, targetUserId)
 }
 
 export function optimisticallyDeleteTransactionFromCache(id, targetUserId) {
@@ -1051,7 +1055,7 @@ export function optimisticallyDeleteTransactionFromCache(id, targetUserId) {
 
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
   for (const [key, rows] of recentEntries) {
-    const queryTargetId = key?.[1]
+    const queryTargetId = key?.[2]
     if (queryTargetId && queryTargetId !== targetUserId) continue
 
     const baseRows = Array.isArray(rows) ? rows : []
@@ -1073,7 +1077,7 @@ export function optimisticallyDeleteTransactionsByLoanId(loanId, targetUserId) {
 
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
   for (const [key, rows] of recentEntries) {
-    const queryTargetId = key?.[1]
+    const queryTargetId = key?.[2]
     if (queryTargetId && queryTargetId !== targetUserId) continue
 
     const baseRows = Array.isArray(rows) ? rows : []
@@ -1095,7 +1099,7 @@ export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId) {
 
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
   for (const [key, rows] of recentEntries) {
-    const queryTargetId = key?.[1]
+    const queryTargetId = key?.[2]
     if (queryTargetId && queryTargetId !== targetUserId) continue
 
     const baseRows = Array.isArray(rows) ? rows : []

@@ -481,9 +481,9 @@ export default function Guide() {
           </div>
         </section>
 
-        <div className="fade-up fade-up-6 card p-4 bg-brand-container border border-brand/20">
+        <div className="fade-up fade-up-6 hint-card">
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles size={15} className="text-brand" />
+            <Sparkles size={15} className="text-ink-2" />
             <p className="text-body font-semibold text-ink">Today tip</p>
           </div>
           <p className="text-label text-ink-2">{todayTip}</p>

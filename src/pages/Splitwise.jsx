@@ -40,7 +40,7 @@ import {
 } from '../hooks/useSplitwise'
 import { getCategoriesForType } from '../lib/categories'
 import { useUserCategories } from '../hooks/useUserCategories'
-import { fmt, fmtDate } from '../lib/utils'
+import { fmt, fmtDate, todayStr } from '../lib/utils'
 
 import { downloadCsv, toCsv } from '../lib/csv'
 import { shareLink } from '../lib/share'
@@ -184,7 +184,7 @@ export default function Splitwise() {
   const [expenseForm, setExpenseForm] = useState({
     description: '',
     amount: '',
-    expense_date: new Date().toISOString().slice(0, 10),
+    expense_date: todayStr(),
     paid_by_member_id: '',
     split_method: 'equal',
     notes: '',
@@ -196,7 +196,7 @@ export default function Splitwise() {
     payer_member_id: '',
     payee_member_id: '',
     amount: '',
-    settled_at: new Date().toISOString().slice(0, 10),
+    settled_at: todayStr(),
     note: '',
   })
 
@@ -903,7 +903,7 @@ export default function Splitwise() {
     setExpenseForm({
       description: expense.description || '',
       amount: String(expense.amount || ''),
-      expense_date: expense.expense_date || new Date().toISOString().slice(0, 10),
+      expense_date: expense.expense_date || todayStr(),
       paid_by_member_id: expense.paid_by_member_id || '',
       split_method: expense.split_method || 'equal',
       notes: expense.notes || '',
@@ -931,7 +931,7 @@ export default function Splitwise() {
       payer_member_id: s.payer_member_id || '',
       payee_member_id: s.payee_member_id || '',
       amount: String(s.amount || ''),
-      settled_at: s.settled_at || new Date().toISOString().slice(0, 10),
+      settled_at: s.settled_at || todayStr(),
       note: s.note || '',
     })
     setShowSettlement(true)

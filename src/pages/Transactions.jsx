@@ -21,7 +21,7 @@ import { useActiveWallet } from '../lib/walletStore'
 import { useUserCategories } from '../hooks/useUserCategories'
 import { CATEGORIES, PAYMENT_MODES, getCategoriesForType } from '../lib/categories'
 import { supabase } from '../lib/supabase'
-import { groupByDate, dateLabel, fmt } from '../lib/utils'
+import { groupByDate, dateLabel, fmt, todayStr } from '../lib/utils'
 import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { MONTH_SHORT } from '../lib/constants'
@@ -1093,7 +1093,7 @@ export default function Transactions() {
         paymentModeFilter ? (PAYMENT_MODE_LABELS[paymentModeFilter] || paymentModeFilter) : '',
       ].filter(Boolean).join('-')
 
-      const fileName = `kosha-${filters || 'transactions'}-${new Date().toISOString().slice(0, 10)}.csv`
+      const fileName = `kosha-${filters || 'transactions'}-${todayStr()}.csv`
       downloadCsv(fileName, csv)
       pushToast(`Downloaded ${fileName} (${exportRows.length} rows).`)
     } catch (e) {
