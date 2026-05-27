@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Popover from '@mui/material/Popover'
-import Fade from '@mui/material/Fade'
+import Grow from '@mui/material/Grow'
 import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
 import Typography from '@mui/material/Typography'
@@ -23,7 +23,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [anchorPosition, setAnchorPosition] = useState({ top: 0, left: 0 })
+  const [anchorEl, setAnchorEl] = useState(null)
   const [unlinkingId, setUnlinkingId] = useState('')
   const closeRafRef = useRef(null)
 
@@ -39,12 +39,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
       setMenuOpen(false)
       return
     }
-
-    const rect = event.currentTarget.getBoundingClientRect()
-    setAnchorPosition({
-      top: dropUp ? rect.top : rect.bottom,
-      left: rect.right,
-    })
+    setAnchorEl(event.currentTarget)
     setMenuOpen(true)
   }
 
@@ -127,11 +122,10 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
       <Popover
         id={id}
         open={open}
-        anchorReference="anchorPosition"
-        anchorPosition={anchorPosition}
+        anchorEl={anchorEl}
         onClose={handleClose}
         disableScrollLock
-        slots={{ transition: Fade }}
+        slots={{ transition: Grow }}
         anchorOrigin={{
           vertical: dropUp ? 'top' : 'bottom',
           horizontal: 'right',
@@ -141,11 +135,11 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
           horizontal: 'right',
         }}
         slotProps={{
-          transition: { timeout: 140 },
+          transition: { timeout: { enter: 190, exit: 160 } },
           paper: {
             sx: {
               mt: 1.5,
-              mr: -2,
+              mr: 0,
               mb: dropUp ? 1.5 : 0,
               width: '300px',
               maxWidth: 'calc(100vw - 2rem)',
@@ -153,7 +147,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               overflow: 'hidden',
               backgroundColor: 'var(--ds-surface)',
               border: '1px solid var(--ds-border)',
-              boxShadow: 'var(--ds-shadow-lg)',
+              boxShadow: 'var(--ds-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
               backgroundImage: 'none',
             },
           },

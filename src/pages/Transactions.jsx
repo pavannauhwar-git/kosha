@@ -884,7 +884,7 @@ export default function Transactions() {
       }
       pushToast(e.message || 'Could not delete transaction.', { duration: 4200 })
     }
-  }, [pushToast])
+  }, [activeWalletUserId, pushToast])
 
   useEffect(() => {
     return () => {
@@ -951,7 +951,7 @@ export default function Transactions() {
     })
 
     return true
-  }, [commitPendingDelete, data, pushToast])
+  }, [activeWalletUserId, commitPendingDelete, data, pushToast])
 
   const inferRepaymentTab = useCallback((txn, loanRow = null) => {
     if (loanRow?.settled) return 'settled'

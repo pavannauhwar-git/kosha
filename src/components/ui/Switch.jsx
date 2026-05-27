@@ -35,13 +35,22 @@ const Switch = forwardRef(function Switch(
     }
   }, [checked, resolvedRef])
 
+  // Ensure disabled state is controlled via the element property.
+  // For custom elements, relying on string attributes like disabled="false"
+  // can still produce disabled behavior because the attribute is present.
+  useEffect(() => {
+    if (resolvedRef.current) {
+      resolvedRef.current.disabled = !!disabled
+    }
+  }, [disabled, resolvedRef])
+
   // Extract pointer-events from MUI style overrides sx (e.g. sx={{ pointerEvents: 'none' }})
   const pointerEvents = sx?.pointerEvents || style.pointerEvents
 
   return (
     <md-switch
       ref={resolvedRef}
-      disabled={disabled}
+      disabled={disabled ? true : undefined}
       class={className}
       style={{
         ...style,

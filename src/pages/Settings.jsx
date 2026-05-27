@@ -33,7 +33,7 @@ const stagger = createStagger(0.05, 0.04)
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 const APP_VERSION = CHANGELOG[0]?.version || '—'
 
-function SettingRow({ icon, label, sublabel, onClick, destructive = false, disabled = false, rightElement, toggleState = null }) {
+function SettingRow({ icon, label, sublabel, onClick, destructive = false, disabled = false, muted = false, rightElement, toggleState = null }) {
   const toggleA11yProps = typeof toggleState === 'boolean'
     ? {
       role: 'switch',
@@ -41,18 +41,22 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
       'aria-pressed': toggleState,
     }
     : {}
+  const nonInteractive = disabled || muted
 
   return (
     <motion.button
       type="button"
-      onClick={onClick}
+      onClick={nonInteractive ? undefined : onClick}
       disabled={disabled}
+      aria-disabled={nonInteractive ? 'true' : undefined}
+      tabIndex={nonInteractive ? -1 : 0}
       {...toggleA11yProps}
       whileTap={{ scale: 0.985 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
                   transition-colors duration-150 active:bg-kosha-surface-2
                   disabled:opacity-50 disabled:bg-transparent disabled:shadow-none disabled:pointer-events-none
+                  ${muted ? 'pointer-events-none' : ''}
                   ${destructive ? 'text-expense-text' : 'text-ink'}`}
     >
       <div className={`w-8 h-8 rounded-chip flex items-center justify-center shrink-0
@@ -102,6 +106,33 @@ export default function Settings() {
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordMsg, setPasswordMsg] = useState('')
+  const remindersPaused = !reminderPrefs.enabled
+  const reminderMasterSwitchStyle = {
+    '--md-switch-selected-track-color': 'var(--ds-primary)',
+    '--md-switch-selected-handle-color': 'var(--ds-on-primary)',
+    '--md-switch-track-color': 'var(--ds-surface-container-highest)',
+    '--md-switch-handle-color': 'var(--ds-text-tertiary)',
+  }
+  const reminderSwitchStyle = remindersPaused
+    ? {
+      '--md-switch-selected-track-color': 'var(--ds-surface-container-highest)',
+      '--md-switch-selected-handle-color': 'var(--ds-text-disabled)',
+      '--md-switch-track-color': 'var(--ds-surface-container-highest)',
+      '--md-switch-handle-color': 'var(--ds-text-disabled)',
+      '--md-switch-disabled-track-opacity': 1,
+      '--md-switch-disabled-track-outline-color': 'var(--ds-border-strong)',
+      '--md-switch-disabled-selected-track-color': 'var(--ds-surface-container-highest)',
+      '--md-switch-disabled-selected-handle-color': 'var(--ds-text-disabled)',
+      '--md-switch-disabled-selected-handle-opacity': 1,
+      '--md-switch-disabled-handle-color': 'var(--ds-text-disabled)',
+      '--md-switch-disabled-handle-opacity': 1,
+    }
+    : {
+      '--md-switch-selected-track-color': 'var(--ds-primary)',
+      '--md-switch-selected-handle-color': 'var(--ds-on-primary)',
+      '--md-switch-track-color': 'var(--ds-surface-container-highest)',
+      '--md-switch-handle-color': 'var(--ds-text-tertiary)',
+    }
 
   useEffect(() => {
     setReminderPrefs(reminderPrefs)
@@ -529,27 +560,50 @@ export default function Settings() {
               sublabel="Turn reminder notifications on or off"
               onClick={() => toggleReminderField('enabled')}
               toggleState={reminderPrefs.enabled}
-              rightElement={<Switch checked={reminderPrefs.enabled} onChange={() => { }} sx={{ pointerEvents: 'none' }} />}
+              rightElement={(
+                <Switch
+                  checked={reminderPrefs.enabled}
+                  onChange={() => { }}
+                  sx={{ pointerEvents: 'none' }}
+                  style={reminderMasterSwitchStyle}
+                />
+              )}
             />
             <Divider />
             <SettingRow
               icon={<BellRing size={16} className="text-accent-text" />}
               label="Bills due alerts"
-              sublabel="Daily reminder when bills are near due"
+              sublabel={remindersPaused ? 'Daily reminder when bills are near due (paused while reminder engine is off)' : 'Daily reminder when bills are near due'}
               onClick={() => toggleReminderField('bill_due')}
-              disabled={!reminderPrefs.enabled}
+              muted={remindersPaused}
               toggleState={reminderPrefs.bill_due}
-              rightElement={<Switch checked={reminderPrefs.bill_due} onChange={() => { }} disabled={!reminderPrefs.enabled} sx={{ pointerEvents: 'none' }} />}
+              rightElement={(
+                <Switch
+                  checked={reminderPrefs.bill_due}
+                  onChange={() => { }}
+                  disabled={remindersPaused}
+                  sx={{ pointerEvents: 'none' }}
+                  style={reminderSwitchStyle}
+                />
+              )}
             />
             <Divider />
             <SettingRow
               icon={<ShieldAlert size={16} className="text-accent-text" />}
               label="Spending pace alerts"
-              sublabel="Warn when spending runs above month pace"
+              sublabel={remindersPaused ? 'Warn when spending runs above month pace (paused while reminder engine is off)' : 'Warn when spending runs above month pace'}
               onClick={() => toggleReminderField('spending_pace')}
-              disabled={!reminderPrefs.enabled}
+              muted={remindersPaused}
               toggleState={reminderPrefs.spending_pace}
-              rightElement={<Switch checked={reminderPrefs.spending_pace} onChange={() => { }} disabled={!reminderPrefs.enabled} sx={{ pointerEvents: 'none' }} />}
+              rightElement={(
+                <Switch
+                  checked={reminderPrefs.spending_pace}
+                  onChange={() => { }}
+                  disabled={remindersPaused}
+                  sx={{ pointerEvents: 'none' }}
+                  style={reminderSwitchStyle}
+                />
+              )}
             />
             <Divider />
             <SettingRow
