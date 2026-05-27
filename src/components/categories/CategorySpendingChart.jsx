@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
 import { getCategory } from '../../lib/categories'
+import Button from '../ui/Button'
 
 const FALLBACK_BAR_PALETTE = ['#FF6B35', '#00C896', '#0EA5E9', '#F59E0B', '#7C3AED', '#EC4899']
 
@@ -12,6 +13,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   subtitle,
   maxRows = 8,
   budgetMap,
+  onManageBudgets,
 }) {
   const safeEntries = Array.isArray(entries)
     ? entries
@@ -75,9 +77,21 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
             <p className="text-[10px] text-ink-3 mt-0.5">Quick monthly spend footprint by category.</p>
           )}
         </div>
-        <div className="text-right shrink-0">
-          <p className="text-[10px] text-ink-3">Total</p>
-          <p className="text-[13px] font-bold text-expense-text tabular-nums">{fmt(safeTotal)}</p>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="text-right shrink-0">
+            <p className="text-[10px] text-ink-3">Total</p>
+            <p className="text-[13px] font-bold text-expense-text tabular-nums">{fmt(safeTotal)}</p>
+          </div>
+          {onManageBudgets && (
+            <Button
+              variant="secondary"
+              size="xs"
+              onClick={onManageBudgets}
+              className="whitespace-nowrap"
+            >
+              Manage
+            </Button>
+          )}
         </div>
       </div>
 

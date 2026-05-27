@@ -164,6 +164,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
+        disableScrollLock
         slots={{ transition: SpringPopoverTransition }}
         transitionDuration={0}
         anchorOrigin={{
@@ -178,8 +179,9 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
           paper: {
             sx: {
               mt: 1.5,
+              mr: -2, // Shift right by 16px to align with screen edge and cover underneath blue hero card shadow/background
               mb: dropUp ? 1.5 : 0,
-              width: '280px',
+              width: '300px',
               borderRadius: '28px',
               overflow: 'hidden',
               backgroundColor: 'var(--ds-surface)',

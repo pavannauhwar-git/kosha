@@ -52,7 +52,7 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
                   transition-colors duration-150 active:bg-kosha-surface-2
-                  disabled:opacity-50
+                  disabled:opacity-50 disabled:bg-transparent disabled:shadow-none disabled:pointer-events-none
                   ${destructive ? 'text-expense-text' : 'text-ink'}`}
     >
       <div className={`w-8 h-8 rounded-chip flex items-center justify-center shrink-0
@@ -419,7 +419,7 @@ export default function Settings() {
               sublabel={isDark ? 'Currently dark' : 'Currently light'}
               onClick={toggleDarkMode}
               toggleState={isDark}
-              rightElement={<Switch checked={isDark} onChange={() => {}} sx={{ pointerEvents: 'none' }} />}
+              rightElement={<Switch checked={isDark} onChange={() => { }} sx={{ pointerEvents: 'none' }} />}
             />
           </div>
         </motion.div>
@@ -529,7 +529,7 @@ export default function Settings() {
               sublabel="Turn reminder notifications on or off"
               onClick={() => toggleReminderField('enabled')}
               toggleState={reminderPrefs.enabled}
-              rightElement={<Switch checked={reminderPrefs.enabled} onChange={() => {}} sx={{ pointerEvents: 'none' }} />}
+              rightElement={<Switch checked={reminderPrefs.enabled} onChange={() => { }} sx={{ pointerEvents: 'none' }} />}
             />
             <Divider />
             <SettingRow
@@ -539,7 +539,7 @@ export default function Settings() {
               onClick={() => toggleReminderField('bill_due')}
               disabled={!reminderPrefs.enabled}
               toggleState={reminderPrefs.bill_due}
-              rightElement={<Switch checked={reminderPrefs.bill_due} onChange={() => {}} disabled={!reminderPrefs.enabled} sx={{ pointerEvents: 'none' }} />}
+              rightElement={<Switch checked={reminderPrefs.bill_due} onChange={() => { }} disabled={!reminderPrefs.enabled} sx={{ pointerEvents: 'none' }} />}
             />
             <Divider />
             <SettingRow
@@ -549,7 +549,7 @@ export default function Settings() {
               onClick={() => toggleReminderField('spending_pace')}
               disabled={!reminderPrefs.enabled}
               toggleState={reminderPrefs.spending_pace}
-              rightElement={<Switch checked={reminderPrefs.spending_pace} onChange={() => {}} disabled={!reminderPrefs.enabled} sx={{ pointerEvents: 'none' }} />}
+              rightElement={<Switch checked={reminderPrefs.spending_pace} onChange={() => { }} disabled={!reminderPrefs.enabled} sx={{ pointerEvents: 'none' }} />}
             />
             <Divider />
             <SettingRow

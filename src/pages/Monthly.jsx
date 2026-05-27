@@ -800,18 +800,8 @@ export default function Monthly() {
                 year={year}
                 subtitle="Ranked category share with exact spend values"
                 budgetMap={bMap}
+                onManageBudgets={!isViewingPartner ? () => setShowBudgetSheet(true) : undefined}
               />
-              {!isViewingPartner && (
-                <div className="flex justify-end -mt-1 mb-1">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setShowBudgetSheet(true)}
-                  >
-                    Manage budgets
-                  </Button>
-                </div>
-              )}
             </div>
           )}
 
