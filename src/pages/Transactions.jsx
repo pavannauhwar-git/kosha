@@ -43,7 +43,12 @@ function shouldCommitDeleteImmediately() {
   if (typeof window === 'undefined') return false
   const webdriver = typeof navigator !== 'undefined' && navigator.webdriver
   const cypress = typeof window.Cypress !== 'undefined'
-  const forced = window.localStorage?.getItem('kosha:e2e-immediate-delete') === '1'
+  let forced = false
+  try {
+    forced = window.localStorage?.getItem('kosha:e2e-immediate-delete') === '1'
+  } catch {
+    forced = false
+  }
   return Boolean(webdriver || cypress || forced)
 }
 
