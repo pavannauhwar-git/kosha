@@ -32,29 +32,31 @@ import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
 
 function DashboardHeroSkeleton() {
   return (
-    <div className="card-hero p-5 relative overflow-hidden">
-      <div className="flex items-center justify-between mb-5">
-        <div className="h-2.5 w-28 rounded-full shimmer opacity-70" />
-        <div className="h-2.5 w-14 rounded-full shimmer opacity-50" />
+    <div className="card-hero p-5 sm:p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between mb-3.5 gap-2">
+        <div className="h-3 w-24 rounded-full shimmer opacity-70" />
+        <div className="h-6 w-24 rounded-pill shimmer opacity-30" />
       </div>
-      <div className="h-10 w-44 rounded-2xl shimmer opacity-80" />
-      <div className="mt-3 mb-5 h-5 w-32 rounded-full shimmer opacity-60" />
-      <div className="mb-4 border-t border-white/8" />
+      <div>
+        <div className="h-[3.12rem] w-48 rounded-xl shimmer opacity-80" />
+      </div>
+      <div className="mt-2.5 mb-5 h-[28px] w-32 rounded-pill shimmer opacity-60" />
+      <div className="mb-3.5 border-t border-white/10" />
       <div className="flex justify-between gap-2">
         {[1, 2, 3].map((slot) => (
-          <div key={slot} className="flex-1 min-w-0 px-2.5 py-2 rounded-2xl bg-white/8">
-            <div className="h-2.5 w-12 rounded-full shimmer opacity-55" />
-            <div className="mt-1.5 h-3.5 w-16 rounded-full shimmer opacity-70" />
+          <div key={slot} className="flex-1 min-w-0 px-3 py-2.5 rounded-2xl bg-white/10">
+            <div className="h-3 w-10 rounded-full shimmer opacity-55" />
+            <div className="mt-2 h-4 w-16 rounded-full shimmer opacity-70" />
           </div>
         ))}
       </div>
-      <div className="mt-4">
+      <div className="mt-3.5">
         <div className="flex justify-between mb-2">
-          <div className="h-2.5 w-20 rounded-full shimmer opacity-55" />
-          <div className="h-2.5 w-8 rounded-full shimmer opacity-65" />
+          <div className="h-3 w-20 rounded-full shimmer opacity-55" />
+          <div className="h-3 w-8 rounded-full shimmer opacity-65" />
         </div>
-        <div className="h-1.5 rounded-full bg-white/12 overflow-hidden">
-          <div className="h-full w-[56%] shimmer opacity-70" />
+        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+          <div className="h-full w-[40%] shimmer opacity-70" />
         </div>
       </div>
     </div>

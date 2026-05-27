@@ -27,8 +27,14 @@ export default function EmptyState({
       variants={stagger}
       initial="hidden"
       animate="show"
-      className={`card empty-state py-10 px-6 flex flex-col items-center text-center ${className}`.trim()}
+      className={`card empty-state py-10 px-6 flex flex-col items-center text-center relative overflow-hidden ${className}`.trim()}
+      style={{
+        background: 'linear-gradient(to bottom, var(--ds-surface), var(--ds-surface-dim))',
+        boxShadow: 'var(--ds-shadow-1), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
+      }}
     >
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at top right, rgba(0, 127, 255, 0.03), transparent 60%)' }} />
+      <div className="relative z-10 flex flex-col items-center">
       {imageUrl ? (
         <motion.div
           variants={fadeUp}
@@ -73,6 +79,7 @@ export default function EmptyState({
           ) : null}
         </motion.div>
       ) : null}
+      </div>
     </motion.div>
   )
 }

@@ -77,14 +77,14 @@
   --ds-success-bg: #E8F5E9;
 
   /* ── Shadows ────────────────────────── */
-  --ds-shadow-sm: 0 1px 2px rgba(17, 19, 24, 0.04), 0 2px 8px rgba(17, 19, 24, 0.03);
-  --ds-shadow-md: 0 4px 12px rgba(17, 19, 24, 0.05), 0 8px 24px rgba(17, 19, 24, 0.05);
-  --ds-shadow-lg: 0 8px 24px rgba(17, 19, 24, 0.06), 0 16px 48px rgba(17, 19, 24, 0.08);
-  --ds-shadow-xl: 0 12px 32px rgba(17, 19, 24, 0.08), 0 32px 80px rgba(17, 19, 24, 0.12);
+  --ds-shadow-sm: 0 1px 2px rgba(17, 19, 24, 0.03), 0 3px 8px -1px rgba(17, 19, 24, 0.04);
+  --ds-shadow-md: 0 4px 12px -2px rgba(17, 19, 24, 0.05), 0 12px 32px -4px rgba(17, 19, 24, 0.04);
+  --ds-shadow-lg: 0 8px 24px -4px rgba(17, 19, 24, 0.06), 0 24px 64px -8px rgba(17, 19, 24, 0.06);
+  --ds-shadow-xl: 0 12px 32px -4px rgba(17, 19, 24, 0.08), 0 48px 100px -12px rgba(17, 19, 24, 0.10);
   
-  --ds-shadow-fab: 0 8px 24px rgba(0, 127, 255, 0.12), 0 2px 8px rgba(17, 19, 24, 0.08);
-  --ds-shadow-fab-hover: 0 12px 32px rgba(0, 127, 255, 0.18), 0 4px 12px rgba(17, 19, 24, 0.10);
-  --ds-shadow-hero: 0 24px 64px rgba(0, 127, 255, 0.10), 0 8px 24px rgba(17, 19, 24, 0.06);
+  --ds-shadow-fab: 0 12px 24px -4px rgba(0, 127, 255, 0.18), 0 4px 8px -2px rgba(17, 19, 24, 0.08);
+  --ds-shadow-fab-hover: 0 16px 40px -6px rgba(0, 127, 255, 0.25), 0 6px 16px -2px rgba(17, 19, 24, 0.10);
+  --ds-shadow-hero: 0 32px 80px -16px rgba(0, 127, 255, 0.15), 0 12px 32px -8px rgba(17, 19, 24, 0.08);
 
   /* ── Glassmorphism ──────────────────── */
   --ds-glass-bg: rgba(255, 255, 255, 0.82);
@@ -127,11 +127,11 @@
   --ds-on-primary: #FFFFFF;
   --ds-on-primary-container: #CCE5FF;
   --ds-primary-rgb: 0, 127, 255;
-
-    --ds-accent: #FFE666; /* One notch lighter than dark yellow, but better contrast than pale yellow */
+    --ds-accent: #FFFF99;
     --ds-accent-dark: #FFD600;
-    --ds-accent-text: #856404; /* Deep amber for accessible labels */
-    --ds-accent-container: #FFF9C4;
+    --ds-accent-container: #333300;
+    --ds-on-accent: #FFFF99;
+    --ds-accent-text: #E6E600;
 
   --ds-surface: #0E1217;
   --ds-surface-dim: #05070A;
@@ -181,14 +181,14 @@
   --ds-glass-border: rgba(255, 255, 255, 0.12);
   --ds-glass-blur: blur(20px) saturate(200%);
 
-  --ds-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --ds-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --ds-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
-  --ds-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
+  --ds-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px -2px rgba(0, 0, 0, 0.2);
+  --ds-shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.4), 0 16px 40px -4px rgba(0, 0, 0, 0.3);
+  --ds-shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 32px 80px -8px rgba(0, 0, 0, 0.4);
+  --ds-shadow-xl: 0 16px 48px -4px rgba(0, 0, 0, 0.6), 0 64px 120px -12px rgba(0, 0, 0, 0.5);
 
-  --ds-shadow-fab: 0 10px 24px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.5);
-  --ds-shadow-fab-hover: 0 14px 32px rgba(0, 0, 0, 0.8), 0 6px 16px rgba(0, 0, 0, 0.6);
-  --ds-shadow-hero: 0 32px 80px rgba(0, 0, 0, 0.9), 0 12px 32px rgba(0, 0, 0, 0.7);
+  --ds-shadow-fab: 0 12px 32px -4px rgba(0, 0, 0, 0.6), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+  --ds-shadow-fab-hover: 0 16px 48px -6px rgba(0, 0, 0, 0.8), 0 6px 20px -2px rgba(0, 0, 0, 0.5);
+  --ds-shadow-hero: 0 48px 100px -16px rgba(0, 0, 0, 0.8), 0 16px 40px -8px rgba(0, 0, 0, 0.6);
 
   --ds-shimmer-1: #181B20;
   --ds-shimmer-2: #252A32;
@@ -393,9 +393,9 @@ textarea:focus-visible,
 
     --c-ink-muted: var(--ds-text-tertiary);
 
-    --c-hero-accent: var(--ds-accent);
+    --c-hero-accent: #FFFF99;
     --c-hero-accent-bg: rgba(255, 255, 153, 0.15);
-    --c-hero-accent-fill: #E6E600;
+    --c-hero-accent-fill: #FFFF99;
     --c-hero-label: rgba(255, 255, 255, 0.70);
     --c-hero-dimmer: rgba(255, 255, 255, 0.45);
     --c-hero-divider: rgba(255, 255, 255, 0.12);
@@ -478,8 +478,13 @@ textarea:focus-visible,
 
   /* -- Cards — borderless, refined depth ──────────────────────────── */
   .card {
-    @apply bg-kosha-surface rounded-card shadow-card border border-kosha-border;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    @apply bg-kosha-surface rounded-card border border-kosha-border;
+    box-shadow: var(--ds-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: transform 0.25s var(--ds-ease-standard), box-shadow 0.25s var(--ds-ease-standard);
+  }
+
+  .dark .card {
+    box-shadow: var(--ds-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .page-stack {
@@ -495,8 +500,13 @@ textarea:focus-visible,
   }
 
   .card-md {
-    @apply bg-kosha-surface rounded-card shadow-card-md;
-    border: none;
+    @apply bg-kosha-surface rounded-card;
+    border: 1px solid var(--ds-border);
+    box-shadow: var(--ds-shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .dark .card-md {
+    box-shadow: var(--ds-shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .card-inset {
@@ -515,6 +525,30 @@ textarea:focus-visible,
   .mini-panel {
     @apply rounded-card bg-kosha-surface-2;
     border: 1px solid var(--ds-border);
+  }
+
+  /* -- Premium Hint Callout ────────────────────────────────────────── */
+  .hint-card {
+    @apply relative overflow-hidden p-3.5 sm:p-4 rounded-card;
+    background: linear-gradient(145deg, var(--ds-surface-bright) 0%, var(--ds-surface) 100%);
+    box-shadow: var(--ds-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--ds-border);
+  }
+  .dark .hint-card {
+    background: linear-gradient(145deg, var(--ds-surface-container) 0%, var(--ds-surface) 100%);
+    box-shadow: var(--ds-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  
+  .hint-card-accent {
+    @apply relative overflow-hidden p-3.5 sm:p-4 rounded-card;
+    background: linear-gradient(145deg, var(--ds-accent-container) 0%, var(--ds-surface) 100%);
+    box-shadow: var(--ds-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+  }
+  .dark .hint-card-accent {
+    background: linear-gradient(145deg, var(--ds-accent-container) 0%, var(--ds-surface-container) 100%);
+    box-shadow: var(--ds-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(167, 139, 250, 0.15);
   }
 
   /* -- Skeleton loader ──────────────────────────────────────────────── */

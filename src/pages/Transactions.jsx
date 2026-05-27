@@ -1498,7 +1498,7 @@ export default function Transactions() {
         )}
 
         {showGuideHint && (
-          <div className="card p-4 border border-brand-border bg-brand-container/40">
+          <div className="hint-card-accent mb-4">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-lg bg-brand-container flex items-center justify-center shrink-0">
                 <BookOpen size={16} className="text-accent-text" />
@@ -1524,7 +1524,7 @@ export default function Transactions() {
         )}
 
         {showSwipeHint && groups.length > 0 && (
-          <div className="mini-panel px-3 py-2.5 flex items-start gap-2.5">
+          <div className="hint-card flex items-start gap-2.5 mb-4">
             <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
               i
             </div>

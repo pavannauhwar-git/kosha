@@ -158,7 +158,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
         <p className="section-label">Latest transactions</p>
         <button
           onClick={() => navigate('/transactions')}
-          className="flex items-center gap-1 text-label font-medium text-accent-text"
+          className="flex items-center gap-1 text-label font-medium text-brand hover:opacity-80 transition-opacity"
         >
           See all <ArrowRight size={13} />
         </button>
@@ -192,7 +192,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
       )}
 
       {showSwipeHint && (
-        <div className="mini-panel px-3 py-2 mb-2.5 flex items-start gap-2.5">
+        <div className="hint-card flex items-start gap-2.5 mb-2.5">
           <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
             i
           </div>

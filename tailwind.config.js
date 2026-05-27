@@ -72,12 +72,12 @@ export default {
       },
 
       fontSize: {
-        'caption': ['11px', { lineHeight: '1.45', letterSpacing: '0.02em' }],
-        'label':   ['13px', { lineHeight: '1.4',  letterSpacing: '0.005em' }],
+        'caption': ['11px', { lineHeight: '1.45', letterSpacing: '0.03em' }],
+        'label':   ['13px', { lineHeight: '1.4',  letterSpacing: '0.01em' }],
         'body':    ['15px', { lineHeight: '1.55', letterSpacing: '0em' }],
-        'value':   ['22px', { lineHeight: '1.2',  letterSpacing: '-0.02em' }],
-        'display': ['32px', { lineHeight: '1.05', letterSpacing: '-0.025em' }],
-        'hero':    ['42px', { lineHeight: '0.95', letterSpacing: '-0.03em' }],
+        'value':   ['22px', { lineHeight: '1.2',  letterSpacing: '-0.025em' }],
+        'display': ['32px', { lineHeight: '1.05', letterSpacing: '-0.03em' }],
+        'hero':    ['42px', { lineHeight: '0.95', letterSpacing: '-0.04em' }],
       },
 
       borderRadius: {

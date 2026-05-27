@@ -9,12 +9,12 @@ const SIZE_CLASSES = {
 }
 
 const VARIANT_CLASSES = {
-  primary:   'bg-[var(--ds-primary)] text-white shadow-fab hover:bg-[var(--ds-primary-dark)] active:scale-[0.97]',
-  secondary: 'bg-[var(--ds-surface)] text-[var(--ds-text-secondary)] shadow-card border border-[var(--ds-border)] hover:bg-[var(--ds-surface-container)] active:scale-[0.97]',
-  ghost:     'bg-transparent text-[var(--ds-text-secondary)] hover:bg-[var(--ds-surface-container)] active:scale-[0.97] border border-transparent',
-  danger:    'bg-[var(--ds-expense-bg)] text-[var(--ds-expense-text)] border border-[var(--ds-expense-border)] hover:brightness-95 active:scale-[0.97]',
-  success:   'bg-[var(--ds-income-bg)] text-[var(--ds-income-text)] border border-[var(--ds-income-border)] hover:brightness-95 active:scale-[0.97]',
-  tonal:     'bg-[var(--ds-primary-container)] text-[var(--ds-on-primary-container)] hover:brightness-95 active:scale-[0.97] border border-transparent',
+  primary:   'bg-[var(--ds-primary)] text-white shadow-fab hover:shadow-fab-hover hover:-translate-y-0.5 active:scale-[0.95] active:translate-y-0 active:shadow-fab',
+  secondary: 'bg-[var(--ds-surface)] text-[var(--ds-text-secondary)] shadow-card border border-[var(--ds-border)] hover:shadow-card-md hover:-translate-y-0.5 active:scale-[0.95] active:translate-y-0',
+  ghost:     'bg-transparent text-[var(--ds-text-secondary)] hover:bg-[var(--ds-surface-container)] active:scale-[0.95] border border-transparent',
+  danger:    'bg-[var(--ds-expense-bg)] text-[var(--ds-expense-text)] border border-[var(--ds-expense-border)] hover:brightness-95 active:scale-[0.95]',
+  success:   'bg-[var(--ds-income-bg)] text-[var(--ds-income-text)] border border-[var(--ds-income-border)] hover:brightness-95 active:scale-[0.95]',
+  tonal:     'bg-[var(--ds-primary-container)] text-[var(--ds-on-primary-container)] hover:brightness-95 active:scale-[0.95] border border-transparent',
 }
 
 const DISABLED_CLASSES = 'opacity-45 pointer-events-none'
@@ -42,7 +42,7 @@ const Button = forwardRef(function Button(
       onClick={handleClick}
       className={[
         'inline-flex items-center justify-center font-semibold rounded-pill select-none cursor-pointer',
-        'transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform',
+        'transition-all duration-300 ease-[var(--ds-ease-spring)] will-change-transform',
         SIZE_CLASSES[size],
         VARIANT_CLASSES[variant],
         isDisabled ? DISABLED_CLASSES : '',

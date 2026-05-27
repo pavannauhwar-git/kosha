@@ -46,7 +46,7 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
       disabled={disabled}
       {...toggleA11yProps}
       className={`w-full flex items-center gap-3 px-4 py-3.5 text-left
-                  transition-colors active:bg-kosha-surface-2
+                  transition-all duration-200 active:scale-[0.98] active:bg-kosha-surface-2
                   disabled:opacity-50
                   ${destructive ? 'text-expense-text' : 'text-ink'}`}
     >

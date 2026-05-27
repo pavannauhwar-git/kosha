@@ -373,7 +373,7 @@ function CategoryPicker({
           </div>
 
           {showSwipeHint && (
-            <div className="mini-panel px-3 py-2 mb-2.5 flex items-start gap-2.5">
+            <div className="hint-card flex items-start gap-2.5 mb-4">
               <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                 i
               </div>
@@ -573,7 +573,7 @@ function VehiclePicker({
           </div>
 
           {showSwipeHint && (
-            <div className="mini-panel px-3 py-2 mb-2.5 flex items-start gap-2.5">
+            <div className="hint-card flex items-start gap-2.5 mb-4">
               <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                 i
               </div>

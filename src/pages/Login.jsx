@@ -305,7 +305,7 @@ export default function Login() {
                         setError(null)
                         setNotice(null)
                       }}
-                      className="text-label font-semibold text-accent-text"
+                      className="text-label font-semibold text-brand hover:opacity-80 transition-opacity"
                     >
                       Forgot password?
                     </button>
@@ -396,7 +396,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="text-accent-text font-semibold"
+                    className="text-brand font-semibold hover:opacity-80 transition-opacity"
                   >
                     Sign in
                   </button>
@@ -410,7 +410,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="text-accent-text font-semibold"
+                    className="text-brand font-semibold hover:opacity-80 transition-opacity"
                   >
                     Back to sign in
                   </button>
@@ -424,7 +424,7 @@ export default function Login() {
                       setError(null)
                       setNotice(null)
                     }}
-                    className="text-accent-text font-semibold"
+                    className="text-brand font-semibold hover:opacity-80 transition-opacity"
                   >
                     {mode === 'signin' ? 'Sign up' : 'Sign in'}
                   </button>
