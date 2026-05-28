@@ -334,3 +334,33 @@ One entry per commit. Reviewer scans for `✗` and `PENDING-*` entries.
 - **Discovered out of scope:** `src/components/brand/KoshaLogo.jsx` and `src/components/common/EmptyState.jsx` already had `decoding="async"` applied.
 - **Notes:** Batched FIX-042, FIX-043, and FIX-044 under Row 22. Swapped `100vh` for `100dvh` in `BottomSheet.jsx`, added `decoding="async"` to image tags across pages, and removed `will-change` from `.fade-up`, `.card-spring-in`, `.fade-in`, and `.hero-card-enter` classes in `index.css`.
 
+---
+
+## FIX-052 — Mark touchstart listeners as passive
+
+- **Commit:** f90ec404950463001a0fd026195535b711cb03b2
+- **PR:** pending
+- **Files modified:** `src/components/obligations/Bills.jsx`, `src/components/obligations/Loans.jsx`
+- **Lint pass:** ✓ (0 errors, 604 pre-existing warnings)
+- **Build pass:** ✓ (built successfully)
+- **Automated verify steps:** N/A (Chrome DevTools console verify requires a browser)
+- **Manual verify steps:** PENDING-DESKTOP-VERIFICATION — Open Bills or Loans page in Chrome DevTools → confirm the "Added non-passive event listener to a scroll-blocking 'touchstart' event" warning is gone
+- **Discovered out of scope:** Nothing
+- **Notes:** Added `{ passive: true }` option to both `addEventListener` and `removeEventListener` calls for `touchstart` in `Bills.jsx` and `Loans.jsx`. The `mousedown` listeners were left unchanged (not scroll-blocking).
+
+---
+
+## FIX-053 — Replace `type="number"` with `type="text" inputMode="decimal"` for money inputs
+
+- **Commit:** 4d4e3ca244c0b5c13df1814a2433c37e8abf2a44
+- **PR:** pending
+- **Files modified:** `src/components/obligations/Bills.jsx`, `src/components/obligations/Loans.jsx`, `src/components/analytics/AnalyticsCharts.jsx`, `src/pages/Splitwise.jsx`
+- **Lint pass:** ✓ (0 errors, 604 pre-existing warnings)
+- **Build pass:** ✓ (built successfully)
+- **Automated verify steps:** N/A (requires browser interaction)
+- **Manual verify steps:** PENDING-DEVICE-VERIFICATION — On any modified page, focus an amount input and scroll the page — value should not change. Confirm no spinner arrows visible on desktop. On mobile, numeric-with-decimal keypad still appears.
+- **Discovered out of scope:** `src/components/categories/BudgetSheet.jsx` has no `type="number"` inputs (grep confirmed). `AnalyticsCharts` axis-bound inputs (`whatif-reduction`, `runway-corpus`) use `inputMode="numeric" pattern="[0-9]*"` (integer-only) per doc spec.
+- **Notes:** Applied `type="text" inputMode="decimal" pattern="[0-9.]*"` to all decimal money inputs across Bills (1 site), Loans (3 sites), and Splitwise (5 sites). AnalyticsCharts integer inputs use `inputMode="numeric" pattern="[0-9]*"` instead per doc note at line 3338.
+
+
+
