@@ -86,6 +86,15 @@ export function purgeUserScopedKeys() {
       try { storage.removeItem(key) } catch { /* keep going */ }
     }
     try { storage.removeItem('kosha:avatar-urls') } catch {}
+
+    // Clear "first visit" markers so the next session animates fresh.
+    try {
+      const keys = Object.keys(sessionStorage)
+      for (const k of keys) {
+        if (k.startsWith('kosha:visited:')) sessionStorage.removeItem(k)
+      }
+    } catch { /* ignore */ }
+
     return keysToRemove.length
   } catch {
     return 0

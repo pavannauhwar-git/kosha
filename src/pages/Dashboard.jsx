@@ -18,6 +18,7 @@ import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
 import { useNavigate } from 'react-router-dom'
+import { useFirstRouteVisit } from '../hooks/useFirstRouteVisit'
 import Button from '../components/ui/Button'
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
@@ -67,6 +68,9 @@ function DashboardSectionCue({ title, subtitle }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const { setSafeTimeout } = useSafeTimeout()
+  const isFirstVisit = useFirstRouteVisit('dashboard')
+  const enterCls = isFirstVisit ? 'fade-up fade-up-1' : ''
+  const heroEnterCls = isFirstVisit ? 'fade-up fade-up-2' : ''
   const [now, setNow] = useState(() => new Date())
   const [reminderPrefs, setReminderPrefsState] = useState(() => getReminderPrefs())
 
@@ -600,7 +604,7 @@ export default function Dashboard() {
     <PageHeaderPage title="Dashboard">
       <div className="page-stack">
         {/* ── Greeting ────────────────────────────────────────────── */}
-        <div className="fade-up fade-up-1 relative">
+        <div className={`${enterCls} relative`}>
           <p className="text-[11px] text-ink-3 tracking-wide">
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
@@ -624,7 +628,7 @@ export default function Dashboard() {
 
         {/* ── Hero card ─────────────────────────────────────────────── */}
         {!isNewUser && (
-          <div className="fade-up fade-up-2">
+          <div className={heroEnterCls}>
             <DashboardHeroCard
               loading={heroLoading}
               now={balanceHorizonDate}
@@ -730,7 +734,7 @@ export default function Dashboard() {
         )}
 
         {isNewUser && (
-          <div className="fade-up fade-up-2">
+          <div className={heroEnterCls}>
             <div className="card p-4 border-0">
               <p className="section-label mb-1.5">Start here</p>
               <p className="text-[14px] font-semibold text-ink">Add your first transaction to unlock daily guidance.</p>

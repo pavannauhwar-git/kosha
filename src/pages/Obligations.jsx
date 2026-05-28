@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useFirstRouteVisit } from '../hooks/useFirstRouteVisit'
 import { CaretRight, Warning } from '@phosphor-icons/react'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import { useLiabilities } from '../hooks/useLiabilities'
@@ -22,6 +23,8 @@ function safeDays(dateValue) {
 
 export default function Obligations() {
   const navigate = useNavigate()
+  const isFirstVisit = useFirstRouteVisit('obligations')
+  const enterCls = isFirstVisit ? 'fade-up' : ''
   const activeWalletUserId = useActiveWallet()
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
 
@@ -80,7 +83,7 @@ export default function Obligations() {
     <PageHeaderPage title="Obligations">
       <div className="page-stack">
         {!isLoading && !isViewingPartner && (
-          <div className="fade-up fade-up-1 px-0.5">
+          <div className={`${enterCls} fade-up-1 px-0.5`}>
             <p className="section-label mb-1">Your Journey</p>
             <p className="text-[13px] text-ink-3 leading-relaxed">
               Add a bill or loan to get started with your obligations journey.
@@ -90,7 +93,7 @@ export default function Obligations() {
 
         {/* ── Loading skeleton ────────────────────────────────────────── */}
         {isLoading && (
-          <div className="fade-up fade-up-2 flex flex-col gap-3">
+          <div className={`${enterCls} fade-up-2 flex flex-col gap-3`}>
             <div className="card p-4 overflow-hidden">
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div className="flex-1 pt-1 space-y-2">
@@ -130,7 +133,7 @@ export default function Obligations() {
 
         {/* ── All-empty hero state ───────────────────────────────────── */}
         {allEmpty && (
-          <div className="fade-up fade-up-2 card p-6 flex flex-col items-center text-center">
+          <div className={`${enterCls} fade-up-2 card p-6 flex flex-col items-center text-center`}>
             <img
               src="/illustrations/all_done.png"
               alt="No obligations"
@@ -159,7 +162,7 @@ export default function Obligations() {
 
         {/* ── Bills card ─────────────────────────────────────────────── */}
         {!isLoading && !allEmpty && (
-          <div className="fade-up fade-up-2">
+          <div className={`${enterCls} fade-up-2`}>
             <Card
               variant="elevated"
               padding="none"
@@ -255,7 +258,7 @@ export default function Obligations() {
 
         {/* ── Loans card ─────────────────────────────────────────────── */}
         {!isLoading && !allEmpty && (
-          <div className="fade-up fade-up-3">
+          <div className={`${enterCls} fade-up-3`}>
             <Card
               variant="elevated"
               padding="none"
