@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Popover from '@mui/material/Popover'
-import Fade from '@mui/material/Fade'
+import Grow from '@mui/material/Grow'
 import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
 import Typography from '@mui/material/Typography'
@@ -146,19 +146,14 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         anchorPosition={anchorPosition || { top: 0, left: 0 }}
         onClose={handleClose}
         disableScrollLock
-        // Use Fade slot — Grow's scale+origin doesn't track when we use
-        // anchorReference="anchorPosition" instead of anchorEl. We provide
-        // the scale ourselves via the CSS class on the paper.
-        slots={{ transition: Fade }}
+        slots={{ transition: Grow }}
         transformOrigin={{
           vertical: dropUp ? 'bottom' : 'top',
           horizontal: 'right',
         }}
         slotProps={{
-          // Slightly slower exit so the menu doesn't snap out of existence.
-          transition: { timeout: { enter: 220, exit: 200 } },
+          transition: { timeout: { enter: 190, exit: 160 } },
           paper: {
-            className: 'profile-menu-paper',
             sx: {
               mt: 1.5,
               mr: 0,
@@ -171,8 +166,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               border: '1px solid var(--ds-border)',
               boxShadow: 'var(--ds-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
               backgroundImage: 'none',
-              // Always anchor visual scale at top-right (or bottom-right when dropUp)
-              transformOrigin: dropUp ? 'bottom right' : 'top right',
             },
           },
         }}
