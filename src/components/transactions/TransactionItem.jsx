@@ -633,4 +633,16 @@ function TransactionItem({
   )
 }
 
-export default memo(TransactionItem)
+export default memo(TransactionItem, (prev, next) => {
+  // Cheap equality — IDs + version fields + selection/layout states.
+  return (
+    prev.txn.id === next.txn.id &&
+    prev.txn.updated_at === next.txn.updated_at &&
+    prev.isHighlighted === next.isHighlighted &&
+    prev.isLast === next.isLast &&
+    prev.compact === next.compact &&
+    prev.showDate === next.showDate &&
+    prev.autoNudge === next.autoNudge &&
+    prev.searchQuery === next.searchQuery
+  )
+})
