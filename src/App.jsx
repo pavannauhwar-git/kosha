@@ -26,17 +26,6 @@ const DASHBOARD_RECENT_COLUMNS =
 const LIABILITY_PREFETCH_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
-function navigateWithViewTransition(navigate, to, options) {
-  if (typeof document !== 'undefined' && typeof document.startViewTransition === 'function') {
-    // The transition's callback must synchronously update state — wrap the navigate.
-    document.startViewTransition(() => {
-      navigate(to, options)
-    })
-    return
-  }
-  navigate(to, options)
-}
-
 // ── Eager ────────────────────────────────────────────────────────────────
 import Login from './pages/Login'
 import InviteLanding from './pages/InviteLanding'
@@ -519,7 +508,10 @@ function BottomNav() {
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                   return
                 }
-                navigateWithViewTransition(navigate, item.path, { replace: true })
+                // replace: true keeps the history stack flat. React Router v6
+                // wraps navigate() in startTransition automatically via the
+                // v7_startTransition future flag on <BrowserRouter>.
+                navigate(item.path, { replace: true })
               }}
               onPointerEnter={(e) => { if (e.pointerType !== 'touch') prefetchRoute(item.path) }}
               onFocus={() => prefetchRoute(item.path)}
