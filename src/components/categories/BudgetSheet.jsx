@@ -8,7 +8,7 @@ import { upsertBudget, deleteBudget } from '../../hooks/useBudgets'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
 import { validateAmount } from '../../lib/validateAmount.js'
-import { FormField } from '../ui'
+import FormField from '../ui/FormField'
 
 export default function BudgetSheet({ open, onClose, budgets = [], byCategory = {} }) {
   const [saving, setSaving] = useState(null)

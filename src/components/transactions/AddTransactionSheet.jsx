@@ -21,7 +21,7 @@ import CreateCategorySheet from '../categories/CreateCategorySheet'
 import { useSplitwise, addSplitExpenseMutation, buildEqualSplits } from '../../hooks/useSplitwise'
 import { supabase } from '../../lib/supabase'
 import { validateAmount } from '../../lib/validateAmount.js'
-import { FormField } from '../ui'
+import FormField from '../ui/FormField'
 
 
 import { todayStr } from '../../lib/utils'
