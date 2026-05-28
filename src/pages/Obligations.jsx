@@ -137,6 +137,7 @@ export default function Obligations() {
             <img
               src="/illustrations/all_done.png"
               alt="No obligations"
+              decoding="async"
               className="w-52 h-auto illustration mb-4"
             />
             <p className="text-[19px] font-bold text-ink tracking-tight mb-1">
@@ -186,6 +187,7 @@ export default function Obligations() {
                 <img
                   src="/illustrations/coffee_chill.png"
                   alt="Bills"
+                  decoding="async"
                   className="w-20 h-20 object-contain illustration shrink-0 -mt-1"
                 />
               </div>
@@ -290,6 +292,7 @@ export default function Obligations() {
                 <img
                   src="/illustrations/empty_loans.png"
                   alt="Loans"
+                  decoding="async"
                   className="w-20 h-20 object-contain illustration shrink-0 -mt-1"
                 />
               </div>

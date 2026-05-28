@@ -1262,7 +1262,7 @@ export default function Splitwise() {
                     className="relative w-full h-24 overflow-hidden rounded-card text-left hover:scale-[1.02] transition-transform shadow-sm"
                   >
                     <div className="absolute inset-0 z-0">
-                      <img src={bgBanner.src} className="w-full h-full object-cover" />
+                      <img src={bgBanner.src} decoding="async" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
                     </div>
                     <div className="relative z-10 px-3.5 py-3 h-full flex flex-col justify-between">
@@ -1298,7 +1298,7 @@ export default function Splitwise() {
         <div className="page-stack">
           <div className="relative overflow-hidden rounded-card">
             <div className="h-40 w-full bg-kosha-surface-2">
-              <img src={activeBanner.src} alt={activeBanner.name} className="h-full w-full object-cover" />
+              <img src={activeBanner.src} alt={activeBanner.name} decoding="async" className="h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
             </div>
             <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
@@ -1492,7 +1492,7 @@ export default function Splitwise() {
             <p className="section-label mb-2">Suggested Settlements</p>
             {suggestedTransfers.length === 0 ? (
               <div className="py-4 text-center">
-                <img src="/illustrations/coffee_chill.png" className="max-h-[140px] w-auto mx-auto mb-2 illustration" alt="All caught up" />
+                <img src="/illustrations/coffee_chill.png" decoding="async" className="max-h-[140px] w-auto mx-auto mb-2 illustration" alt="All caught up" />
                 <p className="text-[13px] font-semibold text-ink">Everyone is settled.</p>
                 <p className="text-[11px] text-ink-3">Time to relax.</p>
               </div>
@@ -1686,6 +1686,7 @@ export default function Splitwise() {
                   <div className="h-32 w-full bg-kosha-surface-2">
                     <img
                       src={(BANNERS.find(b => b.id === (readBannerFromStorage(invitePreview.groupId) || 'goa')) || BANNERS[0]).src}
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -2179,7 +2180,7 @@ export default function Splitwise() {
                       className={`relative flex flex-col items-start gap-1 p-1 overflow-hidden transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.98] rounded-card ${savedBannerId === banner.id ? 'ring-2 ring-brand ring-offset-1' : ''}`}
                     >
                       <div className="h-20 w-full rounded-card overflow-hidden bg-kosha-surface-2 border border-kosha-border object-cover">
-                        <img src={banner.src} alt={banner.name} className="h-full w-full object-cover" loading="lazy" />
+                        <img src={banner.src} alt={banner.name} decoding="async" className="h-full w-full object-cover" loading="lazy" />
                       </div>
                       <span className="text-[11px] font-semibold text-ink px-1 truncate">{banner.name}</span>
                     </button>
