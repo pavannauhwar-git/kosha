@@ -3957,9 +3957,9 @@ grant execute on function public.unlink_partner_atomic(uuid)          to authent
 -- privileges on that table (see the GRANT change above), and a defensive
 -- INSERT policy blocks any attempt through RLS as well.
 --
--- The function is SECURITY DEFINER. Combined with `set row_security = off`
--- it runs as the function owner (`postgres` in Supabase environments)
--- which bypasses RLS for the audit-table insert.
+-- The function is SECURITY DEFINER. It runs as the function owner
+-- (`postgres` in Supabase environments) which bypasses RLS for the
+-- audit-table insert.
 --
 -- Failure mode: if the audit insert itself errors (constraint violation,
 -- type drift, etc.) we DO NOT block the underlying mutation — the trigger
@@ -3980,8 +3980,6 @@ declare
   v_entity_id uuid;
   v_metadata jsonb;
 begin
-  set local row_security = off;
-
   if tg_op = 'DELETE' then
     v_entity_id := old.id;
   else
@@ -4103,7 +4101,7 @@ create trigger trg_log_financial_event_split_settlements
 -- Defence-in-depth: even if a future migration accidentally re-grants
 -- INSERT on financial_events, this RLS policy blocks any client write
 -- because every WITH CHECK evaluates to false. Triggers run as
--- SECURITY DEFINER and explicitly set row_security=off, so they are
+-- SECURITY DEFINER, so they bypass client RLS policies and are
 -- unaffected.
 drop policy if exists "financial_events: insert own" on public.financial_events;
 create policy "financial_events: insert blocked" on public.financial_events
