@@ -1876,8 +1876,9 @@ export default function Splitwise() {
                   <label className="list-row w-full cursor-pointer">
                     <span className="text-[14px] text-ink-3">Amount</span>
                     <input
-                      type="number"
+                      type="text"
                       inputMode="decimal"
+                      pattern="[0-9.]*"
                       className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
                       value={expenseForm.amount}
                       onChange={(event) => setExpenseForm((prev) => ({ ...prev, amount: event.target.value }))}
@@ -1968,8 +1969,9 @@ export default function Splitwise() {
 
                           {expenseForm.split_method === 'exact' && (
                             <input
-                              type="number"
+                              type="text"
                               inputMode="decimal"
+                              pattern="[0-9.]*"
                               className="w-[92px] rounded-pill border border-kosha-border bg-kosha-surface px-2 py-1 text-right text-[12px] text-ink"
                               placeholder="Amount"
                               value={current.exact}
@@ -1986,8 +1988,9 @@ export default function Splitwise() {
 
                           {expenseForm.split_method === 'percent' && (
                             <input
-                              type="number"
+                              type="text"
                               inputMode="decimal"
+                              pattern="[0-9.]*"
                               className="w-[92px] rounded-pill border border-kosha-border bg-kosha-surface px-2 py-1 text-right text-[12px] text-ink"
                               placeholder="%"
                               value={current.percent}
@@ -2004,8 +2007,9 @@ export default function Splitwise() {
 
                           {expenseForm.split_method === 'shares' && (
                             <input
-                              type="number"
+                              type="text"
                               inputMode="decimal"
+                              pattern="[0-9.]*"
                               className="w-[92px] rounded-pill border border-kosha-border bg-kosha-surface px-2 py-1 text-right text-[12px] text-ink"
                               placeholder="Shares"
                               value={current.shares}
@@ -2105,8 +2109,9 @@ export default function Splitwise() {
                   <label className="list-row w-full cursor-pointer">
                     <span className="text-[14px] text-ink-3">Amount</span>
                     <input
-                      type="number"
+                      type="text"
                       inputMode="decimal"
+                      pattern="[0-9.]*"
                       className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
                       value={settlementForm.amount}
                       onChange={(event) => setSettlementForm((prev) => ({ ...prev, amount: event.target.value }))}
