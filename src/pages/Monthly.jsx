@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useFirstRouteVisit } from '../hooks/useFirstRouteVisit'
 import { useMonthSummary, useTransactions, useMonthExpenseDailyTotals } from '../hooks/useTransactions'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 import { CATEGORIES } from '../lib/categories'
@@ -59,6 +60,8 @@ export default function Monthly() {
   const navigate = useNavigate()
   const activeWalletUserId = useActiveWallet()
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
+  const isFirstVisit = useFirstRouteVisit('monthly')
+  const enterCls = isFirstVisit ? 'fade-up' : ''
 
   const now = new Date()
   const currentDayOfMonth = now.getDate()
@@ -580,12 +583,12 @@ export default function Monthly() {
             />
           ) : (
           <>
-          <div className="fade-up fade-up-1 mb-3">
+          <div className={`${enterCls} fade-up-1 mb-3`}>
             <MonthHeroCard month={month} year={year} data={data} />
           </div>
 
           {monthOverMonthSignal && (
-            <div className="fade-up fade-up-2 card p-3.5 border-0">
+            <div className={`${enterCls} fade-up-2 card p-3.5 border-0`}>
               <SectionHeader
                 className="mb-2"
                 title="Month-over-month snapshot"
@@ -616,7 +619,7 @@ export default function Monthly() {
           )}
 
           {monthlyActionQueue.length > 0 && (
-            <div className="fade-up fade-up-3 card p-3.5 border-0">
+            <div className={`${enterCls} fade-up-3 card p-3.5 border-0`}>
               <SectionHeader
                 className="mb-2"
                 title="Monthly action queue"
@@ -654,7 +657,7 @@ export default function Monthly() {
           )}
 
           {(inflow > 0 || spent > 0 || invested > 0) && (
-          <div className="fade-up fade-up-4 card p-4 border-0">
+          <div className={`${enterCls} fade-up-4 card p-4 border-0`}>
             <SectionHeader
               className="mb-2"
               title="Month close summary"
@@ -707,7 +710,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && (inflow > 0 || spent > 0 || invested > 0) && (
-            <div className="fade-up fade-up-5">
+            <div className={`${enterCls} fade-up-5`}>
               <CashflowWaterfallChart
                 totalIncome={inflow}
                 totalExpense={spent}
@@ -718,7 +721,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && (categoryVelocitySignal || budgetPressureSignal || dailyVariabilitySignal) && (
-            <div className="fade-up fade-up-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className={`${enterCls} fade-up-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5`}>
               {categoryVelocitySignal && (
                 <div className="card p-3.5 border-0">
                   <p className="text-[10px] text-ink-3 tracking-wide">Highest category velocity</p>
@@ -767,7 +770,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && !monthlyExpenseTotalsLoading && Object.keys(monthlyExpenseDailyTotals).length > 0 && (
-            <div className="fade-up fade-up-7">
+            <div className={`${enterCls} fade-up-7`}>
               <DailySpendTrend
                 dailyTotals={monthlyExpenseDailyTotals}
                 year={year}
@@ -779,7 +782,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && merchantRows.length > 0 && (
-            <div className="fade-up fade-up-8">
+            <div className={`${enterCls} fade-up-8`}>
               <MerchantIntelCard
                 txnRows={merchantRows}
                 onReviewExpenses={() => navigate(`/transactions?month=${monthParam}&type=expense`)}
@@ -789,7 +792,7 @@ export default function Monthly() {
           )}
 
           {heavyReady && allCatEntries.length > 0 && (
-            <div className="fade-up fade-up-9">
+            <div className={`${enterCls} fade-up-9`}>
               <CategorySpendingChart
                 entries={allCatEntries}
                 total={categoryTotal}

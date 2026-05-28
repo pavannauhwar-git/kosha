@@ -7,6 +7,7 @@ import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBan
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import { MONTH_SHORT } from '../lib/constants'
 import { useNavigate } from 'react-router-dom'
+import { useFirstRouteVisit } from '../hooks/useFirstRouteVisit'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
@@ -50,6 +51,8 @@ export default function Analytics() {
   const navigate = useNavigate()
   const activeWalletUserId = useActiveWallet()
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
+  const isFirstVisit = useFirstRouteVisit('analytics')
+  const enterCls = isFirstVisit ? 'fade-up' : ''
   const now = new Date()
   const currentYear = now.getFullYear()
   const [year, setYear] = useState(currentYear)
@@ -254,7 +257,7 @@ export default function Analytics() {
         <div key={year} className="page-stack">
           {hasYearData ? (
             <>
-              <div className="fade-up fade-up-1 card p-3.5 border-0">
+              <div className={`${enterCls} fade-up-1 card p-3.5 border-0`}>
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
                     <p className="text-[10px] text-ink-3 tracking-wide">Year summary</p>
@@ -294,7 +297,7 @@ export default function Analytics() {
               </div>
 
               {(yearDailyLoading || Object.keys(yearDailyTotals || {}).length > 0) && (
-                <div className="fade-up fade-up-2">
+                <div className={`${enterCls} fade-up-2`}>
                   <CalendarHeatmap
                     dailyTotals={yearDailyTotals}
                     year={year}
@@ -304,7 +307,7 @@ export default function Analytics() {
               )}
 
               {(yearHealthSignal || expenseConcentrationSignal) && (
-                <div className="fade-up fade-up-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className={`${enterCls} fade-up-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5`}>
                   {yearHealthSignal && (
                     <div className="card p-3.5 border-0">
                       <p className="text-[10px] text-ink-3 tracking-wide">Year health score</p>
@@ -338,7 +341,7 @@ export default function Analytics() {
               )}
 
               {Number(data?.totalInvestment || 0) > 0 && (
-                <div className="fade-up fade-up-4">
+                <div className={`${enterCls} fade-up-4`}>
                   <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
                     <YearlyPortfolioSnapshotCard data={data} vehicleData={vehicleData} isViewingPartner={isViewingPartner} />
                   </Suspense>
@@ -348,7 +351,7 @@ export default function Analytics() {
 
               {/* ── 2. Year-over-year context ───────────────────────── */}
               {heavyReady && yoyYears.length >= 2 && (
-                <div className="fade-up fade-up-5">
+                <div className={`${enterCls} fade-up-5`}>
                   <Suspense fallback={<ChartSkeleton height="h-[320px]" />}>
                     <YearOverYearCards years={yoyYears} currentYear={year} enabled />
                   </Suspense>
@@ -356,7 +359,7 @@ export default function Analytics() {
               )}
 
               {/* ── 3. Performance trends ─────────────────────────────── */}
-              <div className="fade-up fade-up-6">
+              <div className={`${enterCls} fade-up-6`}>
                 <Suspense fallback={<ChartSkeleton height="h-[220px]" />}>
                   <CashFlowChart
                     chartData={flowTrendData}
@@ -364,7 +367,7 @@ export default function Analytics() {
                   />
                 </Suspense>
               </div>
-              <div className="fade-up fade-up-7">
+              <div className={`${enterCls} fade-up-7`}>
                 <Suspense fallback={<ChartSkeleton height="h-[220px]" />}>
                   <CashflowWaterfallChart
                     flowData={flowTrendData}
@@ -375,21 +378,21 @@ export default function Analytics() {
                   />
                 </Suspense>
               </div>
-              <div className="fade-up fade-up-8">
+              <div className={`${enterCls} fade-up-8`}>
                 <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
                   <SurplusTrajectoryChart netData={surplusData} />
                 </Suspense>
               </div>
 
               {Number(data?.totalInvestment || 0) > 0 && (
-                <div className="fade-up fade-up-9">
+                <div className={`${enterCls} fade-up-9`}>
                   <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
                     <InvestmentConsistencyCard monthlyData={data?.monthly} year={year} />
                   </Suspense>
                 </div>
               )}
 
-              <div className="fade-up fade-up-9">
+              <div className={`${enterCls} fade-up-9`}>
                 <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
                   <RunwayCoverageChart
                     flowData={flowTrendData}
@@ -399,7 +402,7 @@ export default function Analytics() {
               </div>
 
               {Number(data?.totalExpense || 0) > 0 && (
-                <div className="fade-up fade-up-9">
+                <div className={`${enterCls} fade-up-9`}>
                   <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
                     <WhatIfSimulatorCard
                       categories={scenarioCategories}
