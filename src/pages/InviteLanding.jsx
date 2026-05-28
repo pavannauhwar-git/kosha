@@ -157,7 +157,7 @@ export default function InviteLanding() {
   }
 
   return (
-    <div className="h-screen bg-kosha-bg px-4 flex flex-col items-center justify-center overscroll-none overflow-y-auto">
+    <div className="h-dvh bg-kosha-bg px-4 flex flex-col items-center justify-center overscroll-none overflow-y-auto">
       <div className="w-full max-w-[400px] py-12">
         <AnimatePresence mode="wait">
           {status === 'loading' && (

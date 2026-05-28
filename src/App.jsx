@@ -76,7 +76,7 @@ const ROUTE_PRELOADERS = {
 
 function PageFallback({ pathname }) {
   return (
-    <div className="min-h-screen bg-kosha-bg">
+    <div className="min-h-dvh bg-kosha-bg">
       <div className="route-skeleton-shell">
         <RouteSkeleton pathname={pathname || '/'} />
       </div>
@@ -1578,7 +1578,7 @@ function WalletSwitchGuard() {
 
 function AppShell() {
   return (
-    <div className="relative min-h-screen flex flex-col bg-kosha-bg">
+    <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
       <WalletSwitchGuard />
       <RuntimeRouteTracker />
       <CustomCategoryLoader />

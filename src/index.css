@@ -327,7 +327,7 @@ body {
   color: var(--ds-text);
   width: 100%;
   max-width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   overscroll-behavior: none;
   overflow-x: clip;
   margin: 0;
@@ -467,7 +467,7 @@ button::after,
     @apply bg-kosha-bg text-ink font-sans;
     width: 100%;
     max-width: 100%;
-    min-height: 100vh;
+    min-height: 100dvh;
     overscroll-behavior-y: none;
     overflow-x: clip;
   }
@@ -1243,7 +1243,7 @@ button::after,
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
   .page {
-    @apply min-h-screen;
+    @apply min-h-dvh;
     padding-left: 1rem;
     padding-right: 1rem;
     padding-top: 1rem;

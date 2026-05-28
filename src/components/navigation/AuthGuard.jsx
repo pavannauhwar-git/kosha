@@ -15,7 +15,7 @@ function S({ className, delay = 0 }) {
 // ── Per-route skeletons ───────────────────────────────────────────────────
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen px-5 pt-4 pb-[var(--nav-height)] space-y-4">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-4">
       {/* Header row */}
       <div className="flex items-center justify-between mt-2 mb-5">
         <div className="space-y-1.5">
@@ -56,7 +56,7 @@ function DashboardSkeleton() {
 
 function TransactionsSkeleton() {
   return (
-    <div className="min-h-screen px-5 pt-4 pb-[var(--nav-height)] space-y-4">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between mt-2 mb-5">
         <S className="h-7 w-32" />
@@ -89,7 +89,7 @@ function TransactionsSkeleton() {
 
 function MonthlySkeleton() {
   return (
-    <div className="min-h-screen px-5 pt-4 pb-[var(--nav-height)] space-y-4">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-4">
       {/* Month stepper */}
       <div className="flex items-center justify-between mb-2">
         <S className="h-8 w-8 rounded-full" />
@@ -124,7 +124,7 @@ function MonthlySkeleton() {
 
 function AnalyticsSkeleton() {
   return (
-    <div className="min-h-screen px-5 pt-4 pb-[var(--nav-height)] space-y-4">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between mt-2 mb-5">
         <S className="h-7 w-32" />
@@ -150,7 +150,7 @@ function AnalyticsSkeleton() {
 
 function BillsSkeleton() {
   return (
-    <div className="min-h-screen px-5 pt-4 pb-[var(--nav-height)] space-y-5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
       {/* Header */}
       <S className="h-8 w-32 mt-2 mb-6" />
       {/* Tabs */}
@@ -180,7 +180,7 @@ function BillsSkeleton() {
 
 function SimplePageSkeleton() {
   return (
-    <div className="min-h-screen px-5 pt-4 pb-[var(--nav-height)] space-y-6">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-6">
       {/* Header */}
       <S className="h-8 w-40 mt-2 mb-6" />
       <div className="space-y-4">
@@ -195,7 +195,7 @@ function SimplePageSkeleton() {
 // ── Route → skeleton map ──────────────────────────────────────────────────
 function SplitwiseSkeleton() {
   return (
-    <div className="min-h-screen px-5 pt-4 pb-[var(--nav-height)] space-y-5">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-5">
       {/* Balances Hero */}
       <S className="h-32 w-full" />
       {/* Tabs */}
@@ -220,7 +220,7 @@ function SplitwiseSkeleton() {
 
 function SettingsSkeleton() {
   return (
-    <div className="min-h-screen px-5 pt-4 pb-[var(--nav-height)] space-y-6">
+    <div className="min-h-dvh px-5 pt-4 pb-[var(--nav-height)] space-y-6">
       {/* Profile Header */}
       <div className="flex items-center gap-4">
         <S className="h-16 w-16 rounded-full" />
