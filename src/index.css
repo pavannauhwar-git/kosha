@@ -1045,7 +1045,6 @@ button::after,
 
   .fade-up {
     animation: fade-up-in var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard-decelerate) both;
-    will-change: transform, opacity;
   }
 
   @keyframes card-spring-in {
@@ -1055,7 +1054,6 @@ button::after,
 
   .card-spring-in {
     animation: card-spring-in var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard-decelerate) both;
-    will-change: transform, opacity;
   }
 
   /* Stagger delays for sequential children */
@@ -1077,7 +1075,6 @@ button::after,
 
   .fade-in {
     animation: fade-in var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard-decelerate) both;
-    will-change: opacity;
   }
 
   /* -- Hero card cross-fade — skeleton → content */
@@ -1088,7 +1085,6 @@ button::after,
 
   .hero-card-enter {
     animation: hero-enter var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-standard-decelerate) both;
-    will-change: opacity;
   }
 
   .nav-float-item {
