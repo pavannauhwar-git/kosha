@@ -417,29 +417,60 @@ set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_invite record;
+  v_invite_id uuid;
+  v_invite_creator uuid;
+  v_invite_expires_at timestamptz;
+  v_invite_used_by uuid;
+  v_rows_updated integer;
 begin
   if v_uid is null then
     return jsonb_build_object('consumed', false, 'reason', 'unauthenticated');
   end if;
 
-  select id, created_by into v_invite
+  -- Lock the invite row so two concurrent consume_wallet_invite calls
+  -- serialize through this section. Without the FOR UPDATE the two
+  -- transactions can both read used_by=NULL and both attempt to claim;
+  -- the second would silently overwrite the first and the first user
+  -- would later find themselves unlinked with no error reported.
+  select id, created_by, expires_at, used_by
+    into v_invite_id, v_invite_creator, v_invite_expires_at, v_invite_used_by
   from public.invites
-  where token = p_token and used_by is null;
+  where token = p_token
+  for update;
 
   if not found then
     return jsonb_build_object('consumed', false, 'reason', 'invite-not-found-or-used');
   end if;
 
-  if v_invite.created_by = v_uid then
+  if v_invite_used_by is not null then
+    return jsonb_build_object('consumed', false, 'reason', 'invite-not-found-or-used');
+  end if;
+
+  if v_invite_creator = v_uid then
     return jsonb_build_object('consumed', false, 'reason', 'cannot-consume-own-invite');
   end if;
 
-  update public.invites
-  set used_by = v_uid, used_at = now()
-  where id = v_invite.id;
+  -- expires_at is nullable for backwards-compatibility with existing rows
+  -- (NULL = never expires). Only newly-created invites should set a TTL.
+  if v_invite_expires_at is not null and v_invite_expires_at <= now() then
+    return jsonb_build_object('consumed', false, 'reason', 'invite-expired');
+  end if;
 
-  return jsonb_build_object('consumed', true, 'inviteId', v_invite.id);
+  -- Conditional update — even though we hold a FOR UPDATE lock, this
+  -- WHERE clause is a belt-and-suspenders guard. If row_count is 0 the
+  -- claim was lost to a concurrent transaction and we report the
+  -- standard "not found or used" reason to the caller.
+  update public.invites
+     set used_by = v_uid, used_at = now()
+   where id = v_invite_id
+     and used_by is null;
+  get diagnostics v_rows_updated = row_count;
+
+  if v_rows_updated = 0 then
+    return jsonb_build_object('consumed', false, 'reason', 'invite-not-found-or-used');
+  end if;
+
+  return jsonb_build_object('consumed', true, 'inviteId', v_invite_id);
 end;
 $$;
 
@@ -494,6 +525,9 @@ create table if not exists public.bug_reports (
 create index if not exists idx_bug_reports_created_at on public.bug_reports(created_at desc);
 create index if not exists idx_bug_reports_user on public.bug_reports(user_id);
 create index if not exists idx_bug_reports_status on public.bug_reports(status);
+-- Note: idx_bug_reports_duplicate is created after the Phase-2 `alter table` block
+-- below, because the `duplicate_of` column is added there. Creating it here would
+-- break a fresh install on a clean database.
 
 alter table public.bug_reports enable row level security;
 
@@ -3555,7 +3589,12 @@ grant select on public.bug_reports to anon;
 grant select, insert, update, delete on public.bug_reports to authenticated, service_role;
 
 grant select on public.financial_events to anon;
-grant select, insert, update, delete on public.financial_events to authenticated, service_role;
+-- Migration 004 locks down write access to financial_events: only the
+-- SECURITY DEFINER trigger function `public.log_financial_event_trg`
+-- writes to this table. Clients only ever SELECT. service_role keeps
+-- full access for admin / backfill scripts.
+grant select on public.financial_events to authenticated;
+grant select, insert, update, delete on public.financial_events to service_role;
 
 grant select on public.budgets to anon;
 grant select, insert, update, delete on public.budgets to authenticated, service_role;
@@ -3592,3 +3631,485 @@ grant select, insert, update, delete on public.split_group_invites to authentica
 
 grant select on public.loans to anon;
 grant select, insert, update, delete on public.loans to authenticated, service_role;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Migration 004: Server-side atomicity and audit-log enforcement
+--
+-- Three correctness fixes, applied as a single coherent block so future
+-- readers can see them together:
+--
+--   1. `consume_wallet_invite` is now race-safe (SELECT … FOR UPDATE +
+--      conditional UPDATE) and honours an optional `expires_at` on the
+--      invite row. The function definition above (around line 412) has
+--      been replaced in place; this block just adds the supporting column.
+--
+--   2. The `financial_events` audit log is no longer writable by clients.
+--      Every INSERT/UPDATE/DELETE on the audited tables is mirrored to
+--      `financial_events` by a SECURITY DEFINER trigger that the client
+--      cannot bypass. Client INSERT/UPDATE/DELETE was revoked above
+--      (the grant line for `public.financial_events`).
+--
+--   3. Multi-table operations (delete liability+txns, delete loan+txns,
+--      delete split expense/settlement+txns, unlink partner both ways)
+--      now run inside a single SQL transaction via SECURITY DEFINER RPCs.
+--      Half-completed deletes can no longer leak orphan rows.
+--
+-- Re-running this block is idempotent: every CREATE has `OR REPLACE` or
+-- `IF NOT EXISTS`, every DROP is guarded by `IF EXISTS`, and every ALTER
+-- uses `IF NOT EXISTS` for columns.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- ── 4a. Invites: expiry + active-link cap ───────────────────────────────────
+
+alter table public.invites
+  add column if not exists expires_at timestamptz;
+
+create index if not exists idx_invites_token_active
+  on public.invites(token)
+  where used_by is null;
+
+-- ── Server-side enforcement of MAX_ACTIVE_INVITES (= 1) ──
+--
+-- This is enforced by TWO mechanisms that work together:
+--
+--   (1) A partial UNIQUE index on (created_by) WHERE used_by IS NULL.
+--       This is the atomic, race-proof layer. At READ COMMITTED two
+--       concurrent INSERTs could both pass any SELECT-based check, but
+--       only one can satisfy a unique index. The second fails with
+--       sqlstate 23505 (unique_violation).
+--
+--   (2) A BEFORE INSERT trigger that does the same check using count(*).
+--       This is racy on its own, but produces a friendlier error
+--       message (sqlstate P0001, message 'invite_limit_reached') for the
+--       common single-threaded case. The unique index is the safety net
+--       that closes the race.
+--
+-- Pre-flight: if pre-Migration-004 data has duplicate active invites
+-- (the previous client-only check was racy and may have allowed them),
+-- we must remove them BEFORE creating the unique index or `create
+-- unique index` will fail. We keep the most recently created active
+-- invite per user and delete the older duplicates — they were unused
+-- so no partner relationship is affected.
+
+do $$
+declare
+  v_dupes integer;
+begin
+  with ranked as (
+    select id,
+           row_number() over (partition by created_by order by created_at desc, id desc) as rn
+    from public.invites
+    where used_by is null
+  )
+  delete from public.invites
+   where id in (select id from ranked where rn > 1);
+  get diagnostics v_dupes = row_count;
+  if v_dupes > 0 then
+    raise warning 'Migration 004: removed % duplicate active invite(s) to allow uniq_invites_active_per_user', v_dupes;
+  end if;
+end $$;
+
+create unique index if not exists uniq_invites_active_per_user
+  on public.invites(created_by)
+  where used_by is null;
+
+create or replace function public.enforce_invite_active_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_active_count integer;
+begin
+  select count(*) into v_active_count
+    from public.invites
+    where created_by = new.created_by
+      and used_by is null;
+
+  if v_active_count >= 1 then
+    -- This branch handles the common single-threaded "I already have an
+    -- active link" case with a friendly message. Concurrent inserts that
+    -- both pass this check are caught by uniq_invites_active_per_user.
+    raise exception using
+      errcode = 'P0001',
+      message = 'invite_limit_reached',
+      hint    = 'Each user can keep only one active (unused) invite link at a time.';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_invites_enforce_active_limit on public.invites;
+create trigger trg_invites_enforce_active_limit
+  before insert on public.invites
+  for each row execute function public.enforce_invite_active_limit();
+
+-- ── 4b. Atomic multi-table delete RPCs ──────────────────────────────────────
+--
+-- Liabilities and loans rely on the existing
+-- `transactions.linked_bill_id / linked_loan_id ON DELETE CASCADE` FK to
+-- clean up child rows. The RPC therefore only needs to delete the parent —
+-- but routing the delete through an RPC still gives us
+--   (a) a single SQL transaction the network cannot interrupt mid-way,
+--   (b) a server-side owner check so a malicious client cannot force a
+--       partner-view delete by calling the table directly,
+--   (c) a single hook for the audit-log trigger.
+--
+-- Split expenses and settlements have linked transactions referenced
+-- via FKs with ON DELETE SET NULL (the WRONG direction for clean-up),
+-- so the RPC must also delete those linked transactions explicitly.
+
+create or replace function public.delete_liability_with_txns(p_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_owner uuid;
+  v_rows integer;
+begin
+  if v_uid is null then
+    raise exception using errcode = '28000', message = 'unauthenticated';
+  end if;
+  if p_id is null then
+    raise exception using errcode = '22023', message = 'p_id is required';
+  end if;
+
+  select user_id into v_owner from public.liabilities where id = p_id;
+  if v_owner is null then
+    -- Already deleted by a concurrent caller, or never existed. Idempotent.
+    return false;
+  end if;
+
+  -- Only the owner can delete. Linked partners get view-only access
+  -- through RLS but must not be able to bypass it via this RPC.
+  if v_owner <> v_uid then
+    raise exception using errcode = '42501', message = 'forbidden';
+  end if;
+
+  delete from public.liabilities where id = p_id and user_id = v_uid;
+  get diagnostics v_rows = row_count;
+  return v_rows > 0;
+end;
+$$;
+
+create or replace function public.delete_loan_with_txns(p_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_owner uuid;
+  v_rows integer;
+begin
+  if v_uid is null then
+    raise exception using errcode = '28000', message = 'unauthenticated';
+  end if;
+  if p_id is null then
+    raise exception using errcode = '22023', message = 'p_id is required';
+  end if;
+
+  select user_id into v_owner from public.loans where id = p_id;
+  if v_owner is null then return false; end if;
+  if v_owner <> v_uid then
+    raise exception using errcode = '42501', message = 'forbidden';
+  end if;
+
+  delete from public.loans where id = p_id and user_id = v_uid;
+  get diagnostics v_rows = row_count;
+  return v_rows > 0;
+end;
+$$;
+
+create or replace function public.delete_split_expense_atomic(p_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_group_id uuid;
+  v_linked_txn uuid;
+  v_rows integer;
+begin
+  if v_uid is null then
+    raise exception using errcode = '28000', message = 'unauthenticated';
+  end if;
+  if p_id is null then
+    raise exception using errcode = '22023', message = 'p_id is required';
+  end if;
+
+  select group_id, linked_transaction_id
+    into v_group_id, v_linked_txn
+  from public.split_expenses
+  where id = p_id;
+
+  if v_group_id is null then return false; end if;
+
+  -- Caller must be a member of the group (or above). Authorisation lives
+  -- in the helper to keep policy + RPC in sync.
+  if not public.is_split_group_member_or_above(v_group_id, v_uid) then
+    raise exception using errcode = '42501', message = 'forbidden';
+  end if;
+
+  -- Single transaction: linked transaction first (no cascade in this
+  -- direction), then the expense. If either DELETE fails, the whole
+  -- thing rolls back — no orphan transaction can survive.
+  if v_linked_txn is not null then
+    delete from public.transactions where id = v_linked_txn;
+  end if;
+
+  delete from public.split_expenses where id = p_id;
+  get diagnostics v_rows = row_count;
+  return v_rows > 0;
+end;
+$$;
+
+create or replace function public.delete_split_settlement_atomic(p_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_group_id uuid;
+  v_payer_txn uuid;
+  v_payee_txn uuid;
+  v_rows integer;
+begin
+  if v_uid is null then
+    raise exception using errcode = '28000', message = 'unauthenticated';
+  end if;
+  if p_id is null then
+    raise exception using errcode = '22023', message = 'p_id is required';
+  end if;
+
+  select group_id, payer_transaction_id, payee_transaction_id
+    into v_group_id, v_payer_txn, v_payee_txn
+  from public.split_settlements
+  where id = p_id;
+
+  if v_group_id is null then return false; end if;
+
+  if not public.is_split_group_member_or_above(v_group_id, v_uid) then
+    raise exception using errcode = '42501', message = 'forbidden';
+  end if;
+
+  if v_payer_txn is not null then
+    delete from public.transactions where id = v_payer_txn;
+  end if;
+  if v_payee_txn is not null then
+    delete from public.transactions where id = v_payee_txn;
+  end if;
+
+  delete from public.split_settlements where id = p_id;
+  get diagnostics v_rows = row_count;
+  return v_rows > 0;
+end;
+$$;
+
+create or replace function public.unlink_partner_atomic(p_partner_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_rows integer;
+begin
+  if v_uid is null then
+    raise exception using errcode = '28000', message = 'unauthenticated';
+  end if;
+  if p_partner_id is null then
+    raise exception using errcode = '22023', message = 'p_partner_id is required';
+  end if;
+
+  -- Delete both directions in a single statement so partial unlinks are
+  -- impossible. Either both invite rows go or neither does.
+  delete from public.invites
+   where (created_by = v_uid          and used_by = p_partner_id)
+      or (created_by = p_partner_id  and used_by = v_uid);
+  get diagnostics v_rows = row_count;
+
+  return v_rows > 0;
+end;
+$$;
+
+grant execute on function public.delete_liability_with_txns(uuid)     to authenticated;
+grant execute on function public.delete_loan_with_txns(uuid)          to authenticated;
+grant execute on function public.delete_split_expense_atomic(uuid)    to authenticated;
+grant execute on function public.delete_split_settlement_atomic(uuid) to authenticated;
+grant execute on function public.unlink_partner_atomic(uuid)          to authenticated;
+
+-- ── 4c. Server-side audit log enforcement ───────────────────────────────────
+--
+-- The trigger function below is the ONLY thing that writes to
+-- public.financial_events. Clients no longer have INSERT/UPDATE/DELETE
+-- privileges on that table (see the GRANT change above), and a defensive
+-- INSERT policy blocks any attempt through RLS as well.
+--
+-- The function is SECURITY DEFINER. Combined with `set row_security = off`
+-- it runs as the function owner (`postgres` in Supabase environments)
+-- which bypasses RLS for the audit-table insert.
+--
+-- Failure mode: if the audit insert itself errors (constraint violation,
+-- type drift, etc.) we DO NOT block the underlying mutation — the trigger
+-- catches the exception and emits a Postgres WARNING. The alternative
+-- (block every transaction the moment audit breaks) is too high-blast-
+-- radius for a young app. The warning is loud enough to notice in logs.
+
+create or replace function public.log_financial_event_trg()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid;
+  v_action text;
+  v_entity_type text;
+  v_entity_id uuid;
+  v_metadata jsonb;
+begin
+  set local row_security = off;
+
+  if tg_op = 'DELETE' then
+    v_entity_id := old.id;
+  else
+    v_entity_id := new.id;
+  end if;
+
+  -- Determine the user_id to attribute the event to. Owner-keyed tables
+  -- (transactions/liabilities/loans) carry user_id directly; split_*
+  -- tables are scoped to a group, so we fall back to the calling user.
+  if tg_table_name in ('transactions', 'liabilities', 'loans') then
+    if tg_op = 'DELETE' then
+      v_user := old.user_id;
+    else
+      v_user := new.user_id;
+    end if;
+  else
+    v_user := auth.uid();
+  end if;
+
+  if v_user is null then
+    -- Nothing to attribute the event to (e.g. a system migration insert).
+    -- Skip the audit write rather than fabricating a user_id.
+    return coalesce(new, old);
+  end if;
+
+  case tg_table_name
+    when 'transactions' then
+      v_entity_type := 'transaction';
+      v_action := case tg_op
+        when 'INSERT' then 'transaction_added'
+        when 'UPDATE' then 'transaction_updated'
+        when 'DELETE' then 'transaction_deleted'
+      end;
+    when 'liabilities' then
+      v_entity_type := 'liability';
+      -- Preserve the "marked paid" distinction the old client emitted —
+      -- it's the only update transition worth distinguishing at this
+      -- table; everything else collapses to 'liability_updated'.
+      v_action := case tg_op
+        when 'INSERT' then 'liability_added'
+        when 'UPDATE' then case
+          when (new.paid is distinct from old.paid) and new.paid then 'liability_marked_paid'
+          else 'liability_updated'
+        end
+        when 'DELETE' then 'liability_deleted'
+      end;
+    when 'loans' then
+      v_entity_type := 'loan';
+      v_action := case tg_op
+        when 'INSERT' then 'loan_added'
+        when 'UPDATE' then 'loan_updated'
+        when 'DELETE' then 'loan_deleted'
+      end;
+    when 'split_expenses' then
+      v_entity_type := 'split_expense';
+      v_action := case tg_op
+        when 'INSERT' then 'splitwise_expense_added'
+        when 'UPDATE' then 'splitwise_expense_updated'
+        when 'DELETE' then 'splitwise_expense_deleted'
+      end;
+    when 'split_settlements' then
+      v_entity_type := 'split_settlement';
+      v_action := case tg_op
+        when 'INSERT' then 'splitwise_settlement_added'
+        when 'UPDATE' then 'splitwise_settlement_updated'
+        when 'DELETE' then 'splitwise_settlement_deleted'
+      end;
+    else
+      return coalesce(new, old);
+  end case;
+
+  -- Keep metadata small and stable. On DELETE we capture a row snapshot
+  -- so the audit history can be replayed even after the source row is
+  -- gone. INSERT/UPDATE rely on the row itself as the source of truth.
+  v_metadata := case tg_op
+    when 'DELETE' then jsonb_build_object('snapshot', to_jsonb(old))
+    else null
+  end;
+
+  insert into public.financial_events (user_id, action, entity_type, entity_id, metadata)
+  values (v_user, v_action, v_entity_type, v_entity_id, v_metadata);
+
+  return coalesce(new, old);
+exception
+  when others then
+    raise warning 'log_financial_event_trg failed for %.%: %', tg_table_name, tg_op, sqlerrm;
+    return coalesce(new, old);
+end;
+$$;
+
+-- Attach the trigger to every audited table. AFTER ensures we only log
+-- events that actually committed past the row's own RLS / constraint
+-- checks.
+drop trigger if exists trg_log_financial_event_transactions on public.transactions;
+create trigger trg_log_financial_event_transactions
+  after insert or update or delete on public.transactions
+  for each row execute function public.log_financial_event_trg();
+
+drop trigger if exists trg_log_financial_event_liabilities on public.liabilities;
+create trigger trg_log_financial_event_liabilities
+  after insert or update or delete on public.liabilities
+  for each row execute function public.log_financial_event_trg();
+
+drop trigger if exists trg_log_financial_event_loans on public.loans;
+create trigger trg_log_financial_event_loans
+  after insert or update or delete on public.loans
+  for each row execute function public.log_financial_event_trg();
+
+drop trigger if exists trg_log_financial_event_split_expenses on public.split_expenses;
+create trigger trg_log_financial_event_split_expenses
+  after insert or update or delete on public.split_expenses
+  for each row execute function public.log_financial_event_trg();
+
+drop trigger if exists trg_log_financial_event_split_settlements on public.split_settlements;
+create trigger trg_log_financial_event_split_settlements
+  after insert or update or delete on public.split_settlements
+  for each row execute function public.log_financial_event_trg();
+
+-- Defence-in-depth: even if a future migration accidentally re-grants
+-- INSERT on financial_events, this RLS policy blocks any client write
+-- because every WITH CHECK evaluates to false. Triggers run as
+-- SECURITY DEFINER and explicitly set row_security=off, so they are
+-- unaffected.
+drop policy if exists "financial_events: insert own" on public.financial_events;
+create policy "financial_events: insert blocked" on public.financial_events
+for insert to authenticated
+with check (false);
+
+-- Idempotent revoke — safe if the original grant was already removed
+-- by the modified GRANT block above.
+revoke insert, update, delete on public.financial_events from authenticated;

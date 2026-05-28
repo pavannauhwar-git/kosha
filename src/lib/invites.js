@@ -1,3 +1,10 @@
+// The "one active invite per user" cap is enforced by a BEFORE INSERT
+// trigger on `public.invites` (Migration 004) — the database is now the
+// only authority. We keep this constant exported because the UI uses it
+// to set the `limit` on listInvites() and to show a static helper string.
+// The previous client-side count check has been removed; relying on the
+// server avoids the race where two near-simultaneous create attempts
+// could both pass the count and both insert.
 export const MAX_ACTIVE_INVITES = 1
 
 export function getInviteToken(locationSearch = '') {
@@ -15,24 +22,32 @@ export async function createInvite({ supabaseClient, userId }) {
   if (!supabaseClient) throw new Error('supabaseClient is required')
   if (!userId) throw new Error('userId is required')
 
-  const { count, error: countError } = await supabaseClient
-    .from('invites')
-    .select('id', { count: 'exact', head: true })
-    .eq('created_by', userId)
-    .is('used_by', null)
-
-  if (countError) throw countError
-  if ((count || 0) >= MAX_ACTIVE_INVITES) {
-    throw new Error(`Invite limit reached. You can keep only ${MAX_ACTIVE_INVITES} active links.`)
-  }
-
   const { data, error } = await supabaseClient
     .from('invites')
     .insert({ created_by: userId })
     .select('id, token, created_at, used_by, used_at')
     .single()
 
-  if (error) throw error
+  if (error) {
+    // Two server-side codepaths report the same condition:
+    //   1. The BEFORE INSERT trigger raises P0001 with message
+    //      'invite_limit_reached' on the friendly path.
+    //   2. The partial unique index `uniq_invites_active_per_user` raises
+    //      23505 (unique_violation) when two concurrent inserts both pass
+    //      the trigger check. The index name is in the error message.
+    // Both translate to the same user-facing message so the UX is
+    // identical to the old single-source-of-truth client check.
+    const message = String(error.message || '')
+    const code = String(error.code || '')
+    const isLimitError =
+      message.includes('invite_limit_reached') ||
+      code === '23505' ||
+      message.includes('uniq_invites_active_per_user')
+    if (isLimitError) {
+      throw new Error(`Invite limit reached. You can keep only ${MAX_ACTIVE_INVITES} active links.`)
+    }
+    throw error
+  }
   return data
 }
 

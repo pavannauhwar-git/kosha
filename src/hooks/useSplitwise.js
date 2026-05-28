@@ -619,26 +619,16 @@ export async function deleteSplitExpenseMutation(expenseId) {
   }
   if (!expenseId) throw new Error('Expense is required.')
 
-  const { data: expense } = await supabase
-    .from('split_expenses')
-    .select('linked_transaction_id')
-    .eq('id', expenseId)
-    .maybeSingle()
-
-  const { error } = await supabase
-    .from('split_expenses')
-    .delete()
-    .eq('id', expenseId)
-
+  // Migration 004: a single SECURITY DEFINER RPC deletes the expense AND
+  // its linked transaction (if any) in one Postgres transaction. The
+  // previous two-step client delete could leave an orphan transaction if
+  // the second statement failed — split_expenses.linked_transaction_id
+  // has ON DELETE SET NULL, which is the WRONG direction for clean-up.
+  const { data, error } = await supabase.rpc('delete_split_expense_atomic', { p_id: expenseId })
   if (error) throw error
 
-  if (expense?.linked_transaction_id) {
-    const { error: txnError } = await supabase.from('transactions').delete().eq('id', expense.linked_transaction_id)
-    if (txnError) throw txnError
-  }
-
   await invalidateSplitwiseCache()
-  return true
+  return data === true
 }
 
 export async function recordSplitSettlementMutation({ groupId, payerMemberId, payeeMemberId, amount, settledAt, note }) {
@@ -689,27 +679,15 @@ export async function deleteSplitSettlementMutation(settlementId) {
   }
   if (!settlementId) throw new Error('Settlement is required.')
 
-  const { data: settlement } = await supabase
-    .from('split_settlements')
-    .select('payer_transaction_id, payee_transaction_id')
-    .eq('id', settlementId)
-    .maybeSingle()
-
-  const { error } = await supabase
-    .from('split_settlements')
-    .delete()
-    .eq('id', settlementId)
-
+  // Migration 004: atomic delete of the settlement AND both linked
+  // transactions (payer + payee) in one server-side transaction.
+  // Replaces a three-step client flow that could leak an orphan
+  // transaction on either side if the second/third step failed.
+  const { data, error } = await supabase.rpc('delete_split_settlement_atomic', { p_id: settlementId })
   if (error) throw error
 
-  const txnIds = [settlement?.payer_transaction_id, settlement?.payee_transaction_id].filter(Boolean)
-  if (txnIds.length > 0) {
-    const { error: txnError } = await supabase.from('transactions').delete().in('id', txnIds)
-    if (txnError) throw txnError
-  }
-
   await invalidateSplitwiseCache()
-  return true
+  return data === true
 }
 
 export async function leaveSplitGroupMutation(groupId) {

@@ -1,4 +1,25 @@
-import { supabase } from './supabase'
+// ────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG — client-side façade
+//
+// History: prior to Migration 004, the browser was the sole writer of the
+//   public.financial_events table. That was unacceptable for a finance app —
+//   a malicious or buggy client could skip the audit write or fabricate
+//   events. Migration 004 moves the audit log behind SECURITY DEFINER
+//   triggers on the underlying tables and REVOKEs INSERT from `authenticated`.
+//
+// Today: every transaction / liability / loan / split_expense / split_
+//   settlement mutation is logged automatically by the database. The
+//   `logFinancialEvent` call below is therefore a deliberate no-op. We keep
+//   the export (and the action-verb constants) so existing call-sites
+//   compile without churn — a future cleanup batch can remove them.
+//
+// Why no-op vs delete: the alternative — ripping every `runInBackground(
+//   logFinancialEvent(...))` call out of useLiabilities / useLoans /
+//   useSplitwise / useTransactions / Loans.jsx in this same PR — would have
+//   doubled the diff size and made bisecting any regression harder. The
+//   server triggers are independent of these calls; either path produces
+//   the same audit row.
+// ────────────────────────────────────────────────────────────────────────────
 
 export const FINANCIAL_EVENT_ACTIONS = {
   TXN_ADD: 'transaction_added',
@@ -22,44 +43,12 @@ export const FINANCIAL_EVENT_ACTIONS = {
   SPLITWISE_INVITE_CONSUME: 'splitwise_invite_consumed',
 }
 
-const AUDIT_MAX_RETRIES = 2
-const AUDIT_BASE_DELAY_MS = 500
-
-export async function logFinancialEvent({
-  userId,
-  action,
-  entityType,
-  entityId,
-  metadata = null,
-}) {
-  if (!userId || !action || !entityType || !entityId) return
-
-  for (let attempt = 0; attempt <= AUDIT_MAX_RETRIES; attempt++) {
-    try {
-      const { error } = await supabase
-        .from('financial_events')
-        .insert({
-          user_id: userId,
-          action,
-          entity_type: entityType,
-          entity_id: entityId,
-          metadata,
-        })
-
-      if (error) throw error
-      return // success
-    } catch (error) {
-      const message = String(error?.message || '')
-
-      // Safe no-op when migration has not yet been applied on an environment.
-      if (message.includes('financial_events')) return
-
-      if (attempt < AUDIT_MAX_RETRIES) {
-        await new Promise((r) => setTimeout(r, AUDIT_BASE_DELAY_MS * (attempt + 1)))
-        continue
-      }
-
-      console.warn('[Kosha] financial event log failed after retries', error)
-    }
-  }
+/**
+ * No-op. The server writes financial_events via SECURITY DEFINER triggers.
+ * Kept as an export so existing `runInBackground(logFinancialEvent(...))`
+ * call sites continue to compile. The argument shape is preserved for the
+ * same reason.
+ */
+export async function logFinancialEvent(_args = {}) {
+  return
 }

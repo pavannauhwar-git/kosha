@@ -17,9 +17,9 @@ import { hapticSuccess } from '../lib/haptics'
 
 export const LOAN_INVALIDATION_KEYS = [['loans']]
 
-const LOAN_ACTIVE_GIVEN_KEY   = (targetUserId) => ['loans', 'active', 'given', targetUserId]
-const LOAN_ACTIVE_TAKEN_KEY   = (targetUserId) => ['loans', 'active', 'taken', targetUserId]
-const LOAN_SETTLED_KEY        = (targetUserId) => ['loans', 'settled', targetUserId]
+const LOAN_ACTIVE_GIVEN_KEY = (targetUserId) => ['loans', 'active', 'given', targetUserId]
+const LOAN_ACTIVE_TAKEN_KEY = (targetUserId) => ['loans', 'active', 'taken', targetUserId]
+const LOAN_SETTLED_KEY = (targetUserId) => ['loans', 'settled', targetUserId]
 const LOAN_COLUMNS =
   'id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled, created_at'
 
@@ -58,7 +58,7 @@ async function fetchLoans(direction, settledValue, targetUserId) {
 
 export function useLoans({ enabled = true } = {}) {
   const targetUserId = useActiveWallet()
-  
+
   const [givenQuery, takenQuery, settledQuery] = useQueries({
     queries: [
       {
@@ -86,12 +86,12 @@ export function useLoans({ enabled = true } = {}) {
   })
 
   return {
-    given:    givenQuery.data   || [],
-    taken:    takenQuery.data   || [],
-    settled:  settledQuery.data || [],
-    loading:  givenQuery.isLoading || takenQuery.isLoading,
+    given: givenQuery.data || [],
+    taken: takenQuery.data || [],
+    settled: settledQuery.data || [],
+    loading: givenQuery.isLoading || takenQuery.isLoading,
     settledLoading: settledQuery.isLoading,
-    error:    givenQuery.error || takenQuery.error || settledQuery.error || null,
+    error: givenQuery.error || takenQuery.error || settledQuery.error || null,
   }
 }
 
@@ -106,14 +106,14 @@ async function addLoan(payload) {
   // Use the atomic RPC so the disbursement transaction is created in the same
   // DB transaction as the loan row, guaranteeing referential consistency.
   const { data: result, error } = await supabase.rpc('create_loan', {
-    p_user_id:      userId,
-    p_direction:    payload.direction,
+    p_user_id: userId,
+    p_direction: payload.direction,
     p_counterparty: counterparty,
-    p_amount:       payload.amount,
+    p_amount: payload.amount,
     p_interest_rate: payload.interest_rate ?? 0,
-    p_loan_date:    payload.loan_date || null,
-    p_due_date:     payload.due_date  || null,
-    p_note:         payload.note      || null,
+    p_loan_date: payload.loan_date || null,
+    p_due_date: payload.due_date || null,
+    p_note: payload.note || null,
   })
 
   if (error) throw error
@@ -121,17 +121,17 @@ async function addLoan(payload) {
   // Shape the RPC response into the same LOAN_COLUMNS shape the rest of the
   // app expects (the RPC returns a json object, not a row).
   const data = {
-    id:             result.loan_id,
-    direction:      result.direction,
-    counterparty:   result.counterparty,
-    amount:         result.amount,
+    id: result.loan_id,
+    direction: result.direction,
+    counterparty: result.counterparty,
+    amount: result.amount,
     amount_settled: result.amount_settled,
-    interest_rate:  result.interest_rate,
-    loan_date:      result.loan_date,
-    due_date:       result.due_date,
-    note:           result.note,
-    settled:        result.settled,
-    created_at:     result.created_at,
+    interest_rate: result.interest_rate,
+    loan_date: result.loan_date,
+    due_date: result.due_date,
+    note: result.note,
+    settled: result.settled,
+    created_at: result.created_at,
     // Stash the disbursement transaction id for the optimistic cache update.
     _disbursement_txn_id: result.transaction_id,
   }
@@ -143,12 +143,12 @@ async function addLoan(payload) {
       entityType: 'loan',
       entityId: data.id,
       metadata: {
-        direction:      data.direction,
-        counterparty:  data.counterparty,
-        amount:         data.amount,
-        interest_rate:  data.interest_rate,
-        loan_date:      data.loan_date,
-        due_date:       data.due_date,
+        direction: data.direction,
+        counterparty: data.counterparty,
+        amount: data.amount,
+        interest_rate: data.interest_rate,
+        loan_date: data.loan_date,
+        due_date: data.due_date,
         transaction_id: data._disbursement_txn_id,
       },
     }),
@@ -208,42 +208,16 @@ async function updateLoan(id, updates) {
   return data
 }
 
-async function deleteLoan(id, cachedLoan = null) {
-  const userId = getActiveWalletUserId()
-
-  const { error: txnError } = await supabase
-    .from('transactions')
-    .delete()
-    .eq('linked_loan_id', id)
-    .eq('user_id', userId)
-
-  if (txnError) throw txnError
-
-  const { error } = await supabase
-    .from('loans')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId)
-
+async function deleteLoan(id, _cachedLoan = null) {
+  // Migration 004: single SECURITY DEFINER RPC handles
+  //   (a) the owner check (server-side, can't be bypassed by a malicious
+  //       client calling the table directly),
+  //   (b) the loan DELETE (cascades to transactions via the existing
+  //       transactions.linked_loan_id ON DELETE CASCADE FK),
+  //   (c) the audit-log write (via the trigger on `loans`).
+  const { data, error } = await supabase.rpc('delete_loan_with_txns', { p_id: id })
   if (error) throw error
-
-  runInBackground(
-    logFinancialEvent({
-      userId,
-      action: FINANCIAL_EVENT_ACTIONS.LOAN_DELETE,
-      entityType: 'loan',
-      entityId: id,
-      metadata: {
-        counterparty: cachedLoan?.counterparty,
-        amount: cachedLoan?.amount,
-        direction: cachedLoan?.direction,
-        loan_date: cachedLoan?.loan_date,
-      },
-    }),
-    'loan delete audit'
-  )
-
-  return true
+  return data === true
 }
 
 // ── Cache helpers ─────────────────────────────────────────────────────────
@@ -259,7 +233,7 @@ function snapshotLoanCaches(targetUserId) {
   return [
     [LOAN_ACTIVE_GIVEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_GIVEN_KEY(targetUserId)) || [])],
     [LOAN_ACTIVE_TAKEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_TAKEN_KEY(targetUserId)) || [])],
-    [LOAN_SETTLED_KEY(targetUserId),      cloneCacheData(queryClient.getQueryData(LOAN_SETTLED_KEY(targetUserId)) || [])],
+    [LOAN_SETTLED_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_SETTLED_KEY(targetUserId)) || [])],
   ]
 }
 
@@ -333,7 +307,7 @@ export async function addLoanMutation(payload) {
   const snapshot = snapshotLoanCaches(targetUserId)
   suppress('loans')
   suppress('transactions')
-  const optimisticId  = `optimistic-loan-${Date.now()}`
+  const optimisticId = `optimistic-loan-${Date.now()}`
   const optimisticTxnId = `optimistic-txn-disbursement-${Date.now()}`
   const nowIso = new Date().toISOString()
   const today = todayStr()
@@ -415,9 +389,9 @@ export async function addLoanMutation(payload) {
       entityType: 'loan',
       entityId: created.id,
       metadata: {
-        direction:      created.direction,
-        counterparty:  created.counterparty,
-        amount:         created.amount,
+        direction: created.direction,
+        counterparty: created.counterparty,
+        amount: created.amount,
         transaction_id: realTxnId || null,
       },
     })

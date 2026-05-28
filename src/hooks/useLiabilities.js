@@ -18,7 +18,7 @@ import { hapticSuccess } from '../lib/haptics'
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth'], ['transactions']]
 
 const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending', targetUserId]
-const LIABILITY_PAID_QUERY_KEY    = (targetUserId) => ['liabilities', 'paid', targetUserId]
+const LIABILITY_PAID_QUERY_KEY = (targetUserId) => ['liabilities', 'paid', targetUserId]
 const LIABILITY_COLUMNS =
   'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode'
 export const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id, payment_mode'
@@ -54,31 +54,31 @@ async function fetchLiabilitiesByPaid(paidValue, targetUserId) {
 
 export function useLiabilities({ includePaid = true, enabled = true } = {}) {
   const targetUserId = useActiveWallet()
-  
+
   const [pendingQuery, paidQuery] = useQueries({
     queries: [
       {
         queryKey: LIABILITY_PENDING_QUERY_KEY(targetUserId),
-        queryFn:  () => fetchLiabilitiesByPaid(false, targetUserId),
+        queryFn: () => fetchLiabilitiesByPaid(false, targetUserId),
         enabled: enabled && !!targetUserId,
         placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY(targetUserId),
-        queryFn:  () => fetchLiabilitiesByPaid(true, targetUserId),
-        enabled:  enabled && includePaid && !!targetUserId,
+        queryFn: () => fetchLiabilitiesByPaid(true, targetUserId),
+        enabled: enabled && includePaid && !!targetUserId,
         placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
       },
     ],
   })
 
   return {
-    pending: pendingQuery.data  || [],
-    paid:    paidQuery.data || [],
+    pending: pendingQuery.data || [],
+    paid: paidQuery.data || [],
     loading: pendingQuery.isLoading || (includePaid && paidQuery.isLoading),
     pendingLoading: pendingQuery.isLoading,
     paidLoading: includePaid ? paidQuery.isLoading : false,
-    error:   pendingQuery.error  || (includePaid && paidQuery.error) || null,
+    error: pendingQuery.error || (includePaid && paidQuery.error) || null,
   }
 }
 
@@ -129,7 +129,7 @@ export function useLiabilitiesByMonth(year, month, options = {}) {
 
 export async function addLiability(payload) {
   const userId = getActiveWalletUserId()
-  
+
   // 1. Strict Server Write
   const { data, error } = await supabase
     .from('liabilities')
@@ -165,7 +165,7 @@ export async function markPaid(liability) {
   const { data: result, error: rpcError } = await supabase
     .rpc('mark_liability_paid', {
       p_liability_id: liability.id,
-      p_user_id:      userId,
+      p_user_id: userId,
     })
 
   if (rpcError) throw rpcError
@@ -214,44 +214,18 @@ export async function updateLiability(id, updates) {
   return data
 }
 
-export async function deleteLiability(id, cachedBill = null) {
-  const userId = getActiveWalletUserId()
-  
-  const { error: txnError } = await supabase
-    .from('transactions')
-    .delete()
-    .eq('linked_bill_id', id)
-    .eq('user_id', userId)
-
-  if (txnError) throw txnError
-
-  const { error } = await supabase
-    .from('liabilities')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId)
-
+export async function deleteLiability(id, _cachedBill = null) {
+  // Migration 004: a single SECURITY DEFINER RPC now does
+  //   (a) the owner check,
+  //   (b) the liability DELETE (which cascades to its transactions via the
+  //       existing transactions.linked_bill_id ON DELETE CASCADE FK), and
+  //   (c) the audit-log write (via the trigger on `liabilities`).
+  // The previous two-step client delete could leave the liability behind
+  // if the second statement failed after the first succeeded; the RPC
+  // either commits both or neither.
+  const { data, error } = await supabase.rpc('delete_liability_with_txns', { p_id: id })
   if (error) throw error
-
-  runInBackground(
-    logFinancialEvent({
-      userId,
-      action: FINANCIAL_EVENT_ACTIONS.BILL_DELETE,
-      entityType: 'liability',
-      entityId: id,
-      metadata: {
-        description: cachedBill?.description,
-        amount: cachedBill?.amount,
-        due_date: cachedBill?.due_date,
-        paid: cachedBill?.paid,
-        is_recurring: cachedBill?.is_recurring,
-        recurrence: cachedBill?.recurrence,
-      },
-    }),
-    'liabilities delete audit'
-  )
-
-  return true;
+  return data === true
 }
 
 function sortLiabilitiesByDueDateAsc(rows) {

@@ -49,26 +49,21 @@ export async function fetchLinkedProfiles(userId) {
 
 /**
  * Removes the linkage between the current user and a target partner.
+ *
+ * Migration 004: this now calls a SECURITY DEFINER RPC that deletes both
+ * invite directions in a single SQL statement (inside a single Postgres
+ * transaction). The previous implementation issued TWO separate DELETEs
+ * — if the second one failed (network, RLS, anything) we were left
+ * half-unlinked: one direction gone, the other still active.
+ *
+ * `currentUserId` is intentionally ignored — auth.uid() on the server is
+ * authoritative. The parameter is kept in the signature for backward
+ * compatibility with existing call sites.
  */
 export async function unlinkPartner(currentUserId, targetUserId) {
   if (!currentUserId || !targetUserId) throw new Error('Both currentUserId and targetUserId are required.')
 
-  // Delete where I created and they used
-  const { error: err1 } = await supabase
-    .from('invites')
-    .delete()
-    .eq('created_by', currentUserId)
-    .eq('used_by', targetUserId)
-
-  // Delete where they created and I used
-  const { error: err2 } = await supabase
-    .from('invites')
-    .delete()
-    .eq('created_by', targetUserId)
-    .eq('used_by', currentUserId)
-
-  if (err1) throw err1
-  if (err2) throw err2
-
+  const { error } = await supabase.rpc('unlink_partner_atomic', { p_partner_id: targetUserId })
+  if (error) throw error
   return true
 }
