@@ -1,5 +1,4 @@
 import { forwardRef, useCallback } from 'react'
-import { hapticTap } from '../../lib/haptics'
 import '@material/web/button/filled-button.js'
 import '@material/web/button/outlined-button.js'
 import '@material/web/button/text-button.js'
@@ -34,7 +33,7 @@ const Button = forwardRef(function Button(
 
   const handleClick = useCallback((e) => {
     if (isDisabled) return
-    hapticTap()
+    import('../../lib/haptics').then(m => m.hapticTap())
     if (onClick) onClick(e)
   }, [isDisabled, onClick])
 

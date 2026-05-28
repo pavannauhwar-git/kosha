@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { hapticTap } from '../../lib/haptics'
 import SwipeableDrawer from '@mui/material/SwipeableDrawer'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
@@ -18,7 +17,9 @@ export default function BottomSheet({
   className = '',
 }) {
   useEffect(() => {
-    if (open) hapticTap()
+    if (open) {
+      import('../../lib/haptics').then((m) => m.hapticTap())
+    }
   }, [open])
 
   useEffect(() => {
