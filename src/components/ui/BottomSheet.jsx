@@ -4,6 +4,7 @@ import SwipeableDrawer from '@mui/material/SwipeableDrawer'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
+import { useBackButtonClose } from '../../hooks/useBackButtonClose'
 
 /**
  * BottomSheet — wraps MUI SwipeableDrawer to provide a swipe-dismissable bottom sheet
@@ -20,6 +21,8 @@ export default function BottomSheet({
   useEffect(() => {
     if (open) hapticTap()
   }, [open])
+
+  useBackButtonClose(open, onClose)
 
   useEffect(() => {
     function handleCloseAll() {

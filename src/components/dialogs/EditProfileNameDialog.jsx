@@ -4,6 +4,7 @@ import { X } from '@phosphor-icons/react'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
+import { useBackButtonClose } from '../../hooks/useBackButtonClose'
 
 export default function EditProfileNameDialog({ open, onClose }) {
   const { profile, updateDisplayName } = useAuth()
@@ -11,6 +12,8 @@ export default function EditProfileNameDialog({ open, onClose }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const inputRef = useRef(null)
+
+  useBackButtonClose(open, onClose)
 
   // Sync input with current profile name whenever dialog opens
   useEffect(() => {

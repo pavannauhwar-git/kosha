@@ -1,8 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, User } from 'lucide-react'
 import SecureAvatar from '../ui/SecureAvatar'
+import { useBackButtonClose } from '../../hooks/useBackButtonClose'
 
 export default function ViewProfilePhotoDialog({ open, onClose, avatarUrl, displayName, initial }) {
+  useBackButtonClose(open, onClose)
+
   return (
     <AnimatePresence>
       {open && (
