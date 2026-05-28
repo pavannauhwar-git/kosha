@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { queryClient } from '../lib/queryClient'
-import { captureError } from '../lib/errorReporting'
 import { getAuthUserId } from '../lib/authStore'
 import { C } from '../lib/colors'
 import { saveTransactionMutation } from '../hooks/useTransactions'
@@ -425,7 +424,6 @@ export default function Onboarding() {
       // evaluates the new profile state.
       setTimeout(() => navigate(hasPendingSplitInvite ? '/splitwise' : '/', { replace: true }), 0)
     } catch (e) {
-      captureError(e, { context: 'onboarding.finish' })
       console.error('[Kosha] Onboarding finish failed', e)
       setFinishError(e.message || 'Could not save profile. Please try again.')
       setSaving(false)

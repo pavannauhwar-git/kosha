@@ -6,7 +6,6 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { previewSplitGroupInviteMutation, consumeSplitGroupInviteMutation } from '../hooks/useSplitwise'
 import { consumeInviteToken } from '../lib/invites'
-import { captureError } from '../lib/errorReporting'
 import KoshaLogo from '../components/brand/KoshaLogo'
 import Button from '../components/ui/Button'
 import { createFadeUp, createStagger } from '../lib/animations'
@@ -106,7 +105,6 @@ export default function InviteLanding() {
       }
       setStatus('preview')
     } catch (e) {
-      captureError(e, { context: 'inviteLanding.preview' })
       console.error('Invite preview failed', e)
       setStatus('error')
       const msg = e.message || ''

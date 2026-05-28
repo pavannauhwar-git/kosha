@@ -46,7 +46,6 @@ import { downloadCsv, toCsv } from '../lib/csv'
 import { shareLink } from '../lib/share'
 import useWindowedList from '../hooks/useWindowedList'
 import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
-import { captureError } from '../lib/errorReporting'
 
 const BANNERS = [
   { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.png' },
@@ -258,7 +257,6 @@ export default function Splitwise() {
       try {
         await updateSplitGroupBannerMutation(activeGroupId, id)
       } catch (error) {
-        captureError(error, { context: 'splitwise.changeBanner' })
         console.error('Could not sync banner to database', error)
       }
     }

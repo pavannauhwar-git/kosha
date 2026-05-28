@@ -29,7 +29,6 @@ import { queryClient } from '../lib/queryClient'
 import { CHANGELOG } from '../lib/changelog'
 import { writeLocalStorage } from '../lib/safeStorage'
 import { isValidImageMagicBytes } from '../lib/bugReportUtils'
-import { captureError } from '../lib/errorReporting'
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
@@ -799,7 +798,6 @@ export default function Settings() {
                     url: window.location.origin
                   })
                 } catch (e) {
-                  captureError(e, { context: 'settings.shareApp' })
                   console.error('Share failed', e)
                 }
               }}
