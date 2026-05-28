@@ -7,7 +7,7 @@ import { withOptimisticGuard } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { hapticSuccess } from '../lib/haptics'
 
-const budgetQueryKey = (userId) => ['categoryBudgets', userId]
+export const budgetQueryKey = (userId) => ['categoryBudgets', userId]
 const BUDGET_COLUMNS = 'id, category, monthly_limit, created_at'
 
 export function useBudgets({ enabled = true } = {}) {

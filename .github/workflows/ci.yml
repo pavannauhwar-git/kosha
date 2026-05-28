@@ -7,22 +7,66 @@ on:
       - master
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - name: Install dependencies
         run: npm ci
+      - name: Lint
+        run: npm run lint
 
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run offline tests
+        run: npm run test:no-network
+
+  version-changelog-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check version in changelog
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if ! grep -q "version: '$VERSION'" src/lib/changelog.js; then
+            echo "Version $VERSION not found in src/lib/changelog.js"
+            exit 1
+          fi
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
       - name: Build
         run: npm run build
 
@@ -37,16 +81,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
       - name: Check readiness secret availability
         id: readiness-secrets
         run: |
@@ -57,12 +98,16 @@ jobs:
           [[ -z "$E2E_SESSION_PASSWORD" ]] && missing=1
 
           if [[ "$missing" -eq 1 ]]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Deploy readiness checks skipped because required secrets are not configured."
+            if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "Deploy readiness checks skipped on fork because required secrets are not configured."
+            else
+              echo "Required secrets are missing on a same-repo push/PR. Failing."
+              exit 1
+            fi
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
-
       - name: 'Runtime test: deploy readiness'
         if: ${{ steps.readiness-secrets.outputs.skip != 'true' }}
         run: npm run test:deploy-readiness
@@ -83,16 +128,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
       - name: Check runtime secret availability
         id: runtime-secrets
         run: |
@@ -107,20 +149,22 @@ jobs:
           [[ -z "$E2E_SESSION_PASSWORD" ]] && missing=1
 
           if [[ "$missing" -eq 1 ]]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Runtime verification skipped because required secrets are not configured."
+            if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "Runtime verification skipped on fork because required secrets are not configured."
+            else
+              echo "Required secrets are missing on a same-repo push/PR. Failing."
+              exit 1
+            fi
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
-
       - name: 'Runtime test: join flow'
         if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
         run: npm run test:join-flow
-
       - name: 'Runtime test: liabilities realtime'
         if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
         run: npm run test:liabilities-realtime
-
       - name: 'Runtime test: mutation stress'
         if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
         run: npm run test:mutation-stress

@@ -167,6 +167,8 @@ async function main() {
     // Expected for readiness probe: invalid liability id or business guard error.
     const msg = String(error.message || '')
     if (!msg) throw error
+    if (msg.includes('liability already paid')) return
+    throw error
   }))
 
   checks.push(await runCheck('generate_recurring_transactions RPC available', async () => {

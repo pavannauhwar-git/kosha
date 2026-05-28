@@ -78,8 +78,8 @@ async function main() {
 
     if (upsertReviewError) {
       if (isMissingReconciliationTableError(upsertReviewError)) {
-        console.log('SKIP: reconciliation_reviews not available in this environment yet.')
-        return
+        console.error('SKIP: reconciliation_reviews not available in this environment yet.')
+        return process.exit(process.env.CI ? 1 : 0)
       }
       throw new Error(`Review upsert failed: ${upsertReviewError.message}`)
     }

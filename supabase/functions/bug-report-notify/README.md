@@ -7,6 +7,7 @@ Supabase Edge Function used by Phase 2 bug reporting to send notifications when 
 Set these in your Supabase project before deploying:
 
 - `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `BUG_REPORT_WEBHOOK_URL` (Slack or Discord webhook URL)
 

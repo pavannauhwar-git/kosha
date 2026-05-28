@@ -1,4 +1,4 @@
-import { getPreferredCurrency, getPreferredLocale } from './locale'
+import { getPreferredCurrency, getPreferredLocale } from './locale.js'
 
 const _locale = getPreferredLocale()
 export { round2 } from './paise.js'

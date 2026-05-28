@@ -1,4 +1,4 @@
-import { readLocalJson, readLocalStorage, writeLocalJson, writeLocalStorage } from './safeStorage'
+import { readLocalJson, readLocalStorage, writeLocalJson, writeLocalStorage } from './safeStorage.js'
 
 const REMINDER_PREFS_KEY = 'kosha:reminder-prefs-v1'
 const REMINDER_SENT_PREFIX = 'kosha:reminder-sent:'

@@ -1,4 +1,4 @@
-import { captureError } from './errorReporting'
+import { captureError } from './errorReporting.js'
 
 const STORE_KEY = 'kosha:runtime-monitor-v1'
 const MAX_EVENTS = 40

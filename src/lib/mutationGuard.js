@@ -25,7 +25,7 @@
  * firing 2+ seconds after a local mutation is NOT suppressed.
  */
 
-import { getActiveWalletUserId } from './walletStore'
+import { getActiveWalletUserId } from './walletStore.js'
 
 const SUPPRESS_TTL_MS = 2000
 
@@ -72,7 +72,7 @@ const _inFlight = new Set()
  * @param {Function} fn - The mutation callback, receives the tempId string.
  * @returns {Promise<any>}
  */
-import { queryClient } from './queryClient'
+import { queryClient } from './queryClient.js'
 
 export async function withOptimisticGuard(queryKey, fn) {
   const keyStr = JSON.stringify(queryKey)

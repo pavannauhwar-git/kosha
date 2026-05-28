@@ -1,7 +1,7 @@
-import { queryClient } from './queryClient'
-import { getAuthUserId, isAuthReady } from './authStore'
+import { queryClient } from './queryClient.js'
+import { getAuthUserId, isAuthReady } from './authStore.js'
 import { useQuery } from '@tanstack/react-query'
-import { hapticSelection, hapticWarning } from './haptics'
+import { hapticSelection, hapticWarning } from './haptics.js'
 
 const ACTIVE_WALLET_KEY = ['kosha-active-wallet']
 

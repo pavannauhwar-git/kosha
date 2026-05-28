@@ -16,9 +16,9 @@ import { hapticSuccess } from '../lib/haptics'
 
 export const LOAN_INVALIDATION_KEYS = [['loans']]
 
-const LOAN_ACTIVE_GIVEN_KEY = (targetUserId) => ['loans', 'active', 'given', targetUserId]
-const LOAN_ACTIVE_TAKEN_KEY = (targetUserId) => ['loans', 'active', 'taken', targetUserId]
-const LOAN_SETTLED_KEY = (targetUserId) => ['loans', 'settled', targetUserId]
+export const LOAN_ACTIVE_GIVEN_KEY = (targetUserId) => ['loans', 'active', 'given', targetUserId]
+export const LOAN_ACTIVE_TAKEN_KEY = (targetUserId) => ['loans', 'active', 'taken', targetUserId]
+export const LOAN_SETTLED_KEY = (targetUserId) => ['loans', 'settled', targetUserId]
 const LOAN_COLUMNS =
   'id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled, created_at'
 

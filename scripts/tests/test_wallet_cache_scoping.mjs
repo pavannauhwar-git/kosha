@@ -87,22 +87,40 @@ function testInvalidationCoverage() {
 const USER_A = 'user-aaa-111'
 const USER_B = 'user-bbb-222'
 
+import { budgetQueryKey } from '../../src/hooks/useBudgets.js'
+import { USER_CATEGORIES_QUERY_KEY } from '../../src/hooks/useUserCategories.js'
+import { reviewListKey } from '../../src/hooks/useReconciliationReviews.js'
+import {
+  txnListKey,
+  txnCountKey,
+  transactionSignalAggregatesKey,
+  yearDailyExpenseTotalsKey,
+  yearYoyKey
+} from '../../src/hooks/useTransactions.js'
+import {
+  LOAN_ACTIVE_GIVEN_KEY,
+  LOAN_ACTIVE_TAKEN_KEY,
+  LOAN_SETTLED_KEY
+} from '../../src/hooks/useLoans.js'
+
 const keyFactories = {
-  categoryBudgets: (uid) => ['categoryBudgets', uid],
-  userCategories:  (uid) => ['userCategories', uid],
-  reconciliationReviews: (uid) => ['reconciliationReviews', uid],
-  financialEvents: (uid, limit = 10) => ['financialEvents', limit, uid],
-  transactionSignalAggregates: (uid, filters = {}) => ['transactionSignalAggregates', filters, uid],
-  yearDailyExpenseTotals: (uid, year = 2025) => ['yearDailyExpenseTotals', year, uid],
-  txnCount: (uid, filters = {}) => ['txnCount', filters, uid],
-  yearYoy: (uid, year = 2025) => ['yearYoy', year, uid],
-  loanActiveGiven: (uid) => ['loans', 'active', 'given', uid],
-  loanActiveTaken: (uid) => ['loans', 'active', 'taken', uid],
-  loanSettled: (uid) => ['loans', 'settled', uid],
+  categoryBudgets: budgetQueryKey,
+  userCategories: USER_CATEGORIES_QUERY_KEY,
+  reconciliationReviews: reviewListKey,
+  transactionSignalAggregates: (uid) => transactionSignalAggregatesKey({}, uid),
+  yearDailyExpenseTotals: (uid) => yearDailyExpenseTotalsKey(2025, uid),
+  txnCount: (uid) => txnCountKey({}, uid),
+  yearYoy: (uid) => yearYoyKey(2025, uid),
+  loanActiveGiven: LOAN_ACTIVE_GIVEN_KEY,
+  loanActiveTaken: LOAN_ACTIVE_TAKEN_KEY,
+  loanSettled: LOAN_SETTLED_KEY,
 }
 
 function testKeysDifferByWallet() {
   for (const [name, factory] of Object.entries(keyFactories)) {
+    if (typeof factory !== 'function') {
+      console.log('UNDEFINED FACTORY:', name, factory)
+    }
     const keyA = JSON.stringify(factory(USER_A))
     const keyB = JSON.stringify(factory(USER_B))
     assert.notStrictEqual(
@@ -122,7 +140,6 @@ function testKeysPrefixMatchParent() {
     keyFactories.categoryBudgets(USER_A),
     keyFactories.userCategories(USER_A),
     keyFactories.reconciliationReviews(USER_A),
-    keyFactories.financialEvents(USER_A, 10),
     keyFactories.transactionSignalAggregates(USER_A),
     keyFactories.yearDailyExpenseTotals(USER_A),
     keyFactories.txnCount(USER_A),

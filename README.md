@@ -69,6 +69,8 @@ Key design principles:
 ```
 ├── index.html                  # App entry point
 ├── package.json
+├── eslint.config.js            # ESLint flat config
+├── .nvmrc                      # Node version constraint
 ├── vite.config.js              # Vite + PWA + chunk splitting config
 ├── tailwind.config.js
 ├── vercel.json                 # SPA rewrite rules
@@ -97,7 +99,6 @@ Key design principles:
 │   ├── hooks/
 │   │   ├── useAuth.js          # Auth actions (sign in/out/refresh)
 │   │   ├── useBudgets.js       # Budget queries
-│   │   ├── useFinancialEvents.js  # Audit event log
 │   │   ├── useLiabilities.js   # Bills/liabilities CRUD
 │   │   ├── useLoans.js         # Loans CRUD + payments
 │   │   ├── useReconciliationReviews.js
@@ -206,6 +207,8 @@ All variables go in `.env.local` (git-ignored). See `.env.local.example` for the
 ```env
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<supabase-anon-key>
+SENTRY_DSN=<sentry-dsn>
+SENTRY_AUTH_TOKEN=<sentry-auth-token>
 ```
 
 ### Required — E2E test scripts
@@ -264,6 +267,7 @@ npm run preview
 | `npm run release:candidate-check` | Full release verification suite (PASS/FAIL) |
 | `npm run test:deploy-readiness` | Validate env, tables, columns, RPCs |
 | `npm run test:production-assets` | Verify built asset integrity |
+| `npm run lint` | Run ESLint strict checks |
 
 ### E2E tests
 
@@ -279,6 +283,9 @@ npm run preview
 | `npm run test:reconciliation-flow` | Reconciliation persist + alias-reset paths |
 | `npm run test:reconciliation-metrics` | Reconciliation telemetry counters |
 | `npm run test:reconciliation-schema-live` | Live schema validation for reconciliation tables |
+| `npm run test:reconciliation-insights` | Monthly insights generation telemetry |
+| `npm run test:wallet-cache-scoping` | Cache scoping and invalidation predicates |
+| `npm run test:rls-partner-isolation` | RLS isolation rules between partners |
 
 ## Testing
 

@@ -13,6 +13,9 @@ const CHECKS = [
   { label: 'Reconciliation metrics', command: ['npm', ['run', 'test:reconciliation-metrics']] },
   { label: 'Deploy readiness', command: ['npm', ['run', 'test:deploy-readiness']] },
   { label: 'Reconciliation schema live', command: ['npm', ['run', 'test:reconciliation-schema-live']] },
+  { label: 'Reconciliation insights', command: ['npm', ['run', 'test:reconciliation-insights']] },
+  { label: 'Wallet cache scoping', command: ['npm', ['run', 'test:wallet-cache-scoping']] },
+  { label: 'RLS partner isolation', command: ['npm', ['run', 'test:rls-partner-isolation']] },
   { label: 'Join flow', command: ['npm', ['run', 'test:join-flow']], retries: 2 },
   { label: 'Liabilities realtime', command: ['npm', ['run', 'test:liabilities-realtime']], retries: 3 },
   { label: 'Mutation stress', command: ['npm', ['run', 'test:mutation-stress']] },
@@ -53,7 +56,7 @@ async function main() {
   for (const check of CHECKS) {
     console.log(`=== ${check.label} ===`)
     const [cmd, args] = check.command
-    const maxAttempts = Math.max(1, Number(check.retries || 1))
+    const maxAttempts = Math.max(1, Number(check.retries ?? 1))
     let result = null
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {

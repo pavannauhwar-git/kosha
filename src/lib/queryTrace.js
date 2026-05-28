@@ -1,4 +1,4 @@
-import { readLocalStorage } from './safeStorage'
+import { readLocalStorage } from './safeStorage.js'
 
 function isQueryTraceEnabled() {
   if (!import.meta.env.DEV) return false

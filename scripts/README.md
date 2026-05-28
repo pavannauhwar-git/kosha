@@ -22,14 +22,16 @@ This folder contains project scripts used for development, verification, release
 	- `test_reconciliation_metrics.mjs`
 	- `test_reconciliation_schema_live.mjs`
 	- `test_statement_matching.mjs`
+	- `check_publication_v2.mjs`
+	- `test_wallet_cache_scoping.mjs`
+	- `test_reconciliation_insights.mjs`
+	- `test_rls_partner_isolation.mjs`
+	- `test_splitwise_math.mjs`
+	- `test_splitwise_mutation_paths.mjs`
+	- `test_splitwise_viewer_invite_flow.mjs`
 
 ## QA notes
 
 - Browser-extension console noise (for example Grammarly message-channel errors) should be excluded from app QA decisions.
 - For clean QA runs: use Incognito with extensions disabled.
 - After deploy: unregister service worker once and hard refresh before validating mutation behavior.
-
-## Archived scripts
-
-Legacy one-off patch/fix scripts are in `scripts/archive/legacy-patches/`.
-They are retained for history/reference and are not part of normal app runtime.

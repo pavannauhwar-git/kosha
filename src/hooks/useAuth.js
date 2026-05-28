@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase } from '../lib/supabase'
-import { queryClient } from '../lib/queryClient'
-import { setAuthUser, clearAuthUser, getAuthUserId } from '../lib/authStore'
-import { setErrorReportingUser, clearErrorReportingUser } from '../lib/errorReporting'
-import { initActiveWallet } from '../lib/walletStore'
-import { fetchLinkedUserIds, fetchLinkedProfiles } from '../lib/walletSync'
-import { purgeUserScopedKeys, purgeServiceWorkerCaches } from '../lib/safeStorage'
+import { supabase } from '../lib/supabase.js'
+import { queryClient } from '../lib/queryClient.js'
+import { setAuthUser, clearAuthUser, getAuthUserId } from '../lib/authStore.js'
+import { setErrorReportingUser, clearErrorReportingUser } from '../lib/errorReporting.js'
+import { initActiveWallet } from '../lib/walletStore.js'
+import { fetchLinkedUserIds, fetchLinkedProfiles } from '../lib/walletSync.js'
+import { purgeUserScopedKeys, purgeServiceWorkerCaches } from '../lib/safeStorage.js'
 
 const USER_PROFILE_QUERY_KEY = ['user-profile']
 const PROFILE_COLUMNS = 'id, display_name, avatar_url, onboarded'

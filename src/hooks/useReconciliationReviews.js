@@ -25,11 +25,13 @@ function isMissingTableError(error) {
   )
 }
 
+export const reviewListKey = (targetUserId) => ['reconciliationReviews', targetUserId]
+
 export function useReconciliationReviews(options = {}) {
   const { enabled = true } = options
   const targetUserId = useActiveWallet()
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['reconciliationReviews', targetUserId],
+    queryKey: reviewListKey(targetUserId),
     enabled: enabled && !!targetUserId,
     queryFn: async ({ signal }) => {
       const userId = targetUserId

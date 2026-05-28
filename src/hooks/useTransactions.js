@@ -10,8 +10,11 @@ import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 import { CATEGORIES, getCategoriesForType } from '../lib/categories'
 // ── Query key factories ───────────────────────────────────────────────────
-const txnListKey  = (filters, targetUserId) => ['transactions', filters, targetUserId]
-const txnCountKey = (filters, targetUserId) => ['txnCount', filters, targetUserId]
+export const txnListKey  = (filters, targetUserId) => ['transactions', filters, targetUserId]
+export const txnCountKey = (filters, targetUserId) => ['txnCount', filters, targetUserId]
+export const transactionSignalAggregatesKey = (filters, targetUserId) => ['transactionSignalAggregates', filters, targetUserId]
+export const yearDailyExpenseTotalsKey = (year, targetUserId) => ['yearDailyExpenseTotals', year, targetUserId]
+export const yearYoyKey = (year, targetUserId) => ['yearYoy', year, targetUserId]
 
 /** Shared parser for get_month_summary RPC rows — used by hook and prefetch */
 export function parseMonthSummaryRows(rows) {

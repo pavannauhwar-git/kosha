@@ -1,6 +1,6 @@
-import { getActiveWalletUserId } from './walletStore'
+import { getActiveWalletUserId } from './walletStore.js'
 import { normalizeText } from './bugReportUtils.js'
-import { readLocalJson, writeLocalJson } from './safeStorage'
+import { readLocalJson, writeLocalJson } from './safeStorage.js'
 
 const RECON_REVIEWED_KEY_PREFIX = 'kosha:reconciliation-reviewed-v1:'
 

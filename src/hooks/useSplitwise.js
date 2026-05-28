@@ -1,13 +1,13 @@
 import { useMemo, useEffect } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
-import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
-import { getAuthUserId } from '../lib/authStore'
-import { useActiveWallet, getActiveWalletUserId } from '../lib/walletStore'
-import { suppress } from '../lib/mutationGuard'
-import { traceQuery } from '../lib/queryTrace'
-import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
-import { round2 } from '../lib/paise'
+import { supabase } from '../lib/supabase.js'
+import { queryClient, evictSwCacheEntries } from '../lib/queryClient.js'
+import { getAuthUserId } from '../lib/authStore.js'
+import { useActiveWallet, getActiveWalletUserId } from '../lib/walletStore.js'
+import { suppress } from '../lib/mutationGuard.js'
+import { traceQuery } from '../lib/queryTrace.js'
+import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog.js'
+import { round2 } from '../lib/paise.js'
 import {
   buildEqualSplits,
   buildExactSplits,
@@ -15,7 +15,7 @@ import {
   buildShareSplits,
   buildSimplifiedTransfers,
   computeMemberBalances,
-} from '../lib/splitwiseMath'
+} from '../lib/splitwiseMath.js'
 
 export {
   round2,

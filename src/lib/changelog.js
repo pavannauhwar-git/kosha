@@ -1,5 +1,15 @@
 export const CHANGELOG = [
   {
+    version: '3.0.1',
+    date: 'May 2026',
+    items: [
+      'Hardened CI/CD pipelines with parallel execution, secret validation checks, and comprehensive ESLint static analysis',
+      'Enhanced optimistic update stability via robust mutation guards, preventing UI race conditions during latency spikes',
+      'Optimized application bundle and module graph by purging orphaned React components and unused system hooks',
+      'Refined data caching architecture with strictly scoped query-key factories to prevent cross-wallet data pollution',
+    ],
+  },
+  {
     version: '3.0.0',
     date: 'May 2026',
     items: [

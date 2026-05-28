@@ -1,23 +1,23 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
-import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
-import { getAuthUserId } from '../lib/authStore';
-import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
-import { suppress, withOptimisticGuard } from '../lib/mutationGuard'
-import { traceQuery } from '../lib/queryTrace'
-import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
+import { supabase } from '../lib/supabase.js'
+import { queryClient, evictSwCacheEntries } from '../lib/queryClient.js'
+import { getAuthUserId } from '../lib/authStore.js';
+import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore.js'
+import { suppress, withOptimisticGuard } from '../lib/mutationGuard.js'
+import { traceQuery } from '../lib/queryTrace.js'
+import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog.js'
 import {
   invalidateCache as invalidateTransactionCache,
   optimisticallyUpsertTransactionInCache,
   optimisticallyDeleteTransactionsByBillId
-} from './useTransactions'
-import { todayStr } from '../lib/utils'
-import { hapticSuccess } from '../lib/haptics'
+} from './useTransactions.js'
+import { todayStr } from '../lib/utils.js'
+import { hapticSuccess } from '../lib/haptics.js'
 
 export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth'], ['transactions']]
 
-const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending', targetUserId]
-const LIABILITY_PAID_QUERY_KEY = (targetUserId) => ['liabilities', 'paid', targetUserId]
+export const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending', targetUserId]
+export const LIABILITY_PAID_QUERY_KEY = (targetUserId) => ['liabilities', 'paid', targetUserId]
 const LIABILITY_COLUMNS =
   'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode'
 export const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id, payment_mode'
