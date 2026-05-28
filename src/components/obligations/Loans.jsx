@@ -217,6 +217,7 @@ export default function Loans({
   })
   const [formErr, setFormErr] = useState('')
   const [addSaving, setAddSaving] = useState(false)
+  const isSubmitting = useRef(false)
 
   // ── Payment form state ──────────────────────────────────────────────
   const [payAmount, setPayAmount] = useState('')
@@ -598,6 +599,7 @@ export default function Loans({
     setShowAdd(false)
     setEditLoan(null)
     resetForm()
+    isSubmitting.current = false
   }, [resetForm])
 
   const dismissAddLoanSheet = useCallback(() => {
@@ -606,9 +608,24 @@ export default function Loans({
   }, [addSaving, closeAddLoanSheet])
 
   async function handleAdd() {
-    if (!form.counterparty.trim()) { setFormErr('Enter a name'); return }
-    if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
-    if (!form.loan_date) { setFormErr('Select a loan date'); return }
+    if (addSaving || isSubmitting.current) return
+    isSubmitting.current = true
+
+    if (!form.counterparty.trim()) {
+      setFormErr('Enter a name')
+      isSubmitting.current = false
+      return
+    }
+    if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) {
+      setFormErr('Enter a valid positive amount')
+      isSubmitting.current = false
+      return
+    }
+    if (!form.loan_date) {
+      setFormErr('Select a loan date')
+      isSubmitting.current = false
+      return
+    }
 
     const loanData = {
       direction: form.direction,
@@ -628,9 +645,11 @@ export default function Loans({
         await updateLoanMutation(editLoan.id, loanData)
         setTab(loanData.direction)
         setAddSaving(false)
+        isSubmitting.current = false
         closeAddLoanSheet()
       } catch (e) {
         setAddSaving(false)
+        isSubmitting.current = false
         setErrToast(e.message || 'Could not update loan.')
       }
       return
@@ -640,9 +659,11 @@ export default function Loans({
       await addLoanMutation({ ...loanData, amount_settled: 0, settled: false })
       setTab(loanData.direction)
       setAddSaving(false)
+      isSubmitting.current = false
       closeAddLoanSheet()
     } catch (e) {
       setAddSaving(false)
+      isSubmitting.current = false
       setErrToast(e.message || 'Could not add loan.')
     }
   }
