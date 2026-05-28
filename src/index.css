@@ -350,20 +350,37 @@ body {
 }
 
 /* ── Focus Ring ─────────────────────────────────────────────────────── */
-:focus-visible {
-  outline: none;
-  box-shadow: var(--ds-focus-ring);
-}
-
+/* Premium focus rings — visible only on keyboard navigation, not on touch. */
 button:focus-visible,
 a:focus-visible,
+[role="button"]:focus-visible,
 input:focus-visible,
-select:focus-visible,
 textarea:focus-visible,
-[role="button"]:focus-visible {
-  outline: none;
-  box-shadow: var(--ds-focus-ring);
+select:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 2px;
   border-radius: inherit;
+}
+
+/* Premium Touch Targets — WCAG 2.2 AA / Material 48px tap target compliance without visual style changes */
+button,
+.close-btn,
+[role="button"] {
+  position: relative;
+}
+
+button::after,
+.close-btn::after,
+[role="button"]::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  min-width: 100%;
+  min-height: 100%;
 }
 
 /* ── Scrollbar styling ──────────────────────────────────────────────── */
