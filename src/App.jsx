@@ -1164,34 +1164,49 @@ function CustomCategoryLoader() {
  * module cache → zero Suspense skeleton flash on navigation.
  */
 function EagerChunkPreloader() {
+  const { loading } = useAuth()
+
   useEffect(() => {
-    const loaders = Object.values(ROUTE_PRELOADERS)
-    let handle = null
+    if (loading) return
 
-    const run = () => {
-      // Fire all imports sequentially with tiny gaps so we don't monopolise
-      // the network on initial load. Each import() is a no-op if the chunk
-      // is already cached.
-      loaders.forEach((load, i) => {
-        setTimeout(() => void load().catch(() => { }), i * 80)
-      })
-    }
+    const navBar = [
+      ROUTE_PRELOADERS['/'],
+      ROUTE_PRELOADERS['/transactions'],
+      ROUTE_PRELOADERS['/monthly'],
+      ROUTE_PRELOADERS['/analytics'],
+      ROUTE_PRELOADERS['/obligations'],
+      ROUTE_PRELOADERS['/splitwise'],
+    ].filter(Boolean)
 
-    if (typeof requestIdleCallback !== 'undefined') {
-      handle = requestIdleCallback(run, { timeout: 4000 })
-    } else {
-      // Safari fallback
-      handle = setTimeout(run, 1500)
-    }
+    const secondary = [
+      ROUTE_PRELOADERS['/settings'],
+      ROUTE_PRELOADERS['/reconciliation'],
+      ROUTE_PRELOADERS['/guide'],
+      ROUTE_PRELOADERS['/about'],
+      ROUTE_PRELOADERS['/report-bug'],
+      ROUTE_PRELOADERS['/onboarding'],
+    ].filter(Boolean)
+
+    // Nav chunks — parallel, immediate.
+    Promise.allSettled(navBar.map((load) => load()))
+
+    // Secondary — when the browser is idle.
+    const schedule = typeof requestIdleCallback === 'function'
+      ? (cb) => requestIdleCallback(cb, { timeout: 6000 })
+      : (cb) => setTimeout(cb, 2000)
+
+    const handle = schedule(() => {
+      Promise.allSettled(secondary.map((load) => load()))
+    })
 
     return () => {
-      if (typeof requestIdleCallback !== 'undefined' && handle) {
+      if (typeof requestIdleCallback === 'function' && typeof handle === 'number') {
         cancelIdleCallback(handle)
-      } else {
+      } else if (handle) {
         clearTimeout(handle)
       }
     }
-  }, [])
+  }, [loading])
 
   return null
 }
