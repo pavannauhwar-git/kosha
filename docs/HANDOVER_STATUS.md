@@ -223,17 +223,17 @@ One entry per commit. Reviewer scans for `✗` and `PENDING-*` entries.
 
 ---
 
-## FIX-025 — Remove `fade-up-N` stagger below the Dashboard fold
+## FIX-025 — Remove `fade-up-N` stagger below the Dashboard fold (REVERTED)
 
-- **Commit:** fd9807a66e019256e09a9cc57e2982aa95e9ec34
+- **Commit:** fd9807a66e019256e09a9cc57e2982aa95e9ec34 (Reverted in commit `91f9f5d`)
 - **PR:** pending
 - **Files modified:** `src/pages/Dashboard.jsx`
 - **Lint pass:** ✓ (0 errors, 604 pre-existing warnings)
 - **Build pass:** ✓ (built successfully)
 - **Automated verify steps:** N/A
-- **Manual verify steps:** PENDING-DEVICE-VERIFICATION — Visual: Hard refresh Dashboard. Hero card/above fold fades in; everything below appears together. Profiler: scroll on Dashboard shows fewer composite layers.
-- **Discovered out of scope:** Nothing
-- **Notes:** Changed below-the-fold entrance animations from staggered translating springs (`card-spring-in fade-up-N`) to smooth, layout-safe, GPU-accelerated standard `fade-in` (opacity-only) transitions.
+- **Manual verify steps:** N/A (Reverted per user request to restore translating stagger motion below the fold)
+- **Discovered out of scope:** N/A
+- **Notes:** Reverted entirely per user request to restore translating spring animation classes (`card-spring-in fade-up-N`) below the fold on Dashboard. All elements once again slide up playfully in a staggered sequence.
 
 ---
 
@@ -293,17 +293,17 @@ One entry per commit. Reviewer scans for `✗` and `PENDING-*` entries.
 
 ---
 
-## FIX-041 — "Whole page reloaded" feel on tab switches
+## FIX-041 — "Whole page reloaded" feel on tab switches (REVERTED)
 
-- **Commit:** e8175cf40f74394d79ff2029928aa80bb592ea28
+- **Commit:** e8175cf40f74394d79ff2029928aa80bb592ea28 (Reverted in commit `3ed37fb`)
 - **PR:** pending
 - **Files modified:** `src/hooks/useFirstRouteVisit.js`, `src/pages/Dashboard.jsx`, `src/pages/Monthly.jsx`, `src/pages/Analytics.jsx`, `src/pages/Obligations.jsx`, `src/lib/safeStorage.js`
 - **Lint pass:** ✓ (0 errors, 604 pre-existing warnings)
 - **Build pass:** ✓ (built successfully)
 - **Automated verify steps:** N/A
-- **Manual verify steps:** PENDING-DEVICE-VERIFICATION — First time you open Dashboard/Monthly/Analytics/Obligations → greeting and hero/cards fade-up. Navigate to other tabs, come back → no fade-up, content is immediately in place. Sign out and back in → fade-ups re-fire (session was reset).
-- **Discovered out of scope:** `Splitwise.jsx` and `Transactions.jsx` have no `.fade-up` or other entrance animation classes, so they do not suffer from the revisit animation issue and did not require the hook.
-- **Notes:** Created `useFirstRouteVisit` hook to track whether a route has been visited in the current session via sessionStorage. Applied to conditionalize the `fade-up` class on the above-the-fold elements of Dashboard, Monthly, Analytics, and Obligations pages. Configured `purgeUserScopedKeys` in `safeStorage.js` to purge these visited session markers on user sign-out.
+- **Manual verify steps:** N/A (Reverted per user request to restore animations on every page navigation)
+- **Discovered out of scope:** N/A
+- **Notes:** Reverted entirely per user request to restore the playful entrance animations on every tab visit. The `useFirstRouteVisit` hook and all its conditional className wrappers have been removed, reverting back to regular animation classes.
 
 
 ---
