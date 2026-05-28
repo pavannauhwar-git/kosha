@@ -1,34 +1,6 @@
-import { QueryClient, MutationCache, QueryCache } from '@tanstack/react-query'
-import { captureError } from './errorReporting'
-
-const queryCache = new QueryCache({
-  onError: (error, query) => {
-    const status = error?.status || error?.code
-    // Auth failures are handled by AuthGuard redirect — don't spam Sentry.
-    if (status === 401 || status === 403) return
-    captureError(error, {
-      tags: {
-        source: 'react-query',
-        queryKey: JSON.stringify(query.queryKey).slice(0, 200),
-      },
-    })
-  },
-})
-
-const mutationCache = new MutationCache({
-  onError: (error, _vars, _ctx, mutation) => {
-    captureError(error, {
-      tags: {
-        source: 'react-query-mutation',
-        mutationKey: JSON.stringify(mutation.options.mutationKey || []).slice(0, 200),
-      },
-    })
-  },
-})
+import { QueryClient } from '@tanstack/react-query'
 
 export const queryClient = new QueryClient({
-  queryCache,
-  mutationCache,
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,
