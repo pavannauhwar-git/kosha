@@ -1,4 +1,11 @@
 import * as Sentry from '@sentry/react'
+import { useEffect } from 'react'
+import {
+  useLocation,
+  useNavigationType,
+  createRoutesFromChildren,
+  matchRoutes,
+} from 'react-router-dom'
 
 const DSN = import.meta.env.VITE_SENTRY_DSN
 
@@ -92,7 +99,13 @@ if (DSN) {
     environment: import.meta.env.MODE,            // 'development' | 'production'
     release: import.meta.env.VITE_APP_VERSION,    // optional — set in vite.config.js define block
     integrations: [
-      Sentry.browserTracingIntegration(),
+      Sentry.reactRouterV6BrowserTracingIntegration({
+        useEffect,
+        useLocation,
+        useNavigationType,
+        createRoutesFromChildren,
+        matchRoutes,
+      }),
       Sentry.replayIntegration({
         maskAllText: true,     // financial data — always mask
         blockAllMedia: true,
