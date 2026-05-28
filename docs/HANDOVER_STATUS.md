@@ -390,6 +390,22 @@ One entry per commit. Reviewer scans for `✗` and `PENDING-*` entries.
 - **Discovered out of scope:** Nothing
 - **Notes:** Replaced `Sentry.browserTracingIntegration()` with `Sentry.reactRouterV6BrowserTracingIntegration({ useEffect, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes })`. The five React Router hooks are imported from `react` and `react-router-dom` at the top of the file. `BrowserRouter` (Kosha's router) is compatible with this integration.
 
+---
+
+## FIX-055 — Service Worker cache for Supabase Storage (avatars)
+
+- **Commit:** 1fede2ef342f503efd93d32e3eff35c3354089a2
+- **PR:** pending
+- **Files modified:** `vite.config.js`
+- **Lint pass:** N/A (config file)
+- **Build pass:** ✓ (built in 37.84s)
+- **Automated verify steps:** N/A
+- **Manual verify steps:** PENDING-DEVICE-VERIFICATION — Cold-start the PWA → check DevTools → Application → Cache Storage → `supabase-storage` should populate after the first avatar paint. Reload → avatar appears in the *first* paint, no network request.
+- **Discovered out of scope:** Nothing
+- **Notes:** Added a new cache rule in Workbox configuration specifically for `https://*.supabase.co/storage/*` (CacheFirst strategy). A custom plugin was added to strip query parameters (`?token=...`) from the cache key, so signed URLs resolving to the same underlying avatar image hit the cache. Expiration is set to 1 hour to balance staleness with zero-network paints.
+
+
+
 
 
 
