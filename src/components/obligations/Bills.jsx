@@ -242,7 +242,7 @@ export default function Bills({
 
   const addBillSheetRef = useOverlayFocusTrap(showAdd, {
     onClose: dismissAddBillSheet,
-    initialFocusSelector: 'input[name="bill-description"]',
+    autoFocus: false,
   })
 
   const visiblePending = useMemo(() => pending.filter((bill) => !hiddenBillIds.has(bill.id)), [pending, hiddenBillIds])
