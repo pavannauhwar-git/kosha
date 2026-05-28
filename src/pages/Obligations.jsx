@@ -5,6 +5,7 @@ import PageHeaderPage from '../components/layout/PageHeaderPage'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { useLoans } from '../hooks/useLoans'
 import { fmt, daysUntil } from '../lib/utils'
+import { hapticTap } from '../lib/haptics'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
@@ -71,7 +72,7 @@ export default function Obligations() {
   const allEmpty = !isLoading && pending.length === 0 && given.length === 0 && taken.length === 0 && !hasHistory
 
   function go(path) {
-    import('../lib/haptics').then(m => m.hapticTap())
+    hapticTap()
     navigate(path)
   }
 

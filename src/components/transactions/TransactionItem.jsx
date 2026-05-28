@@ -8,6 +8,7 @@ import { fmt, amountClass, amountPrefix, fmtDate } from '../../lib/utils'
 import { getCategory, INVESTMENT_VEHICLES } from '../../lib/categories'
 import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
+import { hapticHeavy, hapticTap, hapticSuccess } from '../../lib/haptics'
 
 const PEEK_X = 140
 const SWIPE_OPEN_THRESHOLD = PEEK_X * 0.42
@@ -265,7 +266,7 @@ function TransactionItem({
   const isExternalLinked = isSplitwiseLinked || isBillLinked || isLoanLinked
 
   const snapToPeek = useCallback(() => {
-    import('../../lib/haptics').then(m => m.hapticHeavy())
+    hapticHeavy()
     animate(x, -PEEK_X, { type: 'spring', stiffness: 600, damping: 45 })
   }, [x])
 
@@ -326,7 +327,7 @@ function TransactionItem({
     setDeleting(true)
     setHidden(true)
     animate(x, 0, { duration: 0.2 })
-    import('../../lib/haptics').then(m => m.hapticTap())
+    hapticTap()
 
     if (!onDelete) {
       setDeleting(false)
@@ -354,7 +355,7 @@ function TransactionItem({
   const handleDuplicateTap = useCallback(() => {
     markSwipeLearned()
     snapToRest()
-    import('../../lib/haptics').then(m => m.hapticSuccess())
+    hapticSuccess()
     setTimeout(() => onDuplicate && onDuplicate(txn), 120)
   }, [markSwipeLearned, onDuplicate, snapToRest, txn])
 
@@ -364,11 +365,11 @@ function TransactionItem({
       return
     }
     if (isExternalLinked) {
-      import('../../lib/haptics').then(m => m.hapticTap())
+      hapticTap()
       setShowLinkedInfo(true)
       return
     }
-    import('../../lib/haptics').then(m => m.hapticTap())
+    hapticTap()
     onTap && onTap(txn)
   }, [onTap, snapToRest, txn, x, isExternalLinked])
 
