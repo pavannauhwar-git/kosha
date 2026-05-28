@@ -626,6 +626,21 @@ create policy "avatars_storage: read" on storage.objects
 for select to authenticated
 using (
   bucket_id = 'avatars'
+  and (
+    -- Owner can read their own avatar.
+    name like (auth.uid()::text || '-%')
+    -- Linked partner can read each other's avatar (needed by ProfileMenu
+    -- and any partner-view UI). The first 36 chars of the avatar filename
+    -- are the owner's UUID — see the upload policy above. We validate the
+    -- UUID shape with a regex BEFORE casting so a malformed filename
+    -- cannot throw a SQL error and fail the policy evaluation in an
+    -- unpredictable way.
+    or (
+      length(name) >= 37
+      and substring(name from 1 for 36) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      and public.is_linked((substring(name from 1 for 36))::uuid)
+    )
+  )
 );
 
 drop policy if exists "avatars_storage: delete own" on storage.objects;

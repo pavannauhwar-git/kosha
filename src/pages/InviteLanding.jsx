@@ -14,10 +14,25 @@ const fadeUp = createFadeUp(12, 0.4)
 const stagger = createStagger(0.08, 0.05)
 
 export default function InviteLanding() {
-  const { token, splitToken } = useParams()
+  const params = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const { user, loading: authLoading } = useAuth()
+
+  // Snapshot the invite token from the URL on first mount and then strip
+  // it out of the address bar. Two reasons:
+  //   1. Referrer-header leakage — without this, navigating to ANY external
+  //      link from this page leaks the (single-use) invite token in the
+  //      Referer header.
+  //   2. Diagnostics hygiene — `window.location.pathname` is read by
+  //      runtimeMonitor, Sentry breadcrumbs, and PWA cache keys; we don't
+  //      want the secret embedded in any of those even briefly.
+  // We use a ref so re-renders never re-read the (now-empty) URL params.
+  const initialTokensRef = useRef({
+    token: params.token,
+    splitToken: params.splitToken,
+  })
+  const { token, splitToken } = initialTokensRef.current
 
   const [status, setStatus] = useState('loading') // loading, preview, error, success
   const [details, setDetails] = useState(null)
@@ -31,6 +46,27 @@ export default function InviteLanding() {
 
   const isSplitwise = !!splitToken
   const activeToken = splitToken || token
+
+  // One-shot URL cleanup. We deliberately do NOT add `activeToken` as a
+  // dependency — we only want this to fire the first time the component
+  // mounts with a token present, never again.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !activeToken) return
+    const cleanPath = isSplitwise ? '/splitwise/join' : '/join'
+    try {
+      // Persist the token to sessionStorage BEFORE clearing the URL so the
+      // login/signup flow can still recover it after redirect (Login.jsx
+      // and Onboarding.jsx both read these keys).
+      const storageKey = isSplitwise ? 'pendingSplitGroupInviteToken' : 'pendingInviteToken'
+      sessionStorage.setItem(storageKey, activeToken)
+      window.history.replaceState(window.history.state, '', cleanPath)
+    } catch {
+      // sessionStorage / replaceState can throw in private mode or sandboxed
+      // iframes — fall through. The user just loses the URL-cleanup nicety;
+      // the invite flow continues via the in-memory ref.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (authLoading) return
@@ -123,7 +159,7 @@ export default function InviteLanding() {
       <div className="w-full max-w-[400px] py-12">
         <AnimatePresence mode="wait">
           {status === 'loading' && (
-            <motion.div 
+            <motion.div
               key="loader"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -156,13 +192,13 @@ export default function InviteLanding() {
                 {/* ── Content ──────────────────────────────────────────────── */}
                 <div className="text-center">
                   <div className="flex justify-center mb-6">
-                    <img 
-                      src="/illustrations/invite_hero.png" 
-                      alt="Invitation illustration" 
+                    <img
+                      src="/illustrations/invite_hero.png"
+                      alt="Invitation illustration"
                       className="w-48 h-48 object-contain drop-shadow-xl"
                     />
                   </div>
-                  
+
                   <p className="text-caption text-brand font-bold uppercase tracking-widest mb-1">
                     Invitation
                   </p>
@@ -175,7 +211,7 @@ export default function InviteLanding() {
 
                   <div className="mt-8 pt-6 border-t border-kosha-border">
                     <p className="text-[13px] text-ink-2 mb-6 leading-relaxed">
-                      {details.type === 'splitwise' 
+                      {details.type === 'splitwise'
                         ? 'You have been invited to join this shared trip. All expenses and settlements will stay in sync.'
                         : 'Link your wallet to share transactions, bills, and loans in real-time with your partner.'}
                     </p>
@@ -218,7 +254,7 @@ export default function InviteLanding() {
                       </div>
                     )}
                   </div>
-                  
+
                   <button
                     onClick={() => navigate(user ? '/' : '/login')}
                     className="mt-4 text-label font-semibold text-ink-3 hover:text-ink transition-colors"
