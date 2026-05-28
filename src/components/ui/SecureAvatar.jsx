@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { captureError } from '../../lib/errorReporting';
 
 const AVATAR_CACHE_KEY = 'kosha:avatar-urls'
 const AVATAR_CACHE_MAX = 50
@@ -99,6 +100,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial, ...
           .createSignedUrl(src, 60 * 60 * 24 * 7); // 7 days expiry
 
         if (error) {
+          captureError(error, { context: 'secureAvatar.fetchSignedUrl' })
           console.error('Error fetching signed avatar url:', error);
           return;
         }
@@ -108,6 +110,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial, ...
           setUrl(data.signedUrl);
         }
       } catch (err) {
+        captureError(err, { context: 'secureAvatar.fetchSignedUrl.catch' })
         console.error('Failed to load secure avatar', err);
       }
     }
