@@ -28,7 +28,7 @@ import { shareLink } from '../lib/share'
 import { queryClient } from '../lib/queryClient'
 import { CHANGELOG } from '../lib/changelog'
 import { writeLocalStorage } from '../lib/safeStorage'
-
+import { isValidImageMagicBytes } from '../lib/bugReportUtils'
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
@@ -183,6 +183,13 @@ export default function Settings() {
 
     if (!file.type.startsWith('image/')) {
       setPhotoError('Selected file must be an image.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    const valid = await isValidImageMagicBytes(file)
+    if (!valid) {
+      setPhotoError('Selected file is not a valid image format.')
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }

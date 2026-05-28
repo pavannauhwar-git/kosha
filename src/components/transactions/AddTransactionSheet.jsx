@@ -20,6 +20,8 @@ import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import CreateCategorySheet from '../categories/CreateCategorySheet'
 import { useSplitwise, addSplitExpenseMutation, buildEqualSplits } from '../../hooks/useSplitwise'
 import { supabase } from '../../lib/supabase'
+import { validateAmount } from '../../lib/validateAmount.js'
+import { FormField } from '../ui'
 
 
 import { todayStr } from '../../lib/utils'
@@ -646,6 +648,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const set = (key, value) => dispatch({ type: 'SET', key, value })
 
   const amountRef = useRef(null)
+  const isSubmitting = useRef(false)
   const descRef = useRef(null)
 
   // Case 166: Smart Category Memory - remembers choice per type
@@ -777,27 +780,27 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   }
 
   async function handleSave() {
-    if (isSaving) return
+    if (isSaving || isSubmitting.current) return
+    isSubmitting.current = true
 
-    // Client-side validation — fast, no async
-    if (!amount || !Number.isFinite(+amount) || +amount <= 0) {
-      dispatch({ type: 'SAVING_ERROR', value: 'Enter a valid amount' })
+    // Client-side validation
+    const amountValidation = validateAmount(amount, { allowZero: false })
+    if (!amountValidation.ok) {
+      dispatch({ type: 'SAVING_ERROR', value: amountValidation.error })
+      isSubmitting.current = false
       return
     }
 
-    if (+amount > 1_000_000_000) {
-      dispatch({ type: 'SAVING_ERROR', value: 'Amount exceeds safety limit (1 Billion)' })
-      return
-    }
     if (!desc.trim()) {
       dispatch({ type: 'SAVING_ERROR', value: 'Enter a description' })
+      isSubmitting.current = false
       return
     }
 
     const payload = {
       type,
       description: desc.trim(),
-      amount: +amount,
+      amount: Number(amountValidation.paise) / 100,
       category: type === 'investment' 
         ? (investmentOptions.find(v => v.label === vehicle)?.id || 'other').toLowerCase()
         : normalizeCategoryForType(type, category).toLowerCase(),
@@ -856,6 +859,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         type: 'SAVING_ERROR',
         value: e.message || 'Could not save. Check your connection and try again.',
       })
+      isSubmitting.current = false
     }
   }
 
@@ -936,23 +940,27 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
           {/* Amount */}
           <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="flex flex-col min-w-0 pb-2">
-            <div className="bg-transparent px-1 py-2 mb-4 flex items-center gap-2 border-b-2 border-kosha-border">
-            <span className={`text-2xl font-bold ${activeType?.color}`}>₹</span>
-            <input
-              ref={amountRef}
-              type="text" inputMode="decimal" name="txn-amount" placeholder="0.00"
-              aria-label="Transaction amount in Rupees"
-              enterKeyHint="next"
-              value={amount}
-              onChange={e => {
-                const raw = e.target.value;
-                if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) set('amount', raw);
-              }}
-              disabled={isSaving || !!linkedSplitExpenseId}
-              className="min-w-0 flex-1 bg-transparent text-3xl font-bold text-ink
-                         outline-none tabular-nums placeholder-ink-4 disabled:opacity-50"
-            />
-          </div>
+            <FormField error={error}>
+              <div className="bg-transparent px-1 py-2 mb-4 flex items-center gap-2 border-b-2 border-kosha-border">
+                <span className={`text-2xl font-bold ${activeType?.color}`}>₹</span>
+                <input
+                  ref={amountRef}
+                  type="text" inputMode="decimal" pattern="[0-9.]*" name="txn-amount" placeholder="0.00"
+                  aria-label="Transaction amount in Rupees"
+                  enterKeyHint="next"
+                  value={amount}
+                  onChange={e => {
+                    let raw = e.target.value;
+                    if (raw.startsWith('+')) raw = raw.slice(1);
+                    if (raw.toLowerCase().includes('e')) return;
+                    if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) set('amount', raw);
+                  }}
+                  disabled={isSaving || !!linkedSplitExpenseId}
+                  className="min-w-0 flex-1 bg-transparent text-3xl font-bold text-ink
+                             outline-none tabular-nums placeholder-ink-4 disabled:opacity-50"
+                />
+              </div>
+            </FormField>
 
           {/* Description */}
           <input

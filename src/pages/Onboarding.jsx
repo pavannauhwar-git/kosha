@@ -15,6 +15,7 @@ import { createFadeUp, createStagger } from '../lib/animations'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import { todayStr } from '../lib/utils'
+import AppToast from '../components/common/AppToast'
 
 const fadeUp = createFadeUp(8, 0.2)
 const stepStagger = createStagger(0.07, 0)
@@ -357,6 +358,7 @@ export default function Onboarding() {
   const [name,   setName]   = useState('')
   const [saving, setSaving] = useState(false)
   const [finishError, setFinishError] = useState('')
+  const [toast, setToast] = useState(null)
 
   // If already onboarded (e.g. user navigated here manually), send to dashboard
   // Use an effect so we don't navigate before render
@@ -372,8 +374,8 @@ export default function Onboarding() {
     // update completes after step change and the guard sees onboarded=false.
     try {
       await updateProfile({ display_name: name, monthly_income: monthlyIncome })
-    } catch (_) {
-      // Non-fatal — continue even if save fails
+    } catch (e) {
+      setToast(e?.message || 'Could not save profile details.')
     }
     setStep(2)
   }
@@ -430,6 +432,7 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-[max(3rem,calc(env(safe-area-inset-top)+1rem))] pb-[max(2.5rem,calc(env(safe-area-inset-bottom)+1rem))]">
+      {toast && <AppToast message={toast} onDismiss={() => setToast(null)} />}
       <div className="w-full max-w-sm mx-auto flex flex-col flex-1">
 
         {/* Header row: Logo + Skip button */}

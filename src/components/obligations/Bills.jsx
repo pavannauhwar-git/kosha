@@ -100,6 +100,7 @@ export default function Bills({
   const [deletingId, setDeletingId] = useState(null)
   const [highlightedBillId, setHighlightedBillId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
+  const actionGuard = useRef(false)
 
   const [form, setForm] = useState(() => createInitialBillForm())
   const [formErr, setFormErr] = useState('')
@@ -557,7 +558,8 @@ export default function Bills({
   }
 
   async function handleMarkPaid(bill) {
-    if (!bill?.id || payingId) return
+    if (!bill?.id || payingId || actionGuard.current) return
+    actionGuard.current = true
     setPayingId(bill.id)
     try {
       await markLiabilityPaidMutation(bill)
@@ -565,6 +567,8 @@ export default function Bills({
     } catch (e) {
       setPayingId(null)
       setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
+    } finally {
+      actionGuard.current = false
     }
   }
 

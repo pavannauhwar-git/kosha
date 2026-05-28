@@ -75,6 +75,7 @@ export default function Loans({
   const [deletingId, setDeletingId] = useState(null)
   const [errToast, setErrToast] = useState(null)
   const [toast, setToast] = useState(null)
+  const actionGuard = useRef(false)
   const [toastAction, setToastAction] = useState(null)
   const [toastActionLabel, setToastActionLabel] = useState(null)
   const toastTimeoutRef = useRef(null)
@@ -647,12 +648,15 @@ export default function Loans({
   }
 
   async function handleRecordPayment() {
-    if (!payLoan) return
+    if (actionGuard.current) return
+    actionGuard.current = true
+
+    if (!payLoan) { actionGuard.current = false; return }
     const amt = +payAmount
     const remaining = +payLoan.amount - +payLoan.amount_settled
-    if (remaining <= 0) { setPayErr('This loan is already fully settled.'); return }
-    if (!Number.isFinite(amt) || amt <= 0) { setPayErr('Enter a valid positive amount'); return }
-    if (amt > remaining) { setPayErr(`Max payment is ${fmt(remaining)}`); return }
+    if (remaining <= 0) { setPayErr('This loan is already fully settled.'); actionGuard.current = false; return }
+    if (!Number.isFinite(amt) || amt <= 0) { setPayErr('Enter a valid positive amount'); actionGuard.current = false; return }
+    if (amt > remaining) { setPayErr(`Max payment is ${fmt(remaining)}`); actionGuard.current = false; return }
 
     setPayErr('')
     setPaySaving(true)
@@ -664,17 +668,23 @@ export default function Loans({
     } catch (e) {
       setPaySaving(false)
       setErrToast(e.message || 'Could not record payment.')
+    } finally {
+      actionGuard.current = false
     }
   }
 
   const handleSettleFull = useCallback(async (loan) => {
+    if (actionGuard.current) return
+    actionGuard.current = true
     const remaining = +loan.amount - +loan.amount_settled
-    if (remaining <= 0) return
+    if (remaining <= 0) { actionGuard.current = false; return }
 
     try {
       await recordLoanPaymentMutation(loan, remaining)
     } catch (e) {
       setErrToast(e.message || 'Could not settle loan.')
+    } finally {
+      actionGuard.current = false
     }
   }, [])
 

@@ -219,6 +219,7 @@ export default function Splitwise() {
     transaction_category: 'other',
   })
   const [splitInputs, setSplitInputs] = useState({})
+  const actionGuard = React.useRef(false)
 
   const [settlementForm, setSettlementForm] = useState({
     payer_member_id: '',
@@ -775,6 +776,12 @@ export default function Splitwise() {
     }
 
     if (method === 'exact') {
+      const sumPaise = selectedMemberIds.reduce((sum, memberId) => sum + Math.round(Number(splitInputs[memberId]?.exact || 0) * 100), 0)
+      const totalPaise = Math.round(amount * 100)
+      if (sumPaise !== totalPaise) {
+        throw new Error(`Exact splits must add up to the full amount. (Sum: ${sumPaise / 100}, Total: ${totalPaise / 100})`)
+      }
+
       return buildExactSplits(
         selectedMemberIds.map((memberId) => ({
           member_id: memberId,
@@ -785,6 +792,11 @@ export default function Splitwise() {
     }
 
     if (method === 'percent') {
+      const sumBasisPoints = selectedMemberIds.reduce((sum, memberId) => sum + Math.round(Number(splitInputs[memberId]?.percent || 0) * 100), 0)
+      if (sumBasisPoints !== 10000) {
+        throw new Error(`Percentage splits must total exactly 100%. (Current: ${sumBasisPoints / 100}%)`)
+      }
+
       return buildPercentSplits(
         selectedMemberIds.map((memberId) => ({
           member_id: memberId,
@@ -839,6 +851,9 @@ export default function Splitwise() {
       return
     }
 
+    if (actionGuard.current) return
+    actionGuard.current = true
+
     setSaving(editExpense ? 'expense-edit' : 'expense')
     try {
       if (editExpense) {
@@ -871,6 +886,7 @@ export default function Splitwise() {
       setToast(expenseError?.message || 'Could not save expense.')
     } finally {
       setSaving('')
+      actionGuard.current = false
     }
   }
 
@@ -900,6 +916,16 @@ export default function Splitwise() {
       return
     }
 
+    const expenseCurrencies = new Set(expenses.map(e => String(e.currency_code || 'INR').toUpperCase()))
+    const settlementCurrency = String(settlementForm.currency_code || 'INR').toUpperCase()
+    if (expenseCurrencies.size > 0 && !expenseCurrencies.has(settlementCurrency) && !expenseCurrencies.has('INR')) {
+      setToast(`Cross-currency settle-up not supported. Expenses are in ${[...expenseCurrencies].join(', ')}`)
+      return
+    }
+
+    if (actionGuard.current) return
+    actionGuard.current = true
+
     setSaving(editSettlement ? 'settlement-edit' : 'settlement')
     try {
       if (editSettlement) {
@@ -921,11 +947,12 @@ export default function Splitwise() {
       }))
       setEditSettlement(null)
       setShowSettlement(false)
-      setToast(editSettlement ? 'Settlement updated.' : 'Settlement recorded.')
-    } catch (settleError) {
-      setToast(settleError?.message || 'Could not save settlement.')
+      setToast('Settlement recorded.')
+    } catch (settlementError) {
+      setToast(settlementError?.message || 'Could not record settlement.')
     } finally {
       setSaving('')
+      actionGuard.current = false
     }
   }
 

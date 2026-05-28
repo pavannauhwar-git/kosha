@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { lazy, Suspense, useState, useEffect, useCallback, useRef, startTransition } from 'react'
-import { motion } from 'framer-motion'
+import { motion, MotionConfig } from 'framer-motion'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 import { getMuiTheme } from './lib/muiTheme'
 import { useRegisterSW } from 'virtual:pwa-register/react'
@@ -1518,9 +1518,20 @@ function ShellStatusBanners() {
   )
 }
 
+function WalletSwitchGuard() {
+  const activeWalletUserId = useActiveWallet()
+  
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('bottomsheet:close-all'))
+  }, [activeWalletUserId])
+  
+  return null
+}
+
 function AppShell() {
   return (
     <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
+      <WalletSwitchGuard />
       <RuntimeRouteTracker />
       <CustomCategoryLoader />
       <EagerChunkPreloader />
@@ -1550,16 +1561,18 @@ export default function App() {
   return (
     <ThemeProvider theme={getMuiTheme(mode)}>
       <CssBaseline />
-      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-        <AuthProvider>
+      <MotionConfig reducedMotion="user">
+        <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+          <AuthProvider>
           <QueryClientProvider client={queryClient}>
             <GlobalRealtimeSync />
             <DashboardWarmPrefetch />
             <VersionHeartbeat />
-            <AppContent />
-          </QueryClientProvider>
-        </AuthProvider>
-      </BrowserRouter>
+              <AppContent />
+            </QueryClientProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </MotionConfig>
     </ThemeProvider>
   )
 }

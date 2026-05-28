@@ -22,6 +22,16 @@ export default function BottomSheet({
     }
   }, [open])
 
+  useEffect(() => {
+    function handleCloseAll() {
+      if (open && onClose) {
+        onClose()
+      }
+    }
+    window.addEventListener('bottomsheet:close-all', handleCloseAll)
+    return () => window.removeEventListener('bottomsheet:close-all', handleCloseAll)
+  }, [open, onClose])
+
   const ios = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
 
   return (

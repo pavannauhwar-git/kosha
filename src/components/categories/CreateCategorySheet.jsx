@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Check } from '@phosphor-icons/react'
 import { ICON_MAP } from './CategoryIcon'
@@ -73,6 +73,7 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
   const [selectedType, setSelectedType] = useState(initialType)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const isSubmitting = React.useRef(false)
   const sheetRef = useOverlayFocusTrap(true, {
     onClose: saving ? undefined : onClose,
     initialFocusSelector: 'input[name="category-name"]',
@@ -81,13 +82,18 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
   const iconOptions = ICON_OPTIONS_BY_TYPE[selectedType] || ICON_OPTIONS_BY_TYPE.expense
 
   async function handleCreate() {
+    if (saving || isSubmitting.current) return
+    isSubmitting.current = true
+
     const trimmed = name.trim()
     if (trimmed.length < 2) {
       setError('Name must be at least 2 characters')
+      isSubmitting.current = false
       return
     }
     if (trimmed.length > 30) {
       setError('Name must be 30 characters or less')
+      isSubmitting.current = false
       return
     }
 
@@ -109,6 +115,7 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
     } catch (e) {
       setError(e.message || (isEditing ? 'Could not update category' : 'Could not create category'))
       setSaving(false)
+      isSubmitting.current = false
     }
   }
 

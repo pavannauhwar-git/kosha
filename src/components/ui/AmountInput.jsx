@@ -45,7 +45,10 @@ const AmountInput = forwardRef(function AmountInput(
 
   const handleChange = useCallback(
     (e) => {
-      const raw = e.target.value
+      let raw = e.target.value
+      if (raw.startsWith('+')) raw = raw.slice(1)
+      if (raw.toLowerCase().includes('e')) return
+      
       if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) {
         onChange(raw)
       }
@@ -86,8 +89,11 @@ const AmountInput = forwardRef(function AmountInput(
       className={className}
       autoComplete="off"
       slotProps={{
-        input: {
+        htmlInput: {
           inputMode: 'decimal',
+          pattern: '[0-9.]*',
+        },
+        input: {
           startAdornment: (
             <InputAdornment
               position="start"

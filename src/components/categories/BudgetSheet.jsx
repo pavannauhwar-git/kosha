@@ -7,10 +7,13 @@ import { getCategoriesForType } from '../../lib/categories'
 import { upsertBudget, deleteBudget } from '../../hooks/useBudgets'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
+import { validateAmount } from '../../lib/validateAmount.js'
+import { FormField } from '../ui'
 
 export default function BudgetSheet({ open, onClose, budgets = [], byCategory = {} }) {
   const [saving, setSaving] = useState(null)
   const [error, setError] = useState('')
+  const isSubmitting = React.useRef(false)
 
   const { customCategories } = useUserCategories()
 
@@ -41,18 +44,24 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
   )
 
   function handleDraftChange(catId, value) {
-    const cleaned = value.replace(/[^0-9.]/g, '')
-    setDrafts((prev) => ({ ...prev, [catId]: cleaned }))
+    if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
+      setDrafts((prev) => ({ ...prev, [catId]: value }))
+    }
   }
 
   async function handleSave(catId) {
+    if (saving || isSubmitting.current) return
+    isSubmitting.current = true
+    
     const raw = getDraftValue(catId)
-    const limit = Number(raw)
-    if (!Number.isFinite(limit) || limit <= 0) {
-      setError('Enter a valid amount greater than 0.')
+    const amountValidation = validateAmount(raw, { allowZero: false })
+    if (!amountValidation.ok) {
+      setError(amountValidation.error)
       setTimeout(() => setError(''), 2500)
+      isSubmitting.current = false
       return
     }
+    const limit = Number(amountValidation.paise) / 100
 
     setSaving(catId)
     setError('')
@@ -68,12 +77,19 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
       setTimeout(() => setError(''), 3000)
     } finally {
       setSaving(null)
+      isSubmitting.current = false
     }
   }
 
   async function handleDelete(catId) {
+    if (saving || isSubmitting.current) return
+    isSubmitting.current = true
+    
     const existing = budgetMap.get(catId)
-    if (!existing) return
+    if (!existing) {
+      isSubmitting.current = false
+      return
+    }
 
     setSaving(catId)
     setError('')
@@ -89,6 +105,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
       setTimeout(() => setError(''), 3000)
     } finally {
       setSaving(null)
+      isSubmitting.current = false
     }
   }
 
@@ -209,20 +226,28 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[11px] text-ink-3">₹</span>
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              name={`budget-${cat.id}`}
-                              placeholder="—"
-                              value={draft}
-                              onChange={(e) => handleDraftChange(cat.id, e.target.value)}
-                              disabled={isSaving}
-                              className="w-[72px] h-7 rounded-chip border border-kosha-border bg-kosha-surface
-                                         text-[12px] font-semibold text-ink tabular-nums text-right px-2
-                                         focus:outline-none focus:ring-1 focus:ring-brand/40
-                                         disabled:opacity-50 placeholder:text-ink-4"
-                            />
+                            <span className="text-[11px] text-ink-3 mt-1.5">₹</span>
+                            <FormField error={isSaving ? error : ''}>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                pattern="[0-9.]*"
+                                name={`budget-${cat.id}`}
+                                placeholder="—"
+                                value={draft}
+                                onChange={(e) => {
+                                  let raw = e.target.value
+                                  if (raw.startsWith('+')) raw = raw.slice(1)
+                                  if (raw.toLowerCase().includes('e')) return
+                                  handleDraftChange(cat.id, raw)
+                                }}
+                                disabled={isSaving}
+                                className="w-[72px] h-7 rounded-chip border border-kosha-border bg-kosha-surface
+                                           text-[12px] font-semibold text-ink tabular-nums text-right px-2
+                                           focus:outline-none focus:ring-1 focus:ring-brand/40
+                                           disabled:opacity-50 placeholder:text-ink-4"
+                              />
+                            </FormField>
                             {(isModified || (!hasBudget && draft)) && (
                               <button
                                 type="button"

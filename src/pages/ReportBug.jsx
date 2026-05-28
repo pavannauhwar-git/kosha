@@ -11,6 +11,7 @@ import {
   formatReportedScreen,
   fileSizeLabel,
   compressImage,
+  isValidImageMagicBytes,
 } from '../lib/bugReportUtils'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -426,7 +427,20 @@ export default function ReportBug() {
                       name="bug-screenshot"
                       accept="image/png,image/jpeg,image/webp"
                       className="hidden"
-                      onChange={e => setScreenshot(e.target.files?.[0] || null)}
+                      onChange={async e => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          const valid = await isValidImageMagicBytes(file)
+                          if (!valid) {
+                            setError('Selected file is not a valid image format.')
+                            setScreenshot(null)
+                            e.target.value = ''
+                            return
+                          }
+                          setError('')
+                        }
+                        setScreenshot(file || null)
+                      }}
                     />
                   </label>
                 </div>

@@ -7,8 +7,8 @@ import { useActiveWallet, getActiveWalletUserId } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
+import { round2 } from '../lib/paise'
 import {
-  round2,
   buildEqualSplits,
   buildExactSplits,
   buildPercentSplits,

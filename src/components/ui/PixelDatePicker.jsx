@@ -83,6 +83,56 @@ export default function PixelDatePicker({
     }
   }, [open, selectedDate])
 
+  useEffect(() => {
+    if (!open) return
+
+    const handleKeyDown = (e) => {
+      let nextDate = null
+      switch (e.key) {
+        case 'ArrowLeft':
+          nextDate = addDays(viewDate, -1)
+          break
+        case 'ArrowRight':
+          nextDate = addDays(viewDate, 1)
+          break
+        case 'ArrowUp':
+          nextDate = addDays(viewDate, -7)
+          break
+        case 'ArrowDown':
+          nextDate = addDays(viewDate, 7)
+          break
+        case 'PageUp':
+          nextDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, viewDate.getDate(), 12)
+          break
+        case 'PageDown':
+          nextDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, viewDate.getDate(), 12)
+          break
+        case 'Home':
+          nextDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1, 12)
+          break
+        case 'End':
+          nextDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 12)
+          break
+        case 'Escape':
+          setOpen(false)
+          break
+        case 'Enter':
+          e.preventDefault()
+          onChange(toIsoDate(viewDate))
+          setOpen(false)
+          return
+      }
+
+      if (nextDate) {
+        e.preventDefault()
+        setViewDate(nextDate)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, viewDate, onChange])
+
   const displayText = selectedDate ? DISPLAY_FORMATTER.format(selectedDate) : placeholder
 
   return (
@@ -145,6 +195,7 @@ export default function PixelDatePicker({
             {monthGrid.map((day) => {
               const isSelected = isSameDay(day.date, selectedDate)
               const isToday = isSameDay(day.date, today)
+              const isView = isSameDay(day.date, viewDate)
 
               return (
                 <button
@@ -162,6 +213,7 @@ export default function PixelDatePicker({
                         ? 'text-ink hover:bg-kosha-surface-2'
                         : 'text-ink-4 hover:bg-kosha-surface-2/70',
                     !isSelected && isToday ? 'ring-1 ring-brand/35' : '',
+                    !isSelected && isView ? 'ring-2 ring-ink/20' : '',
                   ].join(' ')}
                   aria-label={DISPLAY_FORMATTER.format(day.date)}
                 >

@@ -40,6 +40,23 @@ export function fileSizeLabel(bytes) {
   return `${bytes} B`
 }
 
+export async function isValidImageMagicBytes(file) {
+  if (!file) return false
+  try {
+    const buffer = await file.slice(0, 12).arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+
+    if (hex.startsWith('ffd8')) return true // JPEG
+    if (hex.startsWith('89504e47')) return true // PNG
+    if (hex.startsWith('52494646') && hex.slice(16, 24) === '57454250') return true // WebP
+
+    return false
+  } catch {
+    return false
+  }
+}
+
 export async function compressImage(file) {
   if (!file || !file.type?.startsWith('image/')) return file
   if (file.size <= 1.2 * 1024 * 1024) return file

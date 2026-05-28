@@ -1,5 +1,15 @@
 export const CHANGELOG = [
   {
+    version: '3.0.0',
+    date: 'May 2026',
+    items: [
+      'Migrated financial math from floating-point arithmetic to BigInt paise for zero-loss precision across all features',
+      'Overhauled validation and component lifecycles to eliminate race conditions, duplicate submissions, and data entry errors',
+      'Implemented strict MIME-type and magic byte verification for file uploads and attachments, reinforcing data integrity and security',
+      'Introduced cross-currency validation guards during Splitwise settlements to prevent mismatched currency resolutions',
+    ],
+  },
+  {
     version: '2.4.1',
     date: 'May 2026',
     items: [
