@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { fmt, splitFmtAmount } from '../../../lib/utils'
+import { fmt } from '../../../lib/utils'
 import { safeNumber } from '../../../lib/safeNumber'
 import { C } from '../../../lib/colors'
 
@@ -75,9 +75,10 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0))
     : null
 
-  const mainValueNumber = heroMode === 'balance' ? runningBalance : safeToSpend
-  const mainParts = splitFmtAmount(mainValueNumber)
-  const mainValueClass = getHeroAmountClass(mainParts.totalLength)
+  const mainValueText = heroMode === 'balance'
+    ? (runningBalance !== null ? fmt(runningBalance) : '—')
+    : (safeToSpend !== null ? fmt(safeToSpend) : '—')
+  const mainValueClass = getHeroAmountClass(mainValueText.length)
 
   const heroBadgeStyle = {
     background: 'rgba(255,255,255,0.12)',
@@ -124,15 +125,10 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
         </div>
       </div>
 
-      {/* Main amount — large; paise rendered at 60% scale for premium hierarchy */}
+      {/* Main amount — large */}
       <div>
         <p className={`${mainValueClass} font-bold text-white leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere]`}>
-          {mainParts.main}
-          {mainParts.decimal && (
-            <span className="text-[0.6em] font-semibold opacity-75 align-baseline ml-[0.04em]">
-              {mainParts.decimal}
-            </span>
-          )}
+          {mainValueText}
         </p>
       </div>
 
