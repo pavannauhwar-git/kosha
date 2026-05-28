@@ -515,12 +515,9 @@ function BottomNav() {
                   <motion.div layoutId="nav-pill" className="nav-icon-bg"
                     initial={false}
                     transition={{
-                      // M3 Expressive Spatial Default — damping ratio ~0.85
-                      // produces a small controlled overshoot (~3%) that
-                      // reads as "alive" without feeling jelly.
                       type: 'spring',
-                      stiffness: 800,
-                      damping: 40,
+                      stiffness: 650,
+                      damping: 52,
                       mass: 1,
                     }}
                   />
@@ -533,7 +530,7 @@ function BottomNav() {
                     scale: isActive ? 1 : 0.7,
                   }}
                   transition={isActive
-                    ? { type: 'spring', stiffness: 900, damping: 38, mass: 1 }
+                    ? { type: 'spring', stiffness: 700, damping: 60, mass: 1 }
                     : { duration: 0.12, ease: [0.2, 0, 0, 1] }
                   }
                 >
