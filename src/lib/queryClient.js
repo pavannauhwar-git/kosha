@@ -5,19 +5,11 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
-      // React Query refetches automatically when data is stale (staleTime
-      // exceeded). Mutations explicitly invalidate via invalidateQueryFamilies
-      // which marks queries stale, so the next mount refetches naturally.
-      // Setting `true` here would force a refetch on every mount even when
-      // data is fresh — wasted network + extra re-renders on every tab visit.
-      refetchOnMount: false,
-
-      // Safety belt: keep window-focus refetch enabled. If a query was
-      // somehow missed by an invalidation, returning to the tab from
-      // another app forces a refetch. Combined with the existing
-      // refetchOnReconnect, this keeps the data-freshness floor high
-      // even though we no longer refetch on every mount.
-      refetchOnWindowFocus: true,
+      // After mutation invalidation, inactive pages must refresh when revisited.
+      // `true` refetches only stale queries on mount (not always), preserving
+      // most of the SWR/perceived-performance behavior while fixing stale lists.
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
       // Retry transient failures (network, 5xx) but not auth/client errors.
       retry: (failureCount, error) => {
         if (failureCount >= 2) return false
