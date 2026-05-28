@@ -2977,7 +2977,7 @@ create or replace function public.split_record_settlement(
 )
 returns split_settlements
 language plpgsql
-security invoker
+security definer          -- ← changed
 set search_path = public
 as $$
 declare
@@ -2989,79 +2989,97 @@ declare
   v_payee_txn_id uuid;
   v_payer_name text;
   v_payee_name text;
+  v_note text;
+  v_date date;
 begin
   if v_uid is null then
-    raise exception 'Authentication required';
+    raise exception using errcode = '28000', message = 'Authentication required';
   end if;
 
   if p_amount is null or p_amount <= 0 then
-    raise exception 'Settlement amount must be positive';
+    raise exception using errcode = '22023', message = 'Settlement amount must be positive';
   end if;
 
   if p_payer_member_id is null or p_payee_member_id is null then
-    raise exception 'Payer and payee are required';
+    raise exception using errcode = '22023', message = 'Payer and payee are required';
   end if;
 
   if p_payer_member_id = p_payee_member_id then
-    raise exception 'Payer and payee cannot be the same';
+    raise exception using errcode = '22023', message = 'Payer and payee cannot be the same';
   end if;
 
   if not public.is_split_group_member_or_above(p_group_id, v_uid) then
-    raise exception 'Split group not found';
+    raise exception using errcode = '42501', message = 'Split group not found';
   end if;
 
+  -- Resolve linked user ids and display names for both members.
   select linked_user_id, display_name into v_payer_uid, v_payer_name
   from split_group_members where id = p_payer_member_id and group_id = p_group_id;
-  if v_payer_uid is null and not exists (
-    select 1 from split_group_members m where m.id = p_payer_member_id and m.group_id = p_group_id
-  ) then
-    raise exception 'Payer is not in this group';
+  if not found then
+    raise exception using errcode = '22023', message = 'Payer is not in this group';
   end if;
 
   select linked_user_id, display_name into v_payee_uid, v_payee_name
   from split_group_members where id = p_payee_member_id and group_id = p_group_id;
-  if v_payee_uid is null and not exists (
-    select 1 from split_group_members m where m.id = p_payee_member_id and m.group_id = p_group_id
-  ) then
-    raise exception 'Payee is not in this group';
+  if not found then
+    raise exception using errcode = '22023', message = 'Payee is not in this group';
   end if;
 
+  -- Caller must be either the payer or the payee. This prevents a third
+  -- member of the group from forging a settlement between two other parties.
+  -- (Ghost members — linked_user_id IS NULL — can't be caller, so this also
+  -- gates ghost-on-both-sides settlements.)
+  if (v_payer_uid is null or v_payer_uid <> v_uid)
+     and (v_payee_uid is null or v_payee_uid <> v_uid) then
+    raise exception using errcode = '42501',
+      message = 'Only the payer or the payee can record this settlement';
+  end if;
+
+  v_note := nullif(btrim(coalesce(p_note, '')), '');
+  v_date := coalesce(p_settled_at, current_date);
+
   insert into split_settlements (
-    group_id,
-    payer_member_id,
-    payee_member_id,
-    amount,
-    settled_at,
-    note,
-    user_id
+    group_id, payer_member_id, payee_member_id,
+    amount, settled_at, note, user_id
   ) values (
-    p_group_id,
-    p_payer_member_id,
-    p_payee_member_id,
-    p_amount,
-    coalesce(p_settled_at, current_date),
-    nullif(btrim(coalesce(p_note, '')), ''),
-    v_uid
+    p_group_id, p_payer_member_id, p_payee_member_id,
+    p_amount, v_date, v_note, v_uid
   ) returning * into v_row;
 
   if p_sync_transaction then
-    -- Payer sees: "Settled with [payee name]"
-    if v_payer_uid = v_uid then
-      insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id, notes)
-      values (coalesce(p_settled_at, current_date), 'expense', 'Settled with ' || coalesce(v_payee_name, 'member'), p_amount, 'other', v_uid, true, v_row.id, nullif(btrim(coalesce(p_note, '')), ''))
-      returning id into v_payer_txn_id;
+    -- Payer's personal ledger: an expense for the amount they paid out.
+    -- Insert when the payer is a real Kosha account (linked_user_id set).
+    -- SECURITY DEFINER lets us write to the payer's row regardless of which
+    -- of {payer, payee} actually called the RPC.
+    if v_payer_uid is not null then
+      insert into public.transactions (
+        date, type, description, amount, category, user_id,
+        is_repayment, linked_split_settlement_id, notes
+      ) values (
+        v_date, 'expense',
+        'Settled with ' || coalesce(v_payee_name, 'member'),
+        p_amount, 'other', v_payer_uid,
+        true, v_row.id, v_note
+      ) returning id into v_payer_txn_id;
     end if;
 
-    -- Payee sees: "Received from [payer name]"
-    if v_payee_uid = v_uid then
-      insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id, notes)
-      values (coalesce(p_settled_at, current_date), 'income', 'Received from ' || coalesce(v_payer_name, 'member'), p_amount, 'other', v_uid, true, v_row.id, nullif(btrim(coalesce(p_note, '')), ''))
-      returning id into v_payee_txn_id;
+    -- Payee's personal ledger: an income transaction for the amount received.
+    if v_payee_uid is not null then
+      insert into public.transactions (
+        date, type, description, amount, category, user_id,
+        is_repayment, linked_split_settlement_id, notes
+      ) values (
+        v_date, 'income',
+        'Received from ' || coalesce(v_payer_name, 'member'),
+        p_amount, 'other', v_payee_uid,
+        true, v_row.id, v_note
+      ) returning id into v_payee_txn_id;
     end if;
 
     if v_payer_txn_id is not null or v_payee_txn_id is not null then
       update public.split_settlements
-      set payer_transaction_id = v_payer_txn_id, payee_transaction_id = v_payee_txn_id
+      set payer_transaction_id = v_payer_txn_id,
+          payee_transaction_id = v_payee_txn_id
       where id = v_row.id;
     end if;
   end if;
@@ -3069,6 +3087,10 @@ begin
   return v_row;
 end;
 $$;
+
+grant execute on function public.split_record_settlement(
+  uuid, uuid, uuid, numeric, date, text, boolean
+) to authenticated;
 
 -- ═════════════════════════════════════════════════════════════════════════════
 -- ── LOANS ─────────────────────────────────────────────────────────────────────
