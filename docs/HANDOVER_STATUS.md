@@ -362,21 +362,5 @@ One entry per commit. Reviewer scans for `✗` and `PENDING-*` entries.
 - **Discovered out of scope:** `src/components/categories/BudgetSheet.jsx` has no `type="number"` inputs (grep confirmed). `AnalyticsCharts` axis-bound inputs (`whatif-reduction`, `runway-corpus`) use `inputMode="numeric" pattern="[0-9]*"` (integer-only) per doc spec.
 - **Notes:** Applied `type="text" inputMode="decimal" pattern="[0-9.]*"` to all decimal money inputs across Bills (1 site), Loans (3 sites), and Splitwise (5 sites). AnalyticsCharts integer inputs use `inputMode="numeric" pattern="[0-9]*"` instead per doc note at line 3338.
 
----
-
-## FIX-051 — Standalone `console.error` calls don't reach Sentry
-
-- **Commit:** 38f5ff875169250bf663c869fdf0418e4f3f9636
-- **PR:** pending
-- **Files modified:** `src/pages/Onboarding.jsx`, `src/pages/InviteLanding.jsx`, `src/pages/Splitwise.jsx`, `src/pages/Settings.jsx`, `src/components/ui/SecureAvatar.jsx`
-- **Lint pass:** ✓ (0 errors, 604 pre-existing warnings)
-- **Build pass:** ✓ (built in 34.16s)
-- **Automated verify steps:** N/A (Sentry verify requires production deployment)
-- **Manual verify steps:** PENDING-PROD-OBSERVATION — After deploy, trigger each modified error path and confirm a Sentry event arrives with the correct `context` tag (e.g. `onboarding.finish`, `inviteLanding.preview`, `splitwise.changeBanner`, `settings.shareApp`, `secureAvatar.fetchSignedUrl`).
-- **Discovered out of scope:** `src/lib/invites.js:93` and `:114` console.errors were left as-is — both are inside library functions that re-throw (callers will capture). `src/lib/reconciliation.js` and `src/lib/supabase.js` only have `console.warn` calls (informational, not error paths) — left as-is per doc rules.
-- **Notes:** Added `captureError` import and call alongside each standalone `console.error` catch block in the 5 listed files (6 total call sites). `invites.js` re-throwing catches were deliberately skipped (they bubble to callers handled by React Query / FIX-018).
-
-
-
 
 
