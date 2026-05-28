@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { fmt, savingsRate } from '../../../lib/utils'
+import { fmt, splitFmtAmount, savingsRate } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 import { MONTH_NAMES } from '../../../lib/constants'
 
@@ -25,8 +25,8 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
   const spent = data?.expense || 0
   const invested = data?.investment || 0
   const balance = data?.balance || 0
-  const balanceText = fmt(balance)
-  const balanceClass = getHeroAmountClass(balanceText.length)
+  const balanceParts = splitFmtAmount(balance)
+  const balanceClass = getHeroAmountClass(balanceParts.totalLength)
   const rate = savingsRate(earned, spent)
   const heroAccentStrong = C.heroAccent
   const heroBadgeStyle = {
@@ -56,7 +56,12 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
 
       <p className="text-[10px] font-medium mb-1 tracking-wide" style={{ color: C.heroLabel }}>Monthly balance</p>
       <p className={`${balanceClass} font-bold leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere] ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
-        {balanceText}
+        {balanceParts.main}
+        {balanceParts.decimal && (
+          <span className="text-[0.6em] font-semibold opacity-75 align-baseline ml-[0.04em]">
+            {balanceParts.decimal}
+          </span>
+        )}
       </p>
 
       <div
