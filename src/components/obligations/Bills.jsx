@@ -121,10 +121,10 @@ export default function Bills({
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('touchstart', handleClickOutside, { passive: true })
+    document.addEventListener('touchstart', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('touchstart', handleClickOutside, { passive: true })
+      document.removeEventListener('touchstart', handleClickOutside)
     }
   }, [overflowBillId])
 
