@@ -270,7 +270,6 @@ export default function Splitwise() {
   )
 
   const handleUpdateGroup = async () => {
-    if (saving) return
     if (!editGroupForm.name.trim()) return setToast('Name is required.')
     try {
       setSaving('group-edit')
@@ -286,7 +285,6 @@ export default function Splitwise() {
 
   const handleToggleArchive = async (e, groupId, currentStatus) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    if (saving) return
     setSaving('archive')
     try {
       await toggleArchiveSplitGroupMutation(groupId, !currentStatus)
@@ -590,14 +588,10 @@ export default function Splitwise() {
   }
 
   async function handleCreateGroup() {
-    if (saving || actionGuard.current) return
-    actionGuard.current = true
-
     const name = String(groupForm.name || '').trim()
 
     if (!name) {
       setToast('Group name is required.')
-      actionGuard.current = false
       return
     }
 
@@ -611,7 +605,6 @@ export default function Splitwise() {
       setToast(createError?.message || 'Could not create group.')
     } finally {
       setSaving('')
-      actionGuard.current = false
     }
   }
 

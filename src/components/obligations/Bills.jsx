@@ -224,7 +224,6 @@ export default function Bills({
   }
 
   const [addSaving, setAddSaving] = useState(false)
-  const isSubmitting = useRef(false)
   const [hiddenBillIds, setHiddenBillIds] = useState(() => new Set())
 
   const closeAddBillSheet = useCallback(() => {
@@ -232,7 +231,6 @@ export default function Bills({
     setEditBill(null)
     setFormErr('')
     setForm(createInitialBillForm())
-    isSubmitting.current = false
   }, [])
 
   const dismissAddBillSheet = useCallback(() => {
@@ -517,24 +515,9 @@ export default function Bills({
   }
 
   async function handleAdd() {
-    if (addSaving || isSubmitting.current) return
-    isSubmitting.current = true
-
-    if (!form.description.trim()) {
-      setFormErr('Enter a description')
-      isSubmitting.current = false
-      return
-    }
-    if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) {
-      setFormErr('Enter a valid positive amount')
-      isSubmitting.current = false
-      return
-    }
-    if (!form.due_date) {
-      setFormErr('Select a due date')
-      isSubmitting.current = false
-      return
-    }
+    if (!form.description.trim()) { setFormErr('Enter a description'); return }
+    if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
+    if (!form.due_date) { setFormErr('Select a due date'); return }
 
     const billData = {
       description: form.description.trim(),
@@ -554,11 +537,9 @@ export default function Bills({
         await updateLiabilityMutation(editBill.id, billData)
         setTab('pending')
         setAddSaving(false)
-        isSubmitting.current = false
         closeAddBillSheet()
       } catch (e) {
         setAddSaving(false)
-        isSubmitting.current = false
         setErrToast(e.message || 'Could not update bill. Check your connection.')
       }
       return
@@ -569,11 +550,9 @@ export default function Bills({
 
       setTab('pending')
       setAddSaving(false)
-      isSubmitting.current = false
       closeAddBillSheet()
     } catch (e) {
       setAddSaving(false)
-      isSubmitting.current = false
       setErrToast(e.message || 'Could not add bill. Check your connection.')
     }
   }
