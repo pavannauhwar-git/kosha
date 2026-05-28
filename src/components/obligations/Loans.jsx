@@ -726,12 +726,12 @@ export default function Loans({
 
   const paySheetRef = useOverlayFocusTrap(!!payLoan, {
     onClose: dismissPaySheet,
-    initialFocusSelector: 'input[name="payment-amount"]',
+    autoFocus: false,
   })
 
   const addLoanSheetRef = useOverlayFocusTrap(showAdd, {
     onClose: dismissAddLoanSheet,
-    initialFocusSelector: 'input[name="loan-counterparty"]',
+    autoFocus: false,
   })
 
   async function handleExportCsv() {

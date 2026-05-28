@@ -41,6 +41,7 @@ export default function useOverlayFocusTrap(open, options = {}) {
     onClose,
     initialFocusSelector,
     restoreFocus = true,
+    autoFocus = true,
   } = options
 
   const containerRef = useRef(null)
@@ -49,12 +50,14 @@ export default function useOverlayFocusTrap(open, options = {}) {
   const onCloseRef = useRef(onClose)
   const initialFocusSelectorRef = useRef(initialFocusSelector)
   const restoreFocusRef = useRef(restoreFocus)
+  const autoFocusRef = useRef(autoFocus)
 
   // Sync refs with the latest prop values on every render without triggering effect runs
   useEffect(() => {
     onCloseRef.current = onClose
     initialFocusSelectorRef.current = initialFocusSelector
     restoreFocusRef.current = restoreFocus
+    autoFocusRef.current = autoFocus
   })
 
   useEffect(() => {
@@ -67,6 +70,14 @@ export default function useOverlayFocusTrap(open, options = {}) {
     previousActiveRef.current = previousActive
 
     const focusInitial = () => {
+      if (!autoFocusRef.current) {
+        if (!container.hasAttribute('tabindex')) {
+          container.setAttribute('tabindex', '-1')
+        }
+        container.focus({ preventScroll: true })
+        return
+      }
+
       const targeted = initialFocusSelectorRef.current
         ? container.querySelector(initialFocusSelectorRef.current)
         : null

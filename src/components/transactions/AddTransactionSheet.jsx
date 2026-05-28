@@ -754,7 +754,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     !showCatPicker && !showModePicker && !showVehPicker && !showCreateCat,
     {
       onClose: isSaving ? undefined : onClose,
-      initialFocusSelector: 'input[name="txn-amount"]',
+      autoFocus: false,
     }
   )
 
