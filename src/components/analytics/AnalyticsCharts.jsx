@@ -1107,9 +1107,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
                   className="w-full accent-brand"
                 />
                 <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
+                  type="number"
                   name="whatif-reduction"
                   min={0}
                   max={60}
@@ -1295,9 +1293,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
           <span className="text-[12px] font-semibold text-accent-text">{fmt(reserveAmount, true)}</span>
         </div>
         <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
+          type="number"
           name="runway-corpus"
           min={0}
           step={1000}

@@ -1255,7 +1255,7 @@ export default function Loans({
                                 transition-[border-color] duration-200">
                   <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
-                    type="text" inputMode="decimal" pattern="[0-9.]*" name="payment-amount" placeholder="0"
+                    type="number" inputMode="decimal" name="payment-amount" placeholder="0"
                     value={payAmount}
                     max={Math.max(0, (+payLoan.amount - +payLoan.amount_settled) || 0)}
                     onChange={e => setPayAmount(e.target.value)}
@@ -1390,7 +1390,7 @@ export default function Loans({
                                 transition-[border-color] duration-200">
                   <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
-                    type="text" inputMode="decimal" pattern="[0-9.]*" name="loan-amount" placeholder="0"
+                    type="number" inputMode="decimal" name="loan-amount" placeholder="0"
                     value={form.amount}
                     onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
                   />
@@ -1404,7 +1404,7 @@ export default function Loans({
                     </div>
                     <span className="text-[15px] text-ink-3 shrink-0">Interest</span>
                     <input className="flex-1 bg-transparent text-[15px] text-ink outline-none text-right min-w-0"
-                      type="text" inputMode="decimal" pattern="[0-9.]*" name="loan-interest-rate" placeholder="0"
+                      type="number" inputMode="decimal" name="loan-interest-rate" placeholder="0"
                       value={form.interest_rate}
                       onChange={e => setForm(f => ({ ...f, interest_rate: e.target.value }))}
                     />
