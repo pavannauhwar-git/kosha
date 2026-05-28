@@ -41,7 +41,7 @@ export class RouteErrorBoundary extends React.Component {
         this.state.error?.message?.toLowerCase().includes('network error')
 
       return (
-        <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6 text-center gap-4">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center gap-4">
           <div
             className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
             style={{ background: 'var(--ds-warning-bg)' }}
