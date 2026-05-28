@@ -170,36 +170,6 @@ export default defineConfig(({ mode }) => {
               },
             },
             {
-              // Supabase Storage — CacheFirst, normalized cache key.
-              // Signed URLs change token on every regenerate; we cache by path
-              // so the underlying image is served from cache regardless of which
-              // signed URL was used to request it. Short TTL (1 hr) bounds the
-              // staleness when a user updates their avatar.
-              urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'supabase-storage',
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60, // 1 hour
-                },
-                cacheableResponse: { statuses: [200] },
-                plugins: [
-                  {
-                    // Normalize the cache key: drop query string + fragment.
-                    // Two signed URLs for the same underlying object resolve
-                    // to the same cache key, so we get cache hits even after
-                    // FIX-050's localStorage cache expires and we regenerate
-                    // a fresh signed URL.
-                    cacheKeyWillBeUsed: async ({ request }) => {
-                      const url = new URL(request.url)
-                      return url.origin + url.pathname
-                    },
-                  },
-                ],
-              },
-            },
-            {
               // Google Fonts CSS — CacheFirst (font manifests rarely change)
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
               handler: 'CacheFirst',
