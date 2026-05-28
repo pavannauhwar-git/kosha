@@ -40,21 +40,19 @@ export default function BottomSheet({
       onClose={onClose}
       onOpen={() => {}}
       disableBackdropTransition={!ios}
-      disableDiscovery={true}
+      disableDiscovery={ios}
       transitionDuration={{
-        enter: 300,
-        exit: 200,
+        enter: 380, // matches --ds-dur-spring-default
+        exit: 220,
       }}
       slotProps={{
         backdrop: {
           sx: {
-            // Touch devices skip the blur — see FIX-014.
-            '@media (hover: hover) and (pointer: fine)': {
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-            },
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
             backgroundColor: 'rgba(17, 19, 24, 0.40)',
-            transition: 'opacity 240ms cubic-bezier(0.2, 0, 0, 1) !important',
+            // Backdrop enters with effects spring (no overshoot)
+            transition: 'opacity 280ms cubic-bezier(0.2, 0, 0.2, 1) !important',
           },
         },
         paper: {
@@ -71,9 +69,10 @@ export default function BottomSheet({
             margin: '0 auto',
             width: '100%',
             maxWidth: 'var(--app-shell-max)',
-            // M3 Expressive emphasized — fast, decisive, no overshoot.
+            // M3 Expressive spring — approximated with CSS bezier
+            // Enter: translateY(100%) → 0, ease is the spring approximation
             transition:
-              'transform 300ms cubic-bezier(0.05, 0.7, 0.1, 1), opacity 240ms cubic-bezier(0.2, 0, 0, 1) !important',
+              'transform 380ms cubic-bezier(0.30, 1.38, 0.56, 1), opacity 280ms cubic-bezier(0.2, 0, 0.2, 1) !important',
             // Desktop styling transformation
             '@media (min-width: 600px)': {
               bottom: 'auto',
