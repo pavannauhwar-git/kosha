@@ -18,9 +18,9 @@ import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
 import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
-const DailySpendTrend = lazy(() => import('../components/cards/monthly/DailySpendTrend'))
+import DailySpendTrend from '../components/cards/monthly/DailySpendTrend'
 import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
-const CashflowWaterfallChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.CashflowWaterfallChart })))
+import { CashflowWaterfallChart } from '../components/analytics/AnalyticsCharts'
 import Button from '../components/ui/Button'
 import { readLocalJson, writeLocalJson } from '../lib/safeStorage'
 
