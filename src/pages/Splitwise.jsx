@@ -1376,7 +1376,6 @@ export default function Splitwise() {
                             <SecureAvatar
                               src={avatarUrl}
                               alt={displayName}
-                              fallbackInitial={memberInitial(displayName)}
                               className="h-full w-full object-cover"
                             />
                           ) : (

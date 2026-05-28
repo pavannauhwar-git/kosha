@@ -33,7 +33,6 @@ export default function ViewProfilePhotoDialog({ open, onClose, avatarUrl, displ
                 <SecureAvatar
                   src={avatarUrl}
                   alt={displayName}
-                  fallbackInitial={initial}
                   className="w-full h-full object-cover"
                 />
               ) : (

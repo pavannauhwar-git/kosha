@@ -1,67 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 
-const AVATAR_CACHE_KEY = 'kosha:avatar-urls'
-const AVATAR_CACHE_MAX = 50
-const AVATAR_CACHE_TTL_MS = 6 * 24 * 60 * 60 * 1000 // 6 days (less than 7-day signed URL TTL)
-
-function readAvatarCache() {
-  try {
-    const raw = localStorage.getItem(AVATAR_CACHE_KEY)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw)
-    return typeof parsed === 'object' && parsed !== null ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-function writeAvatarCache(map) {
-  try {
-    localStorage.setItem(AVATAR_CACHE_KEY, JSON.stringify(map))
-  } catch {
-    // Quota exceeded or storage unavailable — silently degrade to no-cache.
-  }
-}
-
-function getCachedAvatarUrl(src) {
-  const cache = readAvatarCache()
-  const entry = cache[src]
-  if (!entry) return null
-  if (Date.now() - entry.t > AVATAR_CACHE_TTL_MS) {
-    delete cache[src]
-    writeAvatarCache(cache)
-    return null
-  }
-  return entry.u
-}
-
-function setCachedAvatarUrl(src, signedUrl) {
-  const cache = readAvatarCache()
-  const keys = Object.keys(cache)
-  if (keys.length >= AVATAR_CACHE_MAX) {
-    // Evict the oldest entry (by timestamp).
-    let oldestKey = keys[0]
-    let oldestT = cache[oldestKey]?.t || 0
-    for (const k of keys) {
-      if ((cache[k]?.t || 0) < oldestT) {
-        oldestT = cache[k].t
-        oldestKey = k
-      }
-    }
-    delete cache[oldestKey]
-  }
-  cache[src] = { u: signedUrl, t: Date.now() }
-  writeAvatarCache(cache)
-}
-
-function deleteCachedAvatarUrl(src) {
-  const cache = readAvatarCache()
-  if (src in cache) {
-    delete cache[src]
-    writeAvatarCache(cache)
-  }
-}
+const avatarCache = new Map();
 
 export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
   const [url, setUrl] = useState(null);
@@ -85,9 +25,8 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
     }
 
     // Check cache
-    const cached = getCachedAvatarUrl(src)
-    if (cached) {
-      setUrl(cached);
+    if (avatarCache.has(src)) {
+      setUrl(avatarCache.get(src));
       return;
     }
 
@@ -104,7 +43,11 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
         }
 
         if (isMounted && data?.signedUrl) {
-          setCachedAvatarUrl(src, data.signedUrl);
+          if (avatarCache.size > 50) {
+            const firstKey = avatarCache.keys().next().value
+            avatarCache.delete(firstKey)
+          }
+          avatarCache.set(src, data.signedUrl);
           setUrl(data.signedUrl);
         }
       } catch (err) {
@@ -116,15 +59,10 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
     return () => { isMounted = false; };
   }, [src, retryNonce]);
 
-  const derivedInitial = (fallbackInitial || (alt && String(alt).trim()[0]) || '').toUpperCase()
-
   if (!url) {
     return (
-      <div
-        className={`flex items-center justify-center bg-kosha-surface-2 text-ink-3 font-medium ${className || ''}`}
-        aria-label={alt || undefined}
-      >
-        {derivedInitial}
+      <div className={`flex items-center justify-center bg-kosha-surface-2 text-ink-3 font-medium ${className || ''}`}>
+        {fallbackInitial || '?'}
       </div>
     );
   }
@@ -141,7 +79,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
         }
         retryCountRef.current += 1
         if (!src.startsWith('http')) {
-          deleteCachedAvatarUrl(src)
+          avatarCache.delete(src)
         }
         setUrl(null)
         setRetryNonce((n) => n + 1)
