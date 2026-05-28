@@ -33,7 +33,7 @@ import {
 import { detectConfidenceDrift, getDriftMessage, identifyDemotedAliases, calculateAliasQuality, identifyMerchantsInCooldown } from '../lib/reconciliationMetrics'
 import { C } from '../lib/colors'
 
-import ReconciliationOverviewPanel from '../components/reconciliation/ReconciliationOverviewPanel'
+const ReconciliationOverviewPanel = lazy(() => import('../components/reconciliation/ReconciliationOverviewPanel'))
 
 const FILTERS = [
   { id: 'all', label: 'All' },

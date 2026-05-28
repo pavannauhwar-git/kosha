@@ -27,8 +27,13 @@ const LIABILITY_PREFETCH_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
 function navigateWithViewTransition(navigate, to, options) {
-  // View Transitions API blocks the main thread on mobile and causes 
-  // 500ms+ hangs on complex DOMs. Bypassing to fix navigation lag.
+  if (typeof document !== 'undefined' && typeof document.startViewTransition === 'function') {
+    // The transition's callback must synchronously update state — wrap the navigate.
+    document.startViewTransition(() => {
+      navigate(to, options)
+    })
+    return
+  }
   navigate(to, options)
 }
 
@@ -1605,9 +1610,7 @@ export default function App() {
     <ThemeProvider theme={getMuiTheme(mode)}>
       <CssBaseline />
       <MotionConfig reducedMotion="user">
-        {/* DO NOT use v7_startTransition. It breaks the useDeferredValue feedback loop 
-            in AppRoutes, making the app appear frozen for 1-2s on tap. */}
-        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+        <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
           <AuthProvider>
           <QueryClientProvider client={queryClient}>
             <GlobalRealtimeSync />

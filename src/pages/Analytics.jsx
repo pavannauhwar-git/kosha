@@ -18,10 +18,15 @@ import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import { getReminderPrefs, maybeNotify } from '../lib/reminders'
 import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
 
-import YearOverYearCards from '../components/cards/analytics/YearOverYearCards'
-import YearlyPortfolioSnapshotCard from '../components/cards/analytics/YearlyPortfolioSnapshotCard'
-import InvestmentConsistencyCard from '../components/cards/analytics/InvestmentConsistencyCard'
-import { CashFlowChart, CashflowWaterfallChart, SurplusTrajectoryChart, WhatIfSimulatorCard, RunwayCoverageChart } from '../components/analytics/AnalyticsCharts'
+// Lazy-load heavy chart components to defer ~264KB charts vendor bundle
+const YearOverYearCards = lazy(() => import('../components/cards/analytics/YearOverYearCards'))
+const YearlyPortfolioSnapshotCard = lazy(() => import('../components/cards/analytics/YearlyPortfolioSnapshotCard'))
+const InvestmentConsistencyCard = lazy(() => import('../components/cards/analytics/InvestmentConsistencyCard'))
+const CashFlowChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.CashFlowChart })))
+const CashflowWaterfallChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.CashflowWaterfallChart })))
+const SurplusTrajectoryChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.SurplusTrajectoryChart })))
+const WhatIfSimulatorCard = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.WhatIfSimulatorCard })))
+const RunwayCoverageChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.RunwayCoverageChart })))
 
 function ChartSkeleton({ height = 'h-[200px]' }) {
   return <div className={`card p-4 ${height} flex items-center justify-center`}><div className="h-3 w-32 rounded-full shimmer opacity-60" /></div>

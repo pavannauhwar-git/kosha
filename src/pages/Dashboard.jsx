@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
-import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
+const SpendingPaceTracker = lazy(() => import('../components/dashboard/SpendingPaceTracker'))
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import AppToast from '../components/common/AppToast'
 import { getAuthUserId } from '../lib/authStore'
