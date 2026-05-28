@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { lazy, Suspense, useState, useEffect, useCallback, useRef, startTransition } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { motion, MotionConfig } from 'framer-motion'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 import { getMuiTheme } from './lib/muiTheme'
@@ -17,6 +17,7 @@ import { RouteErrorBoundary } from './components/errors/RouteErrorBoundary'
 import { House, List, CalendarDots, ChartBar, Receipt, UsersThree } from '@phosphor-icons/react'
 import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
+import { hapticTap } from './lib/haptics'
 import { useUserCategories } from './hooks/useUserCategories'
 import { getActiveWalletUserId, useActiveWallet } from './lib/walletStore'
 
@@ -485,22 +486,18 @@ function BottomNav() {
               key={item.path}
               className="nav-float-item"
               onClick={() => {
-                import('./lib/haptics').then(m => m.hapticTap())
+                hapticTap()
                 if (isActive) {
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                   return
                 }
-                // replace: true keeps the history stack flat — tab switches
-                // should never create back-navigable history entries so that
-                // the iOS swipe-from-left gesture only triggers meaningful
-                // navigation (e.g. modals / sub-pages), not tab hopping.
-                startTransition(() => {
-                  navigate(item.path, { replace: true })
-                })
+                // replace: true keeps the history stack flat. React Router v6
+                // wraps navigate() in startTransition automatically via the
+                // v7_startTransition future flag on <BrowserRouter>.
+                navigate(item.path, { replace: true })
               }}
-              onMouseEnter={() => prefetchRoute(item.path)}
+              onPointerEnter={(e) => { if (e.pointerType !== 'touch') prefetchRoute(item.path) }}
               onFocus={() => prefetchRoute(item.path)}
-              onTouchStart={() => prefetchRoute(item.path)}
               aria-current={isActive ? 'page' : undefined}
               aria-label={item.label}
             >
