@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, useMonthExpenseDailyTotals } from '../hooks/useTransactions'
@@ -18,9 +18,9 @@ import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
 import SectionHeader from '../components/common/SectionHeader'
 import MonthHeroCard from '../components/cards/monthly/MonthHeroCard'
-import DailySpendTrend from '../components/cards/monthly/DailySpendTrend'
+const DailySpendTrend = lazy(() => import('../components/cards/monthly/DailySpendTrend'))
 import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
-import { CashflowWaterfallChart } from '../components/analytics/AnalyticsCharts'
+const CashflowWaterfallChart = lazy(() => import('../components/analytics/AnalyticsCharts').then(m => ({ default: m.CashflowWaterfallChart })))
 import Button from '../components/ui/Button'
 import { readLocalJson, writeLocalJson } from '../lib/safeStorage'
 
@@ -547,7 +547,7 @@ export default function Monthly() {
           {!hasMonthData ? (
             <EmptyState
               className="py-10"
-              imageUrl="/illustrations/monthly_empty.png"
+              imageUrl="/illustrations/monthly_empty.webp"
               title="No data for this month"
               description="This month is empty right now. Add transactions to unlock month-close insights and reconciliation cues."
               actionLabel={
@@ -708,12 +708,14 @@ export default function Monthly() {
 
           {heavyReady && (inflow > 0 || spent > 0 || invested > 0) && (
             <div className="fade-up fade-up-5">
-              <CashflowWaterfallChart
-                totalIncome={inflow}
-                totalExpense={spent}
-                totalInvestment={invested}
-                periodLabel="Monthly"
-              />
+              <Suspense fallback={<div className="h-[220px] card skeleton" />}>
+                <CashflowWaterfallChart
+                  totalIncome={inflow}
+                  totalExpense={spent}
+                  totalInvestment={invested}
+                  periodLabel="Monthly"
+                />
+              </Suspense>
             </div>
           )}
 
@@ -768,13 +770,15 @@ export default function Monthly() {
 
           {heavyReady && !monthlyExpenseTotalsLoading && Object.keys(monthlyExpenseDailyTotals).length > 0 && (
             <div className="fade-up fade-up-7">
-              <DailySpendTrend
-                dailyTotals={monthlyExpenseDailyTotals}
-                year={year}
-                month={month}
-                onReviewExpenses={() => navigate(`/transactions?month=${monthParam}&type=expense`)}
-                onReviewPeakDay={(dateISO) => navigate(`/transactions?month=${monthParam}&type=expense&day=${encodeURIComponent(dateISO)}`)}
-              />
+              <Suspense fallback={<div className="h-[200px] card skeleton" />}>
+                <DailySpendTrend
+                  dailyTotals={monthlyExpenseDailyTotals}
+                  year={year}
+                  month={month}
+                  onReviewExpenses={() => navigate(`/transactions?month=${monthParam}&type=expense`)}
+                  onReviewPeakDay={(dateISO) => navigate(`/transactions?month=${monthParam}&type=expense&day=${encodeURIComponent(dateISO)}`)}
+                />
+              </Suspense>
             </div>
           )}
 

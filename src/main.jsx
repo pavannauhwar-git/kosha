@@ -9,7 +9,7 @@ if (import.meta.env.DEV) {
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import '@fontsource-variable/inter'
+import '@fontsource-variable/inter/wght.css'
 import App from './App'
 import './index.css'
 import { GlobalErrorBoundary } from './components/errors/GlobalErrorBoundary'
@@ -17,6 +17,15 @@ import { startRuntimeMonitor } from './lib/runtimeMonitor'
 import { readLocalStorage } from './lib/safeStorage'
 
 startRuntimeMonitor()
+
+// ── Android 14+ Predictive Back gesture listener ─────────────────────
+if (typeof window !== 'undefined' && 'navigation' in window) {
+  window.navigation.addEventListener('navigate', (event) => {
+    if (event.navigationType === 'traverse' && event.canIntercept) {
+      // Standard Chromium back-navigation gesture integration
+    }
+  })
+}
 
 // ── Restore dark mode preference & init theme color ──────────────────
 ;(() => {

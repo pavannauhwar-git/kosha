@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react'
 
-import { Plus, Wallet, TrendingDown, ArrowRight } from 'lucide-react'
+import { ArrowRight, Plus, TrendDown, Wallet } from '@phosphor-icons/react'
 import {
   useRecentTransactions,
   useMonthSummary,
@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
-import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
+const SpendingPaceTracker = lazy(() => import('../components/dashboard/SpendingPaceTracker'))
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import AppToast from '../components/common/AppToast'
 import { getAuthUserId } from '../lib/authStore'
@@ -779,7 +779,7 @@ export default function Dashboard() {
                 <div className="card p-3.5 border-0">
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${burnRate.ahead ? 'bg-warning-bg' : 'bg-income-bg'}`}>
-                      <TrendingDown size={14} className={burnRate.ahead ? 'text-warning-text' : 'text-income-text'} />
+                      <TrendDown size={14} className={burnRate.ahead ? 'text-warning-text' : 'text-income-text'} />
                     </div>
                     <p className="text-[10px] text-ink-3 tracking-wide">Burn rate</p>
                   </div>
@@ -797,11 +797,13 @@ export default function Dashboard() {
 
         {!heroLoading && (
           <div className="card-spring-in fade-up-4">
-            <SpendingPaceTracker
-              dailyExpenseTotals={dailyExpenseTotals}
-              now={now}
-              driftData={weeklyDriftSignal}
-            />
+            <Suspense fallback={<div className="h-[132px] card skeleton" />}>
+              <SpendingPaceTracker
+                dailyExpenseTotals={dailyExpenseTotals}
+                now={now}
+                driftData={weeklyDriftSignal}
+              />
+            </Suspense>
           </div>
         )}
 

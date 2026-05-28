@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef, startTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X, SlidersHorizontal, Plus, Download, BookOpen, ArrowRight, CheckCircle2, Loader2, Eye } from 'lucide-react'
+import { ArrowRight, BookOpen, CheckCircle, CircleNotch, Download, Eye, MagnifyingGlass, Plus, Sliders, X } from '@phosphor-icons/react'
 import {
   useTransactions,
   useTransactionSignalAggregates,
@@ -1220,7 +1220,7 @@ export default function Transactions() {
               )}
 
               <div className="relative mt-3">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+                <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
                 <input
                   className="input pl-8 pr-8 py-2 md:py-2.5 text-[14px]"
                   name="transaction-search"
@@ -1229,7 +1229,7 @@ export default function Transactions() {
                   onChange={e => setSearch(e.target.value)}
                 />
                 {isSearchDebouncing ? (
-                  <Loader2 size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 animate-spin" />
+                  <CircleNotch size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 animate-spin" />
                 ) : search && (
                   <button
                     type="button"
@@ -1352,7 +1352,7 @@ export default function Transactions() {
                     ? 'bg-brand text-brand-on border-brand'
                     : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
                 >
-                  <SlidersHorizontal size={11} />
+                  <Sliders size={11} />
                   {catFilter ? getCategoryLabel(catFilter) : 'Category'}
                 </button>
 
@@ -1369,7 +1369,7 @@ export default function Transactions() {
                     ? 'bg-brand text-brand-on border-brand'
                     : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'}`}
                 >
-                  <SlidersHorizontal size={11} />
+                  <Sliders size={11} />
                   {paymentModeFilter ? getPaymentModeLabel(paymentModeFilter) : 'Payment'}
                 </button>
 
@@ -1537,7 +1537,7 @@ export default function Transactions() {
         {!isInitialLoad && (
           groups.length === 0 ? (
           <EmptyState
-            imageUrl={hasActiveFilters ? "/illustrations/search_empty.png" : "/illustrations/empty_transactions.png"}
+            imageUrl={hasActiveFilters ? "/illustrations/search_empty.webp" : "/illustrations/empty_transactions.webp"}
             title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
             description={
               hasActiveFilters

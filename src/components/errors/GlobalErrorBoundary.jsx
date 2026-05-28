@@ -1,5 +1,5 @@
 import React from 'react'
-import { Bug, Home, RotateCw } from 'lucide-react'
+import { ArrowClockwise, Bug, House } from '@phosphor-icons/react'
 import KoshaErrorPage from './KoshaErrorPage'
 import { getRuntimeDiagnostics } from '../../lib/runtimeMonitor'
 import { captureError } from '../../lib/errorReporting'
@@ -77,7 +77,7 @@ export class GlobalErrorBoundary extends React.Component {
         .slice(0, 1800)
 
       const isNetworkError = err?.message?.toLowerCase().includes('failed to fetch') || err?.message?.toLowerCase().includes('network error')
-      const imageUrl = isNetworkError ? '/illustrations/no_internet.png' : '/illustrations/error_hero.png'
+      const imageUrl = isNetworkError ? '/illustrations/no_internet.webp' : '/illustrations/error_hero.webp'
 
       return (
         <KoshaErrorPage
@@ -93,8 +93,8 @@ export class GlobalErrorBoundary extends React.Component {
           onPrimary={this.handleReload}
           onSecondary={this.handleGoHome}
           onTertiary={this.handleReportBug}
-          primaryIcon={RotateCw}
-          secondaryIcon={Home}
+          primaryIcon={ArrowClockwise}
+          secondaryIcon={House}
           tertiaryIcon={Bug}
         />
       )

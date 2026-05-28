@@ -1,6 +1,6 @@
 import { memo, useMemo, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, CheckCircle2, X } from 'lucide-react'
+import { ArrowRight, CheckCircle, X } from '@phosphor-icons/react'
 import TransactionItem from '../transactions/TransactionItem'
 import { fmt } from '../../lib/utils'
 import { CATEGORIES, INVESTMENT_VEHICLES } from '../../lib/categories'
@@ -130,7 +130,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
 
         <EmptyState
           className="py-6 !bg-transparent !shadow-none !border-none"
-          imageUrl="/illustrations/empty_transactions.png"
+          imageUrl="/illustrations/empty_transactions.webp"
           title="No transactions yet"
           description="Your latest activity will appear here after you add your first transaction."
           actionLabel="Go to transactions"
