@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Archive, ArrowsLeftRight, CaretLeft, Link, Plus, Receipt, Sliders, Trash, Users, X } from '@phosphor-icons/react'
+import { Plus, Users, ArrowRightLeft, ReceiptText, X, Link2, Trash2, ChevronLeft, Settings2, Archive, ArchiveRestore } from 'lucide-react'
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Button from '../components/ui/Button'
@@ -49,18 +49,18 @@ import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
 import { captureError } from '../lib/errorReporting'
 
 const BANNERS = [
-  { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.webp' },
-  { id: 'gujarat', name: 'Gujarat (Rann)', src: '/banners/gujarat.webp' },
-  { id: 'karnataka', name: 'Karnataka (Hampi)', src: '/banners/karnataka.webp' },
-  { id: 'kerala', name: 'Kerala (Backwaters)', src: '/banners/kerala.webp' },
-  { id: 'meghalaya', name: 'Meghalaya (Waterfalls)', src: '/banners/meghalaya.webp' },
-  { id: 'rajasthan', name: 'Rajasthan (Palace)', src: '/banners/rajasthan.webp' },
-  { id: 'uttarakhand', name: 'Uttarakhand (Himalayas)', src: '/banners/uttarakhand.webp' },
-  { id: 'himachal', name: 'Himachal (Mountains)', src: '/banners/himachal.webp' },
-  { id: 'maharashtra', name: 'Maharashtra (Sahyadri)', src: '/banners/maharashtra.webp' },
-  { id: 'tamil_nadu', name: 'Tamil Nadu (Temples)', src: '/banners/tamil_nadu.webp' },
-  { id: 'punjab', name: 'Punjab (Golden Fields)', src: '/banners/punjab.webp' },
-  { id: 'sikkim', name: 'Sikkim (Monasteries)', src: '/banners/sikkim.webp' },
+  { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.png' },
+  { id: 'gujarat', name: 'Gujarat (Rann)', src: '/banners/gujarat.png' },
+  { id: 'karnataka', name: 'Karnataka (Hampi)', src: '/banners/karnataka.png' },
+  { id: 'kerala', name: 'Kerala (Backwaters)', src: '/banners/kerala.png' },
+  { id: 'meghalaya', name: 'Meghalaya (Waterfalls)', src: '/banners/meghalaya.png' },
+  { id: 'rajasthan', name: 'Rajasthan (Palace)', src: '/banners/rajasthan.png' },
+  { id: 'uttarakhand', name: 'Uttarakhand (Himalayas)', src: '/banners/uttarakhand.png' },
+  { id: 'himachal', name: 'Himachal (Mountains)', src: '/banners/himachal.png' },
+  { id: 'maharashtra', name: 'Maharashtra (Sahyadri)', src: '/banners/maharashtra.png' },
+  { id: 'tamil_nadu', name: 'Tamil Nadu (Temples)', src: '/banners/tamil_nadu.png' },
+  { id: 'punjab', name: 'Punjab (Golden Fields)', src: '/banners/punjab.png' },
+  { id: 'sikkim', name: 'Sikkim (Monasteries)', src: '/banners/sikkim.png' },
 ]
 
 const SPLIT_METHOD_OPTIONS = [
@@ -1106,7 +1106,7 @@ export default function Splitwise() {
                 }}
                 className="inline-flex items-center gap-1 text-[11px] text-ink-3"
               >
-                <CaretLeft size={13} /> All groups
+                <ChevronLeft size={13} /> All groups
               </button>
               <p className="mt-1 truncate text-[15px] font-semibold text-ink">{activeGroup.name}</p>
             </div>
@@ -1127,7 +1127,7 @@ export default function Splitwise() {
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<Link size={13} />}
+                icon={<Link2 size={13} />}
                 onClick={() => { void handleCreateGroupInvite() }}
                 loading={saving === 'group-invite'}
               >
@@ -1139,7 +1139,7 @@ export default function Splitwise() {
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<Sliders size={13} />}
+                icon={<Settings2 size={13} />}
                 onClick={() => {
                   setEditGroupForm({ name: activeGroup.name })
                   setShowEditGroup(true)
@@ -1205,7 +1205,7 @@ export default function Splitwise() {
       ) : groups.length === 0 ? (
         <EmptyState
           className="py-10"
-          imageUrl="/illustrations/splitwise_group.webp"
+          imageUrl="/illustrations/splitwise_group.png"
           title="No split group yet"
           description={isViewingPartner ? "This partner has no split groups." : "Create a group, invite Kosha users, and split expenses together."}
           actionLabel={isViewingPartner ? undefined : "Create group"}
@@ -1248,7 +1248,7 @@ export default function Splitwise() {
               {visibleGroups.length === 0 ? (
                 <EmptyState
                   className="py-6"
-                  imageUrl="/illustrations/splitwise_group.webp"
+                  imageUrl="/illustrations/splitwise_group.png"
                   title={showArchived ? "No archived groups" : "No active groups"}
                   description={showArchived ? "You don't have any archived groups." : "Create or join a new group."}
                 />
@@ -1433,7 +1433,7 @@ export default function Splitwise() {
                               disabled={!!saving}
                               title="Remove member"
                             >
-                              <Trash size={13} />
+                              <Trash2 size={13} />
                             </button>
                           )}
                         </div>
@@ -1473,7 +1473,7 @@ export default function Splitwise() {
             <Button
               variant="primary"
               size="md"
-              icon={<Receipt size={14} />}
+              icon={<ReceiptText size={14} />}
               onClick={() => setShowAddExpense(true)}
               disabled={!canManageGroup}
             >
@@ -1482,7 +1482,7 @@ export default function Splitwise() {
             <Button
               variant="success"
               size="md"
-              icon={<ArrowsLeftRight size={14} />}
+              icon={<ArrowRightLeft size={14} />}
               onClick={handleSettleUpClick}
               disabled={!canManageGroup}
             >
@@ -1494,7 +1494,7 @@ export default function Splitwise() {
             <p className="section-label mb-2">Suggested Settlements</p>
             {suggestedTransfers.length === 0 ? (
               <div className="py-4 text-center">
-                <img src="/illustrations/coffee_chill.webp" decoding="async" className="max-h-[140px] w-auto mx-auto mb-2 illustration" alt="All caught up" />
+                <img src="/illustrations/coffee_chill.png" decoding="async" className="max-h-[140px] w-auto mx-auto mb-2 illustration" alt="All caught up" />
                 <p className="text-[13px] font-semibold text-ink">Everyone is settled.</p>
                 <p className="text-[11px] text-ink-3">Time to relax.</p>
               </div>
@@ -1520,7 +1520,7 @@ export default function Splitwise() {
           <div className="card overflow-hidden">
             <div className="p-4 border-b border-kosha-border bg-kosha-surface flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Receipt size={16} className="text-brand" />
+                <ReceiptText size={16} className="text-brand" />
                 <p className="font-semibold text-[14px] text-ink">Transactions</p>
               </div>
               <div className="flex items-center gap-3">
@@ -1539,7 +1539,7 @@ export default function Splitwise() {
             ) : transactions.length === 0 ? (
               <div className="p-10 text-center">
                 <div className="w-10 h-10 rounded-full bg-kosha-surface-2 flex items-center justify-center mx-auto mb-3">
-                  <Receipt size={18} className="text-ink-3" />
+                  <ReceiptText size={18} className="text-ink-3" />
                 </div>
                 <p className="text-[13px] font-medium text-ink">No transactions yet</p>
                 <p className="text-[11px] text-ink-3 mt-1">Add an expense to get started.</p>
@@ -1570,7 +1570,7 @@ export default function Splitwise() {
                           <div className="flex items-start justify-between gap-2.5">
                             <div className="flex items-start gap-2.5 min-w-0">
                               <div className="h-8 w-8 rounded-full bg-brand/10 text-brand shrink-0 flex items-center justify-center border border-brand/20 mt-0.5">
-                                <Receipt size={14} />
+                                <ReceiptText size={14} />
                               </div>
                               <div className="min-w-0">
                                 <p className="text-[13px] font-semibold text-ink truncate leading-tight">{t.description}</p>
@@ -1612,7 +1612,7 @@ export default function Splitwise() {
                           <div className="flex items-start justify-between gap-2.5">
                             <div className="flex items-start gap-2.5 min-w-0">
                               <div className="h-8 w-8 rounded-full bg-success/10 text-success shrink-0 flex items-center justify-center border border-success/20 mt-0.5">
-                                <ArrowsLeftRight size={14} />
+                                <ArrowRightLeft size={14} />
                               </div>
                               <div className="min-w-0">
                                 <p className="text-[13px] font-semibold text-ink truncate leading-tight">Settlement</p>
@@ -2258,7 +2258,7 @@ export default function Splitwise() {
                     }`}
                   >
                     {activeGroup?.is_archived ? (
-                      <Archive size={20} className="text-brand shrink-0" />
+                      <ArchiveRestore size={20} className="text-brand shrink-0" />
                     ) : (
                       <Archive size={20} className="text-warning-text shrink-0" />
                     )}

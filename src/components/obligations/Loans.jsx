@@ -1,6 +1,10 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowDownLeft, ArrowUpRight, Calendar, Check, CircleNotch, DotsThreeVertical, Download, FileText, HandCoins, NotePencil, Percent, Plus, Trash, Users, X } from '@phosphor-icons/react'
+import {
+  Plus, X, Check, Loader2, Download, ArrowDownLeft, ArrowUpRight,
+  HandCoins, Users, Percent, Calendar, CalendarDays, FileText, Pencil,
+  MoreVertical, Trash2,
+} from 'lucide-react'
 import {
   useLoans,
   addLoanMutation,
@@ -910,7 +914,7 @@ export default function Loans({
             {tab !== 'settled' && activeLoans.length === 0 && (
               <EmptyState
                 className="py-8"
-                imageUrl="/illustrations/empty_loans.webp"
+                imageUrl="/illustrations/empty_loans.png"
                 title={tab === 'given' ? 'No loans given' : 'No loans taken'}
                 description={isViewingPartner
                   ? (tab === 'given' ? 'This partner has not lent any money.' : 'This partner has not borrowed any money.')
@@ -930,7 +934,7 @@ export default function Loans({
             {tab === 'settled' && !settledLoading && visibleSettled.length === 0 && (
               <EmptyState
                 className="py-8"
-                imageUrl="/illustrations/settled_loans.webp"
+                imageUrl="/illustrations/settled_loans.png"
                 title="No settled loans"
                 description="Loans you fully repay will show up here."
                 actionLabel="View active"
@@ -1043,7 +1047,7 @@ export default function Loans({
                             disabled={!!deletingId || isOptimistic}
                             variant="secondary"
                             size="sm"
-                            icon={<NotePencil size={13} />}
+                            icon={<Pencil size={13} />}
                           >
                             Edit
                           </Button>
@@ -1071,7 +1075,7 @@ export default function Loans({
                             disabled={!!deletingId || isOptimistic}
                             variant="danger"
                             size="sm"
-                            icon={deletingId === loan.id ? <CircleNotch size={13} className="animate-spin" /> : <X size={13} />}
+                            icon={deletingId === loan.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                           >
                             {deletingId === loan.id ? 'Deleting…' : 'Delete'}
                           </Button>
@@ -1105,8 +1109,8 @@ export default function Loans({
                                   aria-label="More options"
                                 >
                                   {deletingId === loan.id
-                                    ? <CircleNotch size={14} className="animate-spin" />
-                                    : <DotsThreeVertical size={15} />}
+                                    ? <Loader2 size={14} className="animate-spin" />
+                                    : <MoreVertical size={15} />}
                                 </button>
                                 {overflowLoanId === loan.id && (
                                   <div className="absolute right-0 top-full mt-1 z-30 bg-kosha-surface rounded-2xl border border-kosha-border shadow-apple-card min-w-[200px] overflow-hidden">
@@ -1114,7 +1118,7 @@ export default function Loans({
                                       onClick={() => { setOverflowLoanId(null); handleDelete(loan.id) }}
                                       className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left active:bg-kosha-surface-2 transition-colors"
                                     >
-                                      <Trash size={14} className="text-expense-text mt-0.5 shrink-0" />
+                                      <Trash2 size={14} className="text-expense-text mt-0.5 shrink-0" />
                                       <div>
                                         <p className="text-[13px] font-semibold text-expense-text leading-snug">Delete loan</p>
                                         <p className="text-[11px] text-ink-3 mt-0.5 leading-snug">Linked repayment transactions will also be removed</p>
@@ -1428,7 +1432,7 @@ export default function Loans({
                 <div className="list-card mb-3">
                   <div className="list-row w-full">
                     <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
-                      <Calendar size={14} className="text-brand" />
+                      <CalendarDays size={14} className="text-brand" />
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Expected Repayment</span>
                     <PixelDatePicker

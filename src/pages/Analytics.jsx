@@ -416,7 +416,7 @@ export default function Analytics() {
           ) : (
             <EmptyState
               className="py-10"
-              imageUrl="/illustrations/yearly_empty.webp"
+              imageUrl="/illustrations/yearly_empty.png"
               title={isViewingPartner ? `No data found` : `No data for ${year}`}
               description={isViewingPartner ? `This partner has no transactions for the year ${year}.` : "This year is empty right now. Add transactions to unlock yearly trends, category intelligence, and YoY comparisons."}
               actionLabel={isViewingPartner ? undefined : (year === currentYear ? 'Add transaction' : 'Go to current year')}

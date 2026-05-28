@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowSquareOut, House, ShieldCheck, Sparkle } from '@phosphor-icons/react'
+import { ExternalLink, Home, ShieldCheck, Sparkles } from 'lucide-react'
 import {
   HeartIcon, CodeIcon, CurrencyInrIcon, CopyIcon, CheckIcon,
   GithubLogoIcon, LockIcon, StarIcon, CaretDownIcon, CaretUpIcon,
@@ -78,7 +78,7 @@ function ConnectRow({ href, icon, label, sublabel, tone = 'neutral' }) {
         <p className="text-[14px] font-semibold text-ink leading-snug">{label}</p>
         <p className="text-[12px] text-ink-3 mt-0.5 truncate">{sublabel}</p>
       </div>
-      <ArrowSquareOut size={14} className="text-ink-3 shrink-0" />
+      <ExternalLink size={14} className="text-ink-3 shrink-0" />
     </a>
   )
 }
@@ -131,7 +131,7 @@ export default function About() {
           aria-label="Go to dashboard"
           className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border transition-colors"
         >
-          <House size={16} className="text-ink-2" />
+          <Home size={16} className="text-ink-2" />
         </button>
       )}
     >
@@ -148,7 +148,7 @@ export default function About() {
               <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Kosha</p>
               <p className="text-[12px] text-ink-3 mt-0.5">Your financial command center</p>
             </div>
-            <img src="/illustrations/about_hero.webp" alt="About Kosha" decoding="async" className="w-40 h-auto object-contain illustration shrink-0" />
+            <img src="/illustrations/about_hero.png" alt="About Kosha" decoding="async" className="w-40 h-auto object-contain illustration shrink-0" />
           </div>
 
           <div className="p-4">
@@ -177,7 +177,7 @@ export default function About() {
                 size="md"
                 fullWidth
                 onClick={() => navigate('/guide')}
-                icon={<Sparkle size={14} />}
+                icon={<Sparkles size={14} />}
               >
                 Open product guide
               </Button>
@@ -189,7 +189,7 @@ export default function About() {
           <SectionLabel>How Kosha Works</SectionLabel>
           <div className="card overflow-hidden p-0">
             <StoryRow
-              icon={<Sparkle size={14} className="text-brand" />}
+              icon={<Sparkles size={14} className="text-brand" />}
               title="Capture once"
               description="Track transactions, bills, loans, and investments in one place instead of managing separate systems."
               tone="brand"

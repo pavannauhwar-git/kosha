@@ -132,7 +132,7 @@ export default function Obligations() {
         {allEmpty && (
           <div className="fade-up fade-up-2 card p-6 flex flex-col items-center text-center">
             <img
-              src="/illustrations/all_done.webp"
+              src="/illustrations/all_done.png"
               alt="No obligations"
               decoding="async"
               className="w-52 h-auto illustration mb-4"
@@ -182,7 +182,7 @@ export default function Obligations() {
                   )}
                 </div>
                 <img
-                  src="/illustrations/coffee_chill.webp"
+                  src="/illustrations/coffee_chill.png"
                   alt="Bills"
                   decoding="async"
                   className="w-20 h-20 object-contain illustration shrink-0 -mt-1"
@@ -287,7 +287,7 @@ export default function Obligations() {
                   )}
                 </div>
                 <img
-                  src="/illustrations/empty_loans.webp"
+                  src="/illustrations/empty_loans.png"
                   alt="Loans"
                   decoding="async"
                   className="w-20 h-20 object-contain illustration shrink-0 -mt-1"

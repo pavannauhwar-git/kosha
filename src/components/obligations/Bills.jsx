@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ArrowUpRight, BookOpen, Calendar, Check, CircleNotch, DotsThreeVertical, Download, NotePencil, Plus, Repeat, Trash, X } from '@phosphor-icons/react'
+import { Plus, X, Check, Repeat, Loader2, Download, BookOpen, ArrowRight, Pencil, CalendarDays, MoreVertical, Trash2, ArrowUpRight } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useLiabilities,
@@ -802,7 +802,7 @@ export default function Bills({
             {tab === 'pending' && visiblePending.length === 0 && (
               <EmptyState
                 className="py-8"
-                imageUrl="/illustrations/coffee_chill.webp"
+                imageUrl="/illustrations/coffee_chill.png"
                 title="You're all clear"
                 description={isViewingPartner ? "This partner has no pending bills." : "No pending bills right now. Add recurring dues to keep reminders and cashflow planning accurate."}
                 actionLabel={isViewingPartner ? undefined : "Add a bill"}
@@ -824,7 +824,7 @@ export default function Bills({
             {tab === 'paid' && !paidLoading && visiblePaid.length === 0 && (
               <EmptyState
                 className="py-8"
-                imageUrl="/illustrations/all_done.webp"
+                imageUrl="/illustrations/all_done.png"
                 title="No paid bills yet"
                 description="Bills you mark as paid will show up here for history and tracking."
                 actionLabel="View pending"
@@ -936,7 +936,7 @@ export default function Bills({
                                   disabled={!!payingId || !!deletingId || !!bill.__optimistic}
                                   variant="secondary"
                                   size="sm"
-                                  icon={<NotePencil size={13} />}
+                                  icon={<Pencil size={13} />}
                                 >
                                   Edit
                                 </Button>
@@ -945,7 +945,7 @@ export default function Bills({
                                   disabled={!!payingId || !!deletingId || !!bill.__optimistic}
                                   variant="success"
                                   size="sm"
-                                  icon={payingId === bill.id ? <CircleNotch size={13} className="animate-spin" /> : <Check size={13} />}
+                                  icon={payingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                                 >
                                   {payingId === bill.id ? 'Paying…' : 'Paid'}
                                 </Button>
@@ -954,7 +954,7 @@ export default function Bills({
                                   disabled={!!payingId || !!deletingId || !!bill.__optimistic}
                                   variant="danger"
                                   size="sm"
-                                  icon={deletingId === bill.id ? <CircleNotch size={13} className="animate-spin" /> : <X size={13} />}
+                                  icon={deletingId === bill.id ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                                 >
                                   {deletingId === bill.id ? 'Deleting…' : 'Delete'}
                                 </Button>
@@ -970,8 +970,8 @@ export default function Bills({
                                   aria-label="More options"
                                 >
                                   {deletingId === bill.id
-                                    ? <CircleNotch size={14} className="animate-spin" />
-                                    : <DotsThreeVertical size={16} />}
+                                    ? <Loader2 size={14} className="animate-spin" />
+                                    : <MoreVertical size={16} />}
                                 </button>
                                 {overflowBillId === bill.id && (
                                   <div className="absolute right-0 top-full mt-1 z-30 bg-kosha-surface rounded-2xl border border-kosha-border shadow-apple-card min-w-[200px] overflow-hidden">
@@ -979,7 +979,7 @@ export default function Bills({
                                       onClick={() => { setOverflowBillId(null); handleDelete(bill.id) }}
                                       className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left active:bg-kosha-surface-2 transition-colors"
                                     >
-                                      <Trash size={14} className="text-expense-text mt-0.5 shrink-0" />
+                                      <Trash2 size={14} className="text-expense-text mt-0.5 shrink-0" />
                                       <div>
                                         <p className="text-[13px] font-semibold text-expense-text leading-snug">Delete bill</p>
                                         <p className="text-[11px] text-ink-3 mt-0.5 leading-snug">
@@ -1059,7 +1059,7 @@ export default function Bills({
                 <div className="list-card mb-3">
                   <div className="list-row w-full">
                     <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
-                      <Calendar size={14} className="text-brand" />
+                      <CalendarDays size={14} className="text-brand" />
                     </div>
                     <span className="flex-1 text-[15px] text-ink">Due Date</span>
                     <PixelDatePicker

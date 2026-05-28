@@ -187,7 +187,7 @@ export default function Login() {
                   </div>
                   <p className="text-[12px] text-ink-2">Personal finance, simplified</p>
                 </div>
-                <img src="/illustrations/all_done.webp" alt="Kosha login" decoding="async" className="w-40 h-auto shrink-0 illustration" />
+                <img src="/illustrations/all_done.png" alt="Kosha login" decoding="async" className="w-40 h-auto shrink-0 illustration" />
               </div>
 
               {/* ── Heading ───────────────────────────────────────────────── */}

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo, useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowCounterClockwise, ArrowRight, CheckCircle, ClockCounterClockwise, House, Link, ShieldCheck, WarningCircle } from '@phosphor-icons/react'
+import { AlertCircle, ArrowRight, CheckCircle2, History, Home, Link2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useActiveWallet } from '../lib/walletStore'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
@@ -523,7 +523,7 @@ export default function Reconciliation() {
           className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
           aria-label="Go to home"
         >
-          <House size={16} className="text-ink-2" />
+          <Home size={16} className="text-ink-2" />
         </button>
       )}
       contentClassName="page"
@@ -541,7 +541,7 @@ export default function Reconciliation() {
                 : 'Queue clear. Your records look healthy.'}
             </p>
           </div>
-          <img src="/illustrations/reconciliation_empty.webp" alt="Reconciliation" decoding="async" className="w-40 h-auto object-contain illustration shrink-0" />
+          <img src="/illustrations/reconciliation_empty.png" alt="Reconciliation" decoding="async" className="w-40 h-auto object-contain illustration shrink-0" />
         </div>
 
         <div className="px-4 py-3.5">
@@ -583,7 +583,7 @@ export default function Reconciliation() {
 
       {confidenceDrift?.drifting && Number(confidenceDrift?.drift || 0) >= 25 && (
         <div className="rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 flex items-start gap-2">
-          <WarningCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
+          <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
           <div>
             <p className="text-[12px] font-semibold text-warning-text">Match quality is declining</p>
             <p className="text-[11px] text-ink-3 mt-0.5">
@@ -713,7 +713,7 @@ export default function Reconciliation() {
           ) : !hasTransactions && !hasActiveFilters ? (
             <EmptyState
               className="py-6"
-              imageUrl="/illustrations/reconciliation_empty.webp"
+              imageUrl="/illustrations/reconciliation_empty.png"
               title="Nothing to reconcile yet"
               description="Add transactions first. Reconciliation checks will surface here."
               actionLabel="Go to transactions"
@@ -722,7 +722,7 @@ export default function Reconciliation() {
           ) : visibleItems.length === 0 ? (
             <EmptyState
               className="py-6"
-              imageUrl="/illustrations/all_done.webp"
+              imageUrl="/illustrations/all_done.png"
               title={hasActiveFilters ? 'No items for selected filters' : 'Queue is clear'}
               description={
                 hasActiveFilters
@@ -854,7 +854,7 @@ export default function Reconciliation() {
                   type="button"
                   variant="secondary"
                   size="sm"
-                  icon={<ArrowCounterClockwise size={13} />}
+                  icon={<RotateCcw size={13} />}
                   loading={resettingAliases}
                   onClick={() => { void resetLearnedAliases() }}
                   disabled={learnedAliasCount === 0 || resettingAliases || reviewTableUnavailable}
@@ -862,7 +862,7 @@ export default function Reconciliation() {
                   {resettingAliases ? 'Resetting' : 'Reset'}
                 </Button>
                 <div className="w-9 h-9 rounded-full bg-ink/[0.06] text-ink flex items-center justify-center">
-                  <Link size={16} />
+                  <Link2 size={16} />
                 </div>
               </div>
             </div>
@@ -877,7 +877,7 @@ export default function Reconciliation() {
                     : 'border-brand-border bg-brand-bg'
                 }`}
               >
-                <WarningCircle
+                <AlertCircle
                   size={14}
                   className={`shrink-0 mt-0.5 ${
                     driftMessage.severity === 'warning' ? 'text-warning-text' : 'text-ink'
@@ -908,7 +908,7 @@ export default function Reconciliation() {
 
             {statementValidationMessage && (
               <div className="mt-3 rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 flex items-start gap-2">
-                <WarningCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
+                <AlertCircle size={14} className="text-warning-text shrink-0 mt-0.5" />
                 <p className="text-[11px] text-warning-text">{statementValidationMessage}</p>
               </div>
             )}
@@ -941,7 +941,7 @@ export default function Reconciliation() {
           {recentLinkDecisions.length > 0 && (
             <div className="card p-4">
               <div className="flex items-center gap-2 mb-2.5">
-                <ClockCounterClockwise size={14} className="text-ink-4" />
+                <History size={14} className="text-ink-4" />
                 <p className="text-[12px] font-semibold text-ink-2">Recent matching decisions</p>
               </div>
               <div className="space-y-2">

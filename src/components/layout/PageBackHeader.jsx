@@ -1,4 +1,4 @@
-import { ArrowLeft } from '@phosphor-icons/react'
+import { ArrowLeft } from 'lucide-react'
 
 export default function PageBackHeader({
   title,

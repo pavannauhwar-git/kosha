@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, X } from '@phosphor-icons/react'
+import { X, User } from 'lucide-react'
 import SecureAvatar from '../ui/SecureAvatar'
 import { useBackButtonClose } from '../../hooks/useBackButtonClose'
 

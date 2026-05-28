@@ -1,6 +1,21 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, ChartLineUp, CheckCircle, House, Link, Receipt, ShieldCheck, Sparkle, SquaresFour, Users, Wallet, WarningCircle, X } from '@phosphor-icons/react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Home,
+  Sparkles,
+  ShieldCheck,
+  LayoutGrid,
+  LineChart,
+  Receipt,
+  Wallet,
+  Link2,
+  Users,
+  X,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
@@ -33,7 +48,7 @@ const FEATURE_CARDS = [
     id: 'dashboard',
     title: 'Dashboard',
     subtitle: 'Your daily control center',
-    icon: SquaresFour,
+    icon: LayoutGrid,
     route: '/',
     category: 'beginner',
     accent: 'bg-brand-container text-ink',
@@ -105,7 +120,7 @@ const FEATURE_CARDS = [
     id: 'analytics',
     title: 'Analytics',
     subtitle: 'Behavior and trend intelligence',
-    icon: ChartLineUp,
+    icon: LineChart,
     route: '/analytics',
     category: 'monthly',
     accent: 'bg-brand-container text-brand',
@@ -129,7 +144,7 @@ const FEATURE_CARDS = [
     id: 'reconciliation',
     title: 'Reconciliation',
     subtitle: 'Quality assurance for your records',
-    icon: Link,
+    icon: Link2,
     route: '/reconciliation',
     category: 'weekly',
     accent: 'bg-brand-container text-ink',
@@ -272,7 +287,7 @@ export default function Guide() {
           aria-label="Go to dashboard"
           className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-95 active:bg-kosha-border"
         >
-          <House size={16} className="text-ink-2" />
+          <Home size={16} className="text-ink-2" />
         </button>
       )}
       contentClassName="px-4 pt-5 pb-24 max-w-[560px] mx-auto"
@@ -286,7 +301,7 @@ export default function Guide() {
                 Practical workflows, mistakes to avoid, and quick next actions for every page.
               </p>
             </div>
-            <img src="/illustrations/guide_hero.webp" alt="Guide Hero" decoding="async" className="w-40 h-auto object-contain illustration shrink-0" />
+            <img src="/illustrations/guide_hero.png" alt="Guide Hero" decoding="async" className="w-40 h-auto object-contain illustration shrink-0" />
           </div>
 
           <div className="p-4">
@@ -326,7 +341,7 @@ export default function Guide() {
                 size="md"
                 fullWidth
                 onClick={() => openFeature(nextFeature.id)}
-                icon={<Sparkle size={15} />}
+                icon={<Sparkles size={15} />}
               >
                 Continue with {nextFeature.title}
               </Button>
@@ -459,7 +474,7 @@ export default function Guide() {
 
         <div className="fade-up fade-up-6 hint-card">
           <div className="flex items-center gap-2 mb-1">
-            <Sparkle size={15} className="text-ink-2" />
+            <Sparkles size={15} className="text-ink-2" />
             <p className="text-body font-semibold text-ink">Today tip</p>
           </div>
           <p className="text-label text-ink-2">{todayTip}</p>
@@ -556,7 +571,7 @@ export default function Guide() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
                   <div className="rounded-card border border-income-border bg-income-bg/30 p-2.5">
                     <p className="text-[12px] font-semibold text-income-text mb-1 inline-flex items-center gap-1">
-                      <CheckCircle size={13} /> Do this
+                      <CheckCircle2 size={13} /> Do this
                     </p>
                     <div className="space-y-1">
                       {selectedFeature.doThis.map((point) => (
@@ -567,7 +582,7 @@ export default function Guide() {
 
                   <div className="rounded-card border border-warning-border bg-warning-bg/35 p-2.5">
                     <p className="text-[12px] font-semibold text-warning-text mb-1 inline-flex items-center gap-1">
-                      <WarningCircle size={13} /> Avoid this
+                      <AlertCircle size={13} /> Avoid this
                     </p>
                     <div className="space-y-1">
                       {selectedFeature.avoidThis.map((point) => (
