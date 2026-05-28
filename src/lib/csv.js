@@ -4,7 +4,10 @@ function normalizeCell(value) {
 }
 
 export function asCsvCell(value) {
-  const text = normalizeCell(value)
+  let text = normalizeCell(value)
+  if (/^[=+\-@\t\r]/.test(text)) {
+    text = "'" + text
+  }
   const escaped = text.replace(/"/g, '""')
   return `"${escaped}"`
 }

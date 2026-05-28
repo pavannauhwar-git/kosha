@@ -1,74 +1,39 @@
-export function round2(value) {
-  const n = Number(value || 0)
-  return Math.round((n + Number.EPSILON) * 100) / 100
-}
-
-function parsePositive(value) {
-  const n = Number(value)
-  return Number.isFinite(n) && n > 0 ? n : 0
-}
-
-export function distributeRoundedShares(rawShares, totalAmount) {
-  const total = round2(totalAmount)
-  const rounded = rawShares.map((entry) => ({
-    ...entry,
-    share: round2(entry.share),
-  }))
-
-  const sum = round2(rounded.reduce((acc, entry) => acc + Number(entry.share || 0), 0))
-  const delta = round2(total - sum)
-
-  if (Math.abs(delta) >= 0.01 && rounded.length > 0) {
-    let targetIndex = 0
-    let maxShare = Number(rounded[0].share || 0)
-    for (let i = 1; i < rounded.length; i += 1) {
-      const share = Number(rounded[i].share || 0)
-      if (share > maxShare) {
-        maxShare = share
-        targetIndex = i
-      }
-    }
-
-    rounded[targetIndex] = {
-      ...rounded[targetIndex],
-      share: round2(Number(rounded[targetIndex].share || 0) + delta),
-    }
-  }
-
-  return rounded
-}
+import { fromRupees, toRupees, divEvenly } from './paise.js'
 
 export function buildEqualSplits(memberIds, amount) {
   const validIds = (memberIds || []).filter(Boolean)
-  const total = round2(amount)
-  if (!validIds.length || total <= 0) return []
+  const total = fromRupees(amount)
+  if (!validIds.length || total === 0n) return []
 
-  const perHead = total / validIds.length
-  return distributeRoundedShares(
-    validIds.map((memberId) => ({ member_id: memberId, share: perHead })),
-    total
-  )
+  const shares = divEvenly(total, validIds.length)
+  return validIds.map((memberId, i) => ({
+    member_id: memberId,
+    share: toRupees(shares[i])
+  }))
 }
 
 export function buildExactSplits(entries, amount) {
-  const total = round2(amount)
+  const total = fromRupees(amount)
   const mapped = (entries || [])
     .map((entry) => ({
       member_id: entry?.member_id,
-      share: round2(entry?.share),
+      sharePaise: fromRupees(entry?.share),
     }))
-    .filter((entry) => entry.member_id && entry.share >= 0)
+    .filter((entry) => entry.member_id)
 
-  const sum = round2(mapped.reduce((acc, entry) => acc + Number(entry.share || 0), 0))
-  if (Math.abs(sum - total) > 0.01) {
+  const sum = mapped.reduce((acc, entry) => acc + entry.sharePaise, 0n)
+  if (sum !== total) {
     throw new Error('Exact splits must add up to the full amount.')
   }
 
-  return mapped
+  return mapped.map(e => ({
+    member_id: e.member_id,
+    share: toRupees(e.sharePaise)
+  }))
 }
 
 export function buildPercentSplits(entries, amount) {
-  const total = round2(amount)
+  const total = fromRupees(amount)
   const mapped = (entries || [])
     .map((entry) => ({
       member_id: entry?.member_id,
@@ -76,22 +41,35 @@ export function buildPercentSplits(entries, amount) {
     }))
     .filter((entry) => entry.member_id && entry.percent > 0)
 
-  const percentSum = mapped.reduce((acc, entry) => acc + Number(entry.percent || 0), 0)
-  if (Math.abs(percentSum - 100) > 0.01) {
+  const basisPointsSum = mapped.reduce((acc, entry) => acc + Math.round(entry.percent * 100), 0)
+  if (basisPointsSum !== 10000) {
     throw new Error('Percentage splits must total exactly 100%.')
   }
 
-  const raw = mapped.map((entry) => ({
-    member_id: entry.member_id,
-    percent: round2(entry.percent),
-    share: total * (entry.percent / 100),
+  const rawShares = mapped.map(entry => {
+    const bp = BigInt(Math.round(entry.percent * 100))
+    const exactShare = (total * bp) / 10000n
+    return { ...entry, exactShare, bp }
+  })
+  
+  const exactSum = rawShares.reduce((acc, e) => acc + e.exactShare, 0n)
+  const delta = total - exactSum
+  const sign = delta < 0n ? -1n : 1n;
+  const absDelta = delta < 0n ? -delta : delta;
+  
+  for (let i = 0; i < Number(absDelta) && i < rawShares.length; i++) {
+    rawShares[i].exactShare += sign;
+  }
+  
+  return rawShares.map(e => ({
+    member_id: e.member_id,
+    percent: e.percent,
+    share: toRupees(e.exactShare)
   }))
-
-  return distributeRoundedShares(raw, total)
 }
 
 export function buildShareSplits(entries, amount) {
-  const total = round2(amount)
+  const total = fromRupees(amount)
   const mapped = (entries || [])
     .map((entry) => ({
       member_id: entry?.member_id,
@@ -99,58 +77,94 @@ export function buildShareSplits(entries, amount) {
     }))
     .filter((entry) => entry.member_id && entry.shares > 0)
 
-  const totalShares = mapped.reduce((acc, entry) => acc + Number(entry.shares || 0), 0)
+  const totalShares = mapped.reduce((acc, entry) => acc + entry.shares, 0)
   if (totalShares <= 0) {
     throw new Error('At least one share entry is required.')
   }
 
-  const raw = mapped.map((entry) => ({
-    member_id: entry.member_id,
-    shares: round2(entry.shares),
-    share: total * (entry.shares / totalShares),
+  const totalSharesBig = BigInt(Math.round(totalShares * 10000))
+  
+  const rawShares = mapped.map(entry => {
+    const sBig = BigInt(Math.round(entry.shares * 10000))
+    const exactShare = (total * sBig) / totalSharesBig
+    return { ...entry, exactShare }
+  })
+  
+  const exactSum = rawShares.reduce((acc, e) => acc + e.exactShare, 0n)
+  const delta = total - exactSum
+  const sign = delta < 0n ? -1n : 1n;
+  const absDelta = delta < 0n ? -delta : delta;
+  
+  for (let i = 0; i < Number(absDelta) && i < rawShares.length; i++) {
+    rawShares[i].exactShare += sign;
+  }
+  
+  return rawShares.map(e => ({
+    member_id: e.member_id,
+    shares: e.shares,
+    share: toRupees(e.exactShare)
   }))
-
-  return distributeRoundedShares(raw, total)
 }
 
 export function computeMemberBalances(members, expenses, settlements) {
   const balanceByMember = new Map()
+  const memberSet = new Set()
 
   for (const member of members || []) {
     if (!member?.id) continue
-    balanceByMember.set(member.id, 0)
+    balanceByMember.set(member.id, 0n)
+    memberSet.add(member.id)
   }
 
   for (const expense of expenses || []) {
-    const amount = parsePositive(expense?.amount)
+    const amount = fromRupees(expense?.amount)
     const payerId = expense?.paid_by_member_id
-    if (payerId && balanceByMember.has(payerId)) {
-      balanceByMember.set(payerId, round2((balanceByMember.get(payerId) || 0) + amount))
+    
+    if (payerId && !memberSet.has(payerId)) {
+      throw new Error(`Payer ${payerId} is missing from group members`)
+    }
+
+    if (payerId) {
+      balanceByMember.set(payerId, (balanceByMember.get(payerId) || 0n) + amount)
     }
 
     const splits = Array.isArray(expense?.split_expense_splits) ? expense.split_expense_splits : []
     for (const split of splits) {
       const memberId = split?.member_id
-      const share = round2(split?.share)
-      if (!memberId || !balanceByMember.has(memberId)) continue
-      balanceByMember.set(memberId, round2((balanceByMember.get(memberId) || 0) - share))
+      const share = fromRupees(split?.share)
+      if (!memberId) continue
+      if (!memberSet.has(memberId)) {
+        throw new Error(`Split member ${memberId} is missing from group members`)
+      }
+      balanceByMember.set(memberId, (balanceByMember.get(memberId) || 0n) - share)
     }
   }
 
   for (const settlement of settlements || []) {
-    const amount = parsePositive(settlement?.amount)
+    const amount = fromRupees(settlement?.amount)
     const payerId = settlement?.payer_member_id
     const payeeId = settlement?.payee_member_id
 
-    if (payerId && balanceByMember.has(payerId)) {
-      balanceByMember.set(payerId, round2((balanceByMember.get(payerId) || 0) + amount))
+    if (payerId && !memberSet.has(payerId)) {
+      throw new Error(`Settlement payer ${payerId} is missing from group members`)
     }
-    if (payeeId && balanceByMember.has(payeeId)) {
-      balanceByMember.set(payeeId, round2((balanceByMember.get(payeeId) || 0) - amount))
+    if (payeeId && !memberSet.has(payeeId)) {
+      throw new Error(`Settlement payee ${payeeId} is missing from group members`)
+    }
+
+    if (payerId) {
+      balanceByMember.set(payerId, (balanceByMember.get(payerId) || 0n) + amount)
+    }
+    if (payeeId) {
+      balanceByMember.set(payeeId, (balanceByMember.get(payeeId) || 0n) - amount)
     }
   }
 
-  return balanceByMember
+  const floatMap = new Map()
+  for (const [id, bal] of balanceByMember.entries()) {
+    floatMap.set(id, toRupees(bal))
+  }
+  return floatMap
 }
 
 export function buildSimplifiedTransfers(balancesWithMembers) {
@@ -158,10 +172,13 @@ export function buildSimplifiedTransfers(balancesWithMembers) {
   const debtors = []
 
   for (const row of balancesWithMembers || []) {
-    const net = round2(row?.net)
-    if (net > 0.01) creditors.push({ member: row.member, remaining: net })
-    else if (net < -0.01) debtors.push({ member: row.member, remaining: Math.abs(net) })
+    const net = fromRupees(row?.net)
+    if (net > 0n) creditors.push({ member: row.member, remaining: net })
+    else if (net < 0n) debtors.push({ member: row.member, remaining: -net })
   }
+
+  creditors.sort((a, b) => (b.remaining > a.remaining ? 1 : b.remaining < a.remaining ? -1 : 0))
+  debtors.sort((a, b) => (b.remaining > a.remaining ? 1 : b.remaining < a.remaining ? -1 : 0))
 
   const transfers = []
   let i = 0
@@ -170,21 +187,21 @@ export function buildSimplifiedTransfers(balancesWithMembers) {
   while (i < debtors.length && j < creditors.length) {
     const debtor = debtors[i]
     const creditor = creditors[j]
-    const amount = round2(Math.min(debtor.remaining, creditor.remaining))
+    const amount = debtor.remaining < creditor.remaining ? debtor.remaining : creditor.remaining
 
-    if (amount > 0.01) {
+    if (amount > 0n) {
       transfers.push({
         from: debtor.member,
         to: creditor.member,
-        amount,
+        amount: toRupees(amount),
       })
     }
 
-    debtor.remaining = round2(debtor.remaining - amount)
-    creditor.remaining = round2(creditor.remaining - amount)
+    debtor.remaining -= amount
+    creditor.remaining -= amount
 
-    if (debtor.remaining <= 0.01) i += 1
-    if (creditor.remaining <= 0.01) j += 1
+    if (debtor.remaining === 0n) i += 1
+    if (creditor.remaining === 0n) j += 1
   }
 
   return transfers

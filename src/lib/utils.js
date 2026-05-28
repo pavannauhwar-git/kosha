@@ -1,9 +1,7 @@
 import { getPreferredCurrency, getPreferredLocale } from './locale'
 
 const _locale = getPreferredLocale()
-export function round2(n) {
-  return Math.round((Number(n) || 0) * 100) / 100
-}
+export { round2 } from './paise.js'
 
 const _currency = getPreferredCurrency()
 
@@ -88,20 +86,7 @@ export function dateLabel(dateStr) {
   return _dateLabelFmt.format(d)
 }
 
-export function groupByDate(transactions) {
-  const groups = {}
-  const rows = Array.isArray(transactions) ? transactions : []
-  for (const t of rows) {
-    if (!t || typeof t !== 'object') continue
-    const val = t.date || t.created_at
-    if (!val) continue
-    const key = typeof val === 'string' && val.length >= 10 ? val.slice(0, 10) : String(val).slice(0, 10)
-    if (!key) continue
-    if (!groups[key]) groups[key] = []
-    groups[key].push(t)
-  }
-  return Object.entries(groups).sort(([a],[b]) => b.localeCompare(a))
-}
+export { groupByDate } from './dayKey.js'
 
 // ── Transaction helpers ───────────────────────────────────────────────────
 export function amountPrefix(type) {

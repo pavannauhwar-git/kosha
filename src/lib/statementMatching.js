@@ -1,4 +1,5 @@
 import { normalizeText } from './bugReportUtils.js'
+import { dateDistanceDays } from './dayKey.js'
 
 const NOISE_TOKENS = new Set([
   'upi', 'imps', 'neft', 'rtgs', 'txn', 'ref', 'utr', 'vpa', 'bank',
@@ -10,7 +11,7 @@ function cleanMerchantText(value) {
   const normalized = normalizeText(value)
     .replace(/[\[\]()]/g, ' ')
     .replace(/\b(?:upi|imps|neft|rtgs)\/[^\s]+/g, ' ')
-    .replace(/\b[a-z]*\d+[a-z\d]*\b/g, ' ')
+    .replace(/\b[a-z]*\d{8,}[a-z\d]*\b/g, ' ')
     .replace(/[|,:;]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -27,7 +28,7 @@ function tokenize(value) {
 
 function parseAmount(text) {
   if (!text) return null
-  const cleaned = String(text).replace(/,/g, '')
+  const cleaned = String(text).replace(/,/g, '').replace(/₹/g, '').replace(/\u2212/g, '-')
   const hasBrackets = /^\s*\(.+\)\s*$/.test(cleaned)
   const match = cleaned.match(/[-+]?\d+(?:\.\d{1,2})?/)
   if (!match) return null
@@ -70,15 +71,20 @@ function parseDate(text) {
     }
   }
 
-  return null
-}
+  const dMmY = value.match(/(\d{1,2})[\s-]([a-zA-Z]{3})[\s-]?(\d{2,4})/)
+  if (dMmY) {
+    const day = Number(dMmY[1])
+    const monthStr = dMmY[2].toLowerCase()
+    const months = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 }
+    const month = months[monthStr]
+    const yearRaw = Number(dMmY[3])
+    const year = yearRaw < 100 ? 2000 + yearRaw : yearRaw
+    if (month && year > 1990 && day >= 1 && day <= 31) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    }
+  }
 
-function dateDistanceDays(a, b) {
-  if (!a || !b) return 999
-  const aTime = new Date(`${a}T00:00:00`).getTime()
-  const bTime = new Date(`${b}T00:00:00`).getTime()
-  if (!Number.isFinite(aTime) || !Number.isFinite(bTime)) return 999
-  return Math.round(Math.abs(aTime - bTime) / (1000 * 60 * 60 * 24))
+  return null
 }
 
 function overlapScore(a, b) {
@@ -90,6 +96,28 @@ function overlapScore(a, b) {
   return overlap / Math.max(a.size, b.size)
 }
 
+function parseCsvLine(line) {
+  const parts = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      parts.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  parts.push(current.trim());
+  if (parts.length <= 1 && (line.includes('\t') || line.includes('|'))) {
+    return line.split(/[\t|]/).map(p => p.trim()).filter(Boolean);
+  }
+  return parts.filter(Boolean);
+}
+
 export function parseStatementLines(rawText) {
   const lines = String(rawText || '')
     .split('\n')
@@ -97,7 +125,7 @@ export function parseStatementLines(rawText) {
     .filter(Boolean)
 
   return lines.map((line, idx) => {
-    const parts = line.split(/[|,\t]/).map((part) => part.trim()).filter(Boolean)
+    const parts = parseCsvLine(line)
     const date = parseDate(parts[0] || line)
     const amount = parseAmount(parts[parts.length - 1] || line)
 
@@ -153,6 +181,18 @@ export function buildLearnedStatementAliases(reviewRows, transactions, demotedMe
     // Skip demoted aliases — they failed repeatedly in recent period
     const merchant = statementDescription.split(/[,|]/)[0]?.trim() || statementDescription
     if (demotedMerchants.has(merchant)) continue
+
+    const entry = parsed?.[0]
+    if (entry) {
+       const cand = {
+         txn,
+         tokens: new Set(tokenize(txn.description)),
+         amount: Number(txn.amount || 0),
+         type: String(txn.type || 'expense'),
+       }
+       const scoreObj = scoreCandidate(entry, cand)
+       if (!scoreObj || scoreObj.score < 0.75) continue
+    }
 
     aliases.push({
       statement: statementDescription,
@@ -217,14 +257,9 @@ export function matchStatementEntries(statementEntries, transactions, options = 
   const txnIndex = buildTransactionIndex(transactions)
   const aliasHints = buildAliasHintsMap(options?.aliases)
 
-  return (Array.isArray(statementEntries) ? statementEntries : []).map((entry) => {
+  const entriesScored = (Array.isArray(statementEntries) ? statementEntries : []).map((entry) => {
     if (!entry?.isValid) {
-      return {
-        entry,
-        candidates: [],
-        best: null,
-        confidence: 'low',
-      }
+      return { entry, allScored: [] }
     }
 
     const scored = txnIndex
@@ -236,16 +271,35 @@ export function matchStatementEntries(statementEntries, transactions, options = 
         if (a.amountDiff !== b.amountDiff) return a.amountDiff - b.amountDiff
         return String(b.txn?.date || '').localeCompare(String(a.txn?.date || ''))
       })
-      .slice(0, 3)
 
-    const best = scored[0] || null
+    return { entry, allScored: scored }
+  })
+
+  const matchedTxnIds = new Set()
+
+  return entriesScored.map(({ entry, allScored }) => {
+    if (!allScored.length) {
+      return {
+        entry,
+        candidates: [],
+        best: null,
+        confidence: 'low',
+      }
+    }
+
+    const candidates = allScored.filter(c => !matchedTxnIds.has(c.txn.id)).slice(0, 3)
+    const best = candidates[0] || null
     let confidence = 'low'
     if (best && best.score >= 0.78) confidence = 'high'
     else if (best && best.score >= 0.55) confidence = 'medium'
 
+    if (best) {
+      matchedTxnIds.add(best.txn.id)
+    }
+
     return {
       entry,
-      candidates: scored,
+      candidates,
       best,
       confidence,
     }

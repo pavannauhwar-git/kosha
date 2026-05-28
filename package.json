@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "release:candidate-check": "node scripts/ops/release_candidate_check.mjs",
     "test:deploy-readiness": "node scripts/ops/check_deploy_readiness.mjs",
+    "test:money": "node scripts/tests/test_money_math.mjs",
     "test:statement-matching": "node scripts/tests/test_statement_matching.mjs",
     "test:reconciliation-flow": "node scripts/tests/test_reconciliation_flow.mjs",
     "test:reconciliation-metrics": "node scripts/tests/test_reconciliation_metrics.mjs",
