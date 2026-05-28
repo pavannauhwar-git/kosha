@@ -43,7 +43,7 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
     for (let i = activeMonths.length - 1; i >= 0; i--) {
       if (activeMonths[i].investment > 0) {
         streak += 1
-      } else if (activeMonths[i].hasActivity) {
+      } else {
         break
       }
     }
@@ -55,7 +55,7 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
       if (m.investment > 0) {
         currentRun += 1
         if (currentRun > bestStreak) bestStreak = currentRun
-      } else if (m.hasActivity) {
+      } else {
         currentRun = 0
       }
     }

@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 /** Build a conic-gradient with a 1-degree gap between segments for clarity */
 function buildConicGradient(rows) {
-  const safeRows = (Array.isArray(rows) ? rows : []).filter((row) => Number(row?.value || 0) > 0)
+  const safeRows = (Array.isArray(rows) ? rows : []).filter((row) => row != null && Number(row.value || 0) > 0)
   if (!safeRows.length) return 'conic-gradient(var(--ds-border) 0% 100%)'
 
   const total      = safeRows.reduce((sum, row) => sum + Number(row.value || 0), 0) || 1
@@ -15,7 +15,7 @@ function buildConicGradient(rows) {
     const share   = (Number(row.value || 0) / total) * TOTAL_DEGS
     const isLast  = i === safeRows.length - 1
     const start   = cursor
-    const end     = isLast ? TOTAL_DEGS : cursor + share - GAP_DEG
+    const end     = isLast ? TOTAL_DEGS : Math.max(0, cursor + share - GAP_DEG)
 
     // Gap fill using surface color
     if (i > 0) {

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, X } from 'lucide-react'
 import TransactionItem from '../transactions/TransactionItem'
 import { fmt } from '../../lib/utils'
-import { CATEGORIES } from '../../lib/categories'
+import { CATEGORIES, INVESTMENT_VEHICLES } from '../../lib/categories'
 import Button from '../ui/Button'
 import EmptyState from '../common/EmptyState'
 import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
@@ -62,6 +62,10 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
     () => new Map(CATEGORIES.map((category) => [category.id, category.label])),
     []
   )
+  const investmentLabelById = useMemo(
+    () => new Map(INVESTMENT_VEHICLES.map((v) => [v.id, v.label])),
+    []
+  )
   const summary = useMemo(() => {
     return visibleRecent.reduce((acc, txn) => {
       const amount = Number(txn?.amount || 0)
@@ -88,7 +92,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
       if (!Number.isFinite(amount) || amount <= 0) continue
 
       const bucket = txn?.type === 'investment'
-        ? (String(txn?.investment_vehicle || '').trim() || 'Investment')
+        ? (investmentLabelById.get(String(txn?.investment_vehicle || '').trim()) || 'Investment')
         : (String(txn?.category || '').trim() || 'other')
 
       categoryTotals.set(bucket, (categoryTotals.get(bucket) || 0) + amount)
@@ -105,7 +109,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
 
     const largestLabel = largestTxn?.description
       || categoryLabelById.get(largestTxn?.category)
-      || largestTxn?.investment_vehicle
+      || investmentLabelById.get(largestTxn?.investment_vehicle)
       || 'Largest outflow'
 
     return {

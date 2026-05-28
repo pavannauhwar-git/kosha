@@ -31,12 +31,13 @@ export function useReconciliationReviews(options = {}) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['reconciliationReviews', targetUserId],
     enabled: enabled && !!targetUserId,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const userId = targetUserId
       const { data: rows, error: queryError } = await supabase
         .from('reconciliation_reviews')
         .select(REVIEW_COLUMNS)
         .eq('user_id', userId)
+        .abortSignal(signal)
 
       if (queryError) {
         if (isMissingTableError(queryError)) {

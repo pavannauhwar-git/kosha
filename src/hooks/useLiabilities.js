@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore';
 import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
-import { suppress } from '../lib/mutationGuard'
+import { suppress, withOptimisticGuard } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 import {
@@ -11,7 +11,6 @@ import {
   optimisticallyUpsertTransactionInCache,
   optimisticallyDeleteTransactionsByBillId
 } from './useTransactions'
-import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 import { todayStr } from '../lib/utils'
 import { hapticSuccess } from '../lib/haptics'
 
@@ -38,7 +37,7 @@ export async function invalidateLiabilityCache() {
   ])
 }
 
-async function fetchLiabilitiesByPaid(paidValue, targetUserId) {
+async function fetchLiabilitiesByPaid(paidValue, targetUserId, signal) {
   return traceQuery(`liabilities:${paidValue ? 'paid' : 'pending'}`, async () => {
     const { data: rows, error } = await supabase
       .from('liabilities')
@@ -46,6 +45,7 @@ async function fetchLiabilitiesByPaid(paidValue, targetUserId) {
       .eq('user_id', targetUserId)
       .eq('paid', paidValue)
       .order('due_date', { ascending: true })
+      .abortSignal(signal)
 
     if (error) throw error
     return rows || []
@@ -59,13 +59,13 @@ export function useLiabilities({ includePaid = true, enabled = true } = {}) {
     queries: [
       {
         queryKey: LIABILITY_PENDING_QUERY_KEY(targetUserId),
-        queryFn: () => fetchLiabilitiesByPaid(false, targetUserId),
+        queryFn: ({ signal }) => fetchLiabilitiesByPaid(false, targetUserId, signal),
         enabled: enabled && !!targetUserId,
         placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY(targetUserId),
-        queryFn: () => fetchLiabilitiesByPaid(true, targetUserId),
+        queryFn: ({ signal }) => fetchLiabilitiesByPaid(true, targetUserId, signal),
         enabled: enabled && includePaid && !!targetUserId,
         placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
       },
@@ -102,7 +102,7 @@ export function useLiabilitiesByMonth(year, month, options = {}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['liabilitiesMonth', year, month, targetUserId],
     enabled: enabled && !!startDate && !!endDate && !!targetUserId,
-    queryFn: async () => traceQuery('liabilities:month', async () => {
+    queryFn: async ({ signal }) => traceQuery('liabilities:month', async () => {
       const { data: rows, error: queryError } = await supabase
         .from('liabilities')
         .select(MONTH_LIABILITY_COLUMNS)
@@ -110,6 +110,7 @@ export function useLiabilitiesByMonth(year, month, options = {}) {
         .gte('due_date', startDate)
         .lte('due_date', endDate)
         .order('due_date', { ascending: true })
+        .abortSignal(signal)
 
       if (queryError) throw queryError
       return rows || []
@@ -341,137 +342,117 @@ function refreshLiabilityAndTransactionCachesInBackground({ invalidateLiabilityF
 }
 
 export async function addLiabilityMutation(payload, __testOverrides = null) {
-  const authUserId = getAuthUserId()
-  const targetUserId = getActiveWalletUserId()
+  return withOptimisticGuard(['liabilities'], async (tempId) => {
+    const authUserId = getAuthUserId()
+    const targetUserId = getActiveWalletUserId()
 
-  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
-  if (targetUserId !== authUserId) {
-    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
-    return null
-  }
+    // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+    if (targetUserId !== authUserId) {
+      console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+      return null
+    }
 
-  const snapshot = snapshotLiabilityCaches(targetUserId)
-  suppress('liabilities')
-  const optimisticId = `optimistic-liability-${Date.now()}`
-  const nowIso = new Date().toISOString()
+    const snapshot = snapshotLiabilityCaches(targetUserId)
+    suppress('liabilities')
+    const optimisticId = tempId
+    const nowIso = new Date().toISOString()
 
-  optimisticallyInsertPendingLiability({
-    ...payload,
-    id: optimisticId,
-    paid: false,
-    created_at: nowIso,
-    __optimistic: true,
-  }, targetUserId)
+    optimisticallyInsertPendingLiability({
+      ...payload,
+      id: optimisticId,
+      paid: false,
+      created_at: nowIso,
+      __optimistic: true,
+    }, targetUserId)
 
-  try {
-    const addFn = __testOverrides?.addLiability || addLiability
-    const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
+    try {
+      const addFn = __testOverrides?.addLiability || addLiability
+      const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
 
-    const created = await addFn(payload)
-    await queryClient.cancelQueries({ queryKey: ['liabilities'] })
+      const created = await addFn(payload)
+      // Lock already handled by withOptimisticGuard, no need for cancelQueries here
 
-    optimisticallyDeleteLiabilityFromCache(optimisticId, targetUserId)
-    optimisticallyInsertPendingLiability(created, targetUserId)
+      optimisticallyDeleteLiabilityFromCache(optimisticId, targetUserId)
+      optimisticallyInsertPendingLiability(created, targetUserId)
 
-    hapticSuccess()
-    optimisticallyInsertFinancialEvent({
-      action: FINANCIAL_EVENT_ACTIONS.BILL_ADD,
-      entityType: 'liability',
-      entityId: created.id,
-      metadata: {
-        description: created.description,
-        amount: created.amount,
-        due_date: created.due_date,
-      },
-    })
+      hapticSuccess()
 
-    refreshLiabilityAndTransactionCachesInBackground({
-      invalidateLiabilityFn,
-      invalidateTransactionFn: invalidateTransactionCache,
-      scope: 'liabilities post-add refresh',
-    })
-    return created
-  } catch (error) {
-    restoreLiabilitySnapshot(snapshot)
-    throw error
-  }
+      refreshLiabilityAndTransactionCachesInBackground({
+        invalidateLiabilityFn,
+        invalidateTransactionFn: invalidateTransactionCache,
+        scope: 'liabilities post-add refresh',
+      })
+      return created
+    } catch (error) {
+      restoreLiabilitySnapshot(snapshot)
+      throw error
+    }
+  })
 }
 
 export async function markLiabilityPaidMutation(liability, __testOverrides = null) {
-  const authUserId = getAuthUserId()
-  const targetUserId = getActiveWalletUserId()
+  return withOptimisticGuard(['liabilities'], async (tempId) => {
+    const authUserId = getAuthUserId()
+    const targetUserId = getActiveWalletUserId()
 
-  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
-  if (targetUserId !== authUserId) {
-    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
-    return null
-  }
+    // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+    if (targetUserId !== authUserId) {
+      console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+      return null
+    }
 
-  const snapshot = snapshotLiabilityCaches(targetUserId)
+    const snapshot = snapshotLiabilityCaches(targetUserId)
 
-  try {
-    const markPaidFn = __testOverrides?.markPaid || markPaid
-    const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
-    const invalidateTransactionFn = __testOverrides?.invalidateTransactionCache || invalidateTransactionCache
+    try {
+      const markPaidFn = __testOverrides?.markPaid || markPaid
+      const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
+      const invalidateTransactionFn = __testOverrides?.invalidateTransactionCache || invalidateTransactionCache
 
-    const result = await markPaidFn(liability)
-    suppress('liabilities')
-    suppress('transactions')
-    await queryClient.cancelQueries({ queryKey: ['liabilities'] })
-    await queryClient.cancelQueries({ queryKey: ['transactions'] })
-    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
+      const result = await markPaidFn(liability)
+      suppress('liabilities')
+      suppress('transactions')
+      await queryClient.cancelQueries({ queryKey: ['transactions'] })
+      await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
-    optimisticallyMarkLiabilityPaid(liability, targetUserId, { optimistic: false })
+      optimisticallyMarkLiabilityPaid(liability, targetUserId, { optimistic: false })
 
-    const rpcRow = Array.isArray(result) ? result[0] : result
-    const txnId = rpcRow?.transaction_id || `optimistic-txn-markpaid-${Date.now()}`
+      const rpcRow = Array.isArray(result) ? result[0] : result
+      const txnId = rpcRow?.transaction_id || tempId
 
-    optimisticallyUpsertTransactionInCache({
-      id: txnId,
-      date: todayStr(),
-      created_at: new Date().toISOString(),
-      type: 'expense',
-      amount: Number(liability.amount || 0),
-      description: liability.description || 'Bill Payment',
-      category: liability.category || 'bills',
-      payment_mode: liability.payment_mode || 'upi',
-      linked_bill_id: liability.id,
-      notes: `Paid bill: ${liability.description}`,
-      investment_vehicle: null,
-      is_repayment: false,
-      is_recurring: false,
-      recurrence: null,
-      next_run_date: null,
-      source_transaction_id: null,
-      is_auto_generated: false,
-    }, targetUserId)
+      optimisticallyUpsertTransactionInCache({
+        id: txnId,
+        date: todayStr(),
+        created_at: new Date().toISOString(),
+        type: 'expense',
+        amount: Number(liability.amount || 0),
+        description: liability.description || 'Bill Payment',
+        category: liability.category || 'bills',
+        payment_mode: liability.payment_mode || 'upi',
+        linked_bill_id: liability.id,
+        notes: `Paid bill: ${liability.description}`,
+        investment_vehicle: null,
+        is_repayment: false,
+        is_recurring: false,
+        recurrence: null,
+        next_run_date: null,
+        source_transaction_id: null,
+        is_auto_generated: false,
+      }, targetUserId)
 
-    hapticSuccess()
-    optimisticallyInsertFinancialEvent({
-      action: FINANCIAL_EVENT_ACTIONS.BILL_MARK_PAID,
-      entityType: 'liability',
-      entityId: liability.id,
-      metadata: {
-        description: liability.description,
-        amount: liability.amount,
-        due_date: liability.due_date,
-        is_recurring: liability.is_recurring,
-        recurrence: liability.recurrence,
-        paid_at: new Date().toISOString(),
-      },
-    })
+      hapticSuccess()
 
-    refreshLiabilityAndTransactionCachesInBackground({
-      invalidateLiabilityFn,
-      invalidateTransactionFn,
-      scope: 'liabilities post-mark-paid refresh',
-    })
+      refreshLiabilityAndTransactionCachesInBackground({
+        invalidateLiabilityFn,
+        invalidateTransactionFn,
+        scope: 'liabilities post-mark-paid refresh',
+      })
 
-    return result
-  } catch (error) {
-    restoreLiabilitySnapshot(snapshot)
-    throw error
-  }
+      return result
+    } catch (error) {
+      restoreLiabilitySnapshot(snapshot)
+      throw error
+    }
+  })
 }
 
 export async function updateLiabilityMutation(id, updates) {
@@ -506,13 +487,6 @@ export async function updateLiabilityMutation(id, updates) {
       )
     }
 
-    optimisticallyInsertFinancialEvent({
-      action: FINANCIAL_EVENT_ACTIONS.BILL_UPDATE,
-      entityType: 'liability',
-      entityId: id,
-      metadata: updates,
-    })
-
     refreshLiabilityAndTransactionCachesInBackground({
       invalidateLiabilityFn: invalidateLiabilityCache,
       invalidateTransactionFn: invalidateTransactionCache,
@@ -526,57 +500,44 @@ export async function updateLiabilityMutation(id, updates) {
 }
 
 export async function deleteLiabilityMutation(id, __testOverrides = null) {
-  const authUserId = getAuthUserId()
-  const targetUserId = getActiveWalletUserId()
+  return withOptimisticGuard(['liabilities'], async () => {
+    const authUserId = getAuthUserId()
+    const targetUserId = getActiveWalletUserId()
 
-  // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
-  if (targetUserId !== authUserId) {
-    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
-    return null
-  }
+    // Guard: Shared wallets are VIEW-ONLY. Prevent any mutation attempt.
+    if (targetUserId !== authUserId) {
+      console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+      return null
+    }
 
-  const cachedBill = getLiabilityFromCacheById(id, targetUserId)
-  const snapshot = snapshotLiabilityCaches(targetUserId)
-  suppress('liabilities')
-  optimisticallyDeleteLiabilityFromCache(id, targetUserId)
-  optimisticallyDeleteTransactionsByBillId(id, targetUserId)
-
-  try {
-    const deleteFn = __testOverrides?.deleteLiability || deleteLiability
-    const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
-
-    await deleteFn(id, cachedBill)
-    await queryClient.cancelQueries({ queryKey: ['liabilities'] })
-    await queryClient.cancelQueries({ queryKey: ['transactions'] })
-    await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
-
+    const cachedBill = getLiabilityFromCacheById(id, targetUserId)
+    const snapshot = snapshotLiabilityCaches(targetUserId)
+    suppress('liabilities')
     optimisticallyDeleteLiabilityFromCache(id, targetUserId)
     optimisticallyDeleteTransactionsByBillId(id, targetUserId)
 
-    hapticSuccess()
-    optimisticallyInsertFinancialEvent({
-      action: FINANCIAL_EVENT_ACTIONS.BILL_DELETE,
-      entityType: 'liability',
-      entityId: id,
-      metadata: {
-        description: cachedBill?.description,
-        amount: cachedBill?.amount,
-        due_date: cachedBill?.due_date,
-        paid: cachedBill?.paid,
-        is_recurring: cachedBill?.is_recurring,
-        recurrence: cachedBill?.recurrence,
-        impact: 'Associated payment transactions removed from cache.',
-      },
-    })
+    try {
+      const deleteFn = __testOverrides?.deleteLiability || deleteLiability
+      const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
 
-    refreshLiabilityAndTransactionCachesInBackground({
-      invalidateLiabilityFn,
-      invalidateTransactionFn: invalidateTransactionCache,
-      scope: 'liabilities post-delete refresh',
-    })
-    return true
-  } catch (error) {
-    restoreLiabilitySnapshot(snapshot)
-    throw error
-  }
+      await deleteFn(id, cachedBill)
+      await queryClient.cancelQueries({ queryKey: ['transactions'] })
+      await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
+
+      optimisticallyDeleteLiabilityFromCache(id, targetUserId)
+      optimisticallyDeleteTransactionsByBillId(id, targetUserId)
+
+      hapticSuccess()
+
+      refreshLiabilityAndTransactionCachesInBackground({
+        invalidateLiabilityFn,
+        invalidateTransactionFn: invalidateTransactionCache,
+        scope: 'liabilities post-delete refresh',
+      })
+      return true
+    } catch (error) {
+      restoreLiabilitySnapshot(snapshot)
+      throw error
+    }
+  })
 }

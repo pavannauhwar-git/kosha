@@ -79,8 +79,8 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
       ? 'bg-brand-container text-brand'
       : 'bg-income-bg text-income-text'
 
-  const driftTone = (driftData.driftPct ?? 0) <= 0 ? 'text-income-text' : 'text-warning-text'
-  const wowTone = (driftData.wowPct ?? 0) <= 0 ? 'text-income-text' : 'text-warning-text'
+  const driftTone = driftData.driftPct == null ? 'text-ink-3' : driftData.driftPct <= 0 ? 'text-income-text' : 'text-warning-text'
+  const wowTone = driftData.wowPct == null ? 'text-ink-3' : driftData.wowPct <= 0 ? 'text-income-text' : 'text-warning-text'
 
   return (
     <div className="card p-3.5 border-0">

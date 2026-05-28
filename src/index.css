@@ -1676,6 +1676,22 @@ textarea:focus-visible,
 
 /* ── Reduced-motion overrides ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --ds-dur-spring-fast: 0ms !important;
+    --ds-dur-spring-effects-fast: 0ms !important;
+    --ds-dur-spring-expressive: 0ms !important;
+    --md-sys-motion-duration-short1: 0ms !important;
+    --md-sys-motion-duration-short2: 0ms !important;
+    --md-sys-motion-duration-short3: 0ms !important;
+    --md-sys-motion-duration-short4: 0ms !important;
+    --md-sys-motion-duration-medium1: 0ms !important;
+    --md-sys-motion-duration-medium2: 0ms !important;
+    --md-sys-motion-duration-medium3: 0ms !important;
+    --md-sys-motion-duration-medium4: 0ms !important;
+    --md-sys-motion-duration-long1: 0ms !important;
+    --md-sys-motion-duration-long2: 0ms !important;
+  }
+
   .card,
   .card-hero,
   .mini-panel,

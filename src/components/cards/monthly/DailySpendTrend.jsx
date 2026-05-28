@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import {
   ResponsiveContainer,
   BarChart,
@@ -11,6 +11,7 @@ import {
   Cell,
 } from 'recharts'
 import { fmt } from '../../../lib/utils'
+import { dayKey } from '../../../lib/dayKey'
 import Button from '../../ui/Button'
 
 function DailySpendTooltip({ active, payload, label }) {
@@ -43,46 +44,66 @@ function compactTick(value) {
 }
 
 export default memo(function DailySpendTrend({ dailyTotals, year, month, onReviewExpenses, onReviewPeakDay }) {
-  const daysInMonth = new Date(year, month, 0).getDate()
-
-  // Aggregate expense per day from a pre-aggregated date=>amount map.
-  const dailyMap = new Map()
-  const sourceTotals = dailyTotals && typeof dailyTotals === 'object' ? dailyTotals : {}
-  for (const [dateKey, amountValue] of Object.entries(sourceTotals)) {
-    const amount = Number(amountValue || 0)
-    if (!Number.isFinite(amount) || amount <= 0) continue
-    const day = Number(String(dateKey || '').slice(8, 10))
-    if (day < 1 || day > daysInMonth) continue
-    dailyMap.set(day, (dailyMap.get(day) || 0) + amount)
-  }
-
-  if (dailyMap.size === 0) return null
-
-  const series = Array.from({ length: daysInMonth }, (_, i) => {
-    const day = i + 1
-    return {
-      day,
-      label: `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`,
-      amount: Math.round(dailyMap.get(day) || 0),
+  const {
+    seriesWithFlags,
+    dailyAvg,
+    peakDay,
+    peakDayDate,
+    spendDays,
+    zeroDays,
+    isEmpty,
+  } = useMemo(() => {
+    const daysInMonth = new Date(year, month, 0).getDate()
+    const dailyMap = new Map()
+    const sourceTotals = dailyTotals && typeof dailyTotals === 'object' ? dailyTotals : {}
+    for (const [dateKey, amountValue] of Object.entries(sourceTotals)) {
+      const amount = Number(amountValue || 0)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+      const day = Number(String(dateKey || '').slice(8, 10))
+      if (day < 1 || day > daysInMonth) continue
+      dailyMap.set(day, (dailyMap.get(day) || 0) + amount)
     }
-  })
 
-  const activeDays = series.filter((row) => row.amount > 0)
-  const dailyAvg = activeDays.length > 0
-    ? Math.round(activeDays.reduce((sum, row) => sum + row.amount, 0) / activeDays.length)
-    : 0
+    const isEmpty = dailyMap.size === 0
 
-  const seriesWithFlags = series.map((row) => ({
-    ...row,
-    isAboveAvg: row.amount > dailyAvg,
-  }))
+    const series = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1
+      return {
+        day,
+        label: `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`,
+        amount: Math.round(dailyMap.get(day) || 0),
+      }
+    })
 
-  const peakDay = [...activeDays].sort((a, b) => b.amount - a.amount)[0]
-  const peakDayDate = peakDay
-    ? `${year}-${String(month).padStart(2, '0')}-${String(peakDay.day).padStart(2, '0')}`
-    : null
-  const spendDays = activeDays.length
-  const zeroDays = daysInMonth - spendDays
+    const activeDays = series.filter((row) => row.amount > 0)
+    const dailyAvg = activeDays.length > 0
+      ? Math.round(activeDays.reduce((sum, row) => sum + row.amount, 0) / activeDays.length)
+      : 0
+
+    const seriesWithFlags = series.map((row) => ({
+      ...row,
+      isAboveAvg: row.amount > dailyAvg,
+    }))
+
+    const peakDay = [...activeDays].sort((a, b) => b.amount - a.amount)[0]
+    const peakDayDate = peakDay
+      ? dayKey(new Date(year, month - 1, peakDay.day))
+      : null
+    const spendDays = activeDays.length
+    const zeroDays = daysInMonth - spendDays
+
+    return {
+      seriesWithFlags,
+      dailyAvg,
+      peakDay,
+      peakDayDate,
+      spendDays,
+      zeroDays,
+      isEmpty,
+    }
+  }, [dailyTotals, year, month])
+
+  if (isEmpty) return null
 
   return (
     <div className="card p-4 border-0">

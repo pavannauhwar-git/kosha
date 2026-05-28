@@ -58,3 +58,41 @@ export function isSuppressed(tableKey) {
   _suppressed.delete(scopedKey)   // clean up expired entry
   return false
 }
+
+// Map to track in-flight optimistic mutations by query key string
+const _inFlight = new Set()
+
+/**
+ * Wraps an optimistic mutation function with safeguards:
+ * 1. Cancels any in-flight fetches for the affected queryKey to prevent race conditions.
+ * 2. Prevents double-taps by maintaining a single in-flight lock per queryKey.
+ * 3. Provides a standard UUIDv4 for optimistic IDs (instead of Date.now()).
+ * 
+ * @param {Array} queryKey - The React Query key array to lock and cancel.
+ * @param {Function} fn - The mutation callback, receives the tempId string.
+ * @returns {Promise<any>}
+ */
+import { queryClient } from './queryClient'
+
+export async function withOptimisticGuard(queryKey, fn) {
+  const keyStr = JSON.stringify(queryKey)
+  
+  if (_inFlight.has(keyStr)) {
+    return Promise.reject(new Error('OPTIMISTIC_BUSY'))
+  }
+  
+  _inFlight.add(keyStr)
+  try {
+    // 1. Cancel in-flight queries to prevent them from overwriting optimistic data
+    await queryClient.cancelQueries({ queryKey })
+    
+    // 2. Generate a stable, valid UUID for temp IDs
+    const tempId = crypto.randomUUID()
+    
+    // 3. Execute the mutation logic
+    return await fn(tempId)
+  } finally {
+    // 4. Always release the lock
+    _inFlight.delete(keyStr)
+  }
+}

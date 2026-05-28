@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, Users, ArrowRightLeft, ReceiptText, X, Link2, Trash2, ChevronLeft, Settings2, Archive, ArchiveRestore } from 'lucide-react'
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
@@ -219,7 +219,7 @@ export default function Splitwise() {
     transaction_category: 'other',
   })
   const [splitInputs, setSplitInputs] = useState({})
-  const actionGuard = React.useRef(false)
+  const actionGuard = useRef(false)
 
   const [settlementForm, setSettlementForm] = useState({
     payer_member_id: '',

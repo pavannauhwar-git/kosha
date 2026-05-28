@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import MuiCard from '@mui/material/Card'
 
 const VARIANT_SX = {
@@ -40,6 +40,7 @@ export default function Card({
   ...rest
 }) {
   const isClickable = pressable || onClick
+  const shouldReduceMotion = useReducedMotion()
 
   // M3 standard Large corner radius for cards is 16px (md3-lg)
   const baseRadius = '16px'
@@ -93,13 +94,13 @@ export default function Card({
           }
         }}
         whileHover={{
-          borderRadius: '24px',
-          scale: 1.015,
+          borderRadius: shouldReduceMotion ? baseRadius : '24px',
+          scale: shouldReduceMotion ? 1 : 1.015,
           boxShadow: 'var(--ds-shadow-md)',
         }}
         whileTap={{
-          borderRadius: '14px',
-          scale: 0.98,
+          borderRadius: shouldReduceMotion ? baseRadius : '14px',
+          scale: shouldReduceMotion ? 1 : 0.98,
           boxShadow: 'var(--ds-shadow-sm)',
         }}
         initial={{

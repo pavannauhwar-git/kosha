@@ -52,8 +52,24 @@ create table if not exists liabilities (
                            check (payment_mode in ('upi', 'cash', 'bank', 'card')),
   linked_transaction_id  uuid references transactions(id) on delete set null,
   created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now(),
+  paid_at                timestamptz,
   user_id                uuid
 );
+
+-- Trigger to automatically update updated_at for liabilities
+create or replace function public.touch_liability_updated_at()
+returns trigger as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trg_touch_liability_updated_at on public.liabilities;
+create trigger trg_touch_liability_updated_at
+  before update on public.liabilities
+  for each row execute function public.touch_liability_updated_at();
 
 -- Monthly net changes cache (for fast get_running_balance)
 create table if not exists monthly_net_changes (

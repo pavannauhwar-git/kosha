@@ -29,7 +29,11 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [], is
   const PALETTE  = useDarkPalette()
 
   /* ── Derived data ──────────────────────────────────────────────────── */
-  const safeVehicleData = (Array.isArray(vehicleData) ? vehicleData : [])
+  const vehicleEntries = Array.isArray(vehicleData)
+    ? vehicleData
+    : (vehicleData && typeof vehicleData === 'object' ? Object.entries(vehicleData) : [])
+
+  const safeVehicleData = vehicleEntries
     .map(([name, value]) => ({ name, value: Number(value || 0) }))
     .filter((row) => row.value > 0)
     .sort((a, b) => b.value - a.value)

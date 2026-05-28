@@ -81,7 +81,12 @@ async function fetchGroups() {
 }
 
 async function fetchGroupAccess() {
-  const userId = getAuthUserId()
+  let userId = null
+  try {
+    userId = getAuthUserId()
+  } catch {
+    return []
+  }
   if (!userId) return []
 
   return traceQuery('splitwise:group-access', async () => {
@@ -225,7 +230,13 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
     [accessRows]
   )
 
-  const authUserId = getAuthUserId()
+  let authUserId = null
+  try {
+    authUserId = getAuthUserId()
+  } catch {
+    authUserId = null
+  }
+  
   const groups = useMemo(
     () => (rawGroups || []).map((group) => {
       const role = accessByGroupId.get(group.id)
@@ -466,12 +477,14 @@ export async function createSplitGroupInviteMutation({ groupId } = {}) {
 
   if (error) throw error
 
+  const rpcRow = Array.isArray(data) ? data[0] : data
+
   runInBackground(
     logFinancialEvent({
       userId,
       action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_INVITE_CREATE,
       entityType: 'split_group_invite',
-      entityId: data?.id || groupId,
+      entityId: rpcRow?.id || groupId,
       metadata: {
         group_id: groupId,
         role: 'member',
@@ -481,7 +494,7 @@ export async function createSplitGroupInviteMutation({ groupId } = {}) {
   )
 
   await invalidateSplitwiseCache()
-  return data
+  return rpcRow
 }
 
 export async function previewSplitGroupInviteMutation(inviteToken) {
@@ -513,22 +526,24 @@ export async function consumeSplitGroupInviteMutation(inviteToken) {
 
   if (error) throw error
 
+  const rpcRow = Array.isArray(data) ? data[0] : data
+
   runInBackground(
     logFinancialEvent({
       userId,
       action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_INVITE_CONSUME,
       entityType: 'split_group_invite',
-      entityId: data?.id || userId,
+      entityId: rpcRow?.id || userId,
       metadata: {
         token: token,
-        group_id: data?.id || null,
+        group_id: rpcRow?.id || null,
       },
     }),
     'splitwise invite consume audit'
   )
 
   await invalidateSplitwiseCache()
-  return data
+  return rpcRow
 }
 
 export async function setSplitGroupAccessRoleMutation({ groupId, memberUserId, role }) {
@@ -545,9 +560,10 @@ export async function setSplitGroupAccessRoleMutation({ groupId, memberUserId, r
   })
 
   if (error) throw error
+  const rpcRow = Array.isArray(data) ? data[0] : data
 
   await invalidateSplitwiseCache()
-  return data
+  return rpcRow
 }
 
 export async function addSplitExpenseMutation({
@@ -593,12 +609,14 @@ export async function addSplitExpenseMutation({
 
   if (error) throw error
 
+  const rpcRow = Array.isArray(data) ? data[0] : data
+
   runInBackground(
     logFinancialEvent({
       userId,
       action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_EXPENSE_ADD,
       entityType: 'split_expense',
-      entityId: data?.id || groupId,
+      entityId: rpcRow?.id || groupId,
       metadata: {
         group_id: groupId,
         paid_by_member_id: paidByMemberId,
@@ -610,7 +628,7 @@ export async function addSplitExpenseMutation({
   )
 
   await invalidateSplitwiseCache()
-  return data
+  return rpcRow
 }
 
 export async function deleteSplitExpenseMutation(expenseId) {
@@ -653,12 +671,14 @@ export async function recordSplitSettlementMutation({ groupId, payerMemberId, pa
 
   if (error) throw error
 
+  const rpcRow = Array.isArray(data) ? data[0] : data
+
   runInBackground(
     logFinancialEvent({
       userId,
       action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_SETTLEMENT_ADD,
       entityType: 'split_settlement',
-      entityId: data?.id || groupId,
+      entityId: rpcRow?.id || groupId,
       metadata: {
         group_id: groupId,
         payer_member_id: payerMemberId,
@@ -670,7 +690,7 @@ export async function recordSplitSettlementMutation({ groupId, payerMemberId, pa
   )
 
   await invalidateSplitwiseCache()
-  return data
+  return rpcRow
 }
 
 export async function deleteSplitSettlementMutation(settlementId) {

@@ -1,5 +1,6 @@
 import { memo, useMemo, useState, useCallback, useRef } from 'react'
 import { fmt } from '../../../lib/utils'
+import { dayKey } from '../../../lib/dayKey'
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 const WEEKDAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', '']
@@ -102,8 +103,8 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
   }, [])
 
   const { weeks, monthLabels, stats, monthTotals } = useMemo(() => {
-    const jan1  = new Date(year, 0, 1)
-    const dec31 = new Date(year, 11, 31)
+    const jan1  = new Date(year, 0, 1, 12, 0, 0)
+    const dec31 = new Date(year, 11, 31, 12, 0, 0)
     const startDow = (jan1.getDay() + 6) % 7   // Mon = 0
 
     /* Build all days of the year */
@@ -111,7 +112,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
     const monthSums = Array.from({ length: 12 }, (_, i) => ({ month: i, total: 0 }))
     const cursor = new Date(jan1)
     while (cursor <= dec31) {
-      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
+      const key = dayKey(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 12, 0, 0))
       const value = Number(dailyTotals[key] || 0)
       monthSums[cursor.getMonth()].total += value
       days.push({

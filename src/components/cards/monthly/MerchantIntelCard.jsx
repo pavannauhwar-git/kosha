@@ -65,9 +65,40 @@ export default memo(function MerchantIntelCard({ txnRows, onReviewExpenses, onRe
       .filter((r) => r.type === 'expense')
       .reduce((s, r) => s + Number(r.amount || 0), 0)
 
+    if (totalExpense > 0) {
+      const allMerchants = [...merchants.values()]
+      const sumMerchants = allMerchants.reduce((sum, m) => sum + m.total, 0)
+      const otherTotal = totalExpense - sumMerchants
+
+      const itemsForDist = [
+        ...allMerchants.map((m) => ({ ref: m, val: m.total })),
+        { ref: { isOther: true }, val: Math.max(0, otherTotal) }
+      ]
+
+      let currentSum = 0
+      itemsForDist.forEach((item) => {
+        item.exact = (item.val / totalExpense) * 100
+        item.floor = Math.floor(item.exact)
+        item.remainder = item.exact - item.floor
+        currentSum += item.floor
+      })
+
+      itemsForDist.sort((a, b) => b.remainder - a.remainder)
+      for (let i = 0; i < itemsForDist.length && currentSum < 100; i++) {
+        itemsForDist[i].floor += 1
+        currentSum += 1
+      }
+
+      itemsForDist.forEach((item) => {
+        if (!item.ref.isOther) {
+          item.ref.sharePct = item.floor
+        }
+      })
+    }
+
     const top5 = repeating.slice(0, 5).map((m) => ({
       ...m,
-      sharePct: totalExpense > 0 ? Math.round((m.total / totalExpense) * 100) : 0,
+      sharePct: m.sharePct || 0,
       avgTicket: Math.round(m.total / m.count),
     }))
 

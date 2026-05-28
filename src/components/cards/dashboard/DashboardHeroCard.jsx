@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { fmt } from '../../../lib/utils'
+import { safeNumber } from '../../../lib/safeNumber'
 import { C } from '../../../lib/colors'
 
 function getHeroAmountClass(length) {
@@ -85,8 +86,9 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
   }
 
+  const safeRate = safeNumber(rate, 0)
   // Clamp rate to [0, 1] for CSS custom property
-  const barPct = Math.max(0, Math.min(100, rate ?? 0)) / 100
+  const barPct = Math.max(0, Math.min(100, safeRate)) / 100
 
   return (
     <motion.div
@@ -137,7 +139,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       >
         <span className="text-[12px] font-semibold tracking-wide text-white">
           <span style={{ color: C.heroAccent }}>
-            {rate}%
+            {safeRate}%
           </span> saved this month
         </span>
       </div>
@@ -178,7 +180,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
             Savings rate
           </span>
           <span className="text-[12px] font-semibold" style={{ color: C.heroAccent }}>
-            {rate}%
+            {safeRate}%
           </span>
         </div>
         <div className="bar-dark-track">

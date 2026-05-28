@@ -67,8 +67,10 @@ export const getMuiTheme = (mode) => {
             fontWeight: 600,
             transition: 'all 200ms cubic-bezier(0.2, 0, 0, 1)',
             boxShadow: 'none',
-            '&:active': {
-              transform: 'scale(0.95)',
+            '@media (prefers-reduced-motion: no-preference)': {
+              '&:active': {
+                transform: 'scale(0.95)',
+              },
             },
           },
           containedPrimary: {

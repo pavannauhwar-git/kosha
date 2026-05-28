@@ -9,8 +9,6 @@ import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 import { CATEGORIES, getCategoriesForType } from '../lib/categories'
-import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
-
 // ── Query key factories ───────────────────────────────────────────────────
 const txnListKey  = (filters, targetUserId) => ['transactions', filters, targetUserId]
 const txnCountKey = (filters, targetUserId) => ['txnCount', filters, targetUserId]
@@ -147,6 +145,10 @@ async function ensureRecurringTransactionsReady(userId) {
 }
 
 function logQueryError(scope, error) {
+  // AbortErrors are expected when React Query cancels in-flight requests on
+  // component unmount or during React 18 Strict Mode double-invoke. React Query
+  // already handles them silently — no need to surface them as console errors.
+  if (error?.name === 'AbortError' || String(error?.message || '').includes('AbortError')) return
   console.error(`[Kosha] ${scope} query failed`, error)
 }
 
@@ -271,7 +273,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
   const { data: rows, isLoading, error, refetch } = useQuery({
     queryKey: txnListKey(filters, targetUserId),
     enabled: enabled && !!targetUserId,
-    queryFn: () => traceQuery('transactions:list', async () => {
+    queryFn: ({ signal }) => traceQuery('transactions:list', async () => {
       try {
         const { type, category, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId } = filters
         const allUserIds = [targetUserId]
@@ -288,6 +290,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
           .in('user_id', allUserIds)
           .order('date',       { ascending: false })
           .order('created_at', { ascending: false })
+          .order('id',         { ascending: false })
 
         if (type)     q = q.eq('type', type)
         if (category) q = q.eq('category', category)
@@ -301,7 +304,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         if (search)   q = applyTransactionSearchFilter(q, search)
         if (limit)    q = q.limit(limit)
 
-        const { data, error: err } = await q
+        const { data, error: err } = await q.abortSignal(signal)
         if (err) throw err
         return data || []
       } catch (err) {
@@ -426,6 +429,7 @@ export function useRecentTransactions(limit = 5) {
         .eq('user_id', targetUserId)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(safeLimit)
 
       if (qError) throw qError
@@ -459,6 +463,7 @@ export function useTransactionDigest(days = 14, limit = 200, options = {}) {
         .gte('date', startISO)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(safeLimit)
 
       if (qError) throw qError
@@ -937,11 +942,12 @@ function matchesTransactionFilters(txn, filters = {}) {
   if (filters.endDate && String(txn.date || '') > String(filters.endDate)) return false
 
   if (filters.search) {
-    const needle = normalizeSearchNeedle(filters.search)
+    const needle = sanitizeTransactionSearchNeedle(filters.search)
     if (needle) {
       const description = String(txn.description || '').toLowerCase()
       const notes = String(txn.notes || '').toLowerCase()
-      const categoryLabel = CATEGORY_LABEL_BY_ID.get(String(txn.category || '')) || ''
+      const categoryMap = getCategoryLabelById()
+      const categoryLabel = categoryMap.get(String(txn.category || '')) || ''
       const hasMatch =
         description.includes(needle)
         || notes.includes(needle)
@@ -1270,18 +1276,6 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
     }
     optimisticallyUpsertTransactionInCache(savedTxn, targetUserId)
 
-    optimisticallyInsertFinancialEvent({
-      action: id ? FINANCIAL_EVENT_ACTIONS.TXN_UPDATE : FINANCIAL_EVENT_ACTIONS.TXN_ADD,
-      entityType: 'transaction',
-      entityId: savedTxn.id,
-      metadata: {
-        description: savedTxn.description,
-        amount: savedTxn.amount,
-        type: savedTxn.type,
-        category: savedTxn.category,
-      },
-    })
-
     refreshTransactionCachesInBackground(invalidateFn, 'transactions post-mutation refresh')
 
     return savedTxn
@@ -1320,18 +1314,6 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
     ])
 
     optimisticallyDeleteTransactionFromCache(id, targetUserId)
-
-    optimisticallyInsertFinancialEvent({
-      action: FINANCIAL_EVENT_ACTIONS.TXN_DELETE,
-      entityType: 'transaction',
-      entityId: id,
-      metadata: {
-        description: cachedTxn?.description,
-        amount: cachedTxn?.amount,
-        type: cachedTxn?.type,
-        category: cachedTxn?.category,
-      },
-    })
 
     refreshTransactionCachesInBackground(invalidateFn, 'transactions post-delete refresh')
 

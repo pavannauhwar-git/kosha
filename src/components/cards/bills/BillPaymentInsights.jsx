@@ -26,14 +26,22 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
 
       if (bill.is_recurring) recurringPaidCount += 1
 
-      // Since we don't know exact paid_at, we use a heuristic:
-      // Bills with due_date still in the future when viewed → paid early
-      // Bills with due_date very recently in the past (< 3 days) → roughly on time
-      // Bills with due_date further in the past → paid late likelihood
-      const daysToDue = daysUntil(bill.due_date)
-      if (daysToDue > 0) {
+      // Use actual paid_at, fallback to updated_at, fallback to today heuristic
+      const effectivePaidDate = bill.paid_at || bill.updated_at
+      let deltaDays
+      if (effectivePaidDate) {
+        const due = new Date(bill.due_date || 0)
+        due.setHours(12, 0, 0, 0)
+        const paid = new Date(effectivePaidDate)
+        paid.setHours(12, 0, 0, 0)
+        deltaDays = Math.round((due - paid) / (1000 * 60 * 60 * 24))
+      } else {
+        deltaDays = daysUntil(bill.due_date)
+      }
+
+      if (deltaDays > 0) {
         earlyCount += 1
-      } else if (daysToDue >= -3) {
+      } else if (deltaDays >= -3) {
         onTimeCount += 1
       } else {
         lateEstimate += 1
@@ -52,8 +60,19 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
 
     let streak = 0
     for (const bill of sorted) {
-      const daysToDue = daysUntil(bill.due_date)
-      if (daysToDue >= -3) {
+      const effectivePaidDate = bill.paid_at || bill.updated_at
+      let deltaDays
+      if (effectivePaidDate) {
+        const due = new Date(bill.due_date || 0)
+        due.setHours(12, 0, 0, 0)
+        const paid = new Date(effectivePaidDate)
+        paid.setHours(12, 0, 0, 0)
+        deltaDays = Math.round((due - paid) / (1000 * 60 * 60 * 24))
+      } else {
+        deltaDays = daysUntil(bill.due_date)
+      }
+
+      if (deltaDays >= -3) {
         streak += 1
       } else {
         break

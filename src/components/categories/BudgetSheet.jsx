@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Wallet } from '@phosphor-icons/react'
@@ -13,7 +13,7 @@ import { FormField } from '../ui'
 export default function BudgetSheet({ open, onClose, budgets = [], byCategory = {} }) {
   const [saving, setSaving] = useState(null)
   const [error, setError] = useState('')
-  const isSubmitting = React.useRef(false)
+  const isSubmitting = useRef(false)
 
   const { customCategories } = useUserCategories()
 

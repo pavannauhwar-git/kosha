@@ -20,6 +20,7 @@ function getHeroStatClass(length) {
 const STAT_DELAYS = ['0ms', '60ms', '120ms']
 
 const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
+  const safeMonth = Math.max(1, Math.min(12, month || 1))
   const earned = data?.earned || 0
   const spent = data?.expense || 0
   const invested = data?.investment || 0
@@ -46,7 +47,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
     >
       <div className="flex items-center justify-between mb-3.5">
         <p className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{ color: heroAccentStrong }}>
-          {MONTH_NAMES[month - 1].slice(0, 3)} {year}
+          {MONTH_NAMES[safeMonth - 1].slice(0, 3)} {year}
         </p>
         <p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: C.heroDimmer }}>
           KOSHA

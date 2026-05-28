@@ -11,7 +11,6 @@ import {
   optimisticallyUpsertTransactionInCache,
   optimisticallyDeleteTransactionsByLoanId
 } from './useTransactions'
-import { optimisticallyInsertFinancialEvent } from './useFinancialEvents'
 import { todayStr } from '../lib/utils'
 import { hapticSuccess } from '../lib/haptics'
 
@@ -35,7 +34,7 @@ export async function invalidateLoanCache() {
   await queryClient.invalidateQueries({ queryKey: ['loans'], refetchType: 'active' })
 }
 
-async function fetchLoans(direction, settledValue, targetUserId) {
+async function fetchLoans(direction, settledValue, targetUserId, signal) {
   const label = settledValue ? 'settled' : `active:${direction}`
   return traceQuery(`loans:${label}`, async () => {
     let query = supabase
@@ -48,7 +47,7 @@ async function fetchLoans(direction, settledValue, targetUserId) {
       query = query.eq('direction', direction)
     }
 
-    query = query.order('created_at', { ascending: false })
+    query = query.order('created_at', { ascending: false }).abortSignal(signal)
 
     const { data: rows, error } = await query
     if (error) throw error
@@ -63,21 +62,21 @@ export function useLoans({ enabled = true } = {}) {
     queries: [
       {
         queryKey: LOAN_ACTIVE_GIVEN_KEY(targetUserId),
-        queryFn: () => fetchLoans('given', false, targetUserId),
+        queryFn: ({ signal }) => fetchLoans('given', false, targetUserId, signal),
         enabled: enabled && !!targetUserId,
         placeholderData: (prev, query) =>
           query?.queryKey?.[3] === targetUserId ? prev : undefined,
       },
       {
         queryKey: LOAN_ACTIVE_TAKEN_KEY(targetUserId),
-        queryFn: () => fetchLoans('taken', false, targetUserId),
+        queryFn: ({ signal }) => fetchLoans('taken', false, targetUserId, signal),
         enabled: enabled && !!targetUserId,
         placeholderData: (prev, query) =>
           query?.queryKey?.[3] === targetUserId ? prev : undefined,
       },
       {
         queryKey: LOAN_SETTLED_KEY(targetUserId),
-        queryFn: () => fetchLoans(null, true, targetUserId),
+        queryFn: ({ signal }) => fetchLoans(null, true, targetUserId, signal),
         enabled: enabled && !!targetUserId,
         placeholderData: (prev, query) =>
           query?.queryKey?.[2] === targetUserId ? prev : undefined,
@@ -357,10 +356,19 @@ export async function addLoanMutation(payload) {
     optimisticallyDeleteLoan(optimisticId, targetUserId)
     optimisticallyInsertLoan(created, targetUserId)
 
-    // Replace optimistic disbursement txn with the real transaction_id from the RPC
+    // ALWAYS remove the optimistic disbursement txn by its ID to prevent ghost txns
+    for (const key of [['transactions'], ['transactionsRecent']]) {
+      const data = queryClient.getQueryData(key)
+      if (Array.isArray(data)) {
+        queryClient.setQueryData(key, data.filter(t => t.id !== optimisticTxnId))
+      }
+    }
+    // Also clean up by optimistic loan ID for good measure
+    optimisticallyDeleteTransactionsByLoanId(optimisticId, targetUserId)
+
+    // Insert real transaction if one was returned
     const realTxnId = created._disbursement_txn_id
     if (realTxnId) {
-      optimisticallyDeleteTransactionsByLoanId(optimisticId, targetUserId)
       optimisticallyUpsertTransactionInCache({
         id: realTxnId,
         date: payload.loan_date || today,
@@ -383,18 +391,6 @@ export async function addLoanMutation(payload) {
         is_auto_generated: false,
       }, targetUserId)
     }
-
-    optimisticallyInsertFinancialEvent({
-      action: FINANCIAL_EVENT_ACTIONS.LOAN_ADD,
-      entityType: 'loan',
-      entityId: created.id,
-      metadata: {
-        direction: created.direction,
-        counterparty: created.counterparty,
-        amount: created.amount,
-        transaction_id: realTxnId || null,
-      },
-    })
 
     refreshLoanAndTransactionCachesInBackground({
       invalidateLoanFn: invalidateLoanCache,
@@ -488,21 +484,6 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
     }, targetUserId)
 
     hapticSuccess()
-    optimisticallyInsertFinancialEvent({
-      action: FINANCIAL_EVENT_ACTIONS.LOAN_PAYMENT,
-      entityType: 'loan',
-      entityId: loan.id,
-      metadata: {
-        payment_amount: paymentAmount,
-        direction: loan.direction,
-        counterparty: loan.counterparty,
-        remaining_balance: Math.max(0, Number(loan.amount) - (Number(loan.amount_settled) + paymentAmount)),
-        is_full_settlement: fullSettled,
-        total_loan_amount: loan.amount,
-        loan_date: loan.loan_date,
-        is_repayment: true,
-      },
-    })
 
     refreshLoanAndTransactionCachesInBackground({
       invalidateLoanFn: invalidateLoanCache,
@@ -556,13 +537,6 @@ export async function updateLoanMutation(id, updates) {
       if (Array.isArray(data)) queryClient.setQueryData(newKey, data.map(row => row?.id === id ? updated : row))
     }
 
-    optimisticallyInsertFinancialEvent({
-      action: FINANCIAL_EVENT_ACTIONS.LOAN_UPDATE,
-      entityType: 'loan',
-      entityId: id,
-      metadata: updates,
-    })
-
     refreshLoanAndTransactionCachesInBackground({
       invalidateLoanFn: invalidateLoanCache,
       invalidateTransactionFn: invalidateTransactionCache,
@@ -596,22 +570,6 @@ export async function deleteLoanMutation(id) {
     await queryClient.cancelQueries({ queryKey: ['loans'] })
     optimisticallyDeleteLoan(id, targetUserId)
     optimisticallyDeleteTransactionsByLoanId(id, targetUserId)
-
-    optimisticallyInsertFinancialEvent({
-      action: FINANCIAL_EVENT_ACTIONS.LOAN_DELETE,
-      entityType: 'loan',
-      entityId: id,
-      metadata: {
-        counterparty: cachedLoan?.counterparty,
-        original_amount: cachedLoan?.amount,
-        amount_settled: cachedLoan?.amount_settled,
-        settlement_progress: `${Math.round(((cachedLoan?.amount_settled || 0) / (cachedLoan?.amount || 1)) * 100)}%`,
-        direction: cachedLoan?.direction,
-        loan_date: cachedLoan?.loan_date,
-        due_date: cachedLoan?.due_date,
-        impact: 'Associated disbursement and payment transactions removed from cache.',
-      },
-    })
 
     refreshLoanAndTransactionCachesInBackground({
       invalidateLoanFn: invalidateLoanCache,

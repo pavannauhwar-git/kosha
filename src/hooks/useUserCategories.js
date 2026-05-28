@@ -118,8 +118,8 @@ export function useUserCategories({ enabled = true } = {}) {
       registerCustomCategories([])
       return
     }
-    registerCustomCategories(categories)
-  }, [categories, activeUserId])
+    registerCustomCategories(data || [])
+  }, [data, activeUserId])
 
   return { customCategories: categories, loading: isLoading, error }
 }

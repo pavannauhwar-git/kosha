@@ -93,11 +93,20 @@ function scoreTone(score) {
 
 // ── Tooltips ──────────────────────────────────────────────────────────────
 
+let lastHapticTime = 0
+const throttledHaptic = () => {
+  const now = Date.now()
+  if (now - lastHapticTime > 40) {
+    hapticSelection()
+    lastHapticTime = now
+  }
+}
+
 const PulseTooltip = ({ active, payload, label }) => {
   const prevLabelRef = useRef(null)
   useEffect(() => {
     if (active && label !== prevLabelRef.current) {
-      hapticSelection()
+      throttledHaptic()
       prevLabelRef.current = label
     }
   }, [active, label])
@@ -118,9 +127,9 @@ const PulseTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
+      boxShadow: 'var(--ds-shadow-md)',
       minWidth: 176,
-      border: '1px solid rgba(187,217,255,0.85)',
+      border: '1px solid var(--ds-border-strong)',
     }}>
       <p style={{
         fontSize: 11,
@@ -171,7 +180,7 @@ const NetTooltip = ({ active, payload, label }) => {
   const prevLabelRef = useRef(null)
   useEffect(() => {
     if (active && label !== prevLabelRef.current) {
-      hapticSelection()
+      throttledHaptic()
       prevLabelRef.current = label
     }
   }, [active, label])
@@ -182,21 +191,21 @@ const NetTooltip = ({ active, payload, label }) => {
   const valueColor = val >= 0 ? C.brandMid : C.bills
   return (
     <div className="tooltip-enter" style={{
-      background: 'rgba(34,43,109,0.96)',
+      background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 14px',
-      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
+      boxShadow: 'var(--ds-shadow-md)',
       minWidth: 140,
-      border: '0.5px solid rgba(255,255,255,0.10)',
+      border: '1px solid var(--ds-border-strong)',
     }}>
       <p style={{
-        fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.5)',
+        fontSize: 12, fontWeight: 500, color: 'var(--ds-text-3)',
         letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
       }}>
         {label}
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.78)' }}>Leftover</span>
+        <span style={{ fontSize: 13, color: 'var(--ds-text-1)' }}>Leftover</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: valueColor }}>{fmt(val)}</span>
       </div>
     </div>
@@ -206,14 +215,14 @@ const NetTooltip = ({ active, payload, label }) => {
 // ── CashFlow chart ─────────────────────────────────────────────────────────
 
 export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncome }) {
-  const safeData = (Array.isArray(chartData) ? chartData : []).map((point) => ({
+  const safeData = useMemo(() => (Array.isArray(chartData) ? chartData : []).map((point) => ({
     name: point?.name || '-',
     Income: toFiniteNumber(point?.Income),
     Spent: toFiniteNumber(point?.Spent),
     Invested: toFiniteNumber(point?.Invested),
     Outflow: toFiniteNumber(point?.Outflow || (toFiniteNumber(point?.Spent) + toFiniteNumber(point?.Invested))),
     Pulse: toFiniteNumber(point?.Income) - toFiniteNumber(point?.Outflow || (toFiniteNumber(point?.Spent) + toFiniteNumber(point?.Invested))),
-  }))
+  })), [chartData])
 
   if (!safeData.length) return null
 
@@ -337,10 +346,10 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 // ── NetSavings chart ───────────────────────────────────────────────────────
 
 export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisMax }) {
-  const safeData = (Array.isArray(netData) ? netData : []).map((point) => ({
+  const safeData = useMemo(() => (Array.isArray(netData) ? netData : []).map((point) => ({
     name: point?.name || '-',
     Net: toFiniteNumber(point?.Net),
-  }))
+  })), [netData])
 
   if (!safeData.length) return null
 
@@ -451,9 +460,9 @@ const FlowCompareTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
+      boxShadow: 'var(--ds-shadow-md)',
       minWidth: 170,
-      border: '1px solid rgba(187,217,255,0.85)',
+      border: '1px solid var(--ds-border-strong)',
     }}>
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
@@ -479,7 +488,7 @@ const FlowCompareTooltip = ({ active, payload, label }) => {
 }
 
 export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({ flowData }) {
-  const safeData = (Array.isArray(flowData) ? flowData : []).map((point) => {
+  const safeData = useMemo(() => (Array.isArray(flowData) ? flowData : []).map((point) => {
     const income = toFiniteNumber(point?.Income)
     const spent = toFiniteNumber(point?.Spent)
     const invested = toFiniteNumber(point?.Invested)
@@ -490,7 +499,7 @@ export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({
       Invested: invested,
       Outflow: spent + invested,
     }
-  })
+  }), [flowData])
 
   if (!safeData.length) return null
 
@@ -578,8 +587,8 @@ const WaterfallTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
-      border: '1px solid rgba(187,217,255,0.85)',
+      boxShadow: 'var(--ds-shadow-md)',
+      border: '1px solid var(--ds-border-strong)',
       minWidth: 170,
     }}>
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
@@ -606,7 +615,7 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
   totalInvestment,
   periodLabel = 'Period',
 }) {
-  const safeData = Array.isArray(flowData) ? flowData : []
+  const safeData = useMemo(() => Array.isArray(flowData) ? flowData : [], [flowData])
 
   const income = toFiniteNumber(totalIncome) || safeData.reduce((sum, row) => sum + toFiniteNumber(row?.Income), 0)
   const expense = toFiniteNumber(totalExpense) || safeData.reduce((sum, row) => sum + toFiniteNumber(row?.Spent), 0)
@@ -765,8 +774,8 @@ const CompositionTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
-      border: '1px solid rgba(187,217,255,0.85)',
+      boxShadow: 'var(--ds-shadow-md)',
+      border: '1px solid var(--ds-border-strong)',
       minWidth: 182,
     }}>
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
@@ -793,7 +802,7 @@ const CompositionTooltip = ({ active, payload, label }) => {
 }
 
 export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaChart({ flowData }) {
-  const safeData = (Array.isArray(flowData) ? flowData : []).map((row) => {
+  const safeData = useMemo(() => (Array.isArray(flowData) ? flowData : []).map((row) => {
     const expense = toFiniteNumber(row?.Spent)
     const investment = toFiniteNumber(row?.Invested)
     return {
@@ -804,7 +813,7 @@ export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaC
       Outflow: expense + investment,
       InvestShare: expense + investment > 0 ? Math.round((investment / (expense + investment)) * 100) : 0,
     }
-  })
+  }), [flowData])
 
   if (!safeData.length) return null
 
@@ -1219,10 +1228,10 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
     Math.round(Math.max(toFiniteNumber(annualSurplus), trendOutflow * 2))
   )
 
-  const [reserveCorpus, setReserveCorpus] = useState(baselineReserve)
+  const [reserveCorpusInput, setReserveCorpusInput] = useState(() => String(baselineReserve))
 
   useEffect(() => {
-    setReserveCorpus(baselineReserve)
+    setReserveCorpusInput(String(baselineReserve))
   }, [baselineReserve])
 
   if (!hasOutflowData) {
@@ -1234,7 +1243,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
     )
   }
 
-  const reserveAmount = Math.max(0, toFiniteNumber(reserveCorpus))
+  const reserveAmount = Math.max(0, toFiniteNumber(reserveCorpusInput))
 
   const scenarioData = [
     { name: 'Current trend', short: 'Trend', multiplier: 1, color: C.brand },
@@ -1288,8 +1297,8 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
           name="runway-corpus"
           min={0}
           step={1000}
-          value={reserveAmount}
-          onChange={(event) => setReserveCorpus(Math.max(0, Number(event.target.value || 0)))}
+          value={reserveCorpusInput}
+          onChange={(event) => setReserveCorpusInput(event.target.value)}
           className="w-full rounded-card border border-kosha-border bg-kosha-surface px-3 py-2 text-[12px] font-semibold text-ink"
         />
       </div>

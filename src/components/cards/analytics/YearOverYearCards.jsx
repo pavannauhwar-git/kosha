@@ -48,8 +48,8 @@ function tickCompact(value) {
 function deltaPct(current, previous) {
   const c = Number(current || 0)
   const p = Number(previous || 0)
-  if (p === 0) return null
-  return Math.round(((c - p) / p) * 100)
+  if (c === 0 && p === 0) return 0
+  return Math.round(((c - p) / (Math.abs(p) || 1)) * 100)
 }
 
 function MetricTooltip({ active, payload, label }) {
