@@ -684,8 +684,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       return
     }
 
-    const match = pendingBills.find(b => 
-      b.description.toLowerCase().includes(descLower) || 
+    const match = pendingBills.find(b =>
+      b.description.toLowerCase().includes(descLower) ||
       descLower.includes(b.description.toLowerCase())
     )
     setMatchingBill(match || null)
@@ -733,7 +733,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     if (nextType === type) return
     // Save current category to memory before switching
     setLastCategoryByType(prev => ({ ...prev, [type]: category }))
-    
+
     set('type', nextType)
     if (nextType !== 'investment') {
       const normalized = normalizeCategoryForType(nextType, lastCategoryByType[nextType])
@@ -754,7 +754,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     !showCatPicker && !showModePicker && !showVehPicker && !showCreateCat,
     {
       onClose: isSaving ? undefined : onClose,
-      autoFocus: false,
+      initialFocusSelector: 'input[name="txn-amount"]',
     }
   )
 
@@ -801,7 +801,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       type,
       description: desc.trim(),
       amount: Number(amountValidation.paise) / 100,
-      category: type === 'investment' 
+      category: type === 'investment'
         ? (investmentOptions.find(v => v.label === vehicle)?.id || 'other').toLowerCase()
         : normalizeCategoryForType(type, category).toLowerCase(),
       date,
@@ -962,300 +962,300 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               </div>
             </FormField>
 
-          {/* Description */}
-          <input
-            ref={descRef}
-            type="text" name="txn-description" placeholder="Description"
-            aria-label="Transaction description"
-            enterKeyHint="done"
-            autoCapitalize="sentences"
-            value={desc} onChange={e => set('desc', e.target.value)}
-            disabled={isSaving || isLinkedToSplitwise}
-            className="input mb-3 disabled:opacity-50"
-          />
-
-          <AnimatePresence>
-            {matchingBill && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mb-3 px-3 py-2 rounded-xl bg-brand-container/40 border border-brand/10 flex items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 rounded-full bg-brand-container flex items-center justify-center shrink-0">
-                    <Info size={12} weight="bold" className="text-brand" />
-                  </div>
-                  <p className="text-[11px] font-medium text-ink truncate">
-                    Link to pending bill: <span className="font-bold text-brand">{matchingBill.description}</span>?
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleLinkMatchingBill}
-                  className="shrink-0 text-[11px] font-bold text-brand hover:brightness-90 active:scale-95 transition-all"
-                >
-                  Link & Auto-fill
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Field rows */}
-          <div className="list-card mb-3">
-
-            {/* Date */}
-            <div className={`list-row w-full ${isSaving ? 'opacity-50 pointer-events-none' : ''}`}>
-              <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
-                <CalendarDots size={15} weight="duotone" className="text-brand" />
-              </div>
-              <span className="flex-1 text-[15px] text-ink">Date</span>
-              <PixelDatePicker
-                name="txn-date"
-                value={date}
-                onChange={(nextDate) => set('date', nextDate)}
-                disabled={isSaving}
-                sheetTitle="Select transaction date"
-              />
-            </div>
-
-            {/* Category */}
-            {type !== 'investment' && (
-              <button
-                type="button"
-                className="list-row w-full disabled:opacity-50"
-                onClick={() => setShowCatPicker(() => handleAdvanceFocus())}
-                disabled={isSaving}
-              >
-                <CategoryIcon categoryId={category} size={16} />
-                <span className="flex-1 text-[15px] text-ink text-left">Category</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-[13px] text-ink-3">{selectedCat?.label}</span>
-                  <CaretRight size={14} className="text-ink-4" />
-                </div>
-              </button>
-            )}
-
-            {/* Investment vehicle */}
-            {type === 'investment' && (
-              <button
-                type="button"
-                className="list-row w-full disabled:opacity-50"
-                onClick={() => setShowVehPicker(() => handleAdvanceFocus())}
-                disabled={isSaving}
-              >
-                {(() => {
-                  const VehIcon = selectedVeh ? ICON_MAP[selectedVeh.icon] : null
-                  return VehIcon ? (
-                    <div
-                      className={`w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0 ${selectedVeh?.bg ? '' : 'bg-kosha-surface-2'}`}
-                      style={selectedVeh?.color ? {
-                        backgroundColor: selectedVeh.bg,
-                        background: `color-mix(in srgb, ${selectedVeh.color} 18%, var(--ds-surface))`
-                      } : undefined}
-                    >
-                      <VehIcon
-                        size={15}
-                        weight="duotone"
-                        className={selectedVeh?.color ? '' : 'text-ink-2'}
-                        style={selectedVeh?.color ? { color: selectedVeh.color } : undefined}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 rounded-chip bg-invest-bg flex items-center justify-center shrink-0">
-                      <span className="text-invest-text text-xs font-bold">₹</span>
-                    </div>
-                  )
-                })()}
-                <span className="flex-1 text-[15px] text-ink text-left">Type of Investment</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-[13px] text-ink-3">{vehicle}</span>
-                  <CaretRight size={14} className="text-ink-4" />
-                </div>
-              </button>
-            )}
-
-            {/* Payment mode */}
-            <button
-              type="button"
-              className="list-row w-full disabled:opacity-50"
-              onClick={() => setShowModePicker(() => handleAdvanceFocus())}
-              disabled={isSaving}
-            >
-              {(() => {
-                const ModeIcon = selectedMode ? ICON_MAP[selectedMode.icon] : null
-                return ModeIcon ? (
-                  <div
-                    className="w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0"
-                    style={selectedMode?.color ? {
-                      backgroundColor: selectedMode.bg,
-                      background: `color-mix(in srgb, ${selectedMode.color} 18%, var(--ds-surface))`
-                    } : undefined}
-                  >
-                    <ModeIcon
-                      size={15}
-                      weight="duotone"
-                      className={selectedMode?.color ? '' : 'text-ink-2'}
-                      style={selectedMode?.color ? { color: selectedMode.color } : undefined}
-                    />
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
-                    <span className="text-ink text-xs font-semibold">₹</span>
-                  </div>
-                )
-              })()}
-              <span className="flex-1 text-[15px] text-ink text-left">Payment Mode</span>
-              <div className="flex items-center gap-1">
-                <span className="text-[13px] text-ink-3">{selectedMode?.label}</span>
-                <CaretRight size={14} className="text-ink-4" />
-              </div>
-            </button>
-
-            {/* Recurring */}
-            <div className="px-4 py-3 border-t border-kosha-border">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[14px] font-medium text-ink">Recurring transaction</p>
-                  <p className="text-[12px] text-ink-3">Auto-generates based on selected frequency.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => set('isRecurring', !isRecurring)}
-                  disabled={isSaving}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                    ${isRecurring ? 'bg-brand' : 'bg-kosha-border'}
-                    ${isSaving ? 'opacity-50' : ''}`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform
-                      ${isRecurring ? 'translate-x-5' : 'translate-x-1'}`}
-                  />
-                </button>
-              </div>
-
-              {isRecurring && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {RECURRENCE_OPTIONS.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => set('recurrence', option)}
-                      disabled={isSaving}
-                      className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-[background-color,border-color,color] duration-120
-                        ${recurrence === option
-                          ? 'bg-brand-container text-brand border-brand/20'
-                          : 'bg-kosha-surface text-ink-2 border-kosha-border'}
-                        ${isSaving ? 'opacity-50' : ''}`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Notes */}
-            <button
-              type="button"
-              className="list-row w-full disabled:opacity-50"
-              onClick={() => set('showNotes', !showNotes)}
-              disabled={isSaving}
-            >
-              <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 flex items-center justify-center shrink-0">
-                <NotePencil size={15} className="text-ink-3" />
-              </div>
-              <span className="flex-1 text-[15px] text-ink text-left">
-                {notes.trim() ? 'Note' : 'Add a note'}
-              </span>
-              {notes.trim()
-                ? <span className="text-[12px] text-ink-3 max-w-[120px] truncate">{notes.trim()}</span>
-                : <CaretRight size={14} className={`text-ink-4 transition-transform duration-200 ${showNotes ? 'rotate-90' : ''}`} />
-              }
-            </button>
+            {/* Description */}
+            <input
+              ref={descRef}
+              type="text" name="txn-description" placeholder="Description"
+              aria-label="Transaction description"
+              enterKeyHint="done"
+              autoCapitalize="sentences"
+              value={desc} onChange={e => set('desc', e.target.value)}
+              disabled={isSaving || isLinkedToSplitwise}
+              className="input mb-3 disabled:opacity-50"
+            />
 
             <AnimatePresence>
-              {showNotes && (
+              {matchingBill && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: [0.05, 0.7, 0.1, 1] }}
-                  style={{ overflow: 'hidden' }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-3 px-3 py-2 rounded-xl bg-brand-container/40 border border-brand/10 flex items-center justify-between gap-3"
                 >
-                  <div className="px-4 pb-3 pt-1">
-                    <textarea
-                      rows={3}
-                      name="txn-notes"
-                      placeholder="e.g. Q1 advance tax, flight reimbursement…"
-                      value={notes}
-                      onChange={e => set('notes', e.target.value)}
-                      disabled={isSaving}
-                      className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-[14px]
-                                 text-ink placeholder-ink-4 outline-none resize-none
-                                 border border-transparent focus:border-brand-border
-                                 transition-colors duration-150 disabled:opacity-50"
-                    />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-brand-container flex items-center justify-center shrink-0">
+                      <Info size={12} weight="bold" className="text-brand" />
+                    </div>
+                    <p className="text-[11px] font-medium text-ink truncate">
+                      Link to pending bill: <span className="font-bold text-brand">{matchingBill.description}</span>?
+                    </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleLinkMatchingBill}
+                    className="shrink-0 text-[11px] font-bold text-brand hover:brightness-90 active:scale-95 transition-all"
+                  >
+                    Link & Auto-fill
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Splitwise Integration */}
-            {type === 'expense' && !editTxn && groups && groups.length > 0 && (
+            {/* Field rows */}
+            <div className="list-card mb-3">
+
+              {/* Date */}
+              <div className={`list-row w-full ${isSaving ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                  <CalendarDots size={15} weight="duotone" className="text-brand" />
+                </div>
+                <span className="flex-1 text-[15px] text-ink">Date</span>
+                <PixelDatePicker
+                  name="txn-date"
+                  value={date}
+                  onChange={(nextDate) => set('date', nextDate)}
+                  disabled={isSaving}
+                  sheetTitle="Select transaction date"
+                />
+              </div>
+
+              {/* Category */}
+              {type !== 'investment' && (
+                <button
+                  type="button"
+                  className="list-row w-full disabled:opacity-50"
+                  onClick={() => setShowCatPicker(() => handleAdvanceFocus())}
+                  disabled={isSaving}
+                >
+                  <CategoryIcon categoryId={category} size={16} />
+                  <span className="flex-1 text-[15px] text-ink text-left">Category</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[13px] text-ink-3">{selectedCat?.label}</span>
+                    <CaretRight size={14} className="text-ink-4" />
+                  </div>
+                </button>
+              )}
+
+              {/* Investment vehicle */}
+              {type === 'investment' && (
+                <button
+                  type="button"
+                  className="list-row w-full disabled:opacity-50"
+                  onClick={() => setShowVehPicker(() => handleAdvanceFocus())}
+                  disabled={isSaving}
+                >
+                  {(() => {
+                    const VehIcon = selectedVeh ? ICON_MAP[selectedVeh.icon] : null
+                    return VehIcon ? (
+                      <div
+                        className={`w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0 ${selectedVeh?.bg ? '' : 'bg-kosha-surface-2'}`}
+                        style={selectedVeh?.color ? {
+                          backgroundColor: selectedVeh.bg,
+                          background: `color-mix(in srgb, ${selectedVeh.color} 18%, var(--ds-surface))`
+                        } : undefined}
+                      >
+                        <VehIcon
+                          size={15}
+                          weight="duotone"
+                          className={selectedVeh?.color ? '' : 'text-ink-2'}
+                          style={selectedVeh?.color ? { color: selectedVeh.color } : undefined}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-chip bg-invest-bg flex items-center justify-center shrink-0">
+                        <span className="text-invest-text text-xs font-bold">₹</span>
+                      </div>
+                    )
+                  })()}
+                  <span className="flex-1 text-[15px] text-ink text-left">Type of Investment</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[13px] text-ink-3">{vehicle}</span>
+                    <CaretRight size={14} className="text-ink-4" />
+                  </div>
+                </button>
+              )}
+
+              {/* Payment mode */}
+              <button
+                type="button"
+                className="list-row w-full disabled:opacity-50"
+                onClick={() => setShowModePicker(() => handleAdvanceFocus())}
+                disabled={isSaving}
+              >
+                {(() => {
+                  const ModeIcon = selectedMode ? ICON_MAP[selectedMode.icon] : null
+                  return ModeIcon ? (
+                    <div
+                      className="w-8 h-8 rounded-chip border border-kosha-border flex items-center justify-center shrink-0"
+                      style={selectedMode?.color ? {
+                        backgroundColor: selectedMode.bg,
+                        background: `color-mix(in srgb, ${selectedMode.color} 18%, var(--ds-surface))`
+                      } : undefined}
+                    >
+                      <ModeIcon
+                        size={15}
+                        weight="duotone"
+                        className={selectedMode?.color ? '' : 'text-ink-2'}
+                        style={selectedMode?.color ? { color: selectedMode.color } : undefined}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-chip bg-brand-container flex items-center justify-center shrink-0">
+                      <span className="text-ink text-xs font-semibold">₹</span>
+                    </div>
+                  )
+                })()}
+                <span className="flex-1 text-[15px] text-ink text-left">Payment Mode</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[13px] text-ink-3">{selectedMode?.label}</span>
+                  <CaretRight size={14} className="text-ink-4" />
+                </div>
+              </button>
+
+              {/* Recurring */}
               <div className="px-4 py-3 border-t border-kosha-border">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[14px] font-medium text-ink">Split this expense</p>
-                    <p className="text-[12px] text-ink-3">Automatically adds it to a Splitwise group.</p>
+                    <p className="text-[14px] font-medium text-ink">Recurring transaction</p>
+                    <p className="text-[12px] text-ink-3">Auto-generates based on selected frequency.</p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => set('isSplitwise', !isSplitwise)}
+                    onClick={() => set('isRecurring', !isRecurring)}
                     disabled={isSaving}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                      ${isSplitwise ? 'bg-brand' : 'bg-kosha-border'}
-                      ${isSaving ? 'opacity-50' : ''}`}
+                    ${isRecurring ? 'bg-brand' : 'bg-kosha-border'}
+                    ${isSaving ? 'opacity-50' : ''}`}
                   >
                     <span
                       className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform
-                        ${isSplitwise ? 'translate-x-5' : 'translate-x-1'}`}
+                      ${isRecurring ? 'translate-x-5' : 'translate-x-1'}`}
                     />
                   </button>
                 </div>
 
-                {isSplitwise && (
-                  <div className="mt-3">
-                    <select
-                      value={splitGroupId || ''}
-                      onChange={(e) => set('splitGroupId', e.target.value)}
-                      disabled={isSaving}
-                      className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-[14px] text-ink outline-none border border-transparent focus:border-brand-border disabled:opacity-50"
-                    >
-                      <option value="" disabled>Select a group...</option>
-                      {groups.filter(g => !g.is_archived).map(g => (
-                        <option key={g.id} value={g.id}>{g.name}</option>
-                      ))}
-                    </select>
+                {isRecurring && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {RECURRENCE_OPTIONS.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => set('recurrence', option)}
+                        disabled={isSaving}
+                        className={`px-3 py-1.5 rounded-pill text-xs font-semibold border capitalize transition-[background-color,border-color,color] duration-120
+                        ${recurrence === option
+                            ? 'bg-brand-container text-brand border-brand/20'
+                            : 'bg-kosha-surface text-ink-2 border-kosha-border'}
+                        ${isSaving ? 'opacity-50' : ''}`}
+                      >
+                        {option}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
-            )}
 
-            {editTxn && linkedSplitExpenseId && (
-              <div className="px-4 py-2 border-t border-kosha-border flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-brand-container flex items-center justify-center shrink-0">
-                  <span className="text-[10px] text-brand font-bold">🔗</span>
+              {/* Notes */}
+              <button
+                type="button"
+                className="list-row w-full disabled:opacity-50"
+                onClick={() => set('showNotes', !showNotes)}
+                disabled={isSaving}
+              >
+                <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 flex items-center justify-center shrink-0">
+                  <NotePencil size={15} className="text-ink-3" />
                 </div>
-                <span className="text-[13px] text-ink-2 font-medium">Linked to a Splitwise group. Edits will sync automatically.</span>
-              </div>
-            )}
-          </div>
+                <span className="flex-1 text-[15px] text-ink text-left">
+                  {notes.trim() ? 'Note' : 'Add a note'}
+                </span>
+                {notes.trim()
+                  ? <span className="text-[12px] text-ink-3 max-w-[120px] truncate">{notes.trim()}</span>
+                  : <CaretRight size={14} className={`text-ink-4 transition-transform duration-200 ${showNotes ? 'rotate-90' : ''}`} />
+                }
+              </button>
 
-          {/* Error message */}
-          {error && <p className="text-expense-text text-[13px] mb-3 px-1">{error}</p>}
+              <AnimatePresence>
+                {showNotes && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: [0.05, 0.7, 0.1, 1] }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className="px-4 pb-3 pt-1">
+                      <textarea
+                        rows={3}
+                        name="txn-notes"
+                        placeholder="e.g. Q1 advance tax, flight reimbursement…"
+                        value={notes}
+                        onChange={e => set('notes', e.target.value)}
+                        disabled={isSaving}
+                        className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-[14px]
+                                 text-ink placeholder-ink-4 outline-none resize-none
+                                 border border-transparent focus:border-brand-border
+                                 transition-colors duration-150 disabled:opacity-50"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-          {/*
+              {/* Splitwise Integration */}
+              {type === 'expense' && !editTxn && groups && groups.length > 0 && (
+                <div className="px-4 py-3 border-t border-kosha-border">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[14px] font-medium text-ink">Split this expense</p>
+                      <p className="text-[12px] text-ink-3">Automatically adds it to a Splitwise group.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => set('isSplitwise', !isSplitwise)}
+                      disabled={isSaving}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                      ${isSplitwise ? 'bg-brand' : 'bg-kosha-border'}
+                      ${isSaving ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform
+                        ${isSplitwise ? 'translate-x-5' : 'translate-x-1'}`}
+                      />
+                    </button>
+                  </div>
+
+                  {isSplitwise && (
+                    <div className="mt-3">
+                      <select
+                        value={splitGroupId || ''}
+                        onChange={(e) => set('splitGroupId', e.target.value)}
+                        disabled={isSaving}
+                        className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-[14px] text-ink outline-none border border-transparent focus:border-brand-border disabled:opacity-50"
+                      >
+                        <option value="" disabled>Select a group...</option>
+                        {groups.filter(g => !g.is_archived).map(g => (
+                          <option key={g.id} value={g.id}>{g.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {editTxn && linkedSplitExpenseId && (
+                <div className="px-4 py-2 border-t border-kosha-border flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-brand-container flex items-center justify-center shrink-0">
+                    <span className="text-[10px] text-brand font-bold">🔗</span>
+                  </div>
+                  <span className="text-[13px] text-ink-2 font-medium">Linked to a Splitwise group. Edits will sync automatically.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Error message */}
+            {error && <p className="text-expense-text text-[13px] mb-3 px-1">{error}</p>}
+
+            {/*
             Save button — the most important element.
 
             States:
@@ -1264,18 +1264,18 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               The spinner persists for the ENTIRE mutation + refetch chain.
               When it disappears, the sheet closes and the data is accurate.
           */}
-          <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
-            <Button
-              type="submit"
-              variant="primary"
-              size="xl"
-              fullWidth
-              loading={isSaving}
-            >
-              {isSaving ? 'Saving...' : (editTxn ? 'Save Changes' : `Add ${activeType?.label}`)}
-            </Button>
-            <div className="h-2" />
-          </div>
+            <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
+              <Button
+                type="submit"
+                variant="primary"
+                size="xl"
+                fullWidth
+                loading={isSaving}
+              >
+                {isSaving ? 'Saving...' : (editTxn ? 'Save Changes' : `Add ${activeType?.label}`)}
+              </Button>
+              <div className="h-2" />
+            </div>
           </form>
         </div>
       </motion.div>

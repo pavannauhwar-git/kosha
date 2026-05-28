@@ -404,11 +404,16 @@ One entry per commit. Reviewer scans for `✗` and `PENDING-*` entries.
 - **Discovered out of scope:** Nothing
 - **Notes:** Added a new cache rule in Workbox configuration specifically for `https://*.supabase.co/storage/*` (CacheFirst strategy). A custom plugin was added to strip query parameters (`?token=...`) from the cache key, so signed URLs resolving to the same underlying avatar image hit the cache. Expiration is set to 1 hour to balance staleness with zero-network paints.
 
+---
 
+## FIX-056 — Back-button-aware bottom sheets & dialogs (Android UX)
 
-
-
-
-
-
-
+- **Commit:** b375b6b66285cd532d9977b0c7a9101da41785c0
+- **PR:** pending
+- **Files modified:** `src/hooks/useBackButtonClose.js`, `src/components/ui/BottomSheet.jsx`, `src/components/dialogs/EditProfileNameDialog.jsx`, `src/components/dialogs/ViewProfilePhotoDialog.jsx`
+- **Lint pass:** ✓ (0 errors)
+- **Build pass:** ✓ (built in 33.20s)
+- **Automated verify steps:** N/A
+- **Manual verify steps:** PENDING-DEVICE-VERIFICATION — Open BottomSheet, EditProfileNameDialog, and ViewProfilePhotoDialog on Android device. Press system back button. Modal should close without navigating the page backward.
+- **Discovered out of scope:** Nothing
+- **Notes:** Created `useBackButtonClose` hook that pushes a fake state to `window.history` when a modal opens, and listens to the `popstate` event to close the modal. Also handles cleanup and backward navigation on manual modal close. Hook injected into `BottomSheet.jsx`, `EditProfileNameDialog.jsx`, and `ViewProfilePhotoDialog.jsx`.

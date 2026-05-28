@@ -726,12 +726,12 @@ export default function Loans({
 
   const paySheetRef = useOverlayFocusTrap(!!payLoan, {
     onClose: dismissPaySheet,
-    autoFocus: false,
+    initialFocusSelector: 'input[name="payment-amount"]',
   })
 
   const addLoanSheetRef = useOverlayFocusTrap(showAdd, {
     onClose: dismissAddLoanSheet,
-    autoFocus: false,
+    initialFocusSelector: 'input[name="loan-counterparty"]',
   })
 
   async function handleExportCsv() {
@@ -1132,9 +1132,8 @@ export default function Loans({
 
                           {/* Compact stats row */}
                           <div className="flex items-center gap-2 flex-wrap mb-2">
-                            <span className={`text-[15px] font-semibold tabular-nums ${
-                              loan.direction === 'given' ? 'amt-income' : 'amt-expense'
-                            }`}>{fmt(+loan.amount)}</span>
+                            <span className={`text-[15px] font-semibold tabular-nums ${loan.direction === 'given' ? 'amt-income' : 'amt-expense'
+                              }`}>{fmt(+loan.amount)}</span>
                             {(() => {
                               const start = new Date(`${loan.loan_date}T00:00:00`)
                               if (Number.isNaN(start.getTime())) return null
