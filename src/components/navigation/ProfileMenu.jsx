@@ -120,7 +120,6 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               src={avatarUrl}
               alt={displayName}
               fallbackInitial={initial}
-              fetchpriority="high"
               className="w-full h-full object-cover"
             />
           ) : isViewingPartner && activePartner?.display_name ? (

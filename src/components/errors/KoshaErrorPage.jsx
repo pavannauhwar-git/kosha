@@ -89,7 +89,6 @@ export default function KoshaErrorPage({
                 <img
                   src={imageUrl}
                   alt="Error illustration"
-                  decoding="async"
                   className="w-48 h-48 object-contain illustration drop-shadow-xl"
                 />
               </motion.div>

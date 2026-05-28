@@ -63,7 +63,7 @@ function deleteCachedAvatarUrl(src) {
   }
 }
 
-export default function SecureAvatar({ src, alt, className, fallbackInitial, ...props }) {
+export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
   const [url, setUrl] = useState(null);
   const [retryNonce, setRetryNonce] = useState(0);
   const retryCountRef = useRef(0);
@@ -133,7 +133,6 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial, ...
     <img
       src={url}
       alt={alt}
-      decoding="async"
       className={className}
       onError={() => {
         if (!src || retryCountRef.current >= 1) {
@@ -147,7 +146,6 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial, ...
         setUrl(null)
         setRetryNonce((n) => n + 1)
       }}
-      {...props}
     />
   );
 }

@@ -301,7 +301,7 @@ export default function Guide() {
                 Practical workflows, mistakes to avoid, and quick next actions for every page.
               </p>
             </div>
-            <img src="/illustrations/guide_hero.png" alt="Guide Hero" decoding="async" className="w-40 h-auto object-contain illustration shrink-0" />
+            <img src="/illustrations/guide_hero.png" alt="Guide Hero" className="w-40 h-auto object-contain illustration shrink-0" />
           </div>
 
           <div className="p-4">

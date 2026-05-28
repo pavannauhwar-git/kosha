@@ -451,7 +451,7 @@ export default function Onboarding() {
           <p className="text-[12px] text-expense-text font-medium mb-2 text-right">{finishError}</p>
         )}
         <div className="flex justify-center mb-2">
-          <img src="/illustrations/onboarding_hero.png" alt="Welcome to Kosha" decoding="async" className="w-48 h-auto illustration" />
+          <img src="/illustrations/onboarding_hero.png" alt="Welcome to Kosha" className="w-48 h-auto illustration" />
         </div>
 
         <StepDots current={step} total={3} />
