@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { lazy, Suspense, useState, useEffect, useCallback, useRef, useDeferredValue } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { motion, MotionConfig } from 'framer-motion'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 import { getMuiTheme } from './lib/muiTheme'
@@ -27,13 +27,6 @@ const LIABILITY_PREFETCH_COLUMNS =
   'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
 
 function navigateWithViewTransition(navigate, to, options) {
-  if (typeof document !== 'undefined' && typeof document.startViewTransition === 'function') {
-    // The transition's callback must synchronously update state — wrap the navigate.
-    document.startViewTransition(() => {
-      navigate(to, options)
-    })
-    return
-  }
   navigate(to, options)
 }
 
@@ -1129,8 +1122,6 @@ function SafeRoute({ pathname, guard, children }) {
 
 function AppRoutes() {
   const location = useLocation()
-  const deferredLocation = useDeferredValue(location)
-  const isStale = deferredLocation !== location
 
   useEffect(() => {
     // Reset focus on page navigation: if active element is a bottom nav item, blur it
@@ -1143,14 +1134,8 @@ function AppRoutes() {
   }, [location.pathname])
 
   return (
-    <div
-      style={{
-        opacity: isStale ? 0.92 : 1,
-        transition: 'opacity 140ms cubic-bezier(0.2, 0, 0, 1)',
-        pointerEvents: isStale ? 'none' : 'auto',
-      }}
-    >
-      <Routes location={deferredLocation}>
+    <div>
+      <Routes location={location}>
         <Route path="/login" element={<Login />} />
         <Route path="/join/:token" element={<InviteLanding />} />
         <Route path="/splitwise/join/:splitToken" element={<InviteLanding />} />
@@ -1610,7 +1595,7 @@ export default function App() {
     <ThemeProvider theme={getMuiTheme(mode)}>
       <CssBaseline />
       <MotionConfig reducedMotion="user">
-        <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
           <AuthProvider>
           <QueryClientProvider client={queryClient}>
             <GlobalRealtimeSync />
