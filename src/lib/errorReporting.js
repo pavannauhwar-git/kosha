@@ -131,7 +131,7 @@ if (DSN) {
   })
 }
 
-export function captureError(error, { context = 'unknown', extra = {} } = {}) {
+export function captureError(error, { context = 'unknown', extra = {}, tags = {} } = {}) {
   if (!(error instanceof Error)) {
     error = new Error(String(error ?? 'Unknown error'))
   }
@@ -139,6 +139,9 @@ export function captureError(error, { context = 'unknown', extra = {} } = {}) {
   if (DSN) {
     Sentry.withScope((scope) => {
       scope.setTag('context', context)
+      Object.entries(tags).forEach(([key, val]) => {
+        scope.setTag(key, val)
+      })
       scope.setExtras(extra)
       Sentry.captureException(error)
     })
@@ -146,7 +149,7 @@ export function captureError(error, { context = 'unknown', extra = {} } = {}) {
   }
 
   // Fallback — structured console output in dev
-  console.error(`[Kosha] Error in ${context}:`, error.message, extra)
+  console.error(`[Kosha] Error in ${context}:`, error.message, { ...extra, ...tags })
 }
 
 export function setErrorReportingUser(user) {
