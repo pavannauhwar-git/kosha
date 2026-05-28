@@ -971,9 +971,7 @@ textarea:focus-visible,
     right: 0;
     z-index: 30;
     border-top: 1px solid var(--ds-border);
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: saturate(160%) blur(12px);
-    -webkit-backdrop-filter: saturate(160%) blur(12px);
+    background: #FFFFFF;
     border-top-color: rgba(17, 19, 24, 0.08);
     box-shadow:
       0 -4px 12px rgba(17, 19, 24, 0.05),
@@ -983,6 +981,15 @@ textarea:focus-visible,
     pointer-events: auto;
     /* GPU compositing: fixed position only — no will-change needed for opacity */
     transform: translateZ(0);
+  }
+
+  /* Restore the blur only on devices with a fine pointer (desktop). */
+  @media (hover: hover) and (pointer: fine) {
+    .nav-float-wrap {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: saturate(160%) blur(12px);
+      -webkit-backdrop-filter: saturate(160%) blur(12px);
+    }
   }
 
   .nav-float {
@@ -996,12 +1003,21 @@ textarea:focus-visible,
   }
 
   .dark .nav-float-wrap {
-    background: rgba(29, 32, 36, 0.94);
+    background: #1D2024;
     border-top: 1px solid var(--ds-border);
     border-top-color: rgba(255, 255, 255, 0.10);
     box-shadow:
       0 -4px 12px rgba(0, 0, 0, 0.22),
       inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* Restore the blur only on devices with a fine pointer (desktop). */
+  @media (hover: hover) and (pointer: fine) {
+    .dark .nav-float-wrap {
+      background: rgba(29, 32, 36, 0.94);
+      backdrop-filter: saturate(160%) blur(12px);
+      -webkit-backdrop-filter: saturate(160%) blur(12px);
+    }
   }
 
   /* -- CSS page entry animation — M3 Standard Decelerate ── */
@@ -1079,9 +1095,9 @@ textarea:focus-visible,
   }
 
   .nav-float-item:active {
-    /* Immediate squish — release spring back via the transition */
-    transform: scale(0.88);
-    transition: transform 80ms var(--ds-ease-standard);
+    /* M3 Expressive press-down: 100 ms emphasized-decelerate */
+    transform: scale(0.9);
+    transition: transform 100ms var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
   }
 
   .nav-icon-wrap {
