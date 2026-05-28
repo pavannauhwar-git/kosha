@@ -122,7 +122,6 @@ function useRouteIntentPrefetch() {
   return useCallback((path) => {
     if (!path) return
 
-    // Chunk preload is cheap (just import()) — fire immediately.
     if (!chunkPrefetched.current.has(path)) {
       chunkPrefetched.current.add(path)
       const preload = ROUTE_PRELOADERS[path]
@@ -132,315 +131,307 @@ function useRouteIntentPrefetch() {
     if (!activeUserId) return
     const cacheKey = `${path}-${activeUserId}`
     if (dataPrefetched.current.has(cacheKey)) return
+
     dataPrefetched.current.add(cacheKey)
 
-    // Defer data prefetch — never block on click or scroll.
-    const schedule = typeof requestIdleCallback === 'function'
-      ? (cb) => requestIdleCallback(cb, { timeout: 800 })
-      : (cb) => setTimeout(cb, 0)
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
 
-    schedule(() => runDataPrefetch(path, activeUserId))
-  }, [activeUserId])
-}
 
-// Extracted from useRouteIntentPrefetch — runs in idle time.
-function runDataPrefetch(path, activeUserId) {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
+    if (path === '/transactions') {
+      const txnFilters = {
+        type: undefined,
+        category: undefined,
+        search: undefined,
+        limit: 50,
+        startDate: undefined,
+        endDate: undefined,
+        columns: TRANSACTION_LIST_COLUMNS,
+      }
+      const countFilters = {
+        type: undefined,
+        category: undefined,
+        startDate: undefined,
+        endDate: undefined,
+      }
 
-  if (path === '/transactions') {
-    const txnFilters = {
-      type: undefined,
-      category: undefined,
-      search: undefined,
-      limit: 50,
-      startDate: undefined,
-      endDate: undefined,
-      columns: TRANSACTION_LIST_COLUMNS,
+      void Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['transactions', txnFilters, activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('transactions')
+              .select(TRANSACTION_LIST_COLUMNS)
+              .eq('user_id', activeUserId)
+              .order('date', { ascending: false })
+              .order('created_at', { ascending: false })
+              .limit(50)
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['txnCount', countFilters, activeUserId],
+          queryFn: async () => {
+            const { count, error } = await supabase
+              .from('transactions')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', activeUserId)
+            if (error) throw error
+            return count || 0
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => { })
+      return
     }
-    const countFilters = {
-      type: undefined,
-      category: undefined,
-      startDate: undefined,
-      endDate: undefined,
+
+    if (path === '/monthly') {
+      const monthStart = `${year}-${String(month).padStart(2, '0')}-01`
+      const monthEnd = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
+
+      void Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['month', year, month, activeUserId],
+          queryFn: async () => {
+            const { data: rows, error } = await supabase.rpc('get_month_summary', {
+              p_user_ids: [activeUserId],
+              p_year: year,
+              p_month: month,
+            })
+            if (error) throw error
+            return parseMonthSummaryRows(rows)
+          },
+          staleTime: 30 * 1000,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['liabilitiesMonth', year, month, activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('liabilities')
+              .select(MONTH_LIABILITY_COLUMNS)
+              .eq('user_id', activeUserId)
+              .gte('due_date', monthStart)
+              .lte('due_date', monthEnd)
+              .order('due_date', { ascending: true })
+
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => { })
+      return
     }
 
-    void Promise.all([
-      queryClient.prefetchQuery({
-        queryKey: ['transactions', txnFilters, activeUserId],
+    if (path === '/analytics') {
+      void queryClient.prefetchQuery({
+        queryKey: ['year', year, activeUserId],
         queryFn: async () => {
-          const { data, error } = await supabase
-            .from('transactions')
-            .select(TRANSACTION_LIST_COLUMNS)
-            .eq('user_id', activeUserId)
-            .order('date', { ascending: false })
-            .order('created_at', { ascending: false })
-            .limit(50)
+          const { data: result, error } = await supabase
+            .rpc('get_year_summary', { p_user_ids: [activeUserId], p_year: Number(year) })
+            .maybeSingle()
           if (error) throw error
-          return data || []
-        },
-        staleTime: 30 * 1000,
-      }),
-      queryClient.prefetchQuery({
-        queryKey: ['txnCount', countFilters, activeUserId],
-        queryFn: async () => {
-          const { count, error } = await supabase
-            .from('transactions')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', activeUserId)
-          if (error) throw error
-          return count || 0
-        },
-        staleTime: 30 * 1000,
-      }),
-    ]).catch(() => { })
-    return
-  }
+          if (!result) {
+            return {
+              monthly: Array.from({ length: 12 }, (_, i) => ({
+                month: i + 1,
+                income: 0,
+                expense: 0,
+                investment: 0,
+              })),
+              totalIncome: 0,
+              totalRepayments: 0,
+              totalExpense: 0,
+              totalInvestment: 0,
+              avgSavings: 0,
+              byCategory: {},
+              byVehicle: {},
+              top5: [],
+              count: 0,
+            }
+          }
 
-  if (path === '/monthly') {
-    const monthStart = `${year}-${String(month).padStart(2, '0')}-01`
-    const monthEnd = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
+          const monthlyRaw = result.monthly_data || []
+          const totals = result.totals || {}
+          const byCategory = result.category_data || {}
+          const byVehicle = result.vehicle_data || {}
+          const top5 = result.top5_expenses || []
 
-    void Promise.all([
-      queryClient.prefetchQuery({
-        queryKey: ['month', year, month, activeUserId],
-        queryFn: async () => {
-          const { data: rows, error } = await supabase.rpc('get_month_summary', {
-            p_user_ids: [activeUserId],
-            p_year: year,
-            p_month: month,
-          })
-          if (error) throw error
-          return parseMonthSummaryRows(rows)
-        },
-        staleTime: 30 * 1000,
-      }),
-      queryClient.prefetchQuery({
-        queryKey: ['liabilitiesMonth', year, month, activeUserId],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('liabilities')
-            .select(MONTH_LIABILITY_COLUMNS)
-            .eq('user_id', activeUserId)
-            .gte('due_date', monthStart)
-            .lte('due_date', monthEnd)
-            .order('due_date', { ascending: true })
-
-          if (error) throw error
-          return data || []
-        },
-        staleTime: 30 * 1000,
-      }),
-    ]).catch(() => { })
-    return
-  }
-
-  if (path === '/analytics') {
-    void queryClient.prefetchQuery({
-      queryKey: ['year', year, activeUserId],
-      queryFn: async () => {
-        const { data: result, error } = await supabase
-          .rpc('get_year_summary', { p_user_ids: [activeUserId], p_year: Number(year) })
-          .maybeSingle()
-        if (error) throw error
-        if (!result) {
-          return {
-            monthly: Array.from({ length: 12 }, (_, i) => ({
+          const monthMap = Object.fromEntries((monthlyRaw || []).map(m => [m.month_num, m]))
+          const monthly = Array.from({ length: 12 }, (_, i) => {
+            const m = monthMap[i + 1] || {}
+            return {
               month: i + 1,
-              income: 0,
-              expense: 0,
-              investment: 0,
-            })),
-            totalIncome: 0,
-            totalRepayments: 0,
-            totalExpense: 0,
-            totalInvestment: 0,
-            avgSavings: 0,
-            byCategory: {},
-            byVehicle: {},
-            top5: [],
-            count: 0,
-          }
-        }
+              income: Number(m.income || 0),
+              expense: Number(m.expense || 0),
+              investment: Number(m.investment || 0),
+            }
+          })
 
-        const monthlyRaw = result.monthly_data || []
-        const totals = result.totals || {}
-        const byCategory = result.category_data || {}
-        const byVehicle = result.vehicle_data || {}
-        const top5 = result.top5_expenses || []
+          const totalIncome = Number(totals.income || 0)
+          const totalRepayments = Number(totals.repayments || 0)
+          const totalExpense = Number(totals.expense || 0)
+          const totalInvestment = Number(totals.investment || 0)
 
-        const monthMap = Object.fromEntries((monthlyRaw || []).map(m => [m.month_num, m]))
-        const monthly = Array.from({ length: 12 }, (_, i) => {
-          const m = monthMap[i + 1] || {}
+          const monthsWithIncome = monthly.filter(m => m.income > 0)
+          const avgSavings = monthsWithIncome.length
+            ? Math.round(
+              monthsWithIncome.reduce(
+                (sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0
+              ) / monthsWithIncome.length
+            )
+            : 0
+
           return {
-            month: i + 1,
-            income: Number(m.income || 0),
-            expense: Number(m.expense || 0),
-            investment: Number(m.investment || 0),
+            monthly,
+            totalIncome,
+            totalRepayments,
+            totalExpense,
+            totalInvestment,
+            avgSavings,
+            byCategory,
+            byVehicle,
+            top5,
+            count: Number(totals.count || 0),
           }
-        })
-
-        const totalIncome = Number(totals.income || 0)
-        const totalRepayments = Number(totals.repayments || 0)
-        const totalExpense = Number(totals.expense || 0)
-        const totalInvestment = Number(totals.investment || 0)
-
-        const monthsWithIncome = monthly.filter(m => m.income > 0)
-        const avgSavings = monthsWithIncome.length
-          ? Math.round(
-            monthsWithIncome.reduce(
-              (sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0
-            ) / monthsWithIncome.length
-          )
-          : 0
-
-        return {
-          monthly,
-          totalIncome,
-          totalRepayments,
-          totalExpense,
-          totalInvestment,
-          avgSavings,
-          byCategory,
-          byVehicle,
-          top5,
-          count: Number(totals.count || 0),
-        }
-      },
-      staleTime: 30 * 1000,
-    }).catch(() => { })
-    return
-  }
-
-  if (path === '/obligations' || path === '/bills' || path === '/loans') {
-    void Promise.all([
-      queryClient.prefetchQuery({
-        queryKey: ['liabilities', 'pending', activeUserId],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('liabilities')
-            .select(LIABILITY_PREFETCH_COLUMNS)
-            .eq('user_id', activeUserId)
-            .eq('paid', false)
-            .order('due_date', { ascending: true })
-          if (error) throw error
-          return data || []
         },
         staleTime: 30 * 1000,
-      }),
-      queryClient.prefetchQuery({
-        queryKey: ['loans', 'active', 'given', activeUserId],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('loans')
-            .select('id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled, created_at')
-            .eq('user_id', activeUserId)
-            .eq('settled', false)
-            .eq('direction', 'given')
-            .order('created_at', { ascending: false })
-          if (error) throw error
-          return data || []
-        },
-        staleTime: 30 * 1000,
-      }),
-    ]).catch(() => { })
-    return
-  }
-
-  if (path === '/splitwise') {
-    void Promise.all([
-      queryClient.prefetchQuery({
-        queryKey: ['splitwise', 'groups', activeUserId],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('split_groups')
-            .select('id, name, created_at, updated_at, user_id, is_archived, banner_id')
-            .order('updated_at', { ascending: false })
-
-          if (error) throw error
-          return data || []
-        },
-        staleTime: 30 * 1000,
-      }),
-      queryClient.prefetchQuery({
-        queryKey: ['splitwise', 'group-access', activeUserId],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('split_group_access')
-            .select('group_id, role')
-            .eq('user_id', activeUserId)
-
-          if (error) throw error
-          return data || []
-        },
-        staleTime: 30 * 1000,
-      }),
-    ]).catch(() => { })
-    return
-  }
-
-  if (path === '/reconciliation') {
-    const reconcileTxnFilters = {
-      type: undefined,
-      category: undefined,
-      search: undefined,
-      limit: 250,
-      startDate: undefined,
-      endDate: undefined,
-      columns: TRANSACTION_INSIGHTS_COLUMNS,
+      }).catch(() => { })
+      return
     }
 
-    void Promise.all([
-      queryClient.prefetchQuery({
-        queryKey: ['transactions', reconcileTxnFilters, activeUserId],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('transactions')
-            .select(TRANSACTION_INSIGHTS_COLUMNS)
-            .eq('user_id', activeUserId)
-            .order('date', { ascending: false })
-            .order('created_at', { ascending: false })
-            .limit(250)
+    if (path === '/obligations' || path === '/bills' || path === '/loans') {
+      void Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['liabilities', 'pending', activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('liabilities')
+              .select(LIABILITY_PREFETCH_COLUMNS)
+              .eq('user_id', activeUserId)
+              .eq('paid', false)
+              .order('due_date', { ascending: true })
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['loans', 'active', 'given', activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('loans')
+              .select('id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled, created_at')
+              .eq('user_id', activeUserId)
+              .eq('settled', false)
+              .eq('direction', 'given')
+              .order('created_at', { ascending: false })
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => { })
+      return
+    }
 
-          if (error) throw error
-          return data || []
-        },
-        staleTime: 30 * 1000,
-      }),
-      queryClient.prefetchQuery({
-        queryKey: ['reconciliationReviews', activeUserId],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('reconciliation_reviews')
-            .select('transaction_id, status, statement_line, updated_at')
-            .eq('user_id', activeUserId)
+    if (path === '/splitwise') {
+      void Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['splitwise', 'groups', activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('split_groups')
+              .select('id, name, created_at, updated_at, user_id, is_archived, banner_id')
+              .order('updated_at', { ascending: false })
 
-          if (error) {
-            const message = String(error?.message || '').toLowerCase()
-            const details = String(error?.details || '').toLowerCase()
-            const code = String(error?.code || '').toUpperCase()
-            const status = Number(error?.status || 0)
-            const missingTable = (
-              message.includes('reconciliation_reviews') ||
-              details.includes('reconciliation_reviews') ||
-              (message.includes('relation') && message.includes('does not exist')) ||
-              (details.includes('relation') && details.includes('does not exist')) ||
-              code === '42P01' ||
-              code === 'PGRST205' ||
-              status === 404
-            )
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['splitwise', 'group-access', activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('split_group_access')
+              .select('group_id, role')
+              .eq('user_id', activeUserId)
 
-            if (missingTable) return { rows: [], unavailable: true }
-            throw error
-          }
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => { })
+      return
+    }
 
-          return { rows: data || [], unavailable: false }
-        },
-        staleTime: 30 * 1000,
-      }),
-    ]).catch(() => { })
-  }
+    if (path === '/reconciliation') {
+      const reconcileTxnFilters = {
+        type: undefined,
+        category: undefined,
+        search: undefined,
+        limit: 250,
+        startDate: undefined,
+        endDate: undefined,
+        columns: TRANSACTION_INSIGHTS_COLUMNS,
+      }
+
+      void Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['transactions', reconcileTxnFilters, activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('transactions')
+              .select(TRANSACTION_INSIGHTS_COLUMNS)
+              .eq('user_id', activeUserId)
+              .order('date', { ascending: false })
+              .order('created_at', { ascending: false })
+              .limit(250)
+
+            if (error) throw error
+            return data || []
+          },
+          staleTime: 30 * 1000,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['reconciliationReviews', activeUserId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from('reconciliation_reviews')
+              .select('transaction_id, status, statement_line, updated_at')
+              .eq('user_id', activeUserId)
+
+            if (error) {
+              const message = String(error?.message || '').toLowerCase()
+              const details = String(error?.details || '').toLowerCase()
+              const code = String(error?.code || '').toUpperCase()
+              const status = Number(error?.status || 0)
+              const missingTable = (
+                message.includes('reconciliation_reviews') ||
+                details.includes('reconciliation_reviews') ||
+                (message.includes('relation') && message.includes('does not exist')) ||
+                (details.includes('relation') && details.includes('does not exist')) ||
+                code === '42P01' ||
+                code === 'PGRST205' ||
+                status === 404
+              )
+
+              if (missingTable) return { rows: [], unavailable: true }
+              throw error
+            }
+
+            return { rows: data || [], unavailable: false }
+          },
+          staleTime: 30 * 1000,
+        }),
+      ]).catch(() => { })
+    }
+  }, [activeUserId])
 }
 
 // Desktop sidebar removed — mobile-first, bottom tab bar only
