@@ -20,19 +20,32 @@ function duplicateKey(txn) {
   ].join('|')
 }
 
+// Returns the per-wallet localStorage key for reviewed reconciliation ids,
+// or `null` when no active wallet is known. Returning null prevents the
+// pre-fix behaviour where this function would build a literal "…:null"
+// key that was shared across every user who signed in on the same device.
 function reviewedStorageKey() {
-  return `${RECON_REVIEWED_KEY_PREFIX}${getActiveWalletUserId()}`
+  const userId = getActiveWalletUserId()
+  if (!userId) return null
+  return `${RECON_REVIEWED_KEY_PREFIX}${userId}`
 }
 
 export function getReviewedReconciliationIds() {
-  const list = readLocalJson(reviewedStorageKey(), [])
+  const key = reviewedStorageKey()
+  if (!key) return new Set()
+  const list = readLocalJson(key, [])
   if (!Array.isArray(list)) return new Set()
   return new Set(list.filter(Boolean))
 }
 
 export function setReviewedReconciliationIds(nextIds) {
+  const key = reviewedStorageKey()
+  if (!key) {
+    console.warn('[Kosha] Skipping reconciliation review save — no active wallet yet.')
+    return
+  }
   const payload = Array.from(nextIds || []).filter(Boolean)
-  writeLocalJson(reviewedStorageKey(), payload)
+  writeLocalJson(key, payload)
 }
 
 export function buildReconciliationInsights(transactions, reviewedIds = new Set()) {

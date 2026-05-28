@@ -6,6 +6,13 @@ import { hapticSelection, hapticWarning } from './haptics'
 const ACTIVE_WALLET_KEY = ['kosha-active-wallet']
 
 // SYNC — use only in mutations/lib utils. In components/hooks use useActiveWallet() instead.
+
+// Returns the current active wallet user id, or `null` when no wallet is
+// known yet (auth still booting, or user is signed out). Callers that write
+// to device-local storage MUST check for null before building a storage key;
+// using `${prefix}${getActiveWalletUserId()}` produces a literal "…:null"
+// key that leaks across users on the same device. See `reconciliation.js`
+// for the correct pattern.
 export function getActiveWalletUserId() {
   const active = queryClient.getQueryData(ACTIVE_WALLET_KEY)
   if (active) return active
@@ -14,7 +21,11 @@ export function getActiveWalletUserId() {
 
   try {
     return getAuthUserId()
-  } catch {
+  } catch (err) {
+    // Auth said it was ready but `getAuthUserId()` still threw. This is
+    // unusual (transitional state during sign-out, or a corrupt auth store)
+    // and worth surfacing instead of swallowing silently.
+    console.warn('[Kosha] getActiveWalletUserId: auth ready but no user id resolvable.', err)
     return null
   }
 }

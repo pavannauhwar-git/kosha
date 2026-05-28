@@ -494,7 +494,6 @@ create table if not exists public.bug_reports (
 create index if not exists idx_bug_reports_created_at on public.bug_reports(created_at desc);
 create index if not exists idx_bug_reports_user on public.bug_reports(user_id);
 create index if not exists idx_bug_reports_status on public.bug_reports(status);
-create index if not exists idx_bug_reports_duplicate on public.bug_reports(duplicate_of);
 
 alter table public.bug_reports enable row level security;
 
@@ -556,6 +555,7 @@ alter table public.bug_reports
 create index if not exists idx_bug_reports_priority on public.bug_reports(priority);
 create index if not exists idx_bug_reports_last_reported on public.bug_reports(last_reported_at desc);
 create index if not exists idx_bug_reports_fingerprint_route on public.bug_reports(fingerprint, route);
+create index if not exists idx_bug_reports_duplicate on public.bug_reports(duplicate_of);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
