@@ -233,7 +233,6 @@ export default function Settings() {
     const next = !isDark
     document.documentElement.classList.toggle('dark', next)
     writeLocalStorage('kosha-theme', next ? 'dark' : 'light')
-    window.__koshaApplyThemeColor?.(next)
     setIsDark(next)
   }
 

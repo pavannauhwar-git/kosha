@@ -32,24 +32,23 @@ startRuntimeMonitor()
   }
 
   const stored = readLocalStorage('kosha-theme', null)
-  const mql = window.matchMedia('(prefers-color-scheme: dark)')
-  const prefersDark = mql.matches
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   const isDark = stored === 'dark' || (!stored && prefersDark)
-
-  if (isDark) document.documentElement.classList.add('dark')
+  
+  if (isDark) {
+    document.documentElement.classList.add('dark')
+  }
   applyThemeColor(isDark)
 
-  // React to OS-level changes only when the user has no explicit preference.
-  mql.addEventListener('change', (e) => {
-    if (readLocalStorage('kosha-theme', null)) return
-    if (e.matches) document.documentElement.classList.add('dark')
-    else document.documentElement.classList.remove('dark')
-    applyThemeColor(e.matches)
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.attributeName === 'class') {
+        applyThemeColor(document.documentElement.classList.contains('dark'))
+        break
+      }
+    }
   })
-
-  // Expose the apply function so the in-app dark-mode toggle can call it
-  // directly when it writes localStorage.
-  window.__koshaApplyThemeColor = applyThemeColor
+  observer.observe(document.documentElement, { attributes: true })
 })()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
