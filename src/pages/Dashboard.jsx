@@ -71,12 +71,9 @@ export default function Dashboard() {
   const [reminderPrefs, setReminderPrefsState] = useState(() => getReminderPrefs())
 
   useEffect(() => {
-    let cancelled = false
     let intervalId = null
-    let timeoutId = null
 
-    const tick = () => {
-      if (cancelled) return
+    function tick() {
       const next = new Date()
       setNow(prev => {
         if (
@@ -92,15 +89,13 @@ export default function Dashboard() {
     }
 
     const msUntilNextMinute = (60 - new Date().getSeconds()) * 1000
-    timeoutId = setTimeout(() => {
-      if (cancelled) return
+    const timeoutId = setTimeout(() => {
       tick()
       intervalId = setInterval(tick, 60_000)
     }, msUntilNextMinute)
 
     return () => {
-      cancelled = true
-      if (timeoutId) clearTimeout(timeoutId)
+      clearTimeout(timeoutId)
       if (intervalId) clearInterval(intervalId)
     }
   }, [])
@@ -426,14 +421,8 @@ export default function Dashboard() {
   const showBillsControlSection = walletReady && (dueSoonCount > 0 || upcomingBills.length > 0 || !!billClusterSignal)
 
   useEffect(() => {
-    let pending = false
     const refreshReminderPrefs = () => {
-      if (pending) return
-      pending = true
-      requestAnimationFrame(() => {
-        setReminderPrefsState(getReminderPrefs())
-        pending = false
-      })
+      setReminderPrefsState(getReminderPrefs())
     }
 
     window.addEventListener(REMINDER_PREFS_EVENT, refreshReminderPrefs)
