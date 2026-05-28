@@ -376,22 +376,6 @@ One entry per commit. Reviewer scans for `✗` and `PENDING-*` entries.
 - **Discovered out of scope:** `src/lib/invites.js:93` and `:114` console.errors were left as-is — both are inside library functions that re-throw (callers will capture). `src/lib/reconciliation.js` and `src/lib/supabase.js` only have `console.warn` calls (informational, not error paths) — left as-is per doc rules.
 - **Notes:** Added `captureError` import and call alongside each standalone `console.error` catch block in the 5 listed files (6 total call sites). `invites.js` re-throwing catches were deliberately skipped (they bubble to callers handled by React Query / FIX-018).
 
----
-
-## FIX-054 — Sentry React Router v6 browser tracing integration
-
-- **Commit:** b41e06642d675c1e2ddad7de4b20aece9b47d410
-- **PR:** pending
-- **Files modified:** `src/lib/errorReporting.js`
-- **Lint pass:** ✓ (0 errors, 604 pre-existing warnings)
-- **Build pass:** ✓ (built in 44.56s)
-- **Automated verify steps:** N/A (Sentry performance data populates in production over 24 h)
-- **Manual verify steps:** PENDING-PROD-OBSERVATION — After deploy, open Sentry Performance tab, filter by `transaction:Dashboard` (or any route name) — per-route p50/p75/p95 should populate over the next 24 h.
-- **Discovered out of scope:** Nothing
-- **Notes:** Replaced `Sentry.browserTracingIntegration()` with `Sentry.reactRouterV6BrowserTracingIntegration({ useEffect, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes })`. The five React Router hooks are imported from `react` and `react-router-dom` at the top of the file. `BrowserRouter` (Kosha's router) is compatible with this integration.
-
-
-
 
 
 
