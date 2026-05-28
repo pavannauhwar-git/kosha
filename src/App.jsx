@@ -117,6 +117,14 @@ function useRouteIntentPrefetch() {
   useEffect(() => {
     chunkPrefetched.current.clear()
     dataPrefetched.current.clear()
+    // Cancel in-flight prefetches keyed on the previous user.
+    queryClient.cancelQueries({
+      predicate: (q) => {
+        const key = q.queryKey
+        const lastSegment = Array.isArray(key) ? key[key.length - 1] : null
+        return lastSegment && lastSegment !== activeUserId
+      },
+    })
   }, [activeUserId])
 
   return useCallback((path) => {

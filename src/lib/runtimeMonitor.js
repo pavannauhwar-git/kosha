@@ -122,18 +122,30 @@ function pushEvent(type, detail) {
   writeStore({ ...store, events })
 }
 
-export function recordRuntimeRoute(pathname) {
-  if (!pathname) return
-  const sanitized = sanitizeRoute(String(pathname))
-  const store = readStore()
-  const last = store.routes[store.routes.length - 1]
-  if (last?.path === sanitized) return
+let routePending = null
+let routeTimer = null
 
-  const routes = trim([
-    ...store.routes,
-    { ts: nowIso(), path: sanitized.slice(0, 220) },
-  ])
-  writeStore({ ...store, routes })
+export function recordRuntimeRoute(pathname) {
+  routePending = pathname
+  if (routeTimer) return
+  routeTimer = setTimeout(() => {
+    try {
+      if (routePending) {
+        const sanitized = sanitizeRoute(String(routePending))
+        const store = readStore()
+        const last = store.routes[store.routes.length - 1]
+        if (last?.path !== sanitized) {
+          const routes = trim([
+            ...store.routes,
+            { ts: nowIso(), path: sanitized.slice(0, 220) },
+          ])
+          writeStore({ ...store, routes })
+        }
+      }
+    } catch { /* ignore */ }
+    routeTimer = null
+    routePending = null
+  }, 0)
 }
 
 export function startRuntimeMonitor() {
