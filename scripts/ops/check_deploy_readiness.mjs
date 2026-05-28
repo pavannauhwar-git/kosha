@@ -167,7 +167,7 @@ async function main() {
     // Expected for readiness probe: invalid liability id or business guard error.
     const msg = String(error.message || '')
     if (!msg) throw error
-    if (msg.includes('liability already paid')) return
+    if (msg.includes('liability already paid') || msg.toLowerCase().includes('liability not found')) return
     throw error
   }))
 
