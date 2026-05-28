@@ -91,10 +91,10 @@ export default function Loans({
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('touchstart', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside, { passive: true })
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('touchstart', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside, { passive: true })
     }
   }, [overflowLoanId])
 
