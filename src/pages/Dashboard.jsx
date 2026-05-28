@@ -641,7 +641,7 @@ export default function Dashboard() {
         )}
 
         {showActionQueueSection && (
-          <div className="card-spring-in fade-up-2">
+          <div className="fade-in">
             <DashboardSectionCue
               title="Action queue"
               subtitle="Handle the highest-impact items first."
@@ -650,7 +650,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && attentionItems.length > 0 && (
-          <div className="card-spring-in fade-up-2">
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
@@ -690,7 +690,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && !isNewUser && attentionItems.length === 0 && (earned > 0 || spent > 0) && (
-          <div className="card-spring-in fade-up-2">
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
@@ -748,7 +748,7 @@ export default function Dashboard() {
         )}
 
         {showSpendControlSection && (
-          <div className="card-spring-in fade-up-3">
+          <div className="fade-in">
             <DashboardSectionCue
               title="Spend control"
               subtitle="Track pace, runway, and pressure before month-end."
@@ -758,7 +758,7 @@ export default function Dashboard() {
 
         {/* ── Spendable today + burn rate ───────────────────────────── */}
         {!heroLoading && earned > 0 && (
-          <div className="card-spring-in fade-up-3">
+          <div className="fade-in">
             <div className="grid grid-cols-2 gap-2.5">
               <div className="card p-3.5 border-0">
                 <div className="flex items-center gap-2 mb-2">
@@ -796,7 +796,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && (
-          <div className="card-spring-in fade-up-4">
+          <div className="fade-in">
             <SpendingPaceTracker
               dailyExpenseTotals={dailyExpenseTotals}
               now={now}
@@ -806,7 +806,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && runwayBalance && (
-          <div className="card-spring-in fade-up-5">
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-[10px] text-ink-3 tracking-wide">Runway balance</p>
@@ -852,7 +852,7 @@ export default function Dashboard() {
         )}
 
         {!heroLoading && categoryPressureSignal && (
-          <div className="card-spring-in fade-up-6">
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -887,7 +887,7 @@ export default function Dashboard() {
         )}
 
         {showBillsControlSection && (
-          <div className="card-spring-in fade-up-7">
+          <div className="fade-in">
             <DashboardSectionCue
               title="Bills control"
               subtitle="Stay ahead of due dates and payment clusters."
@@ -896,7 +896,7 @@ export default function Dashboard() {
         )}
 
         {showBillsControlSection && (
-          <div className="card-spring-in fade-up-7">
+          <div className="fade-in">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
@@ -960,7 +960,7 @@ export default function Dashboard() {
         )}
 
         {/* ── Recent transactions ───────────────────────────────── */}
-        <div className="fade-up fade-up-3">
+        <div className="fade-in">
           {recentLoading ? <DashboardRecentSkeleton /> : (
             <DashboardRecentTransactions
               recent={recent}
