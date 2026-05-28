@@ -64,6 +64,29 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      {
+        name: 'kosha-modulepreload-nav-chunks',
+        enforce: 'post',
+        apply: 'build',
+        transformIndexHtml: {
+          order: 'post',
+          handler(html, ctx) {
+            if (!ctx?.bundle) return html
+            const NAV_PAGES = ['Dashboard', 'Transactions', 'Monthly', 'Analytics', 'Obligations', 'Splitwise']
+            const hints = []
+            for (const name of NAV_PAGES) {
+              const chunk = Object.values(ctx.bundle).find(
+                (b) => b.type === 'chunk' && b.facadeModuleId && b.facadeModuleId.includes(`/pages/${name}`)
+              )
+              if (chunk) {
+                hints.push(`<link rel="modulepreload" href="/${chunk.fileName}" crossorigin>`)
+              }
+            }
+            if (hints.length === 0) return html
+            return html.replace('</head>', `    ${hints.join('\n    ')}\n  </head>`)
+          },
+        },
+      },
       VitePWA({
         registerType: 'prompt',
         includeAssets: ['favicon.ico', 'icons/*.png'],
