@@ -9,7 +9,7 @@ if (import.meta.env.DEV) {
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import '@fontsource-variable/inter'
+import '@fontsource-variable/inter/wght.css'
 import App from './App'
 import './index.css'
 import { GlobalErrorBoundary } from './components/errors/GlobalErrorBoundary'

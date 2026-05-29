@@ -48,18 +48,18 @@ import useWindowedList from '../hooks/useWindowedList'
 import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
 
 const BANNERS = [
-  { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.png' },
-  { id: 'gujarat', name: 'Gujarat (Rann)', src: '/banners/gujarat.png' },
-  { id: 'karnataka', name: 'Karnataka (Hampi)', src: '/banners/karnataka.png' },
-  { id: 'kerala', name: 'Kerala (Backwaters)', src: '/banners/kerala.png' },
-  { id: 'meghalaya', name: 'Meghalaya (Waterfalls)', src: '/banners/meghalaya.png' },
-  { id: 'rajasthan', name: 'Rajasthan (Palace)', src: '/banners/rajasthan.png' },
-  { id: 'uttarakhand', name: 'Uttarakhand (Himalayas)', src: '/banners/uttarakhand.png' },
-  { id: 'himachal', name: 'Himachal (Mountains)', src: '/banners/himachal.png' },
-  { id: 'maharashtra', name: 'Maharashtra (Sahyadri)', src: '/banners/maharashtra.png' },
-  { id: 'tamil_nadu', name: 'Tamil Nadu (Temples)', src: '/banners/tamil_nadu.png' },
-  { id: 'punjab', name: 'Punjab (Golden Fields)', src: '/banners/punjab.png' },
-  { id: 'sikkim', name: 'Sikkim (Monasteries)', src: '/banners/sikkim.png' },
+  { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.webp' },
+  { id: 'gujarat', name: 'Gujarat (Rann)', src: '/banners/gujarat.webp' },
+  { id: 'karnataka', name: 'Karnataka (Hampi)', src: '/banners/karnataka.webp' },
+  { id: 'kerala', name: 'Kerala (Backwaters)', src: '/banners/kerala.webp' },
+  { id: 'meghalaya', name: 'Meghalaya (Waterfalls)', src: '/banners/meghalaya.webp' },
+  { id: 'rajasthan', name: 'Rajasthan (Palace)', src: '/banners/rajasthan.webp' },
+  { id: 'uttarakhand', name: 'Uttarakhand (Himalayas)', src: '/banners/uttarakhand.webp' },
+  { id: 'himachal', name: 'Himachal (Mountains)', src: '/banners/himachal.webp' },
+  { id: 'maharashtra', name: 'Maharashtra (Sahyadri)', src: '/banners/maharashtra.webp' },
+  { id: 'tamil_nadu', name: 'Tamil Nadu (Temples)', src: '/banners/tamil_nadu.webp' },
+  { id: 'punjab', name: 'Punjab (Golden Fields)', src: '/banners/punjab.webp' },
+  { id: 'sikkim', name: 'Sikkim (Monasteries)', src: '/banners/sikkim.webp' },
 ]
 
 const SPLIT_METHOD_OPTIONS = [
@@ -1197,7 +1197,7 @@ export default function Splitwise() {
       ) : groups.length === 0 ? (
         <EmptyState
           className="py-10"
-          imageUrl="/illustrations/splitwise_group.png"
+          imageUrl="/illustrations/splitwise_group.webp"
           title="No split group yet"
           description={isViewingPartner ? "This partner has no split groups." : "Create a group, invite Kosha users, and split expenses together."}
           actionLabel={isViewingPartner ? undefined : "Create group"}
@@ -1240,7 +1240,7 @@ export default function Splitwise() {
               {visibleGroups.length === 0 ? (
                 <EmptyState
                   className="py-6"
-                  imageUrl="/illustrations/splitwise_group.png"
+                  imageUrl="/illustrations/splitwise_group.webp"
                   title={showArchived ? "No archived groups" : "No active groups"}
                   description={showArchived ? "You don't have any archived groups." : "Create or join a new group."}
                 />
@@ -1486,7 +1486,7 @@ export default function Splitwise() {
             <p className="section-label mb-2">Suggested Settlements</p>
             {suggestedTransfers.length === 0 ? (
               <div className="py-4 text-center">
-                <img src="/illustrations/coffee_chill.png" className="max-h-[140px] w-auto mx-auto mb-2 illustration" alt="All caught up" />
+                <img src="/illustrations/coffee_chill.webp" className="max-h-[140px] w-auto mx-auto mb-2 illustration" alt="All caught up" />
                 <p className="text-[13px] font-semibold text-ink">Everyone is settled.</p>
                 <p className="text-[11px] text-ink-3">Time to relax.</p>
               </div>

@@ -1,66 +1,61 @@
-import { forwardRef, useCallback, useEffect, useRef } from 'react'
-import '@material/web/switch/switch.js'
+import { forwardRef } from 'react'
+import MuiSwitch from '@mui/material/Switch'
 
 /**
- * Switch — Wraps official Google Material 3 Web Component (<md-switch>)
+ * Switch — High-performance, premium Switch wrapping MUI Switch.
+ * Seamlessly integrates with our CSS design tokens and dark mode.
  */
 const Switch = forwardRef(function Switch(
-  { checked, onChange, disabled, className = '', style = {}, sx, ...props },
+  { checked, onChange, disabled, className = '', style = {}, sx = {}, ...props },
   ref
 ) {
-  const innerRef = useRef(null)
-  const setRefs = useCallback((node) => {
-    innerRef.current = node
-    if (typeof ref === 'function') {
-      ref(node)
-    } else if (ref && typeof ref === 'object') {
-      ref.current = node
-    }
-  }, [ref])
-
-  useEffect(() => {
-    const el = innerRef.current
-    if (!el) return
-
-    const handleChange = (e) => {
-      // In React 18, Custom Elements do not dispatch synthetic onChange events automatically.
-      // We manually bind the native change event listener and fire onChange.
-      if (onChange) {
-        // Create a synthetic-like event wrapper or just pass the native event
-        onChange(e)
-      }
-    }
-
-    el.addEventListener('change', handleChange)
-    return () => el.removeEventListener('change', handleChange)
-  }, [onChange])
-
-  // Sync the boolean property imperatively to avoid React boolean attribute coercion issues
-  useEffect(() => {
-    if (innerRef.current) {
-      innerRef.current.selected = !!checked
-    }
-  }, [checked])
-
-  // Keep disabled state in sync via property (custom element boolean behavior).
-  useEffect(() => {
-    if (innerRef.current) {
-      innerRef.current.disabled = !!disabled
-    }
-  }, [disabled])
-
-  // Extract pointer-events from MUI style overrides sx (e.g. sx={{ pointerEvents: 'none' }})
-  const pointerEvents = sx?.pointerEvents || style.pointerEvents
-
   return (
-    <md-switch
-      ref={setRefs}
-      class={className}
-      aria-disabled={disabled ? 'true' : undefined}
-      style={{
-        ...style,
-        pointerEvents: pointerEvents || undefined,
-        opacity: disabled && style.opacity === undefined ? 0.38 : style.opacity,
+    <MuiSwitch
+      ref={ref}
+      checked={!!checked}
+      onChange={onChange}
+      disabled={disabled}
+      className={className}
+      style={style}
+      sx={{
+        width: 52,
+        height: 32,
+        padding: 0,
+        display: 'inline-flex',
+        '& .MuiSwitch-switchBase': {
+          padding: 0,
+          margin: '4px',
+          transitionDuration: '200ms',
+          '&.Mui-checked': {
+            transform: 'translateX(20px)',
+            color: 'var(--ds-on-primary)',
+            '& + .MuiSwitch-track': {
+              backgroundColor: 'var(--ds-primary)',
+              opacity: 1,
+              border: 0,
+            },
+            '&.Mui-disabled + .MuiSwitch-track': {
+              backgroundColor: 'var(--ds-surface-container-highest)',
+              opacity: 0.38,
+            },
+          },
+          '&.Mui-disabled': {
+            color: 'var(--ds-text-disabled)',
+          },
+        },
+        '& .MuiSwitch-thumb': {
+          boxSizing: 'border-box',
+          width: 24,
+          height: 24,
+          boxShadow: 'none',
+        },
+        '& .MuiSwitch-track': {
+          borderRadius: 32 / 2,
+          backgroundColor: 'var(--ds-surface-container-highest)',
+          opacity: 1,
+          transition: 'background-color 200ms ease',
+        },
+        ...sx,
       }}
       {...props}
     />

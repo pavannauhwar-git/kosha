@@ -85,7 +85,7 @@ export default defineConfig(({ mode }) => {
         workbox: {
           globPatterns: [
             '**/*.{js,css,html,ico,png,svg,woff,woff2,PNG,SVG,WEBP,webp}',
-            'illustrations/*.{png,PNG,webp,WEBP,svg,SVG}'
+            'illustrations/*.{webp,WEBP,svg,SVG}'
           ],
           // ── Caching strategy ──────────────────────────────────────────────
           // StaleWhileRevalidate: serve cached response INSTANTLY, then update

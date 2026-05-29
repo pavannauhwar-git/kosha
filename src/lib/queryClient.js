@@ -33,12 +33,16 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
-      // Realtime subscriptions + invalidateQueryFamilies keep data fresh after
-      // mutations. Refetching on every tab mount wastes bandwidth and causes a
-      // visible loading waterfall on tab switches. staleTime (5 min) and
-      // refetchOnWindowFocus handle the rare cases where data could go stale.
+      // FIX-007: refetchOnMount is disabled so tab switches never trigger a
+      // refetch waterfall. Freshness is maintained by three mechanisms instead:
+      //   1. refetchOnWindowFocus: true  — app returns from background → refresh
+      //   2. refetchOnReconnect: 'always' — network drop + reconnect → refresh
+      //   3. Realtime subscriptions + invalidateQueryFamilies — mutations → refresh
+      //
+      // If a specific query reports stale data, lower its per-query staleTime
+      // (e.g. staleTime: 30_000) rather than reverting this flag globally.
       refetchOnMount: false,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       retry: (failureCount, error) => {
         if (failureCount >= 2) return false
         const status = error?.status || error?.code

@@ -782,7 +782,7 @@ export default function Bills({
             {tab === 'pending' && visiblePending.length === 0 && (
               <EmptyState
                 className="py-8"
-                imageUrl="/illustrations/coffee_chill.png"
+                imageUrl="/illustrations/coffee_chill.webp"
                 title="You're all clear"
                 description={isViewingPartner ? "This partner has no pending bills." : "No pending bills right now. Add recurring dues to keep reminders and cashflow planning accurate."}
                 actionLabel={isViewingPartner ? undefined : "Add a bill"}
@@ -804,7 +804,7 @@ export default function Bills({
             {tab === 'paid' && !paidLoading && visiblePaid.length === 0 && (
               <EmptyState
                 className="py-8"
-                imageUrl="/illustrations/all_done.png"
+                imageUrl="/illustrations/all_done.webp"
                 title="No paid bills yet"
                 description="Bills you mark as paid will show up here for history and tracking."
                 actionLabel="View pending"

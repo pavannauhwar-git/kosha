@@ -1539,6 +1539,26 @@ function WalletSwitchGuard() {
 }
 
 function AppShell() {
+  // Opt in to modern Navigation API for Predictive Back swipe preview on Android 14+ / Pixel
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('navigation' in window)) return
+
+    const handleNavigate = (event) => {
+      if (event.navigationType === 'traverse' && event.canIntercept) {
+        event.intercept({
+          async handler() {
+            // Successfully intercepted physical back-swipe for custom single-page-app transitions.
+          }
+        })
+      }
+    }
+
+    window.navigation.addEventListener('navigate', handleNavigate)
+    return () => {
+      window.navigation.removeEventListener('navigate', handleNavigate)
+    }
+  }, [])
+
   return (
     <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
       <WalletSwitchGuard />

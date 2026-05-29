@@ -1537,7 +1537,7 @@ export default function Transactions() {
         {!isInitialLoad && (
           groups.length === 0 ? (
           <EmptyState
-            imageUrl={hasActiveFilters ? "/illustrations/search_empty.png" : "/illustrations/empty_transactions.png"}
+            imageUrl={hasActiveFilters ? "/illustrations/search_empty.webp" : "/illustrations/empty_transactions.webp"}
             title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
             description={
               hasActiveFilters

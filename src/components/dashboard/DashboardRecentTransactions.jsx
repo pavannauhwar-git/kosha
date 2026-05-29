@@ -130,7 +130,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
 
         <EmptyState
           className="py-6 !bg-transparent !shadow-none !border-none"
-          imageUrl="/illustrations/empty_transactions.png"
+          imageUrl="/illustrations/empty_transactions.webp"
           title="No transactions yet"
           description="Your latest activity will appear here after you add your first transaction."
           actionLabel="Go to transactions"

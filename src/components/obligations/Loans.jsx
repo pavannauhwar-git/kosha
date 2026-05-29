@@ -894,7 +894,7 @@ export default function Loans({
             {tab !== 'settled' && activeLoans.length === 0 && (
               <EmptyState
                 className="py-8"
-                imageUrl="/illustrations/empty_loans.png"
+                imageUrl="/illustrations/empty_loans.webp"
                 title={tab === 'given' ? 'No loans given' : 'No loans taken'}
                 description={isViewingPartner
                   ? (tab === 'given' ? 'This partner has not lent any money.' : 'This partner has not borrowed any money.')
@@ -914,7 +914,7 @@ export default function Loans({
             {tab === 'settled' && !settledLoading && visibleSettled.length === 0 && (
               <EmptyState
                 className="py-8"
-                imageUrl="/illustrations/settled_loans.png"
+                imageUrl="/illustrations/settled_loans.webp"
                 title="No settled loans"
                 description="Loans you fully repay will show up here."
                 actionLabel="View active"

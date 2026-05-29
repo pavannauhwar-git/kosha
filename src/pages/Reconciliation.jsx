@@ -541,7 +541,7 @@ export default function Reconciliation() {
                 : 'Queue clear. Your records look healthy.'}
             </p>
           </div>
-          <img src="/illustrations/reconciliation_empty.png" alt="Reconciliation" className="w-40 h-auto object-contain illustration shrink-0" />
+          <img src="/illustrations/reconciliation_empty.webp" alt="Reconciliation" className="w-40 h-auto object-contain illustration shrink-0" />
         </div>
 
         <div className="px-4 py-3.5">
@@ -713,7 +713,7 @@ export default function Reconciliation() {
           ) : !hasTransactions && !hasActiveFilters ? (
             <EmptyState
               className="py-6"
-              imageUrl="/illustrations/reconciliation_empty.png"
+              imageUrl="/illustrations/reconciliation_empty.webp"
               title="Nothing to reconcile yet"
               description="Add transactions first. Reconciliation checks will surface here."
               actionLabel="Go to transactions"
@@ -722,7 +722,7 @@ export default function Reconciliation() {
           ) : visibleItems.length === 0 ? (
             <EmptyState
               className="py-6"
-              imageUrl="/illustrations/all_done.png"
+              imageUrl="/illustrations/all_done.webp"
               title={hasActiveFilters ? 'No items for selected filters' : 'Queue is clear'}
               description={
                 hasActiveFilters

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash, Info } from '@phosphor-icons/react'
 import Button from '../ui/Button'
+import Select from '../ui/Select'
 import PixelDatePicker from '../ui/PixelDatePicker'
 import {
   saveTransactionMutation,
@@ -1226,17 +1227,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
                 {isSplitwise && (
                   <div className="mt-3">
-                    <select
+                    <Select
                       value={splitGroupId || ''}
                       onChange={(e) => set('splitGroupId', e.target.value)}
                       disabled={isSaving}
-                      className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-[14px] text-ink outline-none border border-transparent focus:border-brand-border disabled:opacity-50"
-                    >
-                      <option value="" disabled>Select a group...</option>
-                      {groups.filter(g => !g.is_archived).map(g => (
-                        <option key={g.id} value={g.id}>{g.name}</option>
-                      ))}
-                    </select>
+                      placeholder="Select a group..."
+                      options={groups.filter(g => !g.is_archived).map(g => ({
+                        value: g.id,
+                        label: g.name,
+                      }))}
+                    />
                   </div>
                 )}
               </div>

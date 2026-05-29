@@ -193,7 +193,7 @@ export default function InviteLanding() {
                 <div className="text-center">
                   <div className="flex justify-center mb-6">
                     <img
-                      src="/illustrations/invite_hero.png"
+                      src="/illustrations/invite_hero.webp"
                       alt="Invitation illustration"
                       className="w-48 h-48 object-contain drop-shadow-xl"
                     />
