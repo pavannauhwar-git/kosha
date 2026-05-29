@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 
-import { Plus, Wallet, TrendingDown, ArrowRight } from 'lucide-react'
+import { Plus, Wallet, TrendDown, ArrowRight } from '@phosphor-icons/react'
 import {
   useRecentTransactions,
   useMonthSummary,
@@ -771,7 +771,7 @@ export default function Dashboard() {
                 <div className="card p-3.5 border-0">
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${burnRate.ahead ? 'bg-warning-bg' : 'bg-income-bg'}`}>
-                      <TrendingDown size={14} className={burnRate.ahead ? 'text-warning-text' : 'text-income-text'} />
+                      <TrendDown size={14} className={burnRate.ahead ? 'text-warning-text' : 'text-income-text'} />
                     </div>
                     <p className="text-[10px] text-ink-3 tracking-wide">Burn rate</p>
                   </div>

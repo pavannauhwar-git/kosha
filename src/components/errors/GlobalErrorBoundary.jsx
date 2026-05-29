@@ -1,5 +1,5 @@
 import React from 'react'
-import { Bug, Home, RotateCw } from 'lucide-react'
+import { Bug, House, ArrowClockwise } from '@phosphor-icons/react'
 import KoshaErrorPage from './KoshaErrorPage'
 import { getRuntimeDiagnostics } from '../../lib/runtimeMonitor'
 import { captureError } from '../../lib/errorReporting'
@@ -93,8 +93,8 @@ export class GlobalErrorBoundary extends React.Component {
           onPrimary={this.handleReload}
           onSecondary={this.handleGoHome}
           onTertiary={this.handleReportBug}
-          primaryIcon={RotateCw}
-          secondaryIcon={Home}
+          primaryIcon={ArrowClockwise}
+          secondaryIcon={House}
           tertiaryIcon={Bug}
         />
       )

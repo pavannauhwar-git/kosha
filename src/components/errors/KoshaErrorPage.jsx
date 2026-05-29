@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { AlertTriangle, Check, Copy, Home, RotateCw } from 'lucide-react'
+import { Warning, Check, Copy, House, ArrowClockwise } from '@phosphor-icons/react'
 import KoshaLogo from '../brand/KoshaLogo'
 import { copyToClipboard } from '../../lib/share'
 
@@ -16,8 +16,8 @@ export default function KoshaErrorPage({
   onPrimary,
   onSecondary,
   onTertiary,
-  primaryIcon: PrimaryIcon = RotateCw,
-  secondaryIcon: SecondaryIcon = Home,
+  primaryIcon: PrimaryIcon = ArrowClockwise,
+  secondaryIcon: SecondaryIcon = House,
   tertiaryIcon: TertiaryIcon,
   imageUrl,
 }) {
@@ -102,7 +102,7 @@ export default function KoshaErrorPage({
           ) : (
             <div className="flex items-start gap-3">
               <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${toneClass}`}>
-                <AlertTriangle size={18} />
+                <Warning size={18} />
               </div>
               <div>
                 <h1 ref={headingRef} tabIndex="-1" className="text-[20px] font-bold leading-tight tracking-tight text-ink">{title}</h1>

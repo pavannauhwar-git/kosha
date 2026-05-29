@@ -1,6 +1,6 @@
 import { memo, useMemo, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, CheckCircle2, X } from 'lucide-react'
+import { ArrowRight, CheckCircle, X } from '@phosphor-icons/react'
 import TransactionItem from '../transactions/TransactionItem'
 import { fmt } from '../../lib/utils'
 import { CATEGORIES, INVESTMENT_VEHICLES } from '../../lib/categories'

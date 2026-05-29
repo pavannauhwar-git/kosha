@@ -11,7 +11,7 @@ import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import Divider from '@mui/material/Divider'
 import MuiButton from '@mui/material/Button'
-import { LogOut, Bug, Info, BookOpen, Link2, Unlink } from 'lucide-react'
+import { SignOut, Bug, Info, BookOpen, LinkSimple, LinkBreak } from '@phosphor-icons/react'
 import { useAuth } from '../../context/AuthContext'
 import { useActiveWallet, setActiveWalletUserId } from '../../lib/walletStore'
 import { unlinkPartner } from '../../lib/walletSync'
@@ -366,7 +366,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                 sx={{ borderRadius: '12px', color: 'var(--ds-text)' }}
               >
                 <ListItemIcon sx={{ minWidth: 36, color: 'var(--ds-text-secondary)' }}>
-                  <Link2 size={16} />
+                  <LinkSimple size={16} />
                 </ListItemIcon>
                 <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 500 }}>Reconciliation</Typography>} />
               </ListItemButton>
@@ -432,7 +432,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               signOut()
             }}
             variant="outlined"
-            startIcon={<LogOut size={15} />}
+            startIcon={<SignOut size={15} />}
             sx={{
               borderRadius: '9999px',
               borderColor: 'var(--ds-border)',

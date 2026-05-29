@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Users, ArrowRightLeft, ReceiptText, X, Link2, Trash2, ChevronLeft, Settings2, Archive, ArchiveRestore } from 'lucide-react'
+import { Plus, Users, ArrowsLeftRight, Receipt, X, LinkSimple, Trash, CaretLeft, SlidersHorizontal, Archive, ArrowUUpLeft } from '@phosphor-icons/react'
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Button from '../components/ui/Button'
@@ -1098,7 +1098,7 @@ export default function Splitwise() {
                 }}
                 className="inline-flex items-center gap-1 text-[11px] text-ink-3"
               >
-                <ChevronLeft size={13} /> All groups
+                <CaretLeft size={13} /> All groups
               </button>
               <p className="mt-1 truncate text-[15px] font-semibold text-ink">{activeGroup.name}</p>
             </div>
@@ -1119,7 +1119,7 @@ export default function Splitwise() {
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<Link2 size={13} />}
+                icon={<LinkSimple size={13} />}
                 onClick={() => { void handleCreateGroupInvite() }}
                 loading={saving === 'group-invite'}
               >
@@ -1131,7 +1131,7 @@ export default function Splitwise() {
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<Settings2 size={13} />}
+                icon={<SlidersHorizontal size={13} />}
                 onClick={() => {
                   setEditGroupForm({ name: activeGroup.name })
                   setShowEditGroup(true)
@@ -1425,7 +1425,7 @@ export default function Splitwise() {
                               disabled={!!saving}
                               title="Remove member"
                             >
-                              <Trash2 size={13} />
+                              <Trash size={13} />
                             </button>
                           )}
                         </div>
@@ -1465,7 +1465,7 @@ export default function Splitwise() {
             <Button
               variant="primary"
               size="md"
-              icon={<ReceiptText size={14} />}
+              icon={<Receipt size={14} />}
               onClick={() => setShowAddExpense(true)}
               disabled={!canManageGroup}
             >
@@ -1474,7 +1474,7 @@ export default function Splitwise() {
             <Button
               variant="success"
               size="md"
-              icon={<ArrowRightLeft size={14} />}
+              icon={<ArrowsLeftRight size={14} />}
               onClick={handleSettleUpClick}
               disabled={!canManageGroup}
             >
@@ -1512,7 +1512,7 @@ export default function Splitwise() {
           <div className="card overflow-hidden">
             <div className="p-4 border-b border-kosha-border bg-kosha-surface flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ReceiptText size={16} className="text-brand" />
+                <Receipt size={16} className="text-brand" />
                 <p className="font-semibold text-[14px] text-ink">Transactions</p>
               </div>
               <div className="flex items-center gap-3">
@@ -1531,7 +1531,7 @@ export default function Splitwise() {
             ) : transactions.length === 0 ? (
               <div className="p-10 text-center">
                 <div className="w-10 h-10 rounded-full bg-kosha-surface-2 flex items-center justify-center mx-auto mb-3">
-                  <ReceiptText size={18} className="text-ink-3" />
+                  <Receipt size={18} className="text-ink-3" />
                 </div>
                 <p className="text-[13px] font-medium text-ink">No transactions yet</p>
                 <p className="text-[11px] text-ink-3 mt-1">Add an expense to get started.</p>
@@ -1562,7 +1562,7 @@ export default function Splitwise() {
                           <div className="flex items-start justify-between gap-2.5">
                             <div className="flex items-start gap-2.5 min-w-0">
                               <div className="h-8 w-8 rounded-full bg-brand/10 text-brand shrink-0 flex items-center justify-center border border-brand/20 mt-0.5">
-                                <ReceiptText size={14} />
+                                <Receipt size={14} />
                               </div>
                               <div className="min-w-0">
                                 <p className="text-[13px] font-semibold text-ink truncate leading-tight">{t.description}</p>
@@ -1604,7 +1604,7 @@ export default function Splitwise() {
                           <div className="flex items-start justify-between gap-2.5">
                             <div className="flex items-start gap-2.5 min-w-0">
                               <div className="h-8 w-8 rounded-full bg-success/10 text-success shrink-0 flex items-center justify-center border border-success/20 mt-0.5">
-                                <ArrowRightLeft size={14} />
+                                <ArrowsLeftRight size={14} />
                               </div>
                               <div className="min-w-0">
                                 <p className="text-[13px] font-semibold text-ink truncate leading-tight">Settlement</p>
@@ -2249,7 +2249,7 @@ export default function Splitwise() {
                     }`}
                   >
                     {activeGroup?.is_archived ? (
-                      <ArchiveRestore size={20} className="text-brand shrink-0" />
+                      <ArrowUUpLeft size={20} className="text-brand shrink-0" />
                     ) : (
                       <Archive size={20} className="text-warning-text shrink-0" />
                     )}

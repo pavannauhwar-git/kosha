@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Home, Plus } from 'lucide-react'
+import { House, Plus } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import Bills from '../components/obligations/Bills'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
@@ -30,7 +30,7 @@ export default function BillsPage() {
           className="w-9 h-9 rounded-full flex items-center justify-center bg-kosha-surface-2 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-95 active:bg-kosha-border"
           aria-label="Go to home"
         >
-          <Home size={16} className="text-ink-2" />
+          <House size={16} className="text-ink-2" />
         </button>
       )}
     >

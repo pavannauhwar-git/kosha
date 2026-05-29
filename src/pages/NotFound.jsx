@@ -1,4 +1,4 @@
-import { ArrowLeft, Home } from 'lucide-react'
+import { ArrowLeft, House } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import KoshaErrorPage from '../components/errors/KoshaErrorPage'
 import { useAuth } from '../context/AuthContext'

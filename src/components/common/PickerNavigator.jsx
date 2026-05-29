@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CaretDown, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { MONTH_SHORT } from '../../lib/constants'
 import BottomSheet from '../ui/BottomSheet'
 import Button from '../ui/Button'
@@ -113,7 +113,7 @@ export default function PickerNavigator({
                      flex items-center justify-center active:bg-kosha-surface-2
                      hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-[background-color] duration-150"
         >
-          <ChevronLeft size={16} className="text-ink-2" />
+          <CaretLeft size={16} className="text-ink-2" />
         </button>
 
         <button
@@ -131,7 +131,7 @@ export default function PickerNavigator({
                      flex items-center justify-center active:bg-kosha-surface-2
                      hover:bg-kosha-surface-2 focus-visible:ring-2 focus-visible:ring-brand/20 focus-visible:outline-none transition-[background-color] duration-150"
         >
-          <ChevronRight size={16} className="text-ink-2" />
+          <CaretRight size={16} className="text-ink-2" />
         </button>
       </div>
 

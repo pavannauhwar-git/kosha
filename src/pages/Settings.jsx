@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Camera, Trash2, Pencil, BellRing, ShieldAlert, Users, User, Copy, Moon, Sun, Home, Unlink } from 'lucide-react'
+import { Camera, Trash, PencilSimple, BellRinging, ShieldWarning, Users, User, Copy, Moon, Sun, House, LinkBreak } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/dialogs/EditProfileNameDialog'
@@ -363,7 +363,7 @@ export default function Settings() {
           className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-95 active:bg-kosha-border"
           aria-label="Go to home"
         >
-          <Home size={16} className="text-ink-2" />
+          <House size={16} className="text-ink-2" />
         </button>
       )}
     >
@@ -406,7 +406,7 @@ export default function Settings() {
                 <p className="text-[18px] sm:text-[22px] font-bold text-ink tracking-tight truncate leading-tight">{displayName}</p>
                 <p className="text-[12px] sm:text-[13px] text-ink-3 truncate mt-0.5">{user?.email}</p>
                 <div className="mt-2.5 inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15 uppercase tracking-wider shadow-sm">
-                  <ShieldAlert size={12} /> Private account
+                  <ShieldWarning size={12} /> Private account
                 </div>
               </div>
             </div>
@@ -414,7 +414,7 @@ export default function Settings() {
 
           <div className="flex flex-col">
             <SettingRow
-              icon={<Pencil size={16} className="text-brand" />}
+              icon={<PencilSimple size={16} className="text-brand" />}
               label="Edit display name"
               onClick={() => setShowEditName(true)}
             />
@@ -429,7 +429,7 @@ export default function Settings() {
               <>
                 <Divider />
                 <SettingRow
-                  icon={<Trash2 size={16} className="text-expense-text" />}
+                  icon={<Trash size={16} className="text-expense-text" />}
                   label="Remove photo"
                   onClick={handleDeletePhoto}
                   destructive
@@ -470,7 +470,7 @@ export default function Settings() {
             </p>
             <div className="card overflow-hidden p-0">
               <SettingRow
-                icon={<ShieldAlert size={16} className="text-accent-text" />}
+                icon={<ShieldWarning size={16} className="text-accent-text" />}
                 label="Change password"
                 sublabel="Update the password used for sign in"
                 onClick={() => {
@@ -562,7 +562,7 @@ export default function Settings() {
             </div>
 
             <SettingRow
-              icon={<BellRing size={16} className="text-accent-text" />}
+              icon={<BellRinging size={16} className="text-accent-text" />}
               label="Enable reminders"
               sublabel="Turn reminder notifications on or off"
               onClick={() => toggleReminderField('enabled')}
@@ -578,7 +578,7 @@ export default function Settings() {
             />
             <Divider />
             <SettingRow
-              icon={<BellRing size={16} className="text-accent-text" />}
+              icon={<BellRinging size={16} className="text-accent-text" />}
               label="Bills due alerts"
               sublabel={remindersPaused ? 'Daily reminder when bills are near due (paused while reminder engine is off)' : 'Daily reminder when bills are near due'}
               onClick={() => toggleReminderField('bill_due')}
@@ -595,7 +595,7 @@ export default function Settings() {
             />
             <Divider />
             <SettingRow
-              icon={<ShieldAlert size={16} className="text-accent-text" />}
+              icon={<ShieldWarning size={16} className="text-accent-text" />}
               label="Spending pace alerts"
               sublabel={remindersPaused ? 'Warn when spending runs above month pace (paused while reminder engine is off)' : 'Warn when spending runs above month pace'}
               onClick={() => toggleReminderField('spending_pace')}
@@ -612,7 +612,7 @@ export default function Settings() {
             />
             <Divider />
             <SettingRow
-              icon={<BellRing size={16} className="text-accent-text" />}
+              icon={<BellRinging size={16} className="text-accent-text" />}
               label="Notification permission"
               sublabel={`Current: ${notificationPermission}`}
               onClick={enableNotifications}
@@ -668,7 +668,7 @@ export default function Settings() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      icon={<Unlink size={13} />}
+                      icon={<LinkBreak size={13} />}
                       onClick={() => { void handleUnlinkPartner(lp.id) }}
                       loading={unlinkingId === lp.id}
                       className="shrink-0 text-expense-text hover:bg-expense-bg h-8 px-2.5 text-[11px] font-semibold"
@@ -752,7 +752,7 @@ export default function Settings() {
                           variant="ghost"
                           size="sm"
                           className="mt-1.5 px-0 h-auto text-[11px] text-expense-text font-semibold"
-                          icon={<Trash2 size={12} />}
+                          icon={<Trash size={12} />}
                           onClick={() => { void handleRevokeInvite(invite.id) }}
                           loading={revokingId === invite.id}
                         >

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Bug, Check, Copy, Home, LogIn } from 'lucide-react'
+import { Bug, Check, Copy, House, SignIn } from '@phosphor-icons/react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -261,7 +261,7 @@ export default function ReportBug() {
           className="w-9 h-9 rounded-pill flex items-center justify-center bg-kosha-surface-2 active:bg-kosha-border"
           aria-label="Go to dashboard"
         >
-          <Home size={16} className="text-ink-2" />
+          <House size={16} className="text-ink-2" />
         </button>
       )}
       rootStyle={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}
@@ -530,7 +530,7 @@ export default function ReportBug() {
                 variant="primary"
                 size="md"
                 fullWidth
-                icon={<LogIn size={15} />}
+                icon={<SignIn size={15} />}
                 onClick={() => navigate('/login', { state: { from: '/report-bug' } })}
               >
                 Sign in to report
