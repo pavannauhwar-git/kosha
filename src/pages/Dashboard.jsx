@@ -619,7 +619,6 @@ export default function Dashboard() {
           <div className="fade-up fade-up-2">
             <DashboardHeroCard
               loading={heroLoading}
-              now={balanceHorizonDate}
               runningBalance={runningBalance}
               rate={rate}
               earned={earned}

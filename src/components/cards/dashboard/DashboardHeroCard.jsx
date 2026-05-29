@@ -21,7 +21,6 @@ const STAT_DELAYS = ['0ms', '60ms', '120ms']
 
 const DashboardHeroCard = memo(function DashboardHeroCard({
   loading = false,
-  now,
   runningBalance,
   rate,
   earned,

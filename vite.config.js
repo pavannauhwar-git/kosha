@@ -35,6 +35,12 @@ function manualChunks(id) {
 
   if (id.includes('/node_modules/recharts/')) return 'charts-vendor'
   if (id.includes('/node_modules/@radix-ui/')) return 'radix-vendor'
+  if (
+    id.includes('/node_modules/@mui/') ||
+    id.includes('/node_modules/@emotion/')
+  ) {
+    return 'mui-vendor'
+  }
 
   return 'vendor'
 }

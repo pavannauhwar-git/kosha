@@ -480,10 +480,18 @@ function BottomNav() {
       className="nav-float-wrap"
       style={{
         opacity: isVisible ? 1 : 0,
+        // Never toggle pointer-events during a fade — the compositor can
+        // apply pointer-events:auto before the opacity animation settles on
+        // iOS Safari, causing the first tap to fall through to content behind
+        // the nav. Use visibility:hidden (already set below for shouldHide)
+        // to block all input when the nav is fully invisible.
         pointerEvents: isVisible ? 'auto' : 'none',
         visibility: shouldHide ? 'hidden' : 'visible',
         transition: loading ? 'none' : 'opacity 180ms cubic-bezier(0.2, 0, 0, 1)',
-        willChange: 'opacity',
+        // Do NOT add willChange:'opacity' here — the nav is already on its
+        // own compositor layer via transform:translateZ(0) in CSS.
+        // A second willChange promotion causes iOS Safari hit-testing to
+        // use the stale composited layer for the first tap after fade-in.
       }}
     >
       <nav className="nav-float" aria-label="Main navigation">
@@ -506,7 +514,14 @@ function BottomNav() {
                 navigate(item.path, { replace: true })
               }}
               onMouseEnter={() => prefetchRoute(item.path)}
-              onFocus={() => prefetchRoute(item.path)}
+              onFocus={(e) => {
+                // Only prefetch on focus from keyboard/mouse — not from tap-focus on iOS.
+                // On mobile Safari, a tap fires focus before click; running
+                // prefetchRoute here on touch devices adds unnecessary work on
+                // the first tap and can delay the click event in edge cases.
+                if (!e.currentTarget.matches(':focus-visible')) return
+                prefetchRoute(item.path)
+              }}
               onTouchStart={() => prefetchRoute(item.path)}
               aria-current={isActive ? 'page' : undefined}
               aria-label={item.label}
