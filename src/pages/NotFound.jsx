@@ -28,7 +28,7 @@ export default function NotFound() {
       secondaryLabel="Go back"
       onPrimary={() => navigate(homePath, { replace: true })}
       onSecondary={handleBack}
-      primaryIcon={Home}
+      primaryIcon={House}
       secondaryIcon={ArrowLeft}
     />
   )

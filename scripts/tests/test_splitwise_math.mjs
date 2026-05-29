@@ -1,5 +1,5 @@
+import { round2 } from '../../src/lib/utils.js'
 import {
-  round2,
   buildEqualSplits,
   buildExactSplits,
   buildPercentSplits,

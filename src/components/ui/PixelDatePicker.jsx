@@ -166,7 +166,7 @@ export default function PixelDatePicker({
               className="w-9 h-9 rounded-full border border-kosha-border bg-kosha-surface-2 text-ink-2 flex items-center justify-center transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.97]"
               aria-label="Previous month"
             >
-              <ChevronLeft size={16} />
+              <CaretLeft size={16} />
             </button>
 
             <p className="text-[15px] font-semibold text-ink tracking-tight">
@@ -179,7 +179,7 @@ export default function PixelDatePicker({
               className="w-9 h-9 rounded-full border border-kosha-border bg-kosha-surface-2 text-ink-2 flex items-center justify-center transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.97]"
               aria-label="Next month"
             >
-              <ChevronRight size={16} />
+              <CaretRight size={16} />
             </button>
           </div>
 
