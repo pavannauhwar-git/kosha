@@ -71,7 +71,19 @@ export default function useOverlayFocusTrap(open, options = {}) {
         ? container.querySelector(initialFocusSelectorRef.current)
         : null
       const fallback = getFocusableElements(container)[0] || container
-      const nextTarget = targeted instanceof HTMLElement ? targeted : fallback
+      let nextTarget = targeted instanceof HTMLElement ? targeted : fallback
+
+      // On touch/mobile devices, avoid programmatically focusing inputs/textareas/selects/editable elements
+      // on initial mount to prevent the virtual keyboard from automatically popping up and covering the sheet.
+      const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator && navigator.maxTouchPoints > 0));
+      if (isTouchDevice && nextTarget instanceof HTMLElement) {
+        const tagName = nextTarget.tagName.toLowerCase();
+        const isInput = tagName === 'input' || tagName === 'textarea' || tagName === 'select' || nextTarget.isContentEditable;
+        if (isInput) {
+          nextTarget = container;
+        }
+      }
+
       if (nextTarget instanceof HTMLElement) {
         nextTarget.focus({ preventScroll: true })
       }

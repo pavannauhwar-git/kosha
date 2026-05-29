@@ -1814,7 +1814,6 @@ export default function Splitwise() {
                       value={newMemberName}
                       onChange={(event) => setNewMemberName(event.target.value)}
                       placeholder="Jane Doe"
-                      autoFocus
                     />
                   </label>
                 </div>

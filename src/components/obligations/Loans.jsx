@@ -1239,7 +1239,6 @@ export default function Loans({
                     value={payAmount}
                     max={Math.max(0, (+payLoan.amount - +payLoan.amount_settled) || 0)}
                     onChange={e => setPayAmount(e.target.value)}
-                    autoFocus
                   />
                 </div>
 

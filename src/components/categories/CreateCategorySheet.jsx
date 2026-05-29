@@ -162,7 +162,6 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
             onChange={e => setName(e.target.value)}
             disabled={saving}
             maxLength={30}
-            autoFocus
             className="input mb-4 disabled:opacity-50"
           />
 
