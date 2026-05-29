@@ -33,10 +33,11 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
-      // After mutation invalidation, inactive pages must refresh when revisited.
-      // `true` refetches only stale queries on mount (not always), preserving
-      // most of the SWR/perceived-performance behavior while fixing stale lists.
-      refetchOnMount: true,
+      // Realtime subscriptions + invalidateQueryFamilies keep data fresh after
+      // mutations. Refetching on every tab mount wastes bandwidth and causes a
+      // visible loading waterfall on tab switches. staleTime (5 min) and
+      // refetchOnWindowFocus handle the rare cases where data could go stale.
+      refetchOnMount: false,
       refetchOnWindowFocus: false,
       retry: (failureCount, error) => {
         if (failureCount >= 2) return false

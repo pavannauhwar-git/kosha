@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { lazy, Suspense, useState, useEffect, useCallback, useRef, startTransition } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { motion, MotionConfig } from 'framer-motion'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 import { getMuiTheme } from './lib/muiTheme'
@@ -19,6 +19,7 @@ import { isSuppressed } from './lib/mutationGuard'
 import { recordRuntimeRoute } from './lib/runtimeMonitor'
 import { useUserCategories } from './hooks/useUserCategories'
 import { getActiveWalletUserId, useActiveWallet } from './lib/walletStore'
+import { hapticTap } from './lib/haptics'
 
 const DASHBOARD_RECENT_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
@@ -493,7 +494,7 @@ function BottomNav() {
               key={item.path}
               className="nav-float-item"
               onClick={() => {
-                import('./lib/haptics').then(m => m.hapticTap())
+                hapticTap()
                 if (isActive) {
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                   return
@@ -502,9 +503,7 @@ function BottomNav() {
                 // should never create back-navigable history entries so that
                 // the iOS swipe-from-left gesture only triggers meaningful
                 // navigation (e.g. modals / sub-pages), not tab hopping.
-                startTransition(() => {
-                  navigate(item.path, { replace: true })
-                })
+                navigate(item.path, { replace: true })
               }}
               onMouseEnter={() => prefetchRoute(item.path)}
               onFocus={() => prefetchRoute(item.path)}
