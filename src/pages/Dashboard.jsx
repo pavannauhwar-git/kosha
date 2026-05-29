@@ -71,9 +71,12 @@ export default function Dashboard() {
   const [reminderPrefs, setReminderPrefsState] = useState(() => getReminderPrefs())
 
   useEffect(() => {
+    let cancelled = false
     let intervalId = null
+    let timeoutId = null
 
-    function tick() {
+    const tick = () => {
+      if (cancelled) return
       const next = new Date()
       setNow(prev => {
         if (
@@ -81,21 +84,21 @@ export default function Dashboard() {
           prev.getMonth() !== next.getMonth() ||
           prev.getDate() !== next.getDate() ||
           prev.getHours() !== next.getHours()
-        ) {
-          return next
-        }
+        ) return next
         return prev
       })
     }
 
     const msUntilNextMinute = (60 - new Date().getSeconds()) * 1000
-    const timeoutId = setTimeout(() => {
+    timeoutId = setTimeout(() => {
+      if (cancelled) return
       tick()
       intervalId = setInterval(tick, 60_000)
     }, msUntilNextMinute)
 
     return () => {
-      clearTimeout(timeoutId)
+      cancelled = true
+      if (timeoutId) clearTimeout(timeoutId)
       if (intervalId) clearInterval(intervalId)
     }
   }, [])

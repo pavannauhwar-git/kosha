@@ -29,6 +29,32 @@ export function fmt(n, compact = false) {
   return _currencyFmt.format(n).replace('-', '−').replace('₹', '₹\u202F')
 }
 
+// Splits a currency amount into rupee and paise parts using Intl
+// .formatToParts so the result is locale-correct (any currency, not just INR).
+//   splitFmtAmount(12345.67) → { main: '₹\u202F12,345', decimal: '.67', totalLength: 12 }
+//   splitFmtAmount(null)     → { main: '—',              decimal: '',     totalLength: 1  }
+export function splitFmtAmount(n) {
+  if (n === null || n === undefined || !Number.isFinite(n)) {
+    return { main: '—', decimal: '', totalLength: 1 }
+  }
+  const parts = _currencyFmt.formatToParts(n)
+  const before = []
+  const after = []
+  let crossed = false
+  for (const p of parts) {
+    if (p.type === 'decimal') {
+      crossed = true
+      after.push(p.value)
+      continue
+    }
+    if (crossed) after.push(p.value)
+    else before.push(p.value)
+  }
+  const main = before.join('').replace('-', '−').replace('₹', '₹\u202F')
+  const decimal = after.join('')
+  return { main, decimal, totalLength: (main + decimal).length }
+}
+
 export function fmtFull(n) {
   const safe = Number.isFinite(n) ? n : 0
   return _currencyFmt.format(safe)

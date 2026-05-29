@@ -606,6 +606,7 @@ export default function Loans({
   }, [addSaving, closeAddLoanSheet])
 
   async function handleAdd() {
+    if (addSaving) return
     if (!form.counterparty.trim()) { setFormErr('Enter a name'); return }
     if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
     if (!form.loan_date) { setFormErr('Select a loan date'); return }

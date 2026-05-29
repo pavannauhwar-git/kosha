@@ -1,6 +1,34 @@
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient, MutationCache, QueryCache } from '@tanstack/react-query'
+import { captureError } from './errorReporting'
+
+const queryCache = new QueryCache({
+  onError: (error, query) => {
+    const status = error?.status || error?.code
+    // Auth failures are handled by AuthGuard redirect — don't spam Sentry.
+    if (status === 401 || status === 403) return
+    captureError(error, {
+      tags: {
+        source: 'react-query',
+        queryKey: JSON.stringify(query.queryKey).slice(0, 200),
+      },
+    })
+  },
+})
+
+const mutationCache = new MutationCache({
+  onError: (error, _vars, _ctx, mutation) => {
+    captureError(error, {
+      tags: {
+        source: 'react-query-mutation',
+        mutationKey: JSON.stringify(mutation.options.mutationKey || []).slice(0, 200),
+      },
+    })
+  },
+})
 
 export const queryClient = new QueryClient({
+  queryCache,
+  mutationCache,
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,
@@ -10,17 +38,13 @@ export const queryClient = new QueryClient({
       // most of the SWR/perceived-performance behavior while fixing stale lists.
       refetchOnMount: true,
       refetchOnWindowFocus: false,
-      // Retry transient failures (network, 5xx) but not auth/client errors.
       retry: (failureCount, error) => {
         if (failureCount >= 2) return false
         const status = error?.status || error?.code
-        // Don't retry auth errors or client errors
         if (status === 401 || status === 403 || status === 404) return false
         if (String(error?.message || '').includes('Not signed in')) return false
         return true
       },
-      // When the device comes back online, refetch active queries
-      // so the app recovers without a manual restart.
       refetchOnReconnect: 'always',
     },
   },

@@ -515,6 +515,7 @@ export default function Bills({
   }
 
   async function handleAdd() {
+    if (addSaving) return
     if (!form.description.trim()) { setFormErr('Enter a description'); return }
     if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
     if (!form.due_date) { setFormErr('Select a due date'); return }

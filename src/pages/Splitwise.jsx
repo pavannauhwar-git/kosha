@@ -588,6 +588,7 @@ export default function Splitwise() {
   }
 
   async function handleCreateGroup() {
+    if (saving) return
     const name = String(groupForm.name || '').trim()
 
     if (!name) {
