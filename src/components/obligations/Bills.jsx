@@ -1030,7 +1030,7 @@ export default function Bills({
                                 transition-[border-color] duration-200">
                   <span className="text-xl font-bold text-brand">₹</span>
                   <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
-                    type="number" inputMode="decimal" name="bill-amount" placeholder="0"
+                    type="text" inputMode="decimal" pattern="[0-9.]*" name="bill-amount" placeholder="0"
                     value={form.amount}
                     onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
                 </div>

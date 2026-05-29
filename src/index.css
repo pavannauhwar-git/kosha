@@ -1079,9 +1079,9 @@ textarea:focus-visible,
   }
 
   .nav-float-item:active {
-    /* Immediate squish — release spring back via the transition */
-    transform: scale(0.88);
-    transition: transform 80ms var(--ds-ease-standard);
+    /* M3 Expressive press-down: 100 ms emphasized-decelerate */
+    transform: scale(0.9);
+    transition: transform 100ms var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
   }
 
   .nav-icon-wrap {
