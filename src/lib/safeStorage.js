@@ -75,6 +75,7 @@ export function purgeUserScopedKeys() {
   const storage = getLocalStorage()
   if (!storage) return 0
   try {
+    try { localStorage.removeItem('kosha:avatar-urls') } catch {}
     const keysToRemove = []
     for (let i = 0; i < storage.length; i += 1) {
       const key = storage.key(i)

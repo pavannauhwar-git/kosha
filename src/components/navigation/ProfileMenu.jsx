@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Popover from '@mui/material/Popover'
-import Grow from '@mui/material/Grow'
+import Fade from '@mui/material/Fade'
 import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
 import Typography from '@mui/material/Typography'
@@ -109,9 +109,19 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                      ${isViewingPartner ? 'ring-2 ring-warning-text/60 ring-offset-1 ring-offset-kosha-bg' : ''}`}
         >
           {isViewingPartner && activePartner?.avatar_url ? (
-            <SecureAvatar src={activePartner.avatar_url} alt={activePartner.display_name} className="w-full h-full object-cover" />
+            <SecureAvatar
+              src={activePartner.avatar_url}
+              alt={activePartner.display_name}
+              fallbackInitial={activePartner.display_name?.[0]?.toUpperCase()}
+              className="w-full h-full object-cover"
+            />
           ) : avatarUrl ? (
-            <SecureAvatar src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+            <SecureAvatar
+              src={avatarUrl}
+              alt={displayName}
+              fallbackInitial={initial}
+              className="w-full h-full object-cover"
+            />
           ) : isViewingPartner && activePartner?.display_name ? (
             <span className="text-label font-semibold" style={{ color: 'var(--ds-warning)' }}>
               {activePartner.display_name[0].toUpperCase()}
@@ -136,14 +146,15 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         anchorPosition={anchorPosition || { top: 0, left: 0 }}
         onClose={handleClose}
         disableScrollLock
-        slots={{ transition: Grow }}
+        slots={{ transition: Fade }}
         transformOrigin={{
           vertical: dropUp ? 'bottom' : 'top',
           horizontal: 'right',
         }}
         slotProps={{
-          transition: { timeout: { enter: 190, exit: 160 } },
+          transition: { timeout: { enter: 200, exit: 150 } },
           paper: {
+            className: 'profile-menu-paper',
             sx: {
               mt: 1.5,
               mr: 0,
@@ -175,7 +186,12 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               }}
             >
               {avatarUrl ? (
-                <SecureAvatar src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                <SecureAvatar
+                  src={avatarUrl}
+                  alt={displayName}
+                  fallbackInitial={initial}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 initial
               )}
@@ -320,7 +336,12 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                         {activeWalletUserId === p.id ? (
                           <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--ds-primary)' }} />
                         ) : p.avatar_url ? (
-                          <SecureAvatar src={p.avatar_url} className="w-full h-full object-cover" alt="" />
+                          <SecureAvatar
+                            src={p.avatar_url}
+                            fallbackInitial={p.display_name?.[0]?.toUpperCase()}
+                            className="w-full h-full object-cover"
+                            alt={p.display_name || ''}
+                          />
                         ) : null}
                       </Box>
                     </ListItemIcon>

@@ -3046,14 +3046,22 @@ begin
 
   if p_sync_transaction then
     -- Payer sees: "Settled with [payee name]"
-    if v_payer_uid = v_uid then
+    if v_payer_uid is not null and v_payer_uid = v_uid and not exists (
+      select 1 from public.transactions
+      where linked_split_settlement_id = v_row.id
+        and user_id = v_payer_uid
+    ) then
       insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id, notes)
       values (coalesce(p_settled_at, current_date), 'expense', 'Settled with ' || coalesce(v_payee_name, 'member'), p_amount, 'other', v_uid, true, v_row.id, nullif(btrim(coalesce(p_note, '')), ''))
       returning id into v_payer_txn_id;
     end if;
 
     -- Payee sees: "Received from [payer name]"
-    if v_payee_uid = v_uid then
+    if v_payee_uid is not null and v_payee_uid = v_uid and not exists (
+      select 1 from public.transactions
+      where linked_split_settlement_id = v_row.id
+        and user_id = v_payee_uid
+    ) then
       insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id, notes)
       values (coalesce(p_settled_at, current_date), 'income', 'Received from ' || coalesce(v_payer_name, 'member'), p_amount, 'other', v_uid, true, v_row.id, nullif(btrim(coalesce(p_note, '')), ''))
       returning id into v_payee_txn_id;
@@ -3061,7 +3069,8 @@ begin
 
     if v_payer_txn_id is not null or v_payee_txn_id is not null then
       update public.split_settlements
-      set payer_transaction_id = v_payer_txn_id, payee_transaction_id = v_payee_txn_id
+      set payer_transaction_id = coalesce(v_payer_txn_id, payer_transaction_id),
+          payee_transaction_id = coalesce(v_payee_txn_id, payee_transaction_id)
       where id = v_row.id;
     end if;
   end if;

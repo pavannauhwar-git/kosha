@@ -385,6 +385,7 @@ export default function Settings() {
                     <SecureAvatar
                       src={avatarUrl}
                       alt={displayName}
+                      fallbackInitial={(displayName || 'K')[0].toUpperCase()}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -646,7 +647,12 @@ export default function Settings() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center overflow-hidden border border-brand-border shrink-0">
                         {lp.avatar_url ? (
-                          <SecureAvatar src={lp.avatar_url} alt="" className="w-full h-full object-cover" />
+                          <SecureAvatar
+                            src={lp.avatar_url}
+                            alt=""
+                            fallbackInitial={lp.display_name?.[0]?.toUpperCase()}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <User size={16} className="text-brand" />
                         )}
