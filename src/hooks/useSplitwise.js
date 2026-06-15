@@ -198,6 +198,27 @@ export function optimisticallyDeleteSplitGroup(groupId, userId) {
   })
 }
 
+export function optimisticallyDeleteSplitExpense(groupId, expenseId) {
+  if (!groupId || !expenseId) return
+  const key = splitExpensesKey(groupId)
+  queryClient.setQueryData(key, (old) => {
+    if (!old) return []
+    return old.filter(e => e.id !== expenseId)
+  })
+}
+
+export function optimisticallyInsertSplitExpense(groupId, expense) {
+  if (!groupId || !expense) return
+  const key = splitExpensesKey(groupId)
+  queryClient.setQueryData(key, (old) => {
+    if (!old) return [expense]
+    if (old.some(e => e.id === expense.id)) {
+      return old.map(e => e.id === expense.id ? expense : e)
+    }
+    return [expense, ...old]
+  })
+}
+
 export function useSplitwise({ groupId, enabled = true } = {}) {
   const userId = useActiveWallet()
 
@@ -664,6 +685,19 @@ export async function deleteSplitExpenseMutation(expenseId) {
   // previous two-step client delete could leave an orphan transaction if
   // the second statement failed — split_expenses.linked_transaction_id
   // has ON DELETE SET NULL, which is the WRONG direction for clean-up.
+
+  // NOTE: We don't have groupId in scope to call optimisticallyDeleteSplitExpense 
+  // directly without fetching it from cache or passing it in.
+  // We'll let the user pass it in as a second argument, or we can look it up.
+  // Wait! If we look it up in cache:
+  const queries = queryClient.getQueriesData({ queryKey: ['splitwise', 'expenses'] })
+  for (const [key, expenses] of queries) {
+    if (Array.isArray(expenses) && expenses.some(e => e.id === expenseId)) {
+      const gid = key[2]
+      optimisticallyDeleteSplitExpense(gid, expenseId)
+    }
+  }
+
   const { data, error } = await supabase.rpc('delete_split_expense_atomic', { p_id: expenseId })
   if (error) throw error
 
