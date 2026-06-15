@@ -1223,7 +1223,7 @@ textarea:focus-visible,
     max-width: var(--app-shell-max);
     margin-left: auto;
     margin-right: auto;
-    padding-top: var(--header-total-offset);
+    padding-top: max(env(safe-area-inset-top, 0px), 0px);
     padding-bottom: calc(var(--nav-height) + 1rem);
     animation: skeleton-shell-fade 0.28s cubic-bezier(0.05, 0.7, 0.1, 1) both;
   }
