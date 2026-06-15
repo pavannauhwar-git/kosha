@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CaretDown, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { MONTH_SHORT } from '../../lib/constants'
 import BottomSheet from '../ui/BottomSheet'
 import Button from '../ui/Button'

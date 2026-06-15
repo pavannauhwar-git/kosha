@@ -10,7 +10,7 @@ import '@material/web/progress/circular-progress.js'
  */
 const Button = forwardRef(function Button(
   {
-    as, // preserved for API compatibility
+    _as, // preserved for API compatibility
     variant = 'primary',
     size = 'md',
     disabled,
@@ -20,7 +20,7 @@ const Button = forwardRef(function Button(
     fullWidth,
     className = '',
     style = {},
-    sx, // MUI-specific styling, mapped if needed
+    _sx, // MUI-specific styling, mapped if needed
     children,
     onClick,
     href,

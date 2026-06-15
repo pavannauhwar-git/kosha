@@ -642,7 +642,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   const {
     type, amount, desc, category, vehicle, mode, date,
-    isRecurring, recurrence, notes, showNotes, isSplitwise, splitGroupId, linkedSplitExpenseId, isSplitwiseLinked, linked_bill_id, isSaving, error,
+    isRecurring, recurrence, notes, showNotes, isSplitwise, splitGroupId, linkedSplitExpenseId, linked_bill_id, isSaving, error,
   } = state
 
   const isLinkedToSplitwise = !!linkedSplitExpenseId || !!editTxn?.linked_split_expense_id
@@ -762,8 +762,6 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   async function handleDeleteCustomCategory(customCategory) {
     const dbId = customCategory?.dbId
     if (!dbId) return
-
-    const label = customCategory?.label || 'this category'
 
     try {
       await archiveUserCategory(dbId)

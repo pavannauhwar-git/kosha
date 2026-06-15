@@ -52,7 +52,7 @@ export function useReconciliationReviews(options = {}) {
     },
   })
 
-  const rows = data?.rows || []
+  const rows = useMemo(() => data?.rows || [], [data?.rows])
   const unavailable = !!data?.unavailable
 
   const { reviewedIdSet, linkedIdSet } = useMemo(() => {

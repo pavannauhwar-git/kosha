@@ -2,7 +2,6 @@
 // Lit checks globalThis.litIssuedWarnings before printing; adding 'dev-mode' here
 // (before any Lit module is imported) tells it the warning was already shown.
 // https://lit.dev/msg/dev-mode
-// eslint-disable-next-line no-undef
 if (import.meta.env.DEV) {
   ;(globalThis.litIssuedWarnings ??= new Set()).add('dev-mode')
 }

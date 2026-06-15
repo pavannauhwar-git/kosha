@@ -12,7 +12,6 @@ export default function BottomSheet({
   open,
   onClose,
   title,
-  description = 'Dialog content.',
   children,
   className = '',
 }) {

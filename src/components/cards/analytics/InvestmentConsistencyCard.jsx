@@ -131,6 +131,7 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
       </div>
 
       {/* Monthly adherence strip */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- onMouseLeave is a hover event, not a user interaction */}
       <div className="rounded-card bg-kosha-surface-2 p-2.5" onMouseLeave={() => setHoveredMonth(null)}>
         <div className="h-4 mb-1">
           {hoveredBar ? (
@@ -145,6 +146,7 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
 
         <div className="flex items-end gap-1 h-16">
           {analysis.bars.map((bar, index) => (
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- onMouseEnter is a hover event, not a user interaction
             <div
               key={bar.label}
               className="flex-1 h-full flex flex-col items-center justify-end gap-0.5 cursor-pointer"

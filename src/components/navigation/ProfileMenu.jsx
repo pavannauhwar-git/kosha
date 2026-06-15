@@ -11,7 +11,7 @@ import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import Divider from '@mui/material/Divider'
 import MuiButton from '@mui/material/Button'
-import { SignOut, Bug, Info, BookOpen, LinkSimple, LinkBreak } from '@phosphor-icons/react'
+import { SignOut, Bug, Info, BookOpen, LinkSimple } from '@phosphor-icons/react'
 import { useAuth } from '../../context/AuthContext'
 import { useActiveWallet, setActiveWalletUserId } from '../../lib/walletStore'
 import { unlinkPartner } from '../../lib/walletSync'
@@ -33,7 +33,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [anchorPosition, setAnchorPosition] = useState(null)
-  const [unlinkingId, setUnlinkingId] = useState('')
+  const [, setUnlinkingId] = useState('')
   const closeRafRef = useRef(null)
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()

@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { C } from '../lib/colors'
 import { saveTransactionMutation } from '../hooks/useTransactions'
-import { supabase } from '../lib/supabase'
-import { consumeInviteToken, getInviteToken } from '../lib/invites'
 import { EXPENSE_CATEGORIES } from '../lib/categories'
 import CategoryIcon from '../components/categories/CategoryIcon'
 import KoshaLogo from '../components/brand/KoshaLogo'
@@ -354,8 +352,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
 // ── Main Onboarding page ──────────────────────────────────────────────────
 export default function Onboarding() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const { user, profile, updateProfile } = useAuth()
+  const { profile, updateProfile } = useAuth()
 
   const [step,   setStep]   = useState(0)
   const [name,   setName]   = useState('')
@@ -405,7 +402,7 @@ export default function Onboarding() {
         if (cached) {
           queryClient.setQueryData(cacheKey, { ...cached, onboarded: true })
         }
-      } catch (_) {
+      } catch {
         // authStore not ready — non-fatal, the DB call below still runs
       }
 

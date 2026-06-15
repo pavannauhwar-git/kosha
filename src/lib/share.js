@@ -4,7 +4,7 @@ export async function copyToClipboard(text) {
     try {
       await navigator.clipboard.writeText(text)
       return { success: true, method: 'clipboard' }
-    } catch (err) {
+    } catch {
       // Fall through to legacy
     }
   }
@@ -27,7 +27,7 @@ export async function copyToClipboard(text) {
     if (successful) {
       return { success: true, method: 'legacy' }
     }
-  } catch (err) {
+  } catch {
     // Both methods failed
   }
 

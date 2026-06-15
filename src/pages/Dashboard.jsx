@@ -104,13 +104,10 @@ export default function Dashboard() {
     }
   }, [])
 
-  const { profile, linkedProfiles } = useAuth()
+  const { profile } = useAuth()
   const activeWalletUserId = useActiveWallet()
   const walletReady = !!activeWalletUserId
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
-  const activePartnerProfile = isViewingPartner
-    ? (linkedProfiles || []).find(p => p.id === activeWalletUserId)
-    : null
 
   const [showAdd, setShowAdd] = useState(false)
   const [editTxn, setEditTxn] = useState(null)
@@ -624,7 +621,7 @@ export default function Dashboard() {
     setDuplicateTxn(null)
     setAddType(t.type)
     setShowAdd(true)
-  }, [navigate, repaymentLoanRoute, isViewingPartner])
+  }, [navigate, repaymentLoanRoute, isViewingPartner, setSafeTimeout])
 
   const handleDuplicate = useCallback((txn) => {
     setEditTxn(null)

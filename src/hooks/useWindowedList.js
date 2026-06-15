@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-function sumRange(getSize, start, endExclusive) {
-  let total = 0
-  for (let i = start; i < endExclusive; i += 1) {
-    total += getSize(i)
-  }
-  return total
-}
-
 export default function useWindowedList({
   count,
   estimateSize = 120,
@@ -34,7 +26,7 @@ export default function useWindowedList({
 
   const offsets = useMemo(() => {
     const list = new Array(count + 1)
-    list[0] = 0
+    list[0] = revision ? 0 : 0
     for (let i = 0; i < count; i++) {
       list[i + 1] = list[i] + getSize(i)
     }

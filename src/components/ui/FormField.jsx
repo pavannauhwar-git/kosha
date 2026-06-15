@@ -1,4 +1,3 @@
-import React from 'react'
 
 /**
  * FormField — Wraps AmountInput / Input and surfaces inline error text.

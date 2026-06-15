@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef, startTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MagnifyingGlass, X, Faders, Plus, DownloadSimple, BookOpen, ArrowRight, CheckCircle, CircleNotch, Eye } from '@phosphor-icons/react'
+import { MagnifyingGlass, X, Faders, Plus, DownloadSimple, BookOpen, ArrowRight, CircleNotch } from '@phosphor-icons/react'
 import {
   useTransactions,
   useTransactionSignalAggregates,
@@ -12,7 +12,6 @@ import {
 } from '../hooks/useTransactions'
 import TransactionItem from '../components/transactions/TransactionItem'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
-import CreateCategorySheet from '../components/categories/CreateCategorySheet'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
@@ -32,7 +31,7 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import Button from '../components/ui/Button'
 import useWindowedList from '../hooks/useWindowedList'
-import { useAuth } from '../context/AuthContext'
+
 import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
 import useToast from '../hooks/useToast'
 
@@ -154,14 +153,10 @@ export default function Transactions() {
   const [showGuideHint, setShowGuideHint] = useState(true)
   const [showSwipeHint, setShowSwipeHint] = useState(false)
   const [triggerSwipeNudge, setTriggerSwipeNudge] = useState(false)
-  const [showCreateCategory, setShowCreateCategory] = useState(false)
+  const [, setShowCreateCategory] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
-  const { linkedProfiles } = useAuth()
   const activeWalletUserId = useActiveWallet()
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
-  const activePartnerProfile = isViewingPartner
-    ? (linkedProfiles || []).find(p => p.id === activeWalletUserId)
-    : null
   const categoryPanelRef = useRef(null)
   const paymentPanelRef = useRef(null)
   const categoryTriggerRef = useRef(null)
@@ -272,10 +267,10 @@ export default function Transactions() {
   const startDate = forcedDateRange?.startDate || presetDateRange.startDate
   const endDate = forcedDateRange?.endDate || presetDateRange.endDate
   const { customCategories } = useUserCategories()
-  const filterCategories = useMemo(
-    () => getCategoriesForType(typeFilter === 'all' ? undefined : typeFilter),
-    [typeFilter, customCategories]
-  )
+  const filterCategories = useMemo(() => {
+    void customCategories
+    return getCategoriesForType(typeFilter === 'all' ? undefined : typeFilter)
+  }, [typeFilter, customCategories])
   const getCategoryLabel = useCallback((categoryId) => {
     if (!categoryId) return 'All categories'
 
@@ -667,7 +662,7 @@ export default function Transactions() {
     }
 
     setDisplayCount(50)
-  }, [searchParams])
+  }, [searchParams, datePreset, forcedDateRange, linkedBillFilter, linkedLoanFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter])
 
   useEffect(() => {
     const currentSearchParams = searchParamsRef.current
@@ -717,6 +712,10 @@ export default function Transactions() {
     forcedDateRange,
     debouncedSearch,
     setSearchParams,
+    linkedBillFilter,
+    linkedLoanFilter,
+    linkedSplitExpenseFilter,
+    linkedSplitSettlementFilter,
   ])
 
   useEffect(() => {
@@ -827,7 +826,7 @@ export default function Transactions() {
     loanFilterRangeSetRef.current = activeLinkedFilter
     setForcedDateRange({ startDate, endDate })
     setDatePreset('all')
-  }, [linkedLoanFilter, linkedBillFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter, data])
+  }, [linkedLoanFilter, linkedBillFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter, data, txnLoading])
 
   const commitPendingDelete = useCallback(async (pendingDelete) => {
     if (!pendingDelete?.id) return
@@ -974,7 +973,7 @@ export default function Transactions() {
     setDuplicateTxn(null)
     setAddType(t.type)
     setShowAdd(true)
-  }, [navigate, pushToast, repaymentLoanRoute])
+  }, [navigate, pushToast, repaymentLoanRoute, isViewingPartner])
 
   const handleDuplicate = useCallback((txn) => {
     setEditTxn(null)
@@ -1056,7 +1055,7 @@ export default function Transactions() {
     } catch (e) {
       pushToast(e.message || 'Could not export transactions.', { duration: 4000 })
     }
-  }, [typeFilter, catFilter, paymentModeFilter, debouncedSearch, startDate, endDate, pushToast])
+  }, [typeFilter, catFilter, paymentModeFilter, debouncedSearch, startDate, endDate, pushToast, activeWalletUserId])
 
   const dismissGuideHint = useCallback(() => {
     setShowGuideHint(false)

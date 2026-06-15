@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react'
+import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient.js'

@@ -18,11 +18,10 @@ export function useSafeTimeout() {
   }, [])
 
   useEffect(() => {
+    const refs = timeoutRefs.current
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      timeoutRefs.current.forEach(clearTimeout)
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      timeoutRefs.current.clear()
+      refs.forEach(clearTimeout)
+      refs.clear()
     }
   }, [])
 

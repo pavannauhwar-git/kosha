@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
@@ -51,18 +51,18 @@ export default function Login() {
 
   const from = location.state?.from || '/'
 
-  function resolvePostAuthPath() {
+  const resolvePostAuthPath = useCallback(() => {
     try {
       if (sessionStorage.getItem('pendingSplitGroupInviteToken')) return '/splitwise'
     } catch {
       // no-op
     }
     return from
-  }
+  }, [from])
 
   useEffect(() => {
     if (user && !isRecoveryFlow) navigate(resolvePostAuthPath(), { replace: true })
-  }, [user, from, navigate, isRecoveryFlow])
+  }, [user, navigate, isRecoveryFlow, resolvePostAuthPath])
 
   useEffect(() => {
     setMode(isRecoveryFlow ? 'reset' : 'signin')

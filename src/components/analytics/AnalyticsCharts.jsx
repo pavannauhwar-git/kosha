@@ -228,7 +228,6 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
 
   const chartH = safeData.length <= 4 ? 190 : 230
   const totalIncomeSafe = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Income), 0)
-  const totalSpent = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Spent), 0)
   const totalInvested = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Invested), 0)
   const totalOutflow = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Outflow), 0)
   const totalNet = safeData.reduce((sum, point) => sum + toFiniteNumber(point.Pulse), 0)

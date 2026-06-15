@@ -26,6 +26,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
   const [drafts, setDrafts] = useState({})
 
   const categories = useMemo(() => {
+    void customCategories
     const allExpenses = getCategoriesForType('expense')
     return allExpenses.filter((c) => c.id !== 'other').map((cat) => {
       const existing = budgetMap.get(cat.id)

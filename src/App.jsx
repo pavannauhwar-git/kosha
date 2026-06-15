@@ -104,11 +104,10 @@ const REALTIME_INVALIDATION_POLICIES = [
   { key: 'splitwise', table: 'split_settlements', queryKeys: SPLITWISE_INVALIDATION_KEYS },
 ]
 
-const NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/splitwise/join', '/auth', '/about', '/not-found', '/report-bug', '/settings', '/guide']
 const BOTTOM_NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/splitwise/join', '/auth', '/about', '/report-bug', '/settings', '/guide', '/reconciliation']
 
 function useRouteIntentPrefetch() {
-  const { user } = useAuth()
+  useAuth() // subscribed so re-render triggers on session change
   const chunkPrefetched = useRef(new Set())
   const dataPrefetched = useRef(new Set())
   const activeUserId = getActiveWalletUserId()
@@ -596,22 +595,6 @@ function AuthCallback() {
   if (!user) return <Navigate to="/login" replace />
   if (!profile || !profile.onboarded) return <Navigate to="/onboarding" replace />
   return <Navigate to="/" replace />
-}
-
-function LegacyObligationRedirect({ tab }) {
-  const location = useLocation()
-  const next = new URLSearchParams(location.search || '')
-
-  if (tab === 'bills') {
-    const listTab = String(next.get('tab') || '').toLowerCase()
-    if (listTab === 'pending' || listTab === 'paid') {
-      next.set('billsTab', listTab)
-    }
-  }
-
-  next.set('tab', tab)
-  const query = next.toString()
-  return <Navigate to={query ? `/obligations?${query}` : '/obligations'} replace />
 }
 
 const REALTIME_CONNECT_TIMEOUT_MS = 8000
@@ -1331,7 +1314,6 @@ function QueryErrorRecovery() {
   )
 }
 
-let _unused_swFlag = null // removed — flag moved to useRef inside ShellStatusBanners
 
 function ShellStatusBanners() {
   const location = useLocation()
@@ -1339,7 +1321,7 @@ function ShellStatusBanners() {
     if (typeof navigator === 'undefined') return false
     return !navigator.onLine
   })
-  const [updateDismissed, setUpdateDismissed] = useState(false)
+  const [, setUpdateDismissed] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [swRegistration, setSwRegistration] = useState(null)
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null)
@@ -1351,7 +1333,7 @@ function ShellStatusBanners() {
   const swListenersAttachedRef = useRef(false)
 
   const {
-    needRefresh: [needRefresh, setNeedRefresh],
+    needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(swUrl, registration) {

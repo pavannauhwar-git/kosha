@@ -336,13 +336,6 @@ export function optimisticallyDeleteLiabilityFromCache(id, targetUserId) {
   }
 }
 
-function refreshLiabilityCachesInBackground(invalidateLiabilityFn, scope) {
-  runInBackground(
-    invalidateLiabilityFn(),
-    scope
-  )
-}
-
 function refreshLiabilityAndTransactionCachesInBackground({ invalidateLiabilityFn, invalidateTransactionFn, scope }) {
   runInBackground(
     Promise.all([

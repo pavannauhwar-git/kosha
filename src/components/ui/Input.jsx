@@ -19,7 +19,7 @@ const Input = forwardRef(function Input(
     autoFocus,
     className = '',
     style = {},
-    sx, // MUI-specific styling, mapped if needed
+    _sx, // MUI-specific styling, mapped if needed
     ...rest
   },
   ref
@@ -54,6 +54,7 @@ const Input = forwardRef(function Input(
       value={value ?? ''}
       type={type}
       disabled={disabled ? '' : undefined}
+      autofocus={autoFocus ? '' : undefined}
       error={hasError ? '' : undefined}
       error-text={hasError ? resolvedHelperText : undefined}
       supporting-text={!hasError ? resolvedHelperText : undefined}

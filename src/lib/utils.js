@@ -56,10 +56,6 @@ export function splitFmtAmount(n) {
   return { main, decimal, totalLength: (main + decimal).length }
 }
 
-function fmtFull(n) {
-  const safe = Number.isFinite(n) ? n : 0
-  return _currencyFmt.format(safe)
-}
 
 function safeParseDate(dateStr) {
   if (!dateStr) return null
@@ -75,16 +71,6 @@ export function fmtDate(dateStr) {
   return _dateFmt.format(d)
 }
 
-function fmtFrequency(freq) {
-  if (!freq) return ''
-  const f = String(freq).toLowerCase()
-  if (f === 'monthly') return 'Monthly'
-  if (f === 'quarterly') return 'Quarterly'
-  if (f === 'yearly') return 'Yearly'
-  if (f === 'weekly') return 'Weekly'
-  if (f === 'daily') return 'Daily'
-  return `Every ${freq}`
-}
 
 export function todayStr() {
   const d = new Date()
@@ -94,11 +80,6 @@ export function todayStr() {
   return `${year}-${month}-${day}`
 }
 
-const _monthYearFmt = new Intl.DateTimeFormat(_locale, { month: 'long', year: 'numeric' })
-
-function monthStr(date = new Date()) {
-  return _monthYearFmt.format(date)
-}
 
 export function dateLabel(dateStr) {
   const d = safeParseDate(dateStr)
@@ -127,20 +108,6 @@ export function amountClass(type, isRepayment = false) {
   if (type === 'investment') return 'amt-invest'
   if (isRepayment)           return 'amt-repay'
   return 'amt-income'
-}
-
-function stripClass(type, isRepayment = false) {
-  if (type === 'expense')    return 'strip-expense'
-  if (type === 'investment') return 'strip-invest'
-  if (isRepayment)           return 'strip-repay'
-  return 'strip-income'
-}
-
-function chipClass(type, isRepayment = false) {
-  if (type === 'expense')    return 'chip-expense'
-  if (type === 'investment') return 'chip-invest'
-  if (isRepayment)           return 'chip-repay'
-  return 'chip-income'
 }
 
 // ── Savings rate ──────────────────────────────────────────────────────────

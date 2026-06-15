@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback } from 'react'
-import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, useMonthExpenseDailyTotals } from '../hooks/useTransactions'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'

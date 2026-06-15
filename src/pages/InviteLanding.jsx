@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { UsersThree, Handshake, ArrowRight, CheckCircle, XCircle } from '@phosphor-icons/react'
@@ -68,12 +68,7 @@ export default function InviteLanding() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    if (authLoading) return
-    void fetchPreview()
-  }, [activeToken, authLoading])
-
-  async function fetchPreview() {
+  const fetchPreview = useCallback(async () => {
     if (!activeToken) {
       setStatus('error')
       setError('No invite token found.')
@@ -114,7 +109,12 @@ export default function InviteLanding() {
         setError(msg || 'This invite link is invalid or has expired.')
       }
     }
-  }
+  }, [activeToken, isSplitwise])
+
+  useEffect(() => {
+    if (authLoading) return
+    void fetchPreview()
+  }, [authLoading, fetchPreview])
 
   async function handleAccept() {
     if (!user) {
@@ -128,7 +128,7 @@ export default function InviteLanding() {
     setBusy(true)
     try {
       if (isSplitwise) {
-        const joined = await consumeSplitGroupInviteMutation(activeToken)
+        await consumeSplitGroupInviteMutation(activeToken)
         setStatus('success')
         navTimerRef.current = setTimeout(() => { navigate('/splitwise', { replace: true }) }, 1500)
       } else {

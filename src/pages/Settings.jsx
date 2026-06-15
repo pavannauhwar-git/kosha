@@ -25,7 +25,6 @@ import { unlinkPartner } from '../lib/walletSync'
 import { getActiveWalletUserId, setActiveWalletUserId } from '../lib/walletStore'
 import { fmtDate } from '../lib/utils'
 import { shareLink } from '../lib/share'
-import { queryClient } from '../lib/queryClient'
 import { CHANGELOG } from '../lib/changelog'
 import { writeLocalStorage } from '../lib/safeStorage'
 import { isValidImageMagicBytes } from '../lib/bugReportUtils'
@@ -373,8 +372,10 @@ export default function Settings() {
 
             <div className="flex items-center gap-5 sm:gap-7 relative z-10">
               <div className="relative shrink-0">
-                <div
+                <button
+                  type="button"
                   onClick={() => setShowViewPhoto(true)}
+                  aria-label="View profile photo"
                   className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-kosha-surface 
                              flex items-center justify-center overflow-hidden 
                              border-2 border-kosha-border shadow-xl cursor-pointer 
@@ -392,7 +393,7 @@ export default function Settings() {
                   ) : (
                     <span className="text-[28px] sm:text-[32px] font-bold text-ink">{initial}</span>
                   )}
-                </div>
+                </button>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}

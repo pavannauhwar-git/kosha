@@ -78,7 +78,6 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
   }, [txn, navigate, onClose, isSplitwise, isBill, isLoan])
 
   const isLoanRepayment = isLoan && txn.is_repayment
-  const isLoanDisbursement = isLoan && !txn.is_repayment
 
   const title = isSplitwise
     ? 'Splitwise Transaction'

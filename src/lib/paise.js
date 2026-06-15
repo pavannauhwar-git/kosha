@@ -18,19 +18,6 @@ export function toRupees(p) {
   return Number(p) / 100;
 }
 
-function add(a, b) {
-  return BigInt(a || 0n) + BigInt(b || 0n);
-}
-
-function sub(a, b) {
-  return BigInt(a || 0n) - BigInt(b || 0n);
-}
-
-function mul(p, factor) {
-  if (p === null || p === undefined || !Number.isFinite(Number(factor))) return 0n;
-  const result = Number(p) * Number(factor);
-  return BigInt(Math.round(result));
-}
 
 export function divEvenly(total, n) {
   const totalBig = BigInt(total || 0n);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Bug, Check, Copy, House, SignIn } from '@phosphor-icons/react'
+import { Check, Copy, House, SignIn } from '@phosphor-icons/react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'

@@ -98,7 +98,7 @@ export default function Bills({
 
   const [editBill, setEditBill] = useState(null)
   const [payingId, setPayingId] = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
+  const [deletingId] = useState(null)
   const [highlightedBillId, setHighlightedBillId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
   const actionGuard = useRef(false)
@@ -142,7 +142,7 @@ export default function Bills({
       }
       pushToast(e.message || 'Could not delete bill.', { duration: 4200 })
     }
-  }, [pushToast])
+  }, [pushToast, activeWalletUserId])
 
   async function handleDelete(id) {
     if (!id || payingId) return false
@@ -204,7 +204,7 @@ export default function Bills({
     setEditBill(null)
     setFormErr('')
     setForm(createInitialBillForm())
-  }, [])
+  }, [setShowAdd])
 
   const dismissAddBillSheet = useCallback(() => {
     if (addSaving) return

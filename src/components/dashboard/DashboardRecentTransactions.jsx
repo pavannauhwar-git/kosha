@@ -1,10 +1,9 @@
 import { memo, useMemo, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, CheckCircle, X } from '@phosphor-icons/react'
+import { ArrowRight, X } from '@phosphor-icons/react'
 import TransactionItem from '../transactions/TransactionItem'
 import { fmt } from '../../lib/utils'
 import { CATEGORIES, INVESTMENT_VEHICLES } from '../../lib/categories'
-import Button from '../ui/Button'
 import EmptyState from '../common/EmptyState'
 import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
 
@@ -118,7 +117,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
       largestLabel,
       largestAmount: Number(largestTxn?.amount || 0),
     }
-  }, [visibleRecent, categoryLabelById])
+  }, [visibleRecent, categoryLabelById, investmentLabelById])
   const lastIndex = visibleRecent.length - 1
 
   if (visibleRecent.length === 0) {

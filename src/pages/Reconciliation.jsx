@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo, useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Warning, ArrowRight, CheckCircle, ClockCounterClockwise, House, LinkSimple, ArrowCounterClockwise, ShieldCheck } from '@phosphor-icons/react'
+import { Warning, ArrowRight, ClockCounterClockwise, House, LinkSimple, ArrowCounterClockwise } from '@phosphor-icons/react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useActiveWallet } from '../lib/walletStore'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
@@ -453,7 +453,7 @@ export default function Reconciliation() {
       setToast(error?.message || 'Could not save reviewed state.')
       setSafeTimeout(() => setToast(null), 3200)
     }
-  }, [persistReview])
+  }, [persistReview, setSafeTimeout])
 
   const markLinked = useCallback(async (id, statementLine) => {
     try {
@@ -464,7 +464,7 @@ export default function Reconciliation() {
       setToast(error?.message || 'Could not save linked state.')
       setSafeTimeout(() => setToast(null), 3200)
     }
-  }, [persistReview])
+  }, [persistReview, setSafeTimeout])
 
   const reportFalsePositive = useCallback(async (id, statementLine) => {
     try {
@@ -479,7 +479,7 @@ export default function Reconciliation() {
       setToast(error?.message || 'Could not report mismatch.')
       setSafeTimeout(() => setToast(null), 3200)
     }
-  }, [refetchReviews])
+  }, [refetchReviews, setSafeTimeout])
 
   const setCategory = useCallback(async (id, category) => {
     if (!id || !category || savingId || reviewsLoading) return
@@ -495,7 +495,7 @@ export default function Reconciliation() {
     } finally {
       setSavingId(null)
     }
-  }, [savingId, reviewsLoading, persistReview])
+  }, [savingId, reviewsLoading, persistReview, setSafeTimeout])
 
   const resetLearnedAliases = useCallback(async () => {
     if (resettingAliases || reviewTableUnavailable) return
@@ -511,7 +511,7 @@ export default function Reconciliation() {
     } finally {
       setResettingAliases(false)
     }
-  }, [resettingAliases, reviewTableUnavailable, refetchReviews])
+  }, [resettingAliases, reviewTableUnavailable, refetchReviews, setSafeTimeout])
 
   const TABS = [
     { id: 'queue', label: 'Queue', count: reviewProgress.queue },

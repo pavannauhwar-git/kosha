@@ -15,11 +15,13 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
   budgetMap,
   onManageBudgets,
 }) {
-  const safeEntries = Array.isArray(entries)
-    ? entries
-      .filter(([, value]) => Number(value || 0) > 0)
-      .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
-    : []
+  const safeEntries = useMemo(() => {
+    return Array.isArray(entries)
+      ? entries
+        .filter(([, value]) => Number(value || 0) > 0)
+        .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
+      : []
+  }, [entries])
 
   const safeTotal = total > 0
     ? total

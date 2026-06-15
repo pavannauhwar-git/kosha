@@ -40,7 +40,7 @@ export function writeLocalStorage(key, value) {
   }
 }
 
-function removeLocalStorage(key) {
+export function removeLocalStorage(key) {
   const storage = getLocalStorage()
   if (!storage) return false
   try {

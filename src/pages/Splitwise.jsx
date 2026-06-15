@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Users, ArrowsLeftRight, Receipt, X, LinkSimple, Trash, CaretLeft, SlidersHorizontal, Archive, ArrowUUpLeft } from '@phosphor-icons/react'
+import { Plus, ArrowsLeftRight, Receipt, X, LinkSimple, Trash, CaretLeft, SlidersHorizontal, Archive, ArrowUUpLeft } from '@phosphor-icons/react'
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Button from '../components/ui/Button'
@@ -528,7 +528,7 @@ export default function Splitwise() {
   const isViewOnly = isViewingPartner || (!!activeGroup && !canManageGroup)
   const inviteTokenFromQuery = String(searchParams.get('splitInvite') || '').trim()
 
-  function clearPendingSplitInviteToken() {
+  const clearPendingSplitInviteToken = useCallback(() => {
     try {
       sessionStorage.removeItem('pendingSplitGroupInviteToken')
     } catch {
@@ -540,7 +540,7 @@ export default function Splitwise() {
       next.delete('splitInvite')
       setSearchParams(next, { replace: true })
     }
-  }
+  }, [inviteTokenFromQuery, searchParams, setSearchParams])
 
   useEffect(() => {
     let inviteToken = inviteTokenFromQuery
@@ -578,7 +578,7 @@ export default function Splitwise() {
     return () => {
       cancelled = true
     }
-  }, [inviteTokenFromQuery, searchParams, setSearchParams, consumingInvite, invitePreview?.token])
+  }, [inviteTokenFromQuery, searchParams, setSearchParams, consumingInvite, invitePreview?.token, clearPendingSplitInviteToken])
 
   function closeSheets() {
     setShowCreateGroup(false)

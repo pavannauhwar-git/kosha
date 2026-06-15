@@ -284,6 +284,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
             </div>
 
             {/* Week columns */}
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- onMouseLeave is a hover event, not a user interaction */}
             <div
               className="flex"
               style={{ gap: CELL_GAP }}

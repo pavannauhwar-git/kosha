@@ -259,7 +259,7 @@ export async function invalidateCache() {
           queryClient.invalidateQueries({ queryKey: ['monthly_net_changes'], refetchType: 'active' }),
         ])
         resolve()
-      } catch (err) {
+      } catch {
         resolve()
       }
     }, 80)

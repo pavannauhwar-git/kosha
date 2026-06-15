@@ -73,7 +73,7 @@ export default function Loans({
 
   const [editLoan, setEditLoan] = useState(null)
   const [payLoan, setPayLoan] = useState(null)      // loan object being paid
-  const [deletingId, setDeletingId] = useState(null)
+  const [deletingId] = useState(null)
   const [errToast, setErrToast] = useState(null)
   const { toast, toastAction, toastActionLabel, pushToast, dismissToast } = useToast()
   const actionGuard = useRef(false)
@@ -106,7 +106,7 @@ export default function Loans({
       optimisticallyInsertLoan(pending.loan, activeWalletUserId)
       pushToast(e.message || 'Could not delete loan.', { duration: 4200 })
     }
-  }, [pushToast])
+  }, [pushToast, activeWalletUserId])
 
   async function handleDelete(id) {
     if (!id) return false
@@ -568,7 +568,7 @@ export default function Loans({
     setShowAdd(false)
     setEditLoan(null)
     resetForm()
-  }, [resetForm])
+  }, [resetForm, setShowAdd])
 
   const dismissAddLoanSheet = useCallback(() => {
     if (addSaving) return

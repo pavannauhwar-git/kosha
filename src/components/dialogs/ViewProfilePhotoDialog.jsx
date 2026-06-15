@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, User } from '@phosphor-icons/react'
+import { X } from '@phosphor-icons/react'
 import SecureAvatar from '../ui/SecureAvatar'
 
 export default function ViewProfilePhotoDialog({ open, onClose, avatarUrl, displayName, initial }) {

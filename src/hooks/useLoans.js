@@ -287,13 +287,6 @@ function getLoanFromCacheById(id, targetUserId) {
   return null
 }
 
-function refreshLoanCachesInBackground(invalidateLoanFn, scope) {
-  runInBackground(
-    invalidateLoanFn(),
-    scope
-  )
-}
-
 function refreshLoanAndTransactionCachesInBackground({ invalidateLoanFn, invalidateTransactionFn, scope }) {
   runInBackground(
     Promise.all([

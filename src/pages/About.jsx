@@ -118,7 +118,7 @@ export default function About() {
       setUpiCopied(true)
       setSafeTimeout(() => setUpiCopied(false), 3000)
     }
-  }, [])
+  }, [setSafeTimeout])
 
   return (
     <PageBackHeaderPage

@@ -1,8 +1,7 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Heart } from '@phosphor-icons/react'
 
 export default function AboutKoshaLink({ className = 'text-center pt-4' }) {
-  const location = useLocation()
   const navigate = useNavigate()
 
   return (

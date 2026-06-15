@@ -97,28 +97,6 @@ export function useAuthState() {
     }
   }, [fetchProfileByUserId, profileQueryKey])
 
-  const invalidateAndRefetchProfile = useCallback(async (userId) => {
-    if (!userId) {
-      setProfile(null)
-      setProfileLoading(false)
-      return null
-    }
-
-    setProfileLoading(true)
-
-    try {
-      const fresh = await queryClient.fetchQuery({
-        queryKey: profileQueryKey(userId),
-        queryFn: () => fetchProfileByUserId(userId),
-        staleTime: 0,
-      })
-
-      setProfile(fresh)
-      return fresh
-    } finally {
-      setProfileLoading(false)
-    }
-  }, [fetchProfileByUserId, profileQueryKey])
 
   // Keep a ref so the auth effect never needs loadProfile in its dep array.
   // This prevents the auth listener from being torn down & re-registered
@@ -260,7 +238,6 @@ export function useAuthState() {
       subscription.unsubscribe()
       clearTimeout(safetyTimer)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])  // Intentionally empty: auth listener must register exactly once
 
   const signInWithGoogle = useCallback(async () => {

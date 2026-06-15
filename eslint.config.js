@@ -51,6 +51,7 @@ export default [
       'no-undef': 'error',
       'react/jsx-uses-react': 'off',
       'react/react-in-jsx-scope': 'off',
+      'react/jsx-uses-vars': 'error', // marks JSX component refs as "used" so imports aren't false-positives
     },
   },
 ]

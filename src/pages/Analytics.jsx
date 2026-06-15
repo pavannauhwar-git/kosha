@@ -1,6 +1,5 @@
 import { CATEGORIES } from '../lib/categories'
 import { lazy, Suspense, useState, useMemo, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { useYearSummary, useYearDailyExpenseTotals } from '../hooks/useTransactions'
 import { fmt } from '../lib/utils'
 import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
@@ -15,8 +14,6 @@ import { useActiveWallet } from '../lib/walletStore'
 import { useSafeTimeout } from '../hooks/useSafeTimeout'
 import CalendarHeatmap from '../components/cards/analytics/CalendarHeatmap'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
-import { getReminderPrefs, maybeNotify } from '../lib/reminders'
-import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
 
 // Lazy-load heavy chart components to defer ~264KB charts vendor bundle
 const YearOverYearCards = lazy(() => import('../components/cards/analytics/YearOverYearCards'))
