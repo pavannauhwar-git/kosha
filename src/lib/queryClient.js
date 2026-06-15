@@ -73,18 +73,15 @@ const CACHE_INVALIDATION_MAP = {
 }
 
 export async function evictSwCacheEntries(pathPrefix) {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
-    return
-  }
-
   const pathsToEvict = CACHE_INVALIDATION_MAP[pathPrefix] || [pathPrefix]
   
   try {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'EVICT_API_CACHE',
-      paths: pathsToEvict
-    })
-  } catch (err) {
-    console.warn('[Kosha] Failed to postMessage to service worker', err)
-  }
+    const cache = await caches.open('supabase-data')
+    const keys = await cache.keys()
+    await Promise.all(
+      keys
+        .filter(req => pathsToEvict.some(p => req.url.includes(p)))
+        .map(req => cache.delete(req))
+    )
+  } catch { /* Cache API unavailable */ }
 }

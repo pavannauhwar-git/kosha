@@ -32,6 +32,8 @@ import {
   recordSplitSettlementMutation,
   round2,
   useSplitwise,
+  optimisticallyInsertSplitGroup,
+  optimisticallyDeleteSplitGroup,
   leaveSplitGroupMutation,
   toggleArchiveSplitGroupMutation,
   updateSplitGroupMutation,
@@ -600,6 +602,7 @@ export default function Splitwise() {
     setSaving('group')
     try {
       const created = await createSplitGroupMutation({ name, selfDisplayName: accountDisplayName })
+      optimisticallyInsertSplitGroup({ ...created, my_role: 'admin' }, activeWalletUserId)
       setActiveGroupId(created.id)
       setGroupForm({ name: '' })
       setShowCreateGroup(false)
@@ -680,6 +683,7 @@ export default function Splitwise() {
 
     setSaving('group-delete')
     try {
+      optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
       await deleteSplitGroupMutation(activeGroupId)
       setToast('Group deleted.')
       setActiveGroupId('')
@@ -731,11 +735,13 @@ export default function Splitwise() {
   async function handleLeaveGroup() {
     if (!activeGroupId || saving) return
 
-    setSaving('leave-group')
+    setSaving('group-leave')
     try {
+      optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
       await leaveSplitGroupMutation(activeGroupId)
-      setToast('You left the group.')
-      setActiveGroupId(null)
+      setToast('Left group.')
+      setActiveGroupId('')
+      closeSheets()
     } catch (err) {
       setToast(err?.message || 'Could not leave group.')
     } finally {

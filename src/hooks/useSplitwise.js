@@ -179,6 +179,25 @@ export async function invalidateSplitwiseCache() {
   }, 300)
 }
 
+export function optimisticallyInsertSplitGroup(group, userId) {
+  if (!userId) return
+  const key = splitGroupsKey(userId)
+  queryClient.setQueryData(key, (old) => {
+    if (!old) return [group]
+    if (old.some(g => g.id === group.id)) return old
+    return [group, ...old]
+  })
+}
+
+export function optimisticallyDeleteSplitGroup(groupId, userId) {
+  if (!userId) return
+  const key = splitGroupsKey(userId)
+  queryClient.setQueryData(key, (old) => {
+    if (!old) return []
+    return old.filter(g => g.id !== groupId)
+  })
+}
+
 export function useSplitwise({ groupId, enabled = true } = {}) {
   const userId = useActiveWallet()
 
