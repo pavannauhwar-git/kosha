@@ -799,25 +799,25 @@ export default function Reconciliation() {
                         <div className="mt-3 pt-3 border-t border-kosha-border">
                           <label className="text-[11px] font-semibold text-ink-3 block mb-1.5">
                             Set category
+                            <select
+                              name="recon-category"
+                              className="input h-9 text-sm w-full md:max-w-[240px] mt-1.5"
+                              defaultValue=""
+                              onChange={(e) => {
+                                const value = e.target.value
+                                if (value) {
+                                  void setCategory(txn.id, value)
+                                  e.target.value = ''
+                                }
+                              }}
+                              disabled={disabled}
+                            >
+                              <option value="">Choose category…</option>
+                              {EXPENSE_CATEGORIES.map((cat) => (
+                                <option key={cat.id} value={cat.id}>{cat.label}</option>
+                              ))}
+                            </select>
                           </label>
-                          <select
-                            name="recon-category"
-                            className="input h-9 text-sm w-full md:max-w-[240px]"
-                            defaultValue=""
-                            onChange={(e) => {
-                              const value = e.target.value
-                              if (value) {
-                                void setCategory(txn.id, value)
-                                e.target.value = ''
-                              }
-                            }}
-                            disabled={disabled}
-                          >
-                            <option value="">Choose category…</option>
-                            {EXPENSE_CATEGORIES.map((cat) => (
-                              <option key={cat.id} value={cat.id}>{cat.label}</option>
-                            ))}
-                          </select>
                         </div>
                       )}
 

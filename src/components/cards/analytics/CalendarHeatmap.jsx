@@ -26,6 +26,7 @@ const HeatmapCell = memo(function HeatmapCell({ day, onHover, onLeave }) {
   return (
     <div
       role="gridcell"
+      tabIndex={0}
       aria-label={`${day.label}: ${fmt(day.value)}`}
       style={{
         width: CELL_SIZE,

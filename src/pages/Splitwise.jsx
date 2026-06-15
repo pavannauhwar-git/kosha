@@ -1263,7 +1263,7 @@ export default function Splitwise() {
                     className="relative w-full h-24 overflow-hidden rounded-card text-left hover:scale-[1.02] transition-transform shadow-sm"
                   >
                     <div className="absolute inset-0 z-0">
-                      <img src={bgBanner.src} className="w-full h-full object-cover" />
+                      <img src={bgBanner.src} alt="" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
                     </div>
                     <div className="relative z-10 px-3.5 py-3 h-full flex flex-col justify-between">
@@ -1687,6 +1687,7 @@ export default function Splitwise() {
                   <div className="h-32 w-full bg-kosha-surface-2">
                     <img
                       src={(BANNERS.find(b => b.id === (readBannerFromStorage(invitePreview.groupId) || 'goa')) || BANNERS[0]).src}
+                      alt=""
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />

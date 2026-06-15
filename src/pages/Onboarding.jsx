@@ -71,6 +71,7 @@ function StepName({ onNext }) {
             placeholder="Your first name"
             value={name}
             onChange={e => setName(e.target.value)}
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- wizard step: user actively navigated here, single-input screen
             autoFocus
             enterKeyHint="next"
             onKeyDown={e => e.key === 'Enter' && name.trim() && onNext(name.trim())}
@@ -138,6 +139,7 @@ function StepIncome({ name, onNext, onBack }) {
               const raw = e.target.value;
               if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) setIncome(raw);
             }}
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- wizard step: user actively navigated here, single-input screen
             autoFocus
             enterKeyHint="next"
           />
@@ -281,6 +283,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
               const raw = e.target.value;
               if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) setAmount(raw);
             }}
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- wizard step: user actively navigated here, single-input screen
             autoFocus
             enterKeyHint="next"
           />
