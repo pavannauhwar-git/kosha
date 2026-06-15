@@ -40,6 +40,7 @@ export default function BottomSheet({
       open={open}
       onClose={onClose}
       onOpen={() => {}}
+      disableScrollLock={true}
       disableBackdropTransition={!ios}
       disableDiscovery={ios}
       transitionDuration={{
