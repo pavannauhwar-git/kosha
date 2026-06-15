@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore';
 import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
-import { snapshotCacheFamilies, suppress } from '../lib/mutationGuard'
+import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { todayStr } from '../lib/utils'
 
