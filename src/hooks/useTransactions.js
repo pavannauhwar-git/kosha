@@ -4,9 +4,11 @@ import { supabase } from '../lib/supabase'
 import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore';
 import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
-import { todayStr } from '../lib/utils'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
+import { todayStr } from '../lib/utils'
+
+export const inFlightDeletedTxnIds = new Set()
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 import { CATEGORIES, getCategoriesForType } from '../lib/categories'
 // ── Query key factories ───────────────────────────────────────────────────
@@ -275,6 +277,62 @@ export function useDebounce(value, ms = 300) {
   return debounced
 }
 
+function findTransactionInCache(id, targetUserId) {
+  for (const family of [['transactions'], ['transactionsRecent']]) {
+    const entries = queryClient.getQueriesData({ queryKey: family })
+    for (const [key, rows] of entries) {
+      if (key?.[2] && key[2] !== targetUserId) continue
+      if (Array.isArray(rows)) {
+        const found = rows.find((r) => r?.id === id)
+        if (found) return found
+      }
+    }
+  }
+  return null
+}
+
+function adjustAggregatesForTransaction(txn, targetUserId, sign) {
+  if (!txn?.date || typeof txn.amount === 'undefined') return
+  const [yStr, mStr] = String(txn.date).split('-')
+  const year = Number(yStr)
+  const month = Number(mStr)
+  if (!year || !month) return
+
+  const amount = Number(txn.amount) || 0
+  const impact = amount * sign // +1 for insert/restore, -1 for delete
+
+  // 1. Month Summary
+  const monthKey = ['month', year, month, targetUserId]
+  const monthData = queryClient.getQueryData(monthKey)
+  if (monthData) {
+    const nextMonth = { ...monthData }
+    if (txn.type === 'expense') {
+      nextMonth.expense = Math.max(0, (nextMonth.expense || 0) + impact)
+    } else if (txn.type === 'income') {
+      if (txn.is_repayment) {
+        nextMonth.repayments = Math.max(0, (nextMonth.repayments || 0) + impact)
+      } else {
+        nextMonth.earned = Math.max(0, (nextMonth.earned || 0) + impact)
+      }
+    } else if (txn.type === 'investment') {
+      nextMonth.investment = Math.max(0, (nextMonth.investment || 0) + impact)
+    }
+    queryClient.setQueryData(monthKey, nextMonth)
+  }
+
+  // 2. Global Running Balance (typically fetched with year=2099, month=12)
+  const balanceKey = ['balance', 2099, 12, targetUserId]
+  const currentBalance = queryClient.getQueryData(balanceKey)
+  if (typeof currentBalance === 'number') {
+    let diff = 0
+    if (txn.type === 'expense' || txn.type === 'investment') diff = -impact
+    if (txn.type === 'income') diff = impact
+    queryClient.setQueryData(balanceKey, currentBalance + diff)
+  }
+}
+
+
+
 // ── Query hooks ───────────────────────────────────────────────────────────
 
 export function useTransactions({ type, category, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, withCount = false, enabled = true, columns } = {}) {
@@ -317,7 +375,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
 
         const { data, error: err } = await q.abortSignal(signal)
         if (err) throw err
-        return data || []
+        return (data || []).filter(r => !inFlightDeletedTxnIds.has(r.id))
       } catch (err) {
         logQueryError('transactions list', err)
         throw err
@@ -444,7 +502,7 @@ export function useRecentTransactions(limit = 5) {
         .limit(safeLimit)
 
       if (qError) throw qError
-      return rows || []
+      return (rows || []).filter(r => !inFlightDeletedTxnIds.has(r.id))
     }),
     gcTime: 5 * 60 * 1000,
     placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
@@ -1057,6 +1115,13 @@ function getTransactionFromCacheById(id) {
 
 export function optimisticallyUpsertTransactionInCache(txn, targetUserId) {
   if (!txn?.id || !targetUserId) return
+  inFlightDeletedTxnIds.delete(txn.id)
+
+  const existingTxn = findTransactionInCache(txn.id, targetUserId)
+  if (existingTxn) {
+    adjustAggregatesForTransaction(existingTxn, targetUserId, -1) // remove old impact
+  }
+  adjustAggregatesForTransaction(txn, targetUserId, 1) // apply new impact
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
 
@@ -1088,6 +1153,12 @@ export function optimisticallyUpsertTransactionInCache(txn, targetUserId) {
 
 export function optimisticallyDeleteTransactionFromCache(id, targetUserId) {
   if (!id || !targetUserId) return
+  inFlightDeletedTxnIds.add(id)
+
+  const txn = findTransactionInCache(id, targetUserId)
+  if (txn) {
+    adjustAggregatesForTransaction(txn, targetUserId, -1)
+  }
 
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
   for (const [key, rows] of listEntries) {
@@ -1111,44 +1182,62 @@ export function optimisticallyDeleteTransactionFromCache(id, targetUserId) {
 export function optimisticallyDeleteTransactionsByLoanId(loanId, targetUserId) {
   if (!loanId || !targetUserId) return
 
-  const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
-  for (const [key, rows] of listEntries) {
-    const queryTargetId = key?.[2]
-    if (queryTargetId && queryTargetId !== targetUserId) continue
-
-    const baseRows = Array.isArray(rows) ? rows : []
-    queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_loan_id !== loanId))
+  const deletedTxnIds = new Set()
+  for (const family of [['transactions'], ['transactionsRecent']]) {
+    const entries = queryClient.getQueriesData({ queryKey: family })
+    for (const [key, rows] of entries) {
+      if (key?.[2] && key[2] !== targetUserId) continue
+      if (Array.isArray(rows)) {
+        const toDelete = rows.filter((row) => row?.linked_loan_id === loanId)
+        for (const txn of toDelete) {
+          if (!deletedTxnIds.has(txn.id)) {
+            deletedTxnIds.add(txn.id)
+            adjustAggregatesForTransaction(txn, targetUserId, -1)
+            inFlightDeletedTxnIds.add(txn.id)
+          }
+        }
+      }
+    }
   }
 
-  const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
-  for (const [key, rows] of recentEntries) {
-    const queryTargetId = key?.[2]
-    if (queryTargetId && queryTargetId !== targetUserId) continue
-
-    const baseRows = Array.isArray(rows) ? rows : []
-    queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_loan_id !== loanId))
+  for (const family of [['transactions'], ['transactionsRecent']]) {
+    const entries = queryClient.getQueriesData({ queryKey: family })
+    for (const [key, rows] of entries) {
+      if (key?.[2] && key[2] !== targetUserId) continue
+      const baseRows = Array.isArray(rows) ? rows : []
+      queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_loan_id !== loanId))
+    }
   }
 }
 
 export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId) {
   if (!billId || !targetUserId) return
 
-  const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
-  for (const [key, rows] of listEntries) {
-    const queryTargetId = key?.[2]
-    if (queryTargetId && queryTargetId !== targetUserId) continue
-
-    const baseRows = Array.isArray(rows) ? rows : []
-    queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_bill_id !== billId))
+  const deletedTxnIds = new Set()
+  for (const family of [['transactions'], ['transactionsRecent']]) {
+    const entries = queryClient.getQueriesData({ queryKey: family })
+    for (const [key, rows] of entries) {
+      if (key?.[2] && key[2] !== targetUserId) continue
+      if (Array.isArray(rows)) {
+        const toDelete = rows.filter((row) => row?.linked_bill_id === billId)
+        for (const txn of toDelete) {
+          if (!deletedTxnIds.has(txn.id)) {
+            deletedTxnIds.add(txn.id)
+            adjustAggregatesForTransaction(txn, targetUserId, -1)
+            inFlightDeletedTxnIds.add(txn.id)
+          }
+        }
+      }
+    }
   }
 
-  const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
-  for (const [key, rows] of recentEntries) {
-    const queryTargetId = key?.[2]
-    if (queryTargetId && queryTargetId !== targetUserId) continue
-
-    const baseRows = Array.isArray(rows) ? rows : []
-    queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_bill_id !== billId))
+  for (const family of [['transactions'], ['transactionsRecent']]) {
+    const entries = queryClient.getQueriesData({ queryKey: family })
+    for (const [key, rows] of entries) {
+      if (key?.[2] && key[2] !== targetUserId) continue
+      const baseRows = Array.isArray(rows) ? rows : []
+      queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_bill_id !== billId))
+    }
   }
 }
 
