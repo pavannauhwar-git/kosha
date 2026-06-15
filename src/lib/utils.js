@@ -24,7 +24,8 @@ export function fmt(n, compact = false) {
     const sign = n < 0 ? '−' : ''
     if (abs >= 1_00_00_000) return `${sign}₹\u202F${(abs / 1_00_00_000).toFixed(2)}Cr`
     if (abs >= 1_00_000) return `${sign}₹\u202F${(abs / 1_00_000).toFixed(2)}L`
-    if (abs >= 1_000) return `${sign}₹\u202F${(abs / 1_000).toFixed(1)}K`
+    // Below 1 lakh: fall through to the standard grouped currency format rather
+    // than the Western "K" suffix, keeping the Indian numbering convention.
   }
   return _currencyFmt.format(n).replace('-', '−').replace('₹', '₹\u202F')
 }
@@ -55,7 +56,7 @@ export function splitFmtAmount(n) {
   return { main, decimal, totalLength: (main + decimal).length }
 }
 
-export function fmtFull(n) {
+function fmtFull(n) {
   const safe = Number.isFinite(n) ? n : 0
   return _currencyFmt.format(safe)
 }
@@ -74,7 +75,7 @@ export function fmtDate(dateStr) {
   return _dateFmt.format(d)
 }
 
-export function fmtFrequency(freq) {
+function fmtFrequency(freq) {
   if (!freq) return ''
   const f = String(freq).toLowerCase()
   if (f === 'monthly') return 'Monthly'
@@ -95,7 +96,7 @@ export function todayStr() {
 
 const _monthYearFmt = new Intl.DateTimeFormat(_locale, { month: 'long', year: 'numeric' })
 
-export function monthStr(date = new Date()) {
+function monthStr(date = new Date()) {
   return _monthYearFmt.format(date)
 }
 
@@ -104,7 +105,7 @@ export function dateLabel(dateStr) {
   if (!d) return ''
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
-  const yest = new Date(today); yest.setDate(today.getDate() - 1)
+  const yest = new Date(today); yest.setDate(today.getDate() - 1); yest.setHours(0, 0, 0, 0)
   const dLocal = new Date(d); dLocal.setHours(0, 0, 0, 0)
 
   if (dLocal.getTime() === today.getTime()) return 'Today'
@@ -128,14 +129,14 @@ export function amountClass(type, isRepayment = false) {
   return 'amt-income'
 }
 
-export function stripClass(type, isRepayment = false) {
+function stripClass(type, isRepayment = false) {
   if (type === 'expense')    return 'strip-expense'
   if (type === 'investment') return 'strip-invest'
   if (isRepayment)           return 'strip-repay'
   return 'strip-income'
 }
 
-export function chipClass(type, isRepayment = false) {
+function chipClass(type, isRepayment = false) {
   if (type === 'expense')    return 'chip-expense'
   if (type === 'investment') return 'chip-invest'
   if (isRepayment)           return 'chip-repay'

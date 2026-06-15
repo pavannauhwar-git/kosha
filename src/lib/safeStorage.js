@@ -1,8 +1,10 @@
+import { captureError } from './errorReporting.js'
+
 // All Kosha-owned device-local storage keys MUST start with this prefix.
 // This lets `purgeUserScopedKeys()` clean up everything we wrote without
 // touching keys owned by Supabase (e.g. `sb-<ref>-auth-token`), other apps,
 // or the PWA service worker.
-export const KOSHA_USER_KEY_PREFIX = 'kosha:'
+const KOSHA_USER_KEY_PREFIX = 'kosha:'
 
 function getLocalStorage() {
   if (typeof window === 'undefined') return null
@@ -30,12 +32,15 @@ export function writeLocalStorage(key, value) {
   try {
     storage.setItem(key, String(value))
     return true
-  } catch {
+  } catch (err) {
+    if (err?.name === 'QuotaExceededError') {
+      try { captureError(err, { context: 'safeStorage.write', tags: { key: String(key).slice(0, 60) } }) } catch { /* never throw from storage */ }
+    }
     return false
   }
 }
 
-export function removeLocalStorage(key) {
+function removeLocalStorage(key) {
   const storage = getLocalStorage()
   if (!storage) return false
   try {

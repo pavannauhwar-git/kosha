@@ -26,10 +26,7 @@ function manualChunks(id) {
   if (id.includes('/node_modules/@tanstack/react-query/')) return 'query-vendor'
   if (id.includes('/node_modules/@supabase/')) return 'supabase-vendor'
 
-  if (
-    id.includes('/node_modules/@phosphor-icons/react/') ||
-    id.includes('/node_modules/lucide-react/')
-  ) {
+  if (id.includes('/node_modules/@phosphor-icons/react/')) {
     return 'icon-vendor'
   }
 
@@ -150,26 +147,6 @@ export default defineConfig(({ mode }) => {
                     cacheKeyWillBeUsed: async ({ request }) => request.url,
                   },
                 ],
-              },
-            },
-            {
-              // Google Fonts CSS — CacheFirst (font manifests rarely change)
-              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-css',
-                expiration: { maxEntries: 5, maxAgeSeconds: 31536000 },
-                cacheableResponse: { statuses: [0, 200] },
-              },
-            },
-            {
-              // Google Fonts files — CacheFirst (font files never change)
-              urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-files',
-                expiration: { maxEntries: 20, maxAgeSeconds: 31536000 },
-                cacheableResponse: { statuses: [0, 200] },
               },
             },
           ],

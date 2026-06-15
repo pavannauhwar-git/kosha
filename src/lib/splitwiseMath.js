@@ -180,6 +180,19 @@ export function buildSimplifiedTransfers(balancesWithMembers) {
   creditors.sort((a, b) => (b.remaining > a.remaining ? 1 : b.remaining < a.remaining ? -1 : 0))
   debtors.sort((a, b) => (b.remaining > a.remaining ? 1 : b.remaining < a.remaining ? -1 : 0))
 
+  // Invariant: creditor and debtor totals must match, else the greedy loop
+  // leaves a residual and the settlement plan won't zero out. Report without
+  // breaking the screen.
+  const credSum = creditors.reduce((acc, c) => acc + c.remaining, 0n)
+  const debtSum = debtors.reduce((acc, d) => acc + d.remaining, 0n)
+  if (credSum !== debtSum) {
+    if (import.meta.env?.DEV) {
+      console.warn('[Kosha] buildSimplifiedTransfers: unbalanced inputs', {
+        credSum: String(credSum), debtSum: String(debtSum),
+      })
+    }
+  }
+
   const transfers = []
   let i = 0
   let j = 0

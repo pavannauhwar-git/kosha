@@ -147,6 +147,24 @@ create trigger trg_maintain_monthly_net_change
 after insert or update or delete on transactions
 for each row execute function maintain_monthly_net_change();
 
+-- One-time backfill: if the cache is empty (fresh install of this trigger on a
+-- DB that already has transactions), populate it from existing rows so the
+-- running balance is correct. Guarded so it never double-counts on re-run.
+do $$
+begin
+  if (select count(*) from public.monthly_net_changes) = 0
+     and exists (select 1 from public.transactions where user_id is not null) then
+    insert into public.monthly_net_changes (user_id, month_start, net_change)
+    select
+      user_id,
+      date_trunc('month', date)::date as month_start,
+      sum(case when type = 'income' then amount else -amount end) as net_change
+    from public.transactions
+    where user_id is not null
+    group by user_id, date_trunc('month', date)::date;
+  end if;
+end $$;
+
 -- Invite links table
 create table if not exists invites (
   id         uuid primary key default gen_random_uuid(),
@@ -563,6 +581,35 @@ for update to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+-- Protect the bug-report webhook idempotency guard from client tampering.
+-- submit_bug_report() is SECURITY INVOKER and bumps occurrence_count /
+-- last_reported_at as the authenticated user, so we must NOT touch those.
+-- We protect ONLY notified_at, which no client/RPC path legitimately writes.
+-- SECURITY INVOKER so current_user reflects the real caller (authenticated /
+-- service_role / postgres), not the function owner.
+create or replace function public.bug_reports_protect_notified_at()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  -- Service tooling may set it: edge function uses the service_role key;
+  -- a DB admin runs as postgres.
+  if current_user in ('service_role', 'postgres') then
+    return new;
+  end if;
+  -- Any other caller (authenticated / anon) cannot change notified_at.
+  new.notified_at := old.notified_at;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_bug_reports_protect on public.bug_reports;
+create trigger trg_bug_reports_protect
+  before update on public.bug_reports
+  for each row execute function public.bug_reports_protect_notified_at();
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Phase 2: Bug reporting triage, screenshots, and duplicate handling
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -913,6 +960,12 @@ begin
   if v_uid <> p_user_id then
     raise exception 'Cannot generate recurring transactions for another user.';
   end if;
+
+  -- Serialize concurrent runs for the same user. Two device wake-ups firing
+  -- this RPC simultaneously would otherwise both read the same next_run_date
+  -- and each materialize the recurring rows, producing duplicates. The
+  -- transaction-scoped advisory lock releases automatically at COMMIT/ROLLBACK.
+  perform pg_advisory_xact_lock(hashtext('kosha:recurring:' || p_user_id::text));
 
   for rec in
     select *

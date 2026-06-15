@@ -113,6 +113,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               src={activePartner.avatar_url}
               alt={activePartner.display_name}
               fallbackInitial={activePartner.display_name?.[0]?.toUpperCase()}
+              version={activePartner.updated_at || activePartner.avatar_url}
               className="w-full h-full object-cover"
             />
           ) : avatarUrl ? (
@@ -120,6 +121,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               src={avatarUrl}
               alt={displayName}
               fallbackInitial={initial}
+              version={profile?.updated_at || avatarUrl}
               className="w-full h-full object-cover"
             />
           ) : isViewingPartner && activePartner?.display_name ? (
@@ -190,6 +192,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                   src={avatarUrl}
                   alt={displayName}
                   fallbackInitial={initial}
+                  version={profile?.updated_at || avatarUrl}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -339,6 +342,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
                           <SecureAvatar
                             src={p.avatar_url}
                             fallbackInitial={p.display_name?.[0]?.toUpperCase()}
+                            version={p.updated_at || p.avatar_url}
                             className="w-full h-full object-cover"
                             alt={p.display_name || ''}
                           />

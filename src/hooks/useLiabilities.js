@@ -215,7 +215,7 @@ export async function updateLiability(id, updates) {
   return data
 }
 
-export async function deleteLiability(id, _cachedBill = null) {
+export async function deleteLiability(id, cachedBill = null) {
   // Migration 004: a single SECURITY DEFINER RPC now does
   //   (a) the owner check,
   //   (b) the liability DELETE (which cascades to its transactions via the
@@ -224,7 +224,10 @@ export async function deleteLiability(id, _cachedBill = null) {
   // The previous two-step client delete could leave the liability behind
   // if the second statement failed after the first succeeded; the RPC
   // either commits both or neither.
-  const { data, error } = await supabase.rpc('delete_liability_with_txns', { p_id: id })
+  const { data, error } = await supabase.rpc('delete_liability_with_txns', { 
+    p_id: id,
+    p_payload: cachedBill 
+  })
   if (error) throw error
   return data === true
 }
@@ -241,10 +244,20 @@ function cloneCacheData(data) {
 }
 
 function snapshotLiabilityCaches(targetUserId) {
-  return [
+  const snap = [
     [LIABILITY_PENDING_QUERY_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(targetUserId)) || [])],
     [LIABILITY_PAID_QUERY_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY(targetUserId)) || [])],
   ]
+  // Bill delete / mark-paid also mutate the linked transaction in the
+  // transaction caches. Snapshot those families so a failed RPC restores them
+  // too instead of leaving the cache in a half-mutated state.
+  for (const family of [['transactions'], ['transactionsRecent']]) {
+    const entries = queryClient.getQueriesData({ queryKey: family })
+    for (const [key, data] of entries) {
+      snap.push([key, cloneCacheData(data ?? null)])
+    }
+  }
+  return snap
 }
 
 function restoreLiabilitySnapshot(snapshot) {
@@ -402,6 +415,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
     }
 
     const snapshot = snapshotLiabilityCaches(targetUserId)
+    let serverCommitted = false
 
     try {
       const markPaidFn = __testOverrides?.markPaid || markPaid
@@ -409,6 +423,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       const invalidateTransactionFn = __testOverrides?.invalidateTransactionCache || invalidateTransactionCache
 
       const result = await markPaidFn(liability)
+      serverCommitted = true
       suppress('liabilities')
       suppress('transactions')
       await queryClient.cancelQueries({ queryKey: ['transactions'] })
@@ -449,8 +464,21 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
 
       return result
     } catch (error) {
-      restoreLiabilitySnapshot(snapshot)
-      throw error
+      // Only roll back the optimistic UI if the SERVER mutation failed. If the
+      // server already committed and a later cache step threw, rolling back
+      // would visually un-pay a bill that is actually paid — reconcile via a
+      // background refetch instead.
+      if (!serverCommitted) {
+        restoreLiabilitySnapshot(snapshot)
+        throw error
+      }
+      console.warn('[Kosha] markLiabilityPaid: post-commit step failed; refetching instead of rolling back', error)
+      refreshLiabilityAndTransactionCachesInBackground({
+        invalidateLiabilityFn: __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache,
+        invalidateTransactionFn: __testOverrides?.invalidateTransactionCache || invalidateTransactionCache,
+        scope: 'liabilities mark-paid post-commit recovery',
+      })
+      return null
     }
   })
 }

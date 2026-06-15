@@ -12,6 +12,7 @@ import {
   Wallet,
   LinkSimple,
   Users,
+  CalendarDots,
   X,
   CheckCircle,
   Warning,
@@ -56,7 +57,7 @@ const FEATURE_CARDS = [
     whenToUse: 'Use this every morning and evening for quick financial orientation.',
     workflow: [
       'Check the hero card for balance direction and savings pace.',
-      'Use quick actions to log income, expense, investment, or bill payment.',
+      'Use quick actions to log income, expense, or transfer.',
       'Open recent transactions only if a number looks off.',
     ],
     doThis: [
@@ -93,6 +94,30 @@ const FEATURE_CARDS = [
     ],
   },
   {
+    id: 'monthly',
+    title: 'Monthly',
+    subtitle: 'Month-over-month snapshots',
+    icon: CalendarDots,
+    route: '/monthly',
+    category: 'monthly',
+    accent: 'bg-income-bg text-income-text',
+    summary: 'View your net change, income vs expenses, and carryover per month.',
+    whenToUse: 'Use this during month-end reviews to gauge your overall savings pace.',
+    workflow: [
+      'Check if the previous month closed green or red.',
+      'Identify months with unusually high expenses.',
+      'Observe the long-term trend of your net carryover.',
+    ],
+    doThis: [
+      'Compare your net change across consecutive months.',
+      'Ensure missing transactions are logged to keep the snapshot accurate.',
+    ],
+    avoidThis: [
+      'Do not rely on this for daily cashflow tracking.',
+      'Avoid obsessing over a single bad month if the long-term trend is positive.',
+    ],
+  },
+  {
     id: 'obligations',
     title: 'Obligations',
     subtitle: 'Never miss due dates & track loans',
@@ -100,7 +125,7 @@ const FEATURE_CARDS = [
     route: '/obligations',
     category: 'weekly',
     accent: 'bg-warning-bg text-warning-text',
-    summary: 'Track upcoming bills, run recurrence, and manage personal loans in one place.',
+    summary: 'Track upcoming bills, run recurrence, and manage personal loans explicitly via the Bills and Loans tabs.',
     whenToUse: 'Use this at least once weekly and before month end to track cashflow.',
     workflow: [
       'Add recurring bills and subscriptions to track due dates.',

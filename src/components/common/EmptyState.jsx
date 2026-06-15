@@ -17,10 +17,11 @@ export default function EmptyState({
     >
       <div className="relative z-10 flex flex-col items-center">
         {imageUrl ? (
-          <div className="mb-4 flex items-center justify-center fade-up fade-up-1">
+          <div className="mb-4 flex min-h-[220px] items-center justify-center fade-up fade-up-1">
             <img
               src={imageUrl}
-              alt="Empty State Illustration"
+              alt=""
+              aria-hidden="true"
               className="max-h-[220px] w-auto object-contain illustration filter drop-shadow-sm"
               loading="lazy"
               decoding="async"

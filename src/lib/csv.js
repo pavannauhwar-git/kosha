@@ -3,7 +3,7 @@ function normalizeCell(value) {
   return String(value)
 }
 
-export function asCsvCell(value) {
+function asCsvCell(value) {
   let text = normalizeCell(value)
   if (/^[=+\-@\t\r]/.test(text)) {
     text = "'" + text
@@ -14,7 +14,8 @@ export function asCsvCell(value) {
 
 export function toCsv(headers, rows) {
   const allRows = [headers, ...rows]
-  return allRows.map((row) => row.map(asCsvCell).join(',')).join('\n')
+  // RFC 4180 §2.1 — rows are CRLF-terminated for maximum spreadsheet compat.
+  return allRows.map((row) => row.map(asCsvCell).join(',')).join('\r\n')
 }
 
 export function downloadCsv(filename, csvContent) {

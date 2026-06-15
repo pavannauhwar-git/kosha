@@ -16,6 +16,11 @@ import { GlobalErrorBoundary } from './components/errors/GlobalErrorBoundary'
 import { startRuntimeMonitor } from './lib/runtimeMonitor'
 import { readLocalStorage } from './lib/safeStorage'
 
+// Defensive: the avatar URL cache is keyed by storage path, not by user. Clear
+// it on every cold start so a previous user's signed URLs can never be read by
+// the next person on a shared device before the auth purge runs.
+try { localStorage.removeItem('kosha:avatar-urls') } catch { /* storage unavailable */ }
+
 startRuntimeMonitor()
 
 // ── Restore dark mode preference & init theme color ──────────────────

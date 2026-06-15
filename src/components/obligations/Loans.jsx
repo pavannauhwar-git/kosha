@@ -32,6 +32,7 @@ import PixelDatePicker from '../ui/PixelDatePicker'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import useWindowedList from '../../hooks/useWindowedList'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import useToast from '../../hooks/useToast'
 
 const LOAN_COLUMNS_EXPORT =
   'id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled'
@@ -74,11 +75,8 @@ export default function Loans({
   const [payLoan, setPayLoan] = useState(null)      // loan object being paid
   const [deletingId, setDeletingId] = useState(null)
   const [errToast, setErrToast] = useState(null)
-  const [toast, setToast] = useState(null)
+  const { toast, toastAction, toastActionLabel, pushToast, dismissToast } = useToast()
   const actionGuard = useRef(false)
-  const [toastAction, setToastAction] = useState(null)
-  const [toastActionLabel, setToastActionLabel] = useState(null)
-  const toastTimeoutRef = useRef(null)
   const pendingDeleteRef = useRef(null)
   const [overflowLoanId, setOverflowLoanId] = useState(null)
   const overflowLoanRef = useRef(null)
@@ -98,32 +96,7 @@ export default function Loans({
     }
   }, [overflowLoanId])
 
-  const dismissToast = useCallback(() => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current)
-      toastTimeoutRef.current = null
-    }
-    setToast(null)
-    setToastAction(null)
-    setToastActionLabel(null)
-  }, [])
 
-  const pushToast = useCallback((message, options = {}) => {
-    const { action = null, actionLabel = 'Undo', duration = 3600 } = options
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current)
-      toastTimeoutRef.current = null
-    }
-    setToast(message)
-    if (typeof action === 'function') {
-      setToastAction(() => action)
-      setToastActionLabel(actionLabel)
-    } else {
-      setToastAction(null)
-      setToastActionLabel(null)
-    }
-    toastTimeoutRef.current = setTimeout(dismissToast, duration)
-  }, [dismissToast])
 
   const commitPendingDelete = useCallback(async (pending) => {
     if (!pending?.id) return
@@ -183,9 +156,6 @@ export default function Loans({
 
   useEffect(() => {
     return () => {
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current)
-      }
       if (pendingDeleteRef.current) {
         const pending = pendingDeleteRef.current
         if (pending.timeoutId) clearTimeout(pending.timeoutId)

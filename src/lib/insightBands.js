@@ -1,4 +1,4 @@
-export const INSIGHT_BANDS = Object.freeze({
+const INSIGHT_BANDS = Object.freeze({
   high: 'high',
   watch: 'watch',
   healthy: 'healthy',

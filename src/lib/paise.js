@@ -1,8 +1,16 @@
+// Round half AWAY from zero so positive and negative amounts of equal
+// magnitude are symmetric (Math.round rounds toward +∞ on .5 ties, which makes
+// e.g. 1.235 and -1.235 fail to cancel). This is the conventional rounding for
+// money handling.
+function roundHalfAwayFromZero(x) {
+  return Math.sign(x) * Math.round(Math.abs(x));
+}
+
 export function fromRupees(n) {
   if (n === null || n === undefined || n === '') return 0n;
   const num = Number(n);
   if (Number.isNaN(num) || !Number.isFinite(num)) return 0n;
-  return BigInt(Math.round(num * 100));
+  return BigInt(roundHalfAwayFromZero(num * 100));
 }
 
 export function toRupees(p) {
@@ -10,15 +18,15 @@ export function toRupees(p) {
   return Number(p) / 100;
 }
 
-export function add(a, b) {
+function add(a, b) {
   return BigInt(a || 0n) + BigInt(b || 0n);
 }
 
-export function sub(a, b) {
+function sub(a, b) {
   return BigInt(a || 0n) - BigInt(b || 0n);
 }
 
-export function mul(p, factor) {
+function mul(p, factor) {
   if (p === null || p === undefined || !Number.isFinite(Number(factor))) return 0n;
   const result = Number(p) * Number(factor);
   return BigInt(Math.round(result));

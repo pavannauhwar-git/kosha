@@ -64,14 +64,27 @@ export function invalidateQueryFamilies(queryKeys) {
   )
 }
 
-export async function evictSwCacheEntries(urlSubstring) {
+// Map API routes to query prefixes for targeted Service Worker cache invalidation
+const CACHE_INVALIDATION_MAP = {
+  '/transactions': ['/transactions'],
+  '/liabilities': ['/liabilities', '/transactions'], // Bills touch transactions
+  '/loans': ['/loans', '/transactions'],             // Loans touch transactions
+  '/splitwise': ['/splitwise'],
+}
+
+export async function evictSwCacheEntries(pathPrefix) {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+    return
+  }
+
+  const pathsToEvict = CACHE_INVALIDATION_MAP[pathPrefix] || [pathPrefix]
+  
   try {
-    const cache = await caches.open('supabase-data')
-    const keys = await cache.keys()
-    await Promise.all(
-      keys
-        .filter(req => req.url.includes(urlSubstring))
-        .map(req => cache.delete(req))
-    )
-  } catch { /* Cache API unavailable */ }
+    navigator.serviceWorker.controller.postMessage({
+      type: 'EVICT_API_CACHE',
+      paths: pathsToEvict
+    })
+  } catch (err) {
+    console.warn('[Kosha] Failed to postMessage to service worker', err)
+  }
 }

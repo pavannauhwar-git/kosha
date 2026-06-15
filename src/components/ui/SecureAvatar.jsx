@@ -63,10 +63,14 @@ function deleteCachedAvatarUrl(src) {
   }
 }
 
-export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
+export default function SecureAvatar({ src, alt, className, fallbackInitial, version }) {
   const [url, setUrl] = useState(null);
   const [retryNonce, setRetryNonce] = useState(0);
   const retryCountRef = useRef(0);
+  // Cache key includes an optional version (e.g. profile.avatar_url or an
+  // updated_at timestamp) so a re-upload to the same storage path busts the
+  // cached signed URL instead of showing the stale image for up to 6 days.
+  const cacheSrc = version ? `${src}::${version}` : src;
 
   useEffect(() => {
     retryCountRef.current = 0;
@@ -84,8 +88,8 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
       return;
     }
 
-    // Check cache
-    const cachedUrl = getCachedAvatarUrl(src);
+    // Check cache (keyed by cacheSrc so a version change busts it)
+    const cachedUrl = getCachedAvatarUrl(cacheSrc);
     if (cachedUrl) {
       setUrl(cachedUrl);
       return;
@@ -104,7 +108,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
         }
 
         if (isMounted && data?.signedUrl) {
-          setCachedAvatarUrl(src, data.signedUrl);
+          setCachedAvatarUrl(cacheSrc, data.signedUrl);
           setUrl(data.signedUrl);
         }
       } catch (err) {
@@ -114,7 +118,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial }) {
 
     fetchSignedUrl();
     return () => { isMounted = false; };
-  }, [src, retryNonce]);
+  }, [src, cacheSrc, retryNonce]);
 
   const derivedInitial = (fallbackInitial || (alt && String(alt).trim()[0]) || '').toUpperCase();
 
