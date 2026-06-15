@@ -34,6 +34,13 @@ if (!url || !key) {
 // made then will fail at the server with 401 anyway, so the `anon`
 // namespace never contains useful user data.
 function withUserHash(input) {
+  // Auth endpoints are NetworkOnly (see vite.config.js) — they are never
+  // cached, so the per-user cache-key fragment has no benefit there. Skip them.
+  const urlStr = typeof input === 'string'
+    ? input
+    : (input instanceof URL ? input.toString() : (input && typeof input.url === 'string' ? input.url : ''))
+  if (/\.supabase\.co\/auth\//.test(urlStr)) return input
+
   let uid
   try {
     uid = getActiveWalletUserId() || 'anon'

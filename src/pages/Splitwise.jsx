@@ -321,7 +321,8 @@ export default function Splitwise() {
         members.find(m => m.id === e.payee_member_id)?.display_name || 'Unknown'
       ])
     })
-    downloadCsv(`kosha-trip-${activeGroup?.name || 'ledger'}.csv`, toCsv(headers, rows))
+    const safeName = String(activeGroup?.name || 'ledger').replace(/[^a-z0-9-_]+/gi, '_').slice(0, 60)
+    downloadCsv(`kosha-trip-${safeName}.csv`, toCsv(headers, rows))
   }
   useEffect(() => {
     if (!members.length) {

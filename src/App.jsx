@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate, useNavigationType } from 'react-router-dom'
 import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { motion, MotionConfig } from 'framer-motion'
 import { ThemeProvider, CssBaseline } from '@mui/material'
@@ -66,7 +66,7 @@ const ROUTE_PRELOADERS = {
 function PageFallback({ pathname }) {
   return (
     <div className="min-h-dvh bg-kosha-bg">
-      <div className="route-skeleton-shell">
+      <div className="route-skeleton-shell fade-in">
         <RouteSkeleton pathname={pathname || '/'} />
       </div>
     </div>
@@ -961,6 +961,35 @@ function GlobalRealtimeSync() {
   return null
 }
 
+// Per-history-entry scroll memory. React Router v6 (non-data router) does not
+// restore scroll, so we do it manually: forward navigations start at the top,
+// back/forward (POP) restores the offset captured for that history entry.
+const _scrollPositions = new Map()
+
+function ScrollManager() {
+  const location = useLocation()
+  const navType = useNavigationType()
+
+  useEffect(() => {
+    const key = location.key || 'default'
+
+    if (navType === 'POP') {
+      const y = _scrollPositions.get(key) ?? 0
+      // Double rAF so the route content (and windowed-list padding) has laid
+      // out before we restore, otherwise the scroll clamps to a short page.
+      requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y)))
+    } else {
+      window.scrollTo(0, 0)
+    }
+
+    const onScroll = () => { _scrollPositions.set(key, window.scrollY) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [location.key, navType])
+
+  return null
+}
+
 function RuntimeRouteTracker() {
   const location = useLocation()
 
@@ -1001,14 +1030,32 @@ function VersionHeartbeat() {
 
   useEffect(() => {
     const HEARTBEAT_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
-    const interval = setInterval(() => {
-      // Skip reload if a mutation is in-flight (e.g. user is mid-form / saving).
+
+    async function hasWaitingServiceWorker() {
+      try {
+        if (!('serviceWorker' in navigator)) return false
+        const reg = await navigator.serviceWorker.getRegistration()
+        // A waiting worker means new code is ready; only then is a reload useful.
+        return !!(reg && reg.waiting)
+      } catch {
+        return false
+      }
+    }
+
+    const interval = setInterval(async () => {
+      // Skip reload if a mutation is in-flight (user mid-save), text is being
+      // edited, or a dialog/sheet is open.
       if (
-        document.visibilityState === 'visible' &&
-        qc.isMutating() === 0 &&
-        !hasActiveTextEditing() &&
-        !hasOpenDialogSurface()
+        document.visibilityState !== 'visible' ||
+        qc.isMutating() !== 0 ||
+        hasActiveTextEditing() ||
+        hasOpenDialogSurface()
       ) {
+        return
+      }
+      // Only reload when there is actually a new SW waiting — avoids pointless
+      // 24h reloads when the app is already on the latest version.
+      if (await hasWaitingServiceWorker()) {
         window.location.reload()
       }
     }, HEARTBEAT_INTERVAL)
@@ -1119,7 +1166,7 @@ function DashboardWarmPrefetch() {
 function SafeRoute({ pathname, guard, children }) {
   const content = guard ? <AuthGuard>{children}</AuthGuard> : children
   return (
-    <RouteErrorBoundary pathname={pathname}>
+    <RouteErrorBoundary key={pathname} pathname={pathname}>
       <SuspenseSkeleton pathname={pathname}>
         {content}
       </SuspenseSkeleton>
@@ -1131,12 +1178,18 @@ function AnimatedRoutes() {
   const location = useLocation()
 
   useEffect(() => {
-    // Reset focus on page navigation: if active element is a bottom nav item, blur it
-    // so it doesn't cause aria-hidden sibling focus blocks on the new page.
-    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
-      if (document.activeElement.classList.contains('nav-float-item')) {
-        document.activeElement.blur()
-      }
+    if (typeof document === 'undefined') return
+    // Blur a focused bottom-nav item so it doesn't trap focus on the new page.
+    if (document.activeElement instanceof HTMLElement &&
+        document.activeElement.classList.contains('nav-float-item')) {
+      document.activeElement.blur()
+    }
+    // Move focus to the main landmark so keyboard/screen-reader users land on
+    // the new page content. preventScroll keeps it from fighting scroll
+    // restoration (FIX 6.1).
+    const main = document.getElementById('main-content')
+    if (main) {
+      requestAnimationFrame(() => main.focus({ preventScroll: true }))
     }
   }, [location.pathname])
 
@@ -1576,12 +1629,19 @@ function AppShell() {
 
   return (
     <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:rounded-pill focus:bg-ink focus:px-4 focus:py-2 focus:text-white focus:shadow-card"
+      >
+        Skip to content
+      </a>
+      <ScrollManager />
       <WalletSwitchGuard />
       <RuntimeRouteTracker />
       <CustomCategoryLoader />
       <EagerChunkPreloader />
       <WalletPrefetcher />
-      <main id="main-content" role="main" className="flex-1">
+      <main id="main-content" role="main" tabIndex={-1} className="flex-1 outline-none">
         <AnimatedRoutes />
       </main>
       <BottomNav />

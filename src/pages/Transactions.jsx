@@ -34,6 +34,7 @@ import Button from '../components/ui/Button'
 import useWindowedList from '../hooks/useWindowedList'
 import { useAuth } from '../context/AuthContext'
 import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
+import useToast from '../hooks/useToast'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
@@ -147,9 +148,7 @@ export default function Transactions() {
   const [selectedMonth, setSelectedMonth] = useState(() => monthInputFromDate())
   const [forcedDateRange, setForcedDateRange] = useState(null)
   const [displayCount, setDisplayCount] = useState(50)
-  const [toast, setToast] = useState(null)
-  const [toastAction, setToastAction] = useState(null)
-  const [toastActionLabel, setToastActionLabel] = useState(null)
+  const { toast, toastAction, toastActionLabel, pushToast, dismissToast } = useToast()
   const [duplicateTxn, setDuplicateTxn] = useState(null)
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
@@ -167,7 +166,6 @@ export default function Transactions() {
   const paymentPanelRef = useRef(null)
   const categoryTriggerRef = useRef(null)
   const paymentTriggerRef = useRef(null)
-  const toastTimeoutRef = useRef(null)
   const pendingDeleteRef = useRef(null)
   const internalUrlUpdateRef = useRef(false)
   const searchParamsRef = useRef(searchParams)
@@ -180,54 +178,9 @@ export default function Transactions() {
   const linkedSplitExpenseFilter = searchParams.get('linked_split_expense') || null
   const linkedSplitSettlementFilter = searchParams.get('linked_split_settlement') || null
 
-  const dismissToast = useCallback(() => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current)
-      toastTimeoutRef.current = null
-    }
-    setToast(null)
-    setToastAction(null)
-    setToastActionLabel(null)
-  }, [])
 
-  const pushToast = useCallback((message, options = {}) => {
-    const {
-      action = null,
-      actionLabel = 'Undo',
-      duration = 3600,
-    } = options
 
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current)
-      toastTimeoutRef.current = null
-    }
 
-    setToast(message)
-    if (typeof action === 'function') {
-      setToastAction(() => action)
-      setToastActionLabel(actionLabel)
-    } else {
-      setToastAction(null)
-      setToastActionLabel(null)
-    }
-
-    if (duration > 0) {
-      toastTimeoutRef.current = setTimeout(() => {
-        setToast(null)
-        setToastAction(null)
-        setToastActionLabel(null)
-        toastTimeoutRef.current = null
-      }, duration)
-    }
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current)
-      }
-    }
-  }, [])
 
   function clearLinkedFilters() {
     if (!linkedLoanFilter && !linkedBillFilter && !linkedSplitExpenseFilter && !linkedSplitSettlementFilter) return

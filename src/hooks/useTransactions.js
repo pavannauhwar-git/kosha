@@ -81,6 +81,14 @@ const RECURRING_SYNC_WAIT_MS = 220
 let lastRecurringSyncAt = 0
 let recurringSyncPromise = null
 
+// Reset the in-memory recurring-sync cooldown. Called on sign-out so the next
+// user to sign in on the same device is not skipped by the previous user's
+// cooldown window.
+export function _resetRecurringSyncState() {
+  lastRecurringSyncAt = 0
+  recurringSyncPromise = null
+}
+
 function runInBackground(promise, scope) {
   void promise.catch((error) => {
     console.warn(`[Kosha] ${scope} background refresh failed`, error)

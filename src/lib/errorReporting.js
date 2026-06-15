@@ -35,10 +35,13 @@ function isSensitiveKey(key) {
 
 function scrubUrl(rawUrl) {
   if (typeof rawUrl !== 'string') return rawUrl
+  const isRelative = !/^https?:\/\//i.test(rawUrl)
   try {
-    const url = new URL(rawUrl)
-    // Strip query params we know carry secrets, keep the rest so we can still
-    // see which page errored.
+    // Relative URLs (react-router breadcrumbs like `/auth/callback#token=…`)
+    // throw in `new URL()` without a base. Parse against a placeholder origin
+    // so query/hash scrubbing always runs, then strip the placeholder back off.
+    const base = 'http://kosha.local/'
+    const url = new URL(rawUrl, base)
     const params = url.searchParams
     for (const key of Array.from(params.keys())) {
       if (SENSITIVE_URL_PARAMS.has(key.toLowerCase())) {
@@ -48,9 +51,11 @@ function scrubUrl(rawUrl) {
     // The hash can carry tokens too (OAuth implicit flow, our own
     // `#kosha-uid=...` per-user cache key, etc). Drop it wholesale.
     if (url.hash) url.hash = ''
-    return url.toString()
+    const out = url.toString()
+    return isRelative ? out.slice(base.length - 1) : out
   } catch {
-    return rawUrl
+    // Last-ditch: guarantee the hash never escapes even if parsing fails.
+    return String(rawUrl).split('#')[0]
   }
 }
 

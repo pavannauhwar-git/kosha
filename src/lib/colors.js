@@ -74,7 +74,4 @@ export const C = {
     '#64748B',
   ],
 
-  // ── Logo SVG ──────────────────────────────────────────────────────
-  logoBg:        '#007FFF',
-  logoHighlight: '#FFFF99',
 }

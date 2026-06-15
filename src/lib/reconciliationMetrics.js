@@ -50,7 +50,7 @@ export function detectConfidenceDrift(rows) {
   return { drifting, recent, baseline, drift }
 }
 
-export function isRejected(row) {
+function isRejected(row) {
   return String(row?.statement_line || '').startsWith('REJECTED:')
 }
 

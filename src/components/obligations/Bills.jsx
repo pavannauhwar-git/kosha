@@ -25,6 +25,7 @@ import PixelDatePicker from '../ui/PixelDatePicker'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import useWindowedList from '../../hooks/useWindowedList'
 import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
+import useToast from '../../hooks/useToast'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const PAYMENT_MODES = [
@@ -105,10 +106,7 @@ export default function Bills({
   const [form, setForm] = useState(() => createInitialBillForm())
   const [formErr, setFormErr] = useState('')
   const [errToast, setErrToast] = useState(null)
-  const [toast, setToast] = useState(null)
-  const [toastAction, setToastAction] = useState(null)
-  const [toastActionLabel, setToastActionLabel] = useState(null)
-  const toastTimeoutRef = useRef(null)
+  const { toast, toastAction, toastActionLabel, pushToast, dismissToast } = useToast()
   const pendingDeleteRef = useRef(null)
   const [overflowBillId, setOverflowBillId] = useState(null)
   const overflowBillRef = useRef(null)
@@ -128,32 +126,7 @@ export default function Bills({
     }
   }, [overflowBillId])
 
-  const dismissToast = useCallback(() => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current)
-      toastTimeoutRef.current = null
-    }
-    setToast(null)
-    setToastAction(null)
-    setToastActionLabel(null)
-  }, [])
 
-  const pushToast = useCallback((message, options = {}) => {
-    const { action = null, actionLabel = 'Undo', duration = 3600 } = options
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current)
-      toastTimeoutRef.current = null
-    }
-    setToast(message)
-    if (typeof action === 'function') {
-      setToastAction(() => action)
-      setToastActionLabel(actionLabel)
-    } else {
-      setToastAction(null)
-      setToastActionLabel(null)
-    }
-    toastTimeoutRef.current = setTimeout(dismissToast, duration)
-  }, [dismissToast])
 
   const commitPendingDelete = useCallback(async (pending) => {
     if (!pending?.id) return
@@ -432,9 +405,6 @@ export default function Bills({
 
   useEffect(() => {
     return () => {
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current)
-      }
       // Commit any pending delete if the component unmounts
       if (pendingDeleteRef.current) {
         const pending = pendingDeleteRef.current

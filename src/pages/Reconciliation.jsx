@@ -68,7 +68,14 @@ export default function Reconciliation() {
   const [resettingAliases, setResettingAliases] = useState(false)
   const [toast, setToast] = useState(null)
   const [statementInput, setStatementInput] = useState('')
+  const [debouncedStatementInput, setDebouncedStatementInput] = useState('')
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
+
+  // Debounce heavy parse+match work so a large paste doesn't block typing.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedStatementInput(statementInput), 250)
+    return () => clearTimeout(t)
+  }, [statementInput])
 
   const { data, loading } = useTransactions({
     limit: 250,
@@ -103,8 +110,8 @@ export default function Reconciliation() {
   const needsOverviewInsights = tab === 'overview'
 
   const statementEntries = useMemo(
-    () => (needsMatchingInsights ? parseStatementLines(statementInput) : []),
-    [statementInput, needsMatchingInsights]
+    () => (needsMatchingInsights ? parseStatementLines(debouncedStatementInput) : []),
+    [debouncedStatementInput, needsMatchingInsights]
   )
 
   const demotedMerchants = useMemo(

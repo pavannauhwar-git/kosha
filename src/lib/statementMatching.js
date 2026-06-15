@@ -26,17 +26,21 @@ function tokenize(value) {
     .filter((token) => token.length >= 3 && !NOISE_TOKENS.has(token))
 }
 
+// Returns { amount, signedHint } where amount is always positive and
+// signedHint is 'debit' | 'credit' | 'unknown' derived from bracket/DR/CR
+// notation. Callers decide how to use the hint.
 function parseAmount(text) {
   if (!text) return null
   const cleaned = String(text).replace(/,/g, '').replace(/₹/g, '').replace(/\u2212/g, '-')
   const hasBrackets = /^\s*\(.+\)\s*$/.test(cleaned)
   const match = cleaned.match(/[-+]?\d+(?:\.\d{1,2})?/)
   if (!match) return null
-  let amount = Number(match[0])
-  if (hasBrackets) amount = -Math.abs(amount)
-  if (/\bdr\b/i.test(cleaned)) amount = -Math.abs(amount)
-  if (/\bcr\b/i.test(cleaned)) amount = Math.abs(amount)
-  return Number.isFinite(amount) ? Math.abs(amount) : null
+  const amount = Number(match[0])
+  if (!Number.isFinite(amount)) return null
+  let signedHint = 'unknown'
+  if (hasBrackets || /\bdr\b/i.test(cleaned) || amount < 0) signedHint = 'debit'
+  else if (/\bcr\b/i.test(cleaned)) signedHint = 'credit'
+  return { amount: Math.abs(amount), signedHint }
 }
 
 function inferDirection(text) {
@@ -50,7 +54,7 @@ function parseDate(text) {
   if (!text) return null
   const value = String(text).trim()
 
-  const iso = value.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
+  const iso = value.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
   if (iso) {
     const year = Number(iso[1])
     const month = Number(iso[2])
@@ -60,7 +64,7 @@ function parseDate(text) {
     }
   }
 
-  const dmy = value.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/)
+  const dmy = value.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/)
   if (dmy) {
     const day = Number(dmy[1])
     const month = Number(dmy[2])
@@ -102,9 +106,19 @@ function parseCsvLine(line) {
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
+    if (inQuotes) {
+      if (char === '"' && line[i + 1] === '"') {
+        // RFC 4180: a doubled quote inside a quoted field is a literal quote.
+        current += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        current += char;
+      }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === ',') {
       parts.push(current.trim());
       current = '';
     } else {
@@ -127,19 +141,26 @@ export function parseStatementLines(rawText) {
   return lines.map((line, idx) => {
     const parts = parseCsvLine(line)
     const date = parseDate(parts[0] || line)
-    const amount = parseAmount(parts[parts.length - 1] || line)
+    const parsedAmount = parseAmount(parts[parts.length - 1] || line)
+    const amount = parsedAmount?.amount ?? null
 
     let description = ''
     if (parts.length >= 3) description = parts.slice(1, -1).join(' ')
     else if (parts.length === 2) description = parts[1]
     else description = line
 
+    // Prefer the signed hint from the amount notation (brackets / DR / CR);
+    // fall back to keyword inference from the whole line.
+    const direction = parsedAmount && parsedAmount.signedHint !== 'unknown'
+      ? parsedAmount.signedHint
+      : inferDirection(line)
+
     return {
       id: `stmt-${idx + 1}`,
       line,
       date,
       amount,
-      direction: inferDirection(line),
+      direction,
       description: description.trim(),
       tokens: new Set(tokenize(description)),
       isValid: !!date && Number.isFinite(amount),

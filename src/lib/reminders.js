@@ -1,4 +1,5 @@
 import { readLocalJson, readLocalStorage, writeLocalJson, writeLocalStorage } from './safeStorage.js'
+import { getActiveWalletUserId } from './walletStore.js'
 
 const REMINDER_PREFS_KEY = 'kosha:reminder-prefs-v1'
 const REMINDER_SENT_PREFIX = 'kosha:reminder-sent:'
@@ -22,7 +23,7 @@ export function setReminderPrefs(nextPrefs) {
   }
 }
 
-export function canUseNotifications() {
+function canUseNotifications() {
   return typeof window !== 'undefined' && 'Notification' in window
 }
 
@@ -42,7 +43,9 @@ export async function requestNotificationPermission() {
 }
 
 function reminderStorageKey(id) {
-  return `${REMINDER_SENT_PREFIX}${id}`
+  let uid = 'anon'
+  try { uid = getActiveWalletUserId() || 'anon' } catch { uid = 'anon' }
+  return `${REMINDER_SENT_PREFIX}${uid}:${id}`
 }
 
 function wasSentWithin(id, cooldownMs) {

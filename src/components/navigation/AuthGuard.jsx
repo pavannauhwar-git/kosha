@@ -266,7 +266,10 @@ export default function AuthGuard({ children }) {
 
     if (!user) {
       navigate('/login', { replace: true, state: { from: location.pathname } })
-    } else if ((!profile || !profile.onboarded) && location.pathname !== '/onboarding') {
+    } else if (profile && !profile.onboarded && location.pathname !== '/onboarding') {
+      // Only redirect to onboarding when we KNOW the profile is not onboarded.
+      // A null profile here means the fetch failed transiently — do not bounce
+      // an established user through onboarding; the profile query will retry.
       navigate('/onboarding', { replace: true })
     } else if (profile?.onboarded && location.pathname === '/onboarding') {
       // Already onboarded — send to dashboard instead of re-showing onboarding
@@ -281,8 +284,17 @@ export default function AuthGuard({ children }) {
     </div>
   )
 
-  // Awaiting redirect — show skeleton instead of null flash
-  if (!user || ((!profile || !profile.onboarded) && location.pathname !== '/onboarding')) {
+  // Awaiting redirect — show skeleton instead of null flash.
+  // A null profile (transient load failure) shows the skeleton and waits for
+  // the refetch rather than forcing onboarding.
+  if (!user || (profile && !profile.onboarded && location.pathname !== '/onboarding')) {
+    return (
+      <div className="route-skeleton-shell">
+        <RouteSkeleton pathname={location.pathname} />
+      </div>
+    )
+  }
+  if (user && !profile && location.pathname !== '/onboarding') {
     return (
       <div className="route-skeleton-shell">
         <RouteSkeleton pathname={location.pathname} />

@@ -53,7 +53,7 @@ export const EXPENSE_CATEGORIES = [
   OTHER_CATEGORY,
 ]
 
-export const INCOME_CATEGORIES = [
+const INCOME_CATEGORIES = [
   { id:'salary',          label:'Salary',           icon:'MoneyWavy',      color:'#10B981', bg:'#ECFDF5' },
   { id:'rent_income',     label:'Rent',             icon:'Globe',          color:'#92400E', bg:'#FEF3C7' },
   { id:'dividend',        label:'Dividend',         icon:'HandCoins',      color:'#0EA5E9', bg:'#E0F2FE' },
@@ -74,16 +74,18 @@ export const CATEGORIES = [
   REPAYMENT_CATEGORY,
 ]
 
-export const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]))
+const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]))
 
 const EXPENSE_CATEGORY_IDS = new Set(EXPENSE_CATEGORIES.map(c => c.id))
 const INCOME_CATEGORY_IDS = new Set(INCOME_CATEGORIES.map(c => c.id))
 
 // ── Custom category registry (populated by useUserCategories hook) ────────
 let _customCategories = []
+let _customCategoriesLoaded = false
 
 export function registerCustomCategories(cats) {
   _customCategories = cats
+  _customCategoriesLoaded = true
 }
 
 export function getCategoriesForType(type) {
@@ -104,7 +106,7 @@ export function getCategoriesForType(type) {
   return [...CATEGORIES, ...customs]
 }
 
-export function isCategoryAllowedForType(type, categoryId) {
+function isCategoryAllowedForType(type, categoryId) {
   if (!categoryId) return false
   if (type === 'income') return INCOME_CATEGORY_IDS.has(categoryId) || _customCategories.some(c => c.id === categoryId && c.type === 'income')
   if (type === 'expense') return EXPENSE_CATEGORY_IDS.has(categoryId) || _customCategories.some(c => c.id === categoryId && c.type === 'expense')
@@ -114,6 +116,9 @@ export function isCategoryAllowedForType(type, categoryId) {
 
 export function normalizeCategoryForType(type, categoryId) {
   if (!categoryId) return 'other'
+  // Before the custom-category registry has loaded, a custom id would fail the
+  // allow-list and be wrongly downgraded to 'other'. Defer until loaded.
+  if (!_customCategoriesLoaded && String(categoryId).startsWith('custom_')) return categoryId
   return isCategoryAllowedForType(type, categoryId) ? categoryId : 'other'
 }
 

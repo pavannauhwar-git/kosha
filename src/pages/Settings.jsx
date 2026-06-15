@@ -386,6 +386,7 @@ export default function Settings() {
                       src={avatarUrl}
                       alt={displayName}
                       fallbackInitial={(displayName || 'K')[0].toUpperCase()}
+                      version={profile?.updated_at || avatarUrl}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -651,6 +652,7 @@ export default function Settings() {
                             src={lp.avatar_url}
                             alt=""
                             fallbackInitial={lp.display_name?.[0]?.toUpperCase()}
+                            version={lp.updated_at || lp.avatar_url}
                             className="w-full h-full object-cover"
                           />
                         ) : (

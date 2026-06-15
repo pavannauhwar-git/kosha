@@ -58,8 +58,9 @@ Deno.serve(async (req: Request) => {
     return json(req, { ok: false, error: 'method_not_allowed' }, 405)
   }
 
-  // Body-size guard. We do this BEFORE reading the body so a malicious
-  // caller can't stream gigabytes at us.
+  // Body-size guard. Content-Length is advisory (absent on HTTP/1.1 chunked
+  // and HTTP/2 streamed bodies), so we ALSO cap the bytes we actually read by
+  // streaming the body and aborting once the running total exceeds the limit.
   const contentLength = Number(req.headers.get('content-length') || 0)
   if (contentLength > MAX_BODY_BYTES) {
     return json(req, { ok: false, error: 'payload_too_large' }, 413)
@@ -68,7 +69,32 @@ Deno.serve(async (req: Request) => {
   try {
     let parsedBody: any
     try {
-      parsedBody = await req.json()
+      const reader = req.body?.getReader()
+      if (!reader) {
+        return json(req, { ok: false, error: 'invalid_json' }, 400)
+      }
+      const chunks: Uint8Array[] = []
+      let received = 0
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        if (value) {
+          received += value.byteLength
+          if (received > MAX_BODY_BYTES) {
+            await reader.cancel().catch(() => {})
+            return json(req, { ok: false, error: 'payload_too_large' }, 413)
+          }
+          chunks.push(value)
+        }
+      }
+      const merged = new Uint8Array(received)
+      let offset = 0
+      for (const chunk of chunks) {
+        merged.set(chunk, offset)
+        offset += chunk.byteLength
+      }
+      const bodyText = new TextDecoder().decode(merged)
+      parsedBody = JSON.parse(bodyText)
     } catch {
       return json(req, { ok: false, error: 'invalid_json' }, 400)
     }

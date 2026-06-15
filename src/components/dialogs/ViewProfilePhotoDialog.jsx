@@ -34,6 +34,7 @@ export default function ViewProfilePhotoDialog({ open, onClose, avatarUrl, displ
                   src={avatarUrl}
                   alt={displayName}
                   fallbackInitial={initial}
+                  version={avatarUrl}
                   className="w-full h-full object-cover"
                 />
               ) : (

@@ -7,15 +7,20 @@ export function validateAmount(input, options = {}) {
     return { ok: false, error: 'Amount is required' };
   }
 
-  const str = String(input).trim();
-  
-  if (str === '') {
+  const rawStr = String(input).trim();
+
+  if (rawStr === '') {
     return { ok: false, error: 'Amount is required' };
   }
 
-  if (str.toLowerCase().includes('e') || str.startsWith('+')) {
+  if (rawStr.toLowerCase().includes('e') || rawStr.startsWith('+')) {
     return { ok: false, error: 'Invalid amount format' };
   }
+
+  // Accept grouped numbers (Western "1,234.56" and Indian "1,23,456.78") by
+  // stripping grouping commas before parsing. Only commas that sit between
+  // digits are removed, so stray commas still fail the Number() check below.
+  const str = rawStr.replace(/(?<=\d),(?=\d)/g, '');
 
   const parts = str.split('.');
   if (parts.length > 2) {

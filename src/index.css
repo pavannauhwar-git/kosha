@@ -49,8 +49,8 @@
   /* ── Text / Ink ─────────────────────── */
   --ds-text: #1F1F1F;
   --ds-text-secondary: #444746;
-  --ds-text-tertiary: #747775;
-  --ds-text-disabled: #C4C7C5;
+  --ds-text-tertiary: #5F6368;
+  --ds-text-disabled: #8E918F;
   --ds-text-rgb: 31, 31, 31;
   
   /* Legacy text aliases used by charts */
@@ -126,6 +126,13 @@
   
   --md-sys-motion-duration-long1: 450ms;
   --md-sys-motion-duration-long2: 500ms;
+
+  /* ── DS motion aliases (referenced across components/keyframes) ── */
+  --ds-ease-standard: cubic-bezier(0.2, 0.0, 0, 1.0);
+  --ds-ease-emphasized: cubic-bezier(0.2, 0.0, 0, 1.0);
+  --ds-motion-fast: 150ms;
+  --ds-motion-base: 200ms;
+  --ds-motion-slow: 300ms;
 
   /* ── M3 Playful Spring Motion Tokens ── */
   --ds-spring-fast: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -215,8 +222,8 @@
 
   --ds-text: #E3E3E3;
   --ds-text-secondary: #C4C7C5;
-  --ds-text-tertiary: #8E918F;
-  --ds-text-disabled: #444746;
+  --ds-text-tertiary: #A1A3A1;
+  --ds-text-disabled: #747775;
   --ds-text-rgb: 227, 227, 227;
 
   --ds-border: rgba(255, 255, 255, 0.08);

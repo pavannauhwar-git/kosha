@@ -34,7 +34,16 @@ export function getActiveWalletUserId() {
 export function useActiveWallet() {
   const { data } = useQuery({
     queryKey: ACTIVE_WALLET_KEY,
-    queryFn: () => isAuthReady() ? getAuthUserId() : null,
+    queryFn: () => {
+      if (!isAuthReady()) return null
+      try {
+        return getAuthUserId()
+      } catch {
+        // Transient sign-out window: auth ready but no user id yet. Return null
+        // rather than throwing, which would spam Sentry via queryCache.onError.
+        return null
+      }
+    },
     initialData: () => getActiveWalletUserId(),
     staleTime: Infinity,
     gcTime: Infinity,
@@ -53,7 +62,7 @@ export function initActiveWallet(userId) {
   }
 }
 
-export const WALLET_INVALIDATION_LIST = [
+const WALLET_INVALIDATION_LIST = [
   'transactions',
   'transactionsRecent',
   'transactionsDigest',
@@ -82,6 +91,8 @@ export const WALLET_INVALIDATION_LIST = [
   'splitwise',
 ]
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export function setActiveWalletUserId(userId) {
   const authUserId = getAuthUserId()
   if (userId === authUserId) {
@@ -90,8 +101,19 @@ export function setActiveWalletUserId(userId) {
     hapticWarning()
   }
   queryClient.setQueryData(ACTIVE_WALLET_KEY, userId)
-  // Remove instead of reset to instantly eliminate "Ghost Flashes" of old data
+  // Remove instead of reset to instantly eliminate "Ghost Flashes" of old data.
+  // Two-layer rule:
+  //   1. The explicit family allow-list (fast, documents intent).
+  //   2. A defensive predicate: evict any query whose LAST key segment is a
+  //      UUID that is not the wallet we are switching to. This catches new
+  //      user-scoped query families that were never added to the list.
   queryClient.removeQueries({
-    predicate: (query) => WALLET_INVALIDATION_LIST.includes(query.queryKey[0])
+    predicate: (query) => {
+      const key = query.queryKey
+      if (Array.isArray(key) && WALLET_INVALIDATION_LIST.includes(key[0])) return true
+      const last = Array.isArray(key) ? key[key.length - 1] : null
+      if (typeof last === 'string' && UUID_RE.test(last) && last !== userId) return true
+      return false
+    },
   })
 }

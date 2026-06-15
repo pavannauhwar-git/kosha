@@ -28,7 +28,7 @@ function runInBackground(promise, scope) {
   })
 }
 
-export async function invalidateLoanCache() {
+async function invalidateLoanCache() {
   suppress('loans')
   await evictSwCacheEntries('/loans')
   await queryClient.invalidateQueries({ queryKey: ['loans'], refetchType: 'active' })
@@ -207,14 +207,17 @@ async function updateLoan(id, updates) {
   return data
 }
 
-async function deleteLoan(id, _cachedLoan = null) {
+async function deleteLoan(id, cachedLoan = null) {
   // Migration 004: single SECURITY DEFINER RPC handles
   //   (a) the owner check (server-side, can't be bypassed by a malicious
   //       client calling the table directly),
   //   (b) the loan DELETE (cascades to transactions via the existing
   //       transactions.linked_loan_id ON DELETE CASCADE FK),
   //   (c) the audit-log write (via the trigger on `loans`).
-  const { data, error } = await supabase.rpc('delete_loan_with_txns', { p_id: id })
+  const { data, error } = await supabase.rpc('delete_loan_with_txns', { 
+    p_id: id,
+    p_payload: cachedLoan 
+  })
   if (error) throw error
   return data === true
 }
@@ -229,11 +232,22 @@ function cloneCacheData(data) {
 }
 
 function snapshotLoanCaches(targetUserId) {
-  return [
+  const snap = [
     [LOAN_ACTIVE_GIVEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_GIVEN_KEY(targetUserId)) || [])],
     [LOAN_ACTIVE_TAKEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_TAKEN_KEY(targetUserId)) || [])],
     [LOAN_SETTLED_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_SETTLED_KEY(targetUserId)) || [])],
   ]
+  // Loan add/delete also touch the linked disbursement transaction in the
+  // transaction caches. Snapshot every matching ['transactions', …] and
+  // ['transactionsRecent', …] entry so a failed RPC rolls those back too,
+  // otherwise a phantom optimistic txn lingers until the next refetch.
+  for (const family of [['transactions'], ['transactionsRecent']]) {
+    const entries = queryClient.getQueriesData({ queryKey: family })
+    for (const [key, data] of entries) {
+      snap.push([key, cloneCacheData(data ?? null)])
+    }
+  }
+  return snap
 }
 
 function restoreLoanSnapshot(snapshot) {

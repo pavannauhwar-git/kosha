@@ -108,6 +108,12 @@ function trim(list, max = MAX_EVENTS) {
   return list.slice(Math.max(0, list.length - max))
 }
 
+const SENSITIVE_DETAIL_RE = /(bearer\s+[a-z0-9._-]+|eyJ[a-z0-9._-]{10,}|access_token=[^&\s]+|refresh_token=[^&\s]+|invite=[^&\s]+|(?:^|[?&])token=[^&\s]+|apikey=[^&\s]+)/gi
+
+function sanitizeDetail(value) {
+  return String(value || '').replace(SENSITIVE_DETAIL_RE, '<redacted>').slice(0, 800)
+}
+
 function pushEvent(type, detail) {
   const store = readStore()
   const events = trim([
@@ -115,7 +121,7 @@ function pushEvent(type, detail) {
     {
       ts: nowIso(),
       type,
-      detail: String(detail || '').slice(0, 800),
+      detail: sanitizeDetail(detail),
       route: currentSanitizedRoute(),
     },
   ])
