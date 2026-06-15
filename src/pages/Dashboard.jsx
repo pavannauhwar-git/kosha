@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 
 import { Plus, Wallet, TrendDown, ArrowRight } from '@phosphor-icons/react'
 import {
@@ -7,7 +7,8 @@ import {
   useRunningBalance,
   useDailyExpenseTotals,
   removeTransactionMutation,
-  saveTransactionMutation,
+  optimisticallyDeleteTransactionFromCache,
+  optimisticallyUpsertTransactionInCache,
 } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { CATEGORIES } from '../lib/categories'
@@ -119,6 +120,7 @@ export default function Dashboard() {
   const [toast, setToast] = useState(null)
   const [toastAction, setToastAction] = useState(null)
   const [toastActionLabel, setToastActionLabel] = useState(null)
+  const pendingDeleteRef = useRef(null)
 
   // ── Data fetching ─────────────────────────────────────────────────────
   const {
@@ -465,46 +467,94 @@ export default function Dashboard() {
   }, [dueSoonCount, weeklyDriftSignal, reminderPrefs.enabled, reminderPrefs.bill_due, reminderPrefs.spending_pace])
 
   // ── Callbacks ──────────────────────────────────────────────────────────
+  const commitPendingDelete = useCallback(async (pendingDelete) => {
+    if (!pendingDelete?.id) return
+    try {
+      await removeTransactionMutation(pendingDelete.id)
+    } catch (e) {
+      if (pendingDelete.txn) {
+        optimisticallyUpsertTransactionInCache(pendingDelete.txn, activeWalletUserId)
+      }
+      setToast(e.message || 'Could not delete transaction.')
+      setSafeTimeout(() => setToast(null), 4000)
+    }
+  }, [activeWalletUserId, setSafeTimeout])
+
+  useEffect(() => {
+    return () => {
+      const pendingDelete = pendingDeleteRef.current
+      if (!pendingDelete) return
+      if (pendingDelete.timeoutId) {
+        clearTimeout(pendingDelete.timeoutId)
+      }
+      pendingDeleteRef.current = null
+      void commitPendingDelete(pendingDelete)
+    }
+  }, [commitPendingDelete])
+
   const handleDelete = useCallback(async (id) => {
     if (!id) return false
-    const deletedTxn = recent.find((row) => row.id === id)
 
-    try {
-      await removeTransactionMutation(id)
-
-      if (deletedTxn) {
-        setToast('Transaction deleted')
-        setToastAction(() => async () => {
-          try {
-            const { id: _id, created_at: _createdAt, user_id: _userId, ...payload } = deletedTxn
-            await saveTransactionMutation({ payload })
-            setToast('Transaction restored')
-            setToastAction(null)
-            setToastActionLabel(null)
-            setSafeTimeout(() => setToast(null), 1600)
-          } catch {
-            setToast('Could not undo delete.')
-            setToastAction(null)
-            setToastActionLabel(null)
-            setSafeTimeout(() => setToast(null), 1800)
-          }
-        })
-        setToastActionLabel('Undo')
-        setSafeTimeout(() => {
-          setToastAction(null)
-          setToastActionLabel(null)
-        }, 5000)
+    const pendingDelete = pendingDeleteRef.current
+    if (pendingDelete?.id && pendingDelete.id !== id) {
+      if (pendingDelete.timeoutId) {
+        clearTimeout(pendingDelete.timeoutId)
       }
+      pendingDeleteRef.current = null
+      void commitPendingDelete(pendingDelete)
+    }
 
-      return true
-    } catch (e) {
-      setToast(e.message || 'Could not delete transaction.')
+    const txn = recent.find((row) => row?.id === id)
+    if (!txn) {
+      try {
+        await removeTransactionMutation(id)
+        return true
+      } catch (e) {
+        setToast(e.message || 'Could not delete transaction.')
+        setToastAction(null)
+        setToastActionLabel(null)
+        setSafeTimeout(() => setToast(null), 4000)
+        return false
+      }
+    }
+
+    const snapshot = { ...txn }
+    optimisticallyDeleteTransactionFromCache(id, activeWalletUserId)
+
+    pendingDeleteRef.current = {
+      id,
+      txn: snapshot,
+      timeoutId: setTimeout(() => {
+        const pending = pendingDeleteRef.current
+        if (pending?.id === id) {
+          pendingDeleteRef.current = null
+          void commitPendingDelete(pending)
+        }
+      }, 3500)
+    }
+
+    setToast('Transaction deleted')
+    setToastAction(() => () => {
+      const pending = pendingDeleteRef.current
+      if (pending?.id === id) {
+        clearTimeout(pending.timeoutId)
+        optimisticallyUpsertTransactionInCache(pending.txn, activeWalletUserId)
+        pendingDeleteRef.current = null
+        setToast('Transaction restored')
+        setToastAction(null)
+        setToastActionLabel(null)
+        setSafeTimeout(() => setToast(null), 1600)
+      }
+    })
+    setToastActionLabel('Undo')
+    setSafeTimeout(() => {
       setToastAction(null)
       setToastActionLabel(null)
-      setSafeTimeout(() => setToast(null), 4000)
-      throw e
-    }
-  }, [recent])
+      setToast(null)
+    }, 4000)
+
+    return undefined
+  }, [recent, activeWalletUserId, commitPendingDelete, setSafeTimeout])
 
   const inferRepaymentTab = useCallback((txn, loanRow = null) => {
     if (loanRow?.settled) return 'settled'

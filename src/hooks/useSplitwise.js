@@ -331,7 +331,8 @@ export async function createSplitGroupMutation({ name, selfDisplayName = 'You' }
       'splitwise group audit'
     )
 
-    await invalidateSplitwiseCache()
+    optimisticallyInsertSplitGroup(rpcGroup, userId)
+    runInBackground(invalidateSplitwiseCache(), 'split_create_group invalidation')
     return rpcGroup
   }
 
@@ -415,6 +416,8 @@ export async function deleteSplitGroupMutation(groupId) {
   const userId = getAuthUserId()
   if (!groupId) throw new Error('Group is required.')
 
+  optimisticallyDeleteSplitGroup(groupId, userId)
+
   const { error } = await supabase
     .from('split_groups')
     .delete()
@@ -433,7 +436,7 @@ export async function deleteSplitGroupMutation(groupId) {
     'splitwise group delete audit'
   )
 
-  await invalidateSplitwiseCache()
+  runInBackground(invalidateSplitwiseCache(), 'split_delete_group invalidation')
   return true
 }
 
