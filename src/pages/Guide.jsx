@@ -17,11 +17,11 @@ import {
   CheckCircle,
   Warning,
 } from '@phosphor-icons/react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
-import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
+import Sheet from '../components/ui/Sheet'
 import { readLocalJson, writeLocalJson } from '../lib/safeStorage'
 
 const START_HERE = [
@@ -267,11 +267,6 @@ export default function Guide() {
     setSelectedId(null)
   }, [])
 
-  const guideDetailRef = useOverlayFocusTrap(!!selectedFeature, {
-    onClose: closeFeatureDetail,
-    initialFocusSelector: 'button[aria-label="Close feature details"]',
-  })
-
   function openFeature(featureId) {
     setSelectedId(featureId)
     setViewed((prev) => {
@@ -507,135 +502,118 @@ export default function Guide() {
 
       </div>
 
-      <AnimatePresence>
+      <Sheet
+        open={!!selectedFeature}
+        onClose={closeFeatureDetail}
+        variant="center"
+        showClose={false}
+        showHandle={false}
+        className="w-full max-w-[560px]"
+        contentClassName="px-0 pt-0 pb-0"
+        ariaLabel={selectedFeature ? `${selectedFeature.title} guide details` : 'Feature details'}
+      >
         {selectedFeature && (
-          <>
-            <motion.button
-              type="button"
-              aria-label="Close guide detail"
-              onClick={closeFeatureDetail}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/35"
-            />
-
-            <div className="fixed z-50 inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] px-4 flex justify-center">
-              <motion.div
-                ref={guideDetailRef}
-                key={selectedFeature.id}
-                tabIndex={-1}
-                role="dialog"
-                aria-modal="true"
-                aria-label={`${selectedFeature.title} guide details`}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 24 }}
-                transition={{ duration: 0.2 }}
-                className="card p-4 md:p-5 max-h-[78vh] overflow-y-auto w-full max-w-[560px]"
+          <div className="text-left">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <p className="text-body font-semibold text-ink">{selectedFeature.title}</p>
+                <p className="text-[12px] text-ink-3 mt-0.5">{selectedFeature.subtitle}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeFeatureDetail}
+                className="close-btn shrink-0"
+                aria-label="Close feature details"
               >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <p className="text-body font-semibold text-ink">{selectedFeature.title}</p>
-                    <p className="text-[12px] text-ink-3 mt-0.5">{selectedFeature.subtitle}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={closeFeatureDetail}
-                    className="close-btn shrink-0"
-                    aria-label="Close feature details"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
+                <X size={14} />
+              </button>
+            </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                  <p className="text-[11px] text-ink-3 shrink-0">
-                    Card {selectedIndex + 1} of {navigationPool.length}
-                  </p>
-                  <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto">
-                    <Button
-                      variant="tonal"
-                      size="sm"
-                      className="whitespace-nowrap"
-                      onClick={() => moveFeature(-1)}
-                      disabled={selectedIndex <= 0}
-                      icon={<ArrowLeft size={13} />}
-                    >
-                      Prev
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="whitespace-nowrap"
-                      onClick={() => moveFeature(1)}
-                      disabled={selectedIndex >= navigationPool.length - 1}
-                      iconRight={<ArrowRight size={13} />}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mini-panel p-2.5 mb-2.5">
-                  <p className="text-[12px] text-ink-2">{selectedFeature.summary}</p>
-                  <p className="text-[11px] text-ink-3 mt-1">{selectedFeature.whenToUse}</p>
-                </div>
-
-                <div className="mb-3">
-                  <p className="text-[12px] font-semibold text-ink-2 mb-1.5">Recommended workflow</p>
-                  <div className="space-y-1.5">
-                    {selectedFeature.workflow.map((step, idx) => (
-                      <p key={step} className="text-[12px] text-ink-3">
-                        <span className="font-semibold text-accent-text">{idx + 1}.</span> {step}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
-                  <div className="rounded-card border border-income-border bg-income-bg/30 p-2.5">
-                    <p className="text-[12px] font-semibold text-income-text mb-1 inline-flex items-center gap-1">
-                      <CheckCircle size={13} /> Do this
-                    </p>
-                    <div className="space-y-1">
-                      {selectedFeature.doThis.map((point) => (
-                        <p key={point} className="text-[11px] text-ink-3">- {point}</p>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-card border border-warning-border bg-warning-bg/35 p-2.5">
-                    <p className="text-[12px] font-semibold text-warning-text mb-1 inline-flex items-center gap-1">
-                      <Warning size={13} /> Avoid this
-                    </p>
-                    <div className="space-y-1">
-                      {selectedFeature.avoidThis.map((point) => (
-                        <p key={point} className="text-[11px] text-ink-3">- {point}</p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+              <p className="text-[11px] text-ink-3 shrink-0">
+                Card {selectedIndex + 1} of {navigationPool.length}
+              </p>
+              <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto">
+                <Button
+                  variant="tonal"
+                  size="sm"
+                  className="whitespace-nowrap"
+                  onClick={() => moveFeature(-1)}
+                  disabled={selectedIndex <= 0}
+                  icon={<ArrowLeft size={13} />}
+                >
+                  Prev
+                </Button>
                 <Button
                   variant="primary"
-                  size="md"
-                  fullWidth
+                  size="sm"
                   className="whitespace-nowrap"
-                  iconRight={<ArrowRight size={14} />}
-                  onClick={() => {
-                    const route = selectedFeature.route
-                    closeFeatureDetail()
-                    navigate(route)
-                  }}
+                  onClick={() => moveFeature(1)}
+                  disabled={selectedIndex >= navigationPool.length - 1}
+                  iconRight={<ArrowRight size={13} />}
                 >
-                  Open {selectedFeature.title}
+                  Next
                 </Button>
-              </motion.div>
+              </div>
             </div>
-          </>
+
+            <div className="mini-panel p-2.5 mb-2.5">
+              <p className="text-[12px] text-ink-2">{selectedFeature.summary}</p>
+              <p className="text-[11px] text-ink-3 mt-1">{selectedFeature.whenToUse}</p>
+            </div>
+
+            <div className="mb-3">
+              <p className="text-[12px] font-semibold text-ink-2 mb-1.5">Recommended workflow</p>
+              <div className="space-y-1.5">
+                {selectedFeature.workflow.map((step, idx) => (
+                  <p key={step} className="text-[12px] text-ink-3">
+                    <span className="font-semibold text-accent-text">{idx + 1}.</span> {step}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
+              <div className="rounded-card border border-income-border bg-income-bg/30 p-2.5">
+                <p className="text-[12px] font-semibold text-income-text mb-1 inline-flex items-center gap-1">
+                  <CheckCircle size={13} /> Do this
+                </p>
+                <div className="space-y-1">
+                  {selectedFeature.doThis.map((point) => (
+                    <p key={point} className="text-[11px] text-ink-3">- {point}</p>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-card border border-warning-border bg-warning-bg/35 p-2.5">
+                <p className="text-[12px] font-semibold text-warning-text mb-1 inline-flex items-center gap-1">
+                  <Warning size={13} /> Avoid this
+                </p>
+                <div className="space-y-1">
+                  {selectedFeature.avoidThis.map((point) => (
+                    <p key={point} className="text-[11px] text-ink-3">- {point}</p>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
+              className="whitespace-nowrap"
+              iconRight={<ArrowRight size={14} />}
+              onClick={() => {
+                const route = selectedFeature.route
+                closeFeatureDetail()
+                navigate(route)
+              }}
+            >
+              Open {selectedFeature.title}
+            </Button>
+          </div>
         )}
-      </AnimatePresence>
+      </Sheet>
     </PageBackHeaderPage>
   )
 }

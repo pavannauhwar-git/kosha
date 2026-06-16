@@ -8,7 +8,8 @@ import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
-import AppToast from '../components/common/AppToast'
+import { useAppToast } from '../context/ToastContext'
+import { toToastMessage } from '../lib/errorTaxonomy'
 import Button from '../components/ui/Button'
 import { useTransactions, saveTransactionMutation, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import {
@@ -18,7 +19,7 @@ import {
   upsertReconciliationReview,
 } from '../hooks/useReconciliationReviews'
 import useWindowedList from '../hooks/useWindowedList'
-import { useSafeTimeout } from '../hooks/useSafeTimeout'
+
 import { EXPENSE_CATEGORIES, PAYMENT_MODES } from '../lib/categories'
 import { fmt, fmtDate } from '../lib/utils'
 import {
@@ -57,7 +58,7 @@ export default function Reconciliation() {
   const [reviewStateFilter, setReviewStateFilter] = useState('queue')
   const [tab, setTab] = useState('queue')
   const [paymentModeFilter, setPaymentModeFilter] = useState('')
-  const { setSafeTimeout } = useSafeTimeout()
+
   const [localReviewedIds, setLocalReviewedIds] = useState(() => getReviewedReconciliationIds())
 
   // Update local reviewed IDs if wallet switches (handles offline/missing-table fallback)
@@ -67,7 +68,7 @@ export default function Reconciliation() {
 
   const [savingId, setSavingId] = useState(null)
   const [resettingAliases, setResettingAliases] = useState(false)
-  const [toast, setToast] = useState(null)
+  const { pushToast } = useAppToast()
   const [statementInput, setStatementInput] = useState('')
   const [debouncedStatementInput, setDebouncedStatementInput] = useState('')
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
@@ -458,24 +459,20 @@ export default function Reconciliation() {
   const markReviewed = useCallback(async (id) => {
     try {
       await persistReview(id, 'reviewed')
-      setToast('Marked as reviewed.')
-      setSafeTimeout(() => setToast(null), 2200)
+      pushToast('Marked as reviewed.')
     } catch (error) {
-      setToast(error?.message || 'Could not save reviewed state.')
-      setSafeTimeout(() => setToast(null), 3200)
+      pushToast(toToastMessage(error, 'Could not save reviewed state.'))
     }
-  }, [persistReview, setSafeTimeout])
+  }, [persistReview, pushToast])
 
   const markLinked = useCallback(async (id, statementLine) => {
     try {
       await persistReview(id, 'linked', statementLine || null)
-      setToast('Linked to statement line.')
-      setSafeTimeout(() => setToast(null), 2200)
+      pushToast('Linked to statement line.')
     } catch (error) {
-      setToast(error?.message || 'Could not save linked state.')
-      setSafeTimeout(() => setToast(null), 3200)
+      pushToast(toToastMessage(error, 'Could not save linked state.'))
     }
-  }, [persistReview, setSafeTimeout])
+  }, [persistReview, pushToast])
 
   const reportFalsePositive = useCallback(async (id, statementLine) => {
     try {
@@ -484,13 +481,11 @@ export default function Reconciliation() {
         statementLine: statementLine || null,
       })
       if (!result?.unavailable) await refetchReviews()
-      setToast('Marked as mismatch for future tuning.')
-      setSafeTimeout(() => setToast(null), 2600)
+      pushToast('Marked as mismatch for future tuning.')
     } catch (error) {
-      setToast(error?.message || 'Could not report mismatch.')
-      setSafeTimeout(() => setToast(null), 3200)
+      pushToast(toToastMessage(error, 'Could not report mismatch.'))
     }
-  }, [refetchReviews, setSafeTimeout, reportFalsePositiveMutation])
+  }, [refetchReviews, reportFalsePositiveMutation, pushToast])
 
   const setCategory = useCallback(async (id, category) => {
     if (!id || !category || savingId || reviewsLoading) return
@@ -498,15 +493,13 @@ export default function Reconciliation() {
     try {
       await saveTransaction.mutateAsync({ id, payload: { category } })
       await persistReview(id, 'reviewed')
-      setToast('Category updated and item reconciled.')
-      setSafeTimeout(() => setToast(null), 2600)
+      pushToast('Category updated and item reconciled.')
     } catch (error) {
-      setToast(error?.message || 'Could not update category.')
-      setSafeTimeout(() => setToast(null), 3000)
+      pushToast(toToastMessage(error, 'Could not update category.'))
     } finally {
       setSavingId(null)
     }
-  }, [savingId, reviewsLoading, persistReview, setSafeTimeout, saveTransaction])
+  }, [savingId, reviewsLoading, persistReview, saveTransaction, pushToast])
 
   const resetLearnedAliases = useCallback(async () => {
     if (resettingAliases || reviewTableUnavailable) return
@@ -514,15 +507,13 @@ export default function Reconciliation() {
     try {
       await resetLearnedAliasesMutation.mutateAsync()
       await refetchReviews()
-      setToast('Learned aliases were reset.')
-      setSafeTimeout(() => setToast(null), 2200)
+      pushToast('Learned aliases were reset.')
     } catch (error) {
-      setToast(error?.message || 'Could not reset learned aliases.')
-      setSafeTimeout(() => setToast(null), 3200)
+      pushToast(toToastMessage(error, 'Could not reset learned aliases.'))
     } finally {
       setResettingAliases(false)
     }
-  }, [resettingAliases, reviewTableUnavailable, refetchReviews, setSafeTimeout, resetLearnedAliasesMutation])
+  }, [resettingAliases, reviewTableUnavailable, refetchReviews, resetLearnedAliasesMutation, pushToast])
 
   const TABS = [
     { id: 'queue', label: 'Queue', count: reviewProgress.queue },
@@ -1066,7 +1057,7 @@ export default function Reconciliation() {
       )}
       </div>
 
-      <AppToast message={toast} onDismiss={() => setToast(null)} />
+
     </PageBackHeaderPage>
   )
 }

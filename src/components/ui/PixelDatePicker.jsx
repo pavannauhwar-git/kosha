@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CaretLeft, CaretRight } from '@phosphor-icons/react'
-import BottomSheet from './BottomSheet'
+import Sheet from './Sheet'
 import Button from './Button'
 
 const MONTH_FORMATTER = new Intl.DateTimeFormat('en-IN', {
@@ -153,7 +153,7 @@ export default function PixelDatePicker({
 
       {name ? <input type="hidden" name={name} value={value || ''} /> : null}
 
-      <BottomSheet
+      <Sheet
         open={open}
         onClose={() => setOpen(false)}
         title={sheetTitle}
@@ -250,7 +250,7 @@ export default function PixelDatePicker({
             </Button>
           </div>
         </div>
-      </BottomSheet>
+      </Sheet>
     </>
   )
 }

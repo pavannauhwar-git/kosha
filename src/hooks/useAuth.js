@@ -320,7 +320,8 @@ export function useAuthState() {
     loadGenRef.current++
     const { data, error } = await supabase
       .from('profiles')
-      .upsert({ id: userId, ...updates }, { onConflict: 'id' })
+      .update(updates)
+      .eq('id', userId)
       .select(PROFILE_COLUMNS)
       .single()
 
@@ -338,11 +339,12 @@ export function useAuthState() {
     const userId = getAuthUserId()
     const trimmedName = String(displayName || '').trim()
     if (!trimmedName) throw new Error('Display name cannot be empty')
-    
+
     loadGenRef.current++
     const { data, error } = await supabase
       .from('profiles')
-      .upsert({ id: userId, display_name: trimmedName }, { onConflict: 'id' })
+      .update({ display_name: trimmedName })
+      .eq('id', userId)
       .select(PROFILE_COLUMNS)
       .single()
 

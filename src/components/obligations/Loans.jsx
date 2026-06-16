@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
+
 import {
   Plus, X, Check, CircleNotch, DownloadSimple, ArrowDownLeft, ArrowUpRight,
   HandCoins, Users, Percent, Calendar, CalendarDots, FileText, PencilSimple,
@@ -27,13 +28,15 @@ import { FINANCIAL_EVENT_ACTIONS } from '../../lib/auditLog'
 import PageHeaderPage from '../layout/PageHeaderPage'
 import SkeletonLayout from '../common/SkeletonLayout'
 import EmptyState from '../common/EmptyState'
-import AppToast from '../common/AppToast'
+
 import Button from '../ui/Button'
+import Input from '../ui/Input'
 import PixelDatePicker from '../ui/PixelDatePicker'
-import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import useWindowedList from '../../hooks/useWindowedList'
+import Sheet from '../ui/Sheet'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import useToast from '../../hooks/useToast'
+import { useAppToast } from '../../context/ToastContext'
+import { toToastMessage } from '../../lib/errorTaxonomy'
 
 const LOAN_COLUMNS_EXPORT =
   'id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled'
@@ -75,8 +78,7 @@ export default function Loans({
   const [editLoan, setEditLoan] = useState(null)
   const [payLoan, setPayLoan] = useState(null)      // loan object being paid
   const [deletingId] = useState(null)
-  const [errToast, setErrToast] = useState(null)
-  const { toast, toastAction, toastActionLabel, pushToast, dismissToast } = useToast()
+  const { pushToast } = useAppToast()
   const actionGuard = useRef(false)
   const pendingDeleteRef = useRef(null)
   const [overflowLoanId, setOverflowLoanId] = useState(null)
@@ -389,7 +391,7 @@ export default function Loans({
             return
           }
 
-          setErrToast('Opened Loans, but could not pinpoint the linked repayment.')
+          pushToast('Opened Loans, but could not pinpoint the linked repayment.')
           deepLinkResolvedRef.current = deepLinkKey
           clearRepaymentDeepLink()
         }
@@ -413,7 +415,7 @@ export default function Loans({
       })
       setHighlightLoanId(targetLoan.id)
 
-      setErrToast('Opened linked repayment context.')
+      pushToast('Opened linked repayment context.')
       deepLinkResolvedRef.current = deepLinkKey
       clearRepaymentDeepLink()
 
@@ -431,6 +433,7 @@ export default function Loans({
       }
     }
   }, [
+    pushToast,
     deepLinkTxnId,
     deepLinkLoanId,
     deepLinkType,
@@ -616,7 +619,7 @@ export default function Loans({
         setTab(loanData.direction)
         closeAddLoanSheet()
       } catch (e) {
-        setErrToast(e.message || 'Could not update loan.')
+        pushToast(toToastMessage(e, 'Could not update loan.'))
       }
       return
     }
@@ -626,7 +629,7 @@ export default function Loans({
       setTab(loanData.direction)
       closeAddLoanSheet()
     } catch (e) {
-      setErrToast(e.message || 'Could not add loan.')
+      pushToast(toToastMessage(e, 'Could not add loan.'))
     }
   }
 
@@ -647,7 +650,7 @@ export default function Loans({
       await recordLoanPayment.mutateAsync({ loan: payLoan, paymentAmount: amt })
       closePaySheet()
     } catch (e) {
-      setErrToast(e.message || 'Could not record payment.')
+      pushToast(toToastMessage(e, 'Could not record payment.'))
     } finally {
       actionGuard.current = false
     }
@@ -662,11 +665,11 @@ export default function Loans({
     try {
       await settleLoan.mutateAsync({ loan, paymentAmount: remaining })
     } catch (e) {
-      setErrToast(e.message || 'Could not settle loan.')
+      pushToast(toToastMessage(e, 'Could not settle loan.'))
     } finally {
       actionGuard.current = false
     }
-  }, [settleLoan])
+  }, [settleLoan, pushToast])
 
   function openEditLoan(loan) {
     setEditLoan(loan)
@@ -683,15 +686,6 @@ export default function Loans({
     setShowAdd(true)
   }
 
-  const paySheetRef = useOverlayFocusTrap(!!payLoan, {
-    onClose: dismissPaySheet,
-    initialFocusSelector: 'input[name="payment-amount"]',
-  })
-
-  const addLoanSheetRef = useOverlayFocusTrap(showAdd, {
-    onClose: dismissAddLoanSheet,
-    initialFocusSelector: 'input[name="loan-counterparty"]',
-  })
 
   async function handleExportCsv() {
     try {
@@ -704,8 +698,7 @@ export default function Loans({
 
       if (error) throw error
       if (!rows?.length) {
-        setErrToast('No loans to export.')
-        setTimeout(() => setErrToast(null), 4000)
+        pushToast('No loans to export.')
         return
       }
 
@@ -719,8 +712,7 @@ export default function Loans({
       const date = todayStr()
       downloadCsv(`kosha-loans-${date}.csv`, csv)
     } catch (e) {
-      setErrToast(e.message || 'Could not export CSV.')
-      setTimeout(() => setErrToast(null), 4000)
+      pushToast(toToastMessage(e, 'Could not export CSV.'))
     }
   }
 
@@ -1158,77 +1150,52 @@ export default function Loans({
       </div>
 
       {/* ── Record Payment Sheet ──────────────────────────────────────── */}
-      <AnimatePresence>
-        {payLoan && (
-          <>
-            <motion.div className="sheet-backdrop"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={dismissPaySheet}
-            />
-            <motion.div
-              ref={paySheetRef}
-              className="sheet-panel"
-              tabIndex={-1}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Record payment"
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.22 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5 overflow-x-hidden">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-display font-bold text-ink">Record Payment</h2>
-                  <button
-                    type="button"
-                    aria-label="Close record payment sheet"
-                    onClick={dismissPaySheet}
-                    className="close-btn"
-                  >
-                    <X size={16} className="text-ink-3" />
-                  </button>
-                </div>
+      <Sheet
+        open={!!payLoan}
+        onClose={dismissPaySheet}
+        title="Record Payment"
+        initialFocusSelector='input[name="payment-amount"]'
+        contentClassName="px-5 overflow-x-hidden"
+      >
 
                 {/* Loan context */}
                 <div className="mini-panel p-3 mb-4">
                   <div className="flex items-center gap-2 mb-1">
                     <div className={`w-6 h-6 rounded-md flex items-center justify-center
-                      ${payLoan.direction === 'given' ? 'bg-income-bg' : 'bg-expense-bg'}`}>
-                      {payLoan.direction === 'given'
+                      ${payLoan?.direction === 'given' ? 'bg-income-bg' : 'bg-expense-bg'}`}>
+                      {payLoan?.direction === 'given'
                         ? <ArrowUpRight size={12} className="text-income-text" />
                         : <ArrowDownLeft size={12} className="text-expense-text" />}
                     </div>
-                    <p className="text-[13px] font-semibold text-ink">{payLoan.counterparty}</p>
+                    <p className="text-[13px] font-semibold text-ink">{payLoan?.counterparty}</p>
                   </div>
                   <div className="flex items-center gap-3 text-[12px] text-ink-3">
-                    <span>Total: {fmt(+payLoan.amount)}</span>
-                    <span>Paid: {fmt(+payLoan.amount_settled)}</span>
-                    <span className="font-semibold text-ink">Remaining: {fmt(+payLoan.amount - +payLoan.amount_settled)}</span>
+                    <span>Total: {fmt(+(payLoan?.amount || 0))}</span>
+                    <span>Paid: {fmt(+(payLoan?.amount_settled || 0))}</span>
+                    <span className="font-semibold text-ink">Remaining: {fmt(+(payLoan?.amount || 0) - +(payLoan?.amount_settled || 0))}</span>
                   </div>
                 </div>
 
                 {/* Amount input */}
-                <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
-                                flex items-center gap-2 border-b-2 border-kosha-border
-                                transition-[border-color] duration-200">
-                  <span className="text-xl font-bold text-brand">₹</span>
-                  <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
-                    type="text" inputMode="decimal" pattern="[0-9.]*" name="payment-amount" placeholder="0"
+                <div className="mb-3">
+                  <Input
+                    label="Amount"
+                    icon={<span className="text-brand font-bold">₹</span>}
+                    type="text" inputMode="decimal" pattern="[0-9.]*"
+                    placeholder="0"
                     value={payAmount}
-                    max={Math.max(0, (+payLoan.amount - +payLoan.amount_settled) || 0)}
                     onChange={e => setPayAmount(e.target.value)}
                   />
                 </div>
 
                 <p className="text-[11px] text-ink-3 mb-2">
-                  Maximum you can record now: {fmt(+payLoan.amount - +payLoan.amount_settled)}
+                  Maximum you can record now: {fmt(+(payLoan?.amount || 0) - +(payLoan?.amount_settled || 0))}
                 </p>
 
                 {/* Quick fill buttons */}
                 <div className="flex gap-2 mb-3 flex-wrap">
                   {(() => {
-                    const remaining = +payLoan.amount - +payLoan.amount_settled
+                    const remaining = +(payLoan?.amount || 0) - +(payLoan?.amount_settled || 0)
                     const options = [
                       { label: 'Full', value: remaining },
                       remaining >= 2 ? { label: 'Half', value: Math.round(remaining / 2) } : null,
@@ -1264,44 +1231,16 @@ export default function Loans({
                     {isPaySaving ? 'Recording…' : 'Record Payment'}
                   </Button>
                 </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      </Sheet>
 
       {/* ── Add Loan Sheet ────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showAdd && (
-          <>
-            <motion.div className="sheet-backdrop"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={dismissAddLoanSheet}
-            />
-            <motion.div
-              ref={addLoanSheetRef}
-              className="sheet-panel"
-              tabIndex={-1}
-              role="dialog"
-              aria-modal="true"
-              aria-label={editLoan ? 'Edit loan' : 'Add loan'}
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.22 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5 overflow-x-hidden">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-display font-bold text-ink">{editLoan ? 'Edit Loan' : 'Add Loan'}</h2>
-                  <button
-                    type="button"
-                    aria-label="Close add loan sheet"
-                    onClick={dismissAddLoanSheet}
-                    className="close-btn"
-                  >
-                    <X size={16} className="text-ink-3" />
-                  </button>
-                </div>
+      <Sheet
+        open={showAdd}
+        onClose={dismissAddLoanSheet}
+        title={editLoan ? 'Edit Loan' : 'Add Loan'}
+        initialFocusSelector='input[name="loan-counterparty"]'
+        contentClassName="px-5 overflow-x-hidden"
+      >
 
                 {/* Direction toggle */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
@@ -1343,12 +1282,12 @@ export default function Loans({
                 </div>
 
                 {/* Amount */}
-                <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
-                                flex items-center gap-2 border-b-2 border-kosha-border
-                                transition-[border-color] duration-200">
-                  <span className="text-xl font-bold text-brand">₹</span>
-                  <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
-                    type="text" inputMode="decimal" pattern="[0-9.]*" name="loan-amount" placeholder="0"
+                <div className="mb-3">
+                  <Input
+                    label="Amount"
+                    icon={<span className="text-brand font-bold">₹</span>}
+                    type="text" inputMode="decimal" pattern="[0-9.]*"
+                    placeholder="0"
                     value={form.amount}
                     onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
                   />
@@ -1437,11 +1376,7 @@ export default function Loans({
                     {isAddSaving ? (editLoan ? 'Saving…' : 'Adding…') : (editLoan ? 'Save Changes' : 'Add Loan')}
                   </Button>
                 </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      </Sheet>
 
       {/* FAB */}
       {!embedded && !isViewingPartner && (
@@ -1450,15 +1385,7 @@ export default function Loans({
         </button>
       )}
 
-      <AppToast
-        message={toast || errToast}
-        onDismiss={() => {
-          dismissToast()
-          setErrToast(null)
-        }}
-        action={toastAction}
-        actionLabel={toastActionLabel}
-      />
+
     </PageHeaderPage>
   )
 }

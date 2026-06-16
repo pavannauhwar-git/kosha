@@ -54,4 +54,32 @@ export default [
       'react/jsx-uses-vars': 'error', // marks JSX component refs as "used" so imports aren't false-positives
     },
   },
+  {
+    // Apply UI primitive guardrails everywhere except the primitives themselves
+    files: ['src/pages/**/*.{js,jsx}', 'src/components/**/*.{js,jsx}'],
+    ignores: ['src/components/ui/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@mui/material/SwipeableDrawer',
+              message: 'Use <Sheet> from src/components/ui/Sheet.jsx instead. See .cursor/rules/ui-primitives.mdc',
+            },
+            {
+              name: '@radix-ui/react-dialog',
+              message: 'Use <Sheet> from src/components/ui/Sheet.jsx instead. See .cursor/rules/ui-primitives.mdc',
+            },
+          ],
+          patterns: [
+            {
+              group: ['**/components/ui/BottomSheet', '*/components/ui/BottomSheet'],
+              message: 'BottomSheet is deprecated. Use <Sheet> from src/components/ui/Sheet.jsx instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]

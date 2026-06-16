@@ -14,7 +14,7 @@ import TransactionItem from '../components/transactions/TransactionItem'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
-import AppToast from '../components/common/AppToast'
+
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import { useAppMutation } from '../hooks/useAppMutation'
 import { getAuthUserId } from '../lib/authStore'
@@ -31,10 +31,11 @@ import SectionHeader from '../components/common/SectionHeader'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
 import useWindowedList from '../hooks/useWindowedList'
 
 import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
-import useToast from '../hooks/useToast'
+import { useAppToast } from '../context/ToastContext'
 
 const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
@@ -148,7 +149,7 @@ export default function Transactions() {
   const [selectedMonth, setSelectedMonth] = useState(() => monthInputFromDate())
   const [forcedDateRange, setForcedDateRange] = useState(null)
   const [displayCount, setDisplayCount] = useState(50)
-  const { toast, toastAction, toastActionLabel, pushToast, dismissToast } = useToast()
+  const { pushToast } = useAppToast()
   const [duplicateTxn, setDuplicateTxn] = useState(null)
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
@@ -1175,26 +1176,27 @@ export default function Transactions() {
                 </div>
               )}
 
-              <div className="relative mt-3">
-                <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
-                <input
-                  className="input pl-8 pr-8 py-2 md:py-2.5 text-[14px]"
+              <div className="mt-3">
+                <Input
                   name="transaction-search"
                   placeholder="Search transactions..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
+                  icon={<MagnifyingGlass size={14} className="text-ink-3 pointer-events-none" />}
+                  iconRight={
+                    isSearchDebouncing ? (
+                      <CircleNotch size={13} className="text-ink-3 animate-spin" />
+                    ) : search ? (
+                      <button
+                        type="button"
+                        onClick={() => setSearch('')}
+                        className="text-ink-3"
+                      >
+                        <X size={13} />
+                      </button>
+                    ) : null
+                  }
                 />
-                {isSearchDebouncing ? (
-                  <CircleNotch size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 animate-spin" />
-                ) : search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
               </div>
 
               {isSearchDebouncing && (
@@ -1743,12 +1745,7 @@ export default function Transactions() {
         )}
       </motion.div>
 
-      <AppToast
-        message={toast}
-        onDismiss={dismissToast}
-        action={toastAction}
-        actionLabel={toastActionLabel}
-      />
+
 
       {/* FAB — hidden in partner wallet view-only mode */}
       {!isViewingPartner && (

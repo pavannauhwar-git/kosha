@@ -1,7 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
-import * as Dialog from '@radix-ui/react-dialog'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Wallet } from '@phosphor-icons/react'
+import { Wallet } from '@phosphor-icons/react'
 import { useUserCategories } from '../../hooks/useUserCategories'
 import { getCategoriesForType } from '../../lib/categories'
 import { upsertBudget as upsertBudgetApi, deleteBudget as deleteBudgetApi } from '../../hooks/useBudgets'
@@ -10,6 +8,7 @@ import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
 import { validateAmount } from '../../lib/validateAmount.js'
 import FormField from '../ui/FormField'
+import Sheet from '../ui/Sheet'
 
 export default function BudgetSheet({ open, onClose, budgets = [], byCategory = {} }) {
   const [saving, setSaving] = useState(null)
@@ -120,198 +119,155 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
   const activeBudgetCount = budgets.filter((b) => b.monthly_limit > 0).length
 
   return (
-    <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
-      <AnimatePresence>
-        {open && (
-          <Dialog.Portal forceMount>
-            <Dialog.Overlay asChild>
-              <motion.div
-                className="fixed inset-0 bg-black/40 z-50"
-                style={{ backdropFilter: 'blur(2px)' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              />
-            </Dialog.Overlay>
-            <Dialog.Content asChild>
-              <motion.div
-                className="fixed inset-x-0 bottom-0 z-50 bg-kosha-surface rounded-t-hero shadow-card-lg"
-                style={{
-                  maxWidth: 560,
-                  margin: '0 auto',
-                  maxHeight: '85dvh',
-                  paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-                }}
-                initial={{ y: '100%' }}
-                animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-                exit={{ y: '100%', transition: { duration: 0.22 } }}
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-kosha-border">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center">
-                      <Wallet size={16} className="text-accent-text" weight="duotone" />
-                    </div>
-                    <div>
-                      <Dialog.Title className="text-[15px] font-bold text-ink">
-                        Category Budgets
-                      </Dialog.Title>
-                      <p className="text-[11px] text-ink-3">
-                        {activeBudgetCount > 0
-                          ? `${activeBudgetCount} budget${activeBudgetCount > 1 ? 's' : ''} active`
-                          : 'Set monthly spending limits per category'}
-                      </p>
-                    </div>
-                  </div>
-                  <Dialog.Close asChild>
-                    <button className="w-8 h-8 rounded-full bg-kosha-surface-2 flex items-center justify-center">
-                      <X size={16} className="text-ink-3" />
-                    </button>
-                  </Dialog.Close>
-                </div>
+    <Sheet open={open} onClose={onClose} title="Category Budgets">
+      <div className="px-5 pt-1 pb-3 -mt-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center">
+            <Wallet size={16} className="text-accent-text" weight="duotone" />
+          </div>
+          <div>
+            <p className="text-[11px] text-ink-3">
+              {activeBudgetCount > 0
+                ? `${activeBudgetCount} budget${activeBudgetCount > 1 ? 's' : ''} active`
+                : 'Set monthly spending limits per category'}
+            </p>
+          </div>
+        </div>
+      </div>
 
-                <Dialog.Description className="sr-only">
-                  Set monthly category spending limits and review budget status.
-                </Dialog.Description>
+      {error && (
+        <div className="px-5 pt-2">
+          <p className="text-[12px] text-expense-text">{error}</p>
+        </div>
+      )}
 
-                {error && (
-                  <div className="px-5 pt-2">
-                    <p className="text-[12px] text-expense-text">{error}</p>
+      {/* Category list */}
+      <div className="overflow-y-auto px-5 py-3 space-y-1.5" style={{ maxHeight: 'calc(85dvh - 120px)' }}>
+        {categories.map((cat) => {
+          const draft = getDraftValue(cat.id)
+          const hasBudget = budgetMap.has(cat.id)
+          const isModified = cat.id in drafts
+          const isSaving = saving === cat.id
+          const budgetNum = Number(draft || 0)
+          const pct = budgetNum > 0 ? Math.round((cat.spent / budgetNum) * 100) : 0
+
+          return (
+            <div
+              key={cat.id}
+              className="rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5"
+            >
+              <div className="flex items-center gap-2.5">
+                {/* Radial gauge icon when budget is set, else static icon */}
+                {hasBudget && budgetNum > 0 ? (
+                  <div className="w-9 h-9 shrink-0 relative">
+                    <svg viewBox="0 0 36 36" className="w-9 h-9">
+                      <circle
+                        cx="18" cy="18" r="15"
+                        fill="none"
+                        stroke="rgba(17,19,24,0.05)"
+                        strokeWidth="3"
+                      />
+                      <circle
+                        cx="18" cy="18" r="15"
+                        fill="none"
+                        stroke={pct >= 100 ? '#E8453C' : pct >= 80 ? '#F9A825' : '#007FFF'}
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeDasharray={`${Math.min(100, pct) * 0.9425} 94.25`}
+                        transform="rotate(-90 18 18)"
+                        style={{ transition: 'stroke-dasharray 0.4s ease' }}
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold tabular-nums text-ink">
+                      {Math.min(pct, 999)}%
+                    </span>
                   </div>
+                ) : (
+                <CategoryIcon categoryId={cat.id} size={13} className="shrink-0" />
                 )}
-
-                {/* Category list */}
-                <div className="overflow-y-auto px-5 py-3 space-y-1.5" style={{ maxHeight: 'calc(85dvh - 80px)' }}>
-                  {categories.map((cat) => {
-                    const draft = getDraftValue(cat.id)
-                    const hasBudget = budgetMap.has(cat.id)
-                    const isModified = cat.id in drafts
-                    const isSaving = saving === cat.id
-                    const budgetNum = Number(draft || 0)
-                    const pct = budgetNum > 0 ? Math.round((cat.spent / budgetNum) * 100) : 0
-
-                    return (
-                      <div
-                        key={cat.id}
-                        className="rounded-card border border-kosha-border bg-kosha-surface-2 px-3 py-2.5"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          {/* Radial gauge icon when budget is set, else static icon */}
-                          {hasBudget && budgetNum > 0 ? (
-                            <div className="w-9 h-9 shrink-0 relative">
-                              <svg viewBox="0 0 36 36" className="w-9 h-9">
-                                <circle
-                                  cx="18" cy="18" r="15"
-                                  fill="none"
-                                  stroke="rgba(17,19,24,0.05)"
-                                  strokeWidth="3"
-                                />
-                                <circle
-                                  cx="18" cy="18" r="15"
-                                  fill="none"
-                                  stroke={pct >= 100 ? '#E8453C' : pct >= 80 ? '#F9A825' : '#007FFF'}
-                                  strokeWidth="3"
-                                  strokeLinecap="round"
-                                  strokeDasharray={`${Math.min(100, pct) * 0.9425} 94.25`}
-                                  transform="rotate(-90 18 18)"
-                                  style={{ transition: 'stroke-dasharray 0.4s ease' }}
-                                />
-                              </svg>
-                              <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold tabular-nums text-ink">
-                                {Math.min(pct, 999)}%
-                              </span>
-                            </div>
-                          ) : (
-                          <CategoryIcon categoryId={cat.id} size={13} className="shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-semibold text-ink truncate">{cat.label}</p>
-                            {cat.spent > 0 && (
-                              <p className="text-[10px] text-ink-3 tabular-nums">
-                                Spent {fmt(cat.spent)}
-                                {budgetNum > 0 && ` · ${pct}%`}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[11px] text-ink-3 mt-1.5">₹</span>
-                            <FormField error={isSaving ? error : ''}>
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                pattern="[0-9.]*"
-                                name={`budget-${cat.id}`}
-                                placeholder="—"
-                                value={draft}
-                                onChange={(e) => {
-                                  let raw = e.target.value
-                                  if (raw.startsWith('+')) raw = raw.slice(1)
-                                  if (raw.toLowerCase().includes('e')) return
-                                  handleDraftChange(cat.id, raw)
-                                }}
-                                disabled={isSaving}
-                                className="w-[72px] h-7 rounded-chip border border-kosha-border bg-kosha-surface
-                                           text-[12px] font-semibold text-ink tabular-nums text-right px-2
-                                           focus:outline-none focus:ring-1 focus:ring-brand/40
-                                           disabled:opacity-50 placeholder:text-ink-4"
-                              />
-                            </FormField>
-                            {(isModified || (!hasBudget && draft)) && (
-                              <button
-                                type="button"
-                                onClick={() => handleSave(cat.id)}
-                                disabled={isSaving}
-                                className="h-7 px-2 rounded-chip bg-brand text-white text-[10px] font-semibold
-                                           disabled:opacity-50 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
-                              >
-                                {isSaving ? '…' : 'Set'}
-                              </button>
-                            )}
-                            {hasBudget && !isModified && (
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(cat.id)}
-                                disabled={isSaving}
-                                className="h-7 px-2 rounded-chip bg-expense-bg text-expense-text text-[10px] font-semibold
-                                           disabled:opacity-50 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
-                              >
-                                {isSaving ? '…' : '×'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Gauge status bar when budget is set */}
-                        {hasBudget && budgetNum > 0 && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <div className="flex-1 h-1.5 rounded-pill bg-kosha-border overflow-hidden">
-                              <div
-                                className={`h-full rounded-pill transition-[width] duration-400 ease-[cubic-bezier(0.05,0.7,0.1,1)] ${
-                                  pct >= 100
-                                    ? 'bg-expense-text'
-                                    : pct >= 80
-                                      ? 'bg-warning-text'
-                                      : 'bg-brand'
-                                }`}
-                                style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
-                              />
-                            </div>
-                            <span className={`text-[9px] font-semibold shrink-0 ${
-                              pct >= 100 ? 'text-expense-text' : pct >= 80 ? 'text-warning-text' : 'text-ink-3'
-                            }`}>
-                              {pct >= 100 ? 'Over budget' : pct >= 80 ? 'Near limit' : 'On track'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-ink truncate">{cat.label}</p>
+                  {cat.spent > 0 && (
+                    <p className="text-[10px] text-ink-3 tabular-nums">
+                      Spent {fmt(cat.spent)}
+                      {budgetNum > 0 && ` · ${pct}%`}
+                    </p>
+                  )}
                 </div>
-              </motion.div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        )}
-      </AnimatePresence>
-    </Dialog.Root>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[11px] text-ink-3 mt-1.5">₹</span>
+                  <FormField error={isSaving ? error : ''}>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9.]*"
+                      name={`budget-${cat.id}`}
+                      placeholder="—"
+                      value={draft}
+                      onChange={(e) => {
+                        let raw = e.target.value
+                        if (raw.startsWith('+')) raw = raw.slice(1)
+                        if (raw.toLowerCase().includes('e')) return
+                        handleDraftChange(cat.id, raw)
+                      }}
+                      disabled={isSaving}
+                      className="w-[72px] h-7 rounded-chip border border-kosha-border bg-kosha-surface
+                                 text-[12px] font-semibold text-ink tabular-nums text-right px-2
+                                 focus:outline-none focus:ring-1 focus:ring-brand/40
+                                 disabled:opacity-50 placeholder:text-ink-4"
+                    />
+                  </FormField>
+                  {(isModified || (!hasBudget && draft)) && (
+                    <button
+                      type="button"
+                      onClick={() => handleSave(cat.id)}
+                      disabled={isSaving}
+                      className="h-7 px-2 rounded-chip bg-brand text-white text-[10px] font-semibold
+                                 disabled:opacity-50 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
+                    >
+                      {isSaving ? '…' : 'Set'}
+                    </button>
+                  )}
+                  {hasBudget && !isModified && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(cat.id)}
+                      disabled={isSaving}
+                      className="h-7 px-2 rounded-chip bg-expense-bg text-expense-text text-[10px] font-semibold
+                                 disabled:opacity-50 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
+                    >
+                      {isSaving ? '…' : '×'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Gauge status bar when budget is set */}
+              {hasBudget && budgetNum > 0 && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="flex-1 h-1.5 rounded-pill bg-kosha-border overflow-hidden">
+                    <div
+                      className={`h-full rounded-pill transition-[width] duration-400 ease-[cubic-bezier(0.05,0.7,0.1,1)] ${
+                        pct >= 100
+                          ? 'bg-expense-text'
+                          : pct >= 80
+                            ? 'bg-warning-text'
+                            : 'bg-brand'
+                      }`}
+                      style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+                    />
+                  </div>
+                  <span className={`text-[9px] font-semibold shrink-0 ${
+                    pct >= 100 ? 'text-expense-text' : pct >= 80 ? 'text-warning-text' : 'text-ink-3'
+                  }`}>
+                    {pct >= 100 ? 'Over budget' : pct >= 80 ? 'Near limit' : 'On track'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </Sheet>
   )
 }

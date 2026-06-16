@@ -15,7 +15,7 @@ import {
 } from '../lib/bugReportUtils'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
-import AppToast from '../components/common/AppToast'
+import { useAppToast } from '../context/ToastContext'
 import { copyToClipboard } from '../lib/share'
 import { useAppMutation } from '../hooks/useAppMutation'
 
@@ -48,10 +48,10 @@ export default function ReportBug() {
   const [includeDiagnostics, setIncludeDiagnostics] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [infoToast, setInfoToast] = useState('')
   const [submitted, setSubmitted] = useState(null)
   const [copiedRef, setCopiedRef] = useState(false)
   const [contextRoute, setContextRoute] = useState(initialReportedRoute)
+  const { pushToast } = useAppToast()
 
   const submitBugReportMutation = useAppMutation(
     async (payload) => {
@@ -205,7 +205,7 @@ export default function ReportBug() {
           ])
         } catch (uploadError) {
           const timeout = String(uploadError?.message || '').includes('SCREENSHOT_TIMEOUT')
-          setInfoToast(
+          pushToast(
             timeout
               ? 'Screenshot upload timed out. Report submitted without image.'
               : 'Could not upload screenshot. Report submitted without image.'
@@ -546,7 +546,6 @@ export default function ReportBug() {
         </div>
       )}
 
-      <AppToast message={infoToast} onDismiss={() => setInfoToast('')} />
     </PageBackHeaderPage>
   )
 }

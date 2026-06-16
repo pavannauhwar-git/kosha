@@ -80,11 +80,7 @@ create table if not exists monthly_net_changes (
 );
 
 alter table monthly_net_changes enable row level security;
-drop policy if exists "Users can read own monthly net changes" on monthly_net_changes;
-create policy "Users can read own monthly net changes"
-  on monthly_net_changes for select
-  to authenticated
-  using (public.is_linked(user_id));
+-- Note: monthly_net_changes RLS policy is applied further below after is_linked() is defined.
 
 create or replace function public.maintain_monthly_net_change()
 returns trigger
@@ -174,6 +170,28 @@ create table if not exists invites (
   used_at    timestamptz,
   created_at timestamptz not null default now()
 );
+
+-- Shared wallet check function (defined here so it is available for all subsequent RLS policies)
+create or replace function public.is_linked(target_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select (select auth.uid()) = target_user_id or exists (
+    select 1 from public.invites
+    where (created_by = (select auth.uid()) and used_by = target_user_id)
+       or (used_by = (select auth.uid()) and created_by = target_user_id)
+  );
+$$;
+
+-- Apply monthly_net_changes RLS policy now that is_linked() exists
+drop policy if exists "Users can read own monthly net changes" on monthly_net_changes;
+create policy "Users can read own monthly net changes"
+  on monthly_net_changes for select
+  to authenticated
+  using (public.is_linked(user_id));
 
 -- Phase 1 to Phase 2 compatibility: add user_id if tables already exist
 alter table transactions add column if not exists user_id uuid;
@@ -918,7 +936,7 @@ as $$
     (
       -- Sum fully completed months from the cache
       select sum(net_change)
-      from monthly_net_changes
+      from public.monthly_net_changes
       where user_id = any(p_user_ids)
         and month_start < date_trunc('month', p_end_date)::date
     ), 0
@@ -926,7 +944,7 @@ as $$
     (
       -- Sum raw transactions for the current partial month up to p_end_date
       select sum(case when type = 'income' then amount else -amount end)
-      from transactions
+      from public.transactions
       where user_id = any(p_user_ids)
         and date >= date_trunc('month', p_end_date)::date
         and date <= p_end_date

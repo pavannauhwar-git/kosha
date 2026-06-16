@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, ArrowsLeftRight, Receipt, X, LinkSimple, Trash, CaretLeft, SlidersHorizontal, Archive, ArrowUUpLeft } from '@phosphor-icons/react'
+import { AnimatePresence } from 'framer-motion'
+import { Plus, ArrowsLeftRight, Receipt, LinkSimple, Trash, CaretLeft, SlidersHorizontal, Archive, ArrowUUpLeft } from '@phosphor-icons/react'
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
+import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import PixelDatePicker from '../components/ui/PixelDatePicker'
 import EmptyState from '../components/common/EmptyState'
 import SkeletonLayout from '../components/common/SkeletonLayout'
-import AppToast from '../components/common/AppToast'
+import { useAppToast } from '../context/ToastContext'
+import { toToastMessage } from '../lib/errorTaxonomy'
+import Sheet from '../components/ui/Sheet'
 import SecureAvatar from '../components/ui/SecureAvatar'
-import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
 import { useAuth } from '../context/AuthContext'
 import { getAuthUserId } from '../lib/authStore'
 import { supabase } from '../lib/supabase'
@@ -218,7 +220,7 @@ export default function Splitwise() {
   const [showAddMember, setShowAddMember] = useState(false)
   const [newMemberName, setNewMemberName] = useState('')
 
-  const [toast, setToast] = useState(null)
+  const { pushToast } = useAppToast()
   const [saving, setSaving] = useState('')
   const [consumingInvite, setConsumingInvite] = useState(false)
   const [invitePreview, setInvitePreview] = useState(null)
@@ -302,14 +304,14 @@ export default function Splitwise() {
   )
 
   const handleUpdateGroup = async () => {
-    if (!editGroupForm.name.trim()) return setToast('Name is required.')
+    if (!editGroupForm.name.trim()) return pushToast('Name is required.')
     try {
       setSaving('group-edit')
       await updateGroup.mutateAsync({ groupId: activeGroupId, name: editGroupForm.name })
-      setToast('Trip updated.')
+      pushToast('Trip updated.')
       setShowEditGroup(false)
     } catch (error) {
-      setToast(extractErrorMessage(error))
+      pushToast(toToastMessage(error, 'Operation failed.'))
     } finally {
       setSaving('')
     }
@@ -321,9 +323,9 @@ export default function Splitwise() {
     try {
       await toggleArchiveGroup.mutateAsync({ groupId, isArchived: !currentStatus })
       if (!currentStatus) setShowEditGroup(false)
-      setToast(!currentStatus ? 'Trip archived (Read Only).' : 'Trip restored.')
+      pushToast(!currentStatus ? 'Trip archived (Read Only).' : 'Trip restored.')
     } catch (err) {
-      setToast(err?.message || 'Could not toggle archive status.')
+      pushToast(toToastMessage(err, 'Could not toggle archive status.'))
     } finally {
       setSaving('')
     }
@@ -599,7 +601,7 @@ export default function Splitwise() {
         })
       } catch (previewError) {
         if (cancelled) return
-        setToast(previewError?.message || 'Could not open shared group invite.')
+        pushToast(toToastMessage(previewError, 'Could not open shared group invite.'))
         clearPendingSplitInviteToken()
       }
     }
@@ -608,7 +610,7 @@ export default function Splitwise() {
     return () => {
       cancelled = true
     }
-  }, [inviteTokenFromQuery, searchParams, setSearchParams, consumingInvite, invitePreview?.token, clearPendingSplitInviteToken, previewGroupInvite])
+  }, [inviteTokenFromQuery, searchParams, setSearchParams, consumingInvite, invitePreview?.token, clearPendingSplitInviteToken, previewGroupInvite, pushToast])
 
   function closeSheets() {
     setShowCreateGroup(false)
@@ -625,7 +627,7 @@ export default function Splitwise() {
     const name = String(groupForm.name || '').trim()
 
     if (!name) {
-      setToast('Group name is required.')
+      pushToast('Group name is required.')
       return
     }
 
@@ -637,7 +639,7 @@ export default function Splitwise() {
       setGroupForm({ name: '' })
       setShowCreateGroup(false)
     } catch (createError) {
-      setToast(createError?.message || 'Could not create group.')
+      pushToast(toToastMessage(createError, 'Could not create group.'))
     } finally {
       setSaving('')
     }
@@ -660,13 +662,13 @@ export default function Splitwise() {
         if (result.method === 'share') {
           // Already shared via native sheet
         } else {
-          setToast('Invite link copied.')
+          pushToast('Invite link copied.')
         }
       } else if (!result.aborted) {
-        setToast(url)
+        pushToast(url)
       }
     } catch (inviteError) {
-      setToast(inviteError?.message || 'Could not create group invite.')
+      pushToast(toToastMessage(inviteError, 'Could not create group invite.'))
     } finally {
       setSaving('')
     }
@@ -693,9 +695,9 @@ export default function Splitwise() {
     try {
       const joinedGroup = await consumeGroupInvite.mutateAsync(invitePreview.token)
       if (joinedGroup?.id) setActiveGroupId(joinedGroup.id)
-      setToast(`Joined ${joinedGroup?.name || invitePreview.groupName} as ${accountDisplayName}.`)
+      pushToast(`Joined ${joinedGroup?.name || invitePreview.groupName} as ${accountDisplayName}.`)
     } catch (consumeError) {
-      setToast(consumeError?.message || 'Could not join shared group invite.')
+      pushToast(toToastMessage(consumeError, 'Could not join shared group invite.'))
     } finally {
       setConsumingInvite(false)
       setInvitePreview(null)
@@ -715,11 +717,11 @@ export default function Splitwise() {
     try {
       optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
       await deleteGroup.mutateAsync(activeGroupId)
-      setToast('Group deleted.')
+      pushToast('Group deleted.')
       setActiveGroupId('')
       closeSheets()
     } catch (deleteError) {
-      setToast(deleteError?.message || 'Could not delete group.')
+      pushToast(toToastMessage(deleteError, 'Could not delete group.'))
     } finally {
       setSaving('')
     }
@@ -727,7 +729,7 @@ export default function Splitwise() {
 
   async function handleSetMemberRole(member, role) {
     if (!isGroupAdmin || activeGroup?.is_archived) {
-      setToast('Only admins can change member roles.')
+      pushToast('Only admins can change member roles.')
       return
     }
 
@@ -740,9 +742,9 @@ export default function Splitwise() {
         memberUserId: member.linked_user_id,
         role,
       })
-      setToast(role === 'admin' ? 'Member promoted to admin.' : role === 'member' ? 'Changed to member.' : 'Changed to viewer.')
+      pushToast(role === 'admin' ? 'Member promoted to admin.' : role === 'member' ? 'Changed to member.' : 'Changed to viewer.')
     } catch (roleError) {
-      setToast(roleError?.message || 'Could not update member role.')
+      pushToast(toToastMessage(roleError, 'Could not update member role.'))
     } finally {
       setSaving('')
     }
@@ -754,9 +756,9 @@ export default function Splitwise() {
     setSaving(`delete-${memberId}`)
     try {
       await deleteMember.mutateAsync(memberId)
-      setToast('Member removed.')
+      pushToast('Member removed.')
     } catch (err) {
-      setToast(err?.message || 'Could not remove member.')
+      pushToast(toToastMessage(err, 'Could not remove member.'))
     } finally {
       setSaving('')
     }
@@ -769,11 +771,11 @@ export default function Splitwise() {
     try {
       optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
       await leaveGroup.mutateAsync(activeGroupId)
-      setToast('Left group.')
+      pushToast('Left group.')
       setActiveGroupId('')
       closeSheets()
     } catch (err) {
-      setToast(err?.message || 'Could not leave group.')
+      pushToast(toToastMessage(err, 'Could not leave group.'))
     } finally {
       setSaving('')
     }
@@ -783,18 +785,18 @@ export default function Splitwise() {
     if (!isGroupAdmin || saving) return
     const name = String(newMemberName || '').trim()
     if (!name) {
-      setToast('Name is required.')
+      pushToast('Name is required.')
       return
     }
 
     setSaving('add-member')
     try {
       await addMember.mutateAsync({ groupId: activeGroupId, displayName: name })
-      setToast('Member added.')
+      pushToast('Member added.')
       setShowAddMember(false)
       setNewMemberName('')
     } catch (err) {
-      setToast(err?.message || 'Could not add member.')
+      pushToast(toToastMessage(err, 'Could not add member.'))
     } finally {
       setSaving('')
     }
@@ -856,12 +858,12 @@ export default function Splitwise() {
   async function handleAddExpense() {
     if (!canManageGroup || saving) {
       if (saving) return
-      setToast('You have view-only access for this group.')
+      pushToast('You have view-only access for this group.')
       return
     }
 
     if (!activeGroupId) {
-      setToast('Select a group first.')
+      pushToast('Select a group first.')
       return
     }
 
@@ -869,15 +871,15 @@ export default function Splitwise() {
     const amount = round2(expenseForm.amount)
 
     if (!description) {
-      setToast('Expense description is required.')
+      pushToast('Expense description is required.')
       return
     }
     if (!Number.isFinite(amount) || amount <= 0) {
-      setToast('Expense amount must be positive.')
+      pushToast('Expense amount must be positive.')
       return
     }
     if (!expenseForm.paid_by_member_id) {
-      setToast('Select who paid for this expense.')
+      pushToast('Select who paid for this expense.')
       return
     }
 
@@ -885,7 +887,7 @@ export default function Splitwise() {
     try {
       splits = buildSplitsPayload(expenseForm.split_method, amount)
     } catch (splitError) {
-      setToast(splitError?.message || 'Invalid split configuration.')
+      pushToast(toToastMessage(splitError, 'Invalid split configuration.'))
       return
     }
 
@@ -934,9 +936,9 @@ export default function Splitwise() {
       }))
       setEditExpense(null)
       setShowAddExpense(false)
-      setToast(editExpense ? 'Expense updated.' : 'Expense added.')
+      pushToast(editExpense ? 'Expense updated.' : 'Expense added.')
     } catch (expenseError) {
-      setToast(expenseError?.message || 'Could not save expense.')
+      pushToast(toToastMessage(expenseError, 'Could not save expense.'))
     } finally {
       setSaving('')
       actionGuard.current = false
@@ -946,33 +948,33 @@ export default function Splitwise() {
   async function handleRecordSettlement() {
     if (!canManageGroup || saving) {
       if (saving) return
-      setToast('You have view-only access for this group.')
+      pushToast('You have view-only access for this group.')
       return
     }
 
     if (!activeGroupId) {
-      setToast('Select a group first.')
+      pushToast('Select a group first.')
       return
     }
 
     const amount = round2(settlementForm.amount)
     if (!settlementForm.payer_member_id || !settlementForm.payee_member_id) {
-      setToast('Select both payer and payee.')
+      pushToast('Select both payer and payee.')
       return
     }
     if (settlementForm.payer_member_id === settlementForm.payee_member_id) {
-      setToast('Payer and payee cannot be the same.')
+      pushToast('Payer and payee cannot be the same.')
       return
     }
     if (!Number.isFinite(amount) || amount <= 0) {
-      setToast('Settlement amount must be positive.')
+      pushToast('Settlement amount must be positive.')
       return
     }
 
     const expenseCurrencies = new Set(expenses.map(e => String(e.currency_code || 'INR').toUpperCase()))
     const settlementCurrency = String(settlementForm.currency_code || 'INR').toUpperCase()
     if (expenseCurrencies.size > 0 && !expenseCurrencies.has(settlementCurrency) && !expenseCurrencies.has('INR')) {
-      setToast(`Cross-currency settle-up not supported. Expenses are in ${[...expenseCurrencies].join(', ')}`)
+      pushToast(`Cross-currency settle-up not supported. Expenses are in ${[...expenseCurrencies].join(', ')}`)
       return
     }
 
@@ -1000,9 +1002,9 @@ export default function Splitwise() {
       }))
       setEditSettlement(null)
       setShowSettlement(false)
-      setToast('Settlement recorded.')
+      pushToast('Settlement recorded.')
     } catch (settlementError) {
-      setToast(settlementError?.message || 'Could not record settlement.')
+      pushToast(toToastMessage(settlementError, 'Could not record settlement.'))
     } finally {
       setSaving('')
       actionGuard.current = false
@@ -1051,7 +1053,7 @@ export default function Splitwise() {
 
   async function handleDeleteExpense(expenseId) {
     if (!canManageGroup) {
-      setToast('You have view-only access for this group.')
+      pushToast('You have view-only access for this group.')
       return
     }
 
@@ -1060,7 +1062,7 @@ export default function Splitwise() {
     try {
       await deleteExpense.mutateAsync(expenseId)
     } catch (deleteError) {
-      setToast(deleteError?.message || 'Could not delete expense.')
+      pushToast(toToastMessage(deleteError, 'Could not delete expense.'))
     } finally {
       setSaving('')
     }
@@ -1068,7 +1070,7 @@ export default function Splitwise() {
 
   async function handleDeleteSettlement(settlementId) {
     if (!canManageGroup) {
-      setToast('You have view-only access for this group.')
+      pushToast('You have view-only access for this group.')
       return
     }
 
@@ -1077,7 +1079,7 @@ export default function Splitwise() {
     try {
       await deleteSettlement.mutateAsync(settlementId)
     } catch (deleteError) {
-      setToast(deleteError?.message || 'Could not delete settlement.')
+      pushToast(toToastMessage(deleteError, 'Could not delete settlement.'))
     } finally {
       setSaving('')
     }
@@ -1140,11 +1142,6 @@ export default function Splitwise() {
   // On touch this focuses the sheet container instead of auto-popping the keyboard, and
   // restores focus with preventScroll on close — without it, focusing an input scrolls
   // the page and leaves the composited fixed bottom-nav displaced after the keyboard hides.
-  const createGroupSheetRef = useOverlayFocusTrap(showCreateGroup, { onClose: closeSheets })
-  const addMemberSheetRef = useOverlayFocusTrap(showAddMember, { onClose: closeSheets })
-  const addExpenseSheetRef = useOverlayFocusTrap(showAddExpense, { onClose: closeSheets })
-  const settlementSheetRef = useOverlayFocusTrap(showSettlement, { onClose: closeSheets })
-  const editGroupSheetRef = useOverlayFocusTrap(showEditGroup, { onClose: () => setShowEditGroup(false) })
 
   return (
     <PageHeaderPage title="Splitwise">
@@ -1716,34 +1713,16 @@ export default function Splitwise() {
       {createPortal(
         <>
           <AnimatePresence>
-        {invitePreview && (
-          <>
-            <motion.div
-              className="sheet-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={handleDismissInvitePreview}
-            />
-            <motion.div
-              className="sheet-panel"
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.2 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-display font-bold text-ink">Join Shared Trip</h2>
-                  <button type="button" onClick={handleDismissInvitePreview} className="close-btn" aria-label="Close join group sheet">
-                    <X size={16} className="text-ink-3" />
-                  </button>
-                </div>
-
+        <Sheet
+          open={!!invitePreview}
+          onClose={handleDismissInvitePreview}
+          title="Join Shared Trip"
+          contentClassName="px-5"
+        >
                 <div className="relative mb-4 overflow-hidden rounded-card">
                   <div className="h-32 w-full bg-kosha-surface-2">
                     <img
-                      src={(BANNERS.find(b => b.id === (readBannerFromStorage(invitePreview.groupId) || 'goa')) || BANNERS[0]).src}
+                      src={(BANNERS.find(b => b.id === (readBannerFromStorage(invitePreview?.groupId) || 'goa')) || BANNERS[0]).src}
                       alt=""
                       className="h-full w-full object-cover"
                     />
@@ -1751,7 +1730,7 @@ export default function Splitwise() {
                   </div>
                   <div className="absolute bottom-3 left-3 right-3 text-white">
                     <p className="text-[10px] opacity-80 mb-0.5 tracking-wider uppercase">Trip Invitation</p>
-                    <h2 className="text-[20px] font-bold truncate leading-tight">{invitePreview.groupName || 'Shared group'}</h2>
+                    <h2 className="text-[20px] font-bold truncate leading-tight">{invitePreview?.groupName || 'Shared group'}</h2>
                   </div>
                 </div>
 
@@ -1784,53 +1763,17 @@ export default function Splitwise() {
                     Join Group
                   </Button>
                 </div>
-              </div>
-            </motion.div>
-          </>
-        )}
+        </Sheet>
       </AnimatePresence>
 
       <AnimatePresence>
-        {showCreateGroup && (
-          <>
-            <motion.div
-              className="sheet-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={closeSheets}
-            />
-            <motion.div
-              ref={createGroupSheetRef}
-              tabIndex={-1}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Create group"
-              className="sheet-panel"
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.2 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5 overflow-y-auto">
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-display font-bold text-ink">Create Group</h2>
-                  <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close create group sheet">
-                    <X size={16} className="text-ink-3" />
-                  </button>
-                </div>
-
-                <div className="list-card mb-3">
-                  <label className="list-row w-full cursor-pointer">
-                    <span className="text-[14px] text-ink-3">Group Name</span>
-                    <input
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={groupForm.name}
-                      onChange={(event) => setGroupForm((prev) => ({ ...prev, name: event.target.value }))}
-                      placeholder="Trip to Goa"
-                    />
-                  </label>
-                </div>
+        <Sheet
+          open={showCreateGroup}
+          onClose={closeSheets}
+          title="Create Group"
+          contentClassName="px-5 overflow-y-auto"
+        >
+                <div className="mb-3"><Input label="Group Name" value={groupForm.name} onChange={(event) => setGroupForm((prev) => ({ ...prev, name: event.target.value }))} placeholder="Trip to Goa" /></div>
 
                 <p className="mb-4 text-[12px] text-ink-3">
                   Your Kosha account name ({accountDisplayName}) will be used automatically.
@@ -1845,53 +1788,17 @@ export default function Splitwise() {
                 >
                   Create Group
                 </Button>
-              </div>
-            </motion.div>
-          </>
-        )}
+        </Sheet>
       </AnimatePresence>
 
       <AnimatePresence>
-        {showAddMember && (
-          <>
-            <motion.div
-              className="sheet-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={closeSheets}
-            />
-            <motion.div
-              ref={addMemberSheetRef}
-              tabIndex={-1}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Add member"
-              className="sheet-panel"
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.2 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5 overflow-y-auto">
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-display font-bold text-ink">Add Member</h2>
-                  <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close add member sheet">
-                    <X size={16} className="text-ink-3" />
-                  </button>
-                </div>
-
-                <div className="list-card mb-4">
-                  <label className="list-row w-full cursor-pointer">
-                    <span className="text-[14px] text-ink-3">Name</span>
-                    <input
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={newMemberName}
-                      onChange={(event) => setNewMemberName(event.target.value)}
-                      placeholder="Jane Doe"
-                    />
-                  </label>
-                </div>
+        <Sheet
+          open={showAddMember}
+          onClose={closeSheets}
+          title="Add Member"
+          contentClassName="px-5 overflow-y-auto"
+        >
+                <div className="mb-4"><Input label="Name" value={newMemberName} onChange={(event) => setNewMemberName(event.target.value)} placeholder="Jane Doe" /></div>
 
                 <Button
                   variant="primary"
@@ -1902,62 +1809,20 @@ export default function Splitwise() {
                 >
                   Add Member
                 </Button>
-              </div>
-            </motion.div>
-          </>
-        )}
+        </Sheet>
       </AnimatePresence>
 
       <AnimatePresence>
-        {showAddExpense && (
-          <>
-            <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }} onClick={closeSheets} />
-            <motion.div
-              ref={addExpenseSheetRef}
-              tabIndex={-1}
-              role="dialog"
-              aria-modal="true"
-              aria-label={editExpense ? 'Edit expense' : 'Add expense'}
-              className="sheet-panel"
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.2 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5 overflow-y-auto">
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-display font-bold text-ink">{editExpense ? 'Edit Expense' : 'Add Expense'}</h2>
-                  <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close add expense sheet">
-                    <X size={16} className="text-ink-3" />
-                  </button>
-                </div>
+        <Sheet
+          open={showAddExpense}
+          onClose={closeSheets}
+          title={editExpense ? 'Edit Expense' : 'Add Expense'}
+          contentClassName="px-5 overflow-y-auto"
+        >
 
-                <div className="list-card mb-3">
-                  <label className="list-row w-full cursor-pointer">
-                    <span className="text-[14px] text-ink-3">Description</span>
-                    <input
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={expenseForm.description}
-                      onChange={(event) => setExpenseForm((prev) => ({ ...prev, description: event.target.value }))}
-                      placeholder="Dinner"
-                    />
-                  </label>
-                </div>
+                <div className="mb-3"><Input label="Description" value={expenseForm.description} onChange={(event) => setExpenseForm((prev) => ({ ...prev, description: event.target.value }))} placeholder="Dinner" /></div>
 
-                <div className="list-card mb-3">
-                  <label className="list-row w-full cursor-pointer">
-                    <span className="text-[14px] text-ink-3">Amount</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9.]*"
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={expenseForm.amount}
-                      onChange={(event) => setExpenseForm((prev) => ({ ...prev, amount: event.target.value }))}
-                      placeholder="0"
-                    />
-                  </label>
-                </div>
+                <div className="mb-3"><Input label="Amount" type="text" inputMode="decimal" pattern="[0-9.]*" value={expenseForm.amount} onChange={(event) => setExpenseForm((prev) => ({ ...prev, amount: event.target.value }))} placeholder="0" /></div>
 
                 <div className="list-card mb-3">
                   <div className="list-row w-full">
@@ -2122,35 +1987,16 @@ export default function Splitwise() {
                 >
                   {editExpense ? (saving === 'expense-edit' ? 'Updating…' : 'Update Expense') : (saving === 'expense' ? 'Adding…' : 'Add Expense')}
                 </Button>
-              </div>
-            </motion.div>
-          </>
-        )}
+        </Sheet>
       </AnimatePresence>
 
       <AnimatePresence>
-        {showSettlement && (
-          <>
-            <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }} onClick={closeSheets} />
-            <motion.div
-              ref={settlementSheetRef}
-              tabIndex={-1}
-              role="dialog"
-              aria-modal="true"
-              aria-label={editSettlement ? 'Edit settlement' : 'Record settlement'}
-              className="sheet-panel"
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.2 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5 overflow-y-auto">
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-display font-bold text-ink">{editSettlement ? 'Edit Settlement' : 'Record Settlement'}</h2>
-                  <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close settlement sheet">
-                    <X size={16} className="text-ink-3" />
-                  </button>
-                </div>
+        <Sheet
+          open={showSettlement}
+          onClose={closeSheets}
+          title={editSettlement ? 'Edit Settlement' : 'Record Settlement'}
+          contentClassName="px-5 overflow-y-auto"
+        >
 
                 <div className="list-card mb-3">
                   <label className="list-row w-full">
@@ -2230,30 +2076,16 @@ export default function Splitwise() {
                 >
                   {editSettlement ? (saving === 'settlement-edit' ? 'Updating…' : 'Update Settlement') : (saving === 'settlement' ? 'Recording…' : 'Record Settlement')}
                 </Button>
-              </div>
-            </motion.div>
-          </>
-        )}
+        </Sheet>
       </AnimatePresence>
 
       <AnimatePresence>
-        {showBannerPicker && (
-          <>
-            <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }} onClick={() => setShowBannerPicker(false)} />
-            <motion.div
-              className="sheet-panel"
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.2 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5 pb-8 overflow-y-auto max-h-[85vh]">
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-display font-bold text-ink">Trip Banner</h2>
-                  <button type="button" onClick={() => setShowBannerPicker(false)} className="close-btn" aria-label="Close banner picker">
-                    <X size={16} className="text-ink-3" />
-                  </button>
-                </div>
+        <Sheet
+          open={showBannerPicker}
+          onClose={() => setShowBannerPicker(false)}
+          title="Trip Banner"
+          contentClassName="px-5 pb-8 overflow-y-auto max-h-[85vh]"
+        >
                 <div className="grid grid-cols-2 gap-3">
                   {BANNERS.map((banner) => (
                     <button
@@ -2268,35 +2100,16 @@ export default function Splitwise() {
                     </button>
                   ))}
                 </div>
-              </div>
-            </motion.div>
-          </>
-        )}
+        </Sheet>
       </AnimatePresence>
 
       <AnimatePresence>
-        {showEditGroup && (
-          <>
-            <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }} onClick={() => setShowEditGroup(false)} />
-            <motion.div
-              ref={editGroupSheetRef}
-              tabIndex={-1}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Trip settings"
-              className="sheet-panel"
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.2 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5 pb-8 overflow-y-auto max-h-[85vh]">
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-display font-bold text-ink">Trip Settings</h2>
-                  <button type="button" onClick={() => setShowEditGroup(false)} className="close-btn" aria-label="Close edit group">
-                    <X size={16} className="text-ink-3" />
-                  </button>
-                </div>
+        <Sheet
+          open={showEditGroup}
+          onClose={() => setShowEditGroup(false)}
+          title="Trip Settings"
+          contentClassName="px-5 pb-8 overflow-y-auto max-h-[85vh]"
+        >
 
                 {!activeGroup?.is_archived && (
                   <>
@@ -2363,16 +2176,13 @@ export default function Splitwise() {
                     Delete Trip Forever
                   </Button>
                 </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-          </AnimatePresence>
+        </Sheet>
+      </AnimatePresence>
         </>,
         document.body
       )}
 
-      <AppToast message={toast} onDismiss={() => setToast(null)} />
+      
       <PartnerViewBanner />
     </PageHeaderPage>
   )

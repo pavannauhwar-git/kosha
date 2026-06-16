@@ -151,6 +151,14 @@
   --ds-sidebar-width: 240px;
   --ds-shell-max: 600px;
 
+  /* Z-index ladder — single source of truth */
+  --ds-z-nav: 30;
+  --ds-z-fab: 35;
+  --ds-z-sheet-backdrop: 40;
+  --ds-z-sheet: 50;
+  --ds-z-toast: 60;
+  --ds-z-lightbox: 70;
+
   /* ── Shimmer ────────────────────────── */
   --ds-shimmer-1: #E9EEF6;
   --ds-shimmer-2: #D8DDE6;
@@ -946,7 +954,8 @@ textarea:focus-visible,
   .fab,
   .fab-bills,
   .fab-loans {
-    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center z-40 cursor-pointer;
+    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center cursor-pointer;
+    z-index: var(--ds-z-fab);
     background: var(--ds-primary);
     bottom: calc(var(--nav-height) + 1rem);
     right: max(1rem, calc((100vw - var(--app-shell-max)) / 2 + 1rem));
@@ -990,7 +999,7 @@ textarea:focus-visible,
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 30;
+    z-index: var(--ds-z-nav);
     border-top: 1px solid var(--ds-border);
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: saturate(160%) blur(12px);
@@ -1158,14 +1167,16 @@ textarea:focus-visible,
 
   /* -- Bottom sheet ────────────────────────────────────────────────── */
   .sheet-backdrop {
-    @apply fixed inset-0 z-40;
+    @apply fixed inset-0;
+    z-index: var(--ds-z-sheet-backdrop);
     background: rgba(17, 19, 24, 0.40);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
 
   .sheet-panel {
-    @apply fixed bottom-0 bg-kosha-surface z-50;
+    @apply fixed bottom-0 bg-kosha-surface;
+    z-index: var(--ds-z-sheet);
     left: 0;
     right: 0;
     width: min(100%, var(--app-shell-max));
@@ -1175,8 +1186,14 @@ textarea:focus-visible,
     box-shadow: 0 -8px 40px rgba(17, 19, 24, 0.10);
     border-radius: 24px 24px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
-    max-height: calc(100dvh - var(--safe-top) - 0.5rem);
+    /* Sit directly on top of the on-screen keyboard (iOS PWA). --kb-inset is
+       published by useKeyboardInset; 0px when no keyboard. This keeps the
+       focused input visible so iOS never offsets the viewport (which used to
+       leave the sheet + nav displaced). */
+    bottom: var(--kb-inset, 0px);
+    max-height: calc(100dvh - var(--safe-top) - 0.5rem - var(--kb-inset, 0px));
     overflow-y: auto;
+    transition: bottom 0.2s cubic-bezier(0.2, 0, 0, 1);
     overflow-x: hidden;
     overscroll-behavior-y: contain;
     overscroll-behavior-x: none;
@@ -1187,6 +1204,24 @@ textarea:focus-visible,
     /* Own compositor layer */
     will-change: transform;
     transform: translateZ(0);
+  }
+
+  /* Centered modal variant of the Sheet primitive (replaces EditProfileNameDialog-style overlays). */
+  .sheet-panel--center {
+    bottom: auto;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
+    width: min(100% - 2rem, 480px);
+    max-width: 480px;
+    border-radius: 28px;
+    /* Stay clear of the keyboard for the same reason as the bottom variant (Phase 0). */
+    max-height: calc(100dvh - var(--safe-top) - 2rem - var(--kb-inset, 0px));
+  }
+
+  @media (min-width: 600px) {
+    .sheet-panel--center { width: 480px; }
   }
 
   .sheet-panel::before {

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Plus, X, Check, Repeat, CircleNotch, DownloadSimple, BookOpen, ArrowRight, PencilSimple, CalendarDots, DotsThreeVertical, Trash, ArrowUpRight } from '@phosphor-icons/react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -19,14 +19,16 @@ import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
 import PageHeaderPage from '../layout/PageHeaderPage'
 import SkeletonLayout from '../common/SkeletonLayout'
 import EmptyState from '../common/EmptyState'
-import AppToast from '../common/AppToast'
+
 import BillPaymentInsights from '../cards/bills/BillPaymentInsights'
 import Button from '../ui/Button'
 import PixelDatePicker from '../ui/PixelDatePicker'
-import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import useWindowedList from '../../hooks/useWindowedList'
+import Sheet from '../ui/Sheet'
+import { useAppToast } from '../../context/ToastContext'
+import { toToastMessage } from '../../lib/errorTaxonomy'
+import Input from '../ui/Input'
 import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
-import useToast from '../../hooks/useToast'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const PAYMENT_MODES = [
@@ -106,8 +108,7 @@ export default function Bills({
 
   const [form, setForm] = useState(() => createInitialBillForm())
   const [formErr, setFormErr] = useState('')
-  const [errToast, setErrToast] = useState(null)
-  const { toast, toastAction, toastActionLabel, pushToast, dismissToast } = useToast()
+  const { pushToast } = useAppToast()
   const pendingDeleteRef = useRef(null)
   const [overflowBillId, setOverflowBillId] = useState(null)
   const overflowBillRef = useRef(null)
@@ -220,10 +221,6 @@ export default function Bills({
     closeAddBillSheet()
   }, [isSaving, closeAddBillSheet])
 
-  const addBillSheetRef = useOverlayFocusTrap(showAdd, {
-    onClose: dismissAddBillSheet,
-    initialFocusSelector: 'input[name="bill-description"]',
-  })
 
   const visiblePending = useMemo(() => pending.filter((bill) => !hiddenBillIds.has(bill.id)), [pending, hiddenBillIds])
   const visiblePaid = useMemo(() => paid.filter((bill) => !hiddenBillIds.has(bill.id)), [paid, hiddenBillIds])
@@ -459,8 +456,7 @@ export default function Bills({
 
       if (error) throw error
       if (!rows?.length) {
-        setErrToast(`No ${tab} bills to export.`)
-        setTimeout(() => setErrToast(null), 4000)
+        pushToast(`No ${tab} bills to export.`)
         return
       }
 
@@ -488,8 +484,7 @@ export default function Bills({
       const date = todayStr()
       downloadCsv(`kosha-${tab}-bills-${date}.csv`, csv)
     } catch (e) {
-      setErrToast(e.message || 'Could not export bills CSV.')
-      setTimeout(() => setErrToast(null), 4000)
+      pushToast(toToastMessage(e, 'Could not export bills CSV.'))
     }
   }
 
@@ -517,7 +512,7 @@ export default function Bills({
         setTab('pending')
         closeAddBillSheet()
       } catch (e) {
-        setErrToast(e.message || 'Could not update bill. Check your connection.')
+        pushToast(toToastMessage(e, 'Could not update bill. Check your connection.'))
       }
       return
     }
@@ -528,7 +523,7 @@ export default function Bills({
       setTab('pending')
       closeAddBillSheet()
     } catch (e) {
-      setErrToast(e.message || 'Could not add bill. Check your connection.')
+      pushToast(toToastMessage(e, 'Could not add bill. Check your connection.'))
     }
   }
   async function handleMarkPaid(bill) {
@@ -540,7 +535,7 @@ export default function Bills({
       setPayingId(null)
     } catch (e) {
       setPayingId(null)
-      setErrToast(e.message || 'Could not mark bill as paid. Check your connection.')
+      pushToast(toToastMessage(e, 'Could not mark bill as paid. Check your connection.'))
     } finally {
       actionGuard.current = false
     }
@@ -959,54 +954,33 @@ export default function Bills({
       </div>
 
       {/* ── Add Bill Sheet ────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showAdd && (
-          <>
-            <motion.div className="sheet-backdrop"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-              onClick={dismissAddBillSheet}
-            />
-            <motion.div
-              ref={addBillSheetRef}
-              className="sheet-panel"
-              tabIndex={-1}
-              role="dialog"
-              aria-modal="true"
-              aria-label={editBill ? 'Edit bill' : 'Add bill'}
-              initial={{ y: '100%' }}
-              animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-              exit={{ y: '100%', transition: { duration: 0.22 } }}
-            >
-              <div className="sheet-handle" />
-              <div className="px-5 overflow-x-hidden">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-display font-bold text-ink">{editBill ? 'Edit Bill' : 'Add Bill'}</h2>
-                  <button
-                    type="button"
-                    aria-label="Close add bill sheet"
-                    onClick={dismissAddBillSheet}
-                    className="close-btn"
-                  >
-                    <X size={16} className="text-ink-3" />
-                  </button>
+      <Sheet
+        open={showAdd}
+        onClose={dismissAddBillSheet}
+        title={editBill ? 'Edit Bill' : 'Add Bill'}
+        initialFocusSelector='input[name="bill-description"]'
+        contentClassName="px-5 overflow-x-hidden"
+      >
+                <div className="mb-3">
+                  <Input
+                    label="Description"
+                    placeholder="e.g. Car EMI"
+                    value={form.description}
+                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  />
                 </div>
 
-                <input
-                  className="input mb-3"
-                  name="bill-description"
-                  placeholder="Description (e.g. Car EMI)"
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                />
-
-                <div className="bg-transparent px-1 py-2 mb-3 overflow-hidden
-                                flex items-center gap-2 border-b-2 border-kosha-border
-                                transition-[border-color] duration-200">
-                  <span className="text-xl font-bold text-brand">₹</span>
-                  <input className="flex-1 bg-transparent text-2xl font-bold text-ink outline-none min-w-0"
-                    type="text" inputMode="decimal" pattern="[0-9.]*" name="bill-amount" placeholder="0"
+                <div className="mb-3">
+                  <Input
+                    label="Amount"
+                    icon={<span className="text-brand font-bold">₹</span>}
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9.]*"
+                    placeholder="0"
                     value={form.amount}
-                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
+                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                  />
                 </div>
 
                 <div className="list-card mb-3">
@@ -1092,28 +1066,13 @@ export default function Bills({
                     {isSaving ? (editBill ? 'Saving…' : 'Adding…') : (editBill ? 'Save Changes' : 'Add Bill')}
                   </Button>
                 </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
+      </Sheet>
       {/* FAB */}
       {!embedded && !isViewingPartner && (
         <button className="fab-bills" aria-label="Add bill" onClick={() => setShowAdd(true)}>
           <Plus size={24} className="text-white" />
         </button>
       )}
-
-      <AppToast
-        message={toast || errToast}
-        onDismiss={() => {
-          dismissToast()
-          setErrToast(null)
-        }}
-        action={toastAction}
-        actionLabel={toastActionLabel}
-      />
 
     </PageHeaderPage>
   )

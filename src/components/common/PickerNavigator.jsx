@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { MONTH_SHORT } from '../../lib/constants'
-import BottomSheet from '../ui/BottomSheet'
+import Sheet from '../ui/Sheet'
 import Button from '../ui/Button'
 import Select from '../ui/Select'
 
@@ -135,7 +135,7 @@ export default function PickerNavigator({
         </button>
       </div>
 
-      <BottomSheet
+       <Sheet
         open={open}
         onClose={() => setOpen(false)}
         title={mode === 'month' ? 'Jump to month' : 'Jump to year'}
@@ -269,7 +269,7 @@ export default function PickerNavigator({
             </div>
           </div>
         </div>
-      </BottomSheet>
+      </Sheet>
     </>
   )
 }

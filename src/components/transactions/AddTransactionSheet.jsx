@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash, Info } from '@phosphor-icons/react'
 import Button from '../ui/Button'
+import Input from '../ui/Input'
 import Select from '../ui/Select'
 import PixelDatePicker from '../ui/PixelDatePicker'
 import { saveTransactionMutation } from '../../hooks/useTransactions'
@@ -16,8 +17,8 @@ import {
 } from '../../lib/categories'
 import { archiveUserCategory, useUserCategories } from '../../hooks/useUserCategories'
 import { useAppMutation } from '../../hooks/useAppMutation'
-import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import CreateCategorySheet from '../categories/CreateCategorySheet'
+import Sheet from '../ui/Sheet'
 import { useSplitwise, addSplitExpenseMutation, buildEqualSplits } from '../../hooks/useSplitwise'
 import { supabase } from '../../lib/supabase'
 import { validateAmount } from '../../lib/validateAmount.js'
@@ -312,7 +313,6 @@ function CategoryPicker({
   onEditCustom,
   onDeleteCustom,
 }) {
-  const sheetRef = useOverlayFocusTrap(true, { onClose })
   const hasManageableCategories = categories.some((cat) => Boolean(cat.isCustom && cat.dbId))
   const [showSwipeHint, setShowSwipeHint] = useState(false)
 
@@ -338,30 +338,7 @@ function CategoryPicker({
   }
 
   return (
-    <>
-      <motion.div className="sheet-backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-      <motion.div
-        ref={sheetRef}
-        className="sheet-panel"
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-        exit={{ y: '100%', transition: { duration: 0.2 } }}
-      >
-        <div className="sheet-handle" />
-        <div className="px-4 pb-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[18px] font-bold text-ink">{title}</h3>
-            <button type="button" aria-label="Close category picker" onClick={onClose} className="close-btn">
-              <X size={16} className="text-ink-3" />
-            </button>
-          </div>
+    <Sheet open={true} onClose={onClose} title={title} contentClassName="px-4 pb-2">
 
           {showSwipeHint && (
             <div className="hint-card flex items-start gap-2.5 mb-4">
@@ -419,40 +396,13 @@ function CategoryPicker({
               <span className="flex-1 text-[15px] text-ink-3 text-left">Create Category</span>
             </button>
           )}
-        </div>
-      </motion.div>
-    </>
+    </Sheet>
   )
 }
 
 function ModePicker({ selected, onSelect, onClose }) {
-  const sheetRef = useOverlayFocusTrap(true, { onClose })
-
   return (
-    <>
-      <motion.div className="sheet-backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-      <motion.div
-        ref={sheetRef}
-        className="sheet-panel"
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Payment mode"
-        initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-        exit={{ y: '100%', transition: { duration: 0.2 } }}
-      >
-        <div className="sheet-handle" />
-        <div className="px-4 pb-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[18px] font-bold text-ink">Payment Mode</h3>
-            <button type="button" aria-label="Close payment mode picker" onClick={onClose} className="close-btn">
-              <X size={16} className="text-ink-3" />
-            </button>
-          </div>
+    <Sheet open={true} onClose={onClose} title="Payment Mode" contentClassName="px-4 pb-2">
           <div className="list-card">
             {PAYMENT_MODES.map(m => {
               const Icon = ICON_MAP[m.icon]
@@ -485,9 +435,7 @@ function ModePicker({ selected, onSelect, onClose }) {
               )
             })}
           </div>
-        </div>
-      </motion.div>
-    </>
+    </Sheet>
   )
 }
 
@@ -500,7 +448,6 @@ function VehiclePicker({
   onEditCustom,
   onDeleteCustom,
 }) {
-  const sheetRef = useOverlayFocusTrap(true, { onClose })
   const hasManageableVehicles = vehicles.some((item) => Boolean(item.isCustom && item.dbId))
   const [showSwipeHint, setShowSwipeHint] = useState(false)
 
@@ -526,30 +473,7 @@ function VehiclePicker({
   }
 
   return (
-    <>
-      <motion.div className="sheet-backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-      <motion.div
-        ref={sheetRef}
-        className="sheet-panel"
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Investment type"
-        initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-        exit={{ y: '100%', transition: { duration: 0.2 } }}
-      >
-        <div className="sheet-handle" />
-        <div className="px-4 pb-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[18px] font-bold text-ink">Investment Type</h3>
-            <button type="button" aria-label="Close investment type picker" onClick={onClose} className="close-btn">
-              <X size={16} className="text-ink-3" />
-            </button>
-          </div>
+    <Sheet open={true} onClose={onClose} title="Investment Type" contentClassName="px-4 pb-2">
 
           {showSwipeHint && (
             <div className="hint-card flex items-start gap-2.5 mb-4">
@@ -625,9 +549,7 @@ function VehiclePicker({
               <span className="flex-1 text-[15px] text-ink-3 text-left">Create Category</span>
             </button>
           )}
-        </div>
-      </motion.div>
-    </>
+    </Sheet>
   )
 }
 
@@ -756,13 +678,6 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   const archiveCategoryMutation = useAppMutation(archiveUserCategory, { context: 'categories:delete' })
 
-  const mainSheetRef = useOverlayFocusTrap(
-    !showCatPicker && !showModePicker && !showVehPicker && !showCreateCat,
-    {
-      onClose: isSaving ? undefined : onClose,
-      initialFocusSelector: 'input[name="txn-amount"]',
-    }
-  )
 
   async function handleDeleteCustomCategory(customCategory) {
     const dbId = customCategory?.dbId
@@ -874,43 +789,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   return (
     <>
-      <motion.div className="sheet-backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }}
-        // Prevent closing by tapping backdrop while saving — data integrity
-        onClick={isSaving ? undefined : onClose}
-      />
-      <motion.div
-        ref={mainSheetRef}
-        className="sheet-panel"
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={editTxn ? 'Edit transaction' : 'Add transaction'}
-        initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-        exit={{ y: '100%', transition: { duration: 0.22 } }}
+      <Sheet
+        open={true}
+        trapFocus={!showCatPicker && !showModePicker && !showVehPicker && !showCreateCat}
+        onClose={isSaving ? () => {} : onClose}
+        title={editTxn ? 'Edit Transaction' : 'Add Transaction'}
+        dismissOnBackdrop={!isSaving}
+        showClose={!isSaving}
+        initialFocusSelector='input[name="txn-amount"]'
+        contentClassName="px-4"
       >
-        <div className="sheet-handle" />
-        <div className="px-4">
-
-          {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-[20px] font-bold text-ink">
-              {editTxn ? 'Edit Transaction' : 'Add Transaction'}
-            </h2>
-            <div className="flex items-center gap-3">
-              {/* X button disabled while saving to prevent accidental close mid-flight */}
-              <button
-                type="button"
-                aria-label="Close transaction sheet"
-                onClick={isSaving ? undefined : onClose}
-                disabled={isSaving}
-                className="close-btn disabled:opacity-40"
-              >
-                <X size={16} className="text-ink-3" />
-              </button>
-            </div>
-          </div>
 
           {isLinkedToSplitwise && (
             <div className="mb-5 p-3 bg-brand-container/30 border border-brand/10 rounded-card flex items-start gap-3">
@@ -965,16 +853,19 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             </FormField>
 
           {/* Description */}
-          <input
-            ref={descRef}
-            type="text" name="txn-description" placeholder="Description"
-            aria-label="Transaction description"
-            enterKeyHint="done"
-            autoCapitalize="sentences"
-            value={desc} onChange={e => set('desc', e.target.value)}
-            disabled={isSaving || isLinkedToSplitwise}
-            className="input mb-3 disabled:opacity-50"
-          />
+          <div className="mb-3">
+            <Input
+              ref={descRef}
+              name="txn-description"
+              placeholder="Description"
+              aria-label="Transaction description"
+              enterKeyHint="done"
+              autoCapitalize="sentences"
+              value={desc}
+              onChange={e => set('desc', e.target.value)}
+              disabled={isSaving || isLinkedToSplitwise}
+            />
+          </div>
 
           <AnimatePresence>
             {matchingBill && (
@@ -1278,8 +1169,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <div className="h-2" />
           </div>
           </form>
-        </div>
-      </motion.div>
+      </Sheet>
 
       <AnimatePresence>
         {showCatPicker && (

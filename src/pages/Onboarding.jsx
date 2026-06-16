@@ -13,8 +13,11 @@ import { createFadeUp, createStagger } from '../lib/animations'
 import { useAppMutation } from '../hooks/useAppMutation'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+
+import { useAppToast } from '../context/ToastContext'
+import { toToastMessage } from '../lib/errorTaxonomy'
 import { todayStr } from '../lib/utils'
-import AppToast from '../components/common/AppToast'
+
 
 const fadeUp = createFadeUp(8, 0.2)
 const stepStagger = createStagger(0.07, 0)
@@ -357,7 +360,7 @@ export default function Onboarding() {
   const [step,   setStep]   = useState(0)
   const [name,   setName]   = useState('')
   const [finishError, setFinishError] = useState('')
-  const [toast, setToast] = useState(null)
+  const { pushToast } = useAppToast()
 
   const updateProfileMutation = useAppMutation(updateProfile, { context: 'onboarding:saveProfile', networkMode: 'online' })
   const finishMutation = useAppMutation(updateProfile, { context: 'onboarding:finish', networkMode: 'online' })
@@ -377,7 +380,7 @@ export default function Onboarding() {
     try {
       await updateProfileMutation.mutateAsync({ display_name: name, monthly_income: monthlyIncome })
     } catch (e) {
-      setToast(e?.message || 'Could not save profile details.')
+      pushToast(toToastMessage(e, 'Could not save profile details.'))
     }
     setStep(2)
   }
@@ -432,7 +435,6 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-[max(3rem,calc(env(safe-area-inset-top)+1rem))] pb-[max(2.5rem,calc(env(safe-area-inset-bottom)+1rem))]">
-      {toast && <AppToast message={toast} onDismiss={() => setToast(null)} />}
       <div className="w-full max-w-sm mx-auto flex flex-col flex-1">
 
         {/* Header row: Logo + Skip button */}

@@ -2,15 +2,14 @@ import { QueryClient, MutationCache, QueryCache } from '@tanstack/react-query'
 import { captureError, isExpectedMutationError } from './errorReporting'
 
 import { saveTransactionMutation, removeTransactionMutation } from '../hooks/useTransactions'
-import { addLiabilityMutation, updateLiabilityMutation, markLiabilityPaidMutation, deleteLiabilityMutation } from '../hooks/useLiabilities'
-import { addLoanMutation, updateLoanMutation, recordLoanPaymentMutation, deleteLoanMutation } from '../hooks/useLoans'
+import { addLiabilityMutation, markLiabilityPaidMutation, deleteLiabilityMutation } from '../hooks/useLiabilities'
+import { addLoanMutation, deleteLoanMutation } from '../hooks/useLoans'
 import {
   createSplitGroupMutation, addSplitMemberMutation, addSplitExpenseMutation,
   recordSplitSettlementMutation, deleteSplitSettlementMutation, deleteSplitExpenseMutation,
   deleteSplitGroupMutation, deleteSplitMemberMutation, leaveSplitGroupMutation,
   updateSplitExpenseMutation, updateSplitGroupMutation, setSplitGroupAccessRoleMutation,
-  createSplitGroupInviteMutation, previewSplitGroupInviteMutation, consumeSplitGroupInviteMutation,
-  toggleArchiveSplitGroupMutation, updateSplitGroupBannerMutation
+  createSplitGroupInviteMutation, previewSplitGroupInviteMutation, consumeSplitGroupInviteMutation
 } from '../hooks/useSplitwise'
 import { createUserCategory, updateUserCategory, archiveUserCategory } from '../hooks/useUserCategories'
 

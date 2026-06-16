@@ -14,7 +14,7 @@ import { useLiabilities } from '../hooks/useLiabilities'
 import { useAppMutation } from '../hooks/useAppMutation'
 import { CATEGORIES } from '../lib/categories'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
-import { useSafeTimeout } from '../hooks/useSafeTimeout'
+
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, savingsRate, daysUntil } from '../lib/utils'
@@ -25,7 +25,8 @@ import DashboardHeroCard from '../components/cards/dashboard/DashboardHeroCard'
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions'
 import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
-import AppToast from '../components/common/AppToast'
+import { useAppToast } from '../context/ToastContext'
+import { toToastMessage } from '../lib/errorTaxonomy'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
@@ -68,7 +69,7 @@ function DashboardSectionCue({ title, subtitle }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { setSafeTimeout } = useSafeTimeout()
+
   const [now, setNow] = useState(() => new Date())
   const [reminderPrefs, setReminderPrefsState] = useState(() => getReminderPrefs())
 
@@ -115,9 +116,7 @@ export default function Dashboard() {
   const [addType, setAddType] = useState('expense')
   const [duplicateTxn, setDuplicateTxn] = useState(null)
   const [heroMode, setHeroMode] = useState('balance')
-  const [toast, setToast] = useState(null)
-  const [toastAction, setToastAction] = useState(null)
-  const [toastActionLabel, setToastActionLabel] = useState(null)
+  const { pushToast } = useAppToast()
   const pendingDeleteRef = useRef(null)
 
   // ── Data fetching ─────────────────────────────────────────────────────
@@ -476,10 +475,9 @@ export default function Dashboard() {
       if (pendingDelete.txn) {
         optimisticallyUpsertTransactionInCache(pendingDelete.txn, activeWalletUserId)
       }
-      setToast(e.message || 'Could not delete transaction.')
-      setSafeTimeout(() => setToast(null), 4000)
+      pushToast(toToastMessage(e, 'Could not delete transaction.'))
     }
-  }, [activeWalletUserId, setSafeTimeout, commitRemoveTransaction])
+  }, [activeWalletUserId, commitRemoveTransaction, pushToast])
 
   useEffect(() => {
     return () => {
@@ -511,10 +509,7 @@ export default function Dashboard() {
         await removeTransaction.mutateAsync(id)
         return true
       } catch (e) {
-        setToast(e.message || 'Could not delete transaction.')
-        setToastAction(null)
-        setToastActionLabel(null)
-        setSafeTimeout(() => setToast(null), 4000)
+        pushToast(toToastMessage(e, 'Could not delete transaction.'))
         return false
       }
     }
@@ -534,28 +529,21 @@ export default function Dashboard() {
       }, 3500)
     }
 
-    setToast('Transaction deleted')
-    setToastAction(() => () => {
-      const pending = pendingDeleteRef.current
-      if (pending?.id === id) {
-        clearTimeout(pending.timeoutId)
-        optimisticallyUpsertTransactionInCache(pending.txn, activeWalletUserId)
-        pendingDeleteRef.current = null
-        setToast('Transaction restored')
-        setToastAction(null)
-        setToastActionLabel(null)
-        setSafeTimeout(() => setToast(null), 1600)
+    pushToast('Transaction deleted', {
+      actionLabel: 'Undo',
+      action: () => {
+        const pending = pendingDeleteRef.current
+        if (pending?.id === id) {
+          clearTimeout(pending.timeoutId)
+          optimisticallyUpsertTransactionInCache(pending.txn, activeWalletUserId)
+          pendingDeleteRef.current = null
+          pushToast('Transaction restored')
+        }
       }
     })
-    setToastActionLabel('Undo')
-    setSafeTimeout(() => {
-      setToastAction(null)
-      setToastActionLabel(null)
-      setToast(null)
-    }, 4000)
 
     return undefined
-  }, [recent, activeWalletUserId, commitPendingDelete, setSafeTimeout, removeTransaction])
+  }, [recent, activeWalletUserId, commitPendingDelete, removeTransaction, pushToast])
 
   const inferRepaymentTab = useCallback((txn, loanRow = null) => {
     if (loanRow?.settled) return 'settled'
@@ -605,17 +593,12 @@ export default function Dashboard() {
   const handleTap = useCallback((t) => {
     // When viewing a partner's wallet, all transactions are view-only
     if (isViewingPartner) {
-      setToast("You can only view your partner's transactions.")
-      setToastAction(null)
-      setToastActionLabel(null)
-      setSafeTimeout(() => setToast(null), 3000)
+      pushToast("You can only view your partner's transactions.")
       return
     }
 
     if (t?.is_repayment && !t?.linked_split_settlement_id) {
-      setToast('Repayments are managed from Loans.')
-      setToastAction(null)
-      setToastActionLabel(null)
+      pushToast('Repayments are managed from Loans.')
 
       navigate(repaymentLoanRoute(t))
       return
@@ -625,7 +608,7 @@ export default function Dashboard() {
     setDuplicateTxn(null)
     setAddType(t.type)
     setShowAdd(true)
-  }, [navigate, repaymentLoanRoute, isViewingPartner, setSafeTimeout])
+  }, [navigate, repaymentLoanRoute, isViewingPartner, pushToast])
 
   const handleDuplicate = useCallback((txn) => {
     setEditTxn(null)
@@ -1015,16 +998,7 @@ export default function Dashboard() {
 
       </div>
 
-      <AppToast
-        message={toast}
-        onDismiss={() => {
-          setToast(null)
-          setToastAction(null)
-          setToastActionLabel(null)
-        }}
-        action={toastAction}
-        actionLabel={toastActionLabel}
-      />
+
 
       {/* FAB — hidden in partner wallet view-only mode */}
       {!isViewingPartner && (

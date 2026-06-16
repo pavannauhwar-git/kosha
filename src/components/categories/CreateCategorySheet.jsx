@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { X, Check } from '@phosphor-icons/react'
+
+import { Check } from '@phosphor-icons/react'
 import { ICON_MAP } from './CategoryIcon'
 import { createUserCategory, updateUserCategory } from '../../hooks/useUserCategories'
 import { useAppMutation } from '../../hooks/useAppMutation'
-import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
-
+import Sheet from '../ui/Sheet'
+import Input from '../ui/Input'
+import Button from '../ui/Button'
 const ICON_OPTIONS_BY_TYPE = {
   expense: [
     'ForkKnife', 'ShoppingCart', 'Handbag', 'BowlFood', 'Car', 'GasPump',
@@ -79,10 +80,6 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
   const updateCategoryMutation = useAppMutation(updateUserCategory, { context: 'categories:save' })
   const saving = createCategoryMutation.isPending || updateCategoryMutation.isPending
 
-  const sheetRef = useOverlayFocusTrap(true, {
-    onClose: saving ? undefined : onClose,
-    initialFocusSelector: 'input[name="category-name"]',
-  })
 
   const iconOptions = ICON_OPTIONS_BY_TYPE[selectedType] || ICON_OPTIONS_BY_TYPE.expense
 
@@ -123,142 +120,98 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
     }
   }
 
-  return (
-    <>
-      <motion.div className="sheet-backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={saving ? undefined : onClose}
-      />
-      <motion.div
-        ref={sheetRef}
-        className="sheet-panel"
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Create category"
-        initial={{ y: '100%' }}
-        animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
-        exit={{ y: '100%', transition: { duration: 0.2 } }}
-      >
-        <div className="sheet-handle" />
-        <div className="px-4 pb-4">
+    return (<Sheet
+      open={true}
+      onClose={saving ? () => {} : onClose}
+      title={isEditing ? 'Edit Category' : 'Create Category'}
+      dismissOnBackdrop={!saving}
+      showClose={!saving}
+      initialFocusSelector='input[name="category-name"]'
+    >
+      {/* Name input */}
+      <div className="mb-4">
+        <Input
+          label="Category name"
+          placeholder="Category name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          disabled={saving}
+          maxLength={30}
+        />
+      </div>
 
-          {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-[18px] font-bold text-ink">{isEditing ? 'Edit Category' : 'Create Category'}</h3>
-            <button
-              type="button"
-              aria-label="Close create category sheet"
-              onClick={saving ? undefined : onClose}
-              disabled={saving}
-              className="close-btn disabled:opacity-40"
-            >
-              <X size={16} className="text-ink-3" />
-            </button>
-          </div>
-
-          {/* Name input */}
-          <input
-            type="text"
-            name="category-name"
-            placeholder="Category name"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            disabled={saving}
-            maxLength={30}
-            className="input mb-4 disabled:opacity-50"
-          />
-
-          <p className="text-[13px] font-medium text-ink-3 mb-2">Category type</p>
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {CATEGORY_TYPES.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => {
-                  if (isEditing) return
-                  setSelectedType(option.id)
-                  const nextOptions = ICON_OPTIONS_BY_TYPE[option.id] || []
-                  if (!nextOptions.includes(icon) && nextOptions.length > 0) {
-                    setIcon(nextOptions[0])
-                  }
-                }}
-                disabled={saving || isEditing}
-                className={`h-9 rounded-card text-[12px] font-semibold border transition-[background-color,border-color,color] duration-150 disabled:opacity-50
-                  ${selectedType === option.id
-                    ? option.activeClass
-                    : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Icon picker */}
-          <p className="text-[13px] font-medium text-ink-3 mb-2">Choose an icon</p>
-          <div className="grid grid-cols-6 gap-2 mb-4">
-            {iconOptions.map((iconName, index) => {
-              const Icon = ICON_MAP[iconName]
-              if (!Icon) return null
-              const selected = icon === iconName
-              const swatch = getIconSwatch(selectedType, index)
-              return (
-                <button
-                  key={iconName}
-                  type="button"
-                  onClick={() => setIcon(iconName)}
-                  disabled={saving}
-                  className={`w-full aspect-square rounded-card flex items-center justify-center
-                    border transition-[background-color,border-color] duration-150 disabled:opacity-50
-                    ${selected
-                      ? ''
-                      : 'bg-kosha-surface-2 border-transparent'}`}
-                  style={selected ? {
-                    backgroundColor: swatch.bg,
-                    background: `color-mix(in srgb, ${swatch.color} 18%, var(--ds-surface))`,
-                    borderColor: swatch.color
-                  } : undefined}
-                >
-                  <Icon size={20} weight="duotone" style={{ color: swatch.color }} />
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Error */}
-          {error && <p className="text-expense-text text-[13px] mb-3 px-1" role="alert" aria-live="polite">{error}</p>}
-
-          {/* Create button */}
+      <p className="text-[13px] font-medium text-ink-3 mb-2">Category type</p>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {CATEGORY_TYPES.map((option) => (
           <button
+            key={option.id}
             type="button"
-            onClick={handleCreate}
-            disabled={saving || name.trim().length < 2}
-            className={`w-full py-3.5 rounded-card text-[15px] font-semibold flex items-center
-                        justify-center gap-2 transition-[transform,background-color,opacity] duration-150 will-change-transform
-                        ${saving
-                          ? 'bg-brand/70 text-white/90 cursor-not-allowed'
-                          : 'bg-brand text-white active:scale-[0.97] disabled:opacity-50 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]'}`}
+            onClick={() => {
+              if (isEditing) return
+              setSelectedType(option.id)
+              const nextOptions = ICON_OPTIONS_BY_TYPE[option.id] || []
+              if (!nextOptions.includes(icon) && nextOptions.length > 0) {
+                setIcon(nextOptions[0])
+              }
+            }}
+            disabled={saving || isEditing}
+            className={`h-9 rounded-card text-[12px] font-semibold border transition-[background-color,border-color,color] duration-150 disabled:opacity-50
+              ${selectedType === option.id
+                ? option.activeClass
+                : 'bg-kosha-surface text-ink-3 border-kosha-border'}`}
           >
-            {saving ? (
-              <>
-                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
-                  fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10"
-                    stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <span>{isEditing ? 'Saving...' : 'Creating...'}</span>
-              </>
-            ) : (
-              <>
-                <Check size={16} weight="bold" />
-                <span>{isEditing ? 'Save Changes' : 'Create Category'}</span>
-              </>
-            )}
+            {option.label}
           </button>
-        </div>
-      </motion.div>
-    </>
-  )
+        ))}
+      </div>
+
+      {/* Icon picker */}
+      <p className="text-[13px] font-medium text-ink-3 mb-2">Choose an icon</p>
+      <div className="grid grid-cols-6 gap-2 mb-4">
+        {iconOptions.map((iconName, index) => {
+          const Icon = ICON_MAP[iconName]
+          if (!Icon) return null
+          const selected = icon === iconName
+          const swatch = getIconSwatch(selectedType, index)
+          return (
+            <button
+              key={iconName}
+              type="button"
+              onClick={() => setIcon(iconName)}
+              disabled={saving}
+              className={`w-full aspect-square rounded-card flex items-center justify-center
+                border transition-[background-color,border-color] duration-150 disabled:opacity-50
+                ${selected
+                  ? ''
+                  : 'bg-kosha-surface-2 border-transparent'}`}
+              style={selected ? {
+                backgroundColor: swatch.bg,
+                background: `color-mix(in srgb, ${swatch.color} 18%, var(--ds-surface))`,
+                borderColor: swatch.color
+              } : undefined}
+            >
+              <Icon size={20} weight="duotone" style={{ color: swatch.color }} />
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Error */}
+      {error && <p className="text-expense-text text-[13px] mb-3 px-1" role="alert" aria-live="polite">{error}</p>}
+
+      {/* Create button */}
+      <div className="pb-4">
+        <Button
+          variant="primary"
+          size="xl"
+          fullWidth
+          loading={saving}
+          disabled={name.trim().length < 2}
+          onClick={handleCreate}
+          icon={<Check size={16} weight="bold" />}
+        >
+          {isEditing ? 'Save Changes' : 'Create Category'}
+        </Button>
+      </div>
+    </Sheet>)
 }

@@ -31,6 +31,8 @@ const LIABILITY_PREFETCH_COLUMNS =
 // ── Eager ────────────────────────────────────────────────────────────────
 import Login from './pages/Login'
 import InviteLanding from './pages/InviteLanding'
+import useKeyboardInset from './hooks/useKeyboardInset'
+import { ToastProvider } from './context/ToastContext'
 
 // ── Lazy ─────────────────────────────────────────────────────────────────
 const Onboarding = lazy(() => import('./pages/Onboarding'))
@@ -1291,7 +1293,7 @@ function QueryErrorRecovery() {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 z-50 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg max-w-[398px] mx-auto"
+      className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg max-w-[398px] mx-auto" style={{ zIndex: "var(--ds-z-toast)" }}
     >
       <span className="text-[13px] font-medium flex-1">Something didn't load correctly.</span>
       <button
@@ -1500,7 +1502,7 @@ function ShellStatusBanners() {
   if (!isOffline && !showUpdatePrompt && !showInstallPrompt && !installMessage) return null
 
   return (
-    <div className={`pointer-events-none fixed left-4 right-4 z-50 mx-auto max-w-[398px] space-y-2 ${bottomClass}`}>
+    <div className={`pointer-events-none fixed left-4 right-4 mx-auto max-w-[398px] space-y-2 ${bottomClass}`} style={{ zIndex: "var(--ds-z-toast)" }}>
       {isOffline && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -1591,6 +1593,8 @@ function WalletSwitchGuard() {
 }
 
 function AppShell() {
+  useKeyboardInset()
+
   // Opt in to modern Navigation API for Predictive Back swipe preview on Android 14+ / Pixel
   useEffect(() => {
     if (typeof window === 'undefined' || !('navigation' in window)) return
@@ -1612,26 +1616,28 @@ function AppShell() {
   }, [])
 
   return (
-    <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:rounded-pill focus:bg-ink focus:px-4 focus:py-2 focus:text-white focus:shadow-card"
-      >
-        Skip to content
-      </a>
-      <ScrollManager />
-      <WalletSwitchGuard />
-      <RuntimeRouteTracker />
-      <CustomCategoryLoader />
-      <EagerChunkPreloader />
-      <WalletPrefetcher />
-      <main id="main-content" role="main" tabIndex={-1} className="flex-1 outline-none">
-        <AnimatedRoutes />
-      </main>
-      <BottomNav />
-      <QueryErrorRecovery />
-      <ShellStatusBanners />
-    </div>
+    <ToastProvider>
+      <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:rounded-pill focus:bg-ink focus:px-4 focus:py-2 focus:text-white focus:shadow-card"
+        >
+          Skip to content
+        </a>
+        <ScrollManager />
+        <WalletSwitchGuard />
+        <RuntimeRouteTracker />
+        <CustomCategoryLoader />
+        <EagerChunkPreloader />
+        <WalletPrefetcher />
+        <main id="main-content" role="main" tabIndex={-1} className="flex-1 outline-none">
+          <AnimatedRoutes />
+        </main>
+        <BottomNav />
+        <QueryErrorRecovery />
+        <ShellStatusBanners />
+      </div>
+    </ToastProvider>
   )
 }
 

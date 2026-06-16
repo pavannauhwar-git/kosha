@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useEffect, useRef } from 'react'
-import { AnimatePresence, motion, useMotionValue, useTransform, animate } from 'framer-motion'
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
 import { ArrowUDownLeft, ArrowUpRight, ArrowDownLeft, ArrowSquareOut, X, Notepad } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
@@ -8,6 +8,7 @@ import { fmt, amountClass, amountPrefix, fmtDate } from '../../lib/utils'
 import { getCategory, INVESTMENT_VEHICLES } from '../../lib/categories'
 import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
+import Sheet from '../ui/Sheet'
 
 const PEEK_X = 140
 const SWIPE_OPEN_THRESHOLD = PEEK_X * 0.42
@@ -110,77 +111,56 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
   const buttonLabel = isSplitwise ? 'Go to Splitwise Group' : isBill ? 'Go to Bills & Dues' : 'Go to Loans'
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-[200] flex items-end justify-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+    <Sheet
+      open={true}
+      onClose={onClose}
+      variant="bottom"
+      showClose={true}
+      showHandle={true}
+      className="max-w-lg"
+      contentClassName="px-5 pb-5 pt-1"
+      title=""
+      ariaLabel={title}
+    >
+      <div className="flex items-center gap-3 mb-4 text-left">
+        <div className="w-11 h-11 rounded-2xl bg-brand-container flex items-center justify-center shrink-0">
+          <ArrowSquareOut size={20} weight="duotone" color="var(--ds-primary)" />
+        </div>
+        <div>
+          <p className="text-[16px] font-bold text-ink leading-snug">{title}</p>
+          <p className="text-[12px] text-ink-3 mt-0.5">{typeLabel}</p>
+        </div>
+      </div>
+
+      <div className="bg-kosha-surface-2 rounded-2xl px-4 py-3 mb-5 text-left">
+        <p className="text-[14px] font-semibold text-ink mb-0.5 truncate">{txn.description}</p>
+        <p className={`text-[13px] font-medium ${amountClass(txn.type, txn.is_repayment)}`}>
+          {amountPrefix(txn.type)}{fmt(txn.amount)}
+        </p>
+        {txn.date && (
+          <p className="text-[12px] text-ink-3 mt-1">{fmtDate(txn.date)}</p>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-brand-container bg-brand-container/40 p-4 mb-5 text-left">
+        <p className="text-[13px] text-ink leading-relaxed">
+          {infoMessage}
+        </p>
+      </div>
+
+      <button
+        onClick={handleGoToSource}
+        disabled={navigating}
+        className="w-full h-12 rounded-2xl bg-brand text-white font-semibold text-[15px] flex items-center justify-center gap-2 active:opacity-80 disabled:opacity-60 transition-opacity"
       >
-        <motion.div
-          className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-          onClick={onClose}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        />
-
-        <motion.div
-          className="relative w-full max-w-lg bg-kosha-surface rounded-t-[28px] px-5 pb-10 pt-2 z-10 shadow-apple-card"
-          initial={{ y: '100%' }}
-          animate={{ y: 0, transition: { type: 'spring', stiffness: 480, damping: 40 } }}
-          exit={{ y: '100%', transition: { duration: 0.22, ease: [0.2, 0, 0, 1] } }}
-        >
-          <div className="w-10 h-1 bg-kosha-border rounded-full mx-auto mb-5" />
-
-          <button
-            onClick={onClose}
-            className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-kosha-surface-2 text-ink-3 active:opacity-70"
-          >
-            <X size={16} weight="bold" />
-          </button>
-
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-11 h-11 rounded-2xl bg-brand-container flex items-center justify-center shrink-0">
-              <ArrowSquareOut size={20} weight="duotone" color="var(--ds-primary)" />
-            </div>
-            <div>
-              <p className="text-[16px] font-bold text-ink leading-snug">{title}</p>
-              <p className="text-[12px] text-ink-3 mt-0.5">{typeLabel}</p>
-            </div>
-          </div>
-
-          <div className="bg-kosha-surface-2 rounded-2xl px-4 py-3 mb-5">
-            <p className="text-[14px] font-semibold text-ink mb-0.5 truncate">{txn.description}</p>
-            <p className={`text-[13px] font-medium ${amountClass(txn.type, txn.is_repayment)}`}>
-              {amountPrefix(txn.type)}{fmt(txn.amount)}
-            </p>
-            {txn.date && (
-              <p className="text-[12px] text-ink-3 mt-1">{fmtDate(txn.date)}</p>
-            )}
-          </div>
-
-          <div className="rounded-2xl border border-brand-container bg-brand-container/40 p-4 mb-5">
-            <p className="text-[13px] text-ink leading-relaxed">
-              {infoMessage}
-            </p>
-          </div>
-
-          <button
-            onClick={handleGoToSource}
-            disabled={navigating}
-            className="w-full h-12 rounded-2xl bg-brand text-white font-semibold text-[15px] flex items-center justify-center gap-2 active:opacity-80 disabled:opacity-60 transition-opacity"
-          >
-            {navigating ? (
-              <CircleNotch size={18} className="animate-spin" />
-            ) : (
-              <ArrowSquareOut size={18} weight="bold" />
-            )}
-            {navigating ? 'Opening…' : buttonLabel}
-          </button>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        {navigating ? (
+          <CircleNotch size={18} className="animate-spin" />
+        ) : (
+          <ArrowSquareOut size={18} weight="bold" />
+        )}
+        {navigating ? 'Opening…' : buttonLabel}
+      </button>
+    </Sheet>
   )
 }
 
