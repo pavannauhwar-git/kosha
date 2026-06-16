@@ -1,5 +1,16 @@
 export const CHANGELOG = [
   {
+    version: '3.0.2',
+    date: 'June 2026',
+    items: [
+      'Implemented extensive optimistic UI updates across transactions and Splitwise group management, eliminating visual lag during cache mutations',
+      'Enabled strict jsx-a11y static analysis and resolved accessibility violations across all UI components for a more inclusive user experience',
+      'Refactored sensitive runtime data handling, improving loan cache consistency and adding automated monthly net change backfills',
+      'Optimized application layout with safe-area-inset padding to seamlessly support native notch and mobile status bars',
+      'Cleaned up orphaned components and unused hooks across the codebase while replacing service worker cache eviction with direct Cache API access',
+    ],
+  },
+  {
     version: '3.0.1',
     date: 'May 2026',
     items: [

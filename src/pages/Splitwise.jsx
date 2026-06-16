@@ -36,6 +36,7 @@ import {
   optimisticallyDeleteSplitGroup,
   leaveSplitGroupMutation,
   toggleArchiveSplitGroupMutation,
+  updateSplitExpenseMutation,
   updateSplitGroupMutation,
   updateSplitGroupBannerMutation,
   setSplitGroupAccessRoleMutation,
@@ -641,17 +642,17 @@ export default function Splitwise() {
       setSaving('')
     }
   }
-  
+
   function handleSettleUpClick() {
     if (!canManageGroup) return
-    
+
     // Find if the current user owes something in the suggested transfers
     const myDebt = suggestedTransfers.find(t => t.from?.linked_user_id === authUserId)
     if (myDebt) {
       applySuggestedTransfer(myDebt)
       return
     }
-    
+
     // Fallback: just open the sheet if no specific debt detected
     setShowSettlement(true)
   }
@@ -865,20 +866,35 @@ export default function Splitwise() {
     setSaving(editExpense ? 'expense-edit' : 'expense')
     try {
       if (editExpense) {
-        await deleteSplitExpenseMutation(editExpense.id)
+        // Atomic edit: a single RPC updates the expense, its splits, and the
+        // linked transaction in one Postgres transaction. The old
+        // delete-then-create path could permanently drop the original if the
+        // re-create failed.
+        await updateSplitExpenseMutation({
+          expenseId: editExpense.id,
+          groupId: activeGroupId,
+          paidByMemberId: expenseForm.paid_by_member_id,
+          description,
+          amount,
+          expenseDate: expenseForm.expense_date,
+          splitMethod: expenseForm.split_method,
+          notes: expenseForm.notes,
+          splits,
+          transactionCategory: expenseForm.transaction_category,
+        })
+      } else {
+        await addSplitExpenseMutation({
+          groupId: activeGroupId,
+          paidByMemberId: expenseForm.paid_by_member_id,
+          description,
+          amount,
+          expenseDate: expenseForm.expense_date,
+          splitMethod: expenseForm.split_method,
+          notes: expenseForm.notes,
+          splits,
+          transactionCategory: expenseForm.transaction_category,
+        })
       }
-
-      await addSplitExpenseMutation({
-        groupId: activeGroupId,
-        paidByMemberId: expenseForm.paid_by_member_id,
-        description,
-        amount,
-        expenseDate: expenseForm.expense_date,
-        splitMethod: expenseForm.split_method,
-        notes: expenseForm.notes,
-        splits,
-        transactionCategory: expenseForm.transaction_category,
-      })
 
       setExpenseForm((prev) => ({
         ...prev,
@@ -1275,15 +1291,15 @@ export default function Splitwise() {
                           </p>
                         </div>
                         <span
-                          className={`rounded-pill px-2 py-0.5 text-[10px] font-semibold border ${group.is_archived 
+                          className={`rounded-pill px-2 py-0.5 text-[10px] font-semibold border ${group.is_archived
                             ? 'bg-kosha-border/60 text-white/70 border-white/10 backdrop-blur-md'
                             : isAdmin
                               ? 'bg-black/40 text-white border-white/20 backdrop-blur-md'
                               : 'bg-black/40 text-white/70 border-white/10 backdrop-blur-md'
                             }`}
                         >
-                          {group.is_archived 
-                            ? `Archived · Was ${isAdmin ? 'Admin' : group.my_role === 'member' ? 'Member' : 'Viewer'}` 
+                          {group.is_archived
+                            ? `Archived · Was ${isAdmin ? 'Admin' : group.my_role === 'member' ? 'Member' : 'Viewer'}`
                             : (isAdmin ? 'Admin' : group.my_role === 'member' ? 'Member' : 'Viewer')}
                         </span>
                       </div>
@@ -1353,7 +1369,7 @@ export default function Splitwise() {
                   const netRow = balances.find((entry) => entry?.member?.id === member.id)
                   const net = round2(netRow?.net || 0)
                   const isSelfMember = member.linked_user_id === authUserId
-                  
+
                   let memberRole = 'guest'
                   if (member.linked_user_id === activeGroup?.user_id) {
                     memberRole = 'admin'
@@ -1557,99 +1573,99 @@ export default function Splitwise() {
                     const deleting = saving === (isExpense ? `expense-delete-${t.id}` : `settlement-delete-${t.id}`)
 
                     return (
-                      <div 
-                        key={t.id} 
+                      <div
+                        key={t.id}
                         ref={(el) => measureTxnElement(el, actualIndex)}
                         data-index={actualIndex}
                         className="p-2 sm:p-2.5 bg-kosha-surface hover:bg-kosha-surface-2 transition-colors group"
                       >
                         {isExpense ? (() => {
                           const payer = memberById.get(t.paid_by_member_id)
-                        return (
-                          <div className="flex items-start justify-between gap-2.5">
-                            <div className="flex items-start gap-2.5 min-w-0">
-                              <div className="h-8 w-8 rounded-full bg-brand/10 text-brand shrink-0 flex items-center justify-center border border-brand/20 mt-0.5">
-                                <Receipt size={14} />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-[13px] font-semibold text-ink truncate leading-tight">{t.description}</p>
-                                <p className="text-[11px] text-ink-3 mt-1 truncate">
-                                  <span className="font-medium text-ink">{resolveMemberName(payer)}</span> paid
-                                </p>
-                                <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.sortDate)}</p>
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0 flex flex-col justify-start items-end">
-                              <p className="text-[14px] font-bold text-ink tabular-nums">{fmt(t.amount)}</p>
-                              {canManageGroup && (
-                                <div className="mt-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditExpense(t)}
-                                    className="text-[10px] font-semibold text-brand/80 hover:text-brand"
-                                    disabled={!!saving}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => { void handleDeleteExpense(t.id) }}
-                                    className="text-[10px] font-semibold text-danger/80 hover:text-danger"
-                                    disabled={!!saving}
-                                  >
-                                    {deleting ? '...' : 'Delete'}
-                                  </button>
+                          return (
+                            <div className="flex items-start justify-between gap-2.5">
+                              <div className="flex items-start gap-2.5 min-w-0">
+                                <div className="h-8 w-8 rounded-full bg-brand/10 text-brand shrink-0 flex items-center justify-center border border-brand/20 mt-0.5">
+                                  <Receipt size={14} />
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })() : (() => {
-                        const payer = memberById.get(t.payer_member_id)
-                        const payee = memberById.get(t.payee_member_id)
-                        return (
-                          <div className="flex items-start justify-between gap-2.5">
-                            <div className="flex items-start gap-2.5 min-w-0">
-                              <div className="h-8 w-8 rounded-full bg-success/10 text-success shrink-0 flex items-center justify-center border border-success/20 mt-0.5">
-                                <ArrowsLeftRight size={14} />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-[13px] font-semibold text-ink truncate leading-tight">Settlement</p>
-                                <p className="text-[11px] text-ink-3 mt-1 truncate">
-                                  <span className="font-medium text-ink">{resolveMemberName(payer)}</span> paid <span className="font-medium text-ink">{resolveMemberName(payee)}</span>
-                                </p>
-                                <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.sortDate)}</p>
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0 flex flex-col justify-start items-end">
-                              <p className="text-[14px] font-bold text-success tabular-nums">{fmt(t.amount)}</p>
-                              {canManageGroup && (
-                                <div className="mt-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditSettlement(t)}
-                                    className="text-[10px] font-semibold text-brand/80 hover:text-brand"
-                                    disabled={!!saving}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => { void handleDeleteSettlement(t.id) }}
-                                    className="text-[10px] font-semibold text-danger/80 hover:text-danger"
-                                    disabled={!!saving}
-                                  >
-                                    {deleting ? '...' : 'Delete'}
-                                  </button>
+                                <div className="min-w-0">
+                                  <p className="text-[13px] font-semibold text-ink truncate leading-tight">{t.description}</p>
+                                  <p className="text-[11px] text-ink-3 mt-1 truncate">
+                                    <span className="font-medium text-ink">{resolveMemberName(payer)}</span> paid
+                                  </p>
+                                  <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.sortDate)}</p>
                                 </div>
-                              )}
+                              </div>
+                              <div className="text-right shrink-0 flex flex-col justify-start items-end">
+                                <p className="text-[14px] font-bold text-ink tabular-nums">{fmt(t.amount)}</p>
+                                {canManageGroup && (
+                                  <div className="mt-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditExpense(t)}
+                                      className="text-[10px] font-semibold text-brand/80 hover:text-brand"
+                                      disabled={!!saving}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => { void handleDeleteExpense(t.id) }}
+                                      className="text-[10px] font-semibold text-danger/80 hover:text-danger"
+                                      disabled={!!saving}
+                                    >
+                                      {deleting ? '...' : 'Delete'}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )
-                      })()}
-                    </div>
-                  )
-                })}
+                          )
+                        })() : (() => {
+                          const payer = memberById.get(t.payer_member_id)
+                          const payee = memberById.get(t.payee_member_id)
+                          return (
+                            <div className="flex items-start justify-between gap-2.5">
+                              <div className="flex items-start gap-2.5 min-w-0">
+                                <div className="h-8 w-8 rounded-full bg-success/10 text-success shrink-0 flex items-center justify-center border border-success/20 mt-0.5">
+                                  <ArrowsLeftRight size={14} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[13px] font-semibold text-ink truncate leading-tight">Settlement</p>
+                                  <p className="text-[11px] text-ink-3 mt-1 truncate">
+                                    <span className="font-medium text-ink">{resolveMemberName(payer)}</span> paid <span className="font-medium text-ink">{resolveMemberName(payee)}</span>
+                                  </p>
+                                  <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.sortDate)}</p>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0 flex flex-col justify-start items-end">
+                                <p className="text-[14px] font-bold text-success tabular-nums">{fmt(t.amount)}</p>
+                                {canManageGroup && (
+                                  <div className="mt-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditSettlement(t)}
+                                      className="text-[10px] font-semibold text-brand/80 hover:text-brand"
+                                      disabled={!!saving}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => { void handleDeleteSettlement(t.id) }}
+                                      className="text-[10px] font-semibold text-danger/80 hover:text-danger"
+                                      disabled={!!saving}
+                                    >
+                                      {deleting ? '...' : 'Delete'}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )
+                  })}
                 </div>
                 <div style={{ height: `${txnsBottomPadding}px`, width: '100%', flexShrink: 0 }} />
               </div>
@@ -2041,15 +2057,15 @@ export default function Splitwise() {
                   </label>
                 </div>
 
-                  <Button
-                    variant="primary"
-                    size="xl"
-                    fullWidth
-                    onClick={() => { void handleAddExpense() }}
-                    loading={saving === 'expense' || saving === 'expense-edit'}
-                  >
-                    {editExpense ? (saving === 'expense-edit' ? 'Updating…' : 'Update Expense') : (saving === 'expense' ? 'Adding…' : 'Add Expense')}
-                  </Button>
+                <Button
+                  variant="primary"
+                  size="xl"
+                  fullWidth
+                  onClick={() => { void handleAddExpense() }}
+                  loading={saving === 'expense' || saving === 'expense-edit'}
+                >
+                  {editExpense ? (saving === 'expense-edit' ? 'Updating…' : 'Update Expense') : (saving === 'expense' ? 'Adding…' : 'Add Expense')}
+                </Button>
               </div>
             </motion.div>
           </>
@@ -2144,15 +2160,15 @@ export default function Splitwise() {
                   </label>
                 </div>
 
-                  <Button
-                    variant="primary"
-                    size="xl"
-                    fullWidth
-                    onClick={() => { void handleRecordSettlement() }}
-                    loading={saving === 'settlement' || saving === 'settlement-edit'}
-                  >
-                    {editSettlement ? (saving === 'settlement-edit' ? 'Updating…' : 'Update Settlement') : (saving === 'settlement' ? 'Recording…' : 'Record Settlement')}
-                  </Button>
+                <Button
+                  variant="primary"
+                  size="xl"
+                  fullWidth
+                  onClick={() => { void handleRecordSettlement() }}
+                  loading={saving === 'settlement' || saving === 'settlement-edit'}
+                >
+                  {editSettlement ? (saving === 'settlement-edit' ? 'Updating…' : 'Update Settlement') : (saving === 'settlement' ? 'Recording…' : 'Record Settlement')}
+                </Button>
               </div>
             </motion.div>
           </>
@@ -2249,11 +2265,10 @@ export default function Splitwise() {
                     type="button"
                     onClick={(e) => void handleToggleArchive(e, activeGroupId, activeGroup?.is_archived)}
                     disabled={!!saving}
-                    className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
-                      activeGroup?.is_archived
+                    className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-colors ${activeGroup?.is_archived
                         ? 'border-brand/20 bg-brand/10 hover:bg-brand/20'
                         : 'border-warning-text/20 bg-warning-text/10 hover:bg-warning-text/20'
-                    }`}
+                      }`}
                   >
                     {activeGroup?.is_archived ? (
                       <ArrowUUpLeft size={20} className="text-brand shrink-0" />
@@ -2265,8 +2280,8 @@ export default function Splitwise() {
                         {activeGroup?.is_archived ? 'Restore from Archive' : 'Archive Trip'}
                       </p>
                       <p className={`mt-0.5 text-[12px] leading-tight ${activeGroup?.is_archived ? 'text-brand/80' : 'text-warning-text/80'}`}>
-                        {activeGroup?.is_archived 
-                          ? 'Make this trip active again to add expenses and new members.' 
+                        {activeGroup?.is_archived
+                          ? 'Make this trip active again to add expenses and new members.'
                           : 'Lock this trip. Prevents adding new expenses or members.'}
                       </p>
                     </div>

@@ -276,7 +276,7 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
   } catch {
     authUserId = null
   }
-  
+
   const groups = useMemo(
     () => (rawGroups || []).map((group) => {
       const role = accessByGroupId.get(group.id)
@@ -668,6 +668,75 @@ export async function addSplitExpenseMutation({
       },
     }),
     'splitwise expense audit'
+  )
+
+  await invalidateSplitwiseCache()
+  return rpcRow
+}
+
+export async function updateSplitExpenseMutation({
+  expenseId,
+  groupId,
+  paidByMemberId,
+  description,
+  amount,
+  expenseDate,
+  splitMethod,
+  notes,
+  splits,
+  transactionCategory,
+}) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot edit Splitwise expenses here.')
+  }
+  const userId = getAuthUserId()
+  const safeAmount = round2(amount)
+  if (!expenseId) throw new Error('Expense is required.')
+  if (!groupId) throw new Error('Group is required.')
+  if (!paidByMemberId) throw new Error('Payer is required.')
+  if (!String(description || '').trim()) throw new Error('Description is required.')
+  if (!Number.isFinite(safeAmount) || safeAmount <= 0) throw new Error('Amount must be positive.')
+  if (!Array.isArray(splits) || !splits.length) throw new Error('At least one split row is required.')
+
+  const payloadSplits = splits.map((row) => ({
+    member_id: row.member_id,
+    share: round2(row.share),
+    percent: row.percent == null ? null : Number(row.percent),
+    shares: row.shares == null ? null : Number(row.shares),
+  }))
+
+  // Atomic server-side edit (split_update_expense). Replaces the previous
+  // delete-then-create flow whose re-create failure could drop the original.
+  const { data, error } = await supabase.rpc('split_update_expense', {
+    p_expense_id: expenseId,
+    p_paid_by_member_id: paidByMemberId,
+    p_description: String(description).trim(),
+    p_amount: safeAmount,
+    p_expense_date: expenseDate || null,
+    p_split_method: splitMethod || 'equal',
+    p_notes: notes || null,
+    p_splits: payloadSplits,
+    p_transaction_category: transactionCategory || 'other',
+  })
+
+  if (error) throw error
+
+  const rpcRow = Array.isArray(data) ? data[0] : data
+
+  runInBackground(
+    logFinancialEvent({
+      userId,
+      action: FINANCIAL_EVENT_ACTIONS.SPLITWISE_EXPENSE_EDIT,
+      entityType: 'split_expense',
+      entityId: rpcRow?.id || expenseId,
+      metadata: {
+        group_id: groupId,
+        paid_by_member_id: paidByMemberId,
+        amount: safeAmount,
+        split_method: splitMethod,
+      },
+    }),
+    'splitwise expense edit audit'
   )
 
   await invalidateSplitwiseCache()
