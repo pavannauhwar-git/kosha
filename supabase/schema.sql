@@ -2138,18 +2138,22 @@ as $$
     and public.has_split_group_access(p_group_id, auth.uid());
 $$;
 
+-- Drop old signature to prevent PostgREST ambiguity
+drop function if exists public.split_create_group(text, text);
+
 create or replace function public.split_create_group(
+  p_id uuid,
   p_name text,
   p_self_display_name text default null
 )
-returns split_groups
+returns public.split_groups
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_group split_groups%rowtype;
+  v_group public.split_groups%rowtype;
   v_name text := btrim(coalesce(p_name, ''));
   v_self_name text := nullif(btrim(coalesce(p_self_display_name, '')), '');
 begin
@@ -2163,7 +2167,7 @@ begin
 
   if v_self_name is null then
     select nullif(btrim(p.display_name), '') into v_self_name
-    from profiles p
+    from public.profiles p
     where p.id = v_uid;
 
     if v_self_name is null then
@@ -2183,17 +2187,20 @@ begin
   end if;
 
   v_self_name := coalesce(v_self_name, 'You');
+  p_id := coalesce(p_id, gen_random_uuid());
 
-  insert into split_groups (name, user_id)
-  values (v_name, v_uid)
-  returning * into v_group;
+  insert into public.split_groups (id, name, user_id)
+  values (p_id, v_name, v_uid)
+  on conflict (id) do nothing;
+  
+  select * into v_group from public.split_groups where id = p_id;
 
-  insert into split_group_access (group_id, user_id, role)
+  insert into public.split_group_access (group_id, user_id, role)
   values (v_group.id, v_uid, 'admin')
   on conflict (group_id, user_id) do update
     set role = 'admin';
 
-  insert into split_group_members (
+  insert into public.split_group_members (
     group_id,
     display_name,
     is_self,
@@ -2217,9 +2224,9 @@ begin
 end;
 $$;
 
-insert into split_group_access (group_id, user_id, role)
+insert into public.split_group_access (group_id, user_id, role)
 select g.id, g.user_id, 'admin'
-from split_groups g
+from public.split_groups g
 where g.user_id is not null
 on conflict (group_id, user_id) do update
   set role = 'admin';
@@ -2514,18 +2521,22 @@ create trigger trg_split_group_owner_access
   after insert on split_groups
   for each row execute function public.ensure_split_group_owner_access();
 
+-- Drop old signature to prevent PostgREST ambiguity
+drop function if exists public.split_create_group_invite(uuid, text);
+
 create or replace function public.split_create_group_invite(
+  p_id uuid,
   p_group_id uuid,
   p_role text default 'member'
 )
-returns split_group_invites
+returns public.split_group_invites
 language plpgsql
 security invoker
 set search_path = public
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_invite split_group_invites%rowtype;
+  v_invite public.split_group_invites%rowtype;
 begin
   if v_uid is null then
     raise exception 'Authentication required';
@@ -2535,15 +2546,21 @@ begin
     raise exception 'Split group not found';
   end if;
 
-  insert into split_group_invites (
+  p_id := coalesce(p_id, gen_random_uuid());
+
+  insert into public.split_group_invites (
+    id,
     group_id,
     role,
     created_by
   ) values (
+    p_id,
     p_group_id,
     p_role,
     v_uid
-  ) returning * into v_invite;
+  ) on conflict (id) do nothing;
+  
+  select * into v_invite from public.split_group_invites where id = p_id;
 
   return v_invite;
 end;
@@ -2653,7 +2670,7 @@ begin
     end;
 
   select nullif(btrim(p.display_name), '') into v_account_name
-  from profiles p
+  from public.profiles p
   where p.id = v_uid;
 
   if v_account_name is null then
@@ -2696,7 +2713,7 @@ begin
       where id = v_existing_member_id;
     else
       begin
-        insert into split_group_members (
+        insert into public.split_group_members (
           group_id,
           display_name,
           is_self,
@@ -2815,7 +2832,7 @@ as $$
   ),
   owed as (
     select s.member_id, sum(s.share)::numeric as total_owed
-    from split_expense_splits s
+    from public.split_expense_splits s
     join split_expenses e on e.id = s.expense_id
     where e.group_id = p_group_id
       and e.user_id = p_user_id
@@ -2824,14 +2841,14 @@ as $$
   ),
   in_settle as (
     select st.payee_member_id as member_id, sum(st.amount)::numeric as total_in
-    from split_settlements st
+    from public.split_settlements st
     where st.group_id = p_group_id
       and st.user_id = p_user_id
     group by st.payee_member_id
   ),
   out_settle as (
     select st.payer_member_id as member_id, sum(st.amount)::numeric as total_out
-    from split_settlements st
+    from public.split_settlements st
     where st.group_id = p_group_id
       and st.user_id = p_user_id
     group by st.payer_member_id
@@ -2853,6 +2870,7 @@ $$;
 drop function if exists public.split_create_expense(uuid, uuid, text, numeric, date, text, text, jsonb);
 
 create or replace function public.split_create_expense(
+  p_id uuid,
   p_group_id uuid,
   p_paid_by_member_id uuid,
   p_description text,
@@ -2864,15 +2882,15 @@ create or replace function public.split_create_expense(
   p_sync_transaction boolean default true,
   p_transaction_category text default 'other'
 )
-returns split_expenses
+returns public.split_expenses
 language plpgsql
 security invoker
 set search_path = public
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_group split_groups%rowtype;
-  v_expense split_expenses%rowtype;
+  v_group public.split_groups%rowtype;
+  v_expense public.split_expenses%rowtype;
   v_sum numeric := 0;
   v_item jsonb;
   v_member_id uuid;
@@ -2899,7 +2917,7 @@ begin
   end if;
 
   select * into v_group
-  from split_groups
+  from public.split_groups
   where id = p_group_id;
 
   if not found then
@@ -2928,7 +2946,10 @@ begin
     raise exception 'At least one split row is required';
   end if;
 
+  p_id := coalesce(p_id, gen_random_uuid());
+
   insert into split_expenses (
+    id,
     group_id,
     paid_by_member_id,
     description,
@@ -2938,6 +2959,7 @@ begin
     notes,
     user_id
   ) values (
+    p_id,
     p_group_id,
     p_paid_by_member_id,
     btrim(p_description),
@@ -2946,7 +2968,14 @@ begin
     p_split_method,
     nullif(btrim(coalesce(p_notes, '')), ''),
     v_uid
-  ) returning * into v_expense;
+  ) on conflict (id) do nothing;
+
+  select * into v_expense from split_expenses where id = p_id;
+
+  -- If splits already exist for this expense ID, it was already created (idempotency hit).
+  if exists (select 1 from public.split_expense_splits where expense_id = v_expense.id) then
+    return v_expense;
+  end if;
 
   for v_item in select * from jsonb_array_elements(p_splits)
   loop
@@ -2972,7 +3001,7 @@ begin
       raise exception 'Split includes a member outside this group';
     end if;
 
-    insert into split_expense_splits (
+    insert into public.split_expense_splits (
       expense_id,
       member_id,
       share,
@@ -3035,7 +3064,7 @@ create or replace function public.split_update_expense(
   p_sync_transaction boolean default true,
   p_transaction_category text default 'other'
 )
-returns split_expenses
+returns public.split_expenses
 language plpgsql
 security definer
 set search_path = ''
@@ -3221,6 +3250,7 @@ grant execute on function public.split_update_expense(uuid, uuid, text, numeric,
 drop function if exists public.split_record_settlement(uuid, uuid, uuid, numeric, date, text);
 
 create or replace function public.split_record_settlement(
+  p_id uuid,
   p_group_id uuid,
   p_payer_member_id uuid,
   p_payee_member_id uuid,
@@ -3229,14 +3259,14 @@ create or replace function public.split_record_settlement(
   p_note text default null,
   p_sync_transaction boolean default true
 )
-returns split_settlements
+returns public.split_settlements
 language plpgsql
 security invoker
 set search_path = public
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_row split_settlements%rowtype;
+  v_row public.split_settlements%rowtype;
   v_payer_uid uuid;
   v_payee_uid uuid;
   v_payer_txn_id uuid;
@@ -3280,7 +3310,10 @@ begin
     raise exception 'Payee is not in this group';
   end if;
 
-  insert into split_settlements (
+  p_id := coalesce(p_id, gen_random_uuid());
+
+  insert into public.split_settlements (
+    id,
     group_id,
     payer_member_id,
     payee_member_id,
@@ -3289,6 +3322,7 @@ begin
     note,
     user_id
   ) values (
+    p_id,
     p_group_id,
     p_payer_member_id,
     p_payee_member_id,
@@ -3296,7 +3330,17 @@ begin
     coalesce(p_settled_at, current_date),
     nullif(btrim(coalesce(p_note, '')), ''),
     v_uid
-  ) returning * into v_row;
+  ) on conflict (id) do nothing;
+  
+  select * into v_row from public.split_settlements where id = p_id;
+  
+  -- Idempotency check: if payer_transaction_id or payee_transaction_id are set, it might already be fully processed.
+  -- But we can just skip if it's already there and we are returning. Wait, if it was already inserted, we should just return it.
+  -- Let's check if we just inserted it. A simple way: check if it already has synced transactions if sync is requested.
+  -- Since we just want basic idempotency, let's look at the transactions directly.
+  if not found then
+    return v_row;
+  end if;
 
   if p_sync_transaction then
     -- Payer sees: "Settled with [payee name]"
@@ -3421,7 +3465,11 @@ create policy "loans: delete own" on loans
 --   loan_given → expense for the lender (cash went out)
 --   loan_taken → income  for the borrower (cash came in)
 
+-- Drop old signature to prevent PostgREST ambiguity
+drop function if exists public.create_loan(uuid, text, text, numeric, numeric, date, date, text);
+
 create or replace function public.create_loan(
+  p_id           uuid,
   p_user_id      uuid,
   p_direction    text,
   p_counterparty text,
@@ -3437,7 +3485,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_loan   loans%rowtype;
+  v_loan   public.loans%rowtype;
   v_txn_id uuid;
   v_txn_type  text;
   v_description  text;
@@ -3473,11 +3521,14 @@ begin
     else              'Money borrowed from ' || btrim(p_counterparty)
   end;
 
-  -- Step 1: Insert the loan
-  insert into loans (
-    direction, counterparty, amount, interest_rate,
+  p_id := coalesce(p_id, gen_random_uuid());
+
+  -- Step 1: Insert the loan idempotently
+  insert into public.loans (
+    id, direction, counterparty, amount, interest_rate,
     loan_date, due_date, note, settled, amount_settled, user_id
   ) values (
+    p_id,
     p_direction,
     btrim(p_counterparty),
     p_amount,
@@ -3489,14 +3540,18 @@ begin
     0,
     p_user_id
   )
-  returning * into v_loan;
+  on conflict (id) do nothing;
+  
+  -- Fetch the loan to get the active row (whether newly inserted or preexisting)
+  select * into v_loan from public.loans where id = p_id;
 
   -- Step 2: Insert the disbursement transaction
   insert into transactions (
     date, type, description, amount, category,
     is_repayment, payment_mode, user_id,
     linked_loan_id, notes
-  ) values (
+  )
+  select
     coalesce(p_loan_date, current_date),
     v_txn_type,
     v_description,
@@ -3507,8 +3562,15 @@ begin
     p_user_id,
     v_loan.id,
     nullif(btrim(coalesce(p_note, '')), '')
+  where not exists (
+    select 1 from transactions where linked_loan_id = v_loan.id and is_repayment = false
   )
   returning id into v_txn_id;
+
+  -- If it was ignored due to conflict, v_txn_id will be null. Let's fetch it.
+  if v_txn_id is null then
+    select id into v_txn_id from transactions where linked_loan_id = v_loan.id limit 1;
+  end if;
 
   return json_build_object(
     'loan_id',        v_loan.id,
@@ -3527,13 +3589,17 @@ begin
 end;
 $$;
 
-grant execute on function public.create_loan(uuid, text, text, numeric, numeric, date, date, text) to authenticated;
+grant execute on function public.create_loan(uuid, uuid, text, text, numeric, numeric, date, date, text) to authenticated;
 
 -- ── record_loan_payment — atomic partial/full repayment ──────────────────────
 -- Creates a linked transaction and updates the loan's settled amount.
 -- If the payment brings amount_settled >= amount, settles the loan.
 
+-- Drop old signature to prevent PostgREST ambiguity
+drop function if exists public.record_loan_payment(uuid, uuid, numeric);
+
 create or replace function public.record_loan_payment(
+  p_id       uuid,
   p_loan_id  uuid,
   p_user_id  uuid,
   p_amount   numeric
@@ -3544,7 +3610,7 @@ security invoker
 set search_path = public
 as $$
 declare
-  v_loan      loans%rowtype;
+  v_loan      public.loans%rowtype;
   v_txn_id    uuid;
   v_new_settled numeric;
   v_fully_settled boolean;
@@ -3556,7 +3622,7 @@ begin
 
   -- Lock and fetch the loan row
   select * into v_loan
-  from loans
+  from public.loans
   where id = p_loan_id and user_id = p_user_id
   for update;
 
@@ -3584,12 +3650,15 @@ begin
     else 'expense'
   end;
 
-  -- Step 1: Insert linked transaction
+  p_id := coalesce(p_id, gen_random_uuid());
+
+  -- Step 1: Insert linked transaction idempotently
   insert into transactions (
-    date, type, description, amount, category,
+    id, date, type, description, amount, category,
     is_repayment, payment_mode, user_id,
     linked_loan_id
   ) values (
+    p_id,
     current_date,
     v_txn_type,
     'Loan payment: ' || v_loan.counterparty,
@@ -3600,10 +3669,23 @@ begin
     p_user_id,
     p_loan_id
   )
+  on conflict (id) do nothing
   returning id into v_txn_id;
 
+  -- If v_txn_id is null, this payment was already recorded (idempotency hit).
+  -- We just fetch the current loan state and return it without double-updating.
+  if v_txn_id is null then
+    return json_build_object(
+      'transaction_id',    p_id,
+      'loan_id',           p_loan_id,
+      'payment_amount',    p_amount,
+      'new_amount_settled', v_loan.amount_settled,
+      'fully_settled',     v_loan.settled
+    );
+  end if;
+
   -- Step 2: Update loan
-  update loans
+  update public.loans
   set amount_settled = v_new_settled,
       settled        = v_fully_settled
   where id = p_loan_id;
@@ -3844,7 +3926,7 @@ grant execute on function public.split_group_member_profiles(uuid) to authentica
 -- Grants for RPC functions
 grant execute on function public.split_preview_group_invite(text) to anon, authenticated;
 grant execute on function public.split_consume_group_invite(text) to authenticated;
-grant execute on function public.split_create_group_invite(uuid, text) to authenticated;
+grant execute on function public.split_create_group_invite(uuid, uuid, text) to authenticated;
 
 -- ======================================================================
 -- REQUIRED PERMISSIONS FOR TABLES (SUPABASE DATA API MAY 30 2026 UPDATE)

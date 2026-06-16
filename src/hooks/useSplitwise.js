@@ -326,7 +326,7 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
   }
 }
 
-export async function createSplitGroupMutation({ name, selfDisplayName = 'You' }) {
+export async function createSplitGroupMutation({ name, selfDisplayName = 'You', id }) {
   if (getActiveWalletUserId() !== getAuthUserId()) {
     throw new Error('Shared wallets are view-only. You cannot create Splitwise groups here.')
   }
@@ -335,7 +335,9 @@ export async function createSplitGroupMutation({ name, selfDisplayName = 'You' }
   const cleanSelfName = String(selfDisplayName || '').trim() || 'You'
   if (!cleanName) throw new Error('Group name is required.')
 
+  const rpcId = id ?? crypto.randomUUID()
   const { data: rpcGroup, error: rpcError } = await supabase.rpc('split_create_group', {
+    p_id: rpcId,
     p_name: cleanName,
     p_self_display_name: cleanSelfName,
   })
@@ -509,11 +511,13 @@ export async function updateSplitGroupMutation({ groupId, name }) {
   return true
 }
 
-export async function createSplitGroupInviteMutation({ groupId } = {}) {
+export async function createSplitGroupInviteMutation({ groupId, id } = {}) {
   const userId = getAuthUserId()
   if (!groupId) throw new Error('Group is required.')
 
+  const rpcId = id ?? crypto.randomUUID()
   const { data, error } = await supabase.rpc('split_create_group_invite', {
+    p_id: rpcId,
     p_group_id: groupId,
     p_role: 'member',
   })
@@ -619,6 +623,7 @@ export async function addSplitExpenseMutation({
   notes,
   splits,
   transactionCategory,
+  id,
 }) {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     throw new Error("You're offline — we'll need a connection to save this.")
@@ -642,7 +647,9 @@ export async function addSplitExpenseMutation({
     shares: row.shares == null ? null : Number(row.shares),
   }))
 
+  const rpcId = id ?? crypto.randomUUID()
   const { data, error } = await supabase.rpc('split_create_expense', {
+    p_id: rpcId,
     p_group_id: groupId,
     p_paid_by_member_id: paidByMemberId,
     p_description: String(description).trim(),
@@ -778,7 +785,7 @@ export async function deleteSplitExpenseMutation(expenseId) {
   return data === true
 }
 
-export async function recordSplitSettlementMutation({ groupId, payerMemberId, payeeMemberId, amount, settledAt, note }) {
+export async function recordSplitSettlementMutation({ groupId, payerMemberId, payeeMemberId, amount, settledAt, note, id }) {
   if (getActiveWalletUserId() !== getAuthUserId()) {
     throw new Error('Shared wallets are view-only. You cannot record settlements here.')
   }
@@ -789,7 +796,9 @@ export async function recordSplitSettlementMutation({ groupId, payerMemberId, pa
   if (!payerMemberId || !payeeMemberId) throw new Error('Both members are required.')
   if (!Number.isFinite(safeAmount) || safeAmount <= 0) throw new Error('Settlement amount must be positive.')
 
+  const rpcId = id ?? crypto.randomUUID()
   const { data, error } = await supabase.rpc('split_record_settlement', {
+    p_id: rpcId,
     p_group_id: groupId,
     p_payer_member_id: payerMemberId,
     p_payee_member_id: payeeMemberId,

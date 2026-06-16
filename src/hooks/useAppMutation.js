@@ -22,15 +22,32 @@ export function useAppMutation(mutationFn, { context, meta, mutationKey, ...opti
   const defaultKey = context ? [context] : undefined
   const key = mutationKey || defaultKey
 
-  return useMutation({
+  const mutation = useMutation({
     mutationKey: key,
     networkMode: 'offlineFirst',
     mutationFn: async (args) => {
-      // In Stage 2, writes are queued offline. We no longer throw an error when offline,
-      // letting React Query pause and queue the mutation automatically.
+      // In Stage 2, writes are queued offline. Idempotency is enforced globally
+      // across all RPCs, making it safe for React Query to pause and replay writes.
       return mutationFn(args)
     },
     ...options,
     meta: { context, ...(meta || {}) },
   })
+
+  // Inject a stable ID into object-shaped variables before they reach React Query.
+  // This ensures the ID is captured in the persisted offline variables and remains
+  // stable during replays, fixing the idempotency loop.
+  const wrapWithId = (originalMutate) => (variables, ...args) => {
+    let payload = variables
+    if (payload && typeof payload === 'object' && !Array.isArray(payload) && payload.id == null) {
+      payload = { ...payload, id: crypto.randomUUID() }
+    }
+    return originalMutate(payload, ...args)
+  }
+
+  return {
+    ...mutation,
+    mutate: wrapWithId(mutation.mutate),
+    mutateAsync: wrapWithId(mutation.mutateAsync),
+  }
 }

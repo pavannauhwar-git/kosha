@@ -102,9 +102,13 @@ async function addLoan(payload) {
   const counterparty = String(payload.counterparty || '').trim()
   if (!counterparty) throw new Error('Counterparty name is required')
 
+  // Read the stable ID from payload (injected by useAppMutation wrapper) so offline replays are idempotent
+  const id = payload.id ?? crypto.randomUUID()
+
   // Use the atomic RPC so the disbursement transaction is created in the same
   // DB transaction as the loan row, guaranteeing referential consistency.
   const { data: result, error } = await supabase.rpc('create_loan', {
+    p_id: id,
     p_user_id: userId,
     p_direction: payload.direction,
     p_counterparty: counterparty,
@@ -157,9 +161,11 @@ async function addLoan(payload) {
   return data
 }
 
-async function recordPayment(loanId, amount) {
+async function recordPayment(loanId, amount, id) {
   const userId = getActiveWalletUserId()
+  const rpcId = id ?? crypto.randomUUID()
   const { data: result, error } = await supabase.rpc('record_loan_payment', {
+    p_id: rpcId,
     p_loan_id: loanId,
     p_user_id: userId,
     p_amount: amount,
@@ -411,7 +417,7 @@ export async function addLoanMutation(payload) {
   }
 }
 
-export async function recordLoanPaymentMutation(loan, paymentAmount) {
+export async function recordLoanPaymentMutation({ loan, paymentAmount, id }) {
   const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
 
@@ -433,7 +439,7 @@ export async function recordLoanPaymentMutation(loan, paymentAmount) {
   }
 
   try {
-    const result = await recordPayment(loan.id, paymentAmount)
+    const result = await recordPayment(loan.id, paymentAmount, id)
     suppress('loans')
     suppress('transactions')
     await queryClient.cancelQueries({ queryKey: ['loans'] })

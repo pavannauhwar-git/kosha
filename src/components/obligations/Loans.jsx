@@ -105,11 +105,11 @@ export default function Loans({
     { context: 'loans:update' }
   )
   const recordLoanPayment = useAppMutation(
-    ({ loan, paymentAmount }) => recordLoanPaymentMutation(loan, paymentAmount),
+    recordLoanPaymentMutation,
     { context: 'loans:recordPayment' }
   )
   const settleLoan = useAppMutation(
-    ({ loan, paymentAmount }) => recordLoanPaymentMutation(loan, paymentAmount),
+    recordLoanPaymentMutation,
     { context: 'loans:settle' }
   )
   const deleteLoan = useAppMutation(deleteLoanMutation, { context: 'loans:delete' })
