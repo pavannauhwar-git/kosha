@@ -2142,9 +2142,9 @@ $$;
 drop function if exists public.split_create_group(text, text);
 
 create or replace function public.split_create_group(
-  p_id uuid,
   p_name text,
-  p_self_display_name text default null
+  p_self_display_name text default null,
+  p_id uuid default null
 )
 returns public.split_groups
 language plpgsql
@@ -2525,9 +2525,9 @@ create trigger trg_split_group_owner_access
 drop function if exists public.split_create_group_invite(uuid, text);
 
 create or replace function public.split_create_group_invite(
-  p_id uuid,
   p_group_id uuid,
-  p_role text default 'member'
+  p_role text default 'member',
+  p_id uuid default null
 )
 returns public.split_group_invites
 language plpgsql
@@ -2870,7 +2870,7 @@ $$;
 drop function if exists public.split_create_expense(uuid, uuid, text, numeric, date, text, text, jsonb);
 
 create or replace function public.split_create_expense(
-  p_id uuid,
+  p_id uuid default null,
   p_group_id uuid,
   p_paid_by_member_id uuid,
   p_description text,
@@ -3250,14 +3250,14 @@ grant execute on function public.split_update_expense(uuid, uuid, text, numeric,
 drop function if exists public.split_record_settlement(uuid, uuid, uuid, numeric, date, text);
 
 create or replace function public.split_record_settlement(
-  p_id uuid,
   p_group_id uuid,
   p_payer_member_id uuid,
   p_payee_member_id uuid,
   p_amount numeric,
   p_settled_at date default current_date,
   p_note text default null,
-  p_sync_transaction boolean default true
+  p_sync_transaction boolean default true,
+  p_id uuid default null
 )
 returns public.split_settlements
 language plpgsql
@@ -3469,7 +3469,6 @@ create policy "loans: delete own" on loans
 drop function if exists public.create_loan(uuid, text, text, numeric, numeric, date, date, text);
 
 create or replace function public.create_loan(
-  p_id           uuid,
   p_user_id      uuid,
   p_direction    text,
   p_counterparty text,
@@ -3477,7 +3476,8 @@ create or replace function public.create_loan(
   p_interest_rate numeric default 0,
   p_loan_date    date    default current_date,
   p_due_date     date    default null,
-  p_note         text    default null
+  p_note         text    default null,
+  p_id           uuid    default null
 )
 returns json
 language plpgsql
@@ -3599,10 +3599,10 @@ grant execute on function public.create_loan(uuid, uuid, text, text, numeric, nu
 drop function if exists public.record_loan_payment(uuid, uuid, numeric);
 
 create or replace function public.record_loan_payment(
-  p_id       uuid,
   p_loan_id  uuid,
   p_user_id  uuid,
-  p_amount   numeric
+  p_amount   numeric,
+  p_id       uuid default null
 )
 returns json
 language plpgsql
