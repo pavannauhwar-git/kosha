@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Wallet } from '@phosphor-icons/react'
 import { useUserCategories } from '../../hooks/useUserCategories'
 import { getCategoriesForType } from '../../lib/categories'
-import { upsertBudget, deleteBudget } from '../../hooks/useBudgets'
+import { upsertBudget as upsertBudgetApi, deleteBudget as deleteBudgetApi } from '../../hooks/useBudgets'
+import { useAppMutation } from '../../hooks/useAppMutation'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
 import { validateAmount } from '../../lib/validateAmount.js'
@@ -14,6 +15,12 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
   const [saving, setSaving] = useState(null)
   const [error, setError] = useState('')
   const isSubmitting = useRef(false)
+
+  const saveBudget = useAppMutation(
+    ({ category, limit }) => upsertBudgetApi(category, limit),
+    { context: 'budgets:save' }
+  )
+  const removeBudget = useAppMutation(deleteBudgetApi, { context: 'budgets:remove' })
 
   const { customCategories } = useUserCategories()
 
@@ -67,7 +74,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
     setSaving(catId)
     setError('')
     try {
-      await upsertBudget(catId, limit)
+      await saveBudget.mutateAsync({ category: catId, limit })
       setDrafts((prev) => {
         const next = { ...prev }
         delete next[catId]
@@ -95,7 +102,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
     setSaving(catId)
     setError('')
     try {
-      await deleteBudget(existing.id)
+      await removeBudget.mutateAsync(existing.id)
       setDrafts((prev) => {
         const next = { ...prev }
         delete next[catId]

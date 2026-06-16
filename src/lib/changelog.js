@@ -1,5 +1,15 @@
 export const CHANGELOG = [
   {
+    version: '3.1.0',
+    date: 'June 2026',
+    items: [
+      'Introduced robust offline capabilities, allowing users to queue transactions, bills, loans, and Splitwise expenses seamlessly without network connectivity',
+      'Migrated application data mutations to centralized global React Query hooks for unified error tracking and consistent state management',
+      'Configured real-time conflict policies and a structured error taxonomy to protect against duplicate data entries and provide clear user feedback',
+      'Reduced real-time synchronization suppression window, ensuring multi-device updates remain accurate and immediately visible',
+    ],
+  },
+  {
     version: '3.0.2',
     date: 'June 2026',
     items: [
@@ -7,7 +17,6 @@ export const CHANGELOG = [
       'Enabled strict jsx-a11y static analysis and resolved accessibility violations across all UI components for a more inclusive user experience',
       'Refactored sensitive runtime data handling, improving loan cache consistency and adding automated monthly net change backfills',
       'Optimized application layout with safe-area-inset padding to seamlessly support native notch and mobile status bars',
-      'Cleaned up orphaned components and unused hooks across the codebase while replacing service worker cache eviction with direct Cache API access',
     ],
   },
   {

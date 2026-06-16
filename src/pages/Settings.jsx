@@ -28,6 +28,7 @@ import { shareLink } from '../lib/share'
 import { CHANGELOG } from '../lib/changelog'
 import { writeLocalStorage } from '../lib/safeStorage'
 import { isValidImageMagicBytes } from '../lib/bugReportUtils'
+import { useAppMutation } from '../hooks/useAppMutation'
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
@@ -85,7 +86,16 @@ export default function Settings() {
   const fileInputRef = useRef(null)
   const { setSafeTimeout } = useSafeTimeout()
 
-  const [uploading, setUploading] = useState(false)
+  const updateProfileMutation = useAppMutation(updateProfile, { context: 'settings:updateProfile', networkMode: 'online' })
+  const createInviteMutation = useAppMutation(createInvite, { context: 'settings:createInvite', networkMode: 'online' })
+  const unlinkPartnerMutation = useAppMutation(({ userId, partnerId }) => unlinkPartner(userId, partnerId), { context: 'settings:unlinkWallet', networkMode: 'online' })
+  const deleteInviteMutation = useAppMutation(deleteInvite, { context: 'settings:revokeInvite', networkMode: 'online' })
+  const updatePasswordMutation = useAppMutation(updatePassword, { context: 'settings:updatePassword', networkMode: 'online' })
+
+  const uploading = updateProfileMutation.isPending
+  const creatingInvite = createInviteMutation.isPending
+  const passwordSaving = updatePasswordMutation.isPending
+
   const [photoError, setPhotoError] = useState('')
   const [showEditName, setShowEditName] = useState(false)
   const [showViewPhoto, setShowViewPhoto] = useState(false)
@@ -96,14 +106,12 @@ export default function Settings() {
   const [walletLoading, setWalletLoading] = useState(false)
   const [walletError, setWalletError] = useState('')
   const [walletMsg, setWalletMsg] = useState('')
-  const [creatingInvite, setCreatingInvite] = useState(false)
   const [revokingId, setRevokingId] = useState('')
   const [unlinkingId, setUnlinkingId] = useState('')
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
   const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordMsg, setPasswordMsg] = useState('')
   const remindersPaused = !reminderPrefs.enabled
@@ -193,7 +201,6 @@ export default function Settings() {
       return
     }
 
-    setUploading(true)
     try {
       const ext = file.name.split('.').pop() || 'jpg'
       const path = `avatars/${user.id}-${Date.now()}.${ext}`
@@ -203,24 +210,20 @@ export default function Settings() {
         .upload(path, file, { cacheControl: '3600', upsert: true })
       if (uploadError) throw uploadError
 
-      await updateProfile({ avatar_url: path })
+      await updateProfileMutation.mutateAsync({ avatar_url: path })
     } catch (e) {
       setPhotoError(e.message || 'Could not update photo. Try again.')
     } finally {
-      setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
   async function handleDeletePhoto() {
     setPhotoError('')
-    setUploading(true)
     try {
-      await updateProfile({ avatar_url: null })
+      await updateProfileMutation.mutateAsync({ avatar_url: null })
     } catch (e) {
       setPhotoError(e.message || 'Could not remove photo. Try again.')
-    } finally {
-      setUploading(false)
     }
   }
 
@@ -274,16 +277,13 @@ export default function Settings() {
 
   async function handleCreateInvite() {
     if (!user?.id || creatingInvite || inviteCapReached) return
-    setCreatingInvite(true)
     setWalletError('')
     try {
-      const row = await createInvite({ supabaseClient: supabase, userId: user.id })
+      const row = await createInviteMutation.mutateAsync({ supabaseClient: supabase, userId: user.id })
       setWalletInvites((prev) => [row, ...prev].slice(0, MAX_ACTIVE_INVITES))
       await copyInviteLink(row.token)
     } catch (error) {
       setWalletError(error?.message || 'Could not create invite link.')
-    } finally {
-      setCreatingInvite(false)
     }
   }
 
@@ -293,7 +293,7 @@ export default function Settings() {
     setUnlinkingId(partnerId)
     setWalletError('')
     try {
-      await unlinkPartner(user.id, partnerId)
+      await unlinkPartnerMutation.mutateAsync({ userId: user.id, partnerId })
       if (getActiveWalletUserId() === partnerId) setActiveWalletUserId(user.id)
       await reloadLinkedData()
     } catch (error) {
@@ -308,7 +308,7 @@ export default function Settings() {
     setRevokingId(inviteId)
     setWalletError('')
     try {
-      await deleteInvite({ supabaseClient: supabase, inviteId })
+      await deleteInviteMutation.mutateAsync({ supabaseClient: supabase, inviteId })
       setWalletInvites((prev) => prev.filter(i => i.id !== inviteId))
     } catch (error) {
       setWalletError(error?.message || 'Could not revoke invite link.')
@@ -337,17 +337,14 @@ export default function Settings() {
       return
     }
 
-    setPasswordSaving(true)
     try {
-      await updatePassword(newPassword)
+      await updatePasswordMutation.mutateAsync(newPassword)
       setPasswordMsg('Password updated successfully.')
       setNewPassword('')
       setConfirmPassword('')
       setShowPasswordForm(false)
     } catch (error) {
       setPasswordError(error?.message || 'Could not update password. Try again.')
-    } finally {
-      setPasswordSaving(false)
     }
   }
 

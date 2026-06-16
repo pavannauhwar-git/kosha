@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react'
+import { isExpectedError } from './errorTaxonomy'
 import { useEffect } from 'react'
 import {
   useLocation,
@@ -168,6 +169,49 @@ export function captureError(error, { context = 'unknown', extra = {}, tags = {}
 
   // Fallback — structured console output in dev
   console.error(`[Kosha] Error in ${context}:`, error.message, { extra, tags })
+}
+
+/**
+ * Classifies a mutation (write-path) error as "expected" (a normal user-facing
+ * outcome we deliberately throw, or one the UX already handles) vs.
+ * "unexpected" (a real backend / network / programming failure worth a Sentry
+ * event).
+ *
+ * Expected → NOT reported:
+ *   - status 401 / 403        → auth + RLS denials, handled by AuthGuard / view-only UX
+ *   - message 'OPTIMISTIC_BUSY' → rapid double-tap guard (see mutationGuard.js)
+ *   - plain client Errors      → our own validation throws ('Amount must be
+ *                                positive', 'Shared wallets are view-only', …)
+ *                                which carry no backend status/code
+ *
+ * Unexpected → reported:
+ *   - any error with a backend status/code (PostgREST/Postgres: missing RPC
+ *     e.g. PGRST202, constraint violations, 5xx, …)
+ *   - network / programming errors (TypeError, incl. Safari "Load failed")
+ */
+// Delegates to the canonical taxonomy so monitoring + UX never diverge.
+// NOTE: this now treats HTTP 409 (conflict) as EXPECTED (was reported under
+// F1). See src/lib/errorTaxonomy.js EXPECTED_KINDS to change that.
+export function isExpectedMutationError(error) {
+  return isExpectedError(error)
+}
+
+/**
+ * Reports an unexpected mutation failure to Sentry. No-ops for expected errors
+ * so the dashboard stays signal-rich. Mutations in this app are plain async
+ * functions (not React Query `useMutation`), so the MutationCache.onError hook
+ * never fires — without this, write-path failures are invisible in monitoring.
+ *
+ * Call from a mutation catch block BEFORE showing the user-facing toast:
+ *
+ *   } catch (err) {
+ *     captureMutationError(err, { context: 'splitwise:saveExpense' })
+ *     setToast(err?.message || 'Could not save expense.')
+ *   }
+ */
+export function captureMutationError(error, { context = 'mutation', extra = {}, tags = {} } = {}) {
+  if (isExpectedMutationError(error)) return
+  captureError(error, { context, extra, tags: { source: 'mutation', ...tags } })
 }
 
 export function setErrorReportingUser(user) {

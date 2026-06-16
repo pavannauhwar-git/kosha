@@ -16,6 +16,7 @@ import {
   accruedInterest,
   loanProgress,
 } from '../../hooks/useLoans'
+import { useAppMutation } from '../../hooks/useAppMutation'
 import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
 import { useActiveWallet } from '../../lib/walletStore'
@@ -98,15 +99,33 @@ export default function Loans({
 
 
 
+  const addLoan = useAppMutation(addLoanMutation, { context: 'loans:add' })
+  const updateLoan = useAppMutation(
+    ({ id, updates }) => updateLoanMutation(id, updates),
+    { context: 'loans:update' }
+  )
+  const recordLoanPayment = useAppMutation(
+    ({ loan, paymentAmount }) => recordLoanPaymentMutation(loan, paymentAmount),
+    { context: 'loans:recordPayment' }
+  )
+  const settleLoan = useAppMutation(
+    ({ loan, paymentAmount }) => recordLoanPaymentMutation(loan, paymentAmount),
+    { context: 'loans:settle' }
+  )
+  const deleteLoan = useAppMutation(deleteLoanMutation, { context: 'loans:delete' })
+
+  const isAddSaving = addLoan.isPending || updateLoan.isPending
+  const isPaySaving = recordLoanPayment.isPending || settleLoan.isPending
+
   const commitPendingDelete = useCallback(async (pending) => {
     if (!pending?.id) return
     try {
-      await deleteLoanMutation(pending.id)
+      await deleteLoan.mutateAsync(pending.id)
     } catch (e) {
       optimisticallyInsertLoan(pending.loan, activeWalletUserId)
       pushToast(e.message || 'Could not delete loan.', { duration: 4200 })
     }
-  }, [pushToast, activeWalletUserId])
+  }, [pushToast, activeWalletUserId, deleteLoan])
 
   async function handleDelete(id) {
     if (!id) return false
@@ -186,12 +205,10 @@ export default function Loans({
     loan_date: todayStr(), due_date: '', note: '',
   })
   const [formErr, setFormErr] = useState('')
-  const [addSaving, setAddSaving] = useState(false)
 
   // ── Payment form state ──────────────────────────────────────────────
   const [payAmount, setPayAmount] = useState('')
   const [payErr, setPayErr] = useState('')
-  const [paySaving, setPaySaving] = useState(false)
 
   const closePaySheet = useCallback(() => {
     setPayLoan(null)
@@ -200,9 +217,9 @@ export default function Loans({
   }, [])
 
   const dismissPaySheet = useCallback(() => {
-    if (paySaving) return
+    if (isPaySaving) return
     closePaySheet()
-  }, [paySaving, closePaySheet])
+  }, [isPaySaving, closePaySheet])
 
   // ── Derived data ────────────────────────────────────────────────────
   const visibleGiven = useMemo(() => given.filter(l => !hiddenIds.has(l.id)), [given, hiddenIds])
@@ -571,12 +588,12 @@ export default function Loans({
   }, [resetForm, setShowAdd])
 
   const dismissAddLoanSheet = useCallback(() => {
-    if (addSaving) return
+    if (isAddSaving) return
     closeAddLoanSheet()
-  }, [addSaving, closeAddLoanSheet])
+  }, [isAddSaving, closeAddLoanSheet])
 
   async function handleAdd() {
-    if (addSaving) return
+    if (isAddSaving) return
     if (!form.counterparty.trim()) { setFormErr('Enter a name'); return }
     if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
     if (!form.loan_date) { setFormErr('Select a loan date'); return }
@@ -592,28 +609,23 @@ export default function Loans({
     }
 
     setFormErr('')
-    setAddSaving(true)
 
     if (editLoan) {
       try {
-        await updateLoanMutation(editLoan.id, loanData)
+        await updateLoan.mutateAsync({ id: editLoan.id, updates: loanData })
         setTab(loanData.direction)
-        setAddSaving(false)
         closeAddLoanSheet()
       } catch (e) {
-        setAddSaving(false)
         setErrToast(e.message || 'Could not update loan.')
       }
       return
     }
 
     try {
-      await addLoanMutation({ ...loanData, amount_settled: 0, settled: false })
+      await addLoan.mutateAsync({ ...loanData, amount_settled: 0, settled: false })
       setTab(loanData.direction)
-      setAddSaving(false)
       closeAddLoanSheet()
     } catch (e) {
-      setAddSaving(false)
       setErrToast(e.message || 'Could not add loan.')
     }
   }
@@ -630,14 +642,11 @@ export default function Loans({
     if (amt > remaining) { setPayErr(`Max payment is ${fmt(remaining)}`); actionGuard.current = false; return }
 
     setPayErr('')
-    setPaySaving(true)
 
     try {
-      await recordLoanPaymentMutation(payLoan, amt)
-      setPaySaving(false)
+      await recordLoanPayment.mutateAsync({ loan: payLoan, paymentAmount: amt })
       closePaySheet()
     } catch (e) {
-      setPaySaving(false)
       setErrToast(e.message || 'Could not record payment.')
     } finally {
       actionGuard.current = false
@@ -651,13 +660,13 @@ export default function Loans({
     if (remaining <= 0) { actionGuard.current = false; return }
 
     try {
-      await recordLoanPaymentMutation(loan, remaining)
+      await settleLoan.mutateAsync({ loan, paymentAmount: remaining })
     } catch (e) {
       setErrToast(e.message || 'Could not settle loan.')
     } finally {
       actionGuard.current = false
     }
-  }, [])
+  }, [settleLoan])
 
   function openEditLoan(loan) {
     setEditLoan(loan)
@@ -1250,9 +1259,9 @@ export default function Loans({
                     size="xl"
                     fullWidth
                     onClick={handleRecordPayment}
-                    loading={paySaving}
+                    loading={isPaySaving}
                   >
-                    {paySaving ? 'Recording…' : 'Record Payment'}
+                    {isPaySaving ? 'Recording…' : 'Record Payment'}
                   </Button>
                 </div>
               </div>
@@ -1373,7 +1382,7 @@ export default function Loans({
                       value={form.loan_date}
                       onChange={(nextDate) => setForm(f => ({ ...f, loan_date: nextDate }))}
                       sheetTitle="Select loan date"
-                      disabled={addSaving}
+                      disabled={isAddSaving}
                     />
                   </div>
                 </div>
@@ -1391,7 +1400,7 @@ export default function Loans({
                       onChange={(nextDate) => setForm(f => ({ ...f, due_date: nextDate }))}
                       sheetTitle="Select repayment date"
                       clearable
-                      disabled={addSaving}
+                      disabled={isAddSaving}
                     />
                   </div>
                 </div>
@@ -1423,9 +1432,9 @@ export default function Loans({
                     size="xl"
                     fullWidth
                     onClick={handleAdd}
-                    loading={addSaving}
+                    loading={isAddSaving}
                   >
-                    {addSaving ? (editLoan ? 'Saving…' : 'Adding…') : (editLoan ? 'Save Changes' : 'Add Loan')}
+                    {isAddSaving ? (editLoan ? 'Saving…' : 'Adding…') : (editLoan ? 'Save Changes' : 'Add Loan')}
                   </Button>
                 </div>
               </div>

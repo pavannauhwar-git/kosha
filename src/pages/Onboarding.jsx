@@ -10,6 +10,7 @@ import { EXPENSE_CATEGORIES } from '../lib/categories'
 import CategoryIcon from '../components/categories/CategoryIcon'
 import KoshaLogo from '../components/brand/KoshaLogo'
 import { createFadeUp, createStagger } from '../lib/animations'
+import { useAppMutation } from '../hooks/useAppMutation'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import { todayStr } from '../lib/utils'
@@ -198,15 +199,15 @@ function StepFirstTransaction({ onFinish, onSkip }) {
   const [desc,     setDesc]     = useState('')
   const [category, setCategory] = useState('food')
   const [txnType,  setTxnType]  = useState('expense')
-  const [saving,   setSaving]   = useState(false)
   const [error,    setError]    = useState(null)
+
+  const saveTransaction = useAppMutation(saveTransactionMutation, { context: 'onboarding:firstTransaction' })
 
   async function handleSave() {
     if (!amount || !desc.trim()) return
-    setSaving(true)
     setError(null)
     try {
-      await saveTransactionMutation({
+      await saveTransaction.mutateAsync({
         payload: {
           date:         todayStr(),
           type:         txnType,
@@ -220,7 +221,6 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       onFinish()
     } catch (e) {
       setError(e.message)
-      setSaving(false)
     }
   }
 
@@ -329,9 +329,9 @@ function StepFirstTransaction({ onFinish, onSkip }) {
           fullWidth
           onClick={handleSave}
           disabled={!amount || !desc.trim()}
-          loading={saving}
+          loading={saveTransaction.isPending}
         >
-          {saving ? 'Saving…' : 'Add & go to dashboard'}
+          {saveTransaction.isPending ? 'Saving…' : 'Add & go to dashboard'}
         </Button>
       </motion.div>
 
@@ -356,9 +356,11 @@ export default function Onboarding() {
 
   const [step,   setStep]   = useState(0)
   const [name,   setName]   = useState('')
-  const [saving, setSaving] = useState(false)
   const [finishError, setFinishError] = useState('')
   const [toast, setToast] = useState(null)
+
+  const updateProfileMutation = useAppMutation(updateProfile, { context: 'onboarding:saveProfile', networkMode: 'online' })
+  const finishMutation = useAppMutation(updateProfile, { context: 'onboarding:finish', networkMode: 'online' })
 
   // If already onboarded (e.g. user navigated here manually), send to dashboard
   // Use an effect so we don't navigate before render
@@ -373,7 +375,7 @@ export default function Onboarding() {
     // Save profile data first, then advance — avoids a race where the profile
     // update completes after step change and the guard sees onboarded=false.
     try {
-      await updateProfile({ display_name: name, monthly_income: monthlyIncome })
+      await updateProfileMutation.mutateAsync({ display_name: name, monthly_income: monthlyIncome })
     } catch (e) {
       setToast(e?.message || 'Could not save profile details.')
     }
@@ -381,8 +383,7 @@ export default function Onboarding() {
   }
 
   async function finish() {
-    if (saving) return
-    setSaving(true)
+    if (finishMutation.isPending) return
     try {
       // ── Optimistic cache patch ────────────────────────────────────────────
       // Google OAuth fires a *second* SIGNED_IN event after token exchange,
@@ -408,7 +409,7 @@ export default function Onboarding() {
 
       // If testing UI and already onboarded, skip the DB update to prevent 403 Forbidden
       if (!profile?.onboarded) {
-        await updateProfile({ onboarded: true })
+        await finishMutation.mutateAsync({ onboarded: true })
       }
 
       const hasPendingSplitInvite = (() => {
@@ -426,7 +427,6 @@ export default function Onboarding() {
     } catch (e) {
       console.error('[Kosha] Onboarding finish failed', e)
       setFinishError(e.message || 'Could not save profile. Please try again.')
-      setSaving(false)
     }
   }
 
@@ -441,10 +441,10 @@ export default function Onboarding() {
           <button
             type="button"
             onClick={finish}
-            disabled={saving}
+            disabled={finishMutation.isPending}
             className="text-[13px] font-semibold text-ink-3 hover:text-ink transition-colors duration-150 disabled:opacity-40"
           >
-            {saving ? 'Saving…' : 'Skip to dashboard →'}
+            {finishMutation.isPending ? 'Saving…' : 'Skip to dashboard →'}
           </button>
         </div>
         {finishError && (

@@ -620,6 +620,10 @@ export async function addSplitExpenseMutation({
   splits,
   transactionCategory,
 }) {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw new Error("You're offline — we'll need a connection to save this.")
+  }
+
   if (getActiveWalletUserId() !== getAuthUserId()) {
     throw new Error('Shared wallets are view-only. You cannot add Splitwise expenses here.')
   }

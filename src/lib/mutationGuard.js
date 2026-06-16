@@ -27,7 +27,12 @@
 
 import { getActiveWalletUserId } from './walletStore.js'
 
-const SUPPRESS_TTL_MS = 2000
+// 1500ms matches the window documented above: it covers the local mutation's
+// own invalidation (~800ms) plus realtime broadcast latency (~300–500ms) with a
+// small margin, while staying short enough that a genuine remote change from
+// another device/tab is NOT suppressed. (Was 2000ms, which could suppress a
+// legitimate cross-device update arriving up to 2s after a local write.)
+const SUPPRESS_TTL_MS = 1500
 
 // Map of scopedKey → expiry timestamp
 const _suppressed = new Map()

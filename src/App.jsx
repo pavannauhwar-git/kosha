@@ -5,7 +5,9 @@ import { ThemeProvider, CssBaseline } from '@mui/material'
 import { getMuiTheme } from './lib/muiTheme'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
+import { queryPersister } from './lib/queryPersister'
 import { queryClient, evictSwCacheEntries, invalidateQueryFamilies } from './lib/queryClient'
 import { supabase } from './lib/supabase'
 import { TRANSACTION_INVALIDATION_KEYS, TRANSACTION_INSIGHTS_COLUMNS, TRANSACTION_LIST_COLUMNS, parseMonthSummaryRows } from './hooks/useTransactions'
@@ -1651,12 +1653,32 @@ export default function App() {
       <MotionConfig reducedMotion="user">
         <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
           <AuthProvider>
-          <QueryClientProvider client={queryClient}>
+          <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={{
+              persister: queryPersister,
+              maxAge: 12 * 60 * 60 * 1000, // 12h, matches the SW supabase-data cache
+              buster: import.meta.env.VITE_APP_VERSION, // new deploy invalidates old cache
+              dehydrateOptions: {
+                // Only persist successful data queries. Never persist auth/session.
+                shouldDehydrateQuery: (query) => {
+                  const key0 = Array.isArray(query.queryKey) ? query.queryKey[0] : null
+                  if (key0 === 'kosha-active-wallet') return false
+                  return query.state.status === 'success'
+                },
+              },
+            }}
+            onSuccess={() => {
+              queryClient.resumePausedMutations().catch(err => {
+                console.warn('[Kosha] Failed to resume paused mutations', err)
+              })
+            }}
+          >
             <GlobalRealtimeSync />
             <DashboardWarmPrefetch />
             <VersionHeartbeat />
               <AppContent />
-            </QueryClientProvider>
+          </PersistQueryClientProvider>
           </AuthProvider>
         </BrowserRouter>
       </MotionConfig>

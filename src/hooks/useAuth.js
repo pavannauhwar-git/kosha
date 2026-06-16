@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { clearPersistedQueryCache } from '../lib/queryPersister'
 import { supabase } from '../lib/supabase.js'
 import { queryClient } from '../lib/queryClient.js'
 import { setAuthUser, clearAuthUser, getAuthUserId } from '../lib/authStore.js'
@@ -19,6 +20,7 @@ const PROFILE_COLUMNS = 'id, display_name, avatar_url, onboarded'
 // own localStorage keys.
 async function purgeAllUserScopedState() {
   try { queryClient.clear() } catch (err) { console.warn('[Kosha] queryClient.clear failed', err) }
+  try { await clearPersistedQueryCache() } catch (err) { console.warn('[Kosha] clearPersistedQueryCache failed', err) }
   try { _resetRecurringSyncState() } catch (err) { console.warn('[Kosha] _resetRecurringSyncState failed', err) }
   try { purgeUserScopedKeys() } catch (err) { console.warn('[Kosha] purgeUserScopedKeys failed', err) }
   try { await purgeServiceWorkerCaches() } catch (err) { console.warn('[Kosha] purgeServiceWorkerCaches failed', err) }

@@ -4,9 +4,7 @@ import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash, Inf
 import Button from '../ui/Button'
 import Select from '../ui/Select'
 import PixelDatePicker from '../ui/PixelDatePicker'
-import {
-  saveTransactionMutation,
-} from '../../hooks/useTransactions'
+import { saveTransactionMutation } from '../../hooks/useTransactions'
 import { useLiabilities } from '../../hooks/useLiabilities'
 import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
 import {
@@ -17,6 +15,7 @@ import {
   normalizeCategoryForType,
 } from '../../lib/categories'
 import { archiveUserCategory, useUserCategories } from '../../hooks/useUserCategories'
+import { useAppMutation } from '../../hooks/useAppMutation'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 import CreateCategorySheet from '../categories/CreateCategorySheet'
 import { useSplitwise, addSplitExpenseMutation, buildEqualSplits } from '../../hooks/useSplitwise'
@@ -642,8 +641,12 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   const {
     type, amount, desc, category, vehicle, mode, date,
-    isRecurring, recurrence, notes, showNotes, isSplitwise, splitGroupId, linkedSplitExpenseId, linked_bill_id, isSaving, error,
+    isRecurring, recurrence, notes, showNotes, isSplitwise, splitGroupId, linkedSplitExpenseId, linked_bill_id, error
   } = state
+
+  const saveTransaction = useAppMutation(saveTransactionMutation, { context: 'transactions:save' })
+  const addSplitExpense = useAppMutation(addSplitExpenseMutation, { context: 'splitwise:addExpense' })
+  const isSaving = saveTransaction.isPending || addSplitExpense.isPending
 
   const isLinkedToSplitwise = !!linkedSplitExpenseId || !!editTxn?.linked_split_expense_id
   const set = (key, value) => dispatch({ type: 'SET', key, value })
@@ -751,6 +754,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const [showCreateCat, setShowCreateCat] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
 
+  const archiveCategoryMutation = useAppMutation(archiveUserCategory, { context: 'categories:delete' })
+
   const mainSheetRef = useOverlayFocusTrap(
     !showCatPicker && !showModePicker && !showVehPicker && !showCreateCat,
     {
@@ -764,7 +769,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     if (!dbId) return
 
     try {
-      await archiveUserCategory(dbId)
+      await archiveCategoryMutation.mutateAsync(dbId)
 
       if (type === 'investment' && vehicle === customCategory.label) {
         set('vehicle', 'Other')
@@ -814,9 +819,6 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),
     }
 
-    // STEP 1: Disable UI immediately. User cannot interact until server confirms.
-    dispatch({ type: 'SAVING_START' })
-
     try {
       if (isSplitwise && type === 'expense' && splitGroupId) {
         const { data: members, error: memErr } = await supabase
@@ -833,7 +835,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
         const splits = buildEqualSplits(members.map(m => m.id), +amount)
 
-        await addSplitExpenseMutation({
+        await addSplitExpense.mutateAsync({
           groupId: splitGroupId,
           paidByMemberId: selfMember.id,
           description: desc.trim(),
@@ -845,7 +847,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           transactionCategory: category
         })
       } else {
-        await saveTransactionMutation({
+        await saveTransaction.mutateAsync({
           id: editTxn?.id,
           payload,
         })
@@ -858,6 +860,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         type: 'SAVING_ERROR',
         value: e.message || 'Could not save. Check your connection and try again.',
       })
+    } finally {
       isSubmitting.current = false
     }
   }

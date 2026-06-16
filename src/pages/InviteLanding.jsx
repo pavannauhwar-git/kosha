@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { UsersThree, Handshake, ArrowRight, CheckCircle, XCircle } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
+import { captureMutationError } from '../lib/errorReporting'
 import { supabase } from '../lib/supabase'
 import { previewSplitGroupInviteMutation, consumeSplitGroupInviteMutation } from '../hooks/useSplitwise'
 import { consumeInviteToken } from '../lib/invites'
@@ -142,6 +143,7 @@ export default function InviteLanding() {
         navTimerRef.current = setTimeout(() => { navigate('/', { replace: true }) }, 1500)
       }
     } catch (e) {
+      captureMutationError(e, { context: 'inviteLanding:consume' })
       const msg = e.message || ''
       if (msg.includes('idx_split_group_members_group_name_unique')) {
         setError('You are already a member of this group.')

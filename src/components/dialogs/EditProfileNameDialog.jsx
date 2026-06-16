@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from '@phosphor-icons/react'
+import { captureMutationError } from '../../lib/errorReporting'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
@@ -30,6 +31,7 @@ export default function EditProfileNameDialog({ open, onClose }) {
       await updateDisplayName(trimmed) // must strictly await mutation+refetch
       onClose()
     } catch (e) {
+      captureMutationError(e, { context: 'profile:updateName' })
       setError(e.message || 'Could not update name. Try again.')
     } finally {
       setSaving(false)

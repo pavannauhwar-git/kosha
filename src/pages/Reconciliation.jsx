@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo, useState, useEffect, useCallback } from 'react
 import { AnimatePresence, motion } from 'framer-motion'
 import { Warning, ArrowRight, ClockCounterClockwise, House, LinkSimple, ArrowCounterClockwise } from '@phosphor-icons/react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAppMutation } from '../hooks/useAppMutation'
 import { useActiveWallet } from '../lib/walletStore'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
@@ -70,6 +71,15 @@ export default function Reconciliation() {
   const [statementInput, setStatementInput] = useState('')
   const [debouncedStatementInput, setDebouncedStatementInput] = useState('')
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
+
+  const saveTransaction = useAppMutation(saveTransactionMutation, { context: 'reconciliation:updateCategory' })
+  const reportFalsePositiveMutation = useAppMutation(reportReconciliationFalsePositive, { context: 'reconciliation:reportMismatch' })
+  const resetLearnedAliasesMutation = useAppMutation(clearLearnedReconciliationAliases, { context: 'reconciliation:resetAliases' })
+  // For `upsertReconciliationReview`, we have multiple contexts depending on the status (reviewed vs linked).
+  // We can either create two instances or pass context dynamically. Wait, `useAppMutation` context is fixed at hook creation.
+  // Let's create two:
+  const saveReviewed = useAppMutation(upsertReconciliationReview, { context: 'reconciliation:saveReviewed' })
+  const saveLinked = useAppMutation(upsertReconciliationReview, { context: 'reconciliation:saveLinked' })
 
   // Debounce heavy parse+match work so a large paste doesn't block typing.
   useEffect(() => {
@@ -429,7 +439,8 @@ export default function Reconciliation() {
 
   const persistReview = useCallback(async (id, status = 'reviewed', statementLine = null) => {
     if (!id) return false
-    const result = await upsertReconciliationReview({
+    const mutation = status === 'linked' ? saveLinked : saveReviewed
+    const result = await mutation.mutateAsync({
       transactionId: id,
       status,
       statementLine,
@@ -442,7 +453,7 @@ export default function Reconciliation() {
 
     await refetchReviews()
     return true
-  }, [markReviewedLocal, refetchReviews])
+  }, [markReviewedLocal, refetchReviews, saveLinked, saveReviewed])
 
   const markReviewed = useCallback(async (id) => {
     try {
@@ -468,7 +479,7 @@ export default function Reconciliation() {
 
   const reportFalsePositive = useCallback(async (id, statementLine) => {
     try {
-      const result = await reportReconciliationFalsePositive({
+      const result = await reportFalsePositiveMutation.mutateAsync({
         transactionId: id,
         statementLine: statementLine || null,
       })
@@ -479,13 +490,13 @@ export default function Reconciliation() {
       setToast(error?.message || 'Could not report mismatch.')
       setSafeTimeout(() => setToast(null), 3200)
     }
-  }, [refetchReviews, setSafeTimeout])
+  }, [refetchReviews, setSafeTimeout, reportFalsePositiveMutation])
 
   const setCategory = useCallback(async (id, category) => {
     if (!id || !category || savingId || reviewsLoading) return
     setSavingId(id)
     try {
-      await saveTransactionMutation({ id, payload: { category } })
+      await saveTransaction.mutateAsync({ id, payload: { category } })
       await persistReview(id, 'reviewed')
       setToast('Category updated and item reconciled.')
       setSafeTimeout(() => setToast(null), 2600)
@@ -495,13 +506,13 @@ export default function Reconciliation() {
     } finally {
       setSavingId(null)
     }
-  }, [savingId, reviewsLoading, persistReview, setSafeTimeout])
+  }, [savingId, reviewsLoading, persistReview, setSafeTimeout, saveTransaction])
 
   const resetLearnedAliases = useCallback(async () => {
     if (resettingAliases || reviewTableUnavailable) return
     setResettingAliases(true)
     try {
-      await clearLearnedReconciliationAliases()
+      await resetLearnedAliasesMutation.mutateAsync()
       await refetchReviews()
       setToast('Learned aliases were reset.')
       setSafeTimeout(() => setToast(null), 2200)
@@ -511,7 +522,7 @@ export default function Reconciliation() {
     } finally {
       setResettingAliases(false)
     }
-  }, [resettingAliases, reviewTableUnavailable, refetchReviews, setSafeTimeout])
+  }, [resettingAliases, reviewTableUnavailable, refetchReviews, setSafeTimeout, resetLearnedAliasesMutation])
 
   const TABS = [
     { id: 'queue', label: 'Queue', count: reviewProgress.queue },

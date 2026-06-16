@@ -11,6 +11,7 @@ import {
   optimisticallyUpsertTransactionInCache,
 } from '../hooks/useTransactions'
 import { useLiabilities } from '../hooks/useLiabilities'
+import { useAppMutation } from '../hooks/useAppMutation'
 import { CATEGORIES } from '../lib/categories'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 import { useSafeTimeout } from '../hooks/useSafeTimeout'
@@ -463,11 +464,14 @@ export default function Dashboard() {
     }
   }, [dueSoonCount, weeklyDriftSignal, reminderPrefs.enabled, reminderPrefs.bill_due, reminderPrefs.spending_pace])
 
+  const removeTransaction = useAppMutation(removeTransactionMutation, { context: 'dashboard:deleteTransaction' })
+  const commitRemoveTransaction = useAppMutation(removeTransactionMutation, { context: 'dashboard:deleteTransactionCommit' })
+
   // ── Callbacks ──────────────────────────────────────────────────────────
   const commitPendingDelete = useCallback(async (pendingDelete) => {
     if (!pendingDelete?.id) return
     try {
-      await removeTransactionMutation(pendingDelete.id)
+      await commitRemoveTransaction.mutateAsync(pendingDelete.id)
     } catch (e) {
       if (pendingDelete.txn) {
         optimisticallyUpsertTransactionInCache(pendingDelete.txn, activeWalletUserId)
@@ -475,7 +479,7 @@ export default function Dashboard() {
       setToast(e.message || 'Could not delete transaction.')
       setSafeTimeout(() => setToast(null), 4000)
     }
-  }, [activeWalletUserId, setSafeTimeout])
+  }, [activeWalletUserId, setSafeTimeout, commitRemoveTransaction])
 
   useEffect(() => {
     return () => {
@@ -504,7 +508,7 @@ export default function Dashboard() {
     const txn = recent.find((row) => row?.id === id)
     if (!txn) {
       try {
-        await removeTransactionMutation(id)
+        await removeTransaction.mutateAsync(id)
         return true
       } catch (e) {
         setToast(e.message || 'Could not delete transaction.')
@@ -551,7 +555,7 @@ export default function Dashboard() {
     }, 4000)
 
     return undefined
-  }, [recent, activeWalletUserId, commitPendingDelete, setSafeTimeout])
+  }, [recent, activeWalletUserId, commitPendingDelete, setSafeTimeout, removeTransaction])
 
   const inferRepaymentTab = useCallback((txn, loanRow = null) => {
     if (loanRow?.settled) return 'settled'

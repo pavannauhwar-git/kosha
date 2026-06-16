@@ -16,6 +16,7 @@ import EmptyState from '../components/common/EmptyState'
 import FilterRow from '../components/common/FilterRow'
 import AppToast from '../components/common/AppToast'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
+import { useAppMutation } from '../hooks/useAppMutation'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import { useUserCategories } from '../hooks/useUserCategories'
@@ -828,17 +829,20 @@ export default function Transactions() {
     setDatePreset('all')
   }, [linkedLoanFilter, linkedBillFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter, data, txnLoading])
 
+  const removeTransaction = useAppMutation(removeTransactionMutation, { context: 'transactions:delete' })
+  const commitRemoveTransaction = useAppMutation(removeTransactionMutation, { context: 'transactions:deleteCommit' })
+
   const commitPendingDelete = useCallback(async (pendingDelete) => {
     if (!pendingDelete?.id) return
     try {
-      await removeTransactionMutation(pendingDelete.id)
+      await commitRemoveTransaction.mutateAsync(pendingDelete.id)
     } catch (e) {
       if (pendingDelete.txn) {
         optimisticallyUpsertTransactionInCache(pendingDelete.txn, activeWalletUserId)
       }
       pushToast(e.message || 'Could not delete transaction.', { duration: 4200 })
     }
-  }, [activeWalletUserId, pushToast])
+  }, [activeWalletUserId, pushToast, commitRemoveTransaction])
 
   useEffect(() => {
     return () => {
@@ -867,7 +871,7 @@ export default function Transactions() {
     const txn = data.find((row) => row?.id === id)
     if (!txn) {
       try {
-        await removeTransactionMutation(id)
+        await removeTransaction.mutateAsync(id)
         return true
       } catch (e) {
         pushToast(e.message || 'Could not delete transaction.', { duration: 4200 })
@@ -909,8 +913,8 @@ export default function Transactions() {
       duration: DELETE_UNDO_WINDOW_MS,
     })
 
-    return true
-  }, [activeWalletUserId, commitPendingDelete, data, pushToast])
+    return undefined
+  }, [data, activeWalletUserId, commitPendingDelete, pushToast, removeTransaction])
 
   const inferRepaymentTab = useCallback((txn, loanRow = null) => {
     if (loanRow?.settled) return 'settled'

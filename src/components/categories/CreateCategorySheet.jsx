@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { X, Check } from '@phosphor-icons/react'
 import { ICON_MAP } from './CategoryIcon'
 import { createUserCategory, updateUserCategory } from '../../hooks/useUserCategories'
+import { useAppMutation } from '../../hooks/useAppMutation'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 
 const ICON_OPTIONS_BY_TYPE = {
@@ -71,9 +72,13 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
   const [name, setName] = useState(existingCategory?.label || '')
   const [icon, setIcon] = useState(existingCategory?.icon || initialIcons[0] || 'Tag')
   const [selectedType, setSelectedType] = useState(initialType)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const isSubmitting = React.useRef(false)
+
+  const createCategoryMutation = useAppMutation(createUserCategory, { context: 'categories:save' })
+  const updateCategoryMutation = useAppMutation(updateUserCategory, { context: 'categories:save' })
+  const saving = createCategoryMutation.isPending || updateCategoryMutation.isPending
+
   const sheetRef = useOverlayFocusTrap(true, {
     onClose: saving ? undefined : onClose,
     initialFocusSelector: 'input[name="category-name"]',
@@ -97,24 +102,23 @@ export default function CreateCategorySheet({ type, onClose, onSaved, onCreated,
       return
     }
 
-    setSaving(true)
     setError('')
 
     try {
       const cat = isEditing
-        ? await updateUserCategory({
+        ? await updateCategoryMutation.mutateAsync({
           dbId: existingCategory.dbId,
           label: trimmed,
           icon,
         })
-        : await createUserCategory({ label: trimmed, type: selectedType, icon })
+        : await createCategoryMutation.mutateAsync({ label: trimmed, type: selectedType, icon })
 
       onSaved?.(cat)
       onCreated?.(cat)
       onClose()
     } catch (e) {
       setError(e.message || (isEditing ? 'Could not update category' : 'Could not create category'))
-      setSaving(false)
+    } finally {
       isSubmitting.current = false
     }
   }

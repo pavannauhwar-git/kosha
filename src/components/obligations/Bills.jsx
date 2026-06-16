@@ -9,6 +9,7 @@ import {
   markLiabilityPaidMutation,
   deleteLiabilityMutation,
 } from '../../hooks/useLiabilities'
+import { useAppMutation } from '../../hooks/useAppMutation'
 import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
 import { useActiveWallet } from '../../lib/walletStore'
@@ -127,11 +128,20 @@ export default function Bills({
   }, [overflowBillId])
 
 
+  const addLiability = useAppMutation(addLiabilityMutation, { context: 'bills:add' })
+  const updateLiability = useAppMutation(
+    ({ id, updates }) => updateLiabilityMutation(id, updates), 
+    { context: 'bills:update' }
+  )
+  const markLiabilityPaid = useAppMutation(markLiabilityPaidMutation, { context: 'bills:markPaid' })
+  const deleteLiability = useAppMutation(deleteLiabilityMutation, { context: 'bills:delete' })
+
+  const isSaving = addLiability.isPending || updateLiability.isPending
 
   const commitPendingDelete = useCallback(async (pending) => {
     if (!pending?.id) return
     try {
-      await deleteLiabilityMutation(pending.id)
+      await deleteLiability.mutateAsync(pending.id)
     } catch (e) {
       // Re-insert into appropriate cache if server delete fails
       const method = pending.bill.paid ? 'paid' : 'pending'
@@ -142,7 +152,7 @@ export default function Bills({
       }
       pushToast(e.message || 'Could not delete bill.', { duration: 4200 })
     }
-  }, [pushToast, activeWalletUserId])
+  }, [pushToast, activeWalletUserId, deleteLiability])
 
   async function handleDelete(id) {
     if (!id || payingId) return false
@@ -196,7 +206,6 @@ export default function Bills({
     return true
   }
 
-  const [addSaving, setAddSaving] = useState(false)
   const [hiddenBillIds, setHiddenBillIds] = useState(() => new Set())
 
   const closeAddBillSheet = useCallback(() => {
@@ -207,9 +216,9 @@ export default function Bills({
   }, [setShowAdd])
 
   const dismissAddBillSheet = useCallback(() => {
-    if (addSaving) return
+    if (isSaving) return
     closeAddBillSheet()
-  }, [addSaving, closeAddBillSheet])
+  }, [isSaving, closeAddBillSheet])
 
   const addBillSheetRef = useOverlayFocusTrap(showAdd, {
     onClose: dismissAddBillSheet,
@@ -485,7 +494,7 @@ export default function Bills({
   }
 
   async function handleAdd() {
-    if (addSaving) return
+    if (isSaving) return
     if (!form.description.trim()) { setFormErr('Enter a description'); return }
     if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
     if (!form.due_date) { setFormErr('Select a due date'); return }
@@ -501,39 +510,33 @@ export default function Bills({
     }
 
     setFormErr('')
-    setAddSaving(true)
 
     if (editBill) {
       try {
-        await updateLiabilityMutation(editBill.id, billData)
+        await updateLiability.mutateAsync({ id: editBill.id, updates: billData })
         setTab('pending')
-        setAddSaving(false)
         closeAddBillSheet()
       } catch (e) {
-        setAddSaving(false)
         setErrToast(e.message || 'Could not update bill. Check your connection.')
       }
       return
     }
 
     try {
-      await addLiabilityMutation(billData)
+      await addLiability.mutateAsync(billData)
 
       setTab('pending')
-      setAddSaving(false)
       closeAddBillSheet()
     } catch (e) {
-      setAddSaving(false)
       setErrToast(e.message || 'Could not add bill. Check your connection.')
     }
   }
-
   async function handleMarkPaid(bill) {
     if (!bill?.id || payingId || actionGuard.current) return
     actionGuard.current = true
     setPayingId(bill.id)
     try {
-      await markLiabilityPaidMutation(bill)
+      await markLiabilityPaid.mutateAsync(bill)
       setPayingId(null)
     } catch (e) {
       setPayingId(null)
@@ -1017,7 +1020,7 @@ export default function Bills({
                       value={form.due_date}
                       onChange={(nextDate) => setForm(f => ({ ...f, due_date: nextDate }))}
                       sheetTitle="Select due date"
-                      disabled={addSaving}
+                      disabled={isSaving}
                     />
                   </div>
                 </div>
@@ -1084,9 +1087,9 @@ export default function Bills({
                     size="xl"
                     fullWidth
                     onClick={handleAdd}
-                    loading={addSaving}
+                    loading={isSaving}
                   >
-                    {addSaving ? (editBill ? 'Saving…' : 'Adding…') : (editBill ? 'Save Changes' : 'Add Bill')}
+                    {isSaving ? (editBill ? 'Saving…' : 'Adding…') : (editBill ? 'Save Changes' : 'Add Bill')}
                   </Button>
                 </div>
               </div>

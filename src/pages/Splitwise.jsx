@@ -10,6 +10,7 @@ import EmptyState from '../components/common/EmptyState'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import AppToast from '../components/common/AppToast'
 import SecureAvatar from '../components/ui/SecureAvatar'
+import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
 import { useAuth } from '../context/AuthContext'
 import { getAuthUserId } from '../lib/authStore'
 import { supabase } from '../lib/supabase'
@@ -42,6 +43,7 @@ import {
   updateSplitGroupBannerMutation,
   setSplitGroupAccessRoleMutation,
 } from '../hooks/useSplitwise'
+import { useAppMutation } from '../hooks/useAppMutation'
 import { getCategoriesForType } from '../lib/categories'
 import { useUserCategories } from '../hooks/useUserCategories'
 import { fmt, fmtDate, todayStr } from '../lib/utils'
@@ -50,7 +52,6 @@ import { downloadCsv, toCsv } from '../lib/csv'
 import { shareLink } from '../lib/share'
 import useWindowedList from '../hooks/useWindowedList'
 import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
-import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
 
 const BANNERS = [
   { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.webp' },
@@ -139,10 +140,35 @@ function writeBannerToStorage(groupId, bannerId) {
 
 export default function Splitwise() {
   const { user, profile } = useAuth()
-  const [activeGroupId, setActiveGroupId] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   const navigate = useNavigate()
+
+  const createGroup = useAppMutation(createSplitGroupMutation, { context: 'splitwise:createGroup' })
+  const addMember = useAppMutation(addSplitMemberMutation, { context: 'splitwise:addMember' })
+  const addExpense = useAppMutation(addSplitExpenseMutation, { context: 'splitwise:addExpense' })
+  const recordSettlement = useAppMutation(recordSplitSettlementMutation, { context: 'splitwise:settle' })
+  const deleteSettlement = useAppMutation(deleteSplitSettlementMutation, { context: 'splitwise:deleteSettlement' })
+  const deleteExpense = useAppMutation(deleteSplitExpenseMutation, { context: 'splitwise:deleteExpense' })
+  const createGroupInvite = useAppMutation(createSplitGroupInviteMutation, { context: 'splitwise:createInvite' })
+  const deleteGroup = useAppMutation(deleteSplitGroupMutation, { context: 'splitwise:deleteGroup' })
+  const deleteMember = useAppMutation(deleteSplitMemberMutation, { context: 'splitwise:deleteMember' })
+  const leaveGroup = useAppMutation(leaveSplitGroupMutation, { context: 'splitwise:leaveGroup' })
+  const toggleArchiveGroup = useAppMutation(
+    ({ groupId, isArchived }) => toggleArchiveSplitGroupMutation(groupId, isArchived), 
+    { context: 'splitwise:toggleArchive' }
+  )
+  const previewGroupInvite = useAppMutation(previewSplitGroupInviteMutation, { context: 'splitwise:previewInvite' })
+  const consumeGroupInvite = useAppMutation(consumeSplitGroupInviteMutation, { context: 'splitwise:consumeInvite' })
+  const updateExpense = useAppMutation(updateSplitExpenseMutation, { context: 'splitwise:updateExpense' })
+  const updateGroup = useAppMutation(updateSplitGroupMutation, { context: 'splitwise:updateGroup' })
+  const updateGroupBanner = useAppMutation(
+    ({ groupId, bannerId }) => updateSplitGroupBannerMutation(groupId, bannerId), 
+    { context: 'splitwise:updateBanner' }
+  )
+  const setMemberRole = useAppMutation(setSplitGroupAccessRoleMutation, { context: 'splitwise:setMemberRole' })
+
+  const [activeGroupId, setActiveGroupId] = useState('')
   const authUserId = getAuthUserId()
   const activeWalletUserId = useActiveWallet()
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== authUserId
@@ -207,12 +233,6 @@ export default function Splitwise() {
   const [editGroupForm, setEditGroupForm] = useState({ name: '' })
   const [showArchived, setShowArchived] = useState(false)
 
-  const createGroupSheetRef = useOverlayFocusTrap(showCreateGroup, { onClose: closeSheets })
-  const addMemberSheetRef = useOverlayFocusTrap(showAddMember, { onClose: closeSheets })
-  const addExpenseSheetRef = useOverlayFocusTrap(showAddExpense, { onClose: closeSheets })
-  const settlementSheetRef = useOverlayFocusTrap(showSettlement, { onClose: closeSheets })
-  const bannerPickerSheetRef = useOverlayFocusTrap(showBannerPicker, { onClose: () => setShowBannerPicker(false) })
-  const editGroupSheetRef = useOverlayFocusTrap(showEditGroup, { onClose: () => setShowEditGroup(false) })
 
   // archivedIds removed in favor of global database state
 
@@ -267,7 +287,7 @@ export default function Splitwise() {
     if (activeGroupId) {
       writeBannerToStorage(activeGroupId, id)
       try {
-        await updateSplitGroupBannerMutation(activeGroupId, id)
+        await updateGroupBanner.mutateAsync({ groupId: activeGroupId, bannerId: id })
       } catch (error) {
         console.error('Could not sync banner to database', error)
       }
@@ -285,7 +305,7 @@ export default function Splitwise() {
     if (!editGroupForm.name.trim()) return setToast('Name is required.')
     try {
       setSaving('group-edit')
-      await updateSplitGroupMutation({ groupId: activeGroupId, name: editGroupForm.name })
+      await updateGroup.mutateAsync({ groupId: activeGroupId, name: editGroupForm.name })
       setToast('Trip updated.')
       setShowEditGroup(false)
     } catch (error) {
@@ -299,7 +319,7 @@ export default function Splitwise() {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     setSaving('archive')
     try {
-      await toggleArchiveSplitGroupMutation(groupId, !currentStatus)
+      await toggleArchiveGroup.mutateAsync({ groupId, isArchived: !currentStatus })
       if (!currentStatus) setShowEditGroup(false)
       setToast(!currentStatus ? 'Trip archived (Read Only).' : 'Trip restored.')
     } catch (err) {
@@ -569,7 +589,7 @@ export default function Splitwise() {
 
     async function previewInvite() {
       try {
-        const preview = await previewSplitGroupInviteMutation(inviteToken)
+        const preview = await previewGroupInvite.mutateAsync(inviteToken)
         if (cancelled) return
         setInvitePreview({
           token: inviteToken,
@@ -588,7 +608,7 @@ export default function Splitwise() {
     return () => {
       cancelled = true
     }
-  }, [inviteTokenFromQuery, searchParams, setSearchParams, consumingInvite, invitePreview?.token, clearPendingSplitInviteToken])
+  }, [inviteTokenFromQuery, searchParams, setSearchParams, consumingInvite, invitePreview?.token, clearPendingSplitInviteToken, previewGroupInvite])
 
   function closeSheets() {
     setShowCreateGroup(false)
@@ -611,7 +631,7 @@ export default function Splitwise() {
 
     setSaving('group')
     try {
-      const created = await createSplitGroupMutation({ name, selfDisplayName: accountDisplayName })
+      const created = await createGroup.mutateAsync({ name, selfDisplayName: accountDisplayName })
       optimisticallyInsertSplitGroup({ ...created, my_role: 'admin' }, activeWalletUserId)
       setActiveGroupId(created.id)
       setGroupForm({ name: '' })
@@ -628,7 +648,7 @@ export default function Splitwise() {
 
     setSaving('group-invite')
     try {
-      const invite = await createSplitGroupInviteMutation({ groupId: activeGroupId })
+      const invite = await createGroupInvite.mutateAsync({ groupId: activeGroupId })
       const url = `${window.location.origin}/splitwise/join/${invite.token}`
 
       const result = await shareLink({
@@ -671,7 +691,7 @@ export default function Splitwise() {
 
     setConsumingInvite(true)
     try {
-      const joinedGroup = await consumeSplitGroupInviteMutation(invitePreview.token)
+      const joinedGroup = await consumeGroupInvite.mutateAsync(invitePreview.token)
       if (joinedGroup?.id) setActiveGroupId(joinedGroup.id)
       setToast(`Joined ${joinedGroup?.name || invitePreview.groupName} as ${accountDisplayName}.`)
     } catch (consumeError) {
@@ -694,7 +714,7 @@ export default function Splitwise() {
     setSaving('group-delete')
     try {
       optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
-      await deleteSplitGroupMutation(activeGroupId)
+      await deleteGroup.mutateAsync(activeGroupId)
       setToast('Group deleted.')
       setActiveGroupId('')
       closeSheets()
@@ -715,7 +735,7 @@ export default function Splitwise() {
 
     setSaving(`member-role-${member.id}`)
     try {
-      await setSplitGroupAccessRoleMutation({
+      await setMemberRole.mutateAsync({
         groupId: activeGroupId,
         memberUserId: member.linked_user_id,
         role,
@@ -733,7 +753,7 @@ export default function Splitwise() {
 
     setSaving(`delete-${memberId}`)
     try {
-      await deleteSplitMemberMutation(memberId)
+      await deleteMember.mutateAsync(memberId)
       setToast('Member removed.')
     } catch (err) {
       setToast(err?.message || 'Could not remove member.')
@@ -748,7 +768,7 @@ export default function Splitwise() {
     setSaving('group-leave')
     try {
       optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
-      await leaveSplitGroupMutation(activeGroupId)
+      await leaveGroup.mutateAsync(activeGroupId)
       setToast('Left group.')
       setActiveGroupId('')
       closeSheets()
@@ -769,7 +789,7 @@ export default function Splitwise() {
 
     setSaving('add-member')
     try {
-      await addSplitMemberMutation({ groupId: activeGroupId, displayName: name })
+      await addMember.mutateAsync({ groupId: activeGroupId, displayName: name })
       setToast('Member added.')
       setShowAddMember(false)
       setNewMemberName('')
@@ -879,7 +899,7 @@ export default function Splitwise() {
         // linked transaction in one Postgres transaction. The old
         // delete-then-create path could permanently drop the original if the
         // re-create failed.
-        await updateSplitExpenseMutation({
+        await updateExpense.mutateAsync({
           expenseId: editExpense.id,
           groupId: activeGroupId,
           paidByMemberId: expenseForm.paid_by_member_id,
@@ -892,7 +912,7 @@ export default function Splitwise() {
           transactionCategory: expenseForm.transaction_category,
         })
       } else {
-        await addSplitExpenseMutation({
+        await addExpense.mutateAsync({
           groupId: activeGroupId,
           paidByMemberId: expenseForm.paid_by_member_id,
           description,
@@ -962,10 +982,10 @@ export default function Splitwise() {
     setSaving(editSettlement ? 'settlement-edit' : 'settlement')
     try {
       if (editSettlement) {
-        await deleteSplitSettlementMutation(editSettlement.id)
+        await deleteSettlement.mutateAsync(editSettlement.id)
       }
 
-      await recordSplitSettlementMutation({
+      await recordSettlement.mutateAsync({
         groupId: activeGroupId,
         payerMemberId: settlementForm.payer_member_id,
         payeeMemberId: settlementForm.payee_member_id,
@@ -1038,7 +1058,7 @@ export default function Splitwise() {
     if (!expenseId || saving) return
     setSaving(`expense-delete-${expenseId}`)
     try {
-      await deleteSplitExpenseMutation(expenseId)
+      await deleteExpense.mutateAsync(expenseId)
     } catch (deleteError) {
       setToast(deleteError?.message || 'Could not delete expense.')
     } finally {
@@ -1055,7 +1075,7 @@ export default function Splitwise() {
     if (!settlementId || saving) return
     setSaving(`settlement-delete-${settlementId}`)
     try {
-      await deleteSplitSettlementMutation(settlementId)
+      await deleteSettlement.mutateAsync(settlementId)
     } catch (deleteError) {
       setToast(deleteError?.message || 'Could not delete settlement.')
     } finally {
@@ -1115,6 +1135,16 @@ export default function Splitwise() {
     () => transactions.slice(txnsStartIndex, txnsEndIndex),
     [transactions, txnsStartIndex, txnsEndIndex]
   )
+
+  // Match the keyboard/focus handling of the other bottom sheets (AddTransactionSheet).
+  // On touch this focuses the sheet container instead of auto-popping the keyboard, and
+  // restores focus with preventScroll on close — without it, focusing an input scrolls
+  // the page and leaves the composited fixed bottom-nav displaced after the keyboard hides.
+  const createGroupSheetRef = useOverlayFocusTrap(showCreateGroup, { onClose: closeSheets })
+  const addMemberSheetRef = useOverlayFocusTrap(showAddMember, { onClose: closeSheets })
+  const addExpenseSheetRef = useOverlayFocusTrap(showAddExpense, { onClose: closeSheets })
+  const settlementSheetRef = useOverlayFocusTrap(showSettlement, { onClose: closeSheets })
+  const editGroupSheetRef = useOverlayFocusTrap(showEditGroup, { onClose: () => setShowEditGroup(false) })
 
   return (
     <PageHeaderPage title="Splitwise">
@@ -1775,6 +1805,7 @@ export default function Splitwise() {
               tabIndex={-1}
               role="dialog"
               aria-modal="true"
+              aria-label="Create group"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -1835,6 +1866,7 @@ export default function Splitwise() {
               tabIndex={-1}
               role="dialog"
               aria-modal="true"
+              aria-label="Add member"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -1885,6 +1917,7 @@ export default function Splitwise() {
               tabIndex={-1}
               role="dialog"
               aria-modal="true"
+              aria-label={editExpense ? 'Edit expense' : 'Add expense'}
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -2104,6 +2137,7 @@ export default function Splitwise() {
               tabIndex={-1}
               role="dialog"
               aria-modal="true"
+              aria-label={editSettlement ? 'Edit settlement' : 'Record settlement'}
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -2207,10 +2241,6 @@ export default function Splitwise() {
           <>
             <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }} onClick={() => setShowBannerPicker(false)} />
             <motion.div
-              ref={bannerPickerSheetRef}
-              tabIndex={-1}
-              role="dialog"
-              aria-modal="true"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -2253,6 +2283,7 @@ export default function Splitwise() {
               tabIndex={-1}
               role="dialog"
               aria-modal="true"
+              aria-label="Trip settings"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}

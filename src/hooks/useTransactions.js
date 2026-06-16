@@ -1334,6 +1334,10 @@ function refreshTransactionCachesInBackground(invalidateFn, scope) {
 }
 
 export async function saveTransactionMutation({ id, payload, __testOverrides = null }) {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw new Error("You're offline — we'll need a connection to save this.")
+  }
+
   const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
 

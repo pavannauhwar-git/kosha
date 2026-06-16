@@ -17,6 +17,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import AppToast from '../components/common/AppToast'
 import { copyToClipboard } from '../lib/share'
+import { useAppMutation } from '../hooks/useAppMutation'
 
 const SEVERITIES = [
   { id: 'low', label: 'Low' },
@@ -51,6 +52,15 @@ export default function ReportBug() {
   const [submitted, setSubmitted] = useState(null)
   const [copiedRef, setCopiedRef] = useState(false)
   const [contextRoute, setContextRoute] = useState(initialReportedRoute)
+
+  const submitBugReportMutation = useAppMutation(
+    async (payload) => {
+      const { data, error } = await supabase.rpc('submit_bug_report', payload).single()
+      if (error) throw error
+      return data
+    },
+    { context: 'reportBug:submit' }
+  )
 
   const parsedTags = useMemo(() => parseTags(tagsInput), [tagsInput])
   const displayReportedScreen = useMemo(() => formatReportedScreen(contextRoute), [contextRoute])
@@ -204,24 +214,20 @@ export default function ReportBug() {
         }
       }
 
-      const { data, error: submitError } = await supabase
-        .rpc('submit_bug_report', {
-          p_title: cleanTitle,
-          p_description: cleanDescription,
-          p_steps: cleanSteps || null,
-          p_severity: severity,
-          p_route: routeForReport,
-          p_app_version: appVersion,
-          p_diagnostics: diagnostics,
-          p_environment: environment,
-          p_screenshot_path: screenshotPath,
-          p_reporter_email: cleanEmail || null,
-          p_fingerprint: fingerprint,
-          p_tags: parsedTags,
-        })
-        .single()
-
-      if (submitError) throw submitError
+      const data = await submitBugReportMutation.mutateAsync({
+        p_title: cleanTitle,
+        p_description: cleanDescription,
+        p_steps: cleanSteps || null,
+        p_severity: severity,
+        p_route: routeForReport,
+        p_app_version: appVersion,
+        p_diagnostics: diagnostics,
+        p_environment: environment,
+        p_screenshot_path: screenshotPath,
+        p_reporter_email: cleanEmail || null,
+        p_fingerprint: fingerprint,
+        p_tags: parsedTags,
+      })
 
       const reportId = data?.report_id
       const isDuplicate = Boolean(data?.is_duplicate)
