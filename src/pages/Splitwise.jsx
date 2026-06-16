@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, ArrowsLeftRight, Receipt, X, LinkSimple, Trash, CaretLeft, SlidersHorizontal, Archive, ArrowUUpLeft } from '@phosphor-icons/react'
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
@@ -1675,9 +1674,7 @@ export default function Splitwise() {
         </div>
       )}
 
-      {createPortal(
-        <>
-          <AnimatePresence>
+      <AnimatePresence>
         {invitePreview && (
           <>
             <motion.div
@@ -2304,10 +2301,7 @@ export default function Splitwise() {
             </motion.div>
           </>
         )}
-          </AnimatePresence>
-        </>,
-        document.body
-      )}
+      </AnimatePresence>
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
       <PartnerViewBanner />

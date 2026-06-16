@@ -1025,6 +1025,16 @@ textarea:focus-visible,
       inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
   }
 
+  /* Hide bottom nav while any bottom-sheet is open across the app so it can't
+     overlap or peek through when the virtual keyboard reshapes the viewport.
+     :has() is supported in Safari 15.4+, Chrome 105+, covering all PWA targets. */
+  :root:has(.sheet-backdrop) .nav-float-wrap {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    transition: none !important;
+  }
+
   /* -- CSS page entry animation — M3 Standard Decelerate ── */
   @keyframes fade-up-in {
     0%   { opacity: 0; transform: translateY(16px); }
