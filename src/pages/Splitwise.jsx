@@ -991,7 +991,7 @@ export default function Splitwise() {
       paid_by_member_id: expense.paid_by_member_id || '',
       split_method: expense.split_method || 'equal',
       notes: expense.notes || '',
-      transaction_category: 'other', // Edit drops original category since it wasn't tracked on the split_expense itself
+      transaction_category: expense.transactions?.category || 'other',
     })
 
     const nextSplits = {}
@@ -1769,7 +1769,7 @@ export default function Splitwise() {
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
-              <div className="px-5">
+              <div className="px-5 overflow-y-auto">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-display font-bold text-ink">Create Group</h2>
                   <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close create group sheet">
@@ -1825,7 +1825,7 @@ export default function Splitwise() {
               exit={{ y: '100%', transition: { duration: 0.2 } }}
             >
               <div className="sheet-handle" />
-              <div className="px-5">
+              <div className="px-5 overflow-y-auto">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-display font-bold text-ink">Add Member</h2>
                   <button type="button" onClick={closeSheets} className="close-btn" aria-label="Close add member sheet">

@@ -40,7 +40,7 @@ const ACCESS_COLUMNS = 'group_id, role'
 const GROUP_ACCESS_COLUMNS = 'id, group_id, user_id, role'
 const MEMBER_COLUMNS = 'id, group_id, display_name, is_self, linked_user_id, user_id, created_at'
 const EXPENSE_COLUMNS =
-  'id, group_id, paid_by_member_id, description, amount, expense_date, split_method, notes, created_at, split_expense_splits(id, member_id, share, percent, shares)'
+  'id, group_id, paid_by_member_id, description, amount, expense_date, split_method, notes, created_at, split_expense_splits(id, member_id, share, percent, shares), transactions(category)'
 const SETTLEMENT_COLUMNS =
   'id, group_id, payer_member_id, payee_member_id, amount, settled_at, note, created_at'
 const EMPTY_ROWS = []
