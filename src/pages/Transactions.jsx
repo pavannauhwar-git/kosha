@@ -32,6 +32,7 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import Select from '../components/ui/Select'
 import useWindowedList from '../hooks/useWindowedList'
 
 import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
@@ -166,6 +167,7 @@ export default function Transactions() {
   const pendingDeleteRef = useRef(null)
   const internalUrlUpdateRef = useRef(false)
   const searchParamsRef = useRef(searchParams)
+  const focusRanForRef = useRef(null)
 
   const debouncedSearch = useDebounce(search, 300)
   const isSearchDebouncing = search !== debouncedSearch
@@ -667,44 +669,50 @@ export default function Transactions() {
   }, [searchParams, datePreset, forcedDateRange, linkedBillFilter, linkedLoanFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter])
 
   useEffect(() => {
-    const currentSearchParams = searchParamsRef.current
-    const nextParams = new URLSearchParams()
+    setSearchParams((prev) => {
+      const currentSearchParams = prev
+      const nextParams = new URLSearchParams()
 
-    if (forcedDateRange?.startDate && forcedDateRange.startDate === forcedDateRange.endDate) {
-      nextParams.set('day', forcedDateRange.startDate)
-    } else if (datePreset === 'custom-month') {
-      const parsed = parseMonthInput(selectedMonth)
-      if (parsed) {
-        nextParams.set('month', `${parsed.year}-${String(parsed.month).padStart(2, '0')}`)
+      if (forcedDateRange?.startDate && forcedDateRange.startDate === forcedDateRange.endDate) {
+        nextParams.set('day', forcedDateRange.startDate)
+      } else if (datePreset === 'custom-month') {
+        const parsed = parseMonthInput(selectedMonth)
+        if (parsed) {
+          nextParams.set('month', `${parsed.year}-${String(parsed.month).padStart(2, '0')}`)
+        }
       }
-    }
 
-    if (typeFilter !== 'all') nextParams.set('type', typeFilter)
-    if (catFilter) nextParams.set('category', catFilter)
-    if (paymentModeFilter) nextParams.set('payment', paymentModeFilter)
+      if (typeFilter !== 'all') nextParams.set('type', typeFilter)
+      if (catFilter) nextParams.set('category', catFilter)
+      if (paymentModeFilter) nextParams.set('payment', paymentModeFilter)
 
-    const query = String(debouncedSearch || '').trim()
-    if (query) nextParams.set('q', query)
+      const query = String(debouncedSearch || '').trim()
+      if (query) nextParams.set('q', query)
 
-    const focusParam = String(currentSearchParams.get('focus') || '').trim()
-    if (focusParam) nextParams.set('focus', focusParam)
+      const focusParam = String(currentSearchParams.get('focus') || '').trim()
+      if (focusParam) nextParams.set('focus', focusParam)
 
-    // Preserve linked filters if they exist (they are URL-driven)
-    if (linkedLoanFilter) nextParams.set('linked_loan', linkedLoanFilter)
-    if (linkedBillFilter) nextParams.set('linked_bill', linkedBillFilter)
-    if (linkedSplitExpenseFilter) nextParams.set('linked_split_expense', linkedSplitExpenseFilter)
-    if (linkedSplitSettlementFilter) nextParams.set('linked_split_settlement', linkedSplitSettlementFilter)
+      if (linkedLoanFilter) nextParams.set('linked_loan', linkedLoanFilter)
+      if (linkedBillFilter) nextParams.set('linked_bill', linkedBillFilter)
+      if (linkedSplitExpenseFilter) nextParams.set('linked_split_expense', linkedSplitExpenseFilter)
+      if (linkedSplitSettlementFilter) nextParams.set('linked_split_settlement', linkedSplitSettlementFilter)
 
-    const mergedParams = new URLSearchParams(currentSearchParams)
-    FILTER_URL_KEYS.forEach((key) => mergedParams.delete(key))
-    for (const [key, value] of nextParams.entries()) {
-      mergedParams.set(key, value)
-    }
+      const mergedParams = new URLSearchParams(currentSearchParams)
+      FILTER_URL_KEYS.forEach((key) => mergedParams.delete(key))
+      for (const [key, value] of nextParams.entries()) {
+        mergedParams.set(key, value)
+      }
 
-    if (mergedParams.toString() !== currentSearchParams.toString()) {
-      internalUrlUpdateRef.current = true
-      setSearchParams(mergedParams, { replace: true })
-    }
+      mergedParams.sort()
+      const prevSorted = new URLSearchParams(currentSearchParams)
+      prevSorted.sort()
+
+      if (mergedParams.toString() !== prevSorted.toString()) {
+        internalUrlUpdateRef.current = true
+        return mergedParams
+      }
+      return prev
+    }, { replace: true })
   }, [
     typeFilter,
     catFilter,
@@ -763,7 +771,7 @@ export default function Transactions() {
   }, [focusTxnId])
 
   useEffect(() => {
-    if (!focusTxnId) return
+    if (!focusTxnId || focusRanForRef.current === focusTxnId) return
 
     const found = data.find(t => t.id === focusTxnId)
     if (!found) {
@@ -773,6 +781,8 @@ export default function Transactions() {
       }
       return
     }
+
+    focusRanForRef.current = focusTxnId
 
     const focusGroupIndex = groups.findIndex(([_, txns]) => txns.some((row) => row.id === focusTxnId))
     if (focusGroupIndex >= 0) {
@@ -787,15 +797,17 @@ export default function Transactions() {
 
     const timeoutId = setTimeout(() => setHighlightedTxnId(null), 2400)
 
-    const next = new URLSearchParams(searchParams)
-    next.delete('focus')
-    setSearchParams(next, { replace: true })
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('focus')
+      return next
+    }, { replace: true })
 
     return () => {
       clearTimeout(scrollTimeoutId)
       clearTimeout(timeoutId)
     }
-  }, [focusTxnId, data, hasMore, groups, scrollTimelineRowToIndex, searchParams, setSearchParams])
+  }, [focusTxnId, data, hasMore, groups, scrollTimelineRowToIndex, setSearchParams])
 
   // Phase 1: when loan filter activates, reset to All time so all repayments load
   const loanFilterRangeSetRef = useRef(null)
@@ -1250,27 +1262,25 @@ export default function Transactions() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
-                      <select
+                      <Select
                         name="transactions-month-filter-month"
                         value={selectedMonthParts.month}
                         onChange={(event) => updateSelectedMonth(selectedMonthParts.year, event.target.value)}
-                        className="w-full h-10 rounded-card border border-kosha-border bg-kosha-surface-2 px-3 text-[14px] text-ink focus:outline-none focus:border-brand"
-                      >
-                        {MONTH_SHORT.map((monthLabel, index) => (
-                          <option key={monthLabel} value={index + 1}>{monthLabel}</option>
-                        ))}
-                      </select>
+                        options={MONTH_SHORT.map((monthLabel, index) => ({
+                          value: index + 1,
+                          label: monthLabel,
+                        }))}
+                      />
 
-                      <select
+                      <Select
                         name="transactions-month-filter-year"
                         value={selectedMonthParts.year}
                         onChange={(event) => updateSelectedMonth(event.target.value, selectedMonthParts.month)}
-                        className="w-full h-10 rounded-card border border-kosha-border bg-kosha-surface-2 px-3 text-[14px] text-ink focus:outline-none focus:border-brand"
-                      >
-                        {monthFilterYearOptions.map((optionYear) => (
-                          <option key={optionYear} value={optionYear}>{optionYear}</option>
-                        ))}
-                      </select>
+                        options={monthFilterYearOptions.map((optionYear) => ({
+                          value: optionYear,
+                          label: String(optionYear),
+                        }))}
+                      />
                     </div>
 
                     <p className="text-[10px] text-ink-3 mt-1">Filtering: {formatMonthInputLabel(selectedMonth)}</p>

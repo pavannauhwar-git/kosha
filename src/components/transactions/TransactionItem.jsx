@@ -1,7 +1,7 @@
 import { memo, useState, useCallback, useEffect, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash, CopySimple, CircleNotch } from '@phosphor-icons/react'
-import { ArrowUDownLeft, ArrowUpRight, ArrowDownLeft, ArrowSquareOut, X, Notepad } from '@phosphor-icons/react'
+import { ArrowUDownLeft, ArrowUpRight, ArrowDownLeft, ArrowSquareOut, Notepad } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
 import { fmt, amountClass, amountPrefix, fmtDate } from '../../lib/utils'

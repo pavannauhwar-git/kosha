@@ -1208,13 +1208,16 @@ textarea:focus-visible,
 
   /* Centered modal variant of the Sheet primitive (replaces EditProfileNameDialog-style overlays). */
   .sheet-panel--center {
+    position: relative;
     bottom: auto;
-    top: 50%;
-    left: 50%;
+    top: auto;
+    left: auto;
     right: auto;
-    transform: translate(-50%, -50%);
-    width: min(100% - 2rem, 480px);
+    transform: none;
+    width: min(100%, 480px);
     max-width: 480px;
+    margin-left: 0;
+    margin-right: 0;
     border-radius: 28px;
     /* Stay clear of the keyboard for the same reason as the bottom variant (Phase 0). */
     max-height: calc(100dvh - var(--safe-top) - 2rem - var(--kb-inset, 0px));
@@ -1234,6 +1237,10 @@ textarea:focus-visible,
     z-index: 2;
     pointer-events: none;
     background: var(--ds-surface);
+  }
+
+  .sheet-panel--center::before {
+    display: none;
   }
 
   .sheet-handle {

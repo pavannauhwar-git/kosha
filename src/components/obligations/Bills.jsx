@@ -112,6 +112,7 @@ export default function Bills({
   const pendingDeleteRef = useRef(null)
   const [overflowBillId, setOverflowBillId] = useState(null)
   const overflowBillRef = useRef(null)
+  const focusRanForRef = useRef(null)
 
   useEffect(() => {
     if (!overflowBillId) return
@@ -390,11 +391,13 @@ export default function Bills({
   useEffect(() => {
     if (tabSource) {
       setTab(tabFromQuery)
-      const next = new URLSearchParams(searchParams)
-      next.delete(tabSource)
-      setSearchParams(next, { replace: true })
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete(tabSource)
+        return next
+      }, { replace: true })
     }
-  }, [tabFromQuery, tabSource, searchParams, setSearchParams])
+  }, [tabFromQuery, tabSource, setSearchParams])
 
   useEffect(() => {
     if (!focusBillId || pendingLoading || paidLoading) return
@@ -407,13 +410,18 @@ export default function Bills({
     } else if (tab === 'paid' && !isInPaid && isInPending) {
       setTab('pending')
     }
-  }, [focusBillId, pending, paid, tab, pendingLoading, paidLoading])
+    // NOTE: `tab` is intentionally excluded from deps. Including it would
+    // cause the effect to re-run after setTab fires, potentially toggling
+    // the tab back before the data stabilizes → infinite loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusBillId, pending, paid, pendingLoading, paidLoading])
 
   useEffect(() => {
     return () => {
       // Commit any pending delete if the component unmounts
       if (pendingDeleteRef.current) {
         const pending = pendingDeleteRef.current
+        pendingDeleteRef.current = null
         if (pending.timeoutId) clearTimeout(pending.timeoutId)
         void commitPendingDelete(pending)
       }
@@ -421,10 +429,14 @@ export default function Bills({
   }, [commitPendingDelete])
 
   useEffect(() => {
-    if (!focusBillId) return
+    if (!focusBillId || focusRanForRef.current === focusBillId) return
 
     const focusIndex = billRows.findIndex((bill) => bill.id === focusBillId)
     if (focusIndex < 0) return
+
+    // Mark as handled BEFORE any state/URL updates to prevent re-entry
+    // if scrollBillToIndex identity changes (useWindowedList revision bumps).
+    focusRanForRef.current = focusBillId
 
     scrollBillToIndex(focusIndex, { behavior: 'smooth', block: 'center' })
 
@@ -436,12 +448,14 @@ export default function Bills({
 
     const timeoutId = setTimeout(() => setHighlightedBillId(null), 2400)
 
-    const next = new URLSearchParams(searchParams)
-    next.delete('focus')
-    setSearchParams(next, { replace: true })
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('focus')
+      return next
+    }, { replace: true })
 
     return () => clearTimeout(timeoutId)
-  }, [focusBillId, billRows, scrollBillToIndex, searchParams, setSearchParams])
+  }, [focusBillId, billRows, scrollBillToIndex, setSearchParams])
 
   async function handleExportCsv() {
     try {
@@ -959,7 +973,7 @@ export default function Bills({
         onClose={dismissAddBillSheet}
         title={editBill ? 'Edit Bill' : 'Add Bill'}
         initialFocusSelector='input[name="bill-description"]'
-        contentClassName="px-5 overflow-x-hidden"
+        contentClassName="px-5 pt-2 overflow-x-hidden"
       >
                 <div className="mb-3">
                   <Input

@@ -4,6 +4,7 @@ import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash, Inf
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 import Select from '../ui/Select'
+import Switch from '../ui/Switch'
 import PixelDatePicker from '../ui/PixelDatePicker'
 import { saveTransactionMutation } from '../../hooks/useTransactions'
 import { useLiabilities } from '../../hooks/useLiabilities'
@@ -797,7 +798,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
         dismissOnBackdrop={!isSaving}
         showClose={!isSaving}
         initialFocusSelector='input[name="txn-amount"]'
-        contentClassName="px-4"
+        contentClassName="px-4 pt-2"
       >
 
           {isLinkedToSplitwise && (
@@ -1012,19 +1013,11 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   <p className="text-[14px] font-medium text-ink">Recurring transaction</p>
                   <p className="text-[12px] text-ink-3">Auto-generates based on selected frequency.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => set('isRecurring', !isRecurring)}
+                <Switch
+                  checked={isRecurring}
+                  onChange={(e) => set('isRecurring', e.target.checked)}
                   disabled={isSaving}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                    ${isRecurring ? 'bg-brand' : 'bg-kosha-border'}
-                    ${isSaving ? 'opacity-50' : ''}`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform
-                      ${isRecurring ? 'translate-x-5' : 'translate-x-1'}`}
-                  />
-                </button>
+                />
               </div>
 
               {isRecurring && (
@@ -1077,17 +1070,14 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   style={{ overflow: 'hidden' }}
                 >
                   <div className="px-4 pb-3 pt-1">
-                    <textarea
+                    <Input
+                      type="textarea"
                       rows={3}
                       name="txn-notes"
                       placeholder="e.g. Q1 advance tax, flight reimbursement…"
                       value={notes}
                       onChange={e => set('notes', e.target.value)}
                       disabled={isSaving}
-                      className="w-full bg-kosha-surface-2 rounded-card px-3 py-2.5 text-[14px]
-                                 text-ink placeholder-ink-4 outline-none resize-none
-                                 border border-transparent focus:border-brand-border
-                                 transition-colors duration-150 disabled:opacity-50"
                     />
                   </div>
                 </motion.div>
@@ -1102,19 +1092,11 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                     <p className="text-[14px] font-medium text-ink">Split this expense</p>
                     <p className="text-[12px] text-ink-3">Automatically adds it to a Splitwise group.</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => set('isSplitwise', !isSplitwise)}
+                  <Switch
+                    checked={isSplitwise}
+                    onChange={(e) => set('isSplitwise', e.target.checked)}
                     disabled={isSaving}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                      ${isSplitwise ? 'bg-brand' : 'bg-kosha-border'}
-                      ${isSaving ? 'opacity-50' : ''}`}
-                  >
-                    <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform
-                        ${isSplitwise ? 'translate-x-5' : 'translate-x-1'}`}
-                    />
-                  </button>
+                  />
                 </div>
 
                 {isSplitwise && (

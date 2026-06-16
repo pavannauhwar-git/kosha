@@ -1,13 +1,9 @@
-import { forwardRef } from 'react'
-import FormControl from '@mui/material/FormControl'
-import InputLabel from '@mui/material/InputLabel'
-import SelectMui from '@mui/material/Select'
-import MenuItem from '@mui/material/MenuItem'
-import FormHelperText from '@mui/material/FormHelperText'
+import { forwardRef, useEffect, useRef } from 'react'
+import '@material/web/select/outlined-select.js'
+import '@material/web/select/select-option.js'
 
 /**
- * Select — Premium, unified select component wrapping MUI Select.
- * Consistently styled with our CSS design tokens and fully accessible.
+ * Select — Premium, unified select component wrapping official Google Material 3 Web Component (<md-outlined-select>)
  */
 const Select = forwardRef(function Select(
   {
@@ -20,68 +16,63 @@ const Select = forwardRef(function Select(
     disabled,
     className = '',
     fullWidth = true,
-    size = 'small',
+    _size, // Ignored in M3 Select
     placeholder,
-    sx = {},
+    style = {},
+    _sx, // Ignored in M3 Select
     ...rest
   },
   ref
 ) {
+  const innerRef = useRef(null)
+  const resolvedRef = ref || innerRef
+
+  useEffect(() => {
+    const el = resolvedRef.current
+    if (!el) return
+
+    const handleChange = (e) => {
+      // In React 18, Custom Elements do not dispatch synthetic onChange events automatically.
+      // We manually bind the native change event listener and fire onChange.
+      if (onChange) {
+        onChange(e)
+      }
+    }
+
+    el.addEventListener('change', handleChange)
+    return () => el.removeEventListener('change', handleChange)
+  }, [onChange, resolvedRef])
+
   const hasError = Boolean(error)
   const resolvedHelperText = error || helperText
 
   return (
-    <FormControl
-      fullWidth={fullWidth}
-      error={hasError}
-      disabled={disabled}
-      className={className}
-      size={size}
+    <md-outlined-select
+      ref={resolvedRef}
+      label={label}
+      value={value ?? ''}
+      disabled={disabled ? '' : undefined}
+      error={hasError ? '' : undefined}
+      error-text={hasError ? resolvedHelperText : undefined}
+      supporting-text={!hasError ? resolvedHelperText : undefined}
+      style={{
+        width: fullWidth ? '100%' : 'auto',
+        ...style,
+      }}
+      class={className}
+      {...rest}
     >
-      {label && <InputLabel id={`mui-select-label-${label}`}>{label}</InputLabel>}
-      <SelectMui
-        labelId={label ? `mui-select-label-${label}` : undefined}
-        ref={ref}
-        value={value ?? ''}
-        onChange={onChange}
-        label={label}
-        displayEmpty={!!placeholder}
-        sx={{
-          borderRadius: '16px',
-          '& .MuiSelect-select': {
-            borderRadius: '16px',
-            fontSize: '14px',
-            color: 'var(--ds-text)',
-          },
-          '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'var(--ds-border)',
-            transition: 'border-color 150ms ease',
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'var(--ds-text-secondary)',
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'var(--ds-primary)',
-          },
-          backgroundColor: 'var(--ds-surface-container)',
-          color: 'var(--ds-text)',
-          ...sx,
-        }}
-        {...rest}
-      >
-        {placeholder && (
-          <MenuItem value="" disabled>
-            {placeholder}
-          </MenuItem>
-        )}
-        {options.map((opt) => (
-          <MenuItem key={opt.value} value={opt.value}>
-            {opt.label}
-          </MenuItem>
-        ))}
-      </SelectMui>
-      {resolvedHelperText && <FormHelperText>{resolvedHelperText}</FormHelperText>}
-    </FormControl>
+      {placeholder && (
+        <md-select-option value="" disabled>
+          <div slot="headline">{placeholder}</div>
+        </md-select-option>
+      )}
+      {options.map((opt) => (
+        <md-select-option key={opt.value} value={opt.value}>
+          <div slot="headline">{opt.label}</div>
+        </md-select-option>
+      ))}
+    </md-outlined-select>
   )
 })
 

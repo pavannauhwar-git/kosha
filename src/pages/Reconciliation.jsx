@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState, useEffect, useCallback } from 'react'
+import { lazy, Suspense, useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Warning, ArrowRight, ClockCounterClockwise, House, LinkSimple, ArrowCounterClockwise } from '@phosphor-icons/react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -11,6 +11,8 @@ import FilterRow from '../components/common/FilterRow'
 import { useAppToast } from '../context/ToastContext'
 import { toToastMessage } from '../lib/errorTaxonomy'
 import Button from '../components/ui/Button'
+import Select from '../components/ui/Select'
+import Input from '../components/ui/Input'
 import { useTransactions, saveTransactionMutation, TRANSACTION_INSIGHTS_COLUMNS } from '../hooks/useTransactions'
 import {
   clearLearnedReconciliationAliases,
@@ -72,6 +74,7 @@ export default function Reconciliation() {
   const [statementInput, setStatementInput] = useState('')
   const [debouncedStatementInput, setDebouncedStatementInput] = useState('')
   const [highlightedTxnId, setHighlightedTxnId] = useState(null)
+  const focusRanForRef = useRef(null)
 
   const saveTransaction = useAppMutation(saveTransactionMutation, { context: 'reconciliation:updateCategory' })
   const reportFalsePositiveMutation = useAppMutation(reportReconciliationFalsePositive, { context: 'reconciliation:reportMismatch' })
@@ -367,49 +370,41 @@ export default function Reconciliation() {
   const hasActiveFilters = reviewStateFilter !== 'queue' || filter !== 'all' || !!paymentModeFilter
 
   useEffect(() => {
-    const next = new URLSearchParams(searchParams)
-    let shouldReplace = false
-
     const tabParam = searchParams.get('tab')
-    if (tabParam && ['queue', 'matching', 'overview'].includes(tabParam)) {
-      setTab(tabParam)
-      next.delete('tab')
-      shouldReplace = true
-    }
-
+    const hasTab = !!(tabParam && ['queue', 'matching', 'overview'].includes(tabParam))
     const view = searchParams.get('view') || searchParams.get('state')
-    if (view && REVIEW_STATE_FILTERS.some((item) => item.id === view)) {
-      setReviewStateFilter(view)
-      setTab('queue')
-      next.delete('view')
-      next.delete('state')
-      shouldReplace = true
-    }
-
+    const hasView = !!(view && REVIEW_STATE_FILTERS.some((item) => item.id === view))
     const quality = searchParams.get('quality') || searchParams.get('filter')
-    if (quality && FILTERS.some((item) => item.id === quality)) {
-      setFilter(quality)
-      setTab('queue')
-      next.delete('quality')
-      next.delete('filter')
-      shouldReplace = true
-    }
+    const hasQuality = !!(quality && FILTERS.some((item) => item.id === quality))
 
-    if (shouldReplace) {
-      setSearchParams(next, { replace: true })
-    }
-  }, [searchParams, setSearchParams])
+    if (!hasTab && !hasView && !hasQuality) return
+
+    if (hasTab) setTab(tabParam)
+    if (hasView) { setReviewStateFilter(view); setTab('queue') }
+    if (hasQuality) { setFilter(quality); setTab('queue') }
+
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (hasTab) next.delete('tab')
+      if (hasView) { next.delete('view'); next.delete('state') }
+      if (hasQuality) { next.delete('quality'); next.delete('filter') }
+      return next
+    }, { replace: true })
+    // NOTE: `searchParams` intentionally excluded — using functional setSearchParams instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setSearchParams, searchParams.get('tab'), searchParams.get('view'), searchParams.get('state'), searchParams.get('quality'), searchParams.get('filter')])
 
   const focusTxnId = searchParams.get('focus')
 
   useEffect(() => {
-    if (!focusTxnId) return
+    if (!focusTxnId || focusRanForRef.current === focusTxnId) return
 
     const focusIndex = visibleItems.findIndex((item) => item?.txn?.id === focusTxnId)
     if (focusIndex < 0) return
 
-    scrollQueueToIndex(focusIndex, { behavior: 'smooth', block: 'center' })
+    focusRanForRef.current = focusTxnId
 
+    scrollQueueToIndex(focusIndex, { behavior: 'smooth', block: 'center' })
     setHighlightedTxnId(focusTxnId)
 
     const scrollTimer = setTimeout(() => {
@@ -419,15 +414,17 @@ export default function Reconciliation() {
 
     const clearTimer = setTimeout(() => setHighlightedTxnId(null), 2400)
 
-    const next = new URLSearchParams(searchParams)
-    next.delete('focus')
-    setSearchParams(next, { replace: true })
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('focus')
+      return next
+    }, { replace: true })
 
     return () => {
       clearTimeout(scrollTimer)
       clearTimeout(clearTimer)
     }
-  }, [focusTxnId, visibleItems, scrollQueueToIndex, searchParams, setSearchParams])
+  }, [focusTxnId, visibleItems, scrollQueueToIndex, setSearchParams])
 
   const markReviewedLocal = useCallback((id) => {
     if (!id) return
@@ -796,30 +793,26 @@ export default function Reconciliation() {
                           <span className="chip text-expense-text">{item.duplicateCount} potential duplicates</span>
                         )}
                       </div>
-
                       {item.flags.missingCategory && txn.type === 'expense' && (
                         <div className="mt-3 pt-3 border-t border-kosha-border">
-                          <label className="text-[11px] font-semibold text-ink-3 block mb-1.5">
-                            Set category
-                            <select
-                              name="recon-category"
-                              className="input h-9 text-sm w-full md:max-w-[240px] mt-1.5"
-                              defaultValue=""
-                              onChange={(e) => {
-                                const value = e.target.value
-                                if (value) {
-                                  void setCategory(txn.id, value)
-                                  e.target.value = ''
-                                }
-                              }}
-                              disabled={disabled}
-                            >
-                              <option value="">Choose category…</option>
-                              {EXPENSE_CATEGORIES.map((cat) => (
-                                <option key={cat.id} value={cat.id}>{cat.label}</option>
-                              ))}
-                            </select>
-                          </label>
+                          <Select
+                            name="recon-category"
+                            label="Set category"
+                            className="w-full md:max-w-[240px]"
+                            value=""
+                            onChange={(e) => {
+                              const value = e.target.value
+                              if (value) {
+                                void setCategory(txn.id, value)
+                              }
+                            }}
+                            disabled={disabled}
+                            placeholder="Choose category…"
+                            options={EXPENSE_CATEGORIES.map((cat) => ({
+                              value: cat.id,
+                              label: cat.label,
+                            }))}
+                          />
                         </div>
                       )}
 
@@ -903,11 +896,13 @@ export default function Reconciliation() {
               </motion.div>
             )}
 
-            <textarea
+            <Input
+              type="textarea"
+              rows={4}
               name="statement-input"
+              label="Paste statement entries"
               value={statementInput}
               onChange={(e) => setStatementInput(e.target.value)}
-              className="input min-h-[110px] text-sm"
               placeholder={[
                 '24/03/2026, Swiggy, 542.00',
                 '2026-03-22 | Uber | 318',

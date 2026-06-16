@@ -2540,6 +2540,34 @@ create trigger trg_split_group_owner_access
   after insert on split_groups
   for each row execute function public.ensure_split_group_owner_access();
 
+create or replace function public.on_split_group_delete_cleanup()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  -- Delete all transactions linked to expenses in the group being deleted
+  delete from public.transactions
+  where linked_split_expense_id in (
+    select id from public.split_expenses where group_id = old.id
+  );
+
+  -- Delete all transactions linked to settlements in the group being deleted
+  delete from public.transactions
+  where linked_split_settlement_id in (
+    select id from public.split_settlements where group_id = old.id
+  );
+
+  return old;
+end;
+$$;
+
+drop trigger if exists trg_split_group_delete_cleanup on public.split_groups;
+create trigger trg_split_group_delete_cleanup
+  before delete on public.split_groups
+  for each row execute function public.on_split_group_delete_cleanup();
+
 -- Drop old signature to prevent PostgREST ambiguity
 drop function if exists public.split_create_group_invite(uuid, text);
 drop function if exists public.split_create_group_invite(uuid, uuid, text);
@@ -2891,7 +2919,7 @@ drop function if exists public.split_create_expense(uuid, uuid, text, numeric, d
 drop function if exists public.split_create_expense(uuid, uuid, text, numeric, date, text, text, jsonb, boolean, text);
 
 create or replace function public.split_create_expense(
-  p_id uuid default null,
+  p_id uuid,
   p_group_id uuid,
   p_paid_by_member_id uuid,
   p_description text,

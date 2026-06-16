@@ -5,6 +5,7 @@ import { Plus, ArrowsLeftRight, Receipt, LinkSimple, Trash, CaretLeft, SlidersHo
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Input from '../components/ui/Input'
+import Select from '../components/ui/Select'
 import Button from '../components/ui/Button'
 import PixelDatePicker from '../components/ui/PixelDatePicker'
 import EmptyState from '../components/common/EmptyState'
@@ -1146,82 +1147,88 @@ export default function Splitwise() {
   return (
     <PageHeaderPage title="Splitwise">
       {!schemaMissing && (
-        <div className="mb-3 flex items-start justify-between gap-2">
+        <div className="mb-3">
           {activeGroup ? (
-            <div className="min-w-0 flex-1">
-              <button
-                type="button"
-                onClick={() => {
-                  closeSheets()
-                  setActiveGroupId('')
-                }}
-                className="inline-flex items-center gap-1 text-[11px] text-ink-3"
-              >
-                <CaretLeft size={13} /> All groups
-              </button>
-              <p className="mt-1 truncate text-[15px] font-semibold text-ink">{activeGroup.name}</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeSheets()
+                    setActiveGroupId('')
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] text-ink-3 whitespace-nowrap"
+                >
+                  <CaretLeft size={13} /> All groups
+                </button>
+
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {isGroupAdmin && !!activeGroupId && !activeGroup?.is_archived && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<LinkSimple size={13} />}
+                      onClick={() => { void handleCreateGroupInvite() }}
+                      loading={saving === 'group-invite'}
+                    >
+                      Invite
+                    </Button>
+                  )}
+
+                  {isGroupAdmin && !!activeGroupId && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<SlidersHorizontal size={13} />}
+                      onClick={() => {
+                        setEditGroupForm({ name: activeGroup.name })
+                        setShowEditGroup(true)
+                      }}
+                    >
+                      Settings
+                    </Button>
+                  )}
+
+                  {!!activeGroupId && !activeGroup?.is_archived && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => { void handleLeaveGroup() }}
+                      loading={saving === 'leave-group'}
+                    >
+                      Leave
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <p className="truncate text-[18px] font-bold text-ink leading-tight">{activeGroup.name}</p>
             </div>
           ) : (
-            <div className="min-w-0 flex-1">
-              <p className="text-[12px] text-ink-3">Split groups</p>
-              <p className="mt-1 text-[15px] font-semibold text-ink">
-                {(() => {
-                  const activeCount = groups.filter(g => !g.is_archived).length
-                  return activeCount ? `${activeCount} active group${activeCount === 1 ? '' : 's'}` : 'Start your first group'
-                })()}
-              </p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] text-ink-3">Split groups</p>
+                <p className="mt-1 text-[15px] font-semibold text-ink">
+                  {(() => {
+                    const activeCount = groups.filter(g => !g.is_archived).length
+                    return activeCount ? `${activeCount} active group${activeCount === 1 ? '' : 's'}` : 'Start your first group'
+                  })()}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1.5">
+                {!activeGroupId && !isViewingPartner && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Plus size={14} />}
+                    onClick={() => setShowCreateGroup(true)}
+                  >
+                    Group
+                  </Button>
+                )}
+              </div>
             </div>
           )}
-
-          <div className="flex shrink-0 items-center gap-1.5">
-            {isGroupAdmin && !!activeGroupId && !activeGroup?.is_archived && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<LinkSimple size={13} />}
-                onClick={() => { void handleCreateGroupInvite() }}
-                loading={saving === 'group-invite'}
-              >
-                Invite
-              </Button>
-            )}
-
-            {isGroupAdmin && !!activeGroupId && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<SlidersHorizontal size={13} />}
-                onClick={() => {
-                  setEditGroupForm({ name: activeGroup.name })
-                  setShowEditGroup(true)
-                }}
-              >
-                Settings
-              </Button>
-            )}
-
-            {!!activeGroupId && !activeGroup?.is_archived && (
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => { void handleLeaveGroup() }}
-                loading={saving === 'leave-group'}
-              >
-                Leave
-              </Button>
-            )}
-
-            {!activeGroupId && !isViewingPartner && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<Plus size={14} />}
-                onClick={() => setShowCreateGroup(true)}
-              >
-                Group
-              </Button>
-            )}
-          </div>
         </div>
       )}
 
@@ -1717,7 +1724,7 @@ export default function Splitwise() {
           open={!!invitePreview}
           onClose={handleDismissInvitePreview}
           title="Join Shared Trip"
-          contentClassName="px-5"
+          contentClassName="px-5 pt-2"
         >
                 <div className="relative mb-4 overflow-hidden rounded-card">
                   <div className="h-32 w-full bg-kosha-surface-2">
@@ -1771,7 +1778,7 @@ export default function Splitwise() {
           open={showCreateGroup}
           onClose={closeSheets}
           title="Create Group"
-          contentClassName="px-5 overflow-y-auto"
+          contentClassName="px-5 pt-2 overflow-y-auto"
         >
                 <div className="mb-3"><Input label="Group Name" value={groupForm.name} onChange={(event) => setGroupForm((prev) => ({ ...prev, name: event.target.value }))} placeholder="Trip to Goa" /></div>
 
@@ -1796,7 +1803,7 @@ export default function Splitwise() {
           open={showAddMember}
           onClose={closeSheets}
           title="Add Member"
-          contentClassName="px-5 overflow-y-auto"
+          contentClassName="px-5 pt-2 overflow-y-auto"
         >
                 <div className="mb-4"><Input label="Name" value={newMemberName} onChange={(event) => setNewMemberName(event.target.value)} placeholder="Jane Doe" /></div>
 
@@ -1817,7 +1824,7 @@ export default function Splitwise() {
           open={showAddExpense}
           onClose={closeSheets}
           title={editExpense ? 'Edit Expense' : 'Add Expense'}
-          contentClassName="px-5 overflow-y-auto"
+          contentClassName="px-5 pt-2 overflow-y-auto"
         >
 
                 <div className="mb-3"><Input label="Description" value={expenseForm.description} onChange={(event) => setExpenseForm((prev) => ({ ...prev, description: event.target.value }))} placeholder="Dinner" /></div>
@@ -1836,34 +1843,28 @@ export default function Splitwise() {
                   </div>
                 </div>
 
-                <div className="list-card mb-3">
-                  <label className="list-row w-full cursor-pointer">
-                    <span className="text-[14px] text-ink-3">Category</span>
-                    <select
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={expenseForm.transaction_category}
-                      onChange={(event) => setExpenseForm((prev) => ({ ...prev, transaction_category: event.target.value }))}
-                    >
-                      {expenseCategoryOptions.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.label}</option>
-                      ))}
-                    </select>
-                  </label>
+                <div className="mb-3">
+                  <Select
+                    label="Category"
+                    value={expenseForm.transaction_category}
+                    onChange={(event) => setExpenseForm((prev) => ({ ...prev, transaction_category: event.target.value }))}
+                    options={expenseCategoryOptions.map((cat) => ({
+                      value: cat.id,
+                      label: cat.label,
+                    }))}
+                  />
                 </div>
 
-                <div className="list-card mb-3">
-                  <label className="list-row w-full">
-                    <span className="text-[14px] text-ink-3">Paid By</span>
-                    <select
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={expenseForm.paid_by_member_id}
-                      onChange={(event) => setExpenseForm((prev) => ({ ...prev, paid_by_member_id: event.target.value }))}
-                    >
-                      {activeMembers.map((member) => (
-                        <option key={member.id} value={member.id}>{resolveMemberName(member)}</option>
-                      ))}
-                    </select>
-                  </label>
+                <div className="mb-3">
+                  <Select
+                    label="Paid By"
+                    value={expenseForm.paid_by_member_id}
+                    onChange={(event) => setExpenseForm((prev) => ({ ...prev, paid_by_member_id: event.target.value }))}
+                    options={activeMembers.map((member) => ({
+                      value: member.id,
+                      label: resolveMemberName(member),
+                    }))}
+                  />
                 </div>
 
                 <div className="mb-3 grid grid-cols-4 gap-2">
@@ -1966,16 +1967,13 @@ export default function Splitwise() {
                   </div>
                 </div>
 
-                <div className="list-card mb-4">
-                  <label className="list-row w-full cursor-pointer">
-                    <span className="text-[14px] text-ink-3">Note</span>
-                    <input
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={expenseForm.notes}
-                      onChange={(event) => setExpenseForm((prev) => ({ ...prev, notes: event.target.value }))}
-                      placeholder="Optional"
-                    />
-                  </label>
+                <div className="mb-4">
+                  <Input
+                    label="Note"
+                    value={expenseForm.notes}
+                    onChange={(event) => setExpenseForm((prev) => ({ ...prev, notes: event.target.value }))}
+                    placeholder="Optional"
+                  />
                 </div>
 
                 <Button
@@ -1995,52 +1993,44 @@ export default function Splitwise() {
           open={showSettlement}
           onClose={closeSheets}
           title={editSettlement ? 'Edit Settlement' : 'Record Settlement'}
-          contentClassName="px-5 overflow-y-auto"
+          contentClassName="px-5 pt-2 overflow-y-auto"
         >
 
-                <div className="list-card mb-3">
-                  <label className="list-row w-full">
-                    <span className="text-[14px] text-ink-3">Payer</span>
-                    <select
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={settlementForm.payer_member_id}
-                      onChange={(event) => setSettlementForm((prev) => ({ ...prev, payer_member_id: event.target.value }))}
-                    >
-                      {activeMembers.map((member) => (
-                        <option key={member.id} value={member.id}>{resolveMemberName(member)}</option>
-                      ))}
-                    </select>
-                  </label>
+                <div className="mb-3">
+                  <Select
+                    label="Payer"
+                    value={settlementForm.payer_member_id}
+                    onChange={(event) => setSettlementForm((prev) => ({ ...prev, payer_member_id: event.target.value }))}
+                    options={activeMembers.map((member) => ({
+                      value: member.id,
+                      label: resolveMemberName(member),
+                    }))}
+                  />
                 </div>
 
-                <div className="list-card mb-3">
-                  <label className="list-row w-full">
-                    <span className="text-[14px] text-ink-3">Payee</span>
-                    <select
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={settlementForm.payee_member_id}
-                      onChange={(event) => setSettlementForm((prev) => ({ ...prev, payee_member_id: event.target.value }))}
-                    >
-                      {activeMembers.map((member) => (
-                        <option key={member.id} value={member.id}>{resolveMemberName(member)}</option>
-                      ))}
-                    </select>
-                  </label>
+                <div className="mb-3">
+                  <Select
+                    label="Payee"
+                    value={settlementForm.payee_member_id}
+                    onChange={(event) => setSettlementForm((prev) => ({ ...prev, payee_member_id: event.target.value }))}
+                    options={activeMembers.map((member) => ({
+                      value: member.id,
+                      label: resolveMemberName(member),
+                    }))}
+                  />
                 </div>
 
-                <div className="list-card mb-3">
-                  <label className="list-row w-full cursor-pointer">
-                    <span className="text-[14px] text-ink-3">Amount</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9.]*"
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={settlementForm.amount}
-                      onChange={(event) => setSettlementForm((prev) => ({ ...prev, amount: event.target.value }))}
-                      placeholder="0"
-                    />
-                  </label>
+                <div className="mb-3">
+                  <Input
+                    label="Amount"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9.]*"
+                    icon="₹"
+                    value={settlementForm.amount}
+                    onChange={(event) => setSettlementForm((prev) => ({ ...prev, amount: event.target.value }))}
+                    placeholder="0"
+                  />
                 </div>
 
                 <div className="list-card mb-3">
@@ -2055,16 +2045,13 @@ export default function Splitwise() {
                   </div>
                 </div>
 
-                <div className="list-card mb-4">
-                  <label className="list-row w-full cursor-pointer">
-                    <span className="text-[14px] text-ink-3">Note</span>
-                    <input
-                      className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                      value={settlementForm.note}
-                      onChange={(event) => setSettlementForm((prev) => ({ ...prev, note: event.target.value }))}
-                      placeholder="Optional"
-                    />
-                  </label>
+                <div className="mb-4">
+                  <Input
+                    label="Note"
+                    value={settlementForm.note}
+                    onChange={(event) => setSettlementForm((prev) => ({ ...prev, note: event.target.value }))}
+                    placeholder="Optional"
+                  />
                 </div>
 
                 <Button
@@ -2084,7 +2071,7 @@ export default function Splitwise() {
           open={showBannerPicker}
           onClose={() => setShowBannerPicker(false)}
           title="Trip Banner"
-          contentClassName="px-5 pb-8 overflow-y-auto max-h-[85vh]"
+          contentClassName="px-5 pt-2 pb-8 overflow-y-auto max-h-[85vh]"
         >
                 <div className="grid grid-cols-2 gap-3">
                   {BANNERS.map((banner) => (
@@ -2108,22 +2095,19 @@ export default function Splitwise() {
           open={showEditGroup}
           onClose={() => setShowEditGroup(false)}
           title="Trip Settings"
-          contentClassName="px-5 pb-8 overflow-y-auto max-h-[85vh]"
+          contentClassName="px-5 pt-2 pb-8 overflow-y-auto max-h-[85vh]"
         >
 
                 {!activeGroup?.is_archived && (
                   <>
-                    <div className="list-card mb-4">
-                      <label className="list-row w-full cursor-pointer">
-                        <span className="text-[14px] text-ink-3">Trip Name</span>
-                        <input
-                          className="flex-1 bg-transparent text-right text-[14px] text-ink outline-none"
-                          value={editGroupForm.name}
-                          onChange={(e) => setEditGroupForm((prev) => ({ ...prev, name: e.target.value }))}
-                          placeholder="e.g. Goa 2026"
-                          maxLength={50}
-                        />
-                      </label>
+                    <div className="mb-4">
+                      <Input
+                        label="Trip Name"
+                        value={editGroupForm.name}
+                        onChange={(e) => setEditGroupForm((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g. Goa 2026"
+                        maxLength={50}
+                      />
                     </div>
 
                     <Button

@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
+import Select from '../ui/Select'
 
 function toFiniteNumber(value) {
   const n = Number(value)
@@ -1075,18 +1076,15 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
               <p className="text-[10px] uppercase tracking-[0.06em] text-ink-3 mb-1">Category</p>
-              <select
+              <Select
                 name="whatif-category"
                 value={selectedCategory?.id || ''}
                 onChange={(event) => setSelectedCategoryId(event.target.value)}
-                className="w-full rounded-card border border-kosha-border bg-kosha-surface px-3 py-2 text-[12px] font-semibold text-ink"
-              >
-                {scenarioOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label} ({fmt(option.value, true)})
-                  </option>
-                ))}
-              </select>
+                options={scenarioOptions.map((option) => ({
+                  value: option.id,
+                  label: `${option.label} (${fmt(option.value, true)})`,
+                }))}
+              />
             </div>
 
             <div>

@@ -177,8 +177,10 @@ export default function Loans({
 
   useEffect(() => {
     return () => {
+      // Commit pending delete on unmount
       if (pendingDeleteRef.current) {
         const pending = pendingDeleteRef.current
+        pendingDeleteRef.current = null
         if (pending.timeoutId) clearTimeout(pending.timeoutId)
         void commitPendingDelete(pending)
       }
@@ -194,12 +196,14 @@ export default function Loans({
   const deepLinkKey = `${deepLinkTxnId || ''}:${deepLinkLoanId || ''}:${deepLinkTabHint || ''}:${deepLinkType || ''}:${deepLinkAmountRaw || ''}:${deepLinkDate || ''}:${deepLinkCounterpartyRaw || ''}`
 
   const clearRepaymentDeepLink = useCallback(() => {
-    const next = new URLSearchParams(searchParams)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
       ;['repaymentTxn', 'repaymentLoan', 'repaymentTab', 'repaymentType', 'repaymentAmount', 'repaymentDate', 'repaymentCounterparty'].forEach((key) => {
         next.delete(key)
       })
-    setSearchParams(next, { replace: true })
-  }, [searchParams, setSearchParams])
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
 
   // ── Form state ──────────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -1155,7 +1159,7 @@ export default function Loans({
         onClose={dismissPaySheet}
         title="Record Payment"
         initialFocusSelector='input[name="payment-amount"]'
-        contentClassName="px-5 overflow-x-hidden"
+        contentClassName="px-5 pt-2 overflow-x-hidden"
       >
 
                 {/* Loan context */}
@@ -1239,7 +1243,7 @@ export default function Loans({
         onClose={dismissAddLoanSheet}
         title={editLoan ? 'Edit Loan' : 'Add Loan'}
         initialFocusSelector='input[name="loan-counterparty"]'
-        contentClassName="px-5 overflow-x-hidden"
+        contentClassName="px-5 pt-2 overflow-x-hidden"
       >
 
                 {/* Direction toggle */}

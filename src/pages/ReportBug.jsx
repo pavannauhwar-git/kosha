@@ -15,6 +15,7 @@ import {
 } from '../lib/bugReportUtils'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import Switch from '../components/ui/Switch'
 import { useAppToast } from '../context/ToastContext'
 import { copyToClipboard } from '../lib/share'
 import { useAppMutation } from '../hooks/useAppMutation'
@@ -359,29 +360,27 @@ export default function ReportBug() {
                 onChange={e => setTitle(e.target.value)}
               />
 
-              <div>
-                <label htmlFor="bug-description" className="text-label font-medium text-ink-2">What happened</label>
-                <textarea
-                  id="bug-description"
-                  className="input min-h-[112px] resize-none mt-1.5"
-                  name="bug-description"
-                  placeholder="What happened?"
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                />
-              </div>
+              <Input
+                label="What happened"
+                type="textarea"
+                id="bug-description"
+                name="bug-description"
+                placeholder="What happened?"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                style={{ minHeight: '112px' }}
+              />
 
-              <div>
-                <label htmlFor="bug-steps" className="text-label font-medium text-ink-2">Steps to reproduce</label>
-                <textarea
-                  id="bug-steps"
-                  className="input min-h-[86px] resize-none mt-1.5"
-                  name="bug-steps"
-                  placeholder="Steps to reproduce (optional)"
-                  value={steps}
-                  onChange={e => setSteps(e.target.value)}
-                />
-              </div>
+              <Input
+                label="Steps to reproduce (optional)"
+                type="textarea"
+                id="bug-steps"
+                name="bug-steps"
+                placeholder="Steps to reproduce (optional)"
+                value={steps}
+                onChange={e => setSteps(e.target.value)}
+                style={{ minHeight: '86px' }}
+              />
 
               <Input
                 label="Contact email (optional)"
@@ -480,19 +479,13 @@ export default function ReportBug() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIncludeDiagnostics(v => !v)}
-                className="w-full flex items-center justify-between px-3 py-2.5 mini-panel"
-              >
+              <div className="w-full flex items-center justify-between px-3 py-2.5 mini-panel">
                 <span className="text-[14px] font-medium text-ink">Include diagnostics</span>
-                <span className={`text-caption font-semibold px-2 py-0.5 rounded-pill
-                    ${includeDiagnostics
-                    ? 'bg-brand-container text-brand'
-                    : 'bg-kosha-surface-2 text-ink-3'}`}>
-                  {includeDiagnostics ? 'On' : 'Off'}
-                </span>
-              </button>
+                <Switch
+                  checked={includeDiagnostics}
+                  onChange={(e) => setIncludeDiagnostics(e.target.checked)}
+                />
+              </div>
 
               <p className="text-[11px] text-ink-3 -mt-1">
                 Includes route, browser, device type, timezone, and viewport size. No financial entries, location coordinates, or personal identity fields are attached.

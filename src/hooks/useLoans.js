@@ -102,7 +102,8 @@ async function addLoan(payload) {
   const counterparty = String(payload.counterparty || '').trim()
   if (!counterparty) throw new Error('Counterparty name is required')
 
-  // Read the stable ID from payload (injected by useAppMutation wrapper) so offline replays are idempotent
+  // Derive a stable id (caller may pass one for idempotent retries; otherwise
+  // generate). The server coalesces a null p_id, so this is belt-and-braces.
   const id = payload.id ?? crypto.randomUUID()
 
   // Use the atomic RPC so the disbursement transaction is created in the same
@@ -220,9 +221,9 @@ async function deleteLoan(id, cachedLoan = null) {
   //   (b) the loan DELETE (cascades to transactions via the existing
   //       transactions.linked_loan_id ON DELETE CASCADE FK),
   //   (c) the audit-log write (via the trigger on `loans`).
-  const { data, error } = await supabase.rpc('delete_loan_with_txns', { 
+  const { data, error } = await supabase.rpc('delete_loan_with_txns', {
     p_id: id,
-    p_payload: cachedLoan 
+    p_payload: cachedLoan
   })
   if (error) throw error
   return data === true

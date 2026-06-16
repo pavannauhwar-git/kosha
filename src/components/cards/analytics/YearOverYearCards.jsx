@@ -13,6 +13,7 @@ import {
 import { supabase } from '../../../lib/supabase'
 import { useActiveWallet } from '../../../lib/walletStore'
 import { fmt } from '../../../lib/utils'
+import Select from '../../ui/Select'
 
 async function fetchYearSummary(year, userId) {
   const { data: result, error } = await supabase
@@ -220,19 +221,19 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
           <p className="text-[11px] text-ink-3 mt-0.5">Compare the selected year against another year and inspect long-term net trend.</p>
         </div>
 
-        <label className="flex items-center gap-2 text-[11px] text-ink-3">
-          Compare with
-          <select
+        <div className="flex items-center gap-2 text-[11px] text-ink-3">
+          <span>Compare with</span>
+          <Select
             name="yoy-compare-year"
             value={compareYear || ''}
             onChange={(event) => setCompareYear(Number(event.target.value))}
-            className="h-8 px-2 rounded-card border border-kosha-border bg-kosha-surface text-ink"
-          >
-            {selectableYears.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </label>
+            options={selectableYears.map((year) => ({
+              value: year,
+              label: String(year),
+            }))}
+            style={{ width: '96px' }}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2.5">

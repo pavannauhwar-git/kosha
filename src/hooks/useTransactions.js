@@ -385,6 +385,9 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
     // search:'coffee') from piling up in cache. refetchType:'all' above would
     // otherwise re-request every combination the user tried this session.
     gcTime: 5 * 60 * 1000,
+    // Refetch on mount so that mutations from other pages (e.g. Splitwise expense
+    // delete) that mark this cache stale are picked up when navigating here.
+    refetchOnMount: true,
     placeholderData: (prev, query) => {
       const currentQueryUserId = query?.queryKey?.[2]
       return (currentQueryUserId === targetUserId) ? prev : undefined
@@ -505,6 +508,7 @@ export function useRecentTransactions(limit = 5) {
       return (rows || []).filter(r => !inFlightDeletedTxnIds.has(r.id))
     }),
     gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
     placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
   })
 
