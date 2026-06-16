@@ -38,6 +38,7 @@ export const FINANCIAL_EVENT_ACTIONS = {
   SPLITWISE_GROUP_DELETE: 'splitwise_group_deleted',
   SPLITWISE_MEMBER_ADD: 'splitwise_member_added',
   SPLITWISE_EXPENSE_ADD: 'splitwise_expense_added',
+  SPLITWISE_EXPENSE_EDIT: 'splitwise_expense_edited',
   SPLITWISE_SETTLEMENT_ADD: 'splitwise_settlement_added',
   SPLITWISE_INVITE_CREATE: 'splitwise_invite_created',
   SPLITWISE_INVITE_CONSUME: 'splitwise_invite_consumed',
