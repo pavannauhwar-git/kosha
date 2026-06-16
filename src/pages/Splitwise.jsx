@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, ArrowsLeftRight, Receipt, X, LinkSimple, Trash, CaretLeft, SlidersHorizontal, Archive, ArrowUUpLeft } from '@phosphor-icons/react'
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
@@ -990,7 +991,7 @@ export default function Splitwise() {
       paid_by_member_id: expense.paid_by_member_id || '',
       split_method: expense.split_method || 'equal',
       notes: expense.notes || '',
-      transaction_category: 'other', // Edit drops original category since it wasn't tracked on the split_expense itself
+      transaction_category: expense.transactions?.category || 'other',
     })
 
     const nextSplits = {}
@@ -1674,7 +1675,9 @@ export default function Splitwise() {
         </div>
       )}
 
-      <AnimatePresence>
+      {createPortal(
+        <>
+          <AnimatePresence>
         {invitePreview && (
           <>
             <motion.div
@@ -2301,7 +2304,10 @@ export default function Splitwise() {
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+          </AnimatePresence>
+        </>,
+        document.body
+      )}
 
       <AppToast message={toast} onDismiss={() => setToast(null)} />
       <PartnerViewBanner />
