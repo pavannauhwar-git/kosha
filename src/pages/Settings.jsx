@@ -203,7 +203,10 @@ export default function Settings() {
 
     try {
       const ext = file.name.split('.').pop() || 'jpg'
-      const path = `avatars/${user.id}-${Date.now()}.${ext}`
+      // Path is relative to the bucket root. Storage RLS policies check
+      // `name like (auth.uid()::text || '-%')`, so the file must start
+      // with the user's UUID — no leading folder prefix.
+      const path = `${user.id}-${Date.now()}.${ext}`
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
