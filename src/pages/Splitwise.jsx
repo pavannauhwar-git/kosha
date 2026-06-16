@@ -990,7 +990,7 @@ export default function Splitwise() {
       paid_by_member_id: expense.paid_by_member_id || '',
       split_method: expense.split_method || 'equal',
       notes: expense.notes || '',
-      transaction_category: expense.transactions?.category || 'other',
+      transaction_category: 'other', // Edit drops original category since it wasn't tracked on the split_expense itself
     })
 
     const nextSplits = {}
