@@ -50,6 +50,7 @@ import { downloadCsv, toCsv } from '../lib/csv'
 import { shareLink } from '../lib/share'
 import useWindowedList from '../hooks/useWindowedList'
 import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
+import useOverlayFocusTrap from '../hooks/useOverlayFocusTrap'
 
 const BANNERS = [
   { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.webp' },
@@ -205,6 +206,13 @@ export default function Splitwise() {
   const [showEditGroup, setShowEditGroup] = useState(false)
   const [editGroupForm, setEditGroupForm] = useState({ name: '' })
   const [showArchived, setShowArchived] = useState(false)
+
+  const createGroupSheetRef = useOverlayFocusTrap(showCreateGroup, { onClose: closeSheets })
+  const addMemberSheetRef = useOverlayFocusTrap(showAddMember, { onClose: closeSheets })
+  const addExpenseSheetRef = useOverlayFocusTrap(showAddExpense, { onClose: closeSheets })
+  const settlementSheetRef = useOverlayFocusTrap(showSettlement, { onClose: closeSheets })
+  const bannerPickerSheetRef = useOverlayFocusTrap(showBannerPicker, { onClose: () => setShowBannerPicker(false) })
+  const editGroupSheetRef = useOverlayFocusTrap(showEditGroup, { onClose: () => setShowEditGroup(false) })
 
   // archivedIds removed in favor of global database state
 
@@ -1763,6 +1771,10 @@ export default function Splitwise() {
               onClick={closeSheets}
             />
             <motion.div
+              ref={createGroupSheetRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -1819,6 +1831,10 @@ export default function Splitwise() {
               onClick={closeSheets}
             />
             <motion.div
+              ref={addMemberSheetRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -1865,6 +1881,10 @@ export default function Splitwise() {
           <>
             <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }} onClick={closeSheets} />
             <motion.div
+              ref={addExpenseSheetRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -2080,6 +2100,10 @@ export default function Splitwise() {
           <>
             <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }} onClick={closeSheets} />
             <motion.div
+              ref={settlementSheetRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -2183,6 +2207,10 @@ export default function Splitwise() {
           <>
             <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }} onClick={() => setShowBannerPicker(false)} />
             <motion.div
+              ref={bannerPickerSheetRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
@@ -2221,6 +2249,10 @@ export default function Splitwise() {
           <>
             <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none' }} onClick={() => setShowEditGroup(false)} />
             <motion.div
+              ref={editGroupSheetRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
               className="sheet-panel"
               initial={{ y: '100%' }}
               animate={{ y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }}
