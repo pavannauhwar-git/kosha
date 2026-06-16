@@ -21,7 +21,7 @@ async function signIn(client, email, password, label) {
   return data.user
 }
 
-async function linkWallets(creatorClient, joinerClient, creatorUser, joinerUser) {
+async function linkWallets(creatorClient, joinerClient, creatorUser, _joinerUser) {
   const inviteToken = `rls-${crypto.randomUUID().replace(/-/g, '').slice(0, 24)}`
   
   // 1. Create invite
@@ -32,7 +32,7 @@ async function linkWallets(creatorClient, joinerClient, creatorUser, joinerUser)
   if (createError) throw new Error(`Invite insert failed: ${createError.message}`)
   
   // 2. Consume invite
-  const { data: consumeData, error: consumeError } = await joinerClient.rpc('consume_wallet_invite', {
+  const { error: consumeError } = await joinerClient.rpc('consume_wallet_invite', {
     p_token: inviteToken
   })
   

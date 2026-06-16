@@ -91,7 +91,6 @@ import { budgetQueryKey } from '../../src/hooks/useBudgets.js'
 import { USER_CATEGORIES_QUERY_KEY } from '../../src/hooks/useUserCategories.js'
 import { reviewListKey } from '../../src/hooks/useReconciliationReviews.js'
 import {
-  txnListKey,
   txnCountKey,
   transactionSignalAggregatesKey,
   yearDailyExpenseTotalsKey,
