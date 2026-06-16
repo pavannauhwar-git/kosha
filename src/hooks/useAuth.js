@@ -315,6 +315,7 @@ export function useAuthState() {
 
   const updateProfile = useCallback(async (updates) => {
     const userId = getAuthUserId()
+    loadGenRef.current++
     const { data, error } = await supabase
       .from('profiles')
       .upsert({ id: userId, ...updates }, { onConflict: 'id' })
@@ -335,7 +336,8 @@ export function useAuthState() {
     const userId = getAuthUserId()
     const trimmedName = String(displayName || '').trim()
     if (!trimmedName) throw new Error('Display name cannot be empty')
-
+    
+    loadGenRef.current++
     const { data, error } = await supabase
       .from('profiles')
       .upsert({ id: userId, display_name: trimmedName }, { onConflict: 'id' })
