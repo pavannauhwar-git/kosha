@@ -2140,6 +2140,7 @@ $$;
 
 -- Drop old signature to prevent PostgREST ambiguity
 drop function if exists public.split_create_group(text, text);
+drop function if exists public.split_create_group(uuid, text, text);
 
 create or replace function public.split_create_group(
   p_name text,
@@ -2523,6 +2524,7 @@ create trigger trg_split_group_owner_access
 
 -- Drop old signature to prevent PostgREST ambiguity
 drop function if exists public.split_create_group_invite(uuid, text);
+drop function if exists public.split_create_group_invite(uuid, uuid, text);
 
 create or replace function public.split_create_group_invite(
   p_group_id uuid,
@@ -2868,6 +2870,7 @@ $$;
 
 -- Drop old signature to prevent PostgREST ambiguity
 drop function if exists public.split_create_expense(uuid, uuid, text, numeric, date, text, text, jsonb);
+drop function if exists public.split_create_expense(uuid, uuid, text, numeric, date, text, text, jsonb, boolean, text);
 
 create or replace function public.split_create_expense(
   p_id uuid default null,
@@ -3248,6 +3251,7 @@ grant execute on function public.split_update_expense(uuid, uuid, text, numeric,
 
 -- Drop old signature to prevent PostgREST ambiguity
 drop function if exists public.split_record_settlement(uuid, uuid, uuid, numeric, date, text);
+drop function if exists public.split_record_settlement(uuid, uuid, uuid, numeric, date, text, boolean);
 
 create or replace function public.split_record_settlement(
   p_group_id uuid,
@@ -3467,6 +3471,7 @@ create policy "loans: delete own" on loans
 
 -- Drop old signature to prevent PostgREST ambiguity
 drop function if exists public.create_loan(uuid, text, text, numeric, numeric, date, date, text);
+drop function if exists public.create_loan(uuid, uuid, text, text, numeric, numeric, date, date, text);
 
 create or replace function public.create_loan(
   p_user_id      uuid,
@@ -3597,6 +3602,7 @@ grant execute on function public.create_loan(uuid, uuid, text, text, numeric, nu
 
 -- Drop old signature to prevent PostgREST ambiguity
 drop function if exists public.record_loan_payment(uuid, uuid, numeric);
+drop function if exists public.record_loan_payment(uuid, uuid, uuid, numeric);
 
 create or replace function public.record_loan_payment(
   p_loan_id  uuid,
