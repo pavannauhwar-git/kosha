@@ -177,11 +177,7 @@ export default function Transactions() {
   const linkedSplitExpenseFilter = searchParams.get('linked_split_expense') || null
   const linkedSplitSettlementFilter = searchParams.get('linked_split_settlement') || null
 
-
-
-
-
-  function clearLinkedFilters() {
+  const clearLinkedFilters = useCallback(() => {
     if (!linkedLoanFilter && !linkedBillFilter && !linkedSplitExpenseFilter && !linkedSplitSettlementFilter) return
     const next = new URLSearchParams(searchParams)
     next.delete('linked_loan')
@@ -190,7 +186,7 @@ export default function Transactions() {
     next.delete('linked_split_settlement')
     internalUrlUpdateRef.current = true
     setSearchParams(next, { replace: true })
-  }
+  }, [linkedLoanFilter, linkedBillFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter, searchParams, setSearchParams])
 
   function handleDatePreset(nextPreset) {
     clearLinkedFilters()
@@ -666,7 +662,8 @@ export default function Transactions() {
     }
 
     setDisplayCount(50)
-  }, [searchParams, datePreset, forcedDateRange, linkedBillFilter, linkedLoanFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, linkedBillFilter, linkedLoanFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter])
 
   useEffect(() => {
     setSearchParams((prev) => {
@@ -1105,7 +1102,8 @@ export default function Transactions() {
     setShowCats(false)
     setShowPaymentModes(false)
     setDisplayCount(50)
-  }, [])
+    clearLinkedFilters()
+  }, [clearLinkedFilters])
 
   useEffect(() => {
     if (!location.state?.openAddInvestment) return
@@ -1171,8 +1169,8 @@ export default function Transactions() {
                     <span className="text-[11px] font-semibold">
                       {linkedLoanFilter ? 'Loan history' :
                         linkedBillFilter ? 'Bill history' :
-                        linkedSplitExpenseFilter ? 'Split expense' :
-                        'Split settlement'}
+                          linkedSplitExpenseFilter ? 'Split expense' :
+                            'Split settlement'}
                     </span>
                     {total > 0 && (
                       <span className="text-[10px] opacity-60 font-medium tabular-nums">· {total} records</span>
@@ -1228,8 +1226,8 @@ export default function Transactions() {
                     type="button"
                     onClick={() => handleDatePreset(preset.id)}
                     className={`chip-control chip-control-sm ${datePreset === preset.id
-                        ? 'bg-brand text-brand-on border-brand'
-                        : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'
+                      ? 'bg-brand text-brand-on border-brand'
+                      : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-kosha-surface-2'
                       }`}
                   >
                     {preset.label}
@@ -1352,7 +1350,7 @@ export default function Transactions() {
                     className="chip-control chip-control-sm bg-brand text-brand-on border-brand flex items-center gap-1"
                   >
                     Loan repayments
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                   </button>
                 )}
 
@@ -1504,71 +1502,71 @@ export default function Transactions() {
         {/* Transaction groups */}
         {!isInitialLoad && (
           groups.length === 0 ? (
-          <EmptyState
-            imageUrl={hasActiveFilters ? "/illustrations/search_empty.webp" : "/illustrations/empty_transactions.webp"}
-            title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
-            description={
-              hasActiveFilters
-                ? 'Try broadening your filters or clearing search to see more results.'
-                : 'Start by adding your first transaction to build your timeline and insights.'
-            }
-            actionLabel={hasActiveFilters ? 'Clear filters' : 'Add transaction'}
-            onAction={hasActiveFilters
-              ? clearAllFilters
-              : () => {
-                setEditTxn(null)
-                setAddType('expense')
-                setShowAdd(true)
-              }}
-          />
-        ) : (
-          <div ref={timelineRowListRef}>
-            {timelineRowTopPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowTopPadding}px` }} />}
-            {renderedGroups.map(([dateKey, txns, net], localGroupIndex) => {
-              const groupIndex = timelineRowStartIndex + localGroupIndex
-              const spacingClass = groupIndex === 0 ? '' : 'mt-4'
+            <EmptyState
+              imageUrl={hasActiveFilters ? "/illustrations/search_empty.webp" : "/illustrations/empty_transactions.webp"}
+              title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}
+              description={
+                hasActiveFilters
+                  ? 'Try broadening your filters or clearing search to see more results.'
+                  : 'Start by adding your first transaction to build your timeline and insights.'
+              }
+              actionLabel={hasActiveFilters ? 'Clear filters' : 'Add transaction'}
+              onAction={hasActiveFilters
+                ? clearAllFilters
+                : () => {
+                  setEditTxn(null)
+                  setAddType('expense')
+                  setShowAdd(true)
+                }}
+            />
+          ) : (
+            <div ref={timelineRowListRef}>
+              {timelineRowTopPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowTopPadding}px` }} />}
+              {renderedGroups.map(([dateKey, txns, net], localGroupIndex) => {
+                const groupIndex = timelineRowStartIndex + localGroupIndex
+                const spacingClass = groupIndex === 0 ? '' : 'mt-4'
 
-              return (
-                <div
-                  key={dateKey}
-                  ref={(node) => measureTimelineRow(groupIndex, node)}
-                  className={`list-card overflow-hidden ${spacingClass}`}
-                >
-                  <div className="flex items-center justify-between px-5 py-3 border-b border-kosha-border bg-kosha-surface-2 sticky top-0 z-10">
-                    <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
-                      {dateLabel(dateKey)}
-                    </span>
-                    <span className={`text-caption font-semibold ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                      {net >= 0 ? '+' : ''}{fmt(net)}
-                    </span>
+                return (
+                  <div
+                    key={dateKey}
+                    ref={(node) => measureTimelineRow(groupIndex, node)}
+                    className={`list-card overflow-hidden ${spacingClass}`}
+                  >
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-kosha-border bg-kosha-surface-2 sticky top-0 z-10">
+                      <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
+                        {dateLabel(dateKey)}
+                      </span>
+                      <span className={`text-caption font-semibold ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                        {net >= 0 ? '+' : ''}{fmt(net)}
+                      </span>
+                    </div>
+
+                    {txns.map((txn, txnIndex) => {
+                      const isLast = txnIndex === txns.length - 1
+                      const isFirstItemOfFirstGroup = groupIndex === 0 && txnIndex === 0
+
+                      return (
+                        <TransactionItem
+                          key={txn.id}
+                          txn={txn}
+                          onDelete={(isViewingPartner || txn.linked_split_expense_id || txn.linked_split_settlement_id || txn.linked_bill_id || txn.linked_loan_id) ? undefined : handleDelete}
+                          onTap={handleTap}
+                          isLast={isLast}
+                          onDuplicate={(isViewingPartner || txn.linked_split_expense_id || txn.linked_split_settlement_id || txn.linked_bill_id || txn.linked_loan_id) ? undefined : handleDuplicate}
+                          isHighlighted={highlightedTxnId === txn.id}
+                          autoNudge={triggerSwipeNudge && !isViewingPartner && isFirstItemOfFirstGroup && !(txn.linked_split_expense_id || txn.linked_split_settlement_id || txn.linked_bill_id || txn.linked_loan_id)}
+                          onAutoNudgeDone={handleAutoNudgeDone}
+                          onSwipeHintLearned={handleSwipeHintLearned}
+                          searchQuery={debouncedSearch}
+                        />
+                      )
+                    })}
                   </div>
-
-                  {txns.map((txn, txnIndex) => {
-                    const isLast = txnIndex === txns.length - 1
-                    const isFirstItemOfFirstGroup = groupIndex === 0 && txnIndex === 0
-
-                    return (
-                      <TransactionItem
-                        key={txn.id}
-                        txn={txn}
-                        onDelete={(isViewingPartner || txn.linked_split_expense_id || txn.linked_split_settlement_id || txn.linked_bill_id || txn.linked_loan_id) ? undefined : handleDelete}
-                        onTap={handleTap}
-                        isLast={isLast}
-                        onDuplicate={(isViewingPartner || txn.linked_split_expense_id || txn.linked_split_settlement_id || txn.linked_bill_id || txn.linked_loan_id) ? undefined : handleDuplicate}
-                        isHighlighted={highlightedTxnId === txn.id}
-                        autoNudge={triggerSwipeNudge && !isViewingPartner && isFirstItemOfFirstGroup && !(txn.linked_split_expense_id || txn.linked_split_settlement_id || txn.linked_bill_id || txn.linked_loan_id)}
-                        onAutoNudgeDone={handleAutoNudgeDone}
-                        onSwipeHintLearned={handleSwipeHintLearned}
-                        searchQuery={debouncedSearch}
-                      />
-                    )
-                  })}
-                </div>
-              )
-            })}
-            {timelineRowBottomPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowBottomPadding}px` }} />}
-          </div>
-        ))}
+                )
+              })}
+              {timelineRowBottomPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowBottomPadding}px` }} />}
+            </div>
+          ))}
 
         {hasMore && (
           <Button
@@ -1591,8 +1589,8 @@ export default function Transactions() {
                   <p className="text-[12px] text-ink-3 mt-0.5">Quick read of the health of your currently loaded rows.</p>
                 </div>
                 <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-pill border whitespace-nowrap ${(hasActiveFilters || linkedLoanFilter)
-                    ? 'bg-brand-container text-brand border-brand/20'
-                    : 'bg-kosha-surface text-ink-3 border-kosha-border'
+                  ? 'bg-brand-container text-brand border-brand/20'
+                  : 'bg-kosha-surface text-ink-3 border-kosha-border'
                   }`}>
                   {(hasActiveFilters || linkedLoanFilter) ? 'Filtered view' : 'Full timeline'}
                 </span>
@@ -1630,7 +1628,7 @@ export default function Transactions() {
               {(timelineActivitySignal || paymentModeSignal || expenseFrequencySignal) && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
                   {timelineActivitySignal && (
-                     <div className="mini-panel px-3 py-2.5">
+                    <div className="mini-panel px-3 py-2.5">
                       <p className="text-[10px] uppercase tracking-wide text-ink-3">Activity density</p>
                       <p className="text-[13px] font-semibold text-ink mt-1 tabular-nums">
                         {timelineActivitySignal.txnsPerActiveDay.toFixed(1)} txns / active day
@@ -1718,7 +1716,7 @@ export default function Transactions() {
                     className="chip-control chip-control-sm bg-brand-container text-brand border-brand/20 flex items-center gap-1"
                   >
                     Loan repayments
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                   </button>
                 )}
               </div>
@@ -1754,8 +1752,6 @@ export default function Transactions() {
           </div>
         )}
       </motion.div>
-
-
 
       {/* FAB — hidden in partner wallet view-only mode */}
       {!isViewingPartner && (

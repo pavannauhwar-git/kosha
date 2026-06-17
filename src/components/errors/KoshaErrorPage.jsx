@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Warning, Check, Copy, House, ArrowClockwise } from '@phosphor-icons/react'
 import KoshaLogo from '../brand/KoshaLogo'
 import { copyToClipboard } from '../../lib/share'
+import Button from '../ui/Button'
 
 export default function KoshaErrorPage({
   type = 'runtime',
@@ -115,40 +116,43 @@ export default function KoshaErrorPage({
           {isNotFound && helperText && <p className="mt-1 text-caption leading-relaxed text-ink-3">{helperText}</p>}
 
           <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <motion.button
-              type="button"
+            <Button
+              variant="primary"
               onClick={onPrimary}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand px-4 py-3 text-[14px] font-semibold text-white"
+              icon={<PrimaryIcon size={16} />}
+              fullWidth
             >
-              <PrimaryIcon size={16} />
               {primaryLabel}
-            </motion.button>
+            </Button>
 
-            <motion.button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onSecondary}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface px-4 py-3 text-[14px] font-semibold text-ink"
+              icon={<SecondaryIcon size={16} />}
+              fullWidth
             >
-              <SecondaryIcon size={16} />
               {secondaryLabel}
-            </motion.button>
+            </Button>
           </div>
 
           {tertiaryLabel && onTertiary && TertiaryIcon && (
-            <motion.button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onTertiary}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-kosha-border bg-kosha-surface-2 px-4 py-3 text-[14px] font-semibold text-accent-text"
+              icon={<TertiaryIcon size={16} />}
+              fullWidth
+              className="mt-2"
+              style={{
+                '--md-outlined-button-label-text-color': 'var(--ds-accent-text)',
+                '--md-outlined-button-hover-label-text-color': 'var(--ds-accent-text)',
+                '--md-outlined-button-focus-label-text-color': 'var(--ds-accent-text)',
+                '--md-outlined-button-pressed-label-text-color': 'var(--ds-accent-text)',
+                '--md-outlined-button-hover-state-layer-color': 'var(--ds-accent-text)',
+                '--md-outlined-button-pressed-state-layer-color': 'var(--ds-accent-text)',
+              }}
             >
-              <TertiaryIcon size={16} />
               {tertiaryLabel}
-            </motion.button>
+            </Button>
           )}
 
           {normalizedDetail && (

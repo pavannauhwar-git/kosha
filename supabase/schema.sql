@@ -2156,9 +2156,22 @@ as $$
     and public.has_split_group_access(p_group_id, auth.uid());
 $$;
 
--- Drop old signature to prevent PostgREST ambiguity
-drop function if exists public.split_create_group(text, text);
-drop function if exists public.split_create_group(uuid, text, text);
+-- Drop old signatures dynamically to prevent PostgREST ambiguity
+do $$
+declare
+  r record;
+begin
+  for r in
+    select 'drop function ' || oid::regprocedure as drop_cmd
+    from pg_proc
+    where proname = 'split_create_group'
+      and pronamespace = 'public'::regnamespace
+  loop
+    execute r.drop_cmd;
+  end loop;
+end;
+$$;
+
 
 create or replace function public.split_create_group(
   p_name text,
@@ -2568,9 +2581,22 @@ create trigger trg_split_group_delete_cleanup
   before delete on public.split_groups
   for each row execute function public.on_split_group_delete_cleanup();
 
--- Drop old signature to prevent PostgREST ambiguity
-drop function if exists public.split_create_group_invite(uuid, text);
-drop function if exists public.split_create_group_invite(uuid, uuid, text);
+-- Drop old signatures dynamically to prevent PostgREST ambiguity
+do $$
+declare
+  r record;
+begin
+  for r in
+    select 'drop function ' || oid::regprocedure as drop_cmd
+    from pg_proc
+    where proname = 'split_create_group_invite'
+      and pronamespace = 'public'::regnamespace
+  loop
+    execute r.drop_cmd;
+  end loop;
+end;
+$$;
+
 
 create or replace function public.split_create_group_invite(
   p_group_id uuid,
@@ -2914,22 +2940,35 @@ as $$
   left join out_settle ot on ot.member_id = m.id;
 $$;
 
--- Drop old signature to prevent PostgREST ambiguity
-drop function if exists public.split_create_expense(uuid, uuid, text, numeric, date, text, text, jsonb);
-drop function if exists public.split_create_expense(uuid, uuid, text, numeric, date, text, text, jsonb, boolean, text);
+-- Drop old signatures dynamically to prevent PostgREST ambiguity
+do $$
+declare
+  r record;
+begin
+  for r in
+    select 'drop function ' || oid::regprocedure as drop_cmd
+    from pg_proc
+    where proname = 'split_create_expense'
+      and pronamespace = 'public'::regnamespace
+  loop
+    execute r.drop_cmd;
+  end loop;
+end;
+$$;
+
 
 create or replace function public.split_create_expense(
-  p_id uuid,
   p_group_id uuid,
   p_paid_by_member_id uuid,
   p_description text,
   p_amount numeric,
-  p_expense_date date,
-  p_split_method text,
-  p_notes text,
-  p_splits jsonb,
+  p_expense_date date default current_date,
+  p_split_method text default 'equal',
+  p_notes text default null,
+  p_splits jsonb default '[]'::jsonb,
   p_sync_transaction boolean default true,
-  p_transaction_category text default 'other'
+  p_transaction_category text default 'other',
+  p_id uuid default null
 )
 returns public.split_expenses
 language plpgsql
@@ -3295,9 +3334,22 @@ $$;
 
 grant execute on function public.split_update_expense(uuid, uuid, text, numeric, date, text, text, jsonb, boolean, text) to authenticated;
 
--- Drop old signature to prevent PostgREST ambiguity
-drop function if exists public.split_record_settlement(uuid, uuid, uuid, numeric, date, text);
-drop function if exists public.split_record_settlement(uuid, uuid, uuid, numeric, date, text, boolean);
+-- Drop old signatures dynamically to prevent PostgREST ambiguity
+do $$
+declare
+  r record;
+begin
+  for r in
+    select 'drop function ' || oid::regprocedure as drop_cmd
+    from pg_proc
+    where proname = 'split_record_settlement'
+      and pronamespace = 'public'::regnamespace
+  loop
+    execute r.drop_cmd;
+  end loop;
+end;
+$$;
+
 
 create or replace function public.split_record_settlement(
   p_group_id uuid,
@@ -3515,9 +3567,22 @@ create policy "loans: delete own" on loans
 --   loan_given → expense for the lender (cash went out)
 --   loan_taken → income  for the borrower (cash came in)
 
--- Drop old signature to prevent PostgREST ambiguity
-drop function if exists public.create_loan(uuid, text, text, numeric, numeric, date, date, text);
-drop function if exists public.create_loan(uuid, uuid, text, text, numeric, numeric, date, date, text);
+-- Drop old signatures dynamically to prevent PostgREST ambiguity
+do $$
+declare
+  r record;
+begin
+  for r in
+    select 'drop function ' || oid::regprocedure as drop_cmd
+    from pg_proc
+    where proname = 'create_loan'
+      and pronamespace = 'public'::regnamespace
+  loop
+    execute r.drop_cmd;
+  end loop;
+end;
+$$;
+
 
 create or replace function public.create_loan(
   p_user_id      uuid,
@@ -3640,15 +3705,28 @@ begin
 end;
 $$;
 
-grant execute on function public.create_loan(uuid, uuid, text, text, numeric, numeric, date, date, text) to authenticated;
+grant execute on function public.create_loan(uuid, text, text, numeric, numeric, date, date, text, uuid) to authenticated;
 
 -- ── record_loan_payment — atomic partial/full repayment ──────────────────────
 -- Creates a linked transaction and updates the loan's settled amount.
 -- If the payment brings amount_settled >= amount, settles the loan.
 
--- Drop old signature to prevent PostgREST ambiguity
-drop function if exists public.record_loan_payment(uuid, uuid, numeric);
-drop function if exists public.record_loan_payment(uuid, uuid, uuid, numeric);
+-- Drop old signatures dynamically to prevent PostgREST ambiguity
+do $$
+declare
+  r record;
+begin
+  for r in
+    select 'drop function ' || oid::regprocedure as drop_cmd
+    from pg_proc
+    where proname = 'record_loan_payment'
+      and pronamespace = 'public'::regnamespace
+  loop
+    execute r.drop_cmd;
+  end loop;
+end;
+$$;
+
 
 create or replace function public.record_loan_payment(
   p_loan_id  uuid,
@@ -3978,7 +4056,7 @@ grant execute on function public.split_group_member_profiles(uuid) to authentica
 -- Grants for RPC functions
 grant execute on function public.split_preview_group_invite(text) to anon, authenticated;
 grant execute on function public.split_consume_group_invite(text) to authenticated;
-grant execute on function public.split_create_group_invite(uuid, uuid, text) to authenticated;
+grant execute on function public.split_create_group_invite(uuid, text, uuid) to authenticated;
 
 -- ======================================================================
 -- REQUIRED PERMISSIONS FOR TABLES (SUPABASE DATA API MAY 30 2026 UPDATE)

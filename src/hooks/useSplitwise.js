@@ -713,7 +713,10 @@ export async function addSplitExpenseMutation({
     'splitwise expense audit'
   )
 
-  optimisticallyInsertSplitExpense(groupId, rpcRow)
+  optimisticallyInsertSplitExpense(groupId, {
+    ...rpcRow,
+    split_expense_splits: payloadSplits,
+  })
   await invalidateSplitwiseCache()
   return rpcRow
 }
@@ -783,7 +786,10 @@ export async function updateSplitExpenseMutation({
     'splitwise expense edit audit'
   )
 
-  optimisticallyInsertSplitExpense(groupId, rpcRow)
+  optimisticallyInsertSplitExpense(groupId, {
+    ...rpcRow,
+    split_expense_splits: payloadSplits,
+  })
   await invalidateSplitwiseCache()
   return rpcRow
 }

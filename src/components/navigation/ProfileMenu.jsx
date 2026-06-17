@@ -1,22 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Popover from '@mui/material/Popover'
 import Fade from '@mui/material/Fade'
-import Box from '@mui/material/Box'
-import Avatar from '@mui/material/Avatar'
-import Typography from '@mui/material/Typography'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemButton from '@mui/material/ListItemButton'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import ListItemText from '@mui/material/ListItemText'
-import Divider from '@mui/material/Divider'
-import MuiButton from '@mui/material/Button'
 import { SignOut, Bug, Info, BookOpen, LinkSimple } from '@phosphor-icons/react'
 import { useAuth } from '../../context/AuthContext'
 import { useActiveWallet, setActiveWalletUserId } from '../../lib/walletStore'
 import { unlinkPartner } from '../../lib/walletSync'
 import { useLocation, useNavigate } from 'react-router-dom'
 import SecureAvatar from '../ui/SecureAvatar'
+import Button from '../ui/Button'
 
 function getAnchorPosition(anchorNode, dropUp) {
   if (!anchorNode || typeof anchorNode.getBoundingClientRect !== 'function') return null
@@ -27,13 +18,29 @@ function getAnchorPosition(anchorNode, dropUp) {
   }
 }
 
+function MenuItem({ icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-chip
+                 transition-all duration-150 text-ink hover:bg-kosha-surface-2 active:scale-[0.98] select-none"
+    >
+      <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0 bg-brand-container text-brand">
+        {icon}
+      </div>
+      <span className="text-[13px] font-semibold">{label}</span>
+    </button>
+  )
+}
+
 export default function ProfileMenu({ className = '', dropUp = false }) {
   const { user, profile, signOut, linkedProfiles, reloadLinkedData } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [anchorPosition, setAnchorPosition] = useState(null)
-  const [, setUnlinkingId] = useState('')
+  const [unlinkingId, setUnlinkingId] = useState('')
   const closeRafRef = useRef(null)
 
   const initial = (profile?.display_name || user?.email || 'K')[0].toUpperCase()
@@ -93,9 +100,9 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
   }, [open, closeOnViewportChange])
 
   return (
-    <Box className={className} sx={{ display: 'inline-block' }}>
+    <div className={`${className} inline-block`.trim()}>
       {/* ── Trigger Avatar Button ────────────────────────────────── */}
-      <Box sx={{ position: 'relative' }}>
+      <div className="relative">
         <button
           type="button"
           onClick={handleOpen}
@@ -138,7 +145,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
             style={{ background: 'var(--ds-warning)' }}
           />
         )}
-      </Box>
+      </div>
 
       {/* ── Profile popover ───────────────────────────────────────────── */}
       <Popover
@@ -148,6 +155,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         anchorPosition={anchorPosition || { top: 0, left: 0 }}
         onClose={handleClose}
         disableScrollLock
+        marginThreshold={0}
         slots={{ transition: Fade }}
         transformOrigin={{
           vertical: dropUp ? 'bottom' : 'top',
@@ -156,37 +164,22 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         slotProps={{
           transition: { timeout: { enter: 200, exit: 150 } },
           paper: {
-            className: 'profile-menu-paper',
+            className: 'bg-kosha-surface border border-kosha-border rounded-hero shadow-card-md overflow-hidden',
             sx: {
               mt: 1.5,
               mr: 0,
               mb: dropUp ? 1.5 : 0,
               width: '300px',
               maxWidth: 'calc(100vw - 2rem)',
-              borderRadius: '28px',
-              overflow: 'hidden',
-              backgroundColor: 'var(--ds-surface)',
-              border: '1px solid var(--ds-border)',
-              boxShadow: 'var(--ds-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
               backgroundImage: 'none',
             },
           },
         }}
       >
         {/* Identity Section (Centered Header Card) */}
-        <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <Box sx={{ position: 'relative', mb: 1.5 }}>
-            <Avatar
-              sx={{
-                width: 72,
-                height: 72,
-                fontSize: '28px',
-                fontWeight: 'bold',
-                backgroundColor: 'var(--ds-primary-container)',
-                color: 'var(--ds-on-primary-container)',
-                border: '1px solid var(--ds-border)',
-              }}
-            >
+        <div className="p-5 flex flex-col items-center text-center">
+          <div className="relative mb-3">
+            <div className="w-16 h-16 rounded-full bg-brand-container text-brand flex items-center justify-center overflow-hidden border border-brand/15 text-[22px] font-bold shrink-0">
               {avatarUrl ? (
                 <SecureAvatar
                   src={avatarUrl}
@@ -198,263 +191,196 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
               ) : (
                 initial
               )}
-            </Avatar>
-          </Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'var(--ds-text)', lineHeight: 1.2 }}>
+            </div>
+          </div>
+          <p className="text-[16px] font-bold text-ink leading-tight tracking-tight mt-1">
             {displayName}
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'var(--ds-text-tertiary)', mb: 1.5 }}>
+          </p>
+          <p className="text-[12px] text-ink-3 mt-0.5 mb-3.5 truncate w-full max-w-[240px]">
             {user?.email}
-          </Typography>
-          <MuiButton
-            variant="outlined"
+          </p>
+          <Button
+            variant="secondary"
+            size="xs"
             onClick={() => {
               handleClose()
               navigate('/settings')
             }}
-            sx={{
-              borderRadius: '9999px',
-              px: 3,
-              py: 0.75,
-              borderColor: 'var(--ds-border)',
-              color: 'var(--ds-text-secondary)',
-              fontSize: '12px',
-              fontWeight: 500,
-              '&:hover': {
-                borderColor: 'var(--ds-border-strong)',
-                backgroundColor: 'var(--ds-surface-container)',
-              },
-            }}
           >
             Manage your Account
-          </MuiButton>
-        </Box>
+          </Button>
+        </div>
 
-        <Divider />
+        <div className="border-t border-kosha-border" />
 
         {/* Wallets & Sync Section (if partner linked) */}
         {linkedProfiles && linkedProfiles.length > 0 && (
-          <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="overline" sx={{ px: 1.5, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--ds-text-tertiary)' }}>
+          <div className="px-3 py-2">
+            <p className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-3">
               Active Wallet
-            </Typography>
-            <List dense disablePadding>
-              <ListItem disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton
-                  onClick={() => {
-                    handleClose()
-                    setActiveWalletUserId(user?.id)
-                  }}
-                  sx={{
-                    borderRadius: '12px',
-                    backgroundColor: activeWalletUserId === user?.id ? 'var(--ds-primary-container)' : 'transparent',
-                    color: activeWalletUserId === user?.id ? 'var(--ds-on-primary-container)' : 'var(--ds-text)',
-                    '&:hover': {
-                      backgroundColor: activeWalletUserId === user?.id ? 'var(--ds-primary-container)' : 'var(--ds-surface-container)',
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    <Box
-                      sx={{
-                        width: 16,
-                        height: 16,
-                        borderRadius: '50%',
-                        border: '2px solid var(--ds-border-strong)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {activeWalletUserId === user?.id && (
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--ds-primary)' }} />
-                      )}
-                    </Box>
-                  </ListItemIcon>
-                  <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 600 }}>My Wallet</Typography>} />
-                </ListItemButton>
-              </ListItem>
+            </p>
+            <div className="flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  handleClose()
+                  setActiveWalletUserId(user?.id)
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-chip transition-colors text-left
+                            ${activeWalletUserId === user?.id
+                              ? 'bg-brand-container'
+                              : 'text-ink hover:bg-kosha-surface-2 active:bg-kosha-border'
+                            }`}
+                style={{
+                  color: activeWalletUserId === user?.id ? 'var(--ds-on-primary-container)' : undefined
+                }}
+              >
+                <div className="w-4 h-4 rounded-full border border-kosha-border-strong flex items-center justify-center shrink-0">
+                  {activeWalletUserId === user?.id && (
+                    <div className="w-2 h-2 rounded-full bg-brand" />
+                  )}
+                </div>
+                <span className="text-[13px] font-semibold flex-1">My Wallet</span>
+              </button>
 
               {linkedProfiles.map((p) => (
-                <ListItem
+                <div
                   key={p.id}
-                  disablePadding
-                  secondaryAction={
-                    <MuiButton
-                      size="small"
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        if (confirm(`Unlink ${p.display_name}? You will no longer access their wallet.`)) {
-                          setUnlinkingId(p.id)
-                          try {
-                            await unlinkPartner(user.id, p.id)
-                            if (activeWalletUserId === p.id) setActiveWalletUserId(user.id)
-                            await reloadLinkedData?.()
-                          } catch (e) {
-                            alert(e.message)
-                          } finally {
-                            setUnlinkingId('')
-                          }
-                        }
-                      }}
-                      sx={{
-                        color: 'var(--ds-expense-text)',
-                        minWidth: 'auto',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        '&:hover': { backgroundColor: 'var(--ds-expense-bg)' },
-                      }}
-                    >
-                      Unlink
-                    </MuiButton>
-                  }
+                  className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-chip transition-colors
+                              ${activeWalletUserId === p.id
+                                ? 'bg-brand-container'
+                                : 'text-ink hover:bg-kosha-surface-2 active:bg-kosha-border'
+                              }`}
+                  style={{
+                    color: activeWalletUserId === p.id ? 'var(--ds-on-primary-container)' : undefined
+                  }}
                 >
-                  <ListItemButton
+                  <button
+                    type="button"
                     onClick={() => {
                       handleClose()
                       setActiveWalletUserId(p.id)
                     }}
-                    sx={{
-                      borderRadius: '12px',
-                      backgroundColor: activeWalletUserId === p.id ? 'var(--ds-primary-container)' : 'transparent',
-                      color: activeWalletUserId === p.id ? 'var(--ds-on-primary-container)' : 'var(--ds-text)',
-                      '&:hover': {
-                        backgroundColor: activeWalletUserId === p.id ? 'var(--ds-primary-container)' : 'var(--ds-surface-container)',
-                      },
-                    }}
+                    className="flex-1 flex items-center gap-3 text-left min-w-0"
                   >
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      <Box
-                        sx={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: '50%',
-                          border: '2px solid var(--ds-border-strong)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {activeWalletUserId === p.id ? (
-                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--ds-primary)' }} />
-                        ) : p.avatar_url ? (
-                          <SecureAvatar
-                            src={p.avatar_url}
-                            fallbackInitial={p.display_name?.[0]?.toUpperCase()}
-                            version={p.updated_at || p.avatar_url}
-                            className="w-full h-full object-cover"
-                            alt={p.display_name || ''}
-                          />
-                        ) : null}
-                      </Box>
-                    </ListItemIcon>
-                    <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 600 }}>{p.display_name}</Typography>} />
-                  </ListItemButton>
-                </ListItem>
+                    <div className="w-4 h-4 rounded-full border border-kosha-border-strong flex items-center justify-center shrink-0">
+                      {activeWalletUserId === p.id && (
+                        <div className="w-2 h-2 rounded-full bg-brand" />
+                      )}
+                    </div>
+                    <div className="w-5 h-5 rounded-full overflow-hidden border border-kosha-border bg-kosha-surface-2 flex items-center justify-center shrink-0">
+                      {p.avatar_url ? (
+                        <SecureAvatar
+                          src={p.avatar_url}
+                          fallbackInitial={p.display_name?.[0]?.toUpperCase()}
+                          version={p.updated_at || p.avatar_url}
+                          className="w-full h-full object-cover"
+                          alt={p.display_name || ''}
+                        />
+                      ) : (
+                        <span className="text-[10px] font-bold text-ink-3">
+                          {p.display_name?.[0]?.toUpperCase() || '?'}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[13px] font-semibold truncate">{p.display_name}</span>
+                  </button>
+
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    loading={unlinkingId === p.id}
+                    onClick={async (e) => {
+                      e.stopPropagation()
+                      if (confirm(`Unlink ${p.display_name}? You will no longer access their wallet.`)) {
+                        setUnlinkingId(p.id)
+                        try {
+                          await unlinkPartner(user.id, p.id)
+                          if (activeWalletUserId === p.id) setActiveWalletUserId(user.id)
+                          await reloadLinkedData?.()
+                        } catch (e) {
+                          alert(e.message)
+                        } finally {
+                          setUnlinkingId('')
+                        }
+                      }
+                    }}
+                    className="shrink-0 text-expense hover:bg-expense-bg h-7 px-2"
+                  >
+                    Unlink
+                  </Button>
+                </div>
               ))}
-            </List>
-            <Divider sx={{ my: 1.5 }} />
-          </Box>
+            </div>
+            <div className="border-t border-kosha-border my-2" />
+          </div>
         )}
 
         {/* Drawer Options List */}
-        <Box sx={{ px: 1, pb: 1 }}>
-          <List dense disablePadding>
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  handleClose()
-                  navigate('/reconciliation')
-                }}
-                sx={{ borderRadius: '12px', color: 'var(--ds-text)' }}
-              >
-                <ListItemIcon sx={{ minWidth: 36, color: 'var(--ds-text-secondary)' }}>
-                  <LinkSimple size={16} />
-                </ListItemIcon>
-                <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 500 }}>Reconciliation</Typography>} />
-              </ListItemButton>
-            </ListItem>
+        <div className="px-2 pb-2 flex flex-col gap-0.5">
+          <MenuItem
+            icon={<LinkSimple size={16} />}
+            label="Reconciliation"
+            onClick={() => {
+              handleClose()
+              navigate('/reconciliation')
+            }}
+          />
+          <MenuItem
+            icon={<Bug size={16} />}
+            label="Report a Bug"
+            onClick={() => {
+              handleClose()
+              const currentPath = `${location.pathname}${location.search || ''}`
+              navigate('/report-bug', {
+                state: { source: 'profile-menu', returnTo: currentPath, reportedRoute: currentPath },
+              })
+            }}
+          />
+          <MenuItem
+            icon={<Info size={16} />}
+            label="About Kosha"
+            onClick={() => {
+              handleClose()
+              navigate('/about')
+            }}
+          />
+          <MenuItem
+            icon={<BookOpen size={16} />}
+            label="Setup Guide"
+            onClick={() => {
+              handleClose()
+              navigate('/guide')
+            }}
+          />
+        </div>
 
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  handleClose()
-                  const currentPath = `${location.pathname}${location.search || ''}`
-                  navigate('/report-bug', {
-                    state: { source: 'profile-menu', returnTo: currentPath, reportedRoute: currentPath },
-                  })
-                }}
-                sx={{ borderRadius: '12px', color: 'var(--ds-text)' }}
-              >
-                <ListItemIcon sx={{ minWidth: 36, color: 'var(--ds-text-secondary)' }}>
-                  <Bug size={16} />
-                </ListItemIcon>
-                <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 500 }}>Report a Bug</Typography>} />
-              </ListItemButton>
-            </ListItem>
-
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  handleClose()
-                  navigate('/about')
-                }}
-                sx={{ borderRadius: '12px', color: 'var(--ds-text)' }}
-              >
-                <ListItemIcon sx={{ minWidth: 36, color: 'var(--ds-text-secondary)' }}>
-                  <Info size={16} />
-                </ListItemIcon>
-                <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 500 }}>About Kosha</Typography>} />
-              </ListItemButton>
-            </ListItem>
-
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  handleClose()
-                  navigate('/guide')
-                }}
-                sx={{ borderRadius: '12px', color: 'var(--ds-text)' }}
-              >
-                <ListItemIcon sx={{ minWidth: 36, color: 'var(--ds-text-secondary)' }}>
-                  <BookOpen size={16} />
-                </ListItemIcon>
-                <ListItemText primary={<Typography sx={{ fontSize: '13px', fontWeight: 500 }}>Setup Guide</Typography>} />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Box>
-
-        <Divider />
+        <div className="border-t border-kosha-border" />
 
         {/* Footer Center Signout Button */}
-        <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'center' }}>
-          <MuiButton
+        <div className="p-4 flex justify-center">
+          <Button
             onClick={() => {
               handleClose()
               signOut()
             }}
-            variant="outlined"
-            startIcon={<SignOut size={15} />}
-            sx={{
-              borderRadius: '9999px',
-              borderColor: 'var(--ds-border)',
-              color: 'var(--ds-expense-text)',
-              fontSize: '12px',
-              fontWeight: 600,
-              width: '100%',
-              py: 1,
-              '&:hover': {
-                borderColor: 'var(--ds-expense-border)',
-                backgroundColor: 'var(--ds-expense-bg)',
-              },
+            variant="secondary"
+            fullWidth
+            icon={<SignOut size={16} />}
+            style={{
+              '--md-outlined-button-outline-color': 'var(--ds-border)',
+              '--md-outlined-button-label-text-color': 'var(--ds-expense-text)',
+              '--md-outlined-button-hover-label-text-color': 'var(--ds-expense-text)',
+              '--md-outlined-button-focus-label-text-color': 'var(--ds-expense-text)',
+              '--md-outlined-button-pressed-label-text-color': 'var(--ds-expense-text)',
+              '--md-outlined-button-hover-state-layer-color': 'var(--ds-expense-text)',
+              '--md-outlined-button-pressed-state-layer-color': 'var(--ds-expense-text)',
             }}
           >
             Sign out of your account
-          </MuiButton>
-        </Box>
+          </Button>
+        </div>
       </Popover>
-    </Box>
+    </div>
   )
 }

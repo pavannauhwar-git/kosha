@@ -478,6 +478,17 @@ function BottomNav() {
     n.match.some((path) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)))
   )
 
+  const [prevActive, setPrevActive] = useState(active)
+
+  useEffect(() => {
+    if (active !== prevActive) {
+      const timer = setTimeout(() => {
+        setPrevActive(active)
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [active, prevActive])
+
   return (
     <div
       className="nav-float-wrap"
@@ -531,7 +542,9 @@ function BottomNav() {
             >
               <div className="nav-icon-wrap">
                 {isActive && (
-                  <motion.div layoutId="nav-pill" className="nav-icon-bg"
+                  <motion.div
+                    layoutId="nav-pill"
+                    className={`nav-icon-bg ${active === prevActive ? 'nav-pill-settled' : ''}`}
                     initial={false}
                     transition={{
                       // M3 Expressive Spatial Default — damping ratio ~0.85

@@ -1759,6 +1759,11 @@ textarea:focus-visible,
   transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
+/* ── Bottom nav stability — disable wiggling when active tab is settled ───── */
+.nav-pill-settled {
+  transform: none !important;
+}
+
 /* ── Reduced-motion overrides ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   :root {
