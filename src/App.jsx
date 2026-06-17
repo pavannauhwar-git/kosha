@@ -1179,11 +1179,21 @@ function AnimatedRoutes() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return
-    // Blur a focused bottom-nav item so it doesn't trap focus on the new page.
-    if (document.activeElement instanceof HTMLElement &&
-        document.activeElement.classList.contains('nav-float-item')) {
-      document.activeElement.blur()
+
+    // Explicitly blur any active text input, textarea, or editable element on route transition
+    // to prevent iOS Safari from keeping the native typing/undo session active.
+    if (document.activeElement instanceof HTMLElement) {
+      const tagName = document.activeElement.tagName.toLowerCase()
+      if (tagName === 'input' || tagName === 'textarea' || document.activeElement.isContentEditable) {
+        document.activeElement.blur()
+      }
+
+      // Blur a focused bottom-nav item so it doesn't trap focus on the new page.
+      if (document.activeElement.classList.contains('nav-float-item')) {
+        document.activeElement.blur()
+      }
     }
+
     // Move focus to the main landmark so keyboard/screen-reader users land on
     // the new page content. preventScroll keeps it from fighting scroll
     // restoration (FIX 6.1).

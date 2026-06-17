@@ -13,9 +13,9 @@ import {
   LinkSimple,
   Users,
   CalendarDots,
-  X,
   CheckCircle,
   Warning,
+  X,
 } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
@@ -492,13 +492,17 @@ export default function Guide() {
           </div>
         </section>
 
-        <div className="fade-up fade-up-6 hint-card">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkle size={15} className="text-ink-2" />
-            <p className="text-body font-semibold text-ink">Today tip</p>
+        <Card variant="outlined" className="fade-up fade-up-6 bg-brand-container/15 border-brand/20 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center shrink-0 text-white shadow-sm">
+              <Sparkle size={16} />
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-body font-bold text-ink">Today's Tip</p>
+              <p className="text-label text-ink-2 mt-1 leading-relaxed">{todayTip}</p>
+            </div>
           </div>
-          <p className="text-label text-ink-2">{todayTip}</p>
-        </div>
+        </Card>
 
       </div>
 
@@ -509,108 +513,113 @@ export default function Guide() {
         showClose={false}
         showHandle={false}
         className="w-full max-w-[560px]"
-        contentClassName="px-0 pt-0 pb-0"
+        contentClassName="px-5 py-4"
         ariaLabel={selectedFeature ? `${selectedFeature.title} guide details` : 'Feature details'}
       >
         {selectedFeature && (
-          <div className="text-left">
-            <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="text-left space-y-4">
+            {/* Custom Header: Title, Subtitle & Close Button aligned together */}
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-body font-semibold text-ink">{selectedFeature.title}</p>
-                <p className="text-[12px] text-ink-3 mt-0.5">{selectedFeature.subtitle}</p>
+                <h2 className="text-[20px] font-bold text-ink leading-tight">{selectedFeature.title}</h2>
+                <p className="text-[12.5px] text-ink-3 mt-0.5 font-medium">{selectedFeature.subtitle}</p>
               </div>
               <button
                 type="button"
                 onClick={closeFeatureDetail}
-                className="close-btn shrink-0"
-                aria-label="Close feature details"
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-kosha-border bg-kosha-surface-2 hover:bg-kosha-surface-3 cursor-pointer shrink-0"
+                aria-label="Close details"
               >
-                <X size={14} />
+                <X size={16} className="text-ink-2" />
               </button>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-              <p className="text-[11px] text-ink-3 shrink-0">
+            {/* Pagination Controls */}
+            <div className="space-y-1.5">
+              <p className="text-[12px] text-ink-3 font-medium">
                 Card {selectedIndex + 1} of {navigationPool.length}
               </p>
-              <div className="grid grid-cols-2 gap-1.5 w-full sm:w-auto">
-                <Button
-                  variant="tonal"
-                  size="sm"
-                  className="whitespace-nowrap"
-                  onClick={() => moveFeature(-1)}
+              <div className="grid grid-cols-2 gap-2.5 w-full">
+                <button
+                  type="button"
                   disabled={selectedIndex <= 0}
-                  icon={<ArrowLeft size={13} />}
+                  onClick={() => moveFeature(-1)}
+                  className="flex items-center justify-center gap-1.5 h-10 px-4 rounded-full bg-warning-bg hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-warning-text font-semibold text-[13px] transition-all w-full"
                 >
-                  Prev
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="whitespace-nowrap"
-                  onClick={() => moveFeature(1)}
+                  <ArrowLeft size={14} />
+                  <span>Prev</span>
+                </button>
+                <button
+                  type="button"
                   disabled={selectedIndex >= navigationPool.length - 1}
-                  iconRight={<ArrowRight size={13} />}
+                  onClick={() => moveFeature(1)}
+                  className="flex items-center justify-center gap-1.5 h-10 px-4 rounded-full bg-brand hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-white font-semibold text-[13px] transition-all w-full shadow-sm"
                 >
-                  Next
-                </Button>
+                  <span>Next</span>
+                  <ArrowRight size={14} />
+                </button>
               </div>
             </div>
 
-            <div className="mini-panel p-2.5 mb-2.5">
-              <p className="text-[12px] text-ink-2">{selectedFeature.summary}</p>
-              <p className="text-[11px] text-ink-3 mt-1">{selectedFeature.whenToUse}</p>
-            </div>
+            {/* Feature Summary Card */}
+            <Card variant="outlined" padding="sm" className="border-kosha-border/80 bg-kosha-surface rounded-xl">
+              <p className="text-[13px] text-ink leading-relaxed font-semibold">{selectedFeature.summary}</p>
+              {selectedFeature.whenToUse && (
+                <p className="text-[11px] text-ink-3 mt-0.5 leading-relaxed">{selectedFeature.whenToUse}</p>
+              )}
+            </Card>
 
-            <div className="mb-3">
-              <p className="text-[12px] font-semibold text-ink-2 mb-1.5">Recommended workflow</p>
-              <div className="space-y-1.5">
+            {/* Recommended Workflow */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold text-ink-3 uppercase tracking-wider">Recommended workflow</p>
+              <div className="space-y-1 text-[12.5px] text-ink-2 leading-relaxed">
                 {selectedFeature.workflow.map((step, idx) => (
-                  <p key={step} className="text-[12px] text-ink-3">
-                    <span className="font-semibold text-accent-text">{idx + 1}.</span> {step}
+                  <p key={step} className="flex items-start gap-1">
+                    <span className="font-bold text-accent-text shrink-0">{idx + 1}.</span>
+                    <span>{step}</span>
                   </p>
                 ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
-              <div className="rounded-card border border-income-border bg-income-bg/30 p-2.5">
-                <p className="text-[12px] font-semibold text-income-text mb-1 inline-flex items-center gap-1">
-                  <CheckCircle size={13} /> Do this
+            {/* Do This / Avoid This Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <Card variant="outlined" padding="sm" className="bg-income-bg/15 border-income-border/40 rounded-xl">
+                <p className="text-[11px] font-bold text-income-text mb-1 inline-flex items-center gap-1">
+                  <CheckCircle size={13} className="text-income" /> Do this
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-0.5 text-caption text-ink-2">
                   {selectedFeature.doThis.map((point) => (
-                    <p key={point} className="text-[11px] text-ink-3">- {point}</p>
+                    <p key={point} className="leading-relaxed">- {point}</p>
                   ))}
                 </div>
-              </div>
+              </Card>
 
-              <div className="rounded-card border border-warning-border bg-warning-bg/35 p-2.5">
-                <p className="text-[12px] font-semibold text-warning-text mb-1 inline-flex items-center gap-1">
-                  <Warning size={13} /> Avoid this
+              <Card variant="outlined" padding="sm" className="bg-warning-bg/20 border-warning-border/40 rounded-xl">
+                <p className="text-[11px] font-bold text-warning-text mb-1 inline-flex items-center gap-1">
+                  <Warning size={13} className="text-warning" /> Avoid this
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-0.5 text-caption text-ink-2">
                   {selectedFeature.avoidThis.map((point) => (
-                    <p key={point} className="text-[11px] text-ink-3">- {point}</p>
+                    <p key={point} className="leading-relaxed">- {point}</p>
                   ))}
                 </div>
-              </div>
+              </Card>
             </div>
 
-            <Button
-              variant="primary"
-              size="md"
-              fullWidth
-              className="whitespace-nowrap"
-              iconRight={<ArrowRight size={14} />}
+            {/* Bottom CTA Button */}
+            <button
+              type="button"
               onClick={() => {
                 const route = selectedFeature.route
                 closeFeatureDetail()
                 navigate(route)
               }}
+              className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-brand hover:opacity-95 active:scale-[0.98] text-white font-semibold text-[14px] transition-all w-full shadow-sm"
             >
-              Open {selectedFeature.title}
-            </Button>
+              <span>Open {selectedFeature.title}</span>
+              <ArrowRight size={14} />
+            </button>
           </div>
         )}
       </Sheet>

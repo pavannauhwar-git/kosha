@@ -121,7 +121,8 @@ export function computeMemberBalances(members, expenses, settlements) {
     const payerId = expense?.paid_by_member_id
     
     if (payerId && !memberSet.has(payerId)) {
-      throw new Error(`Payer ${payerId} is missing from group members`)
+      balanceByMember.set(payerId, 0n)
+      memberSet.add(payerId)
     }
 
     if (payerId) {
@@ -134,7 +135,8 @@ export function computeMemberBalances(members, expenses, settlements) {
       const share = fromRupees(split?.share)
       if (!memberId) continue
       if (!memberSet.has(memberId)) {
-        throw new Error(`Split member ${memberId} is missing from group members`)
+        balanceByMember.set(memberId, 0n)
+        memberSet.add(memberId)
       }
       balanceByMember.set(memberId, (balanceByMember.get(memberId) || 0n) - share)
     }
@@ -146,10 +148,12 @@ export function computeMemberBalances(members, expenses, settlements) {
     const payeeId = settlement?.payee_member_id
 
     if (payerId && !memberSet.has(payerId)) {
-      throw new Error(`Settlement payer ${payerId} is missing from group members`)
+      balanceByMember.set(payerId, 0n)
+      memberSet.add(payerId)
     }
     if (payeeId && !memberSet.has(payeeId)) {
-      throw new Error(`Settlement payee ${payeeId} is missing from group members`)
+      balanceByMember.set(payeeId, 0n)
+      memberSet.add(payeeId)
     }
 
     if (payerId) {

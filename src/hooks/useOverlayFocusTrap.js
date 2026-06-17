@@ -135,6 +135,15 @@ export default function useOverlayFocusTrap(open, options = {}) {
       document.removeEventListener('keydown', handleKeyDown)
       window.cancelAnimationFrame(rafId)
 
+      // Explicitly blur active text inputs/textareas inside the container before unmounting
+      // to prevent iOS Safari from keeping the native typing/undo session active.
+      if (container && document.activeElement instanceof HTMLElement && container.contains(document.activeElement)) {
+        const tagName = document.activeElement.tagName.toLowerCase()
+        if (tagName === 'input' || tagName === 'textarea' || document.activeElement.isContentEditable) {
+          document.activeElement.blur()
+        }
+      }
+
       if (!restoreFocusRef.current) return
 
       const previous = previousActiveRef.current
