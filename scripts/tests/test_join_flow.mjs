@@ -53,6 +53,17 @@ async function main() {
   const appBaseUrl = process.env.APP_BASE_URL || 'http://localhost:5173'
   const joinUrl = `${appBaseUrl}/join/${inviteToken}`
 
+  console.log('Cleaning up any previous active invites for creator...')
+  const { error: preCleanupError } = await creatorClient
+    .from('invites')
+    .delete()
+    .eq('created_by', creatorUser.id)
+    .is('used_by', null)
+
+  if (preCleanupError) {
+    console.warn(`WARN: Pre-cleanup of invites failed: ${preCleanupError.message}`)
+  }
+
   console.log('Creating invite token...')
   const { error: createError } = await creatorClient
     .from('invites')
