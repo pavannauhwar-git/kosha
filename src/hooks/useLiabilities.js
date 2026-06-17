@@ -61,12 +61,14 @@ export function useLiabilities({ includePaid = true, enabled = true } = {}) {
         queryKey: LIABILITY_PENDING_QUERY_KEY(targetUserId),
         queryFn: ({ signal }) => fetchLiabilitiesByPaid(false, targetUserId, signal),
         enabled: enabled && !!targetUserId,
+        refetchOnMount: true,
         placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
       },
       {
         queryKey: LIABILITY_PAID_QUERY_KEY(targetUserId),
         queryFn: ({ signal }) => fetchLiabilitiesByPaid(true, targetUserId, signal),
         enabled: enabled && includePaid && !!targetUserId,
+        refetchOnMount: true,
         placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
       },
     ],
@@ -102,6 +104,7 @@ export function useLiabilitiesByMonth(year, month, options = {}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['liabilitiesMonth', year, month, targetUserId],
     enabled: enabled && !!startDate && !!endDate && !!targetUserId,
+    refetchOnMount: true,
     queryFn: async ({ signal }) => traceQuery('liabilities:month', async () => {
       const { data: rows, error: queryError } = await supabase
         .from('liabilities')

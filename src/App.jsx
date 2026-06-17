@@ -1386,7 +1386,11 @@ function ShellStatusBanners() {
   }, [])
 
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false)
+    const handleOnline = () => {
+      setIsOffline(false)
+      // Force reload all new information from server when internet connects
+      queryClient.invalidateQueries()
+    }
     const handleOffline = () => setIsOffline(true)
 
     window.addEventListener('online', handleOnline)

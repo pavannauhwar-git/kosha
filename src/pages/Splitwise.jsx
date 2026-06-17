@@ -39,6 +39,10 @@ import {
   useSplitwise,
   optimisticallyInsertSplitGroup,
   optimisticallyDeleteSplitGroup,
+  optimisticallyDeleteSplitExpense,
+  optimisticallyInsertSplitExpense,
+  optimisticallyDeleteSplitSettlement,
+  optimisticallyInsertSplitSettlement,
   leaveSplitGroupMutation,
   toggleArchiveSplitGroupMutation,
   updateSplitExpenseMutation,
@@ -255,6 +259,10 @@ export default function Splitwise() {
   })
   const [splitInputs, setSplitInputs] = useState({})
   const actionGuard = useRef(false)
+  // Undo-delete state: holds the pending deletion during the 7s undo window.
+  const pendingExpenseDeleteRef = useRef(null)   // { expenseId, expense, groupId, timerId }
+  const pendingSettlementDeleteRef = useRef(null) // { settlementId, settlement, groupId, timerId }
+
 
   const [settlementForm, setSettlementForm] = useState({
     payer_member_id: '',
@@ -263,6 +271,22 @@ export default function Splitwise() {
     settled_at: todayStr(),
     note: '',
   })
+
+  // On unmount: commit any deletion that was still pending in the Undo window.
+  useEffect(() => {
+    return () => {
+      const pe = pendingExpenseDeleteRef.current
+      if (pe?.timerId) {
+        clearTimeout(pe.timerId)
+        void deleteSplitExpenseMutation(pe.expenseId)
+      }
+      const ps = pendingSettlementDeleteRef.current
+      if (ps?.timerId) {
+        clearTimeout(ps.timerId)
+        void deleteSplitSettlementMutation(ps.settlementId)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!groups.length) {
@@ -1052,21 +1076,63 @@ export default function Splitwise() {
     setShowSettlement(true)
   }
 
+
   async function handleDeleteExpense(expenseId) {
     if (!canManageGroup) {
       pushToast('You have view-only access for this group.')
       return
     }
+    if (!expenseId) return
 
-    if (!expenseId || saving) return
-    setSaving(`expense-delete-${expenseId}`)
-    try {
-      await deleteExpense.mutateAsync(expenseId)
-    } catch (deleteError) {
-      pushToast(toToastMessage(deleteError, 'Could not delete expense.'))
-    } finally {
-      setSaving('')
+    const expense = expenses.find(e => e.id === expenseId)
+    if (!expense) return
+
+    // If a different expense is already pending deletion, commit it immediately
+    // so we don't silently drop an action the user hasn't undone.
+    const prevPending = pendingExpenseDeleteRef.current
+    if (prevPending?.timerId && prevPending.expenseId !== expenseId) {
+      clearTimeout(prevPending.timerId)
+      pendingExpenseDeleteRef.current = null
+      try {
+        await deleteExpense.mutateAsync(prevPending.expenseId)
+      } catch (err) {
+        optimisticallyInsertSplitExpense(prevPending.groupId, prevPending.expense)
+        pushToast(toToastMessage(err, 'Could not delete expense.'))
+      }
     }
+
+    // Capture current group so the closure stays correct if the user switches groups.
+    const gid = activeGroupId
+
+    // Optimistic remove — UI updates instantly.
+    optimisticallyDeleteSplitExpense(gid, expenseId)
+
+    // Build a contextual message: "Expense deleted for 3 members."
+    const splitCount = expense.split_expense_splits?.length ?? 0
+    const memberLabel = splitCount > 1 ? `${splitCount} members` : 'the group'
+
+    const timerId = setTimeout(async () => {
+      pendingExpenseDeleteRef.current = null
+      try {
+        await deleteExpense.mutateAsync(expenseId)
+      } catch (err) {
+        // RPC failed — restore the item so the user doesn't lose data.
+        optimisticallyInsertSplitExpense(gid, expense)
+        pushToast(toToastMessage(err, 'Could not delete expense.'))
+      }
+    }, 7000)
+
+    pendingExpenseDeleteRef.current = { expenseId, expense, groupId: gid, timerId }
+
+    pushToast(`Expense deleted for ${memberLabel}.`, {
+      action: () => {
+        clearTimeout(timerId)
+        pendingExpenseDeleteRef.current = null
+        optimisticallyInsertSplitExpense(gid, expense)
+      },
+      actionLabel: 'Undo',
+      duration: 7500,
+    })
   }
 
   async function handleDeleteSettlement(settlementId) {
@@ -1074,17 +1140,52 @@ export default function Splitwise() {
       pushToast('You have view-only access for this group.')
       return
     }
+    if (!settlementId) return
 
-    if (!settlementId || saving) return
-    setSaving(`settlement-delete-${settlementId}`)
-    try {
-      await deleteSettlement.mutateAsync(settlementId)
-    } catch (deleteError) {
-      pushToast(toToastMessage(deleteError, 'Could not delete settlement.'))
-    } finally {
-      setSaving('')
+    const settlement = settlements.find(s => s.id === settlementId)
+    if (!settlement) return
+
+    // Commit any other pending settlement deletion first.
+    const prevPending = pendingSettlementDeleteRef.current
+    if (prevPending?.timerId && prevPending.settlementId !== settlementId) {
+      clearTimeout(prevPending.timerId)
+      pendingSettlementDeleteRef.current = null
+      try {
+        await deleteSettlement.mutateAsync(prevPending.settlementId)
+      } catch (err) {
+        optimisticallyInsertSplitSettlement(prevPending.groupId, prevPending.settlement)
+        pushToast(toToastMessage(err, 'Could not delete settlement.'))
+      }
     }
+
+    const gid = activeGroupId
+
+    // Optimistic remove.
+    optimisticallyDeleteSplitSettlement(gid, settlementId)
+
+    const timerId = setTimeout(async () => {
+      pendingSettlementDeleteRef.current = null
+      try {
+        await deleteSettlement.mutateAsync(settlementId)
+      } catch (err) {
+        optimisticallyInsertSplitSettlement(gid, settlement)
+        pushToast(toToastMessage(err, 'Could not delete settlement.'))
+      }
+    }, 7000)
+
+    pendingSettlementDeleteRef.current = { settlementId, settlement, groupId: gid, timerId }
+
+    pushToast('Settlement deleted.', {
+      action: () => {
+        clearTimeout(timerId)
+        pendingSettlementDeleteRef.current = null
+        optimisticallyInsertSplitSettlement(gid, settlement)
+      },
+      actionLabel: 'Undo',
+      duration: 7500,
+    })
   }
+
 
   function applySuggestedTransfer(transfer) {
     if (!transfer?.from?.id || !transfer?.to?.id || !transfer?.amount) return
@@ -1613,7 +1714,7 @@ export default function Splitwise() {
                   {renderedTransactions.map((t, idx) => {
                     const actualIndex = txnsStartIndex + idx
                     const isExpense = t.type === 'expense'
-                    const deleting = saving === (isExpense ? `expense-delete-${t.id}` : `settlement-delete-${t.id}`)
+
 
                     return (
                       <div
@@ -1634,6 +1735,9 @@ export default function Splitwise() {
                                   <p className="text-[13px] font-semibold text-ink truncate leading-tight">{t.description}</p>
                                   <p className="text-[11px] text-ink-3 mt-1 truncate">
                                     <span className="font-medium text-ink">{resolveMemberName(payer)}</span> paid
+                                    {t.split_expense_splits?.length > 0 && (
+                                      <span className="opacity-60"> · split {t.split_expense_splits.length} ways</span>
+                                    )}
                                   </p>
                                   <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.sortDate)}</p>
                                 </div>
@@ -1656,7 +1760,7 @@ export default function Splitwise() {
                                       className="text-[10px] font-semibold text-danger/80 hover:text-danger"
                                       disabled={!!saving}
                                     >
-                                      {deleting ? '...' : 'Delete'}
+                                      {isGroupAdmin ? 'Delete for all' : 'Remove'}
                                     </button>
                                   </div>
                                 )}
@@ -1698,7 +1802,7 @@ export default function Splitwise() {
                                       className="text-[10px] font-semibold text-danger/80 hover:text-danger"
                                       disabled={!!saving}
                                     >
-                                      {deleting ? '...' : 'Delete'}
+                                      {isGroupAdmin ? 'Delete for all' : 'Remove'}
                                     </button>
                                   </div>
                                 )}

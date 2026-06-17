@@ -64,6 +64,7 @@ export function useLoans({ enabled = true } = {}) {
         queryKey: LOAN_ACTIVE_GIVEN_KEY(targetUserId),
         queryFn: ({ signal }) => fetchLoans('given', false, targetUserId, signal),
         enabled: enabled && !!targetUserId,
+        refetchOnMount: true,
         placeholderData: (prev, query) =>
           query?.queryKey?.[3] === targetUserId ? prev : undefined,
       },
@@ -71,6 +72,7 @@ export function useLoans({ enabled = true } = {}) {
         queryKey: LOAN_ACTIVE_TAKEN_KEY(targetUserId),
         queryFn: ({ signal }) => fetchLoans('taken', false, targetUserId, signal),
         enabled: enabled && !!targetUserId,
+        refetchOnMount: true,
         placeholderData: (prev, query) =>
           query?.queryKey?.[3] === targetUserId ? prev : undefined,
       },
@@ -78,6 +80,7 @@ export function useLoans({ enabled = true } = {}) {
         queryKey: LOAN_SETTLED_KEY(targetUserId),
         queryFn: ({ signal }) => fetchLoans(null, true, targetUserId, signal),
         enabled: enabled && !!targetUserId,
+        refetchOnMount: true,
         placeholderData: (prev, query) =>
           query?.queryKey?.[2] === targetUserId ? prev : undefined,
       },

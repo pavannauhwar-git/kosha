@@ -560,6 +560,7 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['dailyExpenseTotals', safeDays, startISO, targetUserId],
     enabled: enabled && !!targetUserId,
+    refetchOnMount: true,
     queryFn: () => traceQuery('transactions:daily-expense-totals', async () => {
       const userId = targetUserId
       const pageSize = 1000
@@ -717,6 +718,7 @@ export function useTodayExpenses(options = {}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['todayExpenses', todayISO, targetUserId],
     enabled: enabled && !!targetUserId,
+    refetchOnMount: true,
     queryFn: () => traceQuery('transactions:today-expenses', async () => {
       try {
         const { data: r, error: qError } = await supabase
@@ -744,6 +746,7 @@ export function useMonthSummary(year, month, options = {}) {
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['month', year, month, targetUserId],
     enabled: enabled && !!targetUserId,
+    refetchOnMount: true,
     queryFn: async () => {
       try {
         const allUserIds = [targetUserId]
@@ -906,6 +909,7 @@ export function useRunningBalance(year, month) {
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['balance', year, month, targetUserId],
     enabled: !!targetUserId,
+    refetchOnMount: true,
     queryFn: async () => {
       try {
         const allUserIds = [targetUserId]
@@ -1329,7 +1333,7 @@ function refreshTransactionCachesInBackground(invalidateFn, scope) {
   setTimeout(() => {
     runInBackground(
       (async () => {
-        import('./useSplitwise').then(m => m.invalidateSplitwiseCache()).catch(() => {})
+        import('./useSplitwise.js').then(m => m.invalidateSplitwiseCache()).catch(() => {})
         await invalidateFn()
       })(),
       scope

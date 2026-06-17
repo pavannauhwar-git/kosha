@@ -4272,12 +4272,14 @@ begin
     raise exception using errcode = '42501', message = 'forbidden';
   end if;
 
-  -- Single transaction: linked transaction first (no cascade in this
-  -- direction), then the expense. If either DELETE fails, the whole
-  -- thing rolls back — no orphan transaction can survive.
+  -- Delete via bidirectional link first.
   if v_linked_txn is not null then
     delete from public.transactions where id = v_linked_txn;
   end if;
+
+  -- Also catch any orphaned transaction pointing to this expense the other way
+  -- (handles edge case where linked_transaction_id was de-synced to null).
+  delete from public.transactions where linked_split_expense_id = p_id;
 
   delete from public.split_expenses where id = p_id;
   get diagnostics v_rows = row_count;
@@ -4322,6 +4324,9 @@ begin
   if v_payee_txn is not null then
     delete from public.transactions where id = v_payee_txn;
   end if;
+
+  -- Catch orphaned transactions pointing to this settlement the other way.
+  delete from public.transactions where linked_split_settlement_id = p_id;
 
   delete from public.split_settlements where id = p_id;
   get diagnostics v_rows = row_count;

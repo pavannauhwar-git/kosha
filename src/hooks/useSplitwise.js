@@ -162,6 +162,11 @@ let invalidationTimeout = null
 export async function invalidateSplitwiseCache() {
   if (invalidationTimeout) return
 
+  // Fire transactions cache invalidation immediately in parallel — don't wait for
+  // the splitwise 300 ms debounce. This cuts the worst-case stale window on
+  // Dashboard/Transactions from ~600 ms to ~300 ms.
+  import('./useTransactions.js').then(m => m.invalidateCache()).catch(() => { })
+
   invalidationTimeout = setTimeout(async () => {
     invalidationTimeout = null
     suppress('splitwise')
@@ -175,7 +180,6 @@ export async function invalidateSplitwiseCache() {
       evictSwCacheEntries('/split_settlements'),
     ])
     await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
-    import('./useTransactions').then(m => m.invalidateCache()).catch(() => { })
   }, 300)
 }
 
@@ -219,6 +223,28 @@ export function optimisticallyInsertSplitExpense(groupId, expense) {
   })
 }
 
+export function optimisticallyDeleteSplitSettlement(groupId, settlementId) {
+  if (!groupId || !settlementId) return
+  const key = splitSettlementsKey(groupId)
+  queryClient.setQueryData(key, (old) => {
+    if (!old) return []
+    return old.filter(s => s.id !== settlementId)
+  })
+}
+
+export function optimisticallyInsertSplitSettlement(groupId, settlement) {
+  if (!groupId || !settlement) return
+  const key = splitSettlementsKey(groupId)
+  queryClient.setQueryData(key, (old) => {
+    if (!old) return [settlement]
+    if (old.some(s => s.id === settlement.id)) {
+      return old.map(s => s.id === settlement.id ? settlement : s)
+    }
+    return [settlement, ...old]
+  })
+}
+
+
 export function useSplitwise({ groupId, enabled = true } = {}) {
   const userId = useActiveWallet()
 
@@ -228,36 +254,42 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
         queryKey: splitGroupsKey(userId),
         queryFn: fetchGroups,
         enabled: enabled && !!userId,
+        refetchOnMount: true,
         placeholderData: (prev) => prev,
       },
       {
         queryKey: splitGroupAccessKey(userId),
         queryFn: fetchGroupAccess,
         enabled: enabled && !!userId,
+        refetchOnMount: true,
         placeholderData: (prev) => prev,
       },
       {
         queryKey: splitGroupMembersAccessKey(groupId),
         queryFn: () => fetchGroupMemberAccess(groupId),
         enabled: enabled && !!groupId,
+        refetchOnMount: true,
         placeholderData: (prev) => prev,
       },
       {
         queryKey: splitMembersKey(groupId),
         queryFn: () => fetchMembers(groupId),
         enabled: enabled && !!groupId,
+        refetchOnMount: true,
         placeholderData: (prev) => prev,
       },
       {
         queryKey: splitExpensesKey(groupId),
         queryFn: () => fetchExpenses(groupId),
         enabled: enabled && !!groupId,
+        refetchOnMount: true,
         placeholderData: (prev) => prev,
       },
       {
         queryKey: splitSettlementsKey(groupId),
         queryFn: () => fetchSettlements(groupId),
         enabled: enabled && !!groupId,
+        refetchOnMount: true,
         placeholderData: (prev) => prev,
       },
     ],
@@ -681,6 +713,7 @@ export async function addSplitExpenseMutation({
     'splitwise expense audit'
   )
 
+  optimisticallyInsertSplitExpense(groupId, rpcRow)
   await invalidateSplitwiseCache()
   return rpcRow
 }
@@ -750,6 +783,7 @@ export async function updateSplitExpenseMutation({
     'splitwise expense edit audit'
   )
 
+  optimisticallyInsertSplitExpense(groupId, rpcRow)
   await invalidateSplitwiseCache()
   return rpcRow
 }

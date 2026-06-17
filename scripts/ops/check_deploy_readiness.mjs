@@ -184,6 +184,7 @@ async function main() {
 
   checks.push(await runCheck('split_create_expense RPC available', async () => {
     const { error } = await client.rpc('split_create_expense', {
+      p_id: '00000000-0000-0000-0000-000000000000',
       p_group_id: '00000000-0000-0000-0000-000000000000',
       p_paid_by_member_id: '00000000-0000-0000-0000-000000000000',
       p_description: 'readiness probe',
@@ -211,6 +212,7 @@ async function main() {
     }
     throw error
   }))
+
 
   checks.push(await runCheck('split_record_settlement RPC available', async () => {
     const { error } = await client.rpc('split_record_settlement', {
