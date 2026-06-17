@@ -4252,6 +4252,29 @@ create trigger trg_invites_enforce_active_limit
 -- via FKs with ON DELETE SET NULL (the WRONG direction for clean-up),
 -- so the RPC must also delete those linked transactions explicitly.
 
+-- Drop old signatures dynamically to prevent PostgREST ambiguity
+do $$
+declare
+  r record;
+begin
+  for r in
+    select 'drop function ' || oid::regprocedure as drop_cmd
+    from pg_proc
+    where proname in (
+      'delete_liability_with_txns',
+      'delete_loan_with_txns',
+      'delete_split_expense_atomic',
+      'delete_split_settlement_atomic',
+      'unlink_partner_atomic'
+    )
+      and pronamespace = 'public'::regnamespace
+  loop
+    execute r.drop_cmd;
+  end loop;
+end;
+$$;
+
+
 create or replace function public.delete_liability_with_txns(p_id uuid)
 returns boolean
 language plpgsql
