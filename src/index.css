@@ -1206,6 +1206,14 @@ textarea:focus-visible,
     transform: translateZ(0);
   }
 
+  .sheet-center-wrap {
+    @apply fixed inset-0 flex items-center justify-center pointer-events-none;
+    z-index: var(--ds-z-sheet);
+    padding: 1rem;
+    padding-top: calc(1rem + var(--safe-top));
+    padding-bottom: calc(1rem + var(--safe-bottom));
+  }
+
   /* Centered modal variant of the Sheet primitive (replaces EditProfileNameDialog-style overlays). */
   .sheet-panel--center {
     position: relative;
@@ -1219,8 +1227,9 @@ textarea:focus-visible,
     margin-left: 0;
     margin-right: 0;
     border-radius: 28px;
+    padding-bottom: 0;
     /* Stay clear of the keyboard for the same reason as the bottom variant (Phase 0). */
-    max-height: calc(100dvh - var(--safe-top) - 2rem - var(--kb-inset, 0px));
+    max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 2rem - var(--kb-inset, 0px));
   }
 
   @media (min-width: 600px) {

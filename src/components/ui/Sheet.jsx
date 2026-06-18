@@ -40,13 +40,16 @@ export default function Sheet({
   showClose = true,
   initialFocusSelector,
   className = '',
-  contentClassName = 'px-5 pt-2',
+  contentClassName,
   trapFocus = true,
   children,
 }) {
   const sheetRef = useOverlayFocusTrap(open && trapFocus, { onClose, initialFocusSelector })
 
   const isCenter = variant === 'center'
+  const defaultContentClassName = isCenter ? 'px-5 pt-2 pb-5' : 'px-5 pt-2'
+  const resolvedContentClassName = contentClassName ?? defaultContentClassName
+
   const panelClass = isCenter ? 'sheet-panel sheet-panel--center' : 'sheet-panel'
   const enter = isCenter
     ? { initial: { y: 24, opacity: 0 }, animate: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 500, damping: 40 } }, exit: { y: 24, opacity: 0, transition: { duration: 0.2 } } }
@@ -75,7 +78,7 @@ export default function Sheet({
           )}
         </div>
       )}
-      <div className={contentClassName}>{children}</div>
+      <div className={resolvedContentClassName}>{children}</div>
     </motion.div>
   )
 
@@ -93,7 +96,7 @@ export default function Sheet({
           {isCenter ? (
             <motion.div
               key="sheet-center-wrap"
-              className="fixed inset-0 z-[var(--ds-z-sheet)] flex items-center justify-center p-4 pointer-events-none"
+              className="sheet-center-wrap"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

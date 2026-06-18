@@ -513,7 +513,7 @@ export default function Guide() {
         showClose={false}
         showHandle={false}
         className="w-full max-w-[560px]"
-        contentClassName="px-5 py-4"
+        contentClassName="px-5 py-5"
         ariaLabel={selectedFeature ? `${selectedFeature.title} guide details` : 'Feature details'}
       >
         {selectedFeature && (
