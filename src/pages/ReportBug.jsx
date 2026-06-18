@@ -198,8 +198,13 @@ export default function ReportBug() {
       let screenshotPath = null
       if (screenshot) {
         try {
+          const uploadPromise = uploadScreenshot()
+          uploadPromise.catch((err) => {
+            console.warn('[Kosha] Screenshot upload failed in background after timeout', err)
+          })
+
           screenshotPath = await Promise.race([
-            uploadScreenshot(),
+            uploadPromise,
             new Promise((_, reject) => {
               setTimeout(() => reject(new Error('SCREENSHOT_TIMEOUT')), 10_000)
             }),
