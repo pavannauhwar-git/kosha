@@ -134,7 +134,16 @@ export default function Sheet({
         <div className={`mb-5 flex items-center justify-between px-5 ${(!showHandle || isCenter) ? 'pt-5' : 'pt-1'}`}>
           {title ? <h2 className="text-display font-bold text-ink">{title}</h2> : <span />}
           {showClose && (
-            <button type="button" onClick={onClose} className="close-btn" aria-label="Close">
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault()
+                onClose()
+              }}
+              onClick={onClose}
+              className="close-btn"
+              aria-label="Close"
+            >
               <X size={16} className="text-ink-3" />
             </button>
           )}
@@ -155,6 +164,10 @@ export default function Sheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, pointerEvents: 'none' }}
+            onPointerDown={(e) => {
+              e.preventDefault()
+              handleBackdropClick()
+            }}
             onClick={handleBackdropClick}
           />
           {isCenter ? (
