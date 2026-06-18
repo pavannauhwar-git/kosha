@@ -58,7 +58,7 @@ function StepName({ onNext }) {
       className="flex flex-col"
     >
       <motion.p variants={fadeUp} className="text-caption text-ink-3 font-medium mb-2">
-        Step 1 of 3
+        Step 1 of 2
       </motion.p>
       <motion.h2 variants={fadeUp} className="text-display font-bold text-ink tracking-tight mb-2">
         What should we call you?
@@ -90,106 +90,6 @@ function StepName({ onNext }) {
           disabled={!name.trim()}
         >
           Continue
-        </Button>
-      </motion.div>
-    </motion.div>
-  )
-}
-
-// ── Step 2 — Monthly income ───────────────────────────────────────────────
-function StepIncome({ name, onNext, onBack }) {
-  const [income, setIncome] = useState('')
-  const [confirmSkipIncome, setConfirmSkipIncome] = useState(false)
-
-  function handleContinue() {
-    const parsed = Number.parseFloat(income)
-    const normalized = Number.isFinite(parsed) && parsed > 0 ? parsed : 0
-
-    if (normalized === 0 && !confirmSkipIncome) {
-      setConfirmSkipIncome(true)
-      return
-    }
-
-    onNext(normalized)
-  }
-
-  return (
-    <motion.div
-      key="step-income"
-      variants={stepStagger}
-      initial="hidden" animate="show"
-      className="flex flex-col"
-    >
-      <motion.p variants={fadeUp} className="text-caption text-ink-3 font-medium mb-2">
-        Step 2 of 3
-      </motion.p>
-      <motion.h2 variants={fadeUp} className="text-display font-bold text-ink tracking-tight mb-2">
-        Hey {name}, what's your monthly income?
-      </motion.h2>
-      <motion.p variants={fadeUp} className="text-label text-ink-3 mb-8">
-        Used to calculate your savings rate. You can change this anytime.
-      </motion.p>
-
-      <motion.div variants={fadeUp} className="mb-3">
-        <form onSubmit={e => { e.preventDefault(); handleContinue(); }}>
-          <Input
-            type="text"
-            inputMode="decimal"
-            placeholder="0"
-            value={income}
-            onChange={e => {
-              const raw = e.target.value;
-              if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) setIncome(raw);
-            }}
-            // eslint-disable-next-line jsx-a11y/no-autofocus -- wizard step: user actively navigated here, single-input screen
-            autoFocus
-            enterKeyHint="next"
-          />
-        </form>
-      </motion.div>
-
-      <motion.div variants={fadeUp} className="mb-3">
-        <Button
-          variant="primary"
-          size="md"
-          fullWidth
-          onClick={handleContinue}
-        >
-          {income ? 'Continue' : 'Skip for now'}
-        </Button>
-      </motion.div>
-
-      {confirmSkipIncome && (
-        <motion.div variants={fadeUp} className="rounded-card border border-warning-border bg-warning-bg p-3 mb-3">
-          <p className="text-[12px] font-semibold text-warning-text">No monthly income entered</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Savings rate will be less accurate until you set income in Settings.</p>
-          <div className="flex gap-2 mt-2">
-            <button
-              type="button"
-              onClick={() => onNext(0)}
-              className="chip-control chip-control-sm bg-warning-bg text-warning-text border-warning-border"
-            >
-              Continue anyway
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmSkipIncome(false)}
-              className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border"
-            >
-              Add income
-            </button>
-          </div>
-        </motion.div>
-      )}
-
-      <motion.div variants={fadeUp}>
-        <Button
-          variant="ghost"
-          size="md"
-          fullWidth
-          onClick={onBack}
-        >
-          Back
         </Button>
       </motion.div>
     </motion.div>
@@ -235,7 +135,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
       className="flex flex-col"
     >
       <motion.p variants={fadeUp} className="text-caption text-ink-3 font-medium mb-2">
-        Step 3 of 3
+        Step 2 of 2
       </motion.p>
       <motion.h2 variants={fadeUp} className="text-display font-bold text-ink tracking-tight mb-2">
         Add your first transaction
@@ -371,18 +271,12 @@ export default function Onboarding() {
 
   async function handleNameNext(displayName) {
     setName(displayName)
-    setStep(1)
-  }
-
-  async function handleIncomeNext(monthlyIncome) {
-    // Save profile data first, then advance — avoids a race where the profile
-    // update completes after step change and the guard sees onboarded=false.
     try {
-      await updateProfileMutation.mutateAsync({ display_name: name, monthly_income: monthlyIncome })
+      await updateProfileMutation.mutateAsync({ display_name: displayName })
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not save profile details.'))
     }
-    setStep(2)
+    setStep(1)
   }
 
   async function finish() {
@@ -456,21 +350,13 @@ export default function Onboarding() {
           <img src="/illustrations/onboarding_hero.webp" alt="Welcome to Kosha" className="w-48 h-auto illustration" />
         </div>
 
-        <StepDots current={step} total={3} />
+        <StepDots current={step} total={2} />
 
         <AnimatePresence mode="wait">
           {step === 0 && (
             <StepName key="name" onNext={handleNameNext} />
           )}
           {step === 1 && (
-            <StepIncome
-              key="income"
-              name={name}
-              onNext={handleIncomeNext}
-              onBack={() => setStep(0)}
-            />
-          )}
-          {step === 2 && (
             <StepFirstTransaction
               key="txn"
               onFinish={finish}

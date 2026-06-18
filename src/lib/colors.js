@@ -2,7 +2,7 @@ export const C = {
 
   // ── Brand — Vibrant Blue ─────────────────────────────────────────
   brand:           'var(--ds-primary)',
-  brandMid:        'var(--ds-primary-light)',
+  brandMid:        'var(--ds-primary-light)', // Kept as ds-primary-light to match --c-brand-mid
   brandLight:      'var(--ds-primary-light)',
   brandMuted:      'rgba(var(--ds-primary-rgb),0.22)',
   brandContainer:  'var(--ds-primary-container)',
@@ -30,7 +30,7 @@ export const C = {
 
   // ── Bills — Amber ─────────────────────────────────────────────────
   bills:           'var(--ds-warning)',
-  warningMuted:    'rgba(249,168,37,0.60)',
+  warningMuted:    'var(--ds-warning-border)',
 
   // ── Ink — clean neutrals ──────────────────────────────────────────
   ink:             'var(--ds-text)',

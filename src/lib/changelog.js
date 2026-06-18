@@ -1,5 +1,15 @@
 export const CHANGELOG = [
   {
+    version: '3.1.1',
+    date: 'June 2026',
+    items: [
+      'Resolved accessibility violations and enhanced screen reader support across UI components',
+      'Refined loan interest calculation to strictly apply to the declining balance',
+      'Enforced a strict 1:1 partner model for shared wallets with transparent error messaging',
+      'Hardened database schema aggregations, improving search resilience and preventing silent data overwrites'
+    ],
+  },
+  {
     version: '3.1.0',
     date: 'June 2026',
     items: [

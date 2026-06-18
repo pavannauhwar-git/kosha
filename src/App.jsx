@@ -1529,83 +1529,89 @@ function ShellStatusBanners() {
   if (!isOffline && !showUpdatePrompt && !showInstallPrompt && !installMessage) return null
 
   return (
-    <div className={`pointer-events-none fixed left-4 right-4 mx-auto max-w-[398px] space-y-2 ${bottomClass}`} style={{ zIndex: "var(--ds-z-toast)" }}>
+    <>
       {isOffline && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18 }}
-          role="status"
-          aria-live="polite"
-          className="pointer-events-auto flex items-center gap-2 rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 text-warning-text shadow-card"
-        >
-          <span className="text-[12px] font-semibold">You are offline. Kosha will sync when your connection returns.</span>
-        </motion.div>
+        <div className="pointer-events-none fixed top-4 left-4 right-4 mx-auto max-w-[398px]" style={{ zIndex: "var(--ds-z-toast)" }}>
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18 }}
+            role="status"
+            aria-live="polite"
+            className="pointer-events-auto flex items-center gap-2 rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 text-warning-text shadow-card"
+          >
+            <span className="text-[12px] font-semibold">You are offline. Kosha will sync when your connection returns.</span>
+          </motion.div>
+        </div>
       )}
 
-      {showUpdatePrompt && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18 }}
-          className="pointer-events-auto flex items-center gap-2 rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5 shadow-card"
-        >
-          <span className="flex-1 text-[12px] leading-snug text-ink-2">
-            An update is required to continue.
-          </span>
-          <button
-            type="button"
-            onClick={() => { void handleAppUpdate() }}
-            disabled={updating}
-            className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
-          >
-            {updating ? 'Updating…' : 'Update Now'}
-          </button>
-        </motion.div>
-      )}
+      {(showUpdatePrompt || showInstallPrompt || installMessage) && (
+        <div className={`pointer-events-none fixed left-4 right-4 mx-auto max-w-[398px] space-y-2 ${bottomClass}`} style={{ zIndex: "var(--ds-z-toast)" }}>
+          {showUpdatePrompt && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18 }}
+              className="pointer-events-auto flex items-center gap-2 rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5 shadow-card"
+            >
+              <span className="flex-1 text-[12px] leading-snug text-ink-2">
+                An update is required to continue.
+              </span>
+              <button
+                type="button"
+                onClick={() => { void handleAppUpdate() }}
+                disabled={updating}
+                className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+              >
+                {updating ? 'Updating…' : 'Update Now'}
+              </button>
+            </motion.div>
+          )}
 
-      {showInstallPrompt && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18 }}
-          className="pointer-events-auto flex items-center gap-2 rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5 shadow-card"
-        >
-          <span className="flex-1 text-[12px] leading-snug text-ink-2">Install Kosha for faster launch and offline shell support.</span>
-          <button
-            type="button"
-            onClick={() => {
-              setInstallDismissed(true)
-              setDeferredInstallPrompt(null)
-            }}
-            className="rounded-pill border border-kosha-border bg-kosha-surface-2 px-2.5 py-1 text-[11px] font-semibold text-ink-2"
-          >
-            Not now
-          </button>
-          <button
-            type="button"
-            onClick={() => { void handleInstall() }}
-            disabled={installing}
-            className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
-          >
-            {installing ? 'Installing…' : 'Install'}
-          </button>
-        </motion.div>
-      )}
+          {showInstallPrompt && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18 }}
+              className="pointer-events-auto flex items-center gap-2 rounded-card border border-kosha-border bg-kosha-surface px-3 py-2.5 shadow-card"
+            >
+              <span className="flex-1 text-[12px] leading-snug text-ink-2">Install Kosha for faster launch and offline shell support.</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setInstallDismissed(true)
+                  setDeferredInstallPrompt(null)
+                }}
+                className="rounded-pill border border-kosha-border bg-kosha-surface-2 px-2.5 py-1 text-[11px] font-semibold text-ink-2"
+              >
+                Not now
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleInstall() }}
+                disabled={installing}
+                className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+              >
+                {installing ? 'Installing…' : 'Install'}
+              </button>
+            </motion.div>
+          )}
 
-      {!showInstallPrompt && !isOffline && installMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18 }}
-          role="status"
-          aria-live="polite"
-          className="pointer-events-auto rounded-card bg-ink px-3 py-2.5 text-[12px] font-medium text-white shadow-card"
-        >
-          {installMessage}
-        </motion.div>
+          {!showInstallPrompt && !isOffline && installMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18 }}
+              role="status"
+              aria-live="polite"
+              className="pointer-events-auto rounded-card bg-ink px-3 py-2.5 text-[12px] font-medium text-white shadow-card"
+            >
+              {installMessage}
+            </motion.div>
+          )}
+        </div>
       )}
-    </div>
+    </>
   )
 }
 

@@ -137,9 +137,9 @@ export default function Monthly() {
       : daysInSelectedMonth
 
     const [categoryId, categorySpend] = allCatEntries[0]
-    const monthAvgDaily = spent / Math.max(1, daysElapsed)
-    const topDaily = categorySpend / Math.max(1, daysElapsed)
-    const ratio = monthAvgDaily > 0 ? topDaily / monthAvgDaily : 0
+    const topDaily = categorySpend / Math.max(1, daysElapsed)   // keep — used by `daily` field below
+    const avgCategorySpend = spent / Math.max(1, allCatEntries.length)
+    const ratio = avgCategorySpend > 0 ? categorySpend / avgCategorySpend : 0
     const tone = scoreRiskBand(ratio, { high: 1.4, watch: 1.15 })
 
     return {

@@ -95,7 +95,7 @@ export default function useOverlayFocusTrap(open, options = {}) {
 
     const handleKeyDown = (event) => {
       const active = document.activeElement
-      if (!(active instanceof HTMLElement) || !container.contains(active)) return
+      const insideContainer = active instanceof HTMLElement && container.contains(active)
 
       if (event.key === 'Escape') {
         const currentOnClose = onCloseRef.current
@@ -117,6 +117,13 @@ export default function useOverlayFocusTrap(open, options = {}) {
 
       const first = focusable[0]
       const last = focusable[focusable.length - 1]
+
+      // Focus escaped the overlay (e.g. on <body>): pull it back in.
+      if (!insideContainer) {
+        event.preventDefault()
+        ;(event.shiftKey ? last : first).focus({ preventScroll: true })
+        return
+      }
 
       if (event.shiftKey && active === first) {
         event.preventDefault()

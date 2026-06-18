@@ -25,7 +25,7 @@ export default function ViewProfilePhotoDialog({ open, onClose, avatarUrl, displ
         {avatarUrl ? (
           <SecureAvatar
             src={avatarUrl}
-            alt={displayName}
+            alt={displayName || 'Profile photo'}
             fallbackInitial={initial}
             version={avatarUrl}
             className="w-full h-full object-cover"

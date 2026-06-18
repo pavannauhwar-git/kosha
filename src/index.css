@@ -258,8 +258,8 @@
   --ds-repay-border: rgba(253, 214, 99, 0.25);
 
   --ds-warning: #FDD663;
-  --ds-warning-bg: rgba(253, 214, 99, 0.10);
-  --ds-warning-border: rgba(253, 214, 99, 0.25);
+  --ds-warning-bg: #272319;
+  --ds-warning-border: #443c24;
   --ds-danger: #F28B82;
   --ds-danger-bg: rgba(242, 139, 130, 0.10);
   --ds-success: #81C995;

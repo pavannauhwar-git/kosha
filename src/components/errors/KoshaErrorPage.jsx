@@ -25,6 +25,7 @@ export default function KoshaErrorPage({
   const [copied, setCopied] = useState(false)
   const normalizedDetail = useMemo(() => String(detail || '').trim().slice(0, 1800), [detail])
   const headingRef = useRef(null)
+  const mountedRef = useRef(true)
 
   const isNotFound = type === 'not-found'
   const badgeLabel = isNotFound ? '404' : 'System Error'
@@ -39,15 +40,18 @@ export default function KoshaErrorPage({
 
     return () => {
       window.cancelAnimationFrame(frameId)
+      mountedRef.current = false
     }
   }, [])
 
   async function handleCopyDetail() {
     if (!normalizedDetail) return
     const res = await copyToClipboard(normalizedDetail)
-    if (res.success) {
+    if (res.success && mountedRef.current) {
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      setTimeout(() => {
+        if (mountedRef.current) setCopied(false)
+      }, 1500)
     }
   }
 

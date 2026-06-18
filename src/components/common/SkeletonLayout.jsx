@@ -1,6 +1,6 @@
 export default function SkeletonLayout({ sections = [], className = 'space-y-4' }) {
   return (
-    <div className={className}>
+    <div className={className} aria-hidden="true">
       {sections.map((section, index) => {
         if (section.type === 'grid') {
           const cols = section.cols || 2

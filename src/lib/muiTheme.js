@@ -77,7 +77,7 @@ export const getMuiTheme = (mode) => {
             backgroundColor: isDark ? '#A8C7FA' : '#0B57D0',
             color: isDark ? '#041E49' : '#FFFFFF',
             '&:hover': {
-              backgroundColor: isDark ? '#C4C7C5' : '#0842A0',
+              backgroundColor: isDark ? '#D3E3FD' : '#0842A0',
             },
           },
           outlinedPrimary: {

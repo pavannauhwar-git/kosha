@@ -147,6 +147,8 @@ export default function InviteLanding() {
       const msg = e.message || ''
       if (msg.includes('idx_split_group_members_group_name_unique')) {
         setError('You are already a member of this group.')
+      } else if (msg === 'already-linked') {
+        setError('You or the invite creator are already linked to a wallet partner. Kosha supports a strict 1:1 partner model.')
       } else {
         setError(msg || 'Failed to accept invitation.')
       }

@@ -529,6 +529,16 @@ begin
     return jsonb_build_object('consumed', false, 'reason', 'cannot-consume-own-invite');
   end if;
 
+  -- 1:1 partner model: reject if either party is already linked to someone.
+  if exists (
+    select 1 from public.invites
+    where used_by is not null
+      and (created_by = v_uid or used_by = v_uid
+        or created_by = v_invite_creator or used_by = v_invite_creator)
+  ) then
+    return jsonb_build_object('consumed', false, 'reason', 'already-linked');
+  end if;
+
   -- expires_at is nullable for backwards-compatibility with existing rows
   -- (NULL = never expires). Only newly-created invites should set a TTL.
   if v_invite_expires_at is not null and v_invite_expires_at <= now() then
@@ -1162,6 +1172,8 @@ returns table (
   investment_vehicle text,
   total              numeric
 )
+language sql
+stable
 security invoker
 set search_path = ''
 as $$
@@ -1256,13 +1268,29 @@ begin
             -- whose label contains the search needle
             select c.id from (
               values
-                ('food','food'),('transport','transport'),('shopping','shopping'),
-                ('entertainment','entertainment'),('health','health'),('utilities','utilities'),
-                ('travel','travel'),('education','education'),('personal','personal'),
-                ('home','home'),('insurance','insurance'),('taxes','taxes'),
-                ('gifts','gifts'),('investments','investments'),('salary','salary'),
-                ('freelance','freelance'),('business','business'),('rental','rental'),
-                ('dividends','dividends'),('other','other')
+                ('food','Food & Dining'),('groceries','Groceries'),('vehicle','Vehicle'),
+                ('fuel','Fuel'),('travel','Travel'),('electronics','Electronics'),
+                ('medical','Medical'),('utilities','Utilities'),('personal','Personal'),
+                ('cigarette','Cigarettes & Tobacco'),('entertainment','Entertainment'),('education','Education'),
+                ('shopping','Shopping'),('dining_out','Dining Out'),('insurance','Insurance'),
+                ('credit_card','Credit Card'),('rent','Rent'),('subscription','Subscriptions'),
+                ('transfer','Transfer'),('gift','Gift'),('charity','Charity'),
+                ('taxes','Taxes'),('bills','Bills'),('salon','Salon & Grooming'),
+                ('gym','Gym & Fitness'),('pets','Pets'),('baby','Baby & Kids'),
+                ('home','Home Maintenance'),('internet','Internet & WiFi'),('laundry','Laundry'),
+                ('parking','Parking & Tolls'),('emi','EMI'),('clothing','Clothing'),
+                ('household','Household Supplies'),('mobile_recharge','Mobile Recharge'),('public_transport','Public Transport'),
+                ('office_expense','Office Expense'),('fees_penalties','Fees & Penalties'),('legal','Legal'),
+                ('events','Events & Occasions'),('party_expense','Party & Celebration'),
+                ('salary','Salary'),('rent_income','Rent'),('dividend','Dividend'),
+                ('share_market','Share Market'),('business_profit','Business Profit'),('interest','Interest'),
+                ('freelance','Freelance'),('bonus','Bonus'),('refund','Refund'),
+                ('side_hustle','Side Hustle'),('cashback','Cashback'),('loans','Loans'),
+                ('mutual_fund','Mutual Fund'),('stocks','Stocks'),('fixed_deposit','Fixed Deposit'),
+                ('ppf','PPF'),('nps','NPS'),('gold','Gold'),
+                ('real_estate','Real Estate'),('crypto','Crypto'),('bonds','Bonds'),
+                ('esops','ESOPs'),('sgb','SGB'),('term_plan','Term Plan'),
+                ('other','Other')
             ) as c(id, label)
             where lower(c.label) like '%' || v_needle || '%'
           )
@@ -1431,8 +1459,8 @@ declare
   v_liability  liabilities%rowtype;
   v_txn_id     uuid;
   v_next_due   date;
+  v_txn_mode   text;
 begin
-  -- Lock and fetch the liability row
   select * into v_liability
   from liabilities
   where id = p_liability_id and user_id = p_user_id
@@ -1446,7 +1474,17 @@ begin
     raise exception 'Liability is already marked paid';
   end if;
 
-  -- Step 1: Insert the linked expense transaction
+  -- Map liability payment_mode ('upi','cash','bank','card') to the
+  -- transactions CHECK set ('upi','credit_card','debit_card','cash',
+  -- 'net_banking','other'). 'bank'/'card' are NOT valid txn modes.
+  v_txn_mode := case v_liability.payment_mode
+    when 'card' then 'credit_card'
+    when 'bank' then 'net_banking'
+    when 'upi'  then 'upi'
+    when 'cash' then 'cash'
+    else 'other'
+  end;
+
   insert into transactions (
     date, type, description, amount, category,
     is_repayment, payment_mode, user_id,
@@ -1458,19 +1496,17 @@ begin
     v_liability.amount,
     'bills',
     false,
-    'other',
+    v_txn_mode,
     p_user_id,
     p_liability_id
   )
   returning id into v_txn_id;
 
-  -- Step 2: Mark the liability as paid
   update liabilities
   set paid                  = true,
       linked_transaction_id = v_txn_id
   where id = p_liability_id;
 
-  -- Step 3: If recurring, insert the next period
   if v_liability.is_recurring and v_liability.recurrence is not null then
     v_next_due := case v_liability.recurrence
       when 'monthly'   then v_liability.due_date + interval '1 month'
@@ -1480,7 +1516,7 @@ begin
     end;
 
     insert into liabilities (
-      description, amount, due_date, is_recurring, recurrence, paid, user_id
+      description, amount, due_date, is_recurring, recurrence, paid, payment_mode, user_id
     ) values (
       v_liability.description,
       v_liability.amount,
@@ -1488,11 +1524,11 @@ begin
       true,
       v_liability.recurrence,
       false,
+      v_liability.payment_mode,
       p_user_id
     );
   end if;
 
-  -- Return the created transaction ID for cache injection
   return json_build_object(
     'transaction_id',    v_txn_id,
     'liability_id',      p_liability_id,
@@ -2908,64 +2944,8 @@ begin
 end;
 $$;
 
-create or replace function public.split_group_balances(
-  p_group_id uuid,
-  p_user_id uuid
-)
-returns table(member_id uuid, net numeric)
-language sql
-stable
-security invoker
-set search_path = public
-as $$
-  with members as (
-    select m.id
-    from split_group_members m
-    where m.group_id = p_group_id
-      and m.user_id = p_user_id
-  ),
-  paid as (
-    select e.paid_by_member_id as member_id, sum(e.amount)::numeric as total_paid
-    from split_expenses e
-    where e.group_id = p_group_id
-      and e.user_id = p_user_id
-    group by e.paid_by_member_id
-  ),
-  owed as (
-    select s.member_id, sum(s.share)::numeric as total_owed
-    from public.split_expense_splits s
-    join split_expenses e on e.id = s.expense_id
-    where e.group_id = p_group_id
-      and e.user_id = p_user_id
-      and s.user_id = p_user_id
-    group by s.member_id
-  ),
-  in_settle as (
-    select st.payee_member_id as member_id, sum(st.amount)::numeric as total_in
-    from public.split_settlements st
-    where st.group_id = p_group_id
-      and st.user_id = p_user_id
-    group by st.payee_member_id
-  ),
-  out_settle as (
-    select st.payer_member_id as member_id, sum(st.amount)::numeric as total_out
-    from public.split_settlements st
-    where st.group_id = p_group_id
-      and st.user_id = p_user_id
-    group by st.payer_member_id
-  )
-  select
-    m.id as member_id,
-    coalesce(p.total_paid, 0)
-    - coalesce(o.total_owed, 0)
-    - coalesce(i.total_in, 0)
-    + coalesce(ot.total_out, 0) as net
-  from members m
-  left join paid p on p.member_id = m.id
-  left join owed o on o.member_id = m.id
-  left join in_settle i on i.member_id = m.id
-  left join out_settle ot on ot.member_id = m.id;
-$$;
+drop function if exists public.split_group_balances(uuid);
+drop function if exists public.split_group_balances(uuid, uuid);
 
 -- Drop old signatures dynamically to prevent PostgREST ambiguity
 do $$

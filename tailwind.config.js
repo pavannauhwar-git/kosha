@@ -52,7 +52,7 @@ export default {
         'warning':        'var(--ds-warning)',
         'warning-bg':     'var(--ds-warning-bg)',
         'warning-border': '#FFE0B2',
-        'warning-text':   'var(--ds-expense-text)',
+        'warning-text':   'var(--ds-warning)',
 
         /* ── Ink / Text ────────────────────────────────────────────── */
         'ink':   'var(--ds-text)',

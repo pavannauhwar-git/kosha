@@ -21,7 +21,7 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
-export default memo(function MerchantIntelCard({ txnRows, onReviewExpenses, onReviewMerchant }) {
+export default memo(function MerchantIntelCard({ txnRows = [], onReviewExpenses, onReviewMerchant }) {
   const analysis = useMemo(() => {
     const merchants = new Map()
 

@@ -26,13 +26,19 @@ const EXPECTED_KINDS = new Set([
 
 export function classifyError(error) {
   if (error?.message === 'OPTIMISTIC_BUSY') return ERROR_KIND.BUSY
+  if (error?.name === 'AbortError') return ERROR_KIND.BUSY
 
   const code = error?.code
-  const status = Number(error?.status ?? code)
+  const status = Number(error?.status)
+
+  // PostgREST/Postgres SQLSTATE codes (string) — not HTTP statuses.
+  if (code === '23505') return ERROR_KIND.CONFLICT       // unique_violation
+  if (code === '42501') return ERROR_KIND.PERMISSION     // insufficient_privilege
+  if (code === 'PGRST202') return ERROR_KIND.NOT_FOUND   // missing RPC
 
   if (status === 401 || status === 403) return ERROR_KIND.PERMISSION
   if (status === 409) return ERROR_KIND.CONFLICT
-  if (status === 404 || code === 'PGRST202') return ERROR_KIND.NOT_FOUND
+  if (status === 404) return ERROR_KIND.NOT_FOUND
   if (Number.isFinite(status) && status >= 500) return ERROR_KIND.SERVER
   if (error instanceof TypeError) return ERROR_KIND.NETWORK
 

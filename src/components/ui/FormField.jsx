@@ -8,7 +8,7 @@ export default function FormField({ error, children, className = '' }) {
     <div className={`flex flex-col gap-1 ${className}`}>
       {children}
       {error && (
-        <span className="text-[11px] font-medium text-expense-text ml-1 mt-0.5">
+        <span role="alert" className="text-[11px] font-medium text-expense-text ml-1 mt-0.5">
           {error}
         </span>
       )}

@@ -146,7 +146,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial, ver
         }
         retryCountRef.current += 1;
         if (!src.startsWith('http')) {
-          deleteCachedAvatarUrl(src);
+          deleteCachedAvatarUrl(cacheSrc);
         }
         setUrl(null);
         setRetryNonce((n) => n + 1);

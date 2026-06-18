@@ -44,7 +44,15 @@ export default function PortfolioMixDonut({
     <div
       className="relative shrink-0"
       style={{ width: ringSize, height: ringSize }}
-      aria-label="Portfolio allocation donut chart"
+      aria-label={useMemo(() => {
+        if (!hasData) return "Empty portfolio allocation donut chart"
+        const total = rows.reduce((s, r) => s + Number(r?.value || 0), 0) || 1
+        const shares = rows
+          .filter(r => r != null && Number(r.value || 0) > 0)
+          .map(r => `${r.label || 'Unknown'} ${Math.round((Number(r.value) / total) * 100)}%`)
+          .join(', ')
+        return `Portfolio allocation donut chart: ${shares}`
+      }, [rows, hasData])}
       role="img"
     >
       {/* Ring */}

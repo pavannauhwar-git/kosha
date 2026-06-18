@@ -45,12 +45,10 @@ function CategoryIcon({ categoryId, id, size = 20, className = '' }) {
         width:  size + 12,
         height: size + 12,
         ...(cat.color ? {
-          backgroundColor: cat.bg,
           background: `color-mix(in srgb, ${cat.color} 18%, var(--ds-surface))`,
         } : { backgroundColor: 'var(--ds-surface-container)' }),
       }}
     >
-      {/* Duotone effect: primary icon layer + lighter shadow */}
       <Icon
         size={size}
         weight="duotone"

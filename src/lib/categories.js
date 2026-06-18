@@ -123,7 +123,12 @@ export function normalizeCategoryForType(type, categoryId) {
 }
 
 export function getCategory(id) {
-  return CATEGORY_MAP[id] || _customCategories.find(c => c.id === id) || CATEGORY_MAP['other']
+  const c = CATEGORY_MAP[id] 
+         || INVESTMENT_VEHICLES.find(x => x.id === id)
+         || PAYMENT_MODES.find(x => x.id === id)
+         || _customCategories.find(c => c.id === id) 
+         || CATEGORY_MAP['other']
+  return c
 }
 
 export const INVESTMENT_VEHICLES = [

@@ -38,6 +38,7 @@ const Switch = forwardRef(function Switch(
       ref={resolvedRef}
       selected={checked ? '' : undefined}
       disabled={disabled ? '' : undefined}
+      aria-label={props['aria-label'] || props.ariaLabel || 'Toggle'}
       class={className}
       style={style}
       {...props}

@@ -11,6 +11,11 @@ export default function EditProfileNameDialog({ open, onClose }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const inputRef = useRef(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => { mountedRef.current = false }
+  }, [])
 
   // Sync input with current profile name whenever dialog opens
   useEffect(() => {
@@ -21,18 +26,19 @@ export default function EditProfileNameDialog({ open, onClose }) {
   }, [open, profile?.display_name])
 
   async function handleSave() {
+    if (saving) return
     const trimmed = name.trim()
     if (!trimmed) { setError('Name cannot be empty.'); return }
     setSaving(true)
     setError('')
     try {
       await updateDisplayName(trimmed) // must strictly await mutation+refetch
-      onClose()
+      if (mountedRef.current) onClose()
     } catch (e) {
       captureMutationError(e, { context: 'profile:updateName' })
-      setError(e.message || 'Could not update name. Try again.')
+      if (mountedRef.current) setError(e.message || 'Could not update name. Try again.')
     } finally {
-      setSaving(false)
+      if (mountedRef.current) setSaving(false)
     }
   }
 

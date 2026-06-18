@@ -563,7 +563,7 @@ export default function Loans({
     const settlementPct = totalPrincipal > 0 ? Math.round((totalSettled / totalPrincipal) * 100) : 0
 
     const accruedTotal = activeExposureLoans.reduce(
-      (sum, loan) => sum + Number(accruedInterest(loan.amount, loan.interest_rate, loan.loan_date) || 0),
+      (sum, loan) => sum + Number(accruedInterest(loan.amount - (loan.amount_settled || 0), loan.interest_rate, loan.loan_date) || 0),
       0
     )
 
@@ -904,7 +904,7 @@ export default function Loans({
                 const rowIndex = loanStartIndex + localIndex
                 const remaining = +loan.amount - +loan.amount_settled
                 const pct = loanProgress(loan.amount, loan.amount_settled)
-                const interest = accruedInterest(loan.amount, loan.interest_rate, loan.loan_date)
+                const interest = accruedInterest(loan.amount - (loan.amount_settled || 0), loan.interest_rate, loan.loan_date)
                 const days = loan.due_date ? daysUntil(loan.due_date) : null
                 const isOptimistic = loan.__optimistic || String(loan.id || '').startsWith('optimistic-')
 
@@ -1097,8 +1097,8 @@ export default function Loans({
                               const label = totalDays < 30 ? `${totalDays}d` : `~${Math.round(totalDays / 30.44)}mo`
                               return <span className="text-[11px] text-ink-3">· {label}</span>
                             })()}
-                            {accruedInterest(loan.amount, loan.interest_rate, loan.loan_date) > 0 && (
-                              <span className="text-[11px] text-ink-3">· +{fmt(Math.round(accruedInterest(loan.amount, loan.interest_rate, loan.loan_date) * 100) / 100)} interest</span>
+                            {accruedInterest(loan.amount - (loan.amount_settled || 0), loan.interest_rate, loan.loan_date) > 0 && (
+                              <span className="text-[11px] text-ink-3">· +{fmt(Math.round(accruedInterest(loan.amount - (loan.amount_settled || 0), loan.interest_rate, loan.loan_date) * 100) / 100)} interest</span>
                             )}
                             {loan.due_date && (() => {
                               const diffDays = Math.round((new Date(`${loan.due_date}T00:00:00`).getTime() - Date.now()) / (1000 * 60 * 60 * 24))

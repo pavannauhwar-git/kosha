@@ -1008,10 +1008,6 @@ export default function Splitwise() {
 
     setSaving(editSettlement ? 'settlement-edit' : 'settlement')
     try {
-      if (editSettlement) {
-        await deleteSettlement.mutateAsync(editSettlement.id)
-      }
-
       await recordSettlement.mutateAsync({
         groupId: activeGroupId,
         payerMemberId: settlementForm.payer_member_id,
@@ -1020,6 +1016,10 @@ export default function Splitwise() {
         settledAt: settlementForm.settled_at,
         note: settlementForm.note,
       })
+
+      if (editSettlement) {
+        await deleteSettlement.mutateAsync(editSettlement.id)
+      }
       setSettlementForm((prev) => ({
         ...prev,
         amount: '',
@@ -1739,7 +1739,7 @@ export default function Splitwise() {
                                       <span className="opacity-60"> · split {t.split_expense_splits.length} ways</span>
                                     )}
                                   </p>
-                                  <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.sortDate)}</p>
+                                  <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.expense_date)}</p>
                                 </div>
                               </div>
                               <div className="text-right shrink-0 flex flex-col justify-start items-end">
@@ -1781,7 +1781,7 @@ export default function Splitwise() {
                                   <p className="text-[11px] text-ink-3 mt-1 truncate">
                                     <span className="font-medium text-ink">{resolveMemberName(payer)}</span> paid <span className="font-medium text-ink">{resolveMemberName(payee)}</span>
                                   </p>
-                                  <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.sortDate)}</p>
+                                  <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.settled_at)}</p>
                                 </div>
                               </div>
                               <div className="text-right shrink-0 flex flex-col justify-start items-end">

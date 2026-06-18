@@ -164,9 +164,13 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
   )
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function HighlightText({ text, highlight }) {
   if (!highlight || !text) return <>{text}</>
-  const parts = String(text).split(new RegExp(`(${highlight})`, 'gi'))
+  const parts = String(text).split(new RegExp(`(${escapeRegExp(highlight)})`, 'gi'))
   return (
     <>
       {parts.map((part, i) =>

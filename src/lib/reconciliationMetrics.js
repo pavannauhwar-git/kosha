@@ -1,6 +1,14 @@
 /**
  * Reconciliation matching quality metrics & drift detection
  */
+import { parseStatementLines } from './statementMatching.js'
+
+function merchantKeyFromStatementLine(line) {
+  const raw = String(line || '')
+  const parsed = parseStatementLines(raw)
+  const description = parsed?.[0]?.description
+  return (description && description.trim()) || raw.trim()
+}
 
 export function calculateConfidenceMetrics(rows, timeWindowDays = 7) {
   if (!rows || rows.length === 0) {
@@ -99,7 +107,7 @@ export function identifyDemotedAliases(rows, transactions, threshold = 2, timeWi
 
   const rejectionCounts = new Map()
   for (const line of rejectedStatementLines) {
-    const merchant = line.split(/[,|]/)[0]?.trim() || line
+    const merchant = merchantKeyFromStatementLine(line)
     rejectionCounts.set(merchant, (rejectionCounts.get(merchant) || 0) + 1)
   }
 
@@ -133,7 +141,7 @@ export function calculateAliasQuality(rows, transactions, timeWindowDays = 30) {
 
   for (const row of windowRows) {
     if (row?.status !== 'linked' || !row?.statement_line) continue
-    const merchant = row.statement_line.split(/[,|]/)[0]?.trim() || row.statement_line
+    const merchant = merchantKeyFromStatementLine(row.statement_line)
     if (!aliasStats.has(merchant)) {
       aliasStats.set(merchant, { successCount: 0, rejectionCount: 0 })
     }
@@ -144,7 +152,7 @@ export function calculateAliasQuality(rows, transactions, timeWindowDays = 30) {
     if (!isRejected(row) || !row?.statement_line) continue
     const line = String(row.statement_line || '')
     const cleanLine = line.startsWith('REJECTED:') ? line.slice(9).trim() : line
-    const merchant = cleanLine.split(/[,|]/)[0]?.trim() || cleanLine
+    const merchant = merchantKeyFromStatementLine(cleanLine)
     if (!aliasStats.has(merchant)) {
       aliasStats.set(merchant, { successCount: 0, rejectionCount: 0 })
     }
@@ -181,7 +189,7 @@ export function identifyMerchantsInCooldown(rows, cooldownDays = 14) {
     if (!isRejected(row) || !row?.statement_line) continue
     const line = String(row.statement_line || '')
     const cleanLine = line.startsWith('REJECTED:') ? line.slice(9).trim() : line
-    const merchant = cleanLine.split(/[,|]/)[0]?.trim() || cleanLine
+    const merchant = merchantKeyFromStatementLine(cleanLine)
     
     // Instead of defaulting to epoch zero, ignore invalid dates for cooldown tracking
     if (!row.updated_at) continue

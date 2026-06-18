@@ -1228,10 +1228,18 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
   )
 
   const [reserveCorpusInput, setReserveCorpusInput] = useState(() => String(baselineReserve))
+  const isDirtyRef = useRef(false)
 
   useEffect(() => {
-    setReserveCorpusInput(String(baselineReserve))
+    if (!isDirtyRef.current) {
+      setReserveCorpusInput(String(baselineReserve))
+    }
   }, [baselineReserve])
+
+  const handleCorpusChange = (event) => {
+    isDirtyRef.current = true
+    setReserveCorpusInput(event.target.value)
+  }
 
   if (!hasOutflowData) {
     return (
@@ -1299,7 +1307,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
           min={0}
           step={1000}
           value={reserveCorpusInput}
-          onChange={(event) => setReserveCorpusInput(event.target.value)}
+          onChange={handleCorpusChange}
           className="w-full rounded-card border border-kosha-border bg-kosha-surface px-3 py-2 text-[12px] font-semibold text-ink"
         />
       </div>
