@@ -53,6 +53,12 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version || '0.0.0'),
     },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './scripts/tests/unit/setup.js',
+      include: ['scripts/tests/unit/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    },
     build: {
       target: 'esnext',
       cssCodeSplit: true,
