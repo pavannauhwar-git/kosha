@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
-import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash, Info } from '@phosphor-icons/react'
+import { X, NotePencil, CaretRight, Plus, CalendarDots, PencilSimple, Trash, Info, CheckCircle } from '@phosphor-icons/react'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 import Select from '../ui/Select'
@@ -27,7 +27,7 @@ import FormField from '../ui/FormField'
 
 
 import { todayStr } from '../../lib/utils'
-import { hapticSuccess } from '../../lib/haptics'
+import { hapticSuccess, hapticError, hapticSelection } from '../../lib/haptics'
 import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
 
 const TYPES = [
@@ -267,11 +267,22 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       error: '',
     }
   }
+  const now = new Date()
+  const hour = now.getHours()
+  const date = now.getDate()
+
+  let defaultExpenseCat = 'other'
+  if (date <= 3) {
+    defaultExpenseCat = 'bills_utilities'
+  } else if ((hour >= 6 && hour <= 10) || (hour >= 12 && hour <= 14)) {
+    defaultExpenseCat = 'food_dining'
+  }
+
   return {
     type: initialType || 'expense',
     amount: '',
     desc: '',
-    category: initialType === 'income' ? 'salary' : 'other',
+    category: initialType === 'income' ? 'salary' : (initialType === 'investment' ? 'other' : defaultExpenseCat),
     vehicle: 'Other',
     mode: initialType === 'investment' ? 'net_banking' : 'upi',
     date: todayStr(),
@@ -658,6 +669,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   function setType(nextType) {
     if (nextType === type) return
+    hapticSelection()
     // Save current category to memory before switching
     setLastCategoryByType(prev => ({ ...prev, [type]: category }))
     
@@ -676,6 +688,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const [showVehPicker, setShowVehPicker] = useReducer(v => !v, false)
   const [showCreateCat, setShowCreateCat] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const archiveCategoryMutation = useAppMutation(archiveUserCategory, { context: 'categories:delete' })
 
@@ -706,12 +719,14 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     // Client-side validation
     const amountValidation = validateAmount(amount, { allowZero: false })
     if (!amountValidation.ok) {
+      hapticError()
       dispatch({ type: 'SAVING_ERROR', value: amountValidation.error })
       isSubmitting.current = false
       return
     }
 
     if (!desc.trim()) {
+      hapticError()
       dispatch({ type: 'SAVING_ERROR', value: 'Enter a description' })
       isSubmitting.current = false
       return
@@ -770,13 +785,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       }
 
       hapticSuccess()
-      onClose()
+      setShowSuccess(true)
+      setTimeout(() => {
+        onClose()
+      }, 600)
     } catch (e) {
+      hapticError()
       dispatch({
         type: 'SAVING_ERROR',
         value: e.message || 'Could not save. Check your connection and try again.',
       })
-    } finally {
       isSubmitting.current = false
     }
   }
@@ -1139,15 +1157,26 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               When it disappears, the sheet closes and the data is accurate.
           */}
           <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
-            <Button
-              type="submit"
-              variant="primary"
-              size="xl"
-              fullWidth
-              loading={isSaving}
-            >
-              {isSaving ? 'Saving...' : (editTxn ? 'Save Changes' : `Add ${activeType?.label}`)}
-            </Button>
+            {showSuccess ? (
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="w-full h-[52px] bg-income-bg text-income-text font-semibold rounded-xl flex items-center justify-center gap-2"
+              >
+                <CheckCircle size={20} weight="fill" />
+                <span>Saved!</span>
+              </motion.div>
+            ) : (
+              <Button
+                type="submit"
+                variant="primary"
+                size="xl"
+                fullWidth
+                loading={isSaving}
+              >
+                {isSaving ? 'Saving...' : (editTxn ? 'Save Changes' : `Add ${activeType?.label}`)}
+              </Button>
+            )}
             <div className="h-2" />
           </div>
           </form>

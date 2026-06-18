@@ -10,6 +10,7 @@ vi.mock('framer-motion', () => ({
     ),
   },
   AnimatePresence: ({ children }) => <>{children}</>,
+  useDragControls: () => ({ start: vi.fn() }),
 }))
 
 vi.mock('../../hooks/useOverlayFocusTrap', () => ({
