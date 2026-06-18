@@ -258,7 +258,6 @@ export default function Onboarding() {
   const { profile, updateProfile } = useAuth()
 
   const [step,   setStep]   = useState(0)
-  const [name,   setName]   = useState('')
   const [finishError, setFinishError] = useState('')
   const { pushToast } = useAppToast()
 
@@ -270,7 +269,6 @@ export default function Onboarding() {
   // (AuthGuard also handles this, but being explicit avoids flash)
 
   async function handleNameNext(displayName) {
-    setName(displayName)
     try {
       await updateProfileMutation.mutateAsync({ display_name: displayName })
     } catch (e) {

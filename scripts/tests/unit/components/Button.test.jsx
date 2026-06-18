@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import Button from '../../../../src/components/ui/Button'
-import React from 'react'
 
 // Mock haptics to prevent import errors during testing
 vi.mock('../../lib/haptics', () => ({

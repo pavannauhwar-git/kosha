@@ -1,7 +1,6 @@
 import { render, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import Input from '../../../../src/components/ui/Input'
-import React from 'react'
 
 describe('Input component', () => {
   it('renders with label and placeholder', () => {

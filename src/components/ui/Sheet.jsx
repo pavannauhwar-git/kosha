@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from '@phosphor-icons/react'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
@@ -45,7 +46,40 @@ export default function Sheet({
   trapFocus = true,
   children,
 }) {
-  const sheetRef = useOverlayFocusTrap(open && trapFocus, { onClose, initialFocusSelector })
+  const [animationComplete, setAnimationComplete] = useState(false)
+
+  useEffect(() => {
+    if (!open) {
+      setAnimationComplete(false)
+      return
+    }
+
+    // Delay focus trap activation by 250ms to ensure the slide-up transition is complete
+    const timer = setTimeout(() => {
+      setAnimationComplete(true)
+    }, 250)
+
+    return () => clearTimeout(timer)
+  }, [open])
+
+  useEffect(() => {
+    if (open) {
+      document.documentElement.classList.add('sheet-open')
+    } else {
+      const otherSheets = document.querySelectorAll('.sheet-panel')
+      if (otherSheets.length <= 1) {
+        document.documentElement.classList.remove('sheet-open')
+      }
+    }
+    return () => {
+      const otherSheets = document.querySelectorAll('.sheet-panel')
+      if (otherSheets.length <= 1) {
+        document.documentElement.classList.remove('sheet-open')
+      }
+    }
+  }, [open])
+
+  const sheetRef = useOverlayFocusTrap(open && trapFocus && animationComplete, { onClose, initialFocusSelector })
   const [shakeTrigger, setShakeTrigger] = useState(0)
 
   const isCenter = variant === 'center'
@@ -110,7 +144,9 @@ export default function Sheet({
     </motion.div>
   )
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -136,6 +172,7 @@ export default function Sheet({
           )}
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

@@ -1,11 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
-import React from 'react'
 
 // vi.mock is hoisted — cannot reference any imported var inside factory
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, onClick, className, ...rest }) => (
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
       <div onClick={onClick} className={className} {...rest}>{children}</div>
     ),
   },

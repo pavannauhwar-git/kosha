@@ -964,10 +964,20 @@ textarea:focus-visible,
     /* Spring transition — translate + scale use spatial spring */
     transition:
       transform var(--ds-dur-spring-fast) var(--ds-spring-fast),
+      opacity 200ms var(--ds-ease-standard),
       box-shadow var(--ds-dur-spring-effects-fast) var(--ds-spring-effects),
       background-color 200ms var(--ds-ease-standard);
     /* Entrance animation — springs in with expressive overshoot */
     animation: fab-spring-in var(--ds-dur-spring-expressive) var(--ds-spring-expressive) both;
+  }
+
+  /* Hide FABs when sheet is open to prevent visual clutter */
+  .sheet-open .fab,
+  .sheet-open .fab-bills,
+  .sheet-open .fab-loans {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: scale(0.8) translateY(20px) !important;
   }
 
   .fab:active,
@@ -1169,9 +1179,7 @@ textarea:focus-visible,
   .sheet-backdrop {
     @apply fixed inset-0;
     z-index: var(--ds-z-sheet-backdrop);
-    background: rgba(17, 19, 24, 0.40);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(17, 19, 24, 0.48);
   }
 
   .sheet-panel {
@@ -1184,12 +1192,10 @@ textarea:focus-visible,
     margin-right: auto;
     max-width: var(--app-shell-max);
     box-shadow: 0 -8px 40px rgba(17, 19, 24, 0.10);
-    border-radius: 24px 24px 0 0;
+    border-radius: 28px 28px 0 0;
     padding-bottom: calc(1.5rem + var(--safe-bottom));
     /* Sit directly on top of the on-screen keyboard (iOS PWA). --kb-inset is
-       published by useKeyboardInset; 0px when no keyboard. This keeps the
-       focused input visible so iOS never offsets the viewport (which used to
-       leave the sheet + nav displaced). */
+       published by useKeyboardInset; 0px when no keyboard. */
     bottom: var(--kb-inset, 0px);
     max-height: calc(100dvh - var(--safe-top) - 0.5rem - var(--kb-inset, 0px));
     overflow-y: auto;
@@ -1471,6 +1477,10 @@ textarea:focus-visible,
   /* -- Close button ────────────────────────────────────────────────── */
   .close-btn {
     @apply w-9 h-9 rounded-full flex items-center justify-center bg-kosha-surface-2 cursor-pointer;
+    border: none;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
     touch-action: manipulation;
     transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms cubic-bezier(0.2, 0, 0, 1);
   }

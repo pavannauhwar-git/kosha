@@ -225,8 +225,7 @@ async function deleteLoan(id, cachedLoan = null) {
   //       transactions.linked_loan_id ON DELETE CASCADE FK),
   //   (c) the audit-log write (via the trigger on `loans`).
   const { data, error } = await supabase.rpc('delete_loan_with_txns', {
-    p_id: id,
-    p_payload: cachedLoan
+    p_id: id
   })
   if (error) throw error
   return data === true
@@ -247,16 +246,43 @@ function snapshotLoanCaches(targetUserId) {
     [LOAN_ACTIVE_TAKEN_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_ACTIVE_TAKEN_KEY(targetUserId)) || [])],
     [LOAN_SETTLED_KEY(targetUserId), cloneCacheData(queryClient.getQueryData(LOAN_SETTLED_KEY(targetUserId)) || [])],
   ]
-  // Loan add/delete also touch the linked disbursement transaction in the
-  // transaction caches. Snapshot every matching ['transactions', …] and
-  // ['transactionsRecent', …] entry so a failed RPC rolls those back too,
-  // otherwise a phantom optimistic txn lingers until the next refetch.
+
+  // Snapshot running balance
+  const balanceKey = ['balance', 2099, 12, targetUserId]
+  const balanceData = queryClient.getQueryData(balanceKey)
+  if (typeof balanceData !== 'undefined') {
+    snap.push([balanceKey, cloneCacheData(balanceData)])
+  }
+
+  // Snapshot month keys for any transactions that might be adjusted
+  const monthKeys = new Set()
   for (const family of [['transactions'], ['transactionsRecent']]) {
     const entries = queryClient.getQueriesData({ queryKey: family })
     for (const [key, data] of entries) {
       snap.push([key, cloneCacheData(data ?? null)])
+      if (Array.isArray(data)) {
+        for (const txn of data) {
+          if (txn?.date) {
+            const [yStr, mStr] = String(txn.date).split('-')
+            const year = Number(yStr)
+            const month = Number(mStr)
+            if (year && month) {
+              monthKeys.add(JSON.stringify(['month', year, month, targetUserId]))
+            }
+          }
+        }
+      }
     }
   }
+
+  for (const mKeyStr of monthKeys) {
+    const mKey = JSON.parse(mKeyStr)
+    const mData = queryClient.getQueryData(mKey)
+    if (typeof mData !== 'undefined') {
+      snap.push([mKey, cloneCacheData(mData)])
+    }
+  }
+
   return snap
 }
 

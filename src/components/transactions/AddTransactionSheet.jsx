@@ -251,7 +251,7 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       desc: duplicateTxn.description,
       category: duplicateTxn.category || 'other',
       vehicle: duplicateTxn.investment_vehicle || 'Other',
-      mode: duplicateTxn.payment_mode || (duplicateTxn.type === 'investment' ? 'bank_transfer' : 'upi'),
+      mode: duplicateTxn.payment_mode || (duplicateTxn.type === 'investment' ? 'net_banking' : 'upi'),
       date: todayStr(),
       isRecurring: !!duplicateTxn.is_recurring,
       recurrence: duplicateTxn.recurrence || 'monthly',
@@ -273,7 +273,7 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
     desc: '',
     category: initialType === 'income' ? 'salary' : 'other',
     vehicle: 'Other',
-    mode: initialType === 'investment' ? 'bank_transfer' : 'upi',
+    mode: initialType === 'investment' ? 'net_banking' : 'upi',
     date: todayStr(),
     isRecurring: false,
     recurrence: 'monthly',
@@ -666,7 +666,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       const normalized = normalizeCategoryForType(nextType, lastCategoryByType[nextType])
       set('category', normalized)
     } else {
-      set('mode', 'bank_transfer')
+      set('mode', 'net_banking')
     }
   }
 

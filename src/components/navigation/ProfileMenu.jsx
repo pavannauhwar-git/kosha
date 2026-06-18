@@ -23,7 +23,7 @@ function MenuItem({ icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-chip
+      className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-chip
                  transition-all duration-150 text-ink hover:bg-kosha-surface-2 active:scale-[0.98] select-none"
     >
       <div className="w-8 h-8 rounded-chip flex items-center justify-center shrink-0 bg-brand-container text-brand">
@@ -177,8 +177,8 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         }}
       >
         {/* Identity Section (Centered Header Card) */}
-        <div className="p-5 flex flex-col items-center text-center">
-          <div className="relative mb-3">
+        <div className="pt-4 px-4 pb-4 flex flex-col items-center text-center">
+          <div className="relative mb-2">
             <div className="w-16 h-16 rounded-full bg-brand-container text-brand flex items-center justify-center overflow-hidden border border-brand/15 text-[22px] font-bold shrink-0">
               {avatarUrl ? (
                 <SecureAvatar
@@ -196,7 +196,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
           <p className="text-[16px] font-bold text-ink leading-tight tracking-tight mt-1">
             {displayName}
           </p>
-          <p className="text-[12px] text-ink-3 mt-0.5 mb-3.5 truncate w-full max-w-[240px]">
+          <p className="text-[12px] text-ink-3 mt-0.5 mb-2.5 truncate w-full max-w-[240px]">
             {user?.email}
           </p>
           <Button
@@ -358,7 +358,7 @@ export default function ProfileMenu({ className = '', dropUp = false }) {
         <div className="border-t border-kosha-border" />
 
         {/* Footer Center Signout Button */}
-        <div className="p-4 flex justify-center">
+        <div className="p-3 flex justify-center">
           <Button
             onClick={() => {
               handleClose()

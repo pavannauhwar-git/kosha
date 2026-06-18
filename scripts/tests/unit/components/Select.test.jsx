@@ -1,7 +1,6 @@
 import { render, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import Select from '../../../../src/components/ui/Select'
-import React from 'react'
 
 describe('Select component', () => {
   const options = [
