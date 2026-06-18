@@ -536,7 +536,6 @@ function BottomNav() {
                 if (!e.currentTarget.matches(':focus-visible')) return
                 prefetchRoute(item.path)
               }}
-              onTouchStart={() => prefetchRoute(item.path)}
               aria-current={isActive ? 'page' : undefined}
               aria-label={item.label}
             >
@@ -1341,7 +1340,6 @@ function QueryErrorRecovery() {
   )
 }
 
-
 function ShellStatusBanners() {
   const location = useLocation()
   const [isOffline, setIsOffline] = useState(() => {
@@ -1530,23 +1528,20 @@ function ShellStatusBanners() {
 
   return (
     <>
-      {isOffline && (
-        <div className="pointer-events-none fixed top-4 left-4 right-4 mx-auto max-w-[398px]" style={{ zIndex: "var(--ds-z-toast)" }}>
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18 }}
-            role="status"
-            aria-live="polite"
-            className="pointer-events-auto flex items-center gap-2 rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 text-warning-text shadow-card"
-          >
-            <span className="text-[12px] font-semibold">You are offline. Kosha will sync when your connection returns.</span>
-          </motion.div>
-        </div>
-      )}
-
-      {(showUpdatePrompt || showInstallPrompt || installMessage) && (
-        <div className={`pointer-events-none fixed left-4 right-4 mx-auto max-w-[398px] space-y-2 ${bottomClass}`} style={{ zIndex: "var(--ds-z-toast)" }}>
+      {(isOffline || showUpdatePrompt || showInstallPrompt || installMessage) && (
+        <div className={`pointer-events-none fixed left-4 right-4 mx-auto max-w-[398px] space-y-2 flex flex-col justify-end ${bottomClass}`} style={{ zIndex: "var(--ds-z-toast)" }}>
+          {isOffline && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18 }}
+              role="status"
+              aria-live="polite"
+              className="pointer-events-auto flex items-center gap-2 rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 text-warning-text shadow-card"
+            >
+              <span className="text-[12px] font-semibold">You are offline. Kosha will sync when your connection returns.</span>
+            </motion.div>
+          )}
           {showUpdatePrompt && (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -1617,11 +1612,11 @@ function ShellStatusBanners() {
 
 function WalletSwitchGuard() {
   const activeWalletUserId = useActiveWallet()
-  
+
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('bottomsheet:close-all'))
   }, [activeWalletUserId])
-  
+
   return null
 }
 
@@ -1692,32 +1687,32 @@ export default function App() {
       <MotionConfig reducedMotion="user">
         <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
           <AuthProvider>
-          <PersistQueryClientProvider
-            client={queryClient}
-            persistOptions={{
-              persister: queryPersister,
-              maxAge: 12 * 60 * 60 * 1000, // 12h, matches the SW supabase-data cache
-              buster: import.meta.env.VITE_APP_VERSION, // new deploy invalidates old cache
-              dehydrateOptions: {
-                // Only persist successful data queries. Never persist auth/session.
-                shouldDehydrateQuery: (query) => {
-                  const key0 = Array.isArray(query.queryKey) ? query.queryKey[0] : null
-                  if (key0 === 'kosha-active-wallet') return false
-                  return query.state.status === 'success'
+            <PersistQueryClientProvider
+              client={queryClient}
+              persistOptions={{
+                persister: queryPersister,
+                maxAge: 12 * 60 * 60 * 1000, // 12h, matches the SW supabase-data cache
+                buster: import.meta.env.VITE_APP_VERSION, // new deploy invalidates old cache
+                dehydrateOptions: {
+                  // Only persist successful data queries. Never persist auth/session.
+                  shouldDehydrateQuery: (query) => {
+                    const key0 = Array.isArray(query.queryKey) ? query.queryKey[0] : null
+                    if (key0 === 'kosha-active-wallet') return false
+                    return query.state.status === 'success'
+                  },
                 },
-              },
-            }}
-            onSuccess={() => {
-              queryClient.resumePausedMutations().catch(err => {
-                console.warn('[Kosha] Failed to resume paused mutations', err)
-              })
-            }}
-          >
-            <GlobalRealtimeSync />
-            <DashboardWarmPrefetch />
-            <VersionHeartbeat />
+              }}
+              onSuccess={() => {
+                queryClient.resumePausedMutations().catch(err => {
+                  console.warn('[Kosha] Failed to resume paused mutations', err)
+                })
+              }}
+            >
+              <GlobalRealtimeSync />
+              <DashboardWarmPrefetch />
+              <VersionHeartbeat />
               <AppContent />
-          </PersistQueryClientProvider>
+            </PersistQueryClientProvider>
           </AuthProvider>
         </BrowserRouter>
       </MotionConfig>

@@ -22,10 +22,12 @@ export function getActiveWalletUserId() {
   try {
     return getAuthUserId()
   } catch (err) {
-    // Auth said it was ready but `getAuthUserId()` still threw. This is
-    // unusual (transitional state during sign-out, or a corrupt auth store)
-    // and worth surfacing instead of swallowing silently.
-    console.warn('[Kosha] getActiveWalletUserId: auth ready but no user id resolvable.', err)
+    // Auth said it was ready but `getAuthUserId()` still threw.
+    // If the error is 'Not signed in', it's expected during signed-out state.
+    // Otherwise, surface it as a warning.
+    if (err.message !== 'Not signed in') {
+      console.warn('[Kosha] getActiveWalletUserId: auth ready but no user id resolvable.', err)
+    }
     return null
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { X } from '@phosphor-icons/react'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
 
@@ -117,6 +117,8 @@ export default function Sheet({
     transition: shakeTransition,
   }
 
+  const dragControls = useDragControls()
+
   const renderPanel = () => (
     <motion.div
       ref={sheetRef}
@@ -128,27 +130,41 @@ export default function Sheet({
       initial={enter.initial}
       animate={animateProp}
       exit={enter.exit}
+      drag={!isCenter ? 'y' : false}
+      dragControls={dragControls}
+      dragListener={false}
+      dragConstraints={{ top: 0, bottom: 0 }}
+      dragElastic={{ top: 0, bottom: 0.8 }}
+      onDragEnd={(e, info) => {
+        if (!isCenter && (info.offset.y > 100 || info.velocity.y > 500)) {
+          onClose()
+        }
+      }}
     >
-      {showHandle && !isCenter && <div className="sheet-handle" />}
-      {(title || showClose) && (
-        <div className={`mb-5 flex items-center justify-between px-5 ${(!showHandle || isCenter) ? 'pt-5' : 'pt-1'}`}>
-          {title ? <h2 className="text-display font-bold text-ink">{title}</h2> : <span />}
-          {showClose && (
-            <button
-              type="button"
-              onPointerDown={(e) => {
-                e.preventDefault()
-                onClose()
-              }}
-              onClick={onClose}
-              className="close-btn"
-              aria-label="Close"
-            >
-              <X size={16} className="text-ink-3" />
-            </button>
-          )}
-        </div>
-      )}
+      <div 
+        className="sheet-drag-area" 
+        onPointerDown={(e) => {
+          if (!isCenter) dragControls.start(e)
+        }}
+        style={{ touchAction: 'none' }}
+      >
+        {showHandle && !isCenter && <div className="sheet-handle" />}
+        {(title || showClose) && (
+          <div className={`mb-5 flex items-center justify-between px-5 ${(!showHandle || isCenter) ? 'pt-5' : 'pt-1'}`}>
+            {title ? <h2 className="text-display font-bold text-ink">{title}</h2> : <span />}
+            {showClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="close-btn"
+                aria-label="Close"
+              >
+                <X size={16} className="text-ink-3" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
       <div className={resolvedContentClassName}>{children}</div>
     </motion.div>
   )
@@ -164,10 +180,6 @@ export default function Sheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, pointerEvents: 'none' }}
-            onPointerDown={(e) => {
-              e.preventDefault()
-              handleBackdropClick()
-            }}
             onClick={handleBackdropClick}
           />
           {isCenter ? (

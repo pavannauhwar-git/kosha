@@ -155,11 +155,33 @@ export default function Dashboard() {
 
   const hour = now.getHours()
   const greetingMeta = useMemo(() => {
-    if (hour < 5) return { text: 'Good night', emoji: '🌙💤' }
-    if (hour < 12) return { text: 'Good morning', emoji: '🌤️🌸' }
-    if (hour < 17) return { text: 'Good afternoon', emoji: '☀️🌼' }
-    if (hour < 21) return { text: 'Good evening', emoji: '🏜️✨' }
-    return { text: 'Good night', emoji: '🌙💤' }
+    const greetings = [
+      { text: 'Good night', emoji: '🦉🌌' },     // 00: 12 AM
+      { text: 'Good night', emoji: '🦇💤' },     // 01: 1 AM
+      { text: 'Good night', emoji: '🌟🔭' },     // 02: 2 AM
+      { text: 'Good night', emoji: '🥱🛌' },     // 03: 3 AM
+      { text: 'Good night', emoji: '🌠🌒' },     // 04: 4 AM
+      { text: 'Good morning', emoji: '🌅🐦' },   // 05: 5 AM
+      { text: 'Good morning', emoji: '☕️🥱' },   // 06: 6 AM
+      { text: 'Good morning', emoji: '🍳🥐' },   // 07: 7 AM
+      { text: 'Good morning', emoji: '🏃☀️' },     // 08: 8 AM
+      { text: 'Good morning', emoji: '💼💻' },   // 09: 9 AM
+      { text: 'Good morning', emoji: '🌤️🌸' },   // 10: 10 AM
+      { text: 'Good morning', emoji: '🧠⚡️' },   // 11: 11 AM
+      { text: 'Good afternoon', emoji: '🕛🥗' }, // 12: 12 PM
+      { text: 'Good afternoon', emoji: '🚶☀️' },   // 13: 1 PM
+      { text: 'Good afternoon', emoji: '☕️🔋' }, // 14: 2 PM
+      { text: 'Good afternoon', emoji: '🌤️🌼' }, // 15: 3 PM
+      { text: 'Good afternoon', emoji: '🌇🎧' }, // 16: 4 PM
+      { text: 'Good evening', emoji: '🌅🏃' },     // 17: 5 PM
+      { text: 'Good evening', emoji: '🌆🚗' },   // 18: 6 PM
+      { text: 'Good evening', emoji: '🍽️🍷' },   // 19: 7 PM
+      { text: 'Good evening', emoji: '🛋️📺' },   // 20: 8 PM
+      { text: 'Good night', emoji: '🍿🌙' },     // 21: 9 PM
+      { text: 'Good night', emoji: '🥱📖' },     // 22: 10 PM
+      { text: 'Good night', emoji: '🛌💤' },     // 23: 11 PM
+    ]
+    return greetings[hour] || { text: 'Hello', emoji: '👋✨' }
   }, [hour])
 
   const firstName = useMemo(

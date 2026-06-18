@@ -452,13 +452,17 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
       const { data: result, error: rpcError } = await supabase.rpc(
         'get_transaction_signal_aggregates',
         {
-          p_user_id:      userId,
-          p_type:         type         || null,
-          p_category:     category     || null,
-          p_payment_mode: paymentMode  || null,
-          p_search:       search       || null,
-          p_start_date:   startDate    || null,
-          p_end_date:     endDate      || null,
+          p_user_id:                    userId,
+          p_type:                       type                    || null,
+          p_category:                   category                || null,
+          p_payment_mode:               paymentMode             || null,
+          p_search:                     search                  || null,
+          p_start_date:                 startDate               || null,
+          p_end_date:                   endDate                 || null,
+          p_linked_loan_id:             linkedLoanId            || null,
+          p_linked_bill_id:             linkedBillId            || null,
+          p_linked_split_expense_id:    linkedSplitExpenseId    || null,
+          p_linked_split_settlement_id: linkedSplitSettlementId || null,
         }
       )
 

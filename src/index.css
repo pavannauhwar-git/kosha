@@ -1201,7 +1201,7 @@ textarea:focus-visible,
     overflow-y: auto;
     transition: bottom 0.2s cubic-bezier(0.2, 0, 0, 1);
     overflow-x: hidden;
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: none;
     overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
     isolation: isolate;
