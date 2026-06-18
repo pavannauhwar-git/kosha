@@ -604,8 +604,11 @@ export async function deleteLoanMutation(id) {
 
 export function accruedInterest(principal, annualRate, loanDate, endDate = Date.now()) {
   if (!annualRate || annualRate <= 0 || !loanDate) return 0
-  const endTs = typeof endDate === 'string' ? new Date(`${endDate}T23:59:59`).getTime() : endDate
+  const endTs = typeof endDate === 'string'
+    ? new Date(`${endDate}T23:59:59`).getTime()
+    : (endDate instanceof Date ? endDate.getTime() : Number(endDate))
   const startTs = new Date(`${loanDate}T00:00:00`).getTime()
+  if (Number.isNaN(endTs) || Number.isNaN(startTs)) return 0
   const years = (endTs - startTs) / (365.25 * 86400000)
   return Number(principal) * (Number(annualRate) / 100) * Math.max(0, years)
 }

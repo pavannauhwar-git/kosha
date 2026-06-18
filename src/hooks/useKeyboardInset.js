@@ -33,8 +33,12 @@ export default function useKeyboardInset() {
       !!document.querySelector('.sheet-panel, [aria-modal="true"]')
 
     const apply = () => {
-      // Pixels at the bottom currently covered by the keyboard (and any inset).
-      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      // Shield against pinch-zoom or accessibility page zooms on iOS: if scaled,
+      // vv.height changes which creates a fake keyboard offset. We clamp inset to 0 in this case.
+      const scale = vv.scale || 1
+      const inset = scale <= 1.01
+        ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+        : 0
       root.style.setProperty('--kb-inset', `${Math.round(inset)}px`)
 
       const keyboardOpen = inset > 1

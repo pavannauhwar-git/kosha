@@ -292,7 +292,8 @@ export default function Guide() {
       'Your analytics quality is directly tied to category consistency in raw entries.',
       'A 5-minute weekly reconciliation saves 30+ minutes at month close.',
     ]
-    const idx = new Date().getDate() % tips.length
+    const daysSinceEpoch = Math.floor(Date.now() / 8.64e7)
+    const idx = daysSinceEpoch % tips.length
     return tips[idx]
   }, [])
 

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from '@phosphor-icons/react'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
@@ -45,6 +46,7 @@ export default function Sheet({
   children,
 }) {
   const sheetRef = useOverlayFocusTrap(open && trapFocus, { onClose, initialFocusSelector })
+  const [shakeTrigger, setShakeTrigger] = useState(0)
 
   const isCenter = variant === 'center'
   const defaultContentClassName = isCenter ? 'px-5 pt-2 pb-5' : 'px-5 pt-2'
@@ -55,6 +57,32 @@ export default function Sheet({
     ? { initial: { y: 24, opacity: 0 }, animate: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 500, damping: 40 } }, exit: { y: 24, opacity: 0, transition: { duration: 0.2 } } }
     : { initial: { y: '100%' }, animate: { y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }, exit: { y: '100%', transition: { duration: 0.2 } } }
 
+  const handleBackdropClick = () => {
+    if (dismissOnBackdrop) {
+      onClose()
+    } else {
+      setShakeTrigger((prev) => prev + 1)
+    }
+  }
+
+  const shakeAnimation = shakeTrigger > 0
+    ? (isCenter ? { x: [0, -6, 6, -6, 6, 0] } : { y: [0, -8, 4, -4, 0] })
+    : {}
+
+  const shakeTransition = shakeTrigger > 0
+    ? {
+        ...enter.animate.transition,
+        x: { type: 'spring', stiffness: 800, damping: 18 },
+        y: { type: 'spring', stiffness: 800, damping: 18 },
+      }
+    : enter.animate.transition
+
+  const animateProp = {
+    ...enter.animate,
+    ...shakeAnimation,
+    transition: shakeTransition,
+  }
+
   const renderPanel = () => (
     <motion.div
       ref={sheetRef}
@@ -64,7 +92,7 @@ export default function Sheet({
       aria-label={ariaLabel || title || 'Dialog'}
       className={`${panelClass} ${className} ${isCenter ? 'pointer-events-auto' : ''}`.trim()}
       initial={enter.initial}
-      animate={enter.animate}
+      animate={animateProp}
       exit={enter.exit}
     >
       {showHandle && !isCenter && <div className="sheet-handle" />}
@@ -91,7 +119,7 @@ export default function Sheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, pointerEvents: 'none' }}
-            onClick={dismissOnBackdrop ? onClose : undefined}
+            onClick={handleBackdropClick}
           />
           {isCenter ? (
             <motion.div

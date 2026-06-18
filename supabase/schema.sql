@@ -172,18 +172,31 @@ create table if not exists invites (
 );
 
 -- Shared wallet check function (defined here so it is available for all subsequent RLS policies)
-create or replace function public.is_linked(target_user_id uuid)
+create or replace function public.is_linked(
+  target_user_id uuid,
+  p_user_id uuid
+)
 returns boolean
 language sql
 security definer
 set search_path = ''
 stable
 as $$
-  select (select auth.uid()) = target_user_id or exists (
+  select p_user_id = target_user_id or exists (
     select 1 from public.invites
-    where (created_by = (select auth.uid()) and used_by = target_user_id)
-       or (used_by = (select auth.uid()) and created_by = target_user_id)
+    where (created_by = p_user_id and used_by = target_user_id)
+       or (used_by = p_user_id and created_by = target_user_id)
   );
+$$;
+
+create or replace function public.is_linked(target_user_id uuid)
+returns boolean
+language sql
+security invoker
+set search_path = ''
+stable
+as $$
+  select public.is_linked(target_user_id, auth.uid());
 $$;
 
 -- Apply monthly_net_changes RLS policy now that is_linked() exists
@@ -358,20 +371,34 @@ drop policy if exists "Users can insert own profile" on public.profiles;
 drop policy if exists "Users can update own profile" on public.profiles;
 drop policy if exists "Users can fully manage own transactions" on public.transactions;
 drop policy if exists "Users can fully manage own liabilities" on public.liabilities;
+drop policy if exists "Users can fully manage own bug reports" on public.bug_reports;
 
 -- Shared wallet check function
-create or replace function public.is_linked(target_user_id uuid)
+create or replace function public.is_linked(
+  target_user_id uuid,
+  p_user_id uuid
+)
 returns boolean
 language sql
 security definer
 set search_path = ''
 stable
 as $$
-  select (select auth.uid()) = target_user_id or exists (
+  select p_user_id = target_user_id or exists (
     select 1 from public.invites
-    where (created_by = (select auth.uid()) and used_by = target_user_id)
-       or (used_by = (select auth.uid()) and created_by = target_user_id)
+    where (created_by = p_user_id and used_by = target_user_id)
+       or (used_by = p_user_id and created_by = target_user_id)
   );
+$$;
+
+create or replace function public.is_linked(target_user_id uuid)
+returns boolean
+language sql
+security invoker
+set search_path = ''
+stable
+as $$
+  select public.is_linked(target_user_id, auth.uid());
 $$;
 
 -- Profiles policies
@@ -383,13 +410,13 @@ using (public.is_linked(id));
 drop policy if exists "profiles: insert own" on profiles;
 create policy "profiles: insert own" on profiles
 for insert to authenticated
-with check (auth.uid() = id);
+with check ((select auth.uid()) = id);
 
 drop policy if exists "profiles: update own" on profiles;
 create policy "profiles: update own" on profiles
 for update to authenticated
-using (auth.uid() = id)
-with check (auth.uid() = id);
+using ((select auth.uid()) = id)
+with check ((select auth.uid()) = id);
 
 -- Transactions policies
 drop policy if exists "transactions: select own" on transactions;
@@ -400,17 +427,17 @@ using (public.is_linked(user_id));
 drop policy if exists "transactions: insert own" on transactions;
 create policy "transactions: insert own" on transactions
 for insert to authenticated
-with check (auth.uid() = user_id);
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "transactions: update own" on transactions;
 create policy "transactions: update own" on transactions
 for update to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "transactions: delete own" on transactions;
 create policy "transactions: delete own" on transactions
 for delete to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 -- Liabilities policies
 drop policy if exists "liabilities: select own" on liabilities;
@@ -421,17 +448,17 @@ using (public.is_linked(user_id));
 drop policy if exists "liabilities: insert own" on liabilities;
 create policy "liabilities: insert own" on liabilities
 for insert to authenticated
-with check (auth.uid() = user_id);
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "liabilities: update own" on liabilities;
 create policy "liabilities: update own" on liabilities
 for update to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "liabilities: delete own" on liabilities;
 create policy "liabilities: delete own" on liabilities
 for delete to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 -- Invites policies
 drop policy if exists "invites: select for validation" on invites;
@@ -439,26 +466,26 @@ drop policy if exists "invites: select own" on invites;
 create policy "invites: select own" on invites
 for select to authenticated
 using (
-  auth.uid() = created_by or 
-  auth.uid() = used_by
+  (select auth.uid()) = created_by or 
+  (select auth.uid()) = used_by
 );
 
 drop policy if exists "invites: insert own" on invites;
 create policy "invites: insert own" on invites
 for insert to authenticated
-with check (auth.uid() = created_by);
+with check ((select auth.uid()) = created_by);
 
 drop policy if exists "invites: update to consume" on invites;
 drop policy if exists "invites: update own" on invites;
 create policy "invites: update own" on invites
 for update to authenticated
-using (auth.uid() = created_by)
-with check (auth.uid() = created_by);
+using ((select auth.uid()) = created_by)
+with check ((select auth.uid()) = created_by);
  
 drop policy if exists "invites: delete own" on invites;
 create policy "invites: delete own" on invites
 for delete to authenticated
-using (auth.uid() = created_by);
+using ((select auth.uid()) = created_by);
 
 -- RPC for consuming invites securely
 create or replace function public.consume_wallet_invite(p_token text)
@@ -586,18 +613,18 @@ alter table public.bug_reports enable row level security;
 drop policy if exists "bug_reports: insert own" on public.bug_reports;
 create policy "bug_reports: insert own" on public.bug_reports
 for insert to authenticated
-with check (auth.uid() = user_id);
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "bug_reports: select own" on public.bug_reports;
 create policy "bug_reports: select own" on public.bug_reports
 for select to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 drop policy if exists "bug_reports: update own" on public.bug_reports;
 create policy "bug_reports: update own" on public.bug_reports
 for update to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 -- Protect the bug-report webhook idempotency guard from client tampering.
 -- submit_bug_report() is SECURITY INVOKER and bumps occurrence_count /
@@ -687,7 +714,7 @@ create policy "bug_reports_storage: upload own" on storage.objects
 for insert to authenticated
 with check (
   bucket_id = 'bug-reports'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 
 drop policy if exists "bug_reports_storage: read own" on storage.objects;
@@ -695,7 +722,7 @@ create policy "bug_reports_storage: read own" on storage.objects
 for select to authenticated
 using (
   bucket_id = 'bug-reports'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 
 drop policy if exists "bug_reports_storage: delete own" on storage.objects;
@@ -703,7 +730,7 @@ create policy "bug_reports_storage: delete own" on storage.objects
 for delete to authenticated
 using (
   bucket_id = 'bug-reports'
-  and (storage.foldername(name))[1] = auth.uid()::text
+  and (storage.foldername(name))[1] = (select auth.uid())::text
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -725,7 +752,7 @@ create policy "avatars_storage: upload own" on storage.objects
 for insert to authenticated
 with check (
   bucket_id = 'avatars'
-  and name like (auth.uid()::text || '-%')
+  and name like ((select auth.uid())::text || '-%')
 );
 
 drop policy if exists "avatars_storage: update own" on storage.objects;
@@ -733,7 +760,7 @@ create policy "avatars_storage: update own" on storage.objects
 for update to authenticated
 using (
   bucket_id = 'avatars'
-  and name like (auth.uid()::text || '-%')
+  and name like ((select auth.uid())::text || '-%')
 );
 
 drop policy if exists "avatars_storage: read" on storage.objects;
@@ -743,7 +770,7 @@ using (
   bucket_id = 'avatars'
   and (
     -- Owner can read their own avatar.
-    name like (auth.uid()::text || '-%')
+    name like ((select auth.uid())::text || '-%')
     -- Linked partner can read each other's avatar (needed by ProfileMenu
     -- and any partner-view UI). The first 36 chars of the avatar filename
     -- are the owner's UUID — see the upload policy above. We validate the
@@ -763,7 +790,7 @@ create policy "avatars_storage: delete own" on storage.objects
 for delete to authenticated
 using (
   bucket_id = 'avatars'
-  and name like (auth.uid()::text || '-%')
+  and name like ((select auth.uid())::text || '-%')
 );
 
 create or replace function public.submit_bug_report(
@@ -1107,7 +1134,7 @@ using (public.is_linked(user_id));
 drop policy if exists "financial_events: insert own" on public.financial_events;
 create policy "financial_events: insert own" on public.financial_events
 for insert to authenticated
-with check (auth.uid() = user_id);
+with check ((select auth.uid()) = user_id);
 
 drop policy if exists "financial_events: update none" on public.financial_events;
 create policy "financial_events: update none" on public.financial_events
@@ -1497,18 +1524,18 @@ create policy "budgets: select own" on public.budgets
 drop policy if exists "budgets: insert own" on public.budgets;
 create policy "budgets: insert own" on public.budgets
   for insert to authenticated
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "budgets: update own" on public.budgets;
 create policy "budgets: update own" on public.budgets
   for update to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "budgets: delete own" on public.budgets;
 create policy "budgets: delete own" on public.budgets
   for delete to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 -- ── Migration 004: reconciliation review state ─────────────────────────────
 create table if not exists public.reconciliation_reviews (
@@ -1538,18 +1565,18 @@ create policy "reconciliation_reviews: select own" on public.reconciliation_revi
 drop policy if exists "reconciliation_reviews: insert own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: insert own" on public.reconciliation_reviews
   for insert to authenticated
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "reconciliation_reviews: update own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: update own" on public.reconciliation_reviews
   for update to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "reconciliation_reviews: delete own" on public.reconciliation_reviews;
 create policy "reconciliation_reviews: delete own" on public.reconciliation_reviews
   for delete to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Category Budgets — per-category monthly spending limits
@@ -1592,17 +1619,17 @@ create policy "category_budgets: select own" on category_budgets
 drop policy if exists "category_budgets: insert own" on category_budgets;
 create policy "category_budgets: insert own" on category_budgets
   for insert to authenticated
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "category_budgets: update own" on category_budgets;
 create policy "category_budgets: update own" on category_budgets
   for update to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "category_budgets: delete own" on category_budgets;
 create policy "category_budgets: delete own" on category_budgets
   for delete to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- User Custom Categories
@@ -1647,12 +1674,12 @@ create policy "user_categories: select own" on user_categories
 drop policy if exists "user_categories: insert own" on user_categories;
 create policy "user_categories: insert own" on user_categories
   for insert to authenticated
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "user_categories: update own" on user_categories;
 create policy "user_categories: update own" on user_categories
   for update to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 -- Enforce max 15 active custom categories per user
 create or replace function check_user_category_limit()
@@ -2283,7 +2310,7 @@ create policy "split_groups: select own" on split_groups
 
 create policy "split_groups: insert own" on split_groups
   for insert to authenticated
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 create policy "split_groups: update own" on split_groups
   for update to authenticated
@@ -2303,7 +2330,7 @@ drop policy if exists "split_group_access: insert owner" on split_group_access;
 create policy "split_group_access: insert owner" on split_group_access
   for insert to authenticated
   with check (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     and role in ('admin', 'member', 'viewer')
     and public.is_split_group_owner(split_group_access.group_id)
   );
@@ -2331,7 +2358,7 @@ drop policy if exists "split_group_members: insert own" on split_group_members;
 create policy "split_group_members: insert own" on split_group_members
   for insert to authenticated
   with check (
-    (auth.uid() = user_id)
+    ((select auth.uid()) = user_id)
     and public.is_split_group_owner(split_group_members.group_id)
   );
 
@@ -2340,7 +2367,7 @@ create policy "split_group_members: update own" on split_group_members
   for update to authenticated
   using (public.is_split_group_owner(split_group_members.group_id))
   with check (
-    (auth.uid() = user_id)
+    ((select auth.uid()) = user_id)
     and public.is_split_group_owner(split_group_members.group_id)
   );
 
@@ -2358,7 +2385,7 @@ drop policy if exists "split_expenses: insert own" on split_expenses;
 create policy "split_expenses: insert own" on split_expenses
   for insert to authenticated
   with check (
-    (auth.uid() = user_id)
+    ((select auth.uid()) = user_id)
     and public.is_split_group_member_or_above(split_expenses.group_id)
   );
 
@@ -2367,7 +2394,7 @@ create policy "split_expenses: update own" on split_expenses
   for update to authenticated
   using (public.is_split_group_member_or_above(split_expenses.group_id))
   with check (
-    (auth.uid() = user_id)
+    ((select auth.uid()) = user_id)
     and public.is_split_group_member_or_above(split_expenses.group_id)
   );
 
@@ -2392,7 +2419,7 @@ drop policy if exists "split_expense_splits: insert own" on split_expense_splits
 create policy "split_expense_splits: insert own" on split_expense_splits
   for insert to authenticated
   with check (
-    (auth.uid() = user_id)
+    ((select auth.uid()) = user_id)
     and exists (
       select 1
       from split_expenses e
@@ -2413,7 +2440,7 @@ create policy "split_expense_splits: update own" on split_expense_splits
     )
   )
   with check (
-    (auth.uid() = user_id)
+    ((select auth.uid()) = user_id)
     and exists (
       select 1
       from split_expenses e
@@ -2443,7 +2470,7 @@ drop policy if exists "split_settlements: insert own" on split_settlements;
 create policy "split_settlements: insert own" on split_settlements
   for insert to authenticated
   with check (
-    (auth.uid() = user_id)
+    ((select auth.uid()) = user_id)
     and public.is_split_group_member_or_above(split_settlements.group_id)
   );
 
@@ -2452,7 +2479,7 @@ create policy "split_settlements: update own" on split_settlements
   for update to authenticated
   using (public.is_split_group_member_or_above(split_settlements.group_id))
   with check (
-    (auth.uid() = user_id)
+    ((select auth.uid()) = user_id)
     and public.is_split_group_member_or_above(split_settlements.group_id)
   );
 
@@ -2466,14 +2493,14 @@ create policy "split_group_invites: select own" on split_group_invites
   for select to authenticated
   using (
     public.is_split_group_owner(split_group_invites.group_id)
-    or (auth.uid() = consumed_by)
+    or ((select auth.uid()) = consumed_by)
   );
 
 drop policy if exists "split_group_invites: insert owner" on split_group_invites;
 create policy "split_group_invites: insert owner" on split_group_invites
   for insert to authenticated
   with check (
-    (auth.uid() = created_by)
+    ((select auth.uid()) = created_by)
     and role in ('viewer', 'member', 'admin')
     and public.is_split_group_owner(split_group_invites.group_id)
   );
@@ -4048,7 +4075,7 @@ create trigger on_auth_user_created
 -- ======================================================================
 -- REQUIRED PERMISSIONS FOR RLS HELPER FUNCTIONS
 -- ======================================================================
-grant execute on function public.is_linked(uuid) to authenticated;
+grant execute on function public.is_linked(uuid, uuid) to authenticated;
 grant execute on function public.has_split_group_access(uuid, uuid) to authenticated;
 grant execute on function public.is_split_group_member_or_above(uuid, uuid) to authenticated;
 grant execute on function public.is_split_group_owner(uuid, uuid) to authenticated;
@@ -4630,3 +4657,87 @@ with check (false);
 -- Idempotent revoke — safe if the original grant was already removed
 -- by the modified GRANT block above.
 revoke insert, update, delete on public.financial_events from authenticated;
+
+-- ======================================================================
+-- Unified SECURITY DEFINER Permissions Revocation and Assignment
+-- ======================================================================
+
+-- Drop obsolete overloads if they exist in the target database
+-- Redefine obsolete 1-parameter is_linked wrapper to be SECURITY INVOKER,
+-- avoiding dropping dependent RLS policies while fixing RLS evaluation context.
+create or replace function public.is_linked(target_user_id uuid)
+returns boolean
+language sql
+security invoker
+set search_path = ''
+stable
+as $$
+  select public.is_linked(target_user_id, auth.uid());
+$$;
+drop function if exists public.delete_liability_with_txns(uuid, jsonb);
+drop function if exists public.delete_loan_with_txns(uuid, jsonb);
+drop function if exists public.bug_reports_protect_server_columns();
+
+-- 1. Trigger Functions and Internal Helpers (Revoke completely from PUBLIC, anon, and authenticated)
+revoke execute on function public.maintain_monthly_net_change() from public, anon, authenticated;
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.check_user_category_limit() from public, anon, authenticated;
+revoke execute on function public.ensure_split_group_user_id() from public, anon, authenticated;
+revoke execute on function public.ensure_split_group_owner_access() from public, anon, authenticated;
+revoke execute on function public.on_split_group_delete_cleanup() from public, anon, authenticated;
+revoke execute on function public.cleanup_access_after_member_delete() from public, anon, authenticated;
+revoke execute on function public.sync_transaction_to_split() from public, anon, authenticated;
+revoke execute on function public.sync_split_to_transaction() from public, anon, authenticated;
+revoke execute on function public.enforce_invite_active_limit() from public, anon, authenticated;
+revoke execute on function public.log_financial_event_trg() from public, anon, authenticated;
+
+-- 2. RLS Helper Functions (Revoke from public/anon, grant to authenticated)
+revoke execute on function public.is_linked(uuid, uuid) from public, anon;
+grant execute on function public.is_linked(uuid, uuid) to authenticated;
+
+revoke execute on function public.is_split_group_owner(uuid, uuid) from public, anon;
+grant execute on function public.is_split_group_owner(uuid, uuid) to authenticated;
+
+revoke execute on function public.is_split_group_member_or_above(uuid, uuid) from public, anon;
+grant execute on function public.is_split_group_member_or_above(uuid, uuid) to authenticated;
+
+revoke execute on function public.has_split_group_access(uuid, uuid) from public, anon;
+grant execute on function public.has_split_group_access(uuid, uuid) to authenticated;
+
+revoke execute on function public.split_group_member_profiles(uuid) from public, anon;
+grant execute on function public.split_group_member_profiles(uuid) to authenticated;
+
+-- 3. Authorized RPC Functions (Revoke from public/anon, grant to authenticated)
+revoke execute on function public.consume_wallet_invite(text) from public, anon;
+grant execute on function public.consume_wallet_invite(text) to authenticated;
+
+revoke execute on function public.split_consume_group_invite(text) from public, anon;
+grant execute on function public.split_consume_group_invite(text) to authenticated;
+
+revoke execute on function public.split_create_group(text, text, uuid) from public, anon;
+grant execute on function public.split_create_group(text, text, uuid) to authenticated;
+
+revoke execute on function public.split_update_expense(uuid, uuid, text, numeric, date, text, text, jsonb, boolean, text) from public, anon;
+grant execute on function public.split_update_expense(uuid, uuid, text, numeric, date, text, text, jsonb, boolean, text) to authenticated;
+
+revoke execute on function public.split_leave_group(uuid) from public, anon;
+grant execute on function public.split_leave_group(uuid) to authenticated;
+
+revoke execute on function public.delete_liability_with_txns(uuid) from public, anon;
+grant execute on function public.delete_liability_with_txns(uuid) to authenticated;
+
+revoke execute on function public.delete_loan_with_txns(uuid) from public, anon;
+grant execute on function public.delete_loan_with_txns(uuid) to authenticated;
+
+revoke execute on function public.delete_split_expense_atomic(uuid) from public, anon;
+grant execute on function public.delete_split_expense_atomic(uuid) to authenticated;
+
+revoke execute on function public.delete_split_settlement_atomic(uuid) from public, anon;
+grant execute on function public.delete_split_settlement_atomic(uuid) to authenticated;
+
+revoke execute on function public.unlink_partner_atomic(uuid) from public, anon;
+grant execute on function public.unlink_partner_atomic(uuid) to authenticated;
+
+-- 4. Unauthenticated Public RPC Function (Revoke from general public, grant explicitly to anon and authenticated)
+revoke execute on function public.split_preview_group_invite(text) from public;
+grant execute on function public.split_preview_group_invite(text) to anon, authenticated;

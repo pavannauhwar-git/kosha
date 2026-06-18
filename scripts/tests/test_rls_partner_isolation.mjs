@@ -32,11 +32,12 @@ async function linkWallets(creatorClient, joinerClient, creatorUser, _joinerUser
   if (createError) throw new Error(`Invite insert failed: ${createError.message}`)
   
   // 2. Consume invite
-  const { error: consumeError } = await joinerClient.rpc('consume_wallet_invite', {
+  const { data, error: consumeError } = await joinerClient.rpc('consume_wallet_invite', {
     p_token: inviteToken
   })
   
   if (consumeError) throw new Error(`Invite consume failed: ${consumeError.message}`)
+  if (!data?.consumed) throw new Error(`Invite consume returned false: ${JSON.stringify(data)}`)
 
   return inviteToken
 }
