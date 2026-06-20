@@ -70,6 +70,12 @@ const Input = forwardRef(function Input(
         ...style,
       }}
       class={className}
+      onPointerUp={() => {
+        // Bypass Safari 2-tap swallow when keyboard is open
+        if (resolvedRef.current) {
+          resolvedRef.current.focus()
+        }
+      }}
       {...rest}
     >
       {icon && (

@@ -864,6 +864,10 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                     if (raw.toLowerCase().includes('e')) return;
                     if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) set('amount', raw);
                   }}
+                  onPointerUp={() => {
+                    // Bypass Safari 2-tap swallow
+                    amountRef.current?.focus()
+                  }}
                   disabled={isSaving || !!linkedSplitExpenseId}
                   className="min-w-0 flex-1 bg-transparent text-3xl font-bold text-ink
                              outline-none tabular-nums placeholder-ink-4 disabled:opacity-50"

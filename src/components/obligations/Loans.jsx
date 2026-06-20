@@ -1281,6 +1281,7 @@ export default function Loans({
                       placeholder={form.direction === 'given' ? 'Who did you lend to?' : 'Who did you borrow from?'}
                       value={form.counterparty}
                       onChange={e => setForm(f => ({ ...f, counterparty: e.target.value }))}
+                      onPointerUp={(e) => e.currentTarget.focus()}
                     />
                   </label>
                 </div>
@@ -1308,6 +1309,7 @@ export default function Loans({
                       type="text" inputMode="decimal" pattern="[0-9.]*" name="loan-interest-rate" placeholder="0"
                       value={form.interest_rate}
                       onChange={e => setForm(f => ({ ...f, interest_rate: e.target.value }))}
+                      onPointerUp={(e) => e.currentTarget.focus()}
                     />
                     <span className="text-[13px] text-ink-3 shrink-0">% /yr</span>
                   </label>
@@ -1359,6 +1361,7 @@ export default function Loans({
                       placeholder="Note (optional)"
                       value={form.note}
                       onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+                      onPointerUp={(e) => e.currentTarget.focus()}
                     />
                   </label>
                 </div>
