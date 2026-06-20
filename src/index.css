@@ -1244,6 +1244,7 @@ a,
     margin-right: 0;
     border-radius: 28px;
     padding-bottom: 0;
+    border-bottom: none;
     /* Stay clear of the keyboard for the same reason as the bottom variant (Phase 0). */
     max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 2rem - var(--kb-inset, 0px));
   }

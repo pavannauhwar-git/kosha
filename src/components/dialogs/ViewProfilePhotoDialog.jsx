@@ -12,7 +12,7 @@ export default function ViewProfilePhotoDialog({ open, onClose, avatarUrl, displ
       showHandle={false}
       contentClassName=""
       className="bg-transparent shadow-none w-full max-w-md p-4"
-      backdropClassName="backdrop-blur-xl bg-black/60"
+      backdropClassName="backdrop-blur-md bg-black/40"
     >
       <div className="relative w-full aspect-square bg-kosha-surface-2 rounded-hero overflow-hidden shadow-2xl pointer-events-auto">
         <button
