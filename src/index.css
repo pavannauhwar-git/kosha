@@ -395,6 +395,16 @@ textarea:focus-visible,
   border-radius: inherit;
 }
 
+button,
+a,
+.fab,
+.fab-bills,
+.fab-loans {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* ── Scrollbar styling ──────────────────────────────────────────────── */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

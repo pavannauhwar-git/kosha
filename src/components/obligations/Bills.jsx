@@ -1083,7 +1083,15 @@ export default function Bills({
       </Sheet>
       {/* FAB */}
       {!embedded && !isViewingPartner && (
-        <button className="fab-bills" aria-label="Add bill" onClick={() => setShowAdd(true)}>
+        <button
+          className="fab-bills"
+          aria-label="Add bill"
+          onClick={() => setShowAdd(true)}
+          onPointerDown={(e) => {
+            e.preventDefault() // bypass Safari blur/hover click swallow
+            setShowAdd(true)
+          }}
+        >
           <Plus size={24} className="text-white" />
         </button>
       )}

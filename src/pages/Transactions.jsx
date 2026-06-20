@@ -1762,7 +1762,15 @@ export default function Transactions() {
 
       {/* FAB — hidden in partner wallet view-only mode */}
       {!isViewingPartner && (
-        <button className="fab" aria-label="Add transaction" onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}>
+        <button
+          className="fab"
+          aria-label="Add transaction"
+          onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}
+          onPointerDown={(e) => {
+            e.preventDefault() // bypass Safari blur/hover click swallow
+            setEditTxn(null); setAddType('expense'); setShowAdd(true)
+          }}
+        >
           <Plus size={24} className="text-white" />
         </button>
       )}

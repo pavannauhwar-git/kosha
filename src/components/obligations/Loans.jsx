@@ -1384,7 +1384,15 @@ export default function Loans({
 
       {/* FAB */}
       {!embedded && !isViewingPartner && (
-        <button className="fab-loans" aria-label="Add loan" onClick={() => setShowAdd(true)}>
+        <button
+          className="fab-loans"
+          aria-label="Add loan"
+          onClick={() => setShowAdd(true)}
+          onPointerDown={(e) => {
+            e.preventDefault() // bypass Safari blur/hover click swallow
+            setShowAdd(true)
+          }}
+        >
           <Plus size={24} className="text-white" />
         </button>
       )}
