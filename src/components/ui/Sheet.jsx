@@ -157,9 +157,9 @@ export default function Sheet({
               <button
                 type="button"
                 onClick={onClose}
-                onPointerDown={(e) => {
+                onPointerUp={(e) => {
                   e.stopPropagation()
-                  e.preventDefault() // bypass Safari blur/hover click swallow
+                  // Bypass Safari blur/hover click swallow but wait for finger release
                   onClose()
                 }}
                 className="close-btn"
@@ -187,8 +187,8 @@ export default function Sheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, pointerEvents: 'none' }}
             onClick={handleBackdropClick}
-            onPointerDown={(e) => {
-              e.preventDefault() // bypass Safari blur/hover click swallow
+            onPointerUp={(e) => {
+              // Bypass Safari blur/hover click swallow but wait for finger release
               handleBackdropClick(e)
             }}
           />

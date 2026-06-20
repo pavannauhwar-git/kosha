@@ -1028,8 +1028,8 @@ export default function Dashboard() {
           className="fab"
           aria-label="Add transaction"
           onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}
-          onPointerDown={(e) => {
-            e.preventDefault() // bypass Safari blur/hover click swallow
+          onPointerUp={() => {
+            // Bypass Safari blur swallow but wait for finger release so it feels natural
             setEditTxn(null); setAddType('expense'); setShowAdd(true)
           }}
         >

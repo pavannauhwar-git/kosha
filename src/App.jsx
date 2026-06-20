@@ -524,9 +524,8 @@ function BottomNav() {
                 }
                 navigate(item.path, { replace: true })
               }}
-              onPointerDown={(e) => {
-                // Fast-path for all devices to bypass Safari's blur/hover click-swallowing
-                e.preventDefault() // Prevents duplicate onClick and focus shifting
+              onPointerUp={() => {
+                // Bypass Safari's blur/hover click-swallow, but wait for finger release
                 hapticTap()
                 if (isActive) {
                   window.scrollTo({ top: 0, behavior: 'smooth' })

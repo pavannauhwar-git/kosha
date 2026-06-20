@@ -1388,8 +1388,8 @@ export default function Loans({
           className="fab-loans"
           aria-label="Add loan"
           onClick={() => setShowAdd(true)}
-          onPointerDown={(e) => {
-            e.preventDefault() // bypass Safari blur/hover click swallow
+          onPointerUp={() => {
+            // Bypass Safari blur swallow but wait for finger release so it feels natural
             setShowAdd(true)
           }}
         >
