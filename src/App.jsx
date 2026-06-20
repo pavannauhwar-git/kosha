@@ -525,8 +525,7 @@ function BottomNav() {
                 navigate(item.path, { replace: true })
               }}
               onPointerDown={(e) => {
-                // Fast-path for touch devices to bypass Safari's blur/hover click-swallowing
-                if (e.pointerType === 'mouse') return
+                // Fast-path for all devices to bypass Safari's blur/hover click-swallowing
                 e.preventDefault() // Prevents duplicate onClick and focus shifting
                 hapticTap()
                 if (isActive) {

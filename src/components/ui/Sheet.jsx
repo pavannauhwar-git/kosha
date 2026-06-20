@@ -43,6 +43,7 @@ export default function Sheet({
   initialFocusSelector,
   className = '',
   contentClassName,
+  backdropClassName = '',
   trapFocus = true,
   children,
 }) {
@@ -156,7 +157,11 @@ export default function Sheet({
               <button
                 type="button"
                 onClick={onClose}
-                onPointerDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault() // bypass Safari blur/hover click swallow
+                  onClose()
+                }}
                 className="close-btn"
                 aria-label="Close"
               >
@@ -177,11 +182,15 @@ export default function Sheet({
       {open && (
         <>
           <motion.div
-            className="sheet-backdrop"
+            className={`sheet-backdrop ${backdropClassName}`.trim()}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, pointerEvents: 'none' }}
             onClick={handleBackdropClick}
+            onPointerDown={(e) => {
+              e.preventDefault() // bypass Safari blur/hover click swallow
+              handleBackdropClick(e)
+            }}
           />
           {isCenter ? (
             <motion.div
