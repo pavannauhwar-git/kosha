@@ -21,7 +21,7 @@ export default function useWindowedList({
   const getSize = useCallback((index) => {
     const measured = sizeByIndexRef.current.get(index)
     if (Number.isFinite(measured) && measured > 0) return measured
-    return estimateSize
+    return typeof estimateSize === 'function' ? estimateSize(index) : estimateSize
   }, [estimateSize])
 
   const offsets = useMemo(() => {
@@ -145,6 +145,12 @@ export default function useWindowedList({
     const previous = sizeByIndexRef.current.get(index)
     if (previous && Math.abs(previous - height) < 1) return
 
+    const estimated = typeof estimateSize === 'function' ? estimateSize(index) : estimateSize
+    if (!previous && Math.abs(estimated - height) < 2) {
+      sizeByIndexRef.current.set(index, height)
+      return
+    }
+
     sizeByIndexRef.current.set(index, height)
     
     if (!revisionRafRef.current) {
@@ -153,7 +159,7 @@ export default function useWindowedList({
         setRevision((value) => value + 1)
       })
     }
-  }, [enabled])
+  }, [enabled, estimateSize])
 
   const totalSize = offsets[count]
   const topPadding = offsets[range.start]

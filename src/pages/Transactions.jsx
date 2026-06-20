@@ -352,6 +352,13 @@ export default function Transactions() {
     return grouped.map(([dateKey, txns]) => [dateKey, txns, groupNet(txns)])
   }, [data])
 
+  const estimateGroupSize = useCallback((index) => {
+    const group = groups[index]
+    if (!group) return 150
+    const txnsCount = group[1]?.length || 0
+    return 45 + (txnsCount * 76)
+  }, [groups])
+
   const {
     containerRef: timelineRowListRef,
     startIndex: timelineRowStartIndex,
@@ -362,7 +369,7 @@ export default function Transactions() {
     scrollToIndex: scrollTimelineRowToIndex,
   } = useWindowedList({
     count: groups.length,
-    estimateSize: 150,
+    estimateSize: estimateGroupSize,
     overscan: 6,
     enabled: groups.length > 25,
     resetKey: `${typeFilter}:${catFilter}:${paymentModeFilter}:${datePreset}:${startDate || 'na'}:${endDate || 'na'}:${debouncedSearch}:${displayCount}:${linkedLoanFilter || 'none'}:${linkedBillFilter || 'none'}:${linkedSplitExpenseFilter || 'none'}:${linkedSplitSettlementFilter || 'none'}`,

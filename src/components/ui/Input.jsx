@@ -43,6 +43,13 @@ const Input = forwardRef(function Input(
     return () => el.removeEventListener('input', handleInput)
   }, [onChange, resolvedRef])
 
+  useEffect(() => {
+    const el = resolvedRef.current
+    if (el && value !== undefined && el.value !== value) {
+      el.value = value
+    }
+  }, [value, resolvedRef])
+
   const hasError = Boolean(error)
   const resolvedHelperText = error || helperText
 

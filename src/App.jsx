@@ -515,16 +515,24 @@ function BottomNav() {
             <button
               key={item.path}
               className="nav-float-item"
-              onClick={() => {
+              onClick={(e) => {
+                // Standard click for mouse/keyboard
                 hapticTap()
                 if (isActive) {
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                   return
                 }
-                // replace: true keeps the history stack flat — tab switches
-                // should never create back-navigable history entries so that
-                // the iOS swipe-from-left gesture only triggers meaningful
-                // navigation (e.g. modals / sub-pages), not tab hopping.
+                navigate(item.path, { replace: true })
+              }}
+              onPointerDown={(e) => {
+                // Fast-path for touch devices to bypass Safari's blur/hover click-swallowing
+                if (e.pointerType === 'mouse') return
+                e.preventDefault() // Prevents duplicate onClick and focus shifting
+                hapticTap()
+                if (isActive) {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                  return
+                }
                 navigate(item.path, { replace: true })
               }}
               onMouseEnter={() => prefetchRoute(item.path)}

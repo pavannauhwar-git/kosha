@@ -156,6 +156,7 @@ export default function Sheet({
               <button
                 type="button"
                 onClick={onClose}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="close-btn"
                 aria-label="Close"
               >
