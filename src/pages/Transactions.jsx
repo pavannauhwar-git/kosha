@@ -317,7 +317,7 @@ export default function Transactions() {
     })
   }
 
-  const { data, total, loading: txnLoading } = useTransactions({
+  const { data, total, loading: txnLoading, fetching: txnFetching } = useTransactions({
     type: typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter || undefined,
     paymentMode: paymentModeFilter || undefined,
@@ -372,8 +372,8 @@ export default function Transactions() {
     count: groups.length,
     estimateSize: estimateGroupSize,
     overscan: 6,
-    enabled: groups.length > 25,
-    resetKey: `${typeFilter}:${catFilter}:${paymentModeFilter}:${datePreset}:${startDate || 'na'}:${endDate || 'na'}:${debouncedSearch}:${displayCount}:${linkedLoanFilter || 'none'}:${linkedBillFilter || 'none'}:${linkedSplitExpenseFilter || 'none'}:${linkedSplitSettlementFilter || 'none'}`,
+    enabled: true,
+    resetKey: `${typeFilter}:${catFilter}:${paymentModeFilter}:${datePreset}:${startDate || 'na'}:${endDate || 'na'}:${debouncedSearch}:${linkedLoanFilter || 'none'}:${linkedBillFilter || 'none'}:${linkedSplitExpenseFilter || 'none'}:${linkedSplitSettlementFilter || 'none'}`,
     initialCount: 15,
   })
 
@@ -1528,7 +1528,7 @@ export default function Transactions() {
                 }}
             />
           ) : (
-            <div ref={timelineRowListRef}>
+            <div ref={timelineRowListRef} style={{ overflowAnchor: 'none' }}>
               {timelineRowTopPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowTopPadding}px` }} />}
               {renderedGroups.map(([dateKey, txns, net], localGroupIndex) => {
                 const groupIndex = timelineRowStartIndex + localGroupIndex
@@ -1538,16 +1538,17 @@ export default function Transactions() {
                   <div
                     key={dateKey}
                     ref={(node) => measureTimelineRow(groupIndex, node)}
-                    className={`list-card overflow-hidden ${spacingClass}`}
+                    className={spacingClass}
                   >
-                    <div className="flex items-center justify-between px-5 py-3 border-b border-kosha-border bg-kosha-surface-2 sticky top-0 z-10">
-                      <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
-                        {dateLabel(dateKey)}
-                      </span>
-                      <span className={`text-caption font-semibold ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
-                        {net >= 0 ? '+' : ''}{fmt(net)}
-                      </span>
-                    </div>
+                    <div className="list-card overflow-hidden">
+                      <div className="flex items-center justify-between px-5 py-3 border-b border-kosha-border bg-kosha-surface-2 sticky top-0 z-10">
+                        <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
+                          {dateLabel(dateKey)}
+                        </span>
+                        <span className={`text-caption font-semibold ${net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
+                          {net >= 0 ? '+' : ''}{fmt(net)}
+                        </span>
+                      </div>
 
                     {txns.map((txn, txnIndex) => {
                       const isLast = txnIndex === txns.length - 1
@@ -1569,6 +1570,7 @@ export default function Transactions() {
                         />
                       )
                     })}
+                    </div>
                   </div>
                 )
               })}
@@ -1580,10 +1582,18 @@ export default function Transactions() {
           <Button
             variant="ghost"
             fullWidth
+            disabled={txnFetching}
             onClick={() => setDisplayCount(n => n + 50)}
             className="mt-4"
           >
-            Show more ({total - data.length} remaining)
+            {txnFetching ? (
+              <span className="flex items-center justify-center gap-2">
+                <CircleNotch size={14} className="animate-spin" />
+                Loading older transactions...
+              </span>
+            ) : (
+              `Show more (${total - data.length} remaining)`
+            )}
           </Button>
         )}
 

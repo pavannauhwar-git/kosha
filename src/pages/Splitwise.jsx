@@ -1231,8 +1231,8 @@ export default function Splitwise() {
     count: transactions.length,
     estimateSize: 76,
     overscan: 10,
-    enabled: transactions.length > 20,
-    resetKey: `${activeGroupId}:${transactions.length}`,
+    enabled: true,
+    resetKey: `${activeGroupId}`,
   })
 
   const renderedTransactions = useMemo(
@@ -1707,7 +1707,7 @@ export default function Splitwise() {
               <div
                 ref={txnsListRef}
                 className="max-h-[500px] overflow-y-auto w-full relative scroll-smooth"
-                style={{ willChange: 'transform' }}
+                style={{ willChange: 'transform', overflowAnchor: 'none' }}
               >
                 <div style={{ height: `${txnsTopPadding}px`, width: '100%', flexShrink: 0 }} />
                 <div className="divide-y divide-kosha-border w-full flex flex-col">

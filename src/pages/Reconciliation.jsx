@@ -243,8 +243,8 @@ export default function Reconciliation() {
     count: visibleItems.length,
     estimateSize: 196,
     overscan: 6,
-    enabled: visibleItems.length > 20,
-    resetKey: `${tab}:${reviewStateFilter}:${filter}:${paymentModeFilter}:${visibleItems.length}`,
+    enabled: true,
+    resetKey: `${tab}:${reviewStateFilter}:${filter}:${paymentModeFilter}`,
     initialCount: 24,
   })
 
@@ -747,7 +747,7 @@ export default function Reconciliation() {
                 : () => navigate('/transactions')}
             />
           ) : (
-            <motion.div ref={queueListRef} className="space-y-2.5">
+            <motion.div ref={queueListRef} className="space-y-2.5" style={{ overflowAnchor: 'none' }}>
               {queueTopPadding > 0 && <div aria-hidden="true" style={{ height: `${queueTopPadding}px` }} />}
               <AnimatePresence initial={false} mode="sync">
                 {renderedQueueItems.map((item, localIndex) => {

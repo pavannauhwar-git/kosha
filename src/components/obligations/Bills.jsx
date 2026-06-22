@@ -351,8 +351,8 @@ export default function Bills({
     count: billRows.length,
     estimateSize: tab === 'pending' ? 154 : 128,
     overscan: 6,
-    enabled: billRows.length > 18,
-    resetKey: `${tab}:${billRows.length}`,
+    enabled: true,
+    resetKey: `${tab}`,
     initialCount: 22,
   })
 
@@ -795,7 +795,7 @@ export default function Bills({
             )}
 
             {/* ── Bill cards ── */}
-            <div ref={billListRef} className="space-y-2.5">
+            <div ref={billListRef} className="space-y-2.5" style={{ overflowAnchor: 'none' }}>
               {billTopPadding > 0 && <div aria-hidden="true" style={{ height: `${billTopPadding}px` }} />}
               {renderedBills.map((bill, localIndex) => {
                 const index = billStartIndex + localIndex

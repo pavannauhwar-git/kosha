@@ -118,18 +118,22 @@ export default function useWindowedList({
     }
   }, [scheduleComputeRange])
 
+  const lastResetKeyRef = useRef(resetKey)
   useEffect(() => {
-    sizeByIndexRef.current.clear()
-    if (revisionRafRef.current) {
-      cancelAnimationFrame(revisionRafRef.current)
-      revisionRafRef.current = 0
+    if (resetKey !== lastResetKeyRef.current) {
+      lastResetKeyRef.current = resetKey
+      sizeByIndexRef.current.clear()
+      if (revisionRafRef.current) {
+        cancelAnimationFrame(revisionRafRef.current)
+        revisionRafRef.current = 0
+      }
+      setRevision((value) => value + 1)
+      setRange({
+        start: 0,
+        end: enabled ? Math.min(count, initialCount) : count,
+      })
     }
-    setRevision((value) => value + 1)
-    setRange({
-      start: 0,
-      end: enabled ? Math.min(count, initialCount) : count,
-    })
-  }, [count, enabled, initialCount, resetKey])
+  }, [resetKey, count, enabled, initialCount])
 
   useEffect(() => {
     if (!enabled) return

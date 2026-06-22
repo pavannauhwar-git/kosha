@@ -246,8 +246,8 @@ export default function Loans({
     count: activeLoans.length,
     estimateSize: 186,
     overscan: 6,
-    enabled: activeLoans.length > 16,
-    resetKey: `${tab}:${activeLoans.length}`,
+    enabled: true,
+    resetKey: `${tab}`,
     initialCount: 20,
   })
 
@@ -898,7 +898,7 @@ export default function Loans({
             )}
 
             {/* ── Loan cards ───────────────────────────────────────────── */}
-            <div ref={loanListRef} className="space-y-2.5">
+            <div ref={loanListRef} className="space-y-2.5" style={{ overflowAnchor: 'none' }}>
               {loanTopPadding > 0 && <div aria-hidden="true" style={{ height: `${loanTopPadding}px` }} />}
               {renderedLoans.map((loan, localIndex) => {
                 const rowIndex = loanStartIndex + localIndex

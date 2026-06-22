@@ -339,7 +339,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
   const targetUserId = useActiveWallet()
   const selectedColumns = columns || TRANSACTION_LIST_COLUMNS
   const filters = { type, category, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, columns: selectedColumns }
-  const { data: rows, isLoading, error, refetch } = useQuery({
+  const { data: rows, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: txnListKey(filters, targetUserId),
     enabled: enabled && !!targetUserId,
     queryFn: ({ signal }) => traceQuery('transactions:list', async () => {
@@ -437,7 +437,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
     ? (shouldFetchCount ? (countData ?? safeRows.length) : safeRows.length)
     : safeRows.length
 
-  return { data: safeRows, total, loading: isLoading, error, refetch }
+  return { data: safeRows, total, loading: isLoading, fetching: isFetching, error, refetch }
 }
 
 export function useTransactionSignalAggregates({ type, category, paymentMode, search, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, enabled = true } = {}) {
