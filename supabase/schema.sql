@@ -2,10 +2,8 @@
 -- Kosha — Definitive Supabase Schema
 -- 
 -- This file represents the complete, 100% accurate, and consolidated schema
--- for the Kosha project. It contains all table definitions, functions, triggers,
--- RLS policies, and storage configuration required to spin up a fresh database.
---
--- Run this once in: Supabase Dashboard → SQL Editor → New query → Run
+-- for the Kosha project. It preserves the exact AST execution order of the DB
+-- to guarantee zero dependency errors, while injecting readability headers.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 SET statement_timeout = 0;
@@ -18,8 +16,6 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
-
-COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 CREATE EXTENSION IF NOT EXISTS "hypopg" WITH SCHEMA "extensions";
 
@@ -35,6 +31,10 @@ CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
+
+-- -----------------------------------------------------------------------------
+-- Function: bug_reports_protect_notified_at
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."bug_reports_protect_notified_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
@@ -51,8 +51,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."bug_reports_protect_notified_at"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: check_user_category_limit
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."check_user_category_limit"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -68,8 +70,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."check_user_category_limit"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: cleanup_access_after_member_delete
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."cleanup_access_after_member_delete"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -84,8 +88,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."cleanup_access_after_member_delete"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: consume_wallet_invite
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."consume_wallet_invite"("p_token" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -148,8 +154,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."consume_wallet_invite"("p_token" "text") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: create_loan
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."create_loan"("p_user_id" "uuid", "p_direction" "text", "p_counterparty" "text", "p_amount" numeric, "p_interest_rate" numeric DEFAULT 0, "p_loan_date" "date" DEFAULT CURRENT_DATE, "p_due_date" "date" DEFAULT NULL::"date", "p_note" "text" DEFAULT NULL::"text", "p_id" "uuid" DEFAULT NULL::"uuid") RETURNS json
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -253,8 +261,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."create_loan"("p_user_id" "uuid", "p_direction" "text", "p_counterparty" "text", "p_amount" numeric, "p_interest_rate" numeric, "p_loan_date" "date", "p_due_date" "date", "p_note" "text", "p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: delete_liability_with_txns
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."delete_liability_with_txns"("p_id" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -286,8 +296,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."delete_liability_with_txns"("p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: delete_loan_with_txns
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."delete_loan_with_txns"("p_id" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -316,8 +328,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."delete_loan_with_txns"("p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: delete_split_expense_atomic
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."delete_split_expense_atomic"("p_id" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -358,8 +372,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."delete_split_expense_atomic"("p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: delete_split_settlement_atomic
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."delete_split_settlement_atomic"("p_id" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -404,8 +420,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."delete_split_settlement_atomic"("p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: enforce_invite_active_limit
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."enforce_invite_active_limit"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -429,8 +447,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."enforce_invite_active_limit"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: ensure_split_group_owner_access
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."ensure_split_group_owner_access"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -447,8 +467,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."ensure_split_group_owner_access"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: ensure_split_group_user_id
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."ensure_split_group_user_id"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -463,8 +485,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."ensure_split_group_user_id"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: generate_recurring_transactions
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."generate_recurring_transactions"("p_user_id" "uuid", "p_today" "date" DEFAULT CURRENT_DATE) RETURNS integer
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
@@ -561,8 +585,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."generate_recurring_transactions"("p_user_id" "uuid", "p_today" "date") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: get_month_summary
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_month" "text") RETURNS TABLE("total_income" numeric, "total_expense" numeric, "total_investment" numeric, "category" "text", "investment_vehicle" "text", "total" numeric)
     LANGUAGE "sql" STABLE
     SET "search_path" TO ''
@@ -620,8 +646,10 @@ CREATE OR REPLACE FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_m
   group by investment_vehicle;
 $$;
 
-ALTER FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_month" "text") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: get_month_summary
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_month_summary"("p_user_ids" "uuid"[], "p_year" integer, "p_month" integer) RETURNS TABLE("type" "text", "is_repayment" boolean, "category" "text", "investment_vehicle" "text", "total" numeric)
     LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
@@ -633,8 +661,10 @@ CREATE OR REPLACE FUNCTION "public"."get_month_summary"("p_user_ids" "uuid"[], "
   group by type, is_repayment, category, investment_vehicle
 $$;
 
-ALTER FUNCTION "public"."get_month_summary"("p_user_ids" "uuid"[], "p_year" integer, "p_month" integer) OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: get_month_summary
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_year" integer, "p_month" integer) RETURNS TABLE("type" "text", "is_repayment" boolean, "category" "text", "investment_vehicle" "text", "total" numeric)
     LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
@@ -652,8 +682,10 @@ CREATE OR REPLACE FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_y
   group by type, is_repayment, category, investment_vehicle
 $$;
 
-ALTER FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_year" integer, "p_month" integer) OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: get_running_balance
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_running_balance"("p_user_ids" "uuid"[], "p_end_date" "date") RETURNS numeric
     LANGUAGE "sql" STABLE
     SET "search_path" TO ''
@@ -676,8 +708,10 @@ CREATE OR REPLACE FUNCTION "public"."get_running_balance"("p_user_ids" "uuid"[],
   );
 $$;
 
-ALTER FUNCTION "public"."get_running_balance"("p_user_ids" "uuid"[], "p_end_date" "date") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: get_running_balance
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_running_balance"("p_user_id" "uuid", "p_end_date" "date") RETURNS numeric
     LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
@@ -691,8 +725,10 @@ CREATE OR REPLACE FUNCTION "public"."get_running_balance"("p_user_id" "uuid", "p
     and date    <= p_end_date
 $$;
 
-ALTER FUNCTION "public"."get_running_balance"("p_user_id" "uuid", "p_end_date" "date") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: get_transaction_signal_aggregates
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text" DEFAULT NULL::"text", "p_category" "text" DEFAULT NULL::"text", "p_payment_mode" "text" DEFAULT NULL::"text", "p_search" "text" DEFAULT NULL::"text", "p_start_date" "date" DEFAULT NULL::"date", "p_end_date" "date" DEFAULT NULL::"date") RETURNS json
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
@@ -800,8 +836,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text", "p_category" "text", "p_payment_mode" "text", "p_search" "text", "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: get_transaction_signal_aggregates
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text" DEFAULT NULL::"text", "p_category" "text" DEFAULT NULL::"text", "p_payment_mode" "text" DEFAULT NULL::"text", "p_search" "text" DEFAULT NULL::"text", "p_start_date" "date" DEFAULT NULL::"date", "p_end_date" "date" DEFAULT NULL::"date", "p_linked_loan_id" "uuid" DEFAULT NULL::"uuid", "p_linked_bill_id" "uuid" DEFAULT NULL::"uuid", "p_linked_split_expense_id" "uuid" DEFAULT NULL::"uuid", "p_linked_split_settlement_id" "uuid" DEFAULT NULL::"uuid") RETURNS json
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public'
@@ -917,8 +955,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text", "p_category" "text", "p_payment_mode" "text", "p_search" "text", "p_start_date" "date", "p_end_date" "date", "p_linked_loan_id" "uuid", "p_linked_bill_id" "uuid", "p_linked_split_expense_id" "uuid", "p_linked_split_settlement_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: get_year_summary
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_year_summary"("p_user_ids" "uuid"[], "p_year" integer) RETURNS TABLE("monthly_data" json, "category_data" json, "vehicle_data" json, "totals" json, "top5_expenses" json)
     LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
@@ -981,8 +1021,10 @@ CREATE OR REPLACE FUNCTION "public"."get_year_summary"("p_user_ids" "uuid"[], "p
     (select json_agg(row_to_json(e)) from top5_agg e);
 $$;
 
-ALTER FUNCTION "public"."get_year_summary"("p_user_ids" "uuid"[], "p_year" integer) OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: get_year_summary
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_year_summary"("p_user_id" "uuid", "p_year" integer) RETURNS TABLE("monthly_data" json, "category_data" json, "vehicle_data" json, "totals" json, "top5_expenses" json)
     LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
@@ -990,8 +1032,10 @@ CREATE OR REPLACE FUNCTION "public"."get_year_summary"("p_user_id" "uuid", "p_ye
   select * from public.get_year_summary(ARRAY[p_user_id], p_year);
 $$;
 
-ALTER FUNCTION "public"."get_year_summary"("p_user_id" "uuid", "p_year" integer) OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: handle_new_user
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1004,8 +1048,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: has_split_group_access
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."has_split_group_access"("p_group_id" "uuid", "p_user_id" "uuid" DEFAULT "auth"."uid"()) RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1018,8 +1064,10 @@ CREATE OR REPLACE FUNCTION "public"."has_split_group_access"("p_group_id" "uuid"
   );
 $$;
 
-ALTER FUNCTION "public"."has_split_group_access"("p_group_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: is_linked
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."is_linked"("target_user_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE
     SET "search_path" TO ''
@@ -1027,8 +1075,10 @@ CREATE OR REPLACE FUNCTION "public"."is_linked"("target_user_id" "uuid") RETURNS
   select public.is_linked(target_user_id, auth.uid());
 $$;
 
-ALTER FUNCTION "public"."is_linked"("target_user_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: is_linked
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."is_linked"("target_user_id" "uuid", "p_user_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -1040,8 +1090,10 @@ CREATE OR REPLACE FUNCTION "public"."is_linked"("target_user_id" "uuid", "p_user
   );
 $$;
 
-ALTER FUNCTION "public"."is_linked"("target_user_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: is_split_group_member_or_above
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."is_split_group_member_or_above"("p_group_id" "uuid", "p_user_id" "uuid" DEFAULT "auth"."uid"()) RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1055,8 +1107,10 @@ CREATE OR REPLACE FUNCTION "public"."is_split_group_member_or_above"("p_group_id
   );
 $$;
 
-ALTER FUNCTION "public"."is_split_group_member_or_above"("p_group_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: is_split_group_owner
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."is_split_group_owner"("p_group_id" "uuid", "p_user_id" "uuid" DEFAULT "auth"."uid"()) RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1070,8 +1124,10 @@ CREATE OR REPLACE FUNCTION "public"."is_split_group_owner"("p_group_id" "uuid", 
   );
 $$;
 
-ALTER FUNCTION "public"."is_split_group_owner"("p_group_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: log_financial_event_trg
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."log_financial_event_trg"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1173,8 +1229,10 @@ exception
 end;
 $$;
 
-ALTER FUNCTION "public"."log_financial_event_trg"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: maintain_monthly_net_change
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."maintain_monthly_net_change"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1229,8 +1287,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."maintain_monthly_net_change"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: mark_liability_paid
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."mark_liability_paid"("p_liability_id" "uuid", "p_user_id" "uuid") RETURNS json
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1315,8 +1375,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."mark_liability_paid"("p_liability_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: on_split_group_delete_cleanup
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."on_split_group_delete_cleanup"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1338,8 +1400,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."on_split_group_delete_cleanup"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: record_loan_payment
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."record_loan_payment"("p_loan_id" "uuid", "p_user_id" "uuid", "p_amount" numeric, "p_id" "uuid" DEFAULT NULL::"uuid") RETURNS json
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1427,8 +1491,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."record_loan_payment"("p_loan_id" "uuid", "p_user_id" "uuid", "p_amount" numeric, "p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: rls_auto_enable
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."rls_auto_enable"() RETURNS "event_trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'pg_catalog'
@@ -1457,12 +1523,10 @@ BEGIN
 END;
 $$;
 
-ALTER FUNCTION "public"."rls_auto_enable"() OWNER TO "postgres";
 
-SET default_tablespace = '';
-
-SET default_table_access_method = "heap";
-
+-- -----------------------------------------------------------------------------
+-- Table: split_groups
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."split_groups" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "name" "text" NOT NULL,
@@ -1473,8 +1537,10 @@ CREATE TABLE IF NOT EXISTS "public"."split_groups" (
     "banner_id" "text"
 );
 
-ALTER TABLE "public"."split_groups" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_consume_group_invite
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_consume_group_invite"("p_token" "text") RETURNS "public"."split_groups"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1611,8 +1677,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."split_consume_group_invite"("p_token" "text") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: split_expenses
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."split_expenses" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "group_id" "uuid" NOT NULL,
@@ -1629,8 +1697,10 @@ CREATE TABLE IF NOT EXISTS "public"."split_expenses" (
     CONSTRAINT "split_expenses_split_method_check" CHECK (("split_method" = ANY (ARRAY['equal'::"text", 'exact'::"text", 'percent'::"text", 'shares'::"text"])))
 );
 
-ALTER TABLE "public"."split_expenses" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_create_expense
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_create_expense"("p_group_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date" DEFAULT CURRENT_DATE, "p_split_method" "text" DEFAULT 'equal'::"text", "p_notes" "text" DEFAULT NULL::"text", "p_splits" "jsonb" DEFAULT '[]'::"jsonb", "p_sync_transaction" boolean DEFAULT true, "p_transaction_category" "text" DEFAULT 'other'::"text", "p_id" "uuid" DEFAULT NULL::"uuid") RETURNS "public"."split_expenses"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1793,8 +1863,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."split_create_expense"("p_group_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date", "p_split_method" "text", "p_notes" "text", "p_splits" "jsonb", "p_sync_transaction" boolean, "p_transaction_category" "text", "p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_create_group
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_create_group"("p_name" "text", "p_self_display_name" "text" DEFAULT NULL::"text", "p_id" "uuid" DEFAULT NULL::"uuid") RETURNS "public"."split_groups"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1872,8 +1944,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."split_create_group"("p_name" "text", "p_self_display_name" "text", "p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: split_group_invites
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."split_group_invites" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "group_id" "uuid" NOT NULL,
@@ -1887,8 +1961,10 @@ CREATE TABLE IF NOT EXISTS "public"."split_group_invites" (
     CONSTRAINT "split_group_invites_role_check" CHECK (("role" = ANY (ARRAY['viewer'::"text", 'member'::"text", 'admin'::"text"])))
 );
 
-ALTER TABLE "public"."split_group_invites" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_create_group_invite
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_create_group_invite"("p_group_id" "uuid", "p_role" "text" DEFAULT 'member'::"text", "p_id" "uuid" DEFAULT NULL::"uuid") RETURNS "public"."split_group_invites"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -1925,8 +2001,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."split_create_group_invite"("p_group_id" "uuid", "p_role" "text", "p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_group_member_profiles
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_group_member_profiles"("p_group_id" "uuid") RETURNS TABLE("user_id" "uuid", "display_name" "text", "avatar_url" "text")
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1941,8 +2019,10 @@ CREATE OR REPLACE FUNCTION "public"."split_group_member_profiles"("p_group_id" "
     and public.has_split_group_access(p_group_id, auth.uid());
 $$;
 
-ALTER FUNCTION "public"."split_group_member_profiles"("p_group_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_leave_group
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_leave_group"("p_group_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1989,8 +2069,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."split_leave_group"("p_group_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_preview_group_invite
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_preview_group_invite"("p_token" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2029,8 +2111,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."split_preview_group_invite"("p_token" "text") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: split_settlements
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."split_settlements" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "group_id" "uuid" NOT NULL,
@@ -2046,8 +2130,10 @@ CREATE TABLE IF NOT EXISTS "public"."split_settlements" (
     CONSTRAINT "split_settlements_amount_check" CHECK (("amount" > (0)::numeric))
 );
 
-ALTER TABLE "public"."split_settlements" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_record_settlement
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_record_settlement"("p_group_id" "uuid", "p_payer_member_id" "uuid", "p_payee_member_id" "uuid", "p_amount" numeric, "p_settled_at" "date" DEFAULT CURRENT_DATE, "p_note" "text" DEFAULT NULL::"text", "p_sync_transaction" boolean DEFAULT true, "p_id" "uuid" DEFAULT NULL::"uuid") RETURNS "public"."split_settlements"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -2161,8 +2247,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."split_record_settlement"("p_group_id" "uuid", "p_payer_member_id" "uuid", "p_payee_member_id" "uuid", "p_amount" numeric, "p_settled_at" "date", "p_note" "text", "p_sync_transaction" boolean, "p_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: split_group_access
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."split_group_access" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "group_id" "uuid" NOT NULL,
@@ -2172,8 +2260,10 @@ CREATE TABLE IF NOT EXISTS "public"."split_group_access" (
     CONSTRAINT "split_group_access_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'member'::"text", 'viewer'::"text"])))
 );
 
-ALTER TABLE "public"."split_group_access" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_set_group_access_role
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_set_group_access_role"("p_group_id" "uuid", "p_user_id" "uuid", "p_role" "text") RETURNS "public"."split_group_access"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -2227,8 +2317,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."split_set_group_access_role"("p_group_id" "uuid", "p_user_id" "uuid", "p_role" "text") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: split_update_expense
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."split_update_expense"("p_expense_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date", "p_split_method" "text", "p_notes" "text", "p_splits" "jsonb", "p_sync_transaction" boolean DEFAULT true, "p_transaction_category" "text" DEFAULT 'other'::"text") RETURNS "public"."split_expenses"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -2408,8 +2500,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."split_update_expense"("p_expense_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date", "p_split_method" "text", "p_notes" "text", "p_splits" "jsonb", "p_sync_transaction" boolean, "p_transaction_category" "text") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: submit_bug_report
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."submit_bug_report"("p_title" "text", "p_description" "text", "p_steps" "text" DEFAULT NULL::"text", "p_severity" "text" DEFAULT 'medium'::"text", "p_route" "text" DEFAULT NULL::"text", "p_app_version" "text" DEFAULT NULL::"text", "p_diagnostics" "jsonb" DEFAULT NULL::"jsonb", "p_environment" "jsonb" DEFAULT NULL::"jsonb", "p_screenshot_path" "text" DEFAULT NULL::"text", "p_reporter_email" "text" DEFAULT NULL::"text", "p_fingerprint" "text" DEFAULT NULL::"text", "p_tags" "text"[] DEFAULT NULL::"text"[]) RETURNS TABLE("report_id" "uuid", "is_duplicate" boolean, "occurrence_count" integer)
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
@@ -2511,8 +2605,10 @@ BEGIN
 END;
 $$;
 
-ALTER FUNCTION "public"."submit_bug_report"("p_title" "text", "p_description" "text", "p_steps" "text", "p_severity" "text", "p_route" "text", "p_app_version" "text", "p_diagnostics" "jsonb", "p_environment" "jsonb", "p_screenshot_path" "text", "p_reporter_email" "text", "p_fingerprint" "text", "p_tags" "text"[]) OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: sync_split_to_transaction
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."sync_split_to_transaction"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -2533,8 +2629,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."sync_split_to_transaction"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: sync_transaction_to_split
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."sync_transaction_to_split"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -2559,8 +2657,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."sync_transaction_to_split"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: touch_split_group_updated_at
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."touch_split_group_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -2571,8 +2671,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."touch_split_group_updated_at"() OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Function: unlink_partner_atomic
+-- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."unlink_partner_atomic"("p_partner_id" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -2597,8 +2699,10 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "public"."unlink_partner_atomic"("p_partner_id" "uuid") OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: budgets
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."budgets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2609,8 +2713,10 @@ CREATE TABLE IF NOT EXISTS "public"."budgets" (
     CONSTRAINT "budgets_amount_check" CHECK (("amount" >= (0)::numeric))
 );
 
-ALTER TABLE "public"."budgets" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: bug_reports
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."bug_reports" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid",
@@ -2644,8 +2750,10 @@ CREATE TABLE IF NOT EXISTS "public"."bug_reports" (
     CONSTRAINT "bug_reports_title_check" CHECK (("char_length"("title") <= 160))
 );
 
-ALTER TABLE "public"."bug_reports" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: category_budgets
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."category_budgets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2655,8 +2763,10 @@ CREATE TABLE IF NOT EXISTS "public"."category_budgets" (
     CONSTRAINT "category_budgets_monthly_limit_check" CHECK (("monthly_limit" > (0)::numeric))
 );
 
-ALTER TABLE "public"."category_budgets" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: financial_events
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."financial_events" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2668,8 +2778,10 @@ CREATE TABLE IF NOT EXISTS "public"."financial_events" (
     CONSTRAINT "financial_events_entity_type_check" CHECK (("entity_type" = ANY (ARRAY['transaction'::"text", 'liability'::"text", 'loan'::"text", 'split_group'::"text", 'split_group_member'::"text", 'split_expense'::"text", 'split_settlement'::"text", 'split_group_invite'::"text"])))
 );
 
-ALTER TABLE "public"."financial_events" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: invites
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."invites" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "token" "text" DEFAULT "encode"("extensions"."gen_random_bytes"(12), 'hex'::"text") NOT NULL,
@@ -2680,8 +2792,10 @@ CREATE TABLE IF NOT EXISTS "public"."invites" (
     "expires_at" timestamp with time zone
 );
 
-ALTER TABLE "public"."invites" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: liabilities
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."liabilities" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "description" "text" NOT NULL,
@@ -2699,10 +2813,13 @@ CREATE TABLE IF NOT EXISTS "public"."liabilities" (
     CONSTRAINT "liabilities_recurrence_check" CHECK (("recurrence" = ANY (ARRAY['monthly'::"text", 'quarterly'::"text", 'yearly'::"text"])))
 );
 
+-- Constraint/Alter: liabilities
 ALTER TABLE ONLY "public"."liabilities" REPLICA IDENTITY FULL;
 
-ALTER TABLE "public"."liabilities" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: loans
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."loans" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "direction" "text" NOT NULL,
@@ -2722,18 +2839,23 @@ CREATE TABLE IF NOT EXISTS "public"."loans" (
     CONSTRAINT "loans_interest_rate_check" CHECK (("interest_rate" >= (0)::numeric))
 );
 
+-- Constraint/Alter: loans
 ALTER TABLE ONLY "public"."loans" REPLICA IDENTITY FULL;
 
-ALTER TABLE "public"."loans" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: monthly_net_changes
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."monthly_net_changes" (
     "user_id" "uuid" NOT NULL,
     "month_start" "date" NOT NULL,
     "net_change" numeric DEFAULT 0 NOT NULL
 );
 
-ALTER TABLE "public"."monthly_net_changes" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: profiles
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
     "display_name" "text",
@@ -2743,8 +2865,10 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "avatar_url" "text"
 );
 
-ALTER TABLE "public"."profiles" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: reconciliation_reviews
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."reconciliation_reviews" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2756,8 +2880,10 @@ CREATE TABLE IF NOT EXISTS "public"."reconciliation_reviews" (
     CONSTRAINT "reconciliation_reviews_status_check" CHECK (("status" = ANY (ARRAY['reviewed'::"text", 'linked'::"text"])))
 );
 
-ALTER TABLE "public"."reconciliation_reviews" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: split_expense_splits
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."split_expense_splits" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "expense_id" "uuid" NOT NULL,
@@ -2770,8 +2896,10 @@ CREATE TABLE IF NOT EXISTS "public"."split_expense_splits" (
     CONSTRAINT "split_expense_splits_share_check" CHECK (("share" >= (0)::numeric))
 );
 
-ALTER TABLE "public"."split_expense_splits" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: split_group_members
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."split_group_members" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "group_id" "uuid" NOT NULL,
@@ -2782,8 +2910,10 @@ CREATE TABLE IF NOT EXISTS "public"."split_group_members" (
     "user_id" "uuid"
 );
 
-ALTER TABLE "public"."split_group_members" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: transactions
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "date" "date" NOT NULL,
@@ -2812,10 +2942,13 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
     CONSTRAINT "transactions_type_check" CHECK (("type" = ANY (ARRAY['income'::"text", 'expense'::"text", 'investment'::"text"])))
 );
 
+-- Constraint/Alter: transactions
 ALTER TABLE ONLY "public"."transactions" REPLICA IDENTITY FULL;
 
-ALTER TABLE "public"."transactions" OWNER TO "postgres";
 
+-- -----------------------------------------------------------------------------
+-- Table: user_categories
+-- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."user_categories" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2832,224 +2965,319 @@ CREATE TABLE IF NOT EXISTS "public"."user_categories" (
     CONSTRAINT "user_categories_type_check" CHECK (("type" = ANY (ARRAY['expense'::"text", 'income'::"text", 'investment'::"text"])))
 );
 
-ALTER TABLE "public"."user_categories" OWNER TO "postgres";
-
+-- Constraint/Alter: budgets
 ALTER TABLE ONLY "public"."budgets"
     ADD CONSTRAINT "budgets_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: bug_reports
 ALTER TABLE ONLY "public"."bug_reports"
     ADD CONSTRAINT "bug_reports_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: category_budgets
 ALTER TABLE ONLY "public"."category_budgets"
     ADD CONSTRAINT "category_budgets_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: financial_events
 ALTER TABLE ONLY "public"."financial_events"
     ADD CONSTRAINT "financial_events_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: invites
 ALTER TABLE ONLY "public"."invites"
     ADD CONSTRAINT "invites_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: invites
 ALTER TABLE ONLY "public"."invites"
     ADD CONSTRAINT "invites_token_key" UNIQUE ("token");
 
+-- Constraint/Alter: liabilities
 ALTER TABLE ONLY "public"."liabilities"
     ADD CONSTRAINT "liabilities_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: loans
 ALTER TABLE ONLY "public"."loans"
     ADD CONSTRAINT "loans_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: monthly_net_changes
 ALTER TABLE ONLY "public"."monthly_net_changes"
     ADD CONSTRAINT "monthly_net_changes_pkey" PRIMARY KEY ("user_id", "month_start");
 
+-- Constraint/Alter: profiles
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: reconciliation_reviews
 ALTER TABLE ONLY "public"."reconciliation_reviews"
     ADD CONSTRAINT "reconciliation_reviews_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: reconciliation_reviews
 ALTER TABLE ONLY "public"."reconciliation_reviews"
     ADD CONSTRAINT "reconciliation_reviews_user_id_transaction_id_key" UNIQUE ("user_id", "transaction_id");
 
+-- Constraint/Alter: split_expense_splits
 ALTER TABLE ONLY "public"."split_expense_splits"
     ADD CONSTRAINT "split_expense_splits_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: split_expenses
 ALTER TABLE ONLY "public"."split_expenses"
     ADD CONSTRAINT "split_expenses_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: split_group_access
 ALTER TABLE ONLY "public"."split_group_access"
     ADD CONSTRAINT "split_group_access_group_id_user_id_key" UNIQUE ("group_id", "user_id");
 
+-- Constraint/Alter: split_group_access
 ALTER TABLE ONLY "public"."split_group_access"
     ADD CONSTRAINT "split_group_access_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: split_group_invites
 ALTER TABLE ONLY "public"."split_group_invites"
     ADD CONSTRAINT "split_group_invites_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: split_group_invites
 ALTER TABLE ONLY "public"."split_group_invites"
     ADD CONSTRAINT "split_group_invites_token_key" UNIQUE ("token");
 
+-- Constraint/Alter: split_group_members
 ALTER TABLE ONLY "public"."split_group_members"
     ADD CONSTRAINT "split_group_members_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: split_groups
 ALTER TABLE ONLY "public"."split_groups"
     ADD CONSTRAINT "split_groups_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: split_settlements
 ALTER TABLE ONLY "public"."split_settlements"
     ADD CONSTRAINT "split_settlements_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: transactions
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: user_categories
 ALTER TABLE ONLY "public"."user_categories"
     ADD CONSTRAINT "user_categories_pkey" PRIMARY KEY ("id");
 
+-- Constraint/Alter: user_categories
 ALTER TABLE ONLY "public"."user_categories"
     ADD CONSTRAINT "user_categories_user_id_slug_key" UNIQUE ("user_id", "slug");
 
+-- Index: idx_budgets_user (Table: budgets)
 CREATE INDEX "idx_budgets_user" ON "public"."budgets" USING "btree" ("user_id");
 
+-- Index: idx_budgets_user_category (Table: category_budgets)
 CREATE UNIQUE INDEX "idx_budgets_user_category" ON "public"."category_budgets" USING "btree" ("user_id", "category");
 
+-- Index: idx_bug_reports_created_at (Table: bug_reports)
 CREATE INDEX "idx_bug_reports_created_at" ON "public"."bug_reports" USING "btree" ("created_at" DESC);
 
+-- Index: idx_bug_reports_duplicate (Table: bug_reports)
 CREATE INDEX "idx_bug_reports_duplicate" ON "public"."bug_reports" USING "btree" ("duplicate_of");
 
+-- Index: idx_bug_reports_fingerprint_route (Table: bug_reports)
 CREATE INDEX "idx_bug_reports_fingerprint_route" ON "public"."bug_reports" USING "btree" ("fingerprint", "route");
 
+-- Index: idx_bug_reports_last_reported (Table: bug_reports)
 CREATE INDEX "idx_bug_reports_last_reported" ON "public"."bug_reports" USING "btree" ("last_reported_at" DESC);
 
+-- Index: idx_bug_reports_priority (Table: bug_reports)
 CREATE INDEX "idx_bug_reports_priority" ON "public"."bug_reports" USING "btree" ("priority");
 
+-- Index: idx_bug_reports_status (Table: bug_reports)
 CREATE INDEX "idx_bug_reports_status" ON "public"."bug_reports" USING "btree" ("status");
 
+-- Index: idx_bug_reports_user (Table: bug_reports)
 CREATE INDEX "idx_bug_reports_user" ON "public"."bug_reports" USING "btree" ("user_id");
 
+-- Index: idx_financial_events_entity (Table: financial_events)
 CREATE INDEX "idx_financial_events_entity" ON "public"."financial_events" USING "btree" ("entity_type", "entity_id", "created_at" DESC);
 
+-- Index: idx_financial_events_user_created (Table: financial_events)
 CREATE INDEX "idx_financial_events_user_created" ON "public"."financial_events" USING "btree" ("user_id", "created_at" DESC);
 
+-- Index: idx_invite_created_by (Table: invites)
 CREATE INDEX "idx_invite_created_by" ON "public"."invites" USING "btree" ("created_by");
 
+-- Index: idx_invite_token (Table: invites)
 CREATE INDEX "idx_invite_token" ON "public"."invites" USING "btree" ("token");
 
+-- Index: idx_invite_used_by (Table: invites)
 CREATE INDEX "idx_invite_used_by" ON "public"."invites" USING "btree" ("used_by");
 
+-- Index: idx_invites_token_active (Table: invites)
 CREATE INDEX "idx_invites_token_active" ON "public"."invites" USING "btree" ("token") WHERE ("used_by" IS NULL);
 
+-- Index: idx_liab_due (Table: liabilities)
 CREATE INDEX "idx_liab_due" ON "public"."liabilities" USING "btree" ("due_date");
 
+-- Index: idx_liab_linked_txn (Table: liabilities)
 CREATE INDEX "idx_liab_linked_txn" ON "public"."liabilities" USING "btree" ("linked_transaction_id") WHERE ("linked_transaction_id" IS NOT NULL);
 
+-- Index: idx_liab_paid (Table: liabilities)
 CREATE INDEX "idx_liab_paid" ON "public"."liabilities" USING "btree" ("paid");
 
+-- Index: idx_liab_user (Table: liabilities)
 CREATE INDEX "idx_liab_user" ON "public"."liabilities" USING "btree" ("user_id");
 
+-- Index: idx_liab_user_due (Table: liabilities)
 CREATE INDEX "idx_liab_user_due" ON "public"."liabilities" USING "btree" ("user_id", "due_date");
 
+-- Index: idx_liab_user_paid_due (Table: liabilities)
 CREATE INDEX "idx_liab_user_paid_due" ON "public"."liabilities" USING "btree" ("user_id", "paid", "due_date");
 
+-- Index: idx_liabilities_linked_txn (Table: liabilities)
 CREATE INDEX "idx_liabilities_linked_txn" ON "public"."liabilities" USING "btree" ("linked_transaction_id");
 
+-- Index: idx_loans_direction (Table: loans)
 CREATE INDEX "idx_loans_direction" ON "public"."loans" USING "btree" ("direction");
 
+-- Index: idx_loans_settled (Table: loans)
 CREATE INDEX "idx_loans_settled" ON "public"."loans" USING "btree" ("settled");
 
+-- Index: idx_loans_user (Table: loans)
 CREATE INDEX "idx_loans_user" ON "public"."loans" USING "btree" ("user_id");
 
+-- Index: idx_recon_reviews_transaction_id (Table: reconciliation_reviews)
 CREATE INDEX "idx_recon_reviews_transaction_id" ON "public"."reconciliation_reviews" USING "btree" ("transaction_id");
 
+-- Index: idx_reconciliation_reviews_user (Table: reconciliation_reviews)
 CREATE INDEX "idx_reconciliation_reviews_user" ON "public"."reconciliation_reviews" USING "btree" ("user_id");
 
+-- Index: idx_reconciliation_reviews_user_txn (Table: reconciliation_reviews)
 CREATE INDEX "idx_reconciliation_reviews_user_txn" ON "public"."reconciliation_reviews" USING "btree" ("user_id", "transaction_id");
 
+-- Index: idx_split_expense_splits_expense (Table: split_expense_splits)
 CREATE INDEX "idx_split_expense_splits_expense" ON "public"."split_expense_splits" USING "btree" ("expense_id");
 
+-- Index: idx_split_expense_splits_member (Table: split_expense_splits)
 CREATE INDEX "idx_split_expense_splits_member" ON "public"."split_expense_splits" USING "btree" ("member_id");
 
+-- Index: idx_split_expense_splits_unique_member (Table: split_expense_splits)
 CREATE UNIQUE INDEX "idx_split_expense_splits_unique_member" ON "public"."split_expense_splits" USING "btree" ("expense_id", "member_id");
 
+-- Index: idx_split_expense_splits_user (Table: split_expense_splits)
 CREATE INDEX "idx_split_expense_splits_user" ON "public"."split_expense_splits" USING "btree" ("user_id");
 
+-- Index: idx_split_expenses_group_date (Table: split_expenses)
 CREATE INDEX "idx_split_expenses_group_date" ON "public"."split_expenses" USING "btree" ("group_id", "expense_date" DESC);
 
+-- Index: idx_split_expenses_linked_transaction (Table: split_expenses)
 CREATE INDEX "idx_split_expenses_linked_transaction" ON "public"."split_expenses" USING "btree" ("linked_transaction_id");
 
+-- Index: idx_split_expenses_paid_by_member (Table: split_expenses)
 CREATE INDEX "idx_split_expenses_paid_by_member" ON "public"."split_expenses" USING "btree" ("paid_by_member_id");
 
+-- Index: idx_split_expenses_user (Table: split_expenses)
 CREATE INDEX "idx_split_expenses_user" ON "public"."split_expenses" USING "btree" ("user_id");
 
+-- Index: idx_split_group_access_group (Table: split_group_access)
 CREATE INDEX "idx_split_group_access_group" ON "public"."split_group_access" USING "btree" ("group_id");
 
+-- Index: idx_split_group_access_user (Table: split_group_access)
 CREATE INDEX "idx_split_group_access_user" ON "public"."split_group_access" USING "btree" ("user_id");
 
+-- Index: idx_split_group_invites_active (Table: split_group_invites)
 CREATE INDEX "idx_split_group_invites_active" ON "public"."split_group_invites" USING "btree" ("group_id", "created_at" DESC) WHERE (("consumed_by" IS NULL) AND ("revoked_at" IS NULL));
 
+-- Index: idx_split_group_invites_consumed_by (Table: split_group_invites)
 CREATE INDEX "idx_split_group_invites_consumed_by" ON "public"."split_group_invites" USING "btree" ("consumed_by") WHERE ("consumed_by" IS NOT NULL);
 
+-- Index: idx_split_group_invites_created_by (Table: split_group_invites)
 CREATE INDEX "idx_split_group_invites_created_by" ON "public"."split_group_invites" USING "btree" ("created_by");
 
+-- Index: idx_split_group_invites_group (Table: split_group_invites)
 CREATE INDEX "idx_split_group_invites_group" ON "public"."split_group_invites" USING "btree" ("group_id");
 
+-- Index: idx_split_group_invites_token (Table: split_group_invites)
 CREATE INDEX "idx_split_group_invites_token" ON "public"."split_group_invites" USING "btree" ("token");
 
+-- Index: idx_split_group_members_group (Table: split_group_members)
 CREATE INDEX "idx_split_group_members_group" ON "public"."split_group_members" USING "btree" ("group_id");
 
+-- Index: idx_split_group_members_group_linked_user_unique (Table: split_group_members)
 CREATE UNIQUE INDEX "idx_split_group_members_group_linked_user_unique" ON "public"."split_group_members" USING "btree" ("group_id", "linked_user_id") WHERE ("linked_user_id" IS NOT NULL);
 
+-- Index: idx_split_group_members_group_name_unique (Table: split_group_members)
 CREATE UNIQUE INDEX "idx_split_group_members_group_name_unique" ON "public"."split_group_members" USING "btree" ("group_id", "lower"("display_name"));
 
+-- Index: idx_split_group_members_linked_user (Table: split_group_members)
 CREATE INDEX "idx_split_group_members_linked_user" ON "public"."split_group_members" USING "btree" ("linked_user_id") WHERE ("linked_user_id" IS NOT NULL);
 
+-- Index: idx_split_group_members_user (Table: split_group_members)
 CREATE INDEX "idx_split_group_members_user" ON "public"."split_group_members" USING "btree" ("user_id");
 
+-- Index: idx_split_groups_user (Table: split_groups)
 CREATE INDEX "idx_split_groups_user" ON "public"."split_groups" USING "btree" ("user_id");
 
+-- Index: idx_split_settlements_group_date (Table: split_settlements)
 CREATE INDEX "idx_split_settlements_group_date" ON "public"."split_settlements" USING "btree" ("group_id", "settled_at" DESC);
 
+-- Index: idx_split_settlements_payee (Table: split_settlements)
 CREATE INDEX "idx_split_settlements_payee" ON "public"."split_settlements" USING "btree" ("payee_member_id");
 
+-- Index: idx_split_settlements_payee_transaction (Table: split_settlements)
 CREATE INDEX "idx_split_settlements_payee_transaction" ON "public"."split_settlements" USING "btree" ("payee_transaction_id");
 
+-- Index: idx_split_settlements_payer (Table: split_settlements)
 CREATE INDEX "idx_split_settlements_payer" ON "public"."split_settlements" USING "btree" ("payer_member_id");
 
+-- Index: idx_split_settlements_payer_transaction (Table: split_settlements)
 CREATE INDEX "idx_split_settlements_payer_transaction" ON "public"."split_settlements" USING "btree" ("payer_transaction_id");
 
+-- Index: idx_split_settlements_user (Table: split_settlements)
 CREATE INDEX "idx_split_settlements_user" ON "public"."split_settlements" USING "btree" ("user_id");
 
+-- Index: idx_transactions_linked_bill (Table: transactions)
 CREATE INDEX "idx_transactions_linked_bill" ON "public"."transactions" USING "btree" ("linked_bill_id");
 
+-- Index: idx_transactions_linked_loan (Table: transactions)
 CREATE INDEX "idx_transactions_linked_loan" ON "public"."transactions" USING "btree" ("linked_loan_id");
 
+-- Index: idx_transactions_linked_split_expense (Table: transactions)
 CREATE INDEX "idx_transactions_linked_split_expense" ON "public"."transactions" USING "btree" ("linked_split_expense_id");
 
+-- Index: idx_transactions_linked_split_settlement (Table: transactions)
 CREATE INDEX "idx_transactions_linked_split_settlement" ON "public"."transactions" USING "btree" ("linked_split_settlement_id");
 
+-- Index: idx_txn_category (Table: transactions)
 CREATE INDEX "idx_txn_category" ON "public"."transactions" USING "btree" ("category");
 
+-- Index: idx_txn_date (Table: transactions)
 CREATE INDEX "idx_txn_date" ON "public"."transactions" USING "btree" ("date" DESC);
 
+-- Index: idx_txn_desc_trgm (Table: transactions)
 CREATE INDEX "idx_txn_desc_trgm" ON "public"."transactions" USING "gin" ("description" "extensions"."gin_trgm_ops");
 
+-- Index: idx_txn_recurring_due (Table: transactions)
 CREATE INDEX "idx_txn_recurring_due" ON "public"."transactions" USING "btree" ("user_id", "next_run_date") WHERE ("is_recurring" = true);
 
+-- Index: idx_txn_source_txn (Table: transactions)
 CREATE INDEX "idx_txn_source_txn" ON "public"."transactions" USING "btree" ("source_transaction_id") WHERE ("source_transaction_id" IS NOT NULL);
 
+-- Index: idx_txn_type (Table: transactions)
 CREATE INDEX "idx_txn_type" ON "public"."transactions" USING "btree" ("type");
 
+-- Index: idx_txn_user (Table: transactions)
 CREATE INDEX "idx_txn_user" ON "public"."transactions" USING "btree" ("user_id");
 
+-- Index: idx_txn_user_category_date_created (Table: transactions)
 CREATE INDEX "idx_txn_user_category_date_created" ON "public"."transactions" USING "btree" ("user_id", "category", "date" DESC, "created_at" DESC);
 
+-- Index: idx_txn_user_date (Table: transactions)
 CREATE INDEX "idx_txn_user_date" ON "public"."transactions" USING "btree" ("user_id", "date");
 
+-- Index: idx_txn_user_date_created (Table: transactions)
 CREATE INDEX "idx_txn_user_date_created" ON "public"."transactions" USING "btree" ("user_id", "date" DESC, "created_at" DESC);
 
+-- Index: idx_txn_user_type_date_created (Table: transactions)
 CREATE INDEX "idx_txn_user_type_date_created" ON "public"."transactions" USING "btree" ("user_id", "type", "date" DESC, "created_at" DESC);
 
+-- Index: idx_user_cat_user (Table: user_categories)
 CREATE INDEX "idx_user_cat_user" ON "public"."user_categories" USING "btree" ("user_id") WHERE ("archived" = false);
 
+-- Index: idx_user_categories_user_label_unique (Table: user_categories)
 CREATE UNIQUE INDEX "idx_user_categories_user_label_unique" ON "public"."user_categories" USING "btree" ("user_id", "lower"(TRIM(BOTH FROM "label"))) WHERE ("archived" = false);
 
+-- Index: uniq_invites_active_per_user (Table: invites)
 CREATE UNIQUE INDEX "uniq_invites_active_per_user" ON "public"."invites" USING "btree" ("created_by") WHERE ("used_by" IS NULL);
 
 CREATE OR REPLACE TRIGGER "enforce_user_category_limit" BEFORE INSERT ON "public"."user_categories" FOR EACH ROW EXECUTE FUNCTION "public"."check_user_category_limit"();
@@ -3084,324 +3312,454 @@ CREATE OR REPLACE TRIGGER "trg_sync_tx_to_split" AFTER UPDATE ON "public"."trans
 
 CREATE OR REPLACE TRIGGER "trg_touch_split_group_updated_at" BEFORE UPDATE ON "public"."split_groups" FOR EACH ROW EXECUTE FUNCTION "public"."touch_split_group_updated_at"();
 
+-- Constraint/Alter: budgets
 ALTER TABLE ONLY "public"."budgets"
     ADD CONSTRAINT "budgets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
 
+-- Constraint/Alter: bug_reports
 ALTER TABLE ONLY "public"."bug_reports"
     ADD CONSTRAINT "bug_reports_duplicate_of_fkey" FOREIGN KEY ("duplicate_of") REFERENCES "public"."bug_reports"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: bug_reports
 ALTER TABLE ONLY "public"."bug_reports"
     ADD CONSTRAINT "bug_reports_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: category_budgets
 ALTER TABLE ONLY "public"."category_budgets"
     ADD CONSTRAINT "category_budgets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: financial_events
 ALTER TABLE ONLY "public"."financial_events"
     ADD CONSTRAINT "financial_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: invites
 ALTER TABLE ONLY "public"."invites"
     ADD CONSTRAINT "invites_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
+-- Constraint/Alter: invites
 ALTER TABLE ONLY "public"."invites"
     ADD CONSTRAINT "invites_used_by_fkey" FOREIGN KEY ("used_by") REFERENCES "auth"."users"("id");
 
+-- Constraint/Alter: liabilities
 ALTER TABLE ONLY "public"."liabilities"
     ADD CONSTRAINT "liabilities_linked_transaction_id_fkey" FOREIGN KEY ("linked_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: liabilities
 ALTER TABLE ONLY "public"."liabilities"
     ADD CONSTRAINT "liabilities_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: loans
 ALTER TABLE ONLY "public"."loans"
     ADD CONSTRAINT "loans_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: monthly_net_changes
 ALTER TABLE ONLY "public"."monthly_net_changes"
     ADD CONSTRAINT "monthly_net_changes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: profiles
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: reconciliation_reviews
 ALTER TABLE ONLY "public"."reconciliation_reviews"
     ADD CONSTRAINT "reconciliation_reviews_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: reconciliation_reviews
 ALTER TABLE ONLY "public"."reconciliation_reviews"
     ADD CONSTRAINT "reconciliation_reviews_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_expense_splits
 ALTER TABLE ONLY "public"."split_expense_splits"
     ADD CONSTRAINT "split_expense_splits_expense_id_fkey" FOREIGN KEY ("expense_id") REFERENCES "public"."split_expenses"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_expense_splits
 ALTER TABLE ONLY "public"."split_expense_splits"
     ADD CONSTRAINT "split_expense_splits_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "public"."split_group_members"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_expense_splits
 ALTER TABLE ONLY "public"."split_expense_splits"
     ADD CONSTRAINT "split_expense_splits_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_expenses
 ALTER TABLE ONLY "public"."split_expenses"
     ADD CONSTRAINT "split_expenses_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "public"."split_groups"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_expenses
 ALTER TABLE ONLY "public"."split_expenses"
     ADD CONSTRAINT "split_expenses_linked_transaction_id_fkey" FOREIGN KEY ("linked_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: split_expenses
 ALTER TABLE ONLY "public"."split_expenses"
     ADD CONSTRAINT "split_expenses_paid_by_member_id_fkey" FOREIGN KEY ("paid_by_member_id") REFERENCES "public"."split_group_members"("id") ON DELETE RESTRICT;
 
+-- Constraint/Alter: split_expenses
 ALTER TABLE ONLY "public"."split_expenses"
     ADD CONSTRAINT "split_expenses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_group_access
 ALTER TABLE ONLY "public"."split_group_access"
     ADD CONSTRAINT "split_group_access_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "public"."split_groups"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_group_access
 ALTER TABLE ONLY "public"."split_group_access"
     ADD CONSTRAINT "split_group_access_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_group_invites
 ALTER TABLE ONLY "public"."split_group_invites"
     ADD CONSTRAINT "split_group_invites_consumed_by_fkey" FOREIGN KEY ("consumed_by") REFERENCES "auth"."users"("id");
 
+-- Constraint/Alter: split_group_invites
 ALTER TABLE ONLY "public"."split_group_invites"
     ADD CONSTRAINT "split_group_invites_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
+-- Constraint/Alter: split_group_invites
 ALTER TABLE ONLY "public"."split_group_invites"
     ADD CONSTRAINT "split_group_invites_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "public"."split_groups"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_group_members
 ALTER TABLE ONLY "public"."split_group_members"
     ADD CONSTRAINT "split_group_members_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "public"."split_groups"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_group_members
 ALTER TABLE ONLY "public"."split_group_members"
     ADD CONSTRAINT "split_group_members_linked_user_id_fkey" FOREIGN KEY ("linked_user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: split_group_members
 ALTER TABLE ONLY "public"."split_group_members"
     ADD CONSTRAINT "split_group_members_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_groups
 ALTER TABLE ONLY "public"."split_groups"
     ADD CONSTRAINT "split_groups_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_settlements
 ALTER TABLE ONLY "public"."split_settlements"
     ADD CONSTRAINT "split_settlements_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "public"."split_groups"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: split_settlements
 ALTER TABLE ONLY "public"."split_settlements"
     ADD CONSTRAINT "split_settlements_payee_member_id_fkey" FOREIGN KEY ("payee_member_id") REFERENCES "public"."split_group_members"("id") ON DELETE RESTRICT;
 
+-- Constraint/Alter: split_settlements
 ALTER TABLE ONLY "public"."split_settlements"
     ADD CONSTRAINT "split_settlements_payee_transaction_id_fkey" FOREIGN KEY ("payee_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: split_settlements
 ALTER TABLE ONLY "public"."split_settlements"
     ADD CONSTRAINT "split_settlements_payer_member_id_fkey" FOREIGN KEY ("payer_member_id") REFERENCES "public"."split_group_members"("id") ON DELETE RESTRICT;
 
+-- Constraint/Alter: split_settlements
 ALTER TABLE ONLY "public"."split_settlements"
     ADD CONSTRAINT "split_settlements_payer_transaction_id_fkey" FOREIGN KEY ("payer_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: split_settlements
 ALTER TABLE ONLY "public"."split_settlements"
     ADD CONSTRAINT "split_settlements_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: transactions
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_linked_bill_id_fkey" FOREIGN KEY ("linked_bill_id") REFERENCES "public"."liabilities"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: transactions
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_linked_loan_id_fkey" FOREIGN KEY ("linked_loan_id") REFERENCES "public"."loans"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: transactions
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_linked_split_expense_id_fkey" FOREIGN KEY ("linked_split_expense_id") REFERENCES "public"."split_expenses"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: transactions
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_linked_split_settlement_id_fkey" FOREIGN KEY ("linked_split_settlement_id") REFERENCES "public"."split_settlements"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: transactions
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_source_transaction_id_fkey" FOREIGN KEY ("source_transaction_id") REFERENCES "public"."transactions"("id") ON DELETE SET NULL;
 
+-- Constraint/Alter: transactions
 ALTER TABLE ONLY "public"."transactions"
     ADD CONSTRAINT "transactions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Constraint/Alter: user_categories
 ALTER TABLE ONLY "public"."user_categories"
     ADD CONSTRAINT "user_categories_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
+-- Policy: Users can read own monthly net changes (Table: monthly_net_changes)
 CREATE POLICY "Users can read own monthly net changes" ON "public"."monthly_net_changes" FOR SELECT TO "authenticated" USING ("public"."is_linked"("user_id"));
 
+-- Enable RLS: budgets
 ALTER TABLE "public"."budgets" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: budgets: delete own (Table: budgets)
 CREATE POLICY "budgets: delete own" ON "public"."budgets" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: budgets: insert own (Table: budgets)
 CREATE POLICY "budgets: insert own" ON "public"."budgets" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: budgets: select own (Table: budgets)
 CREATE POLICY "budgets: select own" ON "public"."budgets" FOR SELECT TO "authenticated" USING ("public"."is_linked"("user_id"));
 
+-- Policy: budgets: update own (Table: budgets)
 CREATE POLICY "budgets: update own" ON "public"."budgets" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Enable RLS: bug_reports
 ALTER TABLE "public"."bug_reports" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: bug_reports: insert own (Table: bug_reports)
 CREATE POLICY "bug_reports: insert own" ON "public"."bug_reports" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: bug_reports: select own (Table: bug_reports)
 CREATE POLICY "bug_reports: select own" ON "public"."bug_reports" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: bug_reports: update own (Table: bug_reports)
 CREATE POLICY "bug_reports: update own" ON "public"."bug_reports" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Enable RLS: category_budgets
 ALTER TABLE "public"."category_budgets" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: category_budgets: delete own (Table: category_budgets)
 CREATE POLICY "category_budgets: delete own" ON "public"."category_budgets" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: category_budgets: insert own (Table: category_budgets)
 CREATE POLICY "category_budgets: insert own" ON "public"."category_budgets" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: category_budgets: select own (Table: category_budgets)
 CREATE POLICY "category_budgets: select own" ON "public"."category_budgets" FOR SELECT TO "authenticated" USING ("public"."is_linked"("user_id"));
 
+-- Policy: category_budgets: update own (Table: category_budgets)
 CREATE POLICY "category_budgets: update own" ON "public"."category_budgets" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Enable RLS: financial_events
 ALTER TABLE "public"."financial_events" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: financial_events: delete none (Table: financial_events)
 CREATE POLICY "financial_events: delete none" ON "public"."financial_events" FOR DELETE USING (false);
 
+-- Policy: financial_events: insert blocked (Table: financial_events)
 CREATE POLICY "financial_events: insert blocked" ON "public"."financial_events" FOR INSERT TO "authenticated" WITH CHECK (false);
 
+-- Policy: financial_events: select own (Table: financial_events)
 CREATE POLICY "financial_events: select own" ON "public"."financial_events" FOR SELECT TO "authenticated" USING ("public"."is_linked"("user_id"));
 
+-- Policy: financial_events: update none (Table: financial_events)
 CREATE POLICY "financial_events: update none" ON "public"."financial_events" FOR UPDATE USING (false) WITH CHECK (false);
 
+-- Enable RLS: invites
 ALTER TABLE "public"."invites" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: invites: delete own (Table: invites)
 CREATE POLICY "invites: delete own" ON "public"."invites" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "created_by"));
 
+-- Policy: invites: insert own (Table: invites)
 CREATE POLICY "invites: insert own" ON "public"."invites" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "created_by"));
 
+-- Policy: invites: select own (Table: invites)
 CREATE POLICY "invites: select own" ON "public"."invites" FOR SELECT TO "authenticated" USING (((( SELECT "auth"."uid"() AS "uid") = "created_by") OR (( SELECT "auth"."uid"() AS "uid") = "used_by")));
 
+-- Policy: invites: update own (Table: invites)
 CREATE POLICY "invites: update own" ON "public"."invites" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "created_by")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "created_by"));
 
+-- Enable RLS: liabilities
 ALTER TABLE "public"."liabilities" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: liabilities: delete own (Table: liabilities)
 CREATE POLICY "liabilities: delete own" ON "public"."liabilities" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: liabilities: insert own (Table: liabilities)
 CREATE POLICY "liabilities: insert own" ON "public"."liabilities" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: liabilities: select own (Table: liabilities)
 CREATE POLICY "liabilities: select own" ON "public"."liabilities" FOR SELECT TO "authenticated" USING ("public"."is_linked"("user_id"));
 
+-- Policy: liabilities: update own (Table: liabilities)
 CREATE POLICY "liabilities: update own" ON "public"."liabilities" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Enable RLS: loans
 ALTER TABLE "public"."loans" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: loans: delete own (Table: loans)
 CREATE POLICY "loans: delete own" ON "public"."loans" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: loans: insert own (Table: loans)
 CREATE POLICY "loans: insert own" ON "public"."loans" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: loans: select own (Table: loans)
 CREATE POLICY "loans: select own" ON "public"."loans" FOR SELECT TO "authenticated" USING ("public"."is_linked"("user_id"));
 
+-- Policy: loans: update own (Table: loans)
 CREATE POLICY "loans: update own" ON "public"."loans" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Enable RLS: monthly_net_changes
 ALTER TABLE "public"."monthly_net_changes" ENABLE ROW LEVEL SECURITY;
 
+-- Enable RLS: profiles
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: profiles: insert own (Table: profiles)
 CREATE POLICY "profiles: insert own" ON "public"."profiles" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "id"));
 
+-- Policy: profiles: select own (Table: profiles)
 CREATE POLICY "profiles: select own" ON "public"."profiles" FOR SELECT TO "authenticated" USING ("public"."is_linked"("id"));
 
+-- Policy: profiles: update own (Table: profiles)
 CREATE POLICY "profiles: update own" ON "public"."profiles" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "id"));
 
+-- Enable RLS: reconciliation_reviews
 ALTER TABLE "public"."reconciliation_reviews" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: reconciliation_reviews: delete own (Table: reconciliation_reviews)
 CREATE POLICY "reconciliation_reviews: delete own" ON "public"."reconciliation_reviews" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: reconciliation_reviews: insert own (Table: reconciliation_reviews)
 CREATE POLICY "reconciliation_reviews: insert own" ON "public"."reconciliation_reviews" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: reconciliation_reviews: select own (Table: reconciliation_reviews)
 CREATE POLICY "reconciliation_reviews: select own" ON "public"."reconciliation_reviews" FOR SELECT TO "authenticated" USING ("public"."is_linked"("user_id"));
 
+-- Policy: reconciliation_reviews: update own (Table: reconciliation_reviews)
 CREATE POLICY "reconciliation_reviews: update own" ON "public"."reconciliation_reviews" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id")) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Enable RLS: split_expense_splits
 ALTER TABLE "public"."split_expense_splits" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: split_expense_splits: delete own (Table: split_expense_splits)
 CREATE POLICY "split_expense_splits: delete own" ON "public"."split_expense_splits" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."split_expenses" "e"
   WHERE (("e"."id" = "split_expense_splits"."expense_id") AND "public"."is_split_group_member_or_above"("e"."group_id")))));
 
+-- Policy: split_expense_splits: insert own (Table: split_expense_splits)
 CREATE POLICY "split_expense_splits: insert own" ON "public"."split_expense_splits" FOR INSERT TO "authenticated" WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND (EXISTS ( SELECT 1
    FROM "public"."split_expenses" "e"
   WHERE (("e"."id" = "split_expense_splits"."expense_id") AND "public"."is_split_group_member_or_above"("e"."group_id"))))));
 
+-- Policy: split_expense_splits: select own (Table: split_expense_splits)
 CREATE POLICY "split_expense_splits: select own" ON "public"."split_expense_splits" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."split_expenses" "e"
   WHERE (("e"."id" = "split_expense_splits"."expense_id") AND "public"."has_split_group_access"("e"."group_id")))));
 
+-- Policy: split_expense_splits: update own (Table: split_expense_splits)
 CREATE POLICY "split_expense_splits: update own" ON "public"."split_expense_splits" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."split_expenses" "e"
   WHERE (("e"."id" = "split_expense_splits"."expense_id") AND "public"."is_split_group_member_or_above"("e"."group_id"))))) WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND (EXISTS ( SELECT 1
    FROM "public"."split_expenses" "e"
   WHERE (("e"."id" = "split_expense_splits"."expense_id") AND "public"."is_split_group_member_or_above"("e"."group_id"))))));
 
+-- Enable RLS: split_expenses
 ALTER TABLE "public"."split_expenses" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: split_expenses: delete own (Table: split_expenses)
 CREATE POLICY "split_expenses: delete own" ON "public"."split_expenses" FOR DELETE TO "authenticated" USING ("public"."is_split_group_member_or_above"("group_id"));
 
+-- Policy: split_expenses: insert own (Table: split_expenses)
 CREATE POLICY "split_expenses: insert own" ON "public"."split_expenses" FOR INSERT TO "authenticated" WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_split_group_member_or_above"("group_id")));
 
+-- Policy: split_expenses: select own (Table: split_expenses)
 CREATE POLICY "split_expenses: select own" ON "public"."split_expenses" FOR SELECT TO "authenticated" USING ("public"."has_split_group_access"("group_id"));
 
+-- Policy: split_expenses: update own (Table: split_expenses)
 CREATE POLICY "split_expenses: update own" ON "public"."split_expenses" FOR UPDATE TO "authenticated" USING ("public"."is_split_group_member_or_above"("group_id")) WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_split_group_member_or_above"("group_id")));
 
+-- Enable RLS: split_group_access
 ALTER TABLE "public"."split_group_access" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: split_group_access: delete owner (Table: split_group_access)
 CREATE POLICY "split_group_access: delete owner" ON "public"."split_group_access" FOR DELETE TO "authenticated" USING ("public"."is_split_group_owner"("group_id"));
 
+-- Policy: split_group_access: insert owner (Table: split_group_access)
 CREATE POLICY "split_group_access: insert owner" ON "public"."split_group_access" FOR INSERT TO "authenticated" WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND ("role" = ANY (ARRAY['admin'::"text", 'member'::"text", 'viewer'::"text"])) AND "public"."is_split_group_owner"("group_id")));
 
+-- Policy: split_group_access: select own (Table: split_group_access)
 CREATE POLICY "split_group_access: select own" ON "public"."split_group_access" FOR SELECT TO "authenticated" USING ("public"."has_split_group_access"("group_id"));
 
+-- Policy: split_group_access: update owner (Table: split_group_access)
 CREATE POLICY "split_group_access: update owner" ON "public"."split_group_access" FOR UPDATE TO "authenticated" USING ("public"."is_split_group_owner"("group_id")) WITH CHECK ((("role" = ANY (ARRAY['admin'::"text", 'member'::"text", 'viewer'::"text"])) AND "public"."is_split_group_owner"("group_id")));
 
+-- Enable RLS: split_group_invites
 ALTER TABLE "public"."split_group_invites" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: split_group_invites: delete owner (Table: split_group_invites)
 CREATE POLICY "split_group_invites: delete owner" ON "public"."split_group_invites" FOR DELETE TO "authenticated" USING ("public"."is_split_group_owner"("group_id"));
 
+-- Policy: split_group_invites: insert owner (Table: split_group_invites)
 CREATE POLICY "split_group_invites: insert owner" ON "public"."split_group_invites" FOR INSERT TO "authenticated" WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "created_by") AND ("role" = ANY (ARRAY['viewer'::"text", 'member'::"text", 'admin'::"text"])) AND "public"."is_split_group_owner"("group_id")));
 
+-- Policy: split_group_invites: select own (Table: split_group_invites)
 CREATE POLICY "split_group_invites: select own" ON "public"."split_group_invites" FOR SELECT TO "authenticated" USING (("public"."is_split_group_owner"("group_id") OR (( SELECT "auth"."uid"() AS "uid") = "consumed_by")));
 
+-- Policy: split_group_invites: update owner (Table: split_group_invites)
 CREATE POLICY "split_group_invites: update owner" ON "public"."split_group_invites" FOR UPDATE TO "authenticated" USING ("public"."is_split_group_owner"("group_id")) WITH CHECK ((("role" = ANY (ARRAY['viewer'::"text", 'member'::"text", 'admin'::"text"])) AND "public"."is_split_group_owner"("group_id")));
 
+-- Enable RLS: split_group_members
 ALTER TABLE "public"."split_group_members" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: split_group_members: delete own (Table: split_group_members)
 CREATE POLICY "split_group_members: delete own" ON "public"."split_group_members" FOR DELETE TO "authenticated" USING ("public"."is_split_group_owner"("group_id"));
 
+-- Policy: split_group_members: insert own (Table: split_group_members)
 CREATE POLICY "split_group_members: insert own" ON "public"."split_group_members" FOR INSERT TO "authenticated" WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_split_group_owner"("group_id")));
 
+-- Policy: split_group_members: select own (Table: split_group_members)
 CREATE POLICY "split_group_members: select own" ON "public"."split_group_members" FOR SELECT TO "authenticated" USING ("public"."has_split_group_access"("group_id"));
 
+-- Policy: split_group_members: update own (Table: split_group_members)
 CREATE POLICY "split_group_members: update own" ON "public"."split_group_members" FOR UPDATE TO "authenticated" USING ("public"."is_split_group_owner"("group_id")) WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_split_group_owner"("group_id")));
 
+-- Enable RLS: split_groups
 ALTER TABLE "public"."split_groups" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: split_groups: delete own (Table: split_groups)
 CREATE POLICY "split_groups: delete own" ON "public"."split_groups" FOR DELETE TO "authenticated" USING ("public"."is_split_group_owner"("id"));
 
+-- Policy: split_groups: insert own (Table: split_groups)
 CREATE POLICY "split_groups: insert own" ON "public"."split_groups" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: split_groups: select own (Table: split_groups)
 CREATE POLICY "split_groups: select own" ON "public"."split_groups" FOR SELECT TO "authenticated" USING ("public"."has_split_group_access"("id"));
 
+-- Policy: split_groups: update own (Table: split_groups)
 CREATE POLICY "split_groups: update own" ON "public"."split_groups" FOR UPDATE TO "authenticated" USING (("public"."is_split_group_owner"("id") OR "public"."is_split_group_member_or_above"("id"))) WITH CHECK (("public"."is_split_group_owner"("id") OR "public"."is_split_group_member_or_above"("id")));
 
+-- Enable RLS: split_settlements
 ALTER TABLE "public"."split_settlements" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: split_settlements: delete own (Table: split_settlements)
 CREATE POLICY "split_settlements: delete own" ON "public"."split_settlements" FOR DELETE TO "authenticated" USING ("public"."is_split_group_member_or_above"("group_id"));
 
+-- Policy: split_settlements: insert own (Table: split_settlements)
 CREATE POLICY "split_settlements: insert own" ON "public"."split_settlements" FOR INSERT TO "authenticated" WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_split_group_member_or_above"("group_id")));
 
+-- Policy: split_settlements: select own (Table: split_settlements)
 CREATE POLICY "split_settlements: select own" ON "public"."split_settlements" FOR SELECT TO "authenticated" USING ("public"."has_split_group_access"("group_id"));
 
+-- Policy: split_settlements: update own (Table: split_settlements)
 CREATE POLICY "split_settlements: update own" ON "public"."split_settlements" FOR UPDATE TO "authenticated" USING ("public"."is_split_group_member_or_above"("group_id")) WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_split_group_member_or_above"("group_id")));
 
+-- Enable RLS: transactions
 ALTER TABLE "public"."transactions" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: transactions: delete own (Table: transactions)
 CREATE POLICY "transactions: delete own" ON "public"."transactions" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: transactions: insert own (Table: transactions)
 CREATE POLICY "transactions: insert own" ON "public"."transactions" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: transactions: select own (Table: transactions)
 CREATE POLICY "transactions: select own" ON "public"."transactions" FOR SELECT TO "authenticated" USING ("public"."is_linked"("user_id"));
 
+-- Policy: transactions: update own (Table: transactions)
 CREATE POLICY "transactions: update own" ON "public"."transactions" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Enable RLS: user_categories
 ALTER TABLE "public"."user_categories" ENABLE ROW LEVEL SECURITY;
 
+-- Policy: user_categories: insert own (Table: user_categories)
 CREATE POLICY "user_categories: insert own" ON "public"."user_categories" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
+-- Policy: user_categories: select own (Table: user_categories)
 CREATE POLICY "user_categories: select own" ON "public"."user_categories" FOR SELECT TO "authenticated" USING ("public"."is_linked"("user_id"));
 
+-- Policy: user_categories: update own (Table: user_categories)
 CREATE POLICY "user_categories: update own" ON "public"."user_categories" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
-
-ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
 
 ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."liabilities";
 
@@ -3423,290 +3781,29 @@ ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."split_settlements
 
 ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."transactions";
 
-GRANT USAGE ON SCHEMA "public" TO "postgres";
-GRANT USAGE ON SCHEMA "public" TO "anon";
-GRANT USAGE ON SCHEMA "public" TO "authenticated";
-GRANT USAGE ON SCHEMA "public" TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."bug_reports_protect_notified_at"() TO "anon";
-GRANT ALL ON FUNCTION "public"."bug_reports_protect_notified_at"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."bug_reports_protect_notified_at"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."check_user_category_limit"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."check_user_category_limit"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."cleanup_access_after_member_delete"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."cleanup_access_after_member_delete"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."consume_wallet_invite"("p_token" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."consume_wallet_invite"("p_token" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."consume_wallet_invite"("p_token" "text") TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."create_loan"("p_user_id" "uuid", "p_direction" "text", "p_counterparty" "text", "p_amount" numeric, "p_interest_rate" numeric, "p_loan_date" "date", "p_due_date" "date", "p_note" "text", "p_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."create_loan"("p_user_id" "uuid", "p_direction" "text", "p_counterparty" "text", "p_amount" numeric, "p_interest_rate" numeric, "p_loan_date" "date", "p_due_date" "date", "p_note" "text", "p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."create_loan"("p_user_id" "uuid", "p_direction" "text", "p_counterparty" "text", "p_amount" numeric, "p_interest_rate" numeric, "p_loan_date" "date", "p_due_date" "date", "p_note" "text", "p_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."delete_liability_with_txns"("p_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."delete_liability_with_txns"("p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."delete_liability_with_txns"("p_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."delete_loan_with_txns"("p_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."delete_loan_with_txns"("p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."delete_loan_with_txns"("p_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."delete_split_expense_atomic"("p_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."delete_split_expense_atomic"("p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."delete_split_expense_atomic"("p_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."delete_split_settlement_atomic"("p_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."delete_split_settlement_atomic"("p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."delete_split_settlement_atomic"("p_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."enforce_invite_active_limit"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."enforce_invite_active_limit"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."ensure_split_group_owner_access"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."ensure_split_group_owner_access"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."ensure_split_group_user_id"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."ensure_split_group_user_id"() TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."generate_recurring_transactions"("p_user_id" "uuid", "p_today" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."generate_recurring_transactions"("p_user_id" "uuid", "p_today" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."generate_recurring_transactions"("p_user_id" "uuid", "p_today" "date") TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_month" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_month" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_month" "text") TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."get_month_summary"("p_user_ids" "uuid"[], "p_year" integer, "p_month" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_month_summary"("p_user_ids" "uuid"[], "p_year" integer, "p_month" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_month_summary"("p_user_ids" "uuid"[], "p_year" integer, "p_month" integer) TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_year" integer, "p_month" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_year" integer, "p_month" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_month_summary"("p_user_id" "uuid", "p_year" integer, "p_month" integer) TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."get_running_balance"("p_user_ids" "uuid"[], "p_end_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_running_balance"("p_user_ids" "uuid"[], "p_end_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_running_balance"("p_user_ids" "uuid"[], "p_end_date" "date") TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."get_running_balance"("p_user_id" "uuid", "p_end_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_running_balance"("p_user_id" "uuid", "p_end_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_running_balance"("p_user_id" "uuid", "p_end_date" "date") TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text", "p_category" "text", "p_payment_mode" "text", "p_search" "text", "p_start_date" "date", "p_end_date" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text", "p_category" "text", "p_payment_mode" "text", "p_search" "text", "p_start_date" "date", "p_end_date" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text", "p_category" "text", "p_payment_mode" "text", "p_search" "text", "p_start_date" "date", "p_end_date" "date") TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text", "p_category" "text", "p_payment_mode" "text", "p_search" "text", "p_start_date" "date", "p_end_date" "date", "p_linked_loan_id" "uuid", "p_linked_bill_id" "uuid", "p_linked_split_expense_id" "uuid", "p_linked_split_settlement_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text", "p_category" "text", "p_payment_mode" "text", "p_search" "text", "p_start_date" "date", "p_end_date" "date", "p_linked_loan_id" "uuid", "p_linked_bill_id" "uuid", "p_linked_split_expense_id" "uuid", "p_linked_split_settlement_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_transaction_signal_aggregates"("p_user_id" "uuid", "p_type" "text", "p_category" "text", "p_payment_mode" "text", "p_search" "text", "p_start_date" "date", "p_end_date" "date", "p_linked_loan_id" "uuid", "p_linked_bill_id" "uuid", "p_linked_split_expense_id" "uuid", "p_linked_split_settlement_id" "uuid") TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."get_year_summary"("p_user_ids" "uuid"[], "p_year" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_year_summary"("p_user_ids" "uuid"[], "p_year" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_year_summary"("p_user_ids" "uuid"[], "p_year" integer) TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."get_year_summary"("p_user_id" "uuid", "p_year" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_year_summary"("p_user_id" "uuid", "p_year" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_year_summary"("p_user_id" "uuid", "p_year" integer) TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."handle_new_user"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."has_split_group_access"("p_group_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."has_split_group_access"("p_group_id" "uuid", "p_user_id" "uuid") TO "service_role";
-GRANT ALL ON FUNCTION "public"."has_split_group_access"("p_group_id" "uuid", "p_user_id" "uuid") TO "authenticated";
-
-REVOKE ALL ON FUNCTION "public"."is_linked"("target_user_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."is_linked"("target_user_id" "uuid") TO "service_role";
-GRANT ALL ON FUNCTION "public"."is_linked"("target_user_id" "uuid") TO "authenticated";
-
-REVOKE ALL ON FUNCTION "public"."is_linked"("target_user_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."is_linked"("target_user_id" "uuid", "p_user_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."is_linked"("target_user_id" "uuid", "p_user_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."is_split_group_member_or_above"("p_group_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."is_split_group_member_or_above"("p_group_id" "uuid", "p_user_id" "uuid") TO "service_role";
-GRANT ALL ON FUNCTION "public"."is_split_group_member_or_above"("p_group_id" "uuid", "p_user_id" "uuid") TO "authenticated";
-
-REVOKE ALL ON FUNCTION "public"."is_split_group_owner"("p_group_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."is_split_group_owner"("p_group_id" "uuid", "p_user_id" "uuid") TO "service_role";
-GRANT ALL ON FUNCTION "public"."is_split_group_owner"("p_group_id" "uuid", "p_user_id" "uuid") TO "authenticated";
-
-REVOKE ALL ON FUNCTION "public"."log_financial_event_trg"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."log_financial_event_trg"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."maintain_monthly_net_change"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."maintain_monthly_net_change"() TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."mark_liability_paid"("p_liability_id" "uuid", "p_user_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."mark_liability_paid"("p_liability_id" "uuid", "p_user_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."mark_liability_paid"("p_liability_id" "uuid", "p_user_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."on_split_group_delete_cleanup"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."on_split_group_delete_cleanup"() TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."record_loan_payment"("p_loan_id" "uuid", "p_user_id" "uuid", "p_amount" numeric, "p_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."record_loan_payment"("p_loan_id" "uuid", "p_user_id" "uuid", "p_amount" numeric, "p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."record_loan_payment"("p_loan_id" "uuid", "p_user_id" "uuid", "p_amount" numeric, "p_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."rls_auto_enable"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "service_role";
-
-GRANT ALL ON TABLE "public"."split_groups" TO "anon";
-GRANT ALL ON TABLE "public"."split_groups" TO "authenticated";
-GRANT ALL ON TABLE "public"."split_groups" TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."split_consume_group_invite"("p_token" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."split_consume_group_invite"("p_token" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_consume_group_invite"("p_token" "text") TO "service_role";
-
-GRANT ALL ON TABLE "public"."split_expenses" TO "anon";
-GRANT ALL ON TABLE "public"."split_expenses" TO "authenticated";
-GRANT ALL ON TABLE "public"."split_expenses" TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."split_create_expense"("p_group_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date", "p_split_method" "text", "p_notes" "text", "p_splits" "jsonb", "p_sync_transaction" boolean, "p_transaction_category" "text", "p_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."split_create_expense"("p_group_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date", "p_split_method" "text", "p_notes" "text", "p_splits" "jsonb", "p_sync_transaction" boolean, "p_transaction_category" "text", "p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_create_expense"("p_group_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date", "p_split_method" "text", "p_notes" "text", "p_splits" "jsonb", "p_sync_transaction" boolean, "p_transaction_category" "text", "p_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."split_create_group"("p_name" "text", "p_self_display_name" "text", "p_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."split_create_group"("p_name" "text", "p_self_display_name" "text", "p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_create_group"("p_name" "text", "p_self_display_name" "text", "p_id" "uuid") TO "service_role";
-
-GRANT ALL ON TABLE "public"."split_group_invites" TO "anon";
-GRANT ALL ON TABLE "public"."split_group_invites" TO "authenticated";
-GRANT ALL ON TABLE "public"."split_group_invites" TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."split_create_group_invite"("p_group_id" "uuid", "p_role" "text", "p_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."split_create_group_invite"("p_group_id" "uuid", "p_role" "text", "p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_create_group_invite"("p_group_id" "uuid", "p_role" "text", "p_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."split_group_member_profiles"("p_group_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."split_group_member_profiles"("p_group_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_group_member_profiles"("p_group_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."split_leave_group"("p_group_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."split_leave_group"("p_group_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_leave_group"("p_group_id" "uuid") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."split_preview_group_invite"("p_token" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."split_preview_group_invite"("p_token" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_preview_group_invite"("p_token" "text") TO "service_role";
-GRANT ALL ON FUNCTION "public"."split_preview_group_invite"("p_token" "text") TO "anon";
-
-GRANT ALL ON TABLE "public"."split_settlements" TO "anon";
-GRANT ALL ON TABLE "public"."split_settlements" TO "authenticated";
-GRANT ALL ON TABLE "public"."split_settlements" TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."split_record_settlement"("p_group_id" "uuid", "p_payer_member_id" "uuid", "p_payee_member_id" "uuid", "p_amount" numeric, "p_settled_at" "date", "p_note" "text", "p_sync_transaction" boolean, "p_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."split_record_settlement"("p_group_id" "uuid", "p_payer_member_id" "uuid", "p_payee_member_id" "uuid", "p_amount" numeric, "p_settled_at" "date", "p_note" "text", "p_sync_transaction" boolean, "p_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_record_settlement"("p_group_id" "uuid", "p_payer_member_id" "uuid", "p_payee_member_id" "uuid", "p_amount" numeric, "p_settled_at" "date", "p_note" "text", "p_sync_transaction" boolean, "p_id" "uuid") TO "service_role";
-
-GRANT ALL ON TABLE "public"."split_group_access" TO "anon";
-GRANT ALL ON TABLE "public"."split_group_access" TO "authenticated";
-GRANT ALL ON TABLE "public"."split_group_access" TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."split_set_group_access_role"("p_group_id" "uuid", "p_user_id" "uuid", "p_role" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."split_set_group_access_role"("p_group_id" "uuid", "p_user_id" "uuid", "p_role" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_set_group_access_role"("p_group_id" "uuid", "p_user_id" "uuid", "p_role" "text") TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."split_update_expense"("p_expense_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date", "p_split_method" "text", "p_notes" "text", "p_splits" "jsonb", "p_sync_transaction" boolean, "p_transaction_category" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."split_update_expense"("p_expense_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date", "p_split_method" "text", "p_notes" "text", "p_splits" "jsonb", "p_sync_transaction" boolean, "p_transaction_category" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."split_update_expense"("p_expense_id" "uuid", "p_paid_by_member_id" "uuid", "p_description" "text", "p_amount" numeric, "p_expense_date" "date", "p_split_method" "text", "p_notes" "text", "p_splits" "jsonb", "p_sync_transaction" boolean, "p_transaction_category" "text") TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."submit_bug_report"("p_title" "text", "p_description" "text", "p_steps" "text", "p_severity" "text", "p_route" "text", "p_app_version" "text", "p_diagnostics" "jsonb", "p_environment" "jsonb", "p_screenshot_path" "text", "p_reporter_email" "text", "p_fingerprint" "text", "p_tags" "text"[]) TO "anon";
-GRANT ALL ON FUNCTION "public"."submit_bug_report"("p_title" "text", "p_description" "text", "p_steps" "text", "p_severity" "text", "p_route" "text", "p_app_version" "text", "p_diagnostics" "jsonb", "p_environment" "jsonb", "p_screenshot_path" "text", "p_reporter_email" "text", "p_fingerprint" "text", "p_tags" "text"[]) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."submit_bug_report"("p_title" "text", "p_description" "text", "p_steps" "text", "p_severity" "text", "p_route" "text", "p_app_version" "text", "p_diagnostics" "jsonb", "p_environment" "jsonb", "p_screenshot_path" "text", "p_reporter_email" "text", "p_fingerprint" "text", "p_tags" "text"[]) TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."sync_split_to_transaction"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."sync_split_to_transaction"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."sync_transaction_to_split"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."sync_transaction_to_split"() TO "service_role";
-
-GRANT ALL ON FUNCTION "public"."touch_split_group_updated_at"() TO "anon";
-GRANT ALL ON FUNCTION "public"."touch_split_group_updated_at"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."touch_split_group_updated_at"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."unlink_partner_atomic"("p_partner_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."unlink_partner_atomic"("p_partner_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."unlink_partner_atomic"("p_partner_id" "uuid") TO "service_role";
-
-GRANT ALL ON TABLE "public"."budgets" TO "anon";
-GRANT ALL ON TABLE "public"."budgets" TO "authenticated";
-GRANT ALL ON TABLE "public"."budgets" TO "service_role";
-
-GRANT ALL ON TABLE "public"."bug_reports" TO "anon";
-GRANT ALL ON TABLE "public"."bug_reports" TO "authenticated";
-GRANT ALL ON TABLE "public"."bug_reports" TO "service_role";
-
-GRANT ALL ON TABLE "public"."category_budgets" TO "anon";
-GRANT ALL ON TABLE "public"."category_budgets" TO "authenticated";
-GRANT ALL ON TABLE "public"."category_budgets" TO "service_role";
-
-GRANT ALL ON TABLE "public"."financial_events" TO "anon";
-GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."financial_events" TO "authenticated";
-GRANT ALL ON TABLE "public"."financial_events" TO "service_role";
-
-GRANT ALL ON TABLE "public"."invites" TO "anon";
-GRANT ALL ON TABLE "public"."invites" TO "authenticated";
-GRANT ALL ON TABLE "public"."invites" TO "service_role";
-
-GRANT ALL ON TABLE "public"."liabilities" TO "anon";
-GRANT ALL ON TABLE "public"."liabilities" TO "authenticated";
-GRANT ALL ON TABLE "public"."liabilities" TO "service_role";
-
-GRANT ALL ON TABLE "public"."loans" TO "anon";
-GRANT ALL ON TABLE "public"."loans" TO "authenticated";
-GRANT ALL ON TABLE "public"."loans" TO "service_role";
-
-GRANT ALL ON TABLE "public"."monthly_net_changes" TO "anon";
-GRANT ALL ON TABLE "public"."monthly_net_changes" TO "authenticated";
-GRANT ALL ON TABLE "public"."monthly_net_changes" TO "service_role";
-
-GRANT ALL ON TABLE "public"."profiles" TO "anon";
-GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
-GRANT ALL ON TABLE "public"."profiles" TO "service_role";
-
-GRANT ALL ON TABLE "public"."reconciliation_reviews" TO "anon";
-GRANT ALL ON TABLE "public"."reconciliation_reviews" TO "authenticated";
-GRANT ALL ON TABLE "public"."reconciliation_reviews" TO "service_role";
-
-GRANT ALL ON TABLE "public"."split_expense_splits" TO "anon";
-GRANT ALL ON TABLE "public"."split_expense_splits" TO "authenticated";
-GRANT ALL ON TABLE "public"."split_expense_splits" TO "service_role";
-
-GRANT ALL ON TABLE "public"."split_group_members" TO "anon";
-GRANT ALL ON TABLE "public"."split_group_members" TO "authenticated";
-GRANT ALL ON TABLE "public"."split_group_members" TO "service_role";
-
-GRANT ALL ON TABLE "public"."transactions" TO "anon";
-GRANT ALL ON TABLE "public"."transactions" TO "authenticated";
-GRANT ALL ON TABLE "public"."transactions" TO "service_role";
-
-GRANT ALL ON TABLE "public"."user_categories" TO "anon";
-GRANT ALL ON TABLE "public"."user_categories" TO "authenticated";
-GRANT ALL ON TABLE "public"."user_categories" TO "service_role";
-
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Storage Configuration (Buckets and Policies)
--- ─────────────────────────────────────────────────────────────────────────────
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
@@ -3719,6 +3816,7 @@ values (
 on conflict (id) do nothing;
 
 drop policy if exists "bug_reports_storage: upload own" on storage.objects;
+
 create policy "bug_reports_storage: upload own" on storage.objects
 for insert to authenticated
 with check (
@@ -3727,6 +3825,7 @@ with check (
 );
 
 drop policy if exists "bug_reports_storage: read own" on storage.objects;
+
 create policy "bug_reports_storage: read own" on storage.objects
 for select to authenticated
 using (
@@ -3735,16 +3834,13 @@ using (
 );
 
 drop policy if exists "bug_reports_storage: delete own" on storage.objects;
+
 create policy "bug_reports_storage: delete own" on storage.objects
 for delete to authenticated
 using (
   bucket_id = 'bug-reports'
   and (storage.foldername(name))[1] = (select auth.uid())::text
 );
-
--- ─────────────────────────────────────────────────────────────────────────────
--- Avatars storage
--- ─────────────────────────────────────────────────────────────────────────────
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
@@ -3757,6 +3853,7 @@ values (
 on conflict (id) do update set public = false;
 
 drop policy if exists "avatars_storage: upload own" on storage.objects;
+
 create policy "avatars_storage: upload own" on storage.objects
 for insert to authenticated
 with check (
@@ -3765,6 +3862,7 @@ with check (
 );
 
 drop policy if exists "avatars_storage: update own" on storage.objects;
+
 create policy "avatars_storage: update own" on storage.objects
 for update to authenticated
 using (
@@ -3773,6 +3871,7 @@ using (
 );
 
 drop policy if exists "avatars_storage: read" on storage.objects;
+
 create policy "avatars_storage: read" on storage.objects
 for select to authenticated
 using (
@@ -3795,6 +3894,7 @@ using (
 );
 
 drop policy if exists "avatars_storage: delete own" on storage.objects;
+
 create policy "avatars_storage: delete own" on storage.objects
 for delete to authenticated
 using (
@@ -3802,12 +3902,200 @@ using (
   and name like ((select auth.uid())::text || '-%')
 );
 
--- ─────────────────────────────────────────────────────────────────────────────
--- Auth Triggers
--- ─────────────────────────────────────────────────────────────────────────────
-
--- Safety: recreate the new-user trigger unconditionally.
 drop trigger if exists on_auth_user_created on auth.users;
+
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+
+-- =============================================================================
+-- 1. GROUP BANNERS STORAGE BUCKET & POLICIES
+-- =============================================================================
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'group-banners',
+  'group-banners',
+  false,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set public = false;
+
+drop policy if exists "group_banners: upload" on storage.objects;
+create policy "group_banners: upload" on storage.objects
+for insert to authenticated
+with check (
+  bucket_id = 'group-banners'
+  and length(name) >= 37
+  and substring(name from 1 for 36) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  and public.is_split_group_owner((substring(name from 1 for 36))::uuid)
+);
+
+drop policy if exists "group_banners: update" on storage.objects;
+create policy "group_banners: update" on storage.objects
+for update to authenticated
+using (
+  bucket_id = 'group-banners'
+  and length(name) >= 37
+  and substring(name from 1 for 36) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  and public.is_split_group_owner((substring(name from 1 for 36))::uuid)
+);
+
+drop policy if exists "group_banners: delete" on storage.objects;
+create policy "group_banners: delete" on storage.objects
+for delete to authenticated
+using (
+  bucket_id = 'group-banners'
+  and length(name) >= 37
+  and substring(name from 1 for 36) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  and public.is_split_group_owner((substring(name from 1 for 36))::uuid)
+);
+
+drop policy if exists "group_banners: read" on storage.objects;
+create policy "group_banners: read" on storage.objects
+for select to authenticated
+using (
+  bucket_id = 'group-banners'
+  and length(name) >= 37
+  and substring(name from 1 for 36) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  and public.has_split_group_access((substring(name from 1 for 36))::uuid)
+);
+
+-- =============================================================================
+-- 2. PREVENT TAMPERING WITH IMMUTABLE COLUMNS
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION public.prevent_immutable_update()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF current_setting('role', true) = 'service_role' THEN
+      RETURN NEW;
+    END IF;
+
+    IF NEW.id IS DISTINCT FROM OLD.id THEN
+      RAISE EXCEPTION 'Updating the id column is not allowed';
+    END IF;
+    
+    IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+      RAISE EXCEPTION 'Updating the created_at column is not allowed';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.prevent_immutable_update() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.prevent_immutable_update() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.prevent_immutable_update() FROM authenticated;
+
+DROP TRIGGER IF EXISTS prevent_immutable_transactions ON public.transactions;
+CREATE TRIGGER prevent_immutable_transactions
+BEFORE UPDATE ON public.transactions
+FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_update();
+
+DROP TRIGGER IF EXISTS prevent_immutable_split_expenses ON public.split_expenses;
+CREATE TRIGGER prevent_immutable_split_expenses
+BEFORE UPDATE ON public.split_expenses
+FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_update();
+
+DROP TRIGGER IF EXISTS prevent_immutable_loans ON public.loans;
+CREATE TRIGGER prevent_immutable_loans
+BEFORE UPDATE ON public.loans
+FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_update();
+
+DROP TRIGGER IF EXISTS prevent_immutable_liabilities ON public.liabilities;
+CREATE TRIGGER prevent_immutable_liabilities
+BEFORE UPDATE ON public.liabilities
+FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_update();
+
+DROP TRIGGER IF EXISTS prevent_immutable_budgets ON public.budgets;
+CREATE TRIGGER prevent_immutable_budgets
+BEFORE UPDATE ON public.budgets
+FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_update();
+
+DROP TRIGGER IF EXISTS prevent_immutable_split_groups ON public.split_groups;
+CREATE TRIGGER prevent_immutable_split_groups
+BEFORE UPDATE ON public.split_groups
+FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_update();
+
+-- =============================================================================
+-- 3. STRICT FOREIGN KEY OWNERSHIP (RECONCILIATION REVIEWS)
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION public.enforce_reconciliation_review_ownership()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_txn_owner uuid;
+BEGIN
+  SELECT user_id INTO v_txn_owner FROM public.transactions WHERE id = NEW.transaction_id;
+  
+  IF v_txn_owner IS NULL OR v_txn_owner <> NEW.user_id THEN
+    RAISE EXCEPTION 'Transaction does not belong to the reviewing user';
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.enforce_reconciliation_review_ownership() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.enforce_reconciliation_review_ownership() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.enforce_reconciliation_review_ownership() FROM authenticated;
+
+DROP TRIGGER IF EXISTS check_reconciliation_review_ownership ON public.reconciliation_reviews;
+CREATE TRIGGER check_reconciliation_review_ownership
+BEFORE INSERT OR UPDATE ON public.reconciliation_reviews
+FOR EACH ROW EXECUTE FUNCTION public.enforce_reconciliation_review_ownership();
+
+-- =============================================================================
+-- 4. LOCK DOWN BUG REPORT STATUSES
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION public.prevent_bug_report_tampering()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF current_setting('role', true) = 'service_role' THEN
+      RETURN NEW;
+    END IF;
+
+    -- Only allow users to update description or title of their own bugs, but NOT admin fields
+    IF NEW.status IS DISTINCT FROM OLD.status THEN
+      RAISE EXCEPTION 'Users cannot modify the status of a bug report';
+    END IF;
+    IF NEW.priority IS DISTINCT FROM OLD.priority THEN
+      RAISE EXCEPTION 'Users cannot modify the priority of a bug report';
+    END IF;
+    IF NEW.assignee IS DISTINCT FROM OLD.assignee THEN
+      RAISE EXCEPTION 'Users cannot modify the assignee of a bug report';
+    END IF;
+    IF NEW.resolved_at IS DISTINCT FROM OLD.resolved_at THEN
+      RAISE EXCEPTION 'Users cannot modify the resolved_at timestamp of a bug report';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.prevent_bug_report_tampering() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.prevent_bug_report_tampering() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.prevent_bug_report_tampering() FROM authenticated;
+
+DROP TRIGGER IF EXISTS check_bug_report_tampering ON public.bug_reports;
+CREATE TRIGGER check_bug_report_tampering
+BEFORE UPDATE ON public.bug_reports
+FOR EACH ROW EXECUTE FUNCTION public.prevent_bug_report_tampering();
