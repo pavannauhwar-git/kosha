@@ -126,6 +126,10 @@ export default function PixelDatePicker({
       if (nextDate) {
         e.preventDefault()
         setViewDate(nextDate)
+        setTimeout(() => {
+          const btn = document.getElementById(`day-${toIsoDate(nextDate)}`)
+          if (btn) btn.focus()
+        }, 0)
       }
     }
 
@@ -200,6 +204,7 @@ export default function PixelDatePicker({
               return (
                 <button
                   key={day.iso}
+                  id={`day-${day.iso}`}
                   type="button"
                   onClick={() => {
                     onChange(day.iso)

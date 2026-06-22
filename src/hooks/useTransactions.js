@@ -1216,6 +1216,7 @@ export function optimisticallyDeleteTransactionsByLoanId(loanId, targetUserId) {
       queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_loan_id !== loanId))
     }
   }
+  return deletedTxnIds
 }
 
 export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId) {
@@ -1247,6 +1248,7 @@ export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId) {
       queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_bill_id !== billId))
     }
   }
+  return deletedTxnIds
 }
 
 export async function deleteTransaction(id, cachedTxn = null, mutationUserId = null) {
@@ -1358,6 +1360,8 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
     ['transactions'],
     ['transactionsRecent'],
     ['todayExpenses'],
+    ['month'],
+    ['balance'],
   ])
 
   suppress('transactions')
@@ -1410,6 +1414,9 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
   const snapshot = snapshotCacheFamilies([
     ['transactions'],
     ['transactionsRecent'],
+    ['todayExpenses'],
+    ['month'],
+    ['balance'],
   ])
 
   suppress('transactions')
@@ -1432,6 +1439,7 @@ export async function removeTransactionMutation(id, __testOverrides = null) {
     return true
   } catch (error) {
     restoreCacheSnapshot(snapshot)
+    inFlightDeletedTxnIds.delete(id)
     throw error
   }
 }

@@ -356,7 +356,8 @@ export default function Transactions() {
     const group = groups[index]
     if (!group) return 150
     const txnsCount = group[1]?.length || 0
-    return 45 + (txnsCount * 76)
+    const spacing = index === 0 ? 0 : 16
+    return 45 + (txnsCount * 76) + spacing
   }, [groups])
 
   const {
@@ -1531,7 +1532,7 @@ export default function Transactions() {
               {timelineRowTopPadding > 0 && <div aria-hidden="true" style={{ height: `${timelineRowTopPadding}px` }} />}
               {renderedGroups.map(([dateKey, txns, net], localGroupIndex) => {
                 const groupIndex = timelineRowStartIndex + localGroupIndex
-                const spacingClass = groupIndex === 0 ? '' : 'mt-4'
+                const spacingClass = groupIndex === 0 ? '' : 'pt-4'
 
                 return (
                   <div

@@ -35,7 +35,7 @@ function parseAmount(text) {
   const hasBrackets = /^\s*\(.+\)\s*$/.test(cleaned)
   const match = cleaned.match(/[-+]?\d+(?:\.\d{1,2})?/)
   if (!match) return null
-  const amount = Number(match[0])
+  const amount = Number.parseFloat(match[0])
   if (!Number.isFinite(amount)) return null
   let signedHint = 'unknown'
   if (hasBrackets || /\bdr\b/i.test(cleaned) || amount < 0) signedHint = 'debit'

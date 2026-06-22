@@ -764,13 +764,14 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
         if (!selfMember) throw new Error('You must be a member of the group to add an expense.')
 
-        const splits = buildEqualSplits(members.map(m => m.id), +amount)
+        const splitAmount = Number(amountValidation.paise) / 100
+        const splits = buildEqualSplits(members.map(m => m.id), splitAmount)
 
         await addSplitExpense.mutateAsync({
           groupId: splitGroupId,
           paidByMemberId: selfMember.id,
           description: desc.trim(),
-          amount: +amount,
+          amount: splitAmount,
           expenseDate: date,
           splitMethod: 'equal',
           notes: notes.trim() || null,
@@ -940,7 +941,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <button
                 type="button"
                 className="list-row w-full disabled:opacity-50"
-                onClick={() => setShowCatPicker(() => handleAdvanceFocus())}
+                onClick={() => setShowCatPicker()}
                 disabled={isSaving}
               >
                 <CategoryIcon categoryId={category} size={16} />
@@ -957,7 +958,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <button
                 type="button"
                 className="list-row w-full disabled:opacity-50"
-                onClick={() => setShowVehPicker(() => handleAdvanceFocus())}
+                onClick={() => setShowVehPicker()}
                 disabled={isSaving}
               >
                 {(() => {
@@ -995,7 +996,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <button
               type="button"
               className="list-row w-full disabled:opacity-50"
-              onClick={() => setShowModePicker(() => handleAdvanceFocus())}
+              onClick={() => setShowModePicker()}
               disabled={isSaving}
             >
               {(() => {
@@ -1191,7 +1192,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           <CategoryPicker
             selected={category}
             onSelect={v => set('category', v)}
-            onClose={() => setShowCatPicker()}
+            onClose={() => { setShowCatPicker(); handleAdvanceFocus() }}
             categories={categoryOptions}
             title={type === 'income' ? 'Income Source' : 'Expense Category'}
             onCreateNew={() => {
@@ -1207,12 +1208,12 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             onDeleteCustom={handleDeleteCustomCategory}
           />
         )}
-        {showModePicker && <ModePicker selected={mode} onSelect={v => set('mode', v)} onClose={() => setShowModePicker()} />}
+        {showModePicker && <ModePicker selected={mode} onSelect={v => set('mode', v)} onClose={() => { setShowModePicker(); handleAdvanceFocus() }} />}
         {showVehPicker && (
           <VehiclePicker
             selected={vehicle}
             onSelect={v => set('vehicle', v)}
-            onClose={() => setShowVehPicker()}
+            onClose={() => { setShowVehPicker(); handleAdvanceFocus() }}
             vehicles={investmentOptions}
             onCreateNew={() => {
               setShowVehPicker()

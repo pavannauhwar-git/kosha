@@ -9,7 +9,8 @@ import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 import {
   invalidateCache as invalidateTransactionCache,
   optimisticallyUpsertTransactionInCache,
-  optimisticallyDeleteTransactionsByLoanId
+  optimisticallyDeleteTransactionsByLoanId,
+  inFlightDeletedTxnIds
 } from './useTransactions'
 import { todayStr } from '../lib/utils'
 import { hapticSuccess } from '../lib/haptics'
@@ -606,7 +607,7 @@ export async function deleteLoanMutation(id) {
   const snapshot = snapshotLoanCaches(targetUserId)
   suppress('loans')
   optimisticallyDeleteLoan(id, targetUserId)
-  optimisticallyDeleteTransactionsByLoanId(id, targetUserId)
+  const deletedTxnIds = optimisticallyDeleteTransactionsByLoanId(id, targetUserId)
 
   try {
     await deleteLoan(id, cachedLoan)
@@ -622,6 +623,7 @@ export async function deleteLoanMutation(id) {
     return true
   } catch (error) {
     restoreLoanSnapshot(snapshot)
+    for (const txnId of (deletedTxnIds || [])) inFlightDeletedTxnIds.delete(txnId)
     throw error
   }
 }
