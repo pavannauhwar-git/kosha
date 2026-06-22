@@ -139,19 +139,26 @@ export default function useWindowedList({
   const measureElement = useCallback((index, node) => {
     if (!enabled || !node) return
 
-    const height = Math.ceil(node.getBoundingClientRect().height)
+    const rect = node.getBoundingClientRect()
+    const height = Math.ceil(rect.height)
     if (!Number.isFinite(height) || height <= 0) return
 
     const previous = sizeByIndexRef.current.get(index)
     if (previous && Math.abs(previous - height) < 1) return
 
     const estimated = typeof estimateSize === 'function' ? estimateSize(index) : estimateSize
-    if (!previous && Math.abs(estimated - height) < 2) {
-      sizeByIndexRef.current.set(index, height)
+    const oldHeight = previous || estimated
+
+    if (Math.abs(oldHeight - height) < 2) {
+      if (!previous) sizeByIndexRef.current.set(index, height)
       return
     }
 
     sizeByIndexRef.current.set(index, height)
+    
+    if (rect.bottom < 0 || (!previous && rect.top < 0)) {
+      window.scrollBy(0, height - oldHeight)
+    }
     
     if (!revisionRafRef.current) {
       revisionRafRef.current = requestAnimationFrame(() => {
