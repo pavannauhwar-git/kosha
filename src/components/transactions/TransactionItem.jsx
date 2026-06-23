@@ -412,6 +412,9 @@ function TransactionItem({
           dragElastic={{ left: 0.12, right: 0.02 }}
           onDragEnd={handleDragEnd}
           onClick={handleTap}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTap() } }}
         >
           <div
             className={`${compact ? 'w-8 h-8' : 'w-9 h-9'} rounded-full flex items-center justify-center shrink-0`}
