@@ -85,6 +85,19 @@ export function purgeUserScopedKeys() {
     for (let i = 0; i < storage.length; i += 1) {
       const key = storage.key(i)
       if (key && key.startsWith(KOSHA_USER_KEY_PREFIX)) {
+        // Exempt device-level preferences, hints, and guides from being purged.
+        // We only want to purge user-scoped data (like keys containing user IDs).
+        if (
+          key === 'kosha:reminder-prefs-v1' ||
+          key.includes('guide') ||
+          key.includes('hint') ||
+          key === 'kosha:runtime-monitor-v1' ||
+          key === 'kosha:trace-queries' ||
+          key === 'kosha:monthly-action-queue-clicks-v1' ||
+          key === 'kosha:e2e-immediate-delete'
+        ) {
+          continue
+        }
         keysToRemove.push(key)
       }
     }

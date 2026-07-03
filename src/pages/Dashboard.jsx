@@ -156,30 +156,30 @@ export default function Dashboard() {
   const hour = now.getHours()
   const greetingMeta = useMemo(() => {
     const greetings = [
-      { text: 'Good night', emoji: '🦉🌌' },     // 00: 12 AM
-      { text: 'Good night', emoji: '🦇💤' },     // 01: 1 AM
-      { text: 'Good night', emoji: '🌟🔭' },     // 02: 2 AM
-      { text: 'Good night', emoji: '🥱🛌' },     // 03: 3 AM
-      { text: 'Good night', emoji: '🌠🌒' },     // 04: 4 AM
-      { text: 'Good morning', emoji: '🌅🐦' },   // 05: 5 AM
-      { text: 'Good morning', emoji: '☕️🥱' },   // 06: 6 AM
-      { text: 'Good morning', emoji: '🍳🥐' },   // 07: 7 AM
-      { text: 'Good morning', emoji: '🏃☀️' },     // 08: 8 AM
-      { text: 'Good morning', emoji: '💼💻' },   // 09: 9 AM
-      { text: 'Good morning', emoji: '🌤️🌸' },   // 10: 10 AM
-      { text: 'Good morning', emoji: '🧠⚡️' },   // 11: 11 AM
-      { text: 'Good afternoon', emoji: '🕛🥗' }, // 12: 12 PM
-      { text: 'Good afternoon', emoji: '🚶☀️' },   // 13: 1 PM
-      { text: 'Good afternoon', emoji: '☕️🔋' }, // 14: 2 PM
-      { text: 'Good afternoon', emoji: '🌤️🌼' }, // 15: 3 PM
-      { text: 'Good afternoon', emoji: '🌇🎧' }, // 16: 4 PM
-      { text: 'Good evening', emoji: '🌅🏃' },     // 17: 5 PM
-      { text: 'Good evening', emoji: '🌆🚗' },   // 18: 6 PM
-      { text: 'Good evening', emoji: '🍽️🍷' },   // 19: 7 PM
-      { text: 'Good evening', emoji: '🛋️📺' },   // 20: 8 PM
-      { text: 'Good night', emoji: '🍿🌙' },     // 21: 9 PM
-      { text: 'Good night', emoji: '🥱📖' },     // 22: 10 PM
-      { text: 'Good night', emoji: '🛌💤' },     // 23: 11 PM
+      { text: 'Good night', emoji: '🌌✨' },     // 00: 12 AM (Deep space)
+      { text: 'Good night', emoji: '🌙☁️' },     // 01: 1 AM (Moon and cloud)
+      { text: 'Good night', emoji: '🌠🌌' },     // 02: 2 AM (Shooting star)
+      { text: 'Good night', emoji: '✨☁️' },     // 03: 3 AM (Quiet sparkles)
+      { text: 'Good night', emoji: '🌒🌿' },     // 04: 4 AM (Pre-dawn nature)
+      { text: 'Good morning', emoji: '🌅☕️' },   // 05: 5 AM (Sunrise coffee)
+      { text: 'Good morning', emoji: '🌤️🪴' },   // 06: 6 AM (Morning light)
+      { text: 'Good morning', emoji: '☀️🥐' },   // 07: 7 AM (Breakfast)
+      { text: 'Good morning', emoji: '☀️🌿' },   // 08: 8 AM (Fresh morning)
+      { text: 'Good morning', emoji: '🌤️🌻' },   // 09: 9 AM (Cheerful morning)
+      { text: 'Good morning', emoji: '☀️✨' },   // 10: 10 AM (Bright optimism)
+      { text: 'Good morning', emoji: '☕️🍃' },   // 11: 11 AM (Mid-morning tea/coffee)
+      { text: 'Good afternoon', emoji: '☀️🍋' }, // 12: 12 PM (Refreshing noon)
+      { text: 'Good afternoon', emoji: '☀️🌳' }, // 13: 1 PM (Afternoon shade)
+      { text: 'Good afternoon', emoji: '🌤️🦋' }, // 14: 2 PM (Afternoon breeze)
+      { text: 'Good afternoon', emoji: '🍵🌿' }, // 15: 3 PM (Afternoon calm)
+      { text: 'Good afternoon', emoji: '🌇✨' }, // 16: 4 PM (Golden hour)
+      { text: 'Good evening', emoji: '🌅🕊️' },   // 17: 5 PM (Sunset peace)
+      { text: 'Good evening', emoji: '🌆🍷' },   // 18: 6 PM (Evening relax)
+      { text: 'Good evening', emoji: '🍽️🕯️' },   // 19: 7 PM (Dinner candlelight)
+      { text: 'Good evening', emoji: '🛋️🍵' },   // 20: 8 PM (Cozy couch)
+      { text: 'Good night', emoji: '📚🌙' },     // 21: 9 PM (Evening reading)
+      { text: 'Good night', emoji: '🌌🕯️' },     // 22: 10 PM (Late night ambient)
+      { text: 'Good night', emoji: '🌙☁️' },     // 23: 11 PM (Drifting to sleep)
     ]
     return greetings[hour] || { text: 'Hello', emoji: '👋✨' }
   }, [hour])

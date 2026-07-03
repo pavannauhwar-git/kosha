@@ -1207,9 +1207,9 @@ a,
     /* Anchor to bottom and use border to bleed behind the keyboard to prevent gap flashes */
     bottom: 0px;
     border-bottom: var(--kb-inset, 0px) solid var(--ds-surface);
-    max-height: calc(100dvh - var(--safe-top) - 0.5rem);
+    max-height: calc(100svh - var(--safe-top) - 0.5rem);
     overflow-y: auto;
-    transition: border-bottom-width 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+    transition: border-bottom-width 0.2s cubic-bezier(0.2, 0, 0, 1);
     overflow-x: hidden;
     overscroll-behavior-y: none;
     overscroll-behavior-x: none;
@@ -1246,7 +1246,7 @@ a,
     padding-bottom: 0;
     border-bottom: none;
     /* Stay clear of the keyboard for the same reason as the bottom variant (Phase 0). */
-    max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 2rem - var(--kb-inset, 0px));
+    max-height: calc(100svh - var(--safe-top) - var(--safe-bottom) - 2rem - var(--kb-inset, 0px));
   }
 
   @media (min-width: 600px) {
