@@ -1231,7 +1231,7 @@ export default function Splitwise() {
     count: transactions.length,
     estimateSize: 76,
     overscan: 10,
-    enabled: true,
+    enabled: false,
     resetKey: `${activeGroupId}`,
   })
 
@@ -1295,7 +1295,7 @@ export default function Splitwise() {
                       variant="danger"
                       size="sm"
                       onClick={() => { void handleLeaveGroup() }}
-                      loading={saving === 'leave-group'}
+                      loading={saving === 'group-leave'}
                     >
                       Leave
                     </Button>
@@ -1719,7 +1719,7 @@ export default function Splitwise() {
                     return (
                       <div
                         key={t.id}
-                        ref={(el) => measureTxnElement(el, actualIndex)}
+                        ref={(el) => measureTxnElement(actualIndex, el)}
                         data-index={actualIndex}
                         className="p-2 sm:p-2.5 bg-kosha-surface hover:bg-kosha-surface-2 transition-colors group"
                       >

@@ -245,7 +245,7 @@ function scoreCandidate(entry, candidate, aliasHints = new Map()) {
   if (amountDiff > 2) return null
 
   const days = dateDistanceDays(entry.date, candidate.txn?.date)
-  if (days > 7) return null
+  if (!Number.isFinite(days) || days > 7) return null
 
   const descriptionScore = overlapScore(entry.tokens, candidate.tokens)
   const expandedTokens = new Set(entry.tokens)
