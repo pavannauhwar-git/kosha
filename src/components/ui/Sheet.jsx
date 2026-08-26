@@ -93,6 +93,7 @@ export default function Sheet({
     : { initial: { y: '100%' }, animate: { y: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } }, exit: { y: '100%', transition: { duration: 0.2 } } }
 
   const handleBackdropClick = () => {
+    if (!animationComplete) return;
     if (dismissOnBackdrop) {
       onClose()
     } else {

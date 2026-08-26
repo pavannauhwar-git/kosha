@@ -1777,8 +1777,7 @@ export default function Transactions() {
           className="fab"
           aria-label="Add transaction"
           onClick={() => { setEditTxn(null); setAddType('expense'); setShowAdd(true) }}
-          onPointerUp={(e) => {
-            e.preventDefault()
+          onPointerUp={() => {
             // Bypass Safari blur swallow but wait for finger release so it feels natural
             setEditTxn(null); setAddType('expense'); setShowAdd(true)
           }}

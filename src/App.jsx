@@ -524,8 +524,7 @@ function BottomNav() {
                 }
                 navigate(item.path, { replace: true })
               }}
-              onPointerUp={(e) => {
-                e.preventDefault()
+              onPointerUp={() => {
                 // Bypass Safari's blur/hover click-swallow, but wait for finger release
                 hapticTap()
                 if (isActive) {
