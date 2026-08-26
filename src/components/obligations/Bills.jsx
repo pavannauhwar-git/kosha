@@ -1087,7 +1087,8 @@ export default function Bills({
           className="fab-bills"
           aria-label="Add bill"
           onClick={() => setShowAdd(true)}
-          onPointerUp={() => {
+          onPointerUp={(e) => {
+            e.preventDefault()
             // Bypass Safari blur swallow but wait for finger release so it feels natural
             setShowAdd(true)
           }}
