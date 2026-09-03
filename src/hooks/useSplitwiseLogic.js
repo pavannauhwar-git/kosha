@@ -777,6 +777,10 @@ export function useSplitwiseLogic() {
   async function handleLeaveGroup() {
     if (!activeGroupId || saving) return
 
+    if (activeMembers.length <= 1) {
+      return handleDeleteGroup()
+    }
+
     setSaving('group-leave')
     try {
       optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
