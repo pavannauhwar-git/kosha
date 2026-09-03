@@ -778,7 +778,10 @@ export function useSplitwiseLogic() {
     if (!activeGroupId || saving) return
 
     if (activeMembers.length <= 1) {
-      return handleDeleteGroup()
+      if (window.confirm('You are the last member in this group. Would you like to delete the group entirely?')) {
+        return handleDeleteGroup()
+      }
+      return
     }
 
     setSaving('group-leave')
