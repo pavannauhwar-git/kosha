@@ -1251,7 +1251,7 @@ export function useSplitwiseLogic() {
     applySuggestedTransfer,
     resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS,
     activeWalletUserId, authUserId, pendingExpenseDeleteRef, pendingSettlementDeleteRef,
-    memberById, openEditExpense, openEditSettlement, memberSpendingStats, txnsListRef,
+    roleByUserId, memberById, openEditExpense, openEditSettlement, memberSpendingStats, txnsListRef,
     txnsTopPadding, txnsBottomPadding, measureTxnElement, renderedTransactions, txnsStartIndex,
     transactions
   }

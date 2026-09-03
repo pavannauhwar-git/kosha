@@ -1,7 +1,8 @@
 import { Archive } from '@phosphor-icons/react'
+import { memo } from 'react'
 import EmptyState from '../common/EmptyState'
 
-export default function GroupList({
+const GroupList = memo(function GroupList({
   groupStats,
   showArchived,
   setShowArchived,
@@ -99,4 +100,6 @@ export default function GroupList({
       </div>
     </div>
   )
-}
+})
+
+export default GroupList

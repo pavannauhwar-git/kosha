@@ -30,7 +30,7 @@ export default function Splitwise() {
     handleLeaveGroup, handleAddMember, handleAddExpense, handleDeleteExpense, handleRecordSettlement, handleDeleteSettlement,
     resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS, authUserId,
     balances, suggestedTransfers, loading, applySuggestedTransfer, memberById, openEditExpense,
-    openEditSettlement, memberSpendingStats, txnsListRef, txnsTopPadding, txnsBottomPadding,
+    openEditSettlement, memberSpendingStats, roleByUserId, txnsListRef, txnsTopPadding, txnsBottomPadding,
     measureTxnElement, renderedTransactions, txnsStartIndex, transactions
   } = useSplitwiseLogic()
 
@@ -170,7 +170,7 @@ export default function Splitwise() {
             readBannerFromStorage={readBannerFromStorage}
             setActiveGroupId={setActiveGroupId}
             fmtDate={fmtDate}
-            isViewingPartner={isViewingPartner}
+            _isViewingPartner={isViewingPartner}
           />
       ) : (
           <ActiveGroupView
@@ -209,6 +209,7 @@ export default function Splitwise() {
             handleDeleteSettlement={handleDeleteSettlement}
             saving={saving}
             balances={balances}
+            roleByUserId={roleByUserId}
             fmt={fmt}
             memberSpendingStats={memberSpendingStats}
             suggestedTransfers={suggestedTransfers}

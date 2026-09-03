@@ -1,8 +1,9 @@
 import { Trash, Receipt, ArrowsLeftRight } from '@phosphor-icons/react'
+import { memo } from 'react'
 import Button from '../ui/Button'
 import SecureAvatar from '../ui/SecureAvatar'
 
-export default function ActiveGroupView({
+const ActiveGroupView = memo(function ActiveGroupView({
   activeBanner,
   activeGroup,
   isGroupAdmin,
@@ -405,4 +406,6 @@ export default function ActiveGroupView({
       </div>
     </div>
   )
-}
+})
+
+export default ActiveGroupView
