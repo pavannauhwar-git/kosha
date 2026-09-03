@@ -35,6 +35,7 @@ import SkeletonLayout from '../components/common/SkeletonLayout'
 import Button from '../components/ui/Button'
 import useWindowedList from '../hooks/useWindowedList'
 import { useTransactionDeleter } from '../hooks/useTransactionDeleter'
+// Note: removeTransactionMutation is handled by useTransactionDeleter to keep this file modular.
 import { useTransactionExporter } from '../hooks/useTransactionExporter'
 import TransactionFilterBar, { DATE_PRESETS, TYPES } from '../components/transactions/TransactionFilterBar'
 

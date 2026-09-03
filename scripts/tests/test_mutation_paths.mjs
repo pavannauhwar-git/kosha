@@ -36,9 +36,9 @@ const checks = [
     msg: 'AddTransactionSheet must use saveTransactionMutation',
   },
   {
-    rel: 'src/hooks/useTransactionDeleter.js',
+    rel: 'src/pages/Transactions.jsx',
     mustInclude: 'removeTransactionMutation',
-    msg: 'Transaction deletion hook must use removeTransactionMutation',
+    msg: 'Transactions page must use removeTransactionMutation',
   },
   {
     rel: 'src/pages/Dashboard.jsx',
