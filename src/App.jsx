@@ -515,7 +515,7 @@ function BottomNav() {
             <button
               key={item.path}
               className="nav-float-item"
-              onClick={(e) => {
+              onClick={(_e) => {
                 // Standard click for mouse/keyboard
                 hapticTap()
                 if (isActive) {

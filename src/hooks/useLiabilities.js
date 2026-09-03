@@ -218,7 +218,7 @@ export async function updateLiability(id, updates) {
   return data
 }
 
-export async function deleteLiability(id, cachedBill = null) {
+export async function deleteLiability(id, _cachedBill = null) {
   // Migration 004: a single SECURITY DEFINER RPC now does
   //   (a) the owner check,
   //   (b) the liability DELETE (which cascades to its transactions via the

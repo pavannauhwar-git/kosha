@@ -218,7 +218,7 @@ async function updateLoan(id, updates) {
   return data
 }
 
-async function deleteLoan(id, cachedLoan = null) {
+async function deleteLoan(id, _cachedLoan = null) {
   // Migration 004: single SECURITY DEFINER RPC handles
   //   (a) the owner check (server-side, can't be bypassed by a malicious
   //       client calling the table directly),
