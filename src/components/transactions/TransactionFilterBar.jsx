@@ -5,7 +5,7 @@ import Input from '../ui/Input'
 import Select from '../ui/Select'
 import FilterRow from '../common/FilterRow'
 import SectionHeader from '../common/SectionHeader'
-import { CATEGORIES, PAYMENT_MODES, getCategoriesForType } from '../../lib/categories'
+import { PAYMENT_MODES } from '../../lib/categories'
 import { MONTH_SHORT } from '../../lib/constants'
 import { formatMonthInputLabel, monthInputFromDate } from '../../lib/dateUtils'
 
@@ -35,7 +35,6 @@ export default function TransactionFilterBar({
   search,
   setSearch,
   isSearchDebouncing,
-  debouncedSearch,
   linkedLoanFilter,
   linkedBillFilter,
   linkedSplitExpenseFilter,

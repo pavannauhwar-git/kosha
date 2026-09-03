@@ -1,28 +1,24 @@
 import { useState, useCallback, useMemo, useEffect, useRef, startTransition } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { MagnifyingGlass, X, Faders, Plus, DownloadSimple, BookOpen, ArrowRight, CircleNotch } from '@phosphor-icons/react'
+import { motion } from 'framer-motion'
+import { X, Plus, DownloadSimple, BookOpen, ArrowRight, CircleNotch } from '@phosphor-icons/react'
 import {
   useTransactions,
   useTransactionSignalAggregates,
-  buildTransactionSearchOrClause,
   useDebounce,
 } from '../hooks/useTransactions'
 import TransactionItem from '../components/transactions/TransactionItem'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import EmptyState from '../components/common/EmptyState'
-import FilterRow from '../components/common/FilterRow'
+
 
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
-import { useAppMutation } from '../hooks/useAppMutation'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import { useUserCategories } from '../hooks/useUserCategories'
 import { CATEGORIES, PAYMENT_MODES, getCategoriesForType } from '../lib/categories'
-import { supabase } from '../lib/supabase'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
 
-import { MONTH_SHORT } from '../lib/constants'
 import {
   MONTH_FILTER_MIN_YEAR,
   MONTH_FILTER_MAX_YEAR,
@@ -37,8 +33,6 @@ import SectionHeader from '../components/common/SectionHeader'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import Button from '../components/ui/Button'
-import Input from '../components/ui/Input'
-import Select from '../components/ui/Select'
 import useWindowedList from '../hooks/useWindowedList'
 import { useTransactionDeleter } from '../hooks/useTransactionDeleter'
 import { useTransactionExporter } from '../hooks/useTransactionExporter'
@@ -844,8 +838,6 @@ export default function Transactions() {
     setSelectedMonth(monthInputFromDate())
     setForcedDateRange(null)
     setSearch('')
-    setShowCats(false)
-    setShowPaymentModes(false)
     setDisplayCount(50)
     clearLinkedFilters()
   }, [clearLinkedFilters])

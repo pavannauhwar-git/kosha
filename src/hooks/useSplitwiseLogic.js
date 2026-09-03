@@ -39,7 +39,7 @@ import {
 import { useAppMutation } from './useAppMutation'
 import { getCategoriesForType } from '../lib/categories'
 import { useUserCategories } from './useUserCategories'
-import { fmt, fmtDate, todayStr } from '../lib/utils'
+import { todayStr } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { shareLink } from '../lib/share'
 import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
@@ -1243,6 +1243,9 @@ export function useSplitwiseLogic() {
     handleLeaveGroup, handleAddMember, handleAddExpense, handleDeleteExpense, handleRecordSettlement, handleDeleteSettlement,
     applySuggestedTransfer,
     resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS,
-    activeWalletUserId, authUserId, pendingExpenseDeleteRef, pendingSettlementDeleteRef
+    activeWalletUserId, authUserId, pendingExpenseDeleteRef, pendingSettlementDeleteRef,
+    memberById, openEditExpense, openEditSettlement, memberSpendingStats, txnsListRef,
+    txnsTopPadding, txnsBottomPadding, measureTxnElement, renderedTransactions, txnsStartIndex,
+    transactions
   }
 }

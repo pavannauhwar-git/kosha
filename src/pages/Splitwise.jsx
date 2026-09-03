@@ -1,7 +1,8 @@
 import GroupList from '../components/splitwise/GroupList'
 import ActiveGroupView from '../components/splitwise/ActiveGroupView'
+import { round2 } from '../hooks/useSplitwise'
 import { useSplitwiseLogic, readBannerFromStorage, defaultSplitInput } from '../hooks/useSplitwiseLogic'
-import { fmtDate } from '../lib/utils'
+import { fmtDate, fmt } from '../lib/utils'
 
 import { createPortal } from 'react-dom'
 import { AnimatePresence } from 'framer-motion'
@@ -27,7 +28,10 @@ export default function Splitwise() {
     changeBanner, handleUpdateGroup, handleToggleArchive, handleExportLedger, closeSheets, handleCreateGroup, handleCreateGroupInvite,
     handleSettleUpClick, handleConfirmInviteJoin, handleDismissInvitePreview, handleDeleteGroup, handleSetMemberRole, handleDeleteMember,
     handleLeaveGroup, handleAddMember, handleAddExpense, handleDeleteExpense, handleRecordSettlement, handleDeleteSettlement,
-    resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS, authUserId
+    resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS, authUserId,
+    balances, suggestedTransfers, loading, applySuggestedTransfer, memberById, openEditExpense,
+    openEditSettlement, memberSpendingStats, txnsListRef, txnsTopPadding, txnsBottomPadding,
+    measureTxnElement, renderedTransactions, txnsStartIndex, transactions
   } = useSplitwiseLogic()
 
   return (
@@ -204,6 +208,25 @@ export default function Splitwise() {
             setSettlementForm={setSettlementForm}
             handleDeleteSettlement={handleDeleteSettlement}
             saving={saving}
+            balances={balances}
+            fmt={fmt}
+            memberSpendingStats={memberSpendingStats}
+            suggestedTransfers={suggestedTransfers}
+            applySuggestedTransfer={applySuggestedTransfer}
+            transactions={transactions}
+            loading={loading}
+            txnsListRef={txnsListRef}
+            txnsTopPadding={txnsTopPadding}
+            renderedTransactions={renderedTransactions}
+            txnsStartIndex={txnsStartIndex}
+            measureTxnElement={measureTxnElement}
+            memberById={memberById}
+            fmtDate={fmtDate}
+            openEditExpense={openEditExpense}
+            openEditSettlement={openEditSettlement}
+            round2={round2}
+            txnsBottomPadding={txnsBottomPadding}
+
           />
       )}
 
