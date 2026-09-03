@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import GroupList from '../components/splitwise/GroupList'
+import ActiveGroupView from '../components/splitwise/ActiveGroupView'
+import { useSplitwiseLogic, readBannerFromStorage, defaultSplitInput } from '../hooks/useSplitwiseLogic'
+import { fmtDate } from '../lib/utils'
+
 import { createPortal } from 'react-dom'
 import { AnimatePresence } from 'framer-motion'
-import { Plus, ArrowsLeftRight, Receipt, LinkSimple, Trash, CaretLeft, SlidersHorizontal, Archive, ArrowUUpLeft } from '@phosphor-icons/react'
-import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
+import { Plus, LinkSimple, CaretLeft, SlidersHorizontal, Archive, ArrowUUpLeft } from '@phosphor-icons/react'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
@@ -10,71 +13,21 @@ import Button from '../components/ui/Button'
 import PixelDatePicker from '../components/ui/PixelDatePicker'
 import EmptyState from '../components/common/EmptyState'
 import SkeletonLayout from '../components/common/SkeletonLayout'
-import { useAppToast } from '../context/ToastContext'
-import { toToastMessage } from '../lib/errorTaxonomy'
 import Sheet from '../components/ui/Sheet'
-import SecureAvatar from '../components/ui/SecureAvatar'
-import { useAuth } from '../context/AuthContext'
-import { getAuthUserId } from '../lib/authStore'
-import { supabase } from '../lib/supabase'
-import { useActiveWallet } from '../lib/walletStore'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
-import {
-  addSplitExpenseMutation,
-  addSplitMemberMutation,
-  buildEqualSplits,
-  buildExactSplits,
-  buildPercentSplits,
-  buildShareSplits,
-  consumeSplitGroupInviteMutation,
-  createSplitGroupMutation,
-  createSplitGroupInviteMutation,
-  deleteSplitExpenseMutation,
-  deleteSplitGroupMutation,
-  deleteSplitMemberMutation,
-  deleteSplitSettlementMutation,
-  previewSplitGroupInviteMutation,
-  recordSplitSettlementMutation,
-  round2,
-  useSplitwise,
-  optimisticallyInsertSplitGroup,
-  optimisticallyDeleteSplitGroup,
-  optimisticallyDeleteSplitExpense,
-  optimisticallyInsertSplitExpense,
-  optimisticallyDeleteSplitSettlement,
-  optimisticallyInsertSplitSettlement,
-  leaveSplitGroupMutation,
-  toggleArchiveSplitGroupMutation,
-  updateSplitExpenseMutation,
-  updateSplitGroupMutation,
-  updateSplitGroupBannerMutation,
-  setSplitGroupAccessRoleMutation,
-} from '../hooks/useSplitwise'
-import { useAppMutation } from '../hooks/useAppMutation'
-import { getCategoriesForType } from '../lib/categories'
-import { useUserCategories } from '../hooks/useUserCategories'
-import { fmt, fmtDate, todayStr } from '../lib/utils'
-
-import { downloadCsv, toCsv } from '../lib/csv'
-import { shareLink } from '../lib/share'
-import useWindowedList from '../hooks/useWindowedList'
-import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
-
 export default function Splitwise() {
   const {
-    activeGroupId, setActiveGroupId, groups, members, expenses, settlements, balances, suggestedTransfers, loading, groupsLoading, error,
+    activeGroupId, setActiveGroupId, groups, members, expenses, settlements, groupsLoading,
     schemaMissing, activeGroup, activeMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
-    showCreateGroup, setShowCreateGroup, showAddExpense, setShowAddExpense, showSettlement, setShowSettlement, showAddMember, setShowAddMember,
+    showCreateGroup, setShowCreateGroup, showAddExpense, setShowAddExpense, showSettlement, showAddMember, setShowAddMember,
     newMemberName, setNewMemberName, saving, consumingInvite, invitePreview, editExpense, setEditExpense, editSettlement, setEditSettlement,
-    showBannerPicker, setShowBannerPicker, savedBannerId, setSavedBannerId, showEditGroup, setShowEditGroup, editGroupForm, setEditGroupForm,
+    showBannerPicker, setShowBannerPicker, savedBannerId, showEditGroup, setShowEditGroup, editGroupForm, setEditGroupForm,
     showArchived, setShowArchived, groupForm, setGroupForm, expenseForm, setExpenseForm, splitInputs, setSplitInputs, settlementForm, setSettlementForm,
-    accountDisplayName, activeBanner, visibleGroups, groupStats, totalExpenses, selfNet, selfMember, expenseCategoryOptions,
+    accountDisplayName, activeBanner, visibleGroups, groupStats, totalExpenses, selfNet, expenseCategoryOptions,
     changeBanner, handleUpdateGroup, handleToggleArchive, handleExportLedger, closeSheets, handleCreateGroup, handleCreateGroupInvite,
     handleSettleUpClick, handleConfirmInviteJoin, handleDismissInvitePreview, handleDeleteGroup, handleSetMemberRole, handleDeleteMember,
     handleLeaveGroup, handleAddMember, handleAddExpense, handleDeleteExpense, handleRecordSettlement, handleDeleteSettlement,
-    applySuggestedTransfer,
-    resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS,
-    activeWalletUserId, authUserId, pendingExpenseDeleteRef, pendingSettlementDeleteRef
+    resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS, authUserId
   } = useSplitwiseLogic()
 
   return (
@@ -708,7 +661,3 @@ export default function Splitwise() {
     </PageHeaderPage>
   )
 }
-import GroupList from '../components/splitwise/GroupList'
-import ActiveGroupView from '../components/splitwise/ActiveGroupView'
-import { useSplitwiseLogic, readBannerFromStorage, defaultSplitInput } from '../hooks/useSplitwiseLogic'
-
