@@ -96,9 +96,18 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
     setActiveDay(day)
     if (e && gridRef.current) {
       const rect = gridRef.current.getBoundingClientRect()
+      let clientX = e.clientX
+      let clientY = e.clientY
+
+      if (clientX === undefined || clientY === undefined) {
+        const cellRect = e.currentTarget.getBoundingClientRect()
+        clientX = cellRect.left + cellRect.width / 2
+        clientY = cellRect.top
+      }
+
       setTooltipPos({
-        x: e.clientX - rect.left + gridRef.current.scrollLeft,
-        y: e.clientY - rect.top + gridRef.current.scrollTop,
+        x: clientX - rect.left + gridRef.current.scrollLeft,
+        y: clientY - rect.top + gridRef.current.scrollTop,
       })
     }
   }, [])
