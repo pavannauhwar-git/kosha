@@ -97,8 +97,8 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
     if (e && gridRef.current) {
       const rect = gridRef.current.getBoundingClientRect()
       setTooltipPos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+        x: e.clientX - rect.left + gridRef.current.scrollLeft,
+        y: e.clientY - rect.top + gridRef.current.scrollTop,
       })
     }
   }, [])

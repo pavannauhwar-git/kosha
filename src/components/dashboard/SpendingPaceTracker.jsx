@@ -135,7 +135,7 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
               tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
-              interval="preserveStartEnd"
+              interval={0}
             />
             <YAxis
               domain={[0, yDomainMax]}
