@@ -751,9 +751,7 @@ a,
 
   .app-topbar {
     @apply fixed top-0 left-0 right-0 z-20 border-b border-kosha-border;
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: saturate(160%) blur(12px);
-    -webkit-backdrop-filter: saturate(160%) blur(12px);
+    background: var(--ds-surface);
     border-bottom-color: rgba(17, 19, 24, 0.08);
     box-shadow:
       0 4px 12px rgba(17, 19, 24, 0.045),
@@ -764,7 +762,7 @@ a,
   }
 
   .dark .app-topbar {
-    background: rgba(29, 32, 36, 0.94);
+    background: var(--ds-surface);
     border-bottom-color: rgba(255, 255, 255, 0.10);
     box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.22),

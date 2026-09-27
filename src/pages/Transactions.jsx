@@ -105,14 +105,12 @@ export default function Transactions() {
 
   function handleDatePreset(nextPreset) {
     clearLinkedFilters()
-    startTransition(() => {
-      setDatePreset(nextPreset)
-      setForcedDateRange(null)
-      if (nextPreset === 'custom-month' && !parseMonthInput(selectedMonth)) {
-        setSelectedMonth(monthInputFromDate())
-      }
-      setDisplayCount(50)
-    })
+    setDatePreset(nextPreset)
+    setForcedDateRange(null)
+    if (nextPreset === 'custom-month' && !parseMonthInput(selectedMonth)) {
+      setSelectedMonth(monthInputFromDate())
+    }
+    setDisplayCount(50)
   }
 
   const selectedMonthParts = useMemo(
@@ -209,27 +207,21 @@ export default function Transactions() {
   // Reset display count when filter changes to avoid cascading re-renders
 
   function handleTypeFilter(id) {
-    startTransition(() => {
-      setTypeFilter(id)
-      const nextCategories = getCategoriesForType(id === 'all' ? undefined : id)
-      const isCurrentCategoryAllowed = !catFilter || nextCategories.some((cat) => cat.id === catFilter)
-      if (!isCurrentCategoryAllowed) setCatFilter('')
-      setDisplayCount(50)   // reset in same event — single re-render
-    })
+    setTypeFilter(id)
+    const nextCategories = getCategoriesForType(id === 'all' ? undefined : id)
+    const isCurrentCategoryAllowed = !catFilter || nextCategories.some((cat) => cat.id === catFilter)
+    if (!isCurrentCategoryAllowed) setCatFilter('')
+    setDisplayCount(50)
   }
 
   function handleCatFilter(id) {
-    startTransition(() => {
-      setCatFilter(id)
-      setDisplayCount(50)   // reset in same event — single re-render
-    })
+    setCatFilter(id)
+    setDisplayCount(50)
   }
 
   function handlePaymentModeFilter(id) {
-    startTransition(() => {
-      setPaymentModeFilter(id)
-      setDisplayCount(50)
-    })
+    setPaymentModeFilter(id)
+    setDisplayCount(50)
   }
 
   const { data, total, loading: txnLoading, fetching: txnFetching } = useTransactions({
