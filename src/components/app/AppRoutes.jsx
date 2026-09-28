@@ -43,7 +43,7 @@ export const ROUTE_PRELOADERS = {
 
 export function PageFallback({ pathname }) {
   return (
-    <div className="min-h-[100svh] bg-kosha-bg">
+    <div className="min-h-dvh bg-kosha-bg">
       <div className="route-skeleton-shell fade-in">
         <RouteSkeleton pathname={pathname || '/'} />
       </div>

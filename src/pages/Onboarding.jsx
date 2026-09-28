@@ -326,7 +326,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-kosha-bg flex flex-col px-5 pt-[max(3rem,calc(env(safe-area-inset-top)+1rem))] pb-[max(2.5rem,calc(env(safe-area-inset-bottom)+1rem))]">
+    <div className="min-h-dvh bg-kosha-bg flex flex-col px-5 pt-[max(3rem,calc(env(safe-area-inset-top)+1rem))] pb-[max(2.5rem,calc(env(safe-area-inset-bottom)+1rem))]">
       <div className="w-full max-w-sm mx-auto flex flex-col flex-1">
 
         {/* Header row: Logo + Skip button */}

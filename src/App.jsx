@@ -67,7 +67,7 @@ function AppShell() {
 
   return (
     <ToastProvider>
-      <div className="relative min-h-[100svh] flex flex-col bg-kosha-bg">
+      <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:rounded-pill focus:bg-ink focus:px-4 focus:py-2 focus:text-white focus:shadow-card"
