@@ -142,7 +142,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
       )}
 
       {/* Category list */}
-      <div className="overflow-y-auto px-5 py-3 space-y-1.5" style={{ maxHeight: 'calc(85dvh - 120px)' }}>
+      <div className="overflow-y-auto px-5 py-3 space-y-1.5" style={{ maxHeight: 'calc(85svh - 120px)' }}>
         {categories.map((cat) => {
           const draft = getDraftValue(cat.id)
           const hasBudget = budgetMap.has(cat.id)

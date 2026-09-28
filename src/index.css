@@ -352,11 +352,11 @@ html {
 }
 
 body {
-  background-color: var(--ds-surface-dim);
+  background-color: #FFFFFF;
   color: var(--ds-text);
   width: 100%;
   max-width: 100%;
-  min-height: 100dvh;
+  min-height: 100svh;
   overscroll-behavior: none;
   overflow-x: clip;
   margin: 0;
@@ -478,7 +478,7 @@ a,
     width: 100%;
     max-width: 100%;
     overflow-x: clip;
-    background-color: var(--ds-surface-dim);
+    background-color: #FFFFFF;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -486,12 +486,17 @@ a,
   }
 
   body {
-    @apply bg-kosha-bg text-ink font-sans;
+    @apply text-ink font-sans;
+    background-color: #FFFFFF;
     width: 100%;
     max-width: 100%;
-    min-height: 100dvh;
+    min-height: 100svh;
     overscroll-behavior-y: none;
     overflow-x: clip;
+  }
+
+  html.dark, html.dark body {
+    background-color: #1E1F20;
   }
 
   html, body, #root, .bg-kosha-bg, .card, .mini-panel, .app-topbar, .nav-float-wrap {
@@ -753,17 +758,13 @@ a,
     @apply fixed top-0 left-0 right-0 z-20 border-b border-kosha-border;
     background: var(--ds-surface);
     border-bottom-color: rgba(17, 19, 24, 0.08);
-    box-shadow:
-      0 4px 12px rgba(17, 19, 24, 0.045),
-      inset 0 0.5px 0 rgba(255, 255, 255, 0.76);
+    box-shadow: 0 4px 12px rgba(17, 19, 24, 0.045);
   }
 
   .dark .app-topbar {
     background: var(--ds-surface);
     border-bottom-color: rgba(255, 255, 255, 0.10);
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.22),
-      inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
   }
 
   .app-topbar--bleed {
@@ -1298,7 +1299,7 @@ a,
 
   /* -- Page wrapper ────────────────────────────────────────────────── */
   .page {
-    @apply min-h-dvh;
+    @apply min-h-[100svh];
     padding-left: 1rem;
     padding-right: 1rem;
     padding-top: 1rem;
