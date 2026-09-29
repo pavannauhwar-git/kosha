@@ -387,18 +387,6 @@ export default function Bills({
   }, [focusBillId, pending, paid, pendingLoading, paidLoading])
 
   useEffect(() => {
-    return () => {
-      // Commit any pending delete if the component unmounts
-      if (pendingDeleteRef.current) {
-        const pending = pendingDeleteRef.current
-        pendingDeleteRef.current = null
-        if (pending.timeoutId) clearTimeout(pending.timeoutId)
-        void commitPendingDelete(pending)
-      }
-    }
-  }, [commitPendingDelete])
-
-  useEffect(() => {
     if (!focusBillId || focusRanForRef.current === focusBillId) return
 
     const focusIndex = billRows.findIndex((bill) => bill.id === focusBillId)

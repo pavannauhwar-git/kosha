@@ -150,7 +150,7 @@ export function useSplitwiseLogic() {
     ({ groupId, isArchived }) => toggleArchiveSplitGroupMutation(groupId, isArchived), 
     { context: 'splitwise:toggleArchive' }
   )
-  const previewGroupInvite = useAppMutation(previewSplitGroupInviteMutation, { context: 'splitwise:previewInvite' })
+
   const { mutateAsync: consumeGroupInviteAsync } = useAppMutation(consumeSplitGroupInviteMutation, { context: 'splitwise:consumeInvite' })
   const { mutateAsync: updateExpenseAsync } = useAppMutation(updateSplitExpenseMutation, { context: 'splitwise:updateExpenseAsync' })
   const { mutateAsync: updateGroupAsync } = useAppMutation(updateSplitGroupMutation, { context: 'splitwise:updateGroupAsync' })

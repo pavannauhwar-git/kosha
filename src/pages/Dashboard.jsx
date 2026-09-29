@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 
 import { Plus, Wallet, TrendDown, ArrowRight } from '@phosphor-icons/react'
 import {
@@ -23,7 +23,6 @@ import DashboardRecentTransactions from '../components/dashboard/DashboardRecent
 import SpendingPaceTracker from '../components/dashboard/SpendingPaceTracker'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import { useAppToast } from '../context/ToastContext'
-import { toToastMessage } from '../lib/errorTaxonomy'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'

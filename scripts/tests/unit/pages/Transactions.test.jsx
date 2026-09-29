@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
@@ -86,7 +86,7 @@ describe('Transactions Page', () => {
       measureElement: vi.fn()
     })
 
-    const { container } = renderComponent()
+    renderComponent()
     
     expect(screen.getByText('Transactions')).toBeInTheDocument()
     
@@ -111,7 +111,7 @@ describe('Transactions Page', () => {
       measureElement: vi.fn()
     })
 
-    const { container } = renderComponent()
+    renderComponent()
     
     // The EmptyState component has this specific text based on typeFilter 'all'
     expect(screen.getByText('No transactions yet')).toBeInTheDocument()
