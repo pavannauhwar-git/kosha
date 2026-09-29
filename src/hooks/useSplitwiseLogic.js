@@ -501,7 +501,10 @@ export function useSplitwiseLogic() {
     }
   }, [members, activeGroupId])
 
-  const resolveMemberName = (member) => memberName(member, memberProfilesByUserId)
+  const resolveMemberName = (member) => {
+    const base = memberName(member, memberProfilesByUserId)
+    return member.archived_at ? `${base} (removed)` : base
+  }
   const resolveMemberAvatar = (member) => memberAvatarUrl(member, memberProfilesByUserId)
 
   const selfMember = useMemo(
@@ -548,6 +551,7 @@ export function useSplitwiseLogic() {
 
   const activeMembers = useMemo(() => {
     return (members || []).filter(member => {
+      if (member.archived_at) return false
       let memberRole = 'guest'
       if (member.linked_user_id === activeGroup?.user_id) {
         memberRole = 'admin'
@@ -762,6 +766,12 @@ export function useSplitwiseLogic() {
 
   async function handleDeleteMember(memberId) {
     if (!isGroupAdmin || activeGroup?.is_archived || saving) return
+
+    const balance = balances.find(b => b.member_id === memberId)
+    if (balance && balance.net_balance !== 0) {
+      pushToast(`This member still has an unsettled balance. Settle up first.`)
+      return
+    }
 
     setSaving(`delete-${memberId}`)
     try {

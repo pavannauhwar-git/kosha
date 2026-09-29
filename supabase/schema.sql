@@ -169,6 +169,7 @@ declare
   v_description  text;
   v_notes        text;
 begin
+  perform set_config('kosha.trusted_write', 'true', true);
   if auth.uid() is null or auth.uid() <> p_user_id then
     raise exception 'Authentication required';
   end if;
@@ -358,10 +359,6 @@ begin
 
   if not public.is_split_group_member_or_above(v_group_id, v_uid) then
     raise exception using errcode = '42501', message = 'forbidden';
-  end if;
-
-  if v_linked_txn is not null then
-    delete from public.transactions where id = v_linked_txn;
   end if;
 
   delete from public.transactions where linked_split_expense_id = p_id;
@@ -1415,6 +1412,7 @@ declare
   v_fully_settled boolean;
   v_txn_type  text;
 begin
+  perform set_config('kosha.trusted_write', 'true', true);
   if p_amount is null or p_amount <= 0 then
     raise exception 'Payment amount must be positive';
   end if;
@@ -1718,10 +1716,14 @@ declare
   v_payer_uid uuid;
   v_txn_id uuid;
 begin
+  perform set_config('kosha.trusted_write', 'true', true);
   if v_uid is null then
     raise exception 'Authentication required';
   end if;
 
+  if exists (select 1 from public.split_groups where id = p_group_id and is_archived) then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
+  end if;
   if p_amount is null or p_amount <= 0 then
     raise exception 'Expense amount must be positive';
   end if;
@@ -1798,7 +1800,7 @@ begin
   for v_item in select * from jsonb_array_elements(p_splits)
   loop
     v_member_id := nullif(v_item->>'member_id', '')::uuid;
-    v_share := coalesce((v_item->>'share')::numeric, 0);
+    v_share := round(coalesce((v_item->>'share')::numeric, 0), 2);
     v_percent := nullif(v_item->>'percent', '')::numeric;
     v_shares := nullif(v_item->>'shares', '')::numeric;
 
@@ -1838,7 +1840,7 @@ begin
     v_sum := v_sum + v_share;
   end loop;
 
-  if abs(v_sum - p_amount) > 0.01 then
+  if v_sum <> round(p_amount, 2) then
     raise exception 'Split total (%) does not match amount (%)', v_sum, p_amount;
   end if;
 
@@ -1911,14 +1913,20 @@ begin
 
   insert into public.split_groups (id, name, user_id)
   values (p_id, v_name, v_uid)
-  on conflict (id) do nothing;
-  
-  select * into v_group from public.split_groups where id = p_id;
+  on conflict (id) do nothing
+  returning * into v_group;
+
+  if v_group.id is null then
+    select * into v_group from public.split_groups where id = p_id;
+    if v_group.user_id is distinct from v_uid then
+      raise exception using errcode = '42501', message = 'forbidden';
+    end if;
+    return v_group;
+  end if;
 
   insert into public.split_group_access (group_id, user_id, role)
   values (v_group.id, v_uid, 'admin')
-  on conflict (group_id, user_id) do update
-    set role = 'admin';
+  on conflict (group_id, user_id) do update set role = 'admin';
 
   insert into public.split_group_members (
     group_id,
@@ -2104,7 +2112,7 @@ begin
   end if;
 
   return jsonb_build_object(
-    'group_id', v_group.id,
+    'group_id', case when auth.uid() is not null then v_group.id end,
     'group_name', v_group.name,
     'invited_role', coalesce(v_invite.role, 'viewer')
   );
@@ -2148,6 +2156,7 @@ declare
   v_payer_name text;
   v_payee_name text;
 begin
+  perform set_config('kosha.trusted_write', 'true', true);
   if v_uid is null then
     raise exception 'Authentication required';
   end if;
@@ -2346,6 +2355,9 @@ begin
   if p_expense_id is null then
     raise exception using errcode = '22023', message = 'p_expense_id is required';
   end if;
+  if exists (select 1 from public.split_groups where id = p_group_id and is_archived) then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
+  end if;
   if p_amount is null or p_amount <= 0 then
     raise exception 'Expense amount must be positive';
   end if;
@@ -2407,7 +2419,7 @@ begin
   for v_item in select * from jsonb_array_elements(p_splits)
   loop
     v_member_id := nullif(v_item->>'member_id', '')::uuid;
-    v_share := coalesce((v_item->>'share')::numeric, 0);
+    v_share := round(coalesce((v_item->>'share')::numeric, 0), 2);
     v_percent := nullif(v_item->>'percent', '')::numeric;
     v_shares := nullif(v_item->>'shares', '')::numeric;
 
@@ -2419,7 +2431,7 @@ begin
     end if;
     if not exists (
       select 1 from public.split_group_members m
-      where m.id = v_member_id and m.group_id = v_group_id
+      where m.id = v_member_id and m.group_id = v_group_id and m.archived_at is null
     ) then
       raise exception 'Split includes a member outside this group';
     end if;
@@ -2433,7 +2445,7 @@ begin
     v_sum := v_sum + v_share;
   end loop;
 
-  if abs(v_sum - p_amount) > 0.01 then
+  if v_sum <> round(p_amount, 2) then
     raise exception 'Split total (%) does not match amount (%)', v_sum, p_amount;
   end if;
 
@@ -2443,7 +2455,7 @@ begin
   -- keep a transaction for the payer when the payer is the editor OR a
   -- transaction already exists for that payer (i.e. the payer is unchanged).
   if v_linked_txn is not null then
-    select user_id into v_existing_owner from public.transactions where id = v_linked_txn;
+    select user_id into v_existing_owner from public.transactions where id = v_linked_txn and linked_split_expense_id = p_expense_id;
   end if;
 
   if coalesce(p_sync_transaction, true)
@@ -2470,7 +2482,7 @@ begin
       -- Payer moved to the editor while a txn existed for someone else, or no
       -- txn existed yet: drop the stale one (if any) and create a fresh one.
       if v_linked_txn is not null then
-        delete from public.transactions where id = v_linked_txn;
+        delete from public.transactions where id = v_linked_txn and linked_split_expense_id = p_expense_id;
       end if;
       insert into public.transactions (
         date, type, description, amount, category, user_id, linked_split_expense_id, notes
@@ -2490,7 +2502,7 @@ begin
     -- No txn should exist (sync off, external payer, or payer reassigned away
     -- from both the editor and the existing owner): remove any stale txn.
     if v_linked_txn is not null then
-      delete from public.transactions where id = v_linked_txn;
+      delete from public.transactions where id = v_linked_txn and linked_split_expense_id = p_expense_id;
       update public.split_expenses set linked_transaction_id = null where id = p_expense_id;
     end if;
   end if;
@@ -2621,6 +2633,7 @@ begin
            description = new.description,
            date        = new.expense_date
      where id = new.linked_transaction_id
+       and linked_split_expense_id = new.id
        and (amount      is distinct from new.amount
          or description is distinct from new.description
          or date        is distinct from new.expense_date);
@@ -2649,6 +2662,7 @@ begin
            description  = new.description,
            expense_date = new.date
      where id = new.linked_split_expense_id
+       and linked_transaction_id = new.id
        and (amount       is distinct from new.amount
          or description  is distinct from new.description
          or expense_date is distinct from new.date);
@@ -3374,7 +3388,7 @@ ALTER TABLE ONLY "public"."split_expense_splits"
 
 -- Constraint/Alter: split_expense_splits
 ALTER TABLE ONLY "public"."split_expense_splits"
-    ADD CONSTRAINT "split_expense_splits_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "public"."split_group_members"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "split_expense_splits_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "public"."split_group_members"("id") ON DELETE RESTRICT;
 
 -- Constraint/Alter: split_expense_splits
 ALTER TABLE ONLY "public"."split_expense_splits"
@@ -3551,7 +3565,7 @@ ALTER TABLE "public"."invites" ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "invites: delete own" ON "public"."invites" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "created_by"));
 
 -- Policy: invites: insert own (Table: invites)
-CREATE POLICY "invites: insert own" ON "public"."invites" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") = "created_by"));
+CREATE POLICY "invites: insert own" ON "public"."invites" FOR INSERT TO "authenticated" WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "created_by") AND ("used_by" IS NULL) AND ("used_at" IS NULL)));
 
 -- Policy: invites: select own (Table: invites)
 CREATE POLICY "invites: select own" ON "public"."invites" FOR SELECT TO "authenticated" USING (((( SELECT "auth"."uid"() AS "uid") = "created_by") OR (( SELECT "auth"."uid"() AS "uid") = "used_by")));
@@ -3693,7 +3707,6 @@ CREATE POLICY "split_group_invites: update owner" ON "public"."split_group_invit
 ALTER TABLE "public"."split_group_members" ENABLE ROW LEVEL SECURITY;
 
 -- Policy: split_group_members: delete own (Table: split_group_members)
-CREATE POLICY "split_group_members: delete own" ON "public"."split_group_members" FOR DELETE TO "authenticated" USING ("public"."is_split_group_owner"("group_id"));
 
 -- Policy: split_group_members: insert own (Table: split_group_members)
 CREATE POLICY "split_group_members: insert own" ON "public"."split_group_members" FOR INSERT TO "authenticated" WITH CHECK (((( SELECT "auth"."uid"() AS "uid") = "user_id") AND "public"."is_split_group_owner"("group_id")));
