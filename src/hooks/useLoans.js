@@ -174,6 +174,7 @@ async function recordPayment(loanId, amount, id) {
     p_loan_id: loanId,
     p_user_id: userId,
     p_amount: amount,
+    p_paid_on: todayStr(),
   })
 
   if (error) throw error

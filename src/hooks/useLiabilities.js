@@ -170,6 +170,7 @@ export async function markPaid(liability) {
     .rpc('mark_liability_paid', {
       p_liability_id: liability.id,
       p_user_id: userId,
+      p_paid_on: todayStr(),
     })
 
   if (rpcError) throw rpcError
@@ -457,6 +458,8 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       const rpcRow = Array.isArray(result) ? result[0] : result
       const txnId = rpcRow?.transaction_id || tempId
 
+      const LIABILITY_TO_TXN_MODE = { card: 'credit_card', bank: 'net_banking', upi: 'upi', cash: 'cash' }
+
       optimisticallyUpsertTransactionInCache({
         id: txnId,
         date: todayStr(),
@@ -465,7 +468,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
         amount: Number(liability.amount || 0),
         description: liability.description || 'Bill Payment',
         category: liability.category || 'bills',
-        payment_mode: liability.payment_mode || 'upi',
+        payment_mode: LIABILITY_TO_TXN_MODE[liability.payment_mode] || 'other',
         linked_bill_id: liability.id,
         notes: `Paid bill: ${liability.description}`,
         investment_vehicle: null,

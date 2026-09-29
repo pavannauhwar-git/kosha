@@ -518,6 +518,10 @@ export default function Bills({
       paid: false,
     }
 
+    if (form.is_recurring) {
+      billData.recurrence_anchor = form.due_date
+    }
+
     setFormErr('')
 
     if (editBill) {

@@ -103,7 +103,11 @@ async function maybeGenerateRecurringTransactions(userId) {
   lastRecurringSyncAt = now
 
   try {
-    await supabase.rpc('generate_recurring_transactions', { p_user_id: userId })
+    const { error } = await supabase.rpc('generate_recurring_transactions', {
+      p_user_id: userId,
+      p_today: todayStr(),
+    })
+    if (error) throw error
     return true
   } catch (error) {
     lastRecurringSyncAt = 0

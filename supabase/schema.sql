@@ -158,107 +158,56 @@ $$;
 -- -----------------------------------------------------------------------------
 -- Function: create_loan
 -- -----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION "public"."create_loan"("p_user_id" "uuid", "p_direction" "text", "p_counterparty" "text", "p_amount" numeric, "p_interest_rate" numeric DEFAULT 0, "p_loan_date" "date" DEFAULT CURRENT_DATE, "p_due_date" "date" DEFAULT NULL::"date", "p_note" "text" DEFAULT NULL::"text", "p_id" "uuid" DEFAULT NULL::"uuid") RETURNS json
+CREATE OR REPLACE FUNCTION "public"."create_loan"("p_counterparty" "text", "p_amount" numeric, "p_direction" "text", "p_date" "date", "p_notes" "text", "p_payment_mode" "text", "p_sync_transaction" boolean, "p_user_id" "uuid", "p_id" "uuid" DEFAULT NULL::"uuid") RETURNS "public"."loans"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
     AS $$
 declare
-  v_loan   public.loans%rowtype;
-  v_txn_id uuid;
-  v_txn_type  text;
-  v_description  text;
-  v_notes        text;
+  v_uid uuid := auth.uid();
+  v_loan public.loans%rowtype;
+  v_txn_type text;
 begin
   perform set_config('kosha.trusted_write', 'true', true);
-  if auth.uid() is null or auth.uid() <> p_user_id then
-    raise exception 'Authentication required';
-  end if;
-
-  if p_amount is null or p_amount <= 0 then
-    raise exception 'Loan amount must be positive';
-  end if;
-
-  if p_direction not in ('given', 'taken') then
-    raise exception 'Direction must be given or taken';
-  end if;
-
-  if p_counterparty is null or btrim(p_counterparty) = '' then
-    raise exception 'Counterparty name is required';
-  end if;
-
-  v_txn_type := case p_direction when 'given' then 'expense' else 'income' end;
-
-  v_description := case p_direction
-    when 'given' then 'Loan given to ' || btrim(p_counterparty)
-    else              'Loan taken from ' || btrim(p_counterparty)
-  end;
-
-  v_notes := case p_direction
-    when 'given' then 'Money lent to ' || btrim(p_counterparty)
-    else              'Money borrowed from ' || btrim(p_counterparty)
-  end;
+  p_amount := round(p_amount, 2);
+  if v_uid is null then raise exception 'Authentication required'; end if;
+  if v_uid <> p_user_id then raise exception 'Cannot create loan for another user'; end if;
+  if p_amount is null or p_amount <= 0 then raise exception 'Loan amount must be positive'; end if;
+  if p_direction not in ('given', 'taken') then raise exception 'Invalid loan direction'; end if;
+  if p_counterparty is null or btrim(p_counterparty) = '' then raise exception 'Counterparty is required'; end if;
 
   p_id := coalesce(p_id, gen_random_uuid());
 
   insert into public.loans (
-    id, direction, counterparty, amount, interest_rate,
-    loan_date, due_date, note, settled, amount_settled, user_id
+    id, counterparty, amount, amount_settled, direction, date,
+    notes, settled, user_id
   ) values (
-    p_id,
-    p_direction,
-    btrim(p_counterparty),
-    p_amount,
-    coalesce(p_interest_rate, 0),
-    coalesce(p_loan_date, current_date),
-    p_due_date,
-    nullif(btrim(coalesce(p_note, '')), ''),
-    false,
-    0,
-    p_user_id
-  )
-  on conflict (id) do nothing;
+    p_id, btrim(p_counterparty), p_amount, 0, p_direction, p_date,
+    nullif(btrim(coalesce(p_notes, '')), ''), false, p_user_id
+  ) on conflict (id) do nothing;
   
   select * into v_loan from public.loans where id = p_id;
-
-  insert into transactions (
-    date, type, description, amount, category,
-    is_repayment, payment_mode, user_id,
-    linked_loan_id, notes
-  )
-  select
-    coalesce(p_loan_date, current_date),
-    v_txn_type,
-    v_description,
-    p_amount,
-    'loans',
-    false,
-    'other',
-    p_user_id,
-    v_loan.id,
-    nullif(btrim(coalesce(p_note, '')), '')
-  where not exists (
-    select 1 from transactions where linked_loan_id = v_loan.id and is_repayment = false
-  )
-  returning id into v_txn_id;
-
-  if v_txn_id is null then
-    select id into v_txn_id from transactions where linked_loan_id = v_loan.id limit 1;
+  if v_loan.id is null or v_loan.user_id <> p_user_id then
+    return v_loan;
   end if;
 
-  return json_build_object(
-    'loan_id',        v_loan.id,
-    'transaction_id', v_txn_id,
-    'direction',      v_loan.direction,
-    'counterparty',   v_loan.counterparty,
-    'amount',         v_loan.amount,
-    'interest_rate',  v_loan.interest_rate,
-    'loan_date',      v_loan.loan_date,
-    'due_date',       v_loan.due_date,
-    'note',           v_loan.note,
-    'settled',        v_loan.settled,
-    'amount_settled', v_loan.amount_settled,
-    'created_at',     v_loan.created_at
-  );
+  if p_sync_transaction then
+    v_txn_type := case p_direction when 'given' then 'expense' else 'income' end;
+
+    if not exists (
+      select 1 from public.transactions
+      where linked_loan_id = v_loan.id and user_id = p_user_id
+    ) then
+      insert into public.transactions (
+        date, type, description, amount, category, is_repayment,
+        payment_mode, user_id, linked_loan_id
+      ) values (
+        p_date, v_txn_type, 'Loan: ' || btrim(p_counterparty), p_amount, 'loans',
+        true, coalesce(p_payment_mode, 'other'), p_user_id, v_loan.id
+      );
+    end if;
+  end if;
+
+  return v_loan;
 end;
 $$;
 
@@ -486,96 +435,59 @@ $$;
 -- -----------------------------------------------------------------------------
 -- Function: generate_recurring_transactions
 -- -----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION "public"."generate_recurring_transactions"("p_user_id" "uuid", "p_today" "date" DEFAULT CURRENT_DATE) RETURNS integer
+CREATE OR REPLACE FUNCTION "public"."generate_recurring_transactions"("p_user_id" "uuid", "p_today" "date" DEFAULT NULL::"date") RETURNS integer
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
     AS $$
 declare
   v_uid uuid := auth.uid();
-  v_inserted integer := 0;
+  -- Client passes its local date; accept at most one day either side of server UTC.
+  v_today date := least(greatest(coalesce(p_today, current_date), current_date - 1), current_date + 1);
+  v_step int;
+  v_k int;
   v_run_date date;
+  v_inserted int := 0;
+  v_guard int;
   rec record;
 begin
-  if v_uid is null then
-    raise exception 'Authentication required.';
-  end if;
+  if v_uid is null then raise exception 'Authentication required.'; end if;
+  if v_uid <> p_user_id then raise exception 'Cannot generate recurring transactions for another user.'; end if;
 
-  if v_uid <> p_user_id then
-    raise exception 'Cannot generate recurring transactions for another user.';
-  end if;
-
-  -- Serialize concurrent runs for the same user. Two device wake-ups firing this
-  -- RPC at once would otherwise both read the same next_run_date and each
-  -- materialize the rows, producing duplicates. Transaction-scoped lock releases
-  -- automatically at COMMIT/ROLLBACK.
   perform pg_advisory_xact_lock(hashtext('kosha:recurring:' || p_user_id::text));
 
   for rec in
-    select *
-    from public.transactions
-    where user_id = p_user_id
-      and is_recurring = true
-      and recurrence is not null
-      and coalesce(next_run_date, date) <= p_today
-    order by coalesce(next_run_date, date) asc
+    select * from public.transactions
+    where user_id = p_user_id and is_recurring = true and recurrence is not null
   loop
-    v_run_date := coalesce(rec.next_run_date, rec.date);
+    v_step := case rec.recurrence when 'monthly' then 1 when 'quarterly' then 3 when 'yearly' then 12 end;
+    continue when v_step is null;
 
-    while v_run_date <= p_today loop
+    v_run_date := coalesce(rec.next_run_date, (rec.date + make_interval(months => v_step))::date);
+    continue when v_run_date > v_today;
+
+    -- Whole months between the anchor and the next run (self-heals rows that already drifted).
+    v_k := ((extract(year from v_run_date) - extract(year from rec.date)) * 12
+          + (extract(month from v_run_date) - extract(month from rec.date)))::int;
+    v_guard := 0;
+
+    while v_run_date <= v_today and v_guard < 120 loop
       insert into public.transactions (
-        date,
-        type,
-        description,
-        amount,
-        category,
-        investment_vehicle,
-        is_repayment,
-        payment_mode,
-        notes,
-        is_recurring,
-        recurrence,
-        next_run_date,
-        source_transaction_id,
-        is_auto_generated,
-        user_id
-      )
-      values (
-        v_run_date,
-        rec.type,
-        rec.description,
-        rec.amount,
-        rec.category,
-        rec.investment_vehicle,
-        rec.is_repayment,
-        rec.payment_mode,
-        rec.notes,
-        false,
-        null,
-        null,
-        rec.id,
-        true,
-        rec.user_id
+        date, type, description, amount, category, investment_vehicle, is_repayment,
+        payment_mode, notes, is_recurring, recurrence, next_run_date,
+        source_transaction_id, is_auto_generated, user_id
+      ) values (
+        v_run_date, rec.type, rec.description, rec.amount, rec.category, rec.investment_vehicle,
+        rec.is_repayment, rec.payment_mode, rec.notes, false, null, null,
+        rec.id, true, rec.user_id
       );
-
       v_inserted := v_inserted + 1;
-
-      v_run_date := case rec.recurrence
-        when 'monthly'   then (v_run_date + interval '1 month')::date
-        when 'quarterly' then (v_run_date + interval '3 months')::date
-        when 'yearly'    then (v_run_date + interval '1 year')::date
-        else null
-      end;
-
-      if v_run_date is null then
-        exit;
-      end if;
+      v_guard := v_guard + 1;
+      v_k := v_k + v_step;
+      v_run_date := (rec.date + make_interval(months => v_k))::date;
     end loop;
 
-    update public.transactions
-    set
-      next_run_date = v_run_date
-    where id = rec.id
-      and user_id = p_user_id;
+    update public.transactions set next_run_date = v_run_date
+    where id = rec.id and user_id = p_user_id;
   end loop;
 
   return v_inserted;
@@ -1288,87 +1200,43 @@ $$;
 -- -----------------------------------------------------------------------------
 -- Function: mark_liability_paid
 -- -----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION "public"."mark_liability_paid"("p_liability_id" "uuid", "p_user_id" "uuid") RETURNS json
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_liability  liabilities%rowtype;
-  v_txn_id     uuid;
-  v_next_due   date;
-  v_txn_mode   text;
-begin
-  select * into v_liability
-  from liabilities
-  where id = p_liability_id and user_id = p_user_id
-  for update;
-
-  if not found then
-    raise exception 'Liability not found or access denied';
-  end if;
-
   if v_liability.paid then
-    raise exception 'Liability is already marked paid';
+    -- Idempotent: a retry after a lost response returns the original result.
+    return json_build_object(
+      'transaction_id', v_liability.linked_transaction_id,
+      'liability_id', p_liability_id,
+      'next_due_date', null,
+      'already_paid', true
+    );
   end if;
 
-  -- Map liability payment_mode to the transactions CHECK set 
   v_txn_mode := case v_liability.payment_mode
     when 'card' then 'credit_card'
     when 'bank' then 'net_banking'
-    when 'upi'  then 'upi'
+    when 'upi' then 'upi'
     when 'cash' then 'cash'
     else 'other'
   end;
 
-  insert into transactions (
-    date, type, description, amount, category,
-    is_repayment, payment_mode, user_id,
-    linked_bill_id
-  ) values (
-    current_date,
-    'expense',
-    v_liability.description,
-    v_liability.amount,
-    'bills',
-    false,
-    v_txn_mode,
-    p_user_id,
-    p_liability_id
-  )
+  insert into transactions (date, type, description, amount, category, is_repayment, payment_mode, user_id, linked_bill_id)
+  values (v_paid_on, 'expense', v_liability.description, v_liability.amount, 'bills', false, v_txn_mode, p_user_id, p_liability_id)
   returning id into v_txn_id;
 
-  update liabilities
-  set paid                  = true,
-      linked_transaction_id = v_txn_id
-  where id = p_liability_id;
+  update liabilities set paid = true, linked_transaction_id = v_txn_id where id = p_liability_id;
 
   if v_liability.is_recurring and v_liability.recurrence is not null then
-    v_next_due := case v_liability.recurrence
-      when 'monthly'   then v_liability.due_date + interval '1 month'
-      when 'quarterly' then v_liability.due_date + interval '3 months'
-      when 'yearly'    then v_liability.due_date + interval '1 year'
-      else                  v_liability.due_date + interval '1 month'
-    end;
+    v_step := case v_liability.recurrence when 'quarterly' then 3 when 'yearly' then 12 else 1 end;
+    v_anchor := coalesce(v_liability.recurrence_anchor, v_liability.due_date);
+    v_k := ((extract(year from v_liability.due_date) - extract(year from v_anchor)) * 12
+          + (extract(month from v_liability.due_date) - extract(month from v_anchor)))::int + v_step;
+    v_next_due := (v_anchor + make_interval(months => v_k))::date;
 
-    insert into liabilities (
-      description, amount, due_date, is_recurring, recurrence, paid, payment_mode, user_id
-    ) values (
-      v_liability.description,
-      v_liability.amount,
-      v_next_due,
-      true,
-      v_liability.recurrence,
-      false,
-      v_liability.payment_mode,
-      p_user_id
-    );
+    insert into liabilities (description, amount, due_date, is_recurring, recurrence, paid, payment_mode, user_id, recurrence_anchor)
+    values (v_liability.description, v_liability.amount, v_next_due, true, v_liability.recurrence, false,
+            v_liability.payment_mode, p_user_id, v_anchor);
   end if;
 
-  return json_build_object(
-    'transaction_id',    v_txn_id,
-    'liability_id',      p_liability_id,
-    'next_due_date',     v_next_due
-  );
+  return json_build_object('transaction_id', v_txn_id, 'liability_id', p_liability_id, 'next_due_date', v_next_due);
 end;
 $$;
 
@@ -1401,91 +1269,40 @@ $$;
 -- -----------------------------------------------------------------------------
 -- Function: record_loan_payment
 -- -----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION "public"."record_loan_payment"("p_loan_id" "uuid", "p_user_id" "uuid", "p_amount" numeric, "p_id" "uuid" DEFAULT NULL::"uuid") RETURNS json
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_loan      public.loans%rowtype;
-  v_txn_id    uuid;
-  v_new_settled numeric;
-  v_fully_settled boolean;
-  v_txn_type  text;
-begin
-  perform set_config('kosha.trusted_write', 'true', true);
-  if p_amount is null or p_amount <= 0 then
-    raise exception 'Payment amount must be positive';
-  end if;
-
-  select * into v_loan
-  from public.loans
+  select * into v_loan from public.loans
   where id = p_loan_id and user_id = p_user_id
   for update;
+  if not found then raise exception 'Loan not found or access denied'; end if;
 
-  if not found then
-    raise exception 'Loan not found or access denied';
+  -- Idempotency first: a retry with the same id returns the original outcome.
+  if p_id is not null then
+    select * into v_existing from public.transactions where id = p_id and user_id = p_user_id;
+    if found then
+      return json_build_object(
+        'transaction_id', p_id, 'loan_id', p_loan_id, 'payment_amount', v_existing.amount,
+        'new_amount_settled', v_loan.amount_settled, 'fully_settled', v_loan.settled
+      );
+    end if;
   end if;
 
-  if v_loan.settled then
-    raise exception 'Loan is already fully settled';
-  end if;
+  if v_loan.settled then raise exception 'Loan is already fully settled'; end if;
 
   v_new_settled := v_loan.amount_settled + p_amount;
   if v_new_settled > v_loan.amount then
-    raise exception 'Payment exceeds remaining balance (remaining: %)',
-      (v_loan.amount - v_loan.amount_settled);
+    raise exception 'Payment exceeds remaining balance (remaining: %)', (v_loan.amount - v_loan.amount_settled);
   end if;
-
   v_fully_settled := v_new_settled >= v_loan.amount;
+  v_txn_type := case v_loan.direction when 'given' then 'income' else 'expense' end;
 
-  v_txn_type := case v_loan.direction
-    when 'given' then 'income'
-    else 'expense'
-  end;
+  insert into transactions (id, date, type, description, amount, category, is_repayment, payment_mode, user_id, linked_loan_id)
+  values (coalesce(p_id, gen_random_uuid()), v_paid_on, v_txn_type, 'Loan payment: ' || v_loan.counterparty,
+          p_amount, 'loans', true, 'other', p_user_id, p_loan_id)
+  returning id into p_id;
 
-  p_id := coalesce(p_id, gen_random_uuid());
+  update public.loans set amount_settled = v_new_settled, settled = v_fully_settled where id = p_loan_id;
 
-  insert into transactions (
-    id, date, type, description, amount, category,
-    is_repayment, payment_mode, user_id,
-    linked_loan_id
-  ) values (
-    p_id,
-    current_date,
-    v_txn_type,
-    'Loan payment: ' || v_loan.counterparty,
-    p_amount,
-    'loans',
-    true,
-    'other',
-    p_user_id,
-    p_loan_id
-  )
-  on conflict (id) do nothing
-  returning id into v_txn_id;
-
-  if v_txn_id is null then
-    return json_build_object(
-      'transaction_id',    p_id,
-      'loan_id',           p_loan_id,
-      'payment_amount',    p_amount,
-      'new_amount_settled', v_loan.amount_settled,
-      'fully_settled',     v_loan.settled
-    );
-  end if;
-
-  update public.loans
-  set amount_settled = v_new_settled,
-      settled        = v_fully_settled
-  where id = p_loan_id;
-
-  return json_build_object(
-    'transaction_id',    v_txn_id,
-    'loan_id',           p_loan_id,
-    'payment_amount',    p_amount,
-    'new_amount_settled', v_new_settled,
-    'fully_settled',     v_fully_settled
-  );
+  return json_build_object('transaction_id', p_id, 'loan_id', p_loan_id, 'payment_amount', p_amount,
+                           'new_amount_settled', v_new_settled, 'fully_settled', v_fully_settled);
 end;
 $$;
 
@@ -2817,6 +2634,7 @@ CREATE TABLE IF NOT EXISTS "public"."liabilities" (
     "due_date" "date" NOT NULL,
     "is_recurring" boolean DEFAULT false NOT NULL,
     "recurrence" "text",
+    "recurrence_anchor" "date",
     "paid" boolean DEFAULT false NOT NULL,
     "linked_transaction_id" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
@@ -2943,6 +2761,7 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "user_id" "uuid",
     "is_recurring" boolean DEFAULT false NOT NULL,
     "recurrence" "text",
+    "recurrence_anchor" "date",
     "next_run_date" "date",
     "source_transaction_id" "uuid",
     "is_auto_generated" boolean DEFAULT false NOT NULL,
@@ -3328,7 +3147,7 @@ CREATE OR REPLACE TRIGGER "trg_touch_split_group_updated_at" BEFORE UPDATE ON "p
 
 -- Constraint/Alter: budgets
 ALTER TABLE ONLY "public"."budgets"
-    ADD CONSTRAINT "budgets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
+    ADD CONSTRAINT "budgets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 -- Constraint/Alter: bug_reports
 ALTER TABLE ONLY "public"."bug_reports"
@@ -3348,11 +3167,11 @@ ALTER TABLE ONLY "public"."financial_events"
 
 -- Constraint/Alter: invites
 ALTER TABLE ONLY "public"."invites"
-    ADD CONSTRAINT "invites_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+    ADD CONSTRAINT "invites_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 -- Constraint/Alter: invites
 ALTER TABLE ONLY "public"."invites"
-    ADD CONSTRAINT "invites_used_by_fkey" FOREIGN KEY ("used_by") REFERENCES "auth"."users"("id");
+    ADD CONSTRAINT "invites_used_by_fkey" FOREIGN KEY ("used_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 -- Constraint/Alter: liabilities
 ALTER TABLE ONLY "public"."liabilities"
@@ -3420,11 +3239,11 @@ ALTER TABLE ONLY "public"."split_group_access"
 
 -- Constraint/Alter: split_group_invites
 ALTER TABLE ONLY "public"."split_group_invites"
-    ADD CONSTRAINT "split_group_invites_consumed_by_fkey" FOREIGN KEY ("consumed_by") REFERENCES "auth"."users"("id");
+    ADD CONSTRAINT "split_group_invites_consumed_by_fkey" FOREIGN KEY ("consumed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 -- Constraint/Alter: split_group_invites
 ALTER TABLE ONLY "public"."split_group_invites"
-    ADD CONSTRAINT "split_group_invites_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+    ADD CONSTRAINT "split_group_invites_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 -- Constraint/Alter: split_group_invites
 ALTER TABLE ONLY "public"."split_group_invites"
@@ -4112,3 +3931,23 @@ DROP TRIGGER IF EXISTS check_bug_report_tampering ON public.bug_reports;
 CREATE TRIGGER check_bug_report_tampering
 BEFORE UPDATE ON public.bug_reports
 FOR EACH ROW EXECUTE FUNCTION public.prevent_bug_report_tampering();
+
+CREATE OR REPLACE FUNCTION "public"."ensure_group_has_admin"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+begin
+  if old.role = 'admin' and not exists (
+    select 1 from public.split_group_access where group_id = old.group_id and role = 'admin'
+  ) then
+    update public.split_group_access set role = 'admin'
+    where id = (
+      select id from public.split_group_access
+      where group_id = old.group_id
+      order by case role when 'member' then 0 else 1 end, created_at
+      limit 1
+    );
+  end if;
+  return old;
+end;
+$$;
