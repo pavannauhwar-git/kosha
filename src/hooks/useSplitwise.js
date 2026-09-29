@@ -376,6 +376,7 @@ export async function createSplitGroupMutation({ name, selfDisplayName = 'You', 
   const cleanSelfName = String(selfDisplayName || '').trim() || 'You'
   if (!cleanName) throw new Error('Group name is required.')
 
+  if (!id) console.warn('[Kosha] createSplitGroup called without an idempotency id')
   const rpcId = id ?? crypto.randomUUID()
   const { data: rpcGroup, error: rpcError } = await supabase.rpc('split_create_group', {
     p_id: rpcId,
@@ -552,6 +553,7 @@ export async function createSplitGroupInviteMutation({ groupId, id } = {}) {
   const userId = getAuthUserId()
   if (!groupId) throw new Error('Group is required.')
 
+  if (!id) console.warn('[Kosha] createSplitGroupInvite called without an idempotency id')
   const rpcId = id ?? crypto.randomUUID()
   const { data, error } = await supabase.rpc('split_create_group_invite', {
     p_id: rpcId,
@@ -663,7 +665,7 @@ export async function addSplitExpenseMutation({
   id,
 }) {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    throw new Error("You're offline — we'll need a connection to save this.")
+    throw new Error("You're offline. Connect to the internet and try again.")
   }
 
   if (getActiveWalletUserId() !== getAuthUserId()) {
@@ -684,6 +686,7 @@ export async function addSplitExpenseMutation({
     shares: row.shares == null ? null : Number(row.shares),
   }))
 
+  if (!id) console.warn('[Kosha] addSplitExpense called without an idempotency id')
   const rpcId = id ?? crypto.randomUUID()
   const { data, error } = await supabase.rpc('split_create_expense', {
     p_id: rpcId,
@@ -841,6 +844,7 @@ export async function recordSplitSettlementMutation({ groupId, payerMemberId, pa
   if (!payerMemberId || !payeeMemberId) throw new Error('Both members are required.')
   if (!Number.isFinite(safeAmount) || safeAmount <= 0) throw new Error('Settlement amount must be positive.')
 
+  if (!id) console.warn('[Kosha] recordSplitSettlement called without an idempotency id')
   const rpcId = id ?? crypto.randomUUID()
   const { data, error } = await supabase.rpc('split_record_settlement', {
     p_id: rpcId,

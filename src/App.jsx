@@ -116,17 +116,13 @@ export default function App() {
                 maxAge: 12 * 60 * 60 * 1000, // 12h
                 buster: import.meta.env.VITE_APP_VERSION,
                 dehydrateOptions: {
+                  shouldDehydrateMutation: () => false,
                   shouldDehydrateQuery: (query) => {
                     const key0 = Array.isArray(query.queryKey) ? query.queryKey[0] : null
                     if (key0 === 'kosha-active-wallet') return false
                     return query.state.status === 'success'
                   },
                 },
-              }}
-              onSuccess={() => {
-                queryClient.resumePausedMutations().catch(err => {
-                  console.warn('[Kosha] Failed to resume paused mutations', err)
-                })
               }}
             >
               <GlobalRealtimeSync />

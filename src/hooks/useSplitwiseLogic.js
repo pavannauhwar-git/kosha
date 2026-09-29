@@ -637,7 +637,7 @@ export function useSplitwiseLogic() {
 
     setSaving('group')
     try {
-      const created = await createGroupAsync({ name, selfDisplayName: accountDisplayName })
+      const created = await createGroupAsync({ name, selfDisplayName: accountDisplayName, id: crypto.randomUUID() })
       optimisticallyInsertSplitGroup({ ...created, my_role: 'admin' }, activeWalletUserId)
       setActiveGroupId(created.id)
       setGroupForm({ name: '' })
@@ -654,7 +654,7 @@ export function useSplitwiseLogic() {
 
     setSaving('group-invite')
     try {
-      const invite = await createGroupInviteAsync({ groupId: activeGroupId })
+      const invite = await createGroupInviteAsync({ groupId: activeGroupId, id: crypto.randomUUID() })
       const url = `${window.location.origin}/splitwise/join/${invite.token}`
 
       const result = await shareLink({
@@ -941,6 +941,7 @@ export function useSplitwiseLogic() {
           notes: expenseForm.notes,
           splits,
           transactionCategory: expenseForm.transaction_category,
+          id: crypto.randomUUID(),
         })
       }
 
@@ -1007,6 +1008,7 @@ export function useSplitwiseLogic() {
         amount,
         settledAt: settlementForm.settled_at,
         note: settlementForm.note,
+        id: crypto.randomUUID(),
       })
 
       if (editSettlement) {

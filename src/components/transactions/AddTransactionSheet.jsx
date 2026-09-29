@@ -582,6 +582,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const addSplitExpense = useAppMutation(addSplitExpenseMutation, { context: 'splitwise:addExpense' })
   const isSaving = saveTransaction.isPending || addSplitExpense.isPending
 
+  const draftIdRef = useRef(null)
+  if (!draftIdRef.current) draftIdRef.current = crypto.randomUUID()
+
   const isLinkedToSplitwise = !!linkedSplitExpenseId || !!editTxn?.linked_split_expense_id
   const set = (key, value) => dispatch({ type: 'SET', key, value })
 
@@ -776,17 +779,20 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           splitMethod: 'equal',
           notes: notes.trim() || null,
           splits,
-          transactionCategory: category
+          transactionCategory: category,
+          id: draftIdRef.current
         })
       } else {
         await saveTransaction.mutateAsync({
           id: editTxn?.id,
+          clientId: editTxn ? undefined : draftIdRef.current,
           payload,
         })
       }
 
       hapticSuccess()
       setShowSuccess(true)
+      draftIdRef.current = null
       setTimeout(() => {
         onClose()
       }, 600)

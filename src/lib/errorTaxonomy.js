@@ -11,6 +11,7 @@ export const ERROR_KIND = Object.freeze({
   CONFLICT: 'conflict',     // 409 unique/constraint — show message, don't report
   NOT_FOUND: 'notFound',    // 404 incl. PGRST202 missing RPC — real gap, report
   NETWORK: 'network',       // fetch/TypeError incl. Safari "Load failed" — report
+  OFFLINE: 'offline',       // OFFLINE explicit error — don't report
   SERVER: 'server',         // 5xx — report
   UNKNOWN: 'unknown',       // backend error we didn't special-case — report
 })
@@ -22,11 +23,13 @@ const EXPECTED_KINDS = new Set([
   ERROR_KIND.PERMISSION,
   ERROR_KIND.BUSY,
   ERROR_KIND.CONFLICT,
+  ERROR_KIND.OFFLINE,
 ])
 
 export function classifyError(error) {
   if (error?.message === 'OPTIMISTIC_BUSY') return ERROR_KIND.BUSY
   if (error?.name === 'AbortError') return ERROR_KIND.BUSY
+  if (error?.name === 'OfflineError' || error?.code === 'OFFLINE') return ERROR_KIND.OFFLINE
 
   const code = error?.code
   const status = Number(error?.status)
@@ -63,7 +66,7 @@ const GENERIC_MESSAGE = 'Something went wrong. Please try again.'
  */
 export function toToastMessage(error, fallback) {
   const kind = classifyError(error)
-  if (kind === ERROR_KIND.VALIDATION || kind === ERROR_KIND.PERMISSION || kind === ERROR_KIND.CONFLICT) {
+  if (kind === ERROR_KIND.VALIDATION || kind === ERROR_KIND.PERMISSION || kind === ERROR_KIND.CONFLICT || kind === ERROR_KIND.OFFLINE) {
     return error?.message || fallback || GENERIC_MESSAGE
   }
   return fallback || GENERIC_MESSAGE

@@ -591,7 +591,7 @@ export default function Loans({
     }
 
     try {
-      await addLoanAsync({ ...loanData, amount_settled: 0, settled: false })
+      await addLoanAsync({ ...loanData, id: crypto.randomUUID(), amount_settled: 0, settled: false })
       setTab(loanData.direction)
       closeAddLoanSheet()
     } catch (e) {
@@ -613,7 +613,7 @@ export default function Loans({
     setPayErr('')
 
     try {
-      await recordLoanPaymentAsync({ loan: payLoan, paymentAmount: amt })
+      await recordLoanPaymentAsync({ loan: payLoan, paymentAmount: amt, id: crypto.randomUUID() })
       closePaySheet()
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not record payment.'))
@@ -629,7 +629,7 @@ export default function Loans({
     if (remaining <= 0) { actionGuard.current = false; return }
 
     try {
-      await settleLoanAsync({ loan, paymentAmount: remaining })
+      await settleLoanAsync({ loan, paymentAmount: remaining, id: crypto.randomUUID() })
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not settle loan.'))
     } finally {

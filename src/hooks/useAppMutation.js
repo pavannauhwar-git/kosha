@@ -1,12 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
-
-const MUTATION_RETRY = (failureCount, error) => {
-  if (failureCount >= 2) return false
-  const status = error?.status || error?.code
-  if (status === 401 || status === 403 || status === 404) return false
-  if (String(error?.message || '').includes('Not signed in')) return false
-  return true
-}
+import { MUTATION_RETRY } from '../lib/mutationRetry'
+import { assertOnline } from '../lib/offlineError'
 
 /**
  * Standard mutation hook for the app. Wraps React Query's useMutation and
@@ -19,9 +13,7 @@ const MUTATION_RETRY = (failureCount, error) => {
  * invocation, pending state, and centralized error reporting.
  *
  * Usage:
- *   const saveExpense = useAppMutation(addSplitExpenseMutation, { context: 'splitwise:addExpense' })
- *   saveExpense.mutate(args, { onSuccess, onError })
- *   saveExpense.isPending   // replaces a manual `saving` flag
+ *   const { mutateAsync: saveExpense } = useAppMutation(addSplitExpenseMutation, { context: 'splitwise:addExpense' })
  *
  * @param {Function} mutationFn  async fn that performs the write (existing *Mutation fn)
  * @param {{ context?: string } & import('@tanstack/react-query').UseMutationOptions} [options]
@@ -32,20 +24,13 @@ export function useAppMutation(mutationFn, { context, meta, mutationKey, ...opti
 
   const mutation = useMutation({
     mutationKey: key,
-    networkMode: 'offlineFirst',
-    // Mirror the query-level retry policy: never retry auth/permission/not-found
-    // failures — they will never succeed and would cause a replay storm when the
-    // offline queue picks them back up on every reconnect.
+    // 'always': never pause. Offline is handled explicitly by assertOnline() so the
+    // caller gets an error immediately instead of a mutation stuck in isPending.
+    networkMode: 'always',
     retry: MUTATION_RETRY,
     mutationFn: async (args) => {
-      // In Stage 2, writes are queued offline. Idempotency for the RPCs that
-      // need it is enforced inside their own mutation fns (which derive a
-      // stable id and pass it as p_id) and re-affirmed server-side via
-      // `coalesce(p_id, gen_random_uuid())`. This hook must NOT touch the
-      // payload: many mutations use a top-level `id` to distinguish create
-      // vs. update (e.g. saveTransactionMutation) or write it straight into
-      // an UPDATE set (e.g. updateProfile), so injecting an id here corrupts
-      // those writes.
+      // Writes are NOT queued offline. Offline saves fail fast with a clear message.
+      assertOnline()
       return mutationFn(args)
     },
     ...options,

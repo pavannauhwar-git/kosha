@@ -86,11 +86,11 @@ export default function Settings() {
   const fileInputRef = useRef(null)
   const { setSafeTimeout } = useSafeTimeout()
 
-  const updateProfileMutation = useAppMutation(updateProfile, { context: 'settings:updateProfile', networkMode: 'online' })
-  const createInviteMutation = useAppMutation(createInvite, { context: 'settings:createInvite', networkMode: 'online' })
-  const unlinkPartnerMutation = useAppMutation(({ userId, partnerId }) => unlinkPartner(userId, partnerId), { context: 'settings:unlinkWallet', networkMode: 'online' })
-  const deleteInviteMutation = useAppMutation(deleteInvite, { context: 'settings:revokeInvite', networkMode: 'online' })
-  const updatePasswordMutation = useAppMutation(updatePassword, { context: 'settings:updatePassword', networkMode: 'online' })
+  const updateProfileMutation = useAppMutation(updateProfile, { context: 'settings:updateProfile' })
+  const createInviteMutation = useAppMutation(createInvite, { context: 'settings:createInvite' })
+  const unlinkPartnerMutation = useAppMutation(({ userId, partnerId }) => unlinkPartner(userId, partnerId), { context: 'settings:unlinkWallet' })
+  const deleteInviteMutation = useAppMutation(deleteInvite, { context: 'settings:revokeInvite' })
+  const updatePasswordMutation = useAppMutation(updatePassword, { context: 'settings:updatePassword' })
 
   const uploading = updateProfileMutation.isPending
   const creatingInvite = createInviteMutation.isPending

@@ -106,11 +106,17 @@ function StepFirstTransaction({ onFinish, onSkip }) {
 
   const saveTransaction = useAppMutation(saveTransactionMutation, { context: 'onboarding:firstTransaction' })
 
+  const draftIdRef = useRef(null)
+  if (!draftIdRef.current) draftIdRef.current = crypto.randomUUID()
+  const isSubmitting = useRef(false)
+
   async function handleSave() {
-    if (!amount || !desc.trim()) return
+    if (!amount || !desc.trim() || isSubmitting.current) return
+    isSubmitting.current = true
     setError(null)
     try {
       await saveTransaction.mutateAsync({
+        clientId: draftIdRef.current,
         payload: {
           date:         todayStr(),
           type:         txnType,
@@ -121,9 +127,11 @@ function StepFirstTransaction({ onFinish, onSkip }) {
           payment_mode: 'upi',
         },
       })
+      draftIdRef.current = null
       onFinish()
     } catch (e) {
       setError(e.message)
+      isSubmitting.current = false
     }
   }
 
@@ -261,8 +269,8 @@ export default function Onboarding() {
   const [finishError, setFinishError] = useState('')
   const { pushToast } = useAppToast()
 
-  const updateProfileMutation = useAppMutation(updateProfile, { context: 'onboarding:saveProfile', networkMode: 'online' })
-  const finishMutation = useAppMutation(updateProfile, { context: 'onboarding:finish', networkMode: 'online' })
+  const updateProfileMutation = useAppMutation(updateProfile, { context: 'onboarding:saveProfile' })
+  const finishMutation = useAppMutation(updateProfile, { context: 'onboarding:finish' })
 
   // If already onboarded (e.g. user navigated here manually), send to dashboard
   // Use an effect so we don't navigate before render

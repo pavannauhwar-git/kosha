@@ -1,18 +1,6 @@
 import { QueryClient, MutationCache, QueryCache } from '@tanstack/react-query'
 import { captureError, isExpectedMutationError } from './errorReporting'
 
-import { saveTransactionMutation, removeTransactionMutation } from '../hooks/useTransactions'
-import { addLiabilityMutation, markLiabilityPaidMutation, deleteLiabilityMutation } from '../hooks/useLiabilities'
-import { addLoanMutation, deleteLoanMutation } from '../hooks/useLoans'
-import {
-  createSplitGroupMutation, addSplitMemberMutation, addSplitExpenseMutation,
-  recordSplitSettlementMutation, deleteSplitSettlementMutation, deleteSplitExpenseMutation,
-  deleteSplitGroupMutation, deleteSplitMemberMutation, leaveSplitGroupMutation,
-  updateSplitExpenseMutation, updateSplitGroupMutation, setSplitGroupAccessRoleMutation,
-  createSplitGroupInviteMutation, previewSplitGroupInviteMutation, consumeSplitGroupInviteMutation
-} from '../hooks/useSplitwise'
-import { createUserCategory, updateUserCategory, archiveUserCategory } from '../hooks/useUserCategories'
-
 
 const queryCache = new QueryCache({
   onError: (error, query) => {
@@ -75,58 +63,31 @@ export const queryClient = new QueryClient({
   },
 })
 
-// Register resumable mutations for Stage 2 Offline Writes.
-// These are the defaults used when React Query replays a paused mutation from IDB.
-const resumableMutations = {
-  // Transactions
-  'transactions:save': saveTransactionMutation,
-  'transactions:delete': removeTransactionMutation,
-  'transactions:deleteCommit': removeTransactionMutation,
-  'dashboard:deleteTransaction': removeTransactionMutation,
-  'dashboard:deleteTransactionCommit': removeTransactionMutation,
-  'onboarding:firstTransaction': saveTransactionMutation,
-  'reconciliation:updateCategory': saveTransactionMutation,
-  
-  // Obligations
-  'bills:add': addLiabilityMutation,
-  'bills:markPaid': markLiabilityPaidMutation,
-  'bills:delete': deleteLiabilityMutation,
-  'loans:add': addLoanMutation,
-  'loans:delete': deleteLoanMutation,
-
-  // Splitwise
-  'splitwise:createGroup': createSplitGroupMutation,
-  'splitwise:addMember': addSplitMemberMutation,
-  'splitwise:addExpense': addSplitExpenseMutation,
-  'splitwise:settle': recordSplitSettlementMutation,
-  'splitwise:deleteSettlement': deleteSplitSettlementMutation,
-  'splitwise:deleteExpense': deleteSplitExpenseMutation,
-  'splitwise:createInvite': createSplitGroupInviteMutation,
-  'splitwise:deleteGroup': deleteSplitGroupMutation,
-  'splitwise:deleteMember': deleteSplitMemberMutation,
-  'splitwise:leaveGroup': leaveSplitGroupMutation,
-  'splitwise:previewInvite': previewSplitGroupInviteMutation,
-  'splitwise:consumeInvite': consumeSplitGroupInviteMutation,
-  'splitwise:updateExpense': updateSplitExpenseMutation,
-  'splitwise:updateGroup': updateSplitGroupMutation,
-  'splitwise:setMemberRole': setSplitGroupAccessRoleMutation,
-
-  // Categories
-  'categories:save': (vars) => vars.dbId ? updateUserCategory(vars) : createUserCategory(vars),
-  'categories:delete': archiveUserCategory,
-}
-
-for (const [context, mutationFn] of Object.entries(resumableMutations)) {
-  queryClient.setMutationDefaults([[context]], { mutationFn })
-}
+let invalidationQueue = []
+let invalidationTimeout = null
 
 export function invalidateQueryFamilies(queryKeys) {
   if (!Array.isArray(queryKeys)) return Promise.resolve()
-  return Promise.all(
-    queryKeys.map(queryKey =>
-      queryClient.invalidateQueries({ queryKey })
-    )
-  )
+  
+  return new Promise((resolve) => {
+    invalidationQueue.push(...queryKeys)
+    
+    if (invalidationTimeout) {
+      clearTimeout(invalidationTimeout)
+    }
+    
+    invalidationTimeout = setTimeout(() => {
+      const keysToInvalidate = [...new Set(invalidationQueue.map(k => JSON.stringify(k)))].map(k => JSON.parse(k))
+      invalidationQueue = []
+      invalidationTimeout = null
+      
+      Promise.all(
+        keysToInvalidate.map(queryKey =>
+          queryClient.invalidateQueries({ queryKey })
+        )
+      ).then(resolve)
+    }, 50)
+  })
 }
 
 // Map API routes to query prefixes for targeted Service Worker cache invalidation

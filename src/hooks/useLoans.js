@@ -106,8 +106,7 @@ async function addLoan(payload) {
   const counterparty = String(payload.counterparty || '').trim()
   if (!counterparty) throw new Error('Counterparty name is required')
 
-  // Derive a stable id (caller may pass one for idempotent retries; otherwise
-  // generate). The server coalesces a null p_id, so this is belt-and-braces.
+  if (!payload.id) console.warn('[Kosha] addLoan called without an idempotency id')
   const id = payload.id ?? crypto.randomUUID()
 
   // Use the atomic RPC so the disbursement transaction is created in the same
@@ -168,6 +167,7 @@ async function addLoan(payload) {
 
 async function recordPayment(loanId, amount, id) {
   const userId = getActiveWalletUserId()
+  if (!id) console.warn('[Kosha] recordPayment called without an idempotency id')
   const rpcId = id ?? crypto.randomUUID()
   const { data: result, error } = await supabase.rpc('record_loan_payment', {
     p_id: rpcId,

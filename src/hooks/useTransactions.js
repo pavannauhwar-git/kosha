@@ -941,16 +941,22 @@ export function useRunningBalance(year, month) {
 
 // ── Mutations — centralized pipeline ──────────────────────────────────────
 
-export async function addTransaction(payload, mutationUserId = null) {
+export async function addTransaction(payload, mutationUserId = null, clientId = null) {
   const userId = mutationUserId || getActiveWalletUserId()
   if (!userId) throw new Error('No active wallet selected.')
 
-  const { data, error } = await supabase
+  const row = { ...payload, user_id: userId, ...(clientId ? { id: clientId } : {}) }
+  let { data, error } = await supabase
     .from('transactions')
-    .insert({ ...payload, user_id: userId })
+    .insert(row)
     .select(TRANSACTION_MUTATION_COLUMNS)
     .single()
 
+  if (error?.code === '23505' && clientId) {
+    // Retry of an insert that already committed: return the existing row.
+    ;({ data, error } = await supabase.from('transactions')
+      .select(TRANSACTION_MUTATION_COLUMNS).eq('id', clientId).eq('user_id', userId).single())
+  }
   if (error) throw error
 
   runInBackground(
@@ -1347,9 +1353,9 @@ function refreshTransactionCachesInBackground(invalidateFn, scope) {
   }, 350)
 }
 
-export async function saveTransactionMutation({ id, payload, __testOverrides = null }) {
+export async function saveTransactionMutation({ id, clientId, payload, __testOverrides = null }) {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    throw new Error("You're offline — we'll need a connection to save this.")
+    throw new Error("You're offline. Connect to the internet and try again.")
   }
 
   const authUserId = getAuthUserId()
@@ -1371,7 +1377,7 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
   suppress('transactions')
 
   const nowIso = new Date().toISOString()
-  const optimisticId = id || `optimistic-txn-${Date.now()}`
+  const optimisticId = id || clientId || `optimistic-txn-${Date.now()}`
   const existingTxn = id ? getTransactionFromCacheById(id) : null
 
   applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowIso, targetUserId })
@@ -1384,7 +1390,7 @@ export async function saveTransactionMutation({ id, payload, __testOverrides = n
 
     const savedTxn = id
       ? await updateFn(id, payload, targetUserId)
-      : await addFn(payload, targetUserId)
+      : await addFn(payload, targetUserId, clientId)
 
     await Promise.all([
       queryClient.cancelQueries({ queryKey: ['transactions'] }),
