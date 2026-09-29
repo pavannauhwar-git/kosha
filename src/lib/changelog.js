@@ -1,5 +1,15 @@
 export const CHANGELOG = [
   {
+    version: '3.1.2',
+    date: 'September 2026',
+    items: [
+      'Hardened database security by wrapping RLS bypasses in SECURITY DEFINER functions with scoped transaction checks',
+      'Refactored cascading liability and loan closures, replacing nested RPC deadlocks with single-transaction logic',
+      'Eliminated unmounted-state memory leaks across the app via a unified useUndoableDelete hook',
+      'Upgraded offline architecture to a synchronous fail-fast model with stable client-generated UUIDs',
+    ],
+  },
+  {
     version: '3.1.1',
     date: 'June 2026',
     items: [
