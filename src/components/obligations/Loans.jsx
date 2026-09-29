@@ -21,6 +21,7 @@ import { useAppMutation } from '../../hooks/useAppMutation'
 import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
 import { useActiveWallet } from '../../lib/walletStore'
+import { useUndoableDelete } from '../../hooks/useUndoableDelete'
 import { downloadCsv, toCsv } from '../../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, todayStr } from '../../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
@@ -80,9 +81,10 @@ export default function Loans({
   const [deletingId] = useState(null)
   const { pushToast } = useAppToast()
   const actionGuard = useRef(false)
-  const pendingDeleteRef = useRef(null)
   const [overflowLoanId, setOverflowLoanId] = useState(null)
   const overflowLoanRef = useRef(null)
+  const [highlightLoanId, setHighlightLoanId] = useState(null)
+  const [hiddenIds, setHiddenIds] = useState(() => new Set())
 
   useEffect(() => {
     if (!overflowLoanId) return
@@ -101,94 +103,54 @@ export default function Loans({
 
 
 
-  const addLoan = useAppMutation(addLoanMutation, { context: 'loans:add' })
-  const updateLoan = useAppMutation(
+  const { mutateAsync: addLoanAsync, isPending: isAddPending } = useAppMutation(addLoanMutation, { context: 'loans:add' })
+  const { mutateAsync: updateLoanAsync, isPending: isUpdatePending } = useAppMutation(
     ({ id, updates }) => updateLoanMutation(id, updates),
     { context: 'loans:update' }
   )
-  const recordLoanPayment = useAppMutation(
+  const { mutateAsync: recordLoanPaymentAsync, isPending: isPaymentPending } = useAppMutation(
     recordLoanPaymentMutation,
     { context: 'loans:recordPayment' }
   )
-  const settleLoan = useAppMutation(
+  const { mutateAsync: settleLoanAsync, isPending: isSettlePending } = useAppMutation(
     recordLoanPaymentMutation,
     { context: 'loans:settle' }
   )
-  const deleteLoan = useAppMutation(deleteLoanMutation, { context: 'loans:delete' })
 
-  const isAddSaving = addLoan.isPending || updateLoan.isPending
-  const isPaySaving = recordLoanPayment.isPending || settleLoan.isPending
+  const isAddSaving = isAddPending || isUpdatePending
+  const isPaySaving = isPaymentPending || isSettlePending
 
-  const commitPendingDelete = useCallback(async (pending) => {
-    if (!pending?.id) return
-    try {
-      await deleteLoan.mutateAsync(pending.id)
-    } catch (e) {
-      optimisticallyInsertLoan(pending.loan, activeWalletUserId)
-      pushToast(e.message || 'Could not delete loan.', { duration: 4200 })
-    }
-  }, [pushToast, activeWalletUserId, deleteLoan])
+  const { mutateAsync: deleteLoanAsync } = useAppMutation(deleteLoanMutation, { context: 'loans:delete' })
+
+  const { schedule, undo } = useUndoableDelete({
+    commit: (id) => deleteLoanAsync(id),
+    restore: ({ loan, walletUserId, txnIds }) => {
+      setHiddenIds((prev) => { const n = new Set(prev); n.delete(loan.id); return n })
+      optimisticallyInsertLoan(loan, walletUserId)
+      import('../../hooks/useTransactions').then((m) => {
+        for (const txnId of txnIds) m.inFlightDeletedTxnIds.delete(txnId)
+        return m.invalidateCache()
+      })
+    },
+    onError: (e) => pushToast(e.message || 'Could not delete loan.', { duration: 4200 }),
+  })
 
   async function handleDelete(id) {
-    if (!id) return false
-
-    const pendingDelete = pendingDeleteRef.current
-    if (pendingDelete?.id && pendingDelete.id !== id) {
-      if (pendingDelete.timeoutId) clearTimeout(pendingDelete.timeoutId)
-      pendingDeleteRef.current = null
-      void commitPendingDelete(pendingDelete)
-    }
-
-    const loan = [...given, ...taken, ...settled].find(l => l.id === id)
+    const loan = [...given, ...taken, ...settled].find((l) => l.id === id)
     if (!loan) return false
-
-    const snapshot = { ...loan }
-    setHiddenIds(prev => { const n = new Set(prev); n.add(id); return n })
+    setHiddenIds((prev) => new Set(prev).add(id))
     optimisticallyDeleteLoan(id, activeWalletUserId)
-    import('../../hooks/useTransactions').then(m => m.optimisticallyDeleteTransactionsByLoanId(id, activeWalletUserId))
-
-    const undoDelete = () => {
-      const pending = pendingDeleteRef.current
-      if (!pending || pending.id !== id) return
-      if (pending.timeoutId) clearTimeout(pending.timeoutId)
-      pendingDeleteRef.current = null
-      setHiddenIds(prev => { const n = new Set(prev); n.delete(id); return n })
-      optimisticallyInsertLoan(pending.loan, activeWalletUserId)
-      pushToast('Deletion canceled.', { duration: 2200 })
-    }
-
-    const timeoutId = setTimeout(() => {
-      const pending = pendingDeleteRef.current
-      if (!pending || pending.id !== id) return
-      pendingDeleteRef.current = null
-      void commitPendingDelete(pending)
-    }, 4200)
-
-    pendingDeleteRef.current = { id, loan: snapshot, timeoutId }
-
+    const m = await import('../../hooks/useTransactions')
+    const txnIds = m.optimisticallyDeleteTransactionsByLoanId(id, activeWalletUserId) || new Set()
+    schedule(id, { loan: { ...loan }, walletUserId: activeWalletUserId, txnIds })
     pushToast('Loan deleted.', {
-      action: undoDelete,
+      action: () => { if (undo(id)) pushToast('Deletion canceled.', { duration: 2200 }) },
       actionLabel: 'Undo',
       duration: 4200,
     })
-
     return true
   }
 
-  useEffect(() => {
-    return () => {
-      // Commit pending delete on unmount
-      if (pendingDeleteRef.current) {
-        const pending = pendingDeleteRef.current
-        pendingDeleteRef.current = null
-        if (pending.timeoutId) clearTimeout(pending.timeoutId)
-        void commitPendingDelete(pending)
-      }
-    }
-  }, [commitPendingDelete])
-
-  const [highlightLoanId, setHighlightLoanId] = useState(null)
-  const [hiddenIds, setHiddenIds] = useState(() => new Set())
   const [deepLinkRetryTick, setDeepLinkRetryTick] = useState(0)
   const deepLinkResolvedRef = useRef('')
   const deepLinkAttemptRef = useRef({ key: '', count: 0 })
@@ -619,7 +581,7 @@ export default function Loans({
 
     if (editLoan) {
       try {
-        await updateLoan.mutateAsync({ id: editLoan.id, updates: loanData })
+        await updateLoanAsync({ id: editLoan.id, updates: loanData })
         setTab(loanData.direction)
         closeAddLoanSheet()
       } catch (e) {
@@ -629,7 +591,7 @@ export default function Loans({
     }
 
     try {
-      await addLoan.mutateAsync({ ...loanData, amount_settled: 0, settled: false })
+      await addLoanAsync({ ...loanData, amount_settled: 0, settled: false })
       setTab(loanData.direction)
       closeAddLoanSheet()
     } catch (e) {
@@ -651,7 +613,7 @@ export default function Loans({
     setPayErr('')
 
     try {
-      await recordLoanPayment.mutateAsync({ loan: payLoan, paymentAmount: amt })
+      await recordLoanPaymentAsync({ loan: payLoan, paymentAmount: amt })
       closePaySheet()
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not record payment.'))
@@ -667,13 +629,13 @@ export default function Loans({
     if (remaining <= 0) { actionGuard.current = false; return }
 
     try {
-      await settleLoan.mutateAsync({ loan, paymentAmount: remaining })
+      await settleLoanAsync({ loan, paymentAmount: remaining })
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not settle loan.'))
     } finally {
       actionGuard.current = false
     }
-  }, [settleLoan, pushToast])
+  }, [settleLoanAsync, pushToast])
 
   function openEditLoan(loan) {
     setEditLoan(loan)

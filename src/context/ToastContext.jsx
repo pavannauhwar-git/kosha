@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useMemo } from 'react'
 import useToast from '../hooks/useToast'
 import AppToast from '../components/common/AppToast'
 
@@ -6,8 +6,11 @@ const ToastContext = createContext(null)
 
 export function ToastProvider({ children }) {
   const { toast, toastAction, toastActionLabel, pushToast, dismissToast } = useToast()
+  
+  const value = useMemo(() => ({ pushToast, dismissToast }), [pushToast, dismissToast])
+  
   return (
-    <ToastContext.Provider value={{ pushToast, dismissToast }}>
+    <ToastContext.Provider value={value}>
       {children}
       <AppToast
         message={toast}

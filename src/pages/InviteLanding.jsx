@@ -130,6 +130,7 @@ export default function InviteLanding() {
     try {
       if (isSplitwise) {
         await consumeSplitGroupInviteMutation(activeToken)
+        try { sessionStorage.removeItem('pendingSplitGroupInviteToken') } catch { /* private mode */ }
         setStatus('success')
         navTimerRef.current = setTimeout(() => { navigate('/splitwise', { replace: true }) }, 1500)
       } else {
@@ -139,6 +140,7 @@ export default function InviteLanding() {
           userId: user.id
         })
         if (!result.consumed) throw new Error(result.reason || 'Could not join wallet.')
+        try { sessionStorage.removeItem('pendingInviteToken') } catch { /* private mode */ }
         setStatus('success')
         navTimerRef.current = setTimeout(() => { navigate('/', { replace: true }) }, 1500)
       }

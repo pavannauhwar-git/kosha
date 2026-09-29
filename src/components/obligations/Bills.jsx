@@ -16,6 +16,7 @@ import { useActiveWallet } from '../../lib/walletStore'
 import { downloadCsv, toCsv } from '../../lib/csv'
 import { fmt, fmtDate, round2, daysUntil, dueLabel, dueChipClass, dueShadow, todayStr } from '../../lib/utils'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
+import { useUndoableDelete } from '../../hooks/useUndoableDelete'
 import PageHeaderPage from '../layout/PageHeaderPage'
 import SkeletonLayout from '../common/SkeletonLayout'
 import EmptyState from '../common/EmptyState'
@@ -109,7 +110,6 @@ export default function Bills({
   const [form, setForm] = useState(() => createInitialBillForm())
   const [formErr, setFormErr] = useState('')
   const { pushToast } = useAppToast()
-  const pendingDeleteRef = useRef(null)
   const [overflowBillId, setOverflowBillId] = useState(null)
   const overflowBillRef = useRef(null)
   const focusRanForRef = useRef(null)
@@ -140,75 +140,45 @@ export default function Bills({
 
   const isSaving = addLiability.isPending || updateLiability.isPending
 
-  const commitPendingDelete = useCallback(async (pending) => {
-    if (!pending?.id) return
-    try {
-      await deleteLiability.mutateAsync(pending.id)
-    } catch (e) {
-      // Re-insert into appropriate cache if server delete fails
-      const method = pending.bill.paid ? 'paid' : 'pending'
-      if (method === 'pending') {
-        import('../../hooks/useLiabilities').then(m => m.optimisticallyInsertPendingLiability(pending.bill, activeWalletUserId))
-      } else {
-        import('../../hooks/useLiabilities').then(m => m.optimisticallyMarkLiabilityPaid(pending.bill, activeWalletUserId, { optimistic: false }))
-      }
-      pushToast(e.message || 'Could not delete bill.', { duration: 4200 })
-    }
-  }, [pushToast, activeWalletUserId, deleteLiability])
+  const [hiddenBillIds, setHiddenBillIds] = useState(() => new Set())
+
+  const { schedule, undo } = useUndoableDelete({
+    commit: (id) => deleteLiability.mutateAsync(id),
+    restore: ({ bill, walletUserId, txnIds }) => {
+      setHiddenBillIds(prev => { const n = new Set(prev); n.delete(bill.id); return n })
+      import('../../hooks/useLiabilities').then(m => {
+        if (bill.paid) m.optimisticallyMarkLiabilityPaid(bill, walletUserId, { optimistic: false })
+        else m.optimisticallyInsertPendingLiability(bill, walletUserId)
+      })
+      import('../../hooks/useTransactions').then(m => {
+        for (const txnId of txnIds) m.inFlightDeletedTxnIds.delete(txnId)
+        return m.invalidateCache()
+      })
+    },
+    onError: (e) => pushToast(e.message || 'Could not delete bill.', { duration: 4200 }),
+  })
 
   async function handleDelete(id) {
     if (!id || payingId) return false
-
-    const pendingDelete = pendingDeleteRef.current
-    if (pendingDelete?.id && pendingDelete.id !== id) {
-      if (pendingDelete.timeoutId) clearTimeout(pendingDelete.timeoutId)
-      pendingDeleteRef.current = null
-      void commitPendingDelete(pendingDelete)
-    }
-
     const sourceRows = tab === 'pending' ? pending : paid
     const bill = sourceRows.find((b) => b.id === id)
     if (!bill) return false
 
-    const snapshot = { ...bill }
     setHiddenBillIds(prev => { const n = new Set(prev); n.add(id); return n })
     import('../../hooks/useLiabilities').then(m => m.optimisticallyDeleteLiabilityFromCache(id, activeWalletUserId))
-    import('../../hooks/useTransactions').then(m => m.optimisticallyDeleteTransactionsByBillId(id, activeWalletUserId))
-
-    const undoDelete = () => {
-      const pending = pendingDeleteRef.current
-      if (!pending || pending.id !== id) return
-      if (pending.timeoutId) clearTimeout(pending.timeoutId)
-      pendingDeleteRef.current = null
-      setHiddenBillIds(prev => { const n = new Set(prev); n.delete(id); return n })
-
-      if (snapshot.paid) {
-        import('../../hooks/useLiabilities').then(m => m.optimisticallyMarkLiabilityPaid(snapshot, activeWalletUserId, { optimistic: false }))
-      } else {
-        import('../../hooks/useLiabilities').then(m => m.optimisticallyInsertPendingLiability(snapshot, activeWalletUserId))
-      }
-      pushToast('Deletion canceled.', { duration: 2200 })
-    }
-
-    const timeoutId = setTimeout(() => {
-      const pending = pendingDeleteRef.current
-      if (!pending || pending.id !== id) return
-      pendingDeleteRef.current = null
-      void commitPendingDelete(pending)
-    }, 4200)
-
-    pendingDeleteRef.current = { id, bill: snapshot, timeoutId }
+    const m = await import('../../hooks/useTransactions')
+    const txnIds = m.optimisticallyDeleteTransactionsByBillId(id, activeWalletUserId) || new Set()
+    
+    schedule(id, { bill: { ...bill }, walletUserId: activeWalletUserId, txnIds })
 
     pushToast('Bill deleted.', {
-      action: undoDelete,
+      action: () => { if (undo(id)) pushToast('Deletion canceled.', { duration: 2200 }) },
       actionLabel: 'Undo',
       duration: 4200,
     })
 
     return true
   }
-
-  const [hiddenBillIds, setHiddenBillIds] = useState(() => new Set())
 
   const closeAddBillSheet = useCallback(() => {
     setShowAdd(false)

@@ -6,12 +6,9 @@ import {
   useMonthSummary,
   useRunningBalance,
   useDailyExpenseTotals,
-  removeTransactionMutation,
-  optimisticallyDeleteTransactionFromCache,
-  optimisticallyUpsertTransactionInCache,
 } from '../hooks/useTransactions'
+import { useTransactionDeleter } from '../hooks/useTransactionDeleter'
 import { useLiabilities } from '../hooks/useLiabilities'
-import { useAppMutation } from '../hooks/useAppMutation'
 import { CATEGORIES } from '../lib/categories'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 
@@ -117,7 +114,6 @@ export default function Dashboard() {
   const [duplicateTxn, setDuplicateTxn] = useState(null)
   const [heroMode, setHeroMode] = useState('balance')
   const { pushToast } = useAppToast()
-  const pendingDeleteRef = useRef(null)
 
   // ── Data fetching ─────────────────────────────────────────────────────
   const {
@@ -485,87 +481,7 @@ export default function Dashboard() {
     }
   }, [dueSoonCount, weeklyDriftSignal, reminderPrefs.enabled, reminderPrefs.bill_due, reminderPrefs.spending_pace])
 
-  const removeTransaction = useAppMutation(removeTransactionMutation, { context: 'dashboard:deleteTransaction' })
-  const commitRemoveTransaction = useAppMutation(removeTransactionMutation, { context: 'dashboard:deleteTransactionCommit' })
-
-  // ── Callbacks ──────────────────────────────────────────────────────────
-  const commitPendingDelete = useCallback(async (pendingDelete) => {
-    if (!pendingDelete?.id) return
-    try {
-      await commitRemoveTransaction.mutateAsync(pendingDelete.id)
-    } catch (e) {
-      if (pendingDelete.txn) {
-        optimisticallyUpsertTransactionInCache(pendingDelete.txn, activeWalletUserId)
-      }
-      pushToast(toToastMessage(e, 'Could not delete transaction.'))
-    }
-  }, [activeWalletUserId, commitRemoveTransaction, pushToast])
-
-  useEffect(() => {
-    return () => {
-      const pendingDelete = pendingDeleteRef.current
-      if (!pendingDelete) return
-      if (pendingDelete.timeoutId) {
-        clearTimeout(pendingDelete.timeoutId)
-      }
-      pendingDeleteRef.current = null
-      void commitPendingDelete(pendingDelete)
-    }
-  }, [commitPendingDelete])
-
-  const handleDelete = useCallback(async (id) => {
-    if (!id) return false
-
-    const pendingDelete = pendingDeleteRef.current
-    if (pendingDelete?.id && pendingDelete.id !== id) {
-      if (pendingDelete.timeoutId) {
-        clearTimeout(pendingDelete.timeoutId)
-      }
-      pendingDeleteRef.current = null
-      void commitPendingDelete(pendingDelete)
-    }
-
-    const txn = recent.find((row) => row?.id === id)
-    if (!txn) {
-      try {
-        await removeTransaction.mutateAsync(id)
-        return true
-      } catch (e) {
-        pushToast(toToastMessage(e, 'Could not delete transaction.'))
-        return false
-      }
-    }
-
-    const snapshot = { ...txn }
-    optimisticallyDeleteTransactionFromCache(id, activeWalletUserId)
-
-    pendingDeleteRef.current = {
-      id,
-      txn: snapshot,
-      timeoutId: setTimeout(() => {
-        const pending = pendingDeleteRef.current
-        if (pending?.id === id) {
-          pendingDeleteRef.current = null
-          void commitPendingDelete(pending)
-        }
-      }, 3500)
-    }
-
-    pushToast('Transaction deleted', {
-      actionLabel: 'Undo',
-      action: () => {
-        const pending = pendingDeleteRef.current
-        if (pending?.id === id) {
-          clearTimeout(pending.timeoutId)
-          optimisticallyUpsertTransactionInCache(pending.txn, activeWalletUserId)
-          pendingDeleteRef.current = null
-          pushToast('Transaction restored')
-        }
-      }
-    })
-
-    return undefined
-  }, [recent, activeWalletUserId, commitPendingDelete, removeTransaction, pushToast])
+  const { handleDelete } = useTransactionDeleter(activeWalletUserId, recent)
 
   const inferRepaymentTab = useCallback((txn, loanRow = null) => {
     if (loanRow?.settled) return 'settled'
@@ -1011,9 +927,9 @@ export default function Dashboard() {
           {recentLoading ? <DashboardRecentSkeleton /> : (
             <DashboardRecentTransactions
               recent={recent}
-              onDelete={handleDelete}
+              onDelete={isViewingPartner ? undefined : handleDelete}
               onTap={handleTap}
-              onDuplicate={handleDuplicate}
+              onDuplicate={isViewingPartner ? undefined : handleDuplicate}
             />
           )}
         </div>

@@ -136,29 +136,29 @@ export function useSplitwiseLogic() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const createGroup = useAppMutation(createSplitGroupMutation, { context: 'splitwise:createGroup' })
-  const addMember = useAppMutation(addSplitMemberMutation, { context: 'splitwise:addMember' })
-  const addExpense = useAppMutation(addSplitExpenseMutation, { context: 'splitwise:addExpense' })
-  const recordSettlement = useAppMutation(recordSplitSettlementMutation, { context: 'splitwise:settle' })
-  const deleteSettlement = useAppMutation(deleteSplitSettlementMutation, { context: 'splitwise:deleteSettlement' })
-  const deleteExpense = useAppMutation(deleteSplitExpenseMutation, { context: 'splitwise:deleteExpense' })
-  const createGroupInvite = useAppMutation(createSplitGroupInviteMutation, { context: 'splitwise:createInvite' })
-  const deleteGroup = useAppMutation(deleteSplitGroupMutation, { context: 'splitwise:deleteGroup' })
-  const deleteMember = useAppMutation(deleteSplitMemberMutation, { context: 'splitwise:deleteMember' })
-  const leaveGroup = useAppMutation(leaveSplitGroupMutation, { context: 'splitwise:leaveGroup' })
-  const toggleArchiveGroup = useAppMutation(
+  const { mutateAsync: createGroupAsync } = useAppMutation(createSplitGroupMutation, { context: 'splitwise:createGroupAsync' })
+  const { mutateAsync: addMemberAsync } = useAppMutation(addSplitMemberMutation, { context: 'splitwise:addMemberAsync' })
+  const { mutateAsync: addExpenseAsync } = useAppMutation(addSplitExpenseMutation, { context: 'splitwise:addExpenseAsync' })
+  const { mutateAsync: recordSettlementAsync } = useAppMutation(recordSplitSettlementMutation, { context: 'splitwise:settle' })
+  const { mutateAsync: deleteSettlementAsync } = useAppMutation(deleteSplitSettlementMutation, { context: 'splitwise:deleteSettlementAsync' })
+  const { mutateAsync: deleteExpenseAsync } = useAppMutation(deleteSplitExpenseMutation, { context: 'splitwise:deleteExpenseAsync' })
+  const { mutateAsync: createGroupInviteAsync } = useAppMutation(createSplitGroupInviteMutation, { context: 'splitwise:createInvite' })
+  const { mutateAsync: deleteGroupAsync } = useAppMutation(deleteSplitGroupMutation, { context: 'splitwise:deleteGroupAsync' })
+  const { mutateAsync: deleteMemberAsync } = useAppMutation(deleteSplitMemberMutation, { context: 'splitwise:deleteMemberAsync' })
+  const { mutateAsync: leaveGroupAsync } = useAppMutation(leaveSplitGroupMutation, { context: 'splitwise:leaveGroupAsync' })
+  const { mutateAsync: toggleArchiveGroupAsync } = useAppMutation(
     ({ groupId, isArchived }) => toggleArchiveSplitGroupMutation(groupId, isArchived), 
     { context: 'splitwise:toggleArchive' }
   )
   const previewGroupInvite = useAppMutation(previewSplitGroupInviteMutation, { context: 'splitwise:previewInvite' })
-  const consumeGroupInvite = useAppMutation(consumeSplitGroupInviteMutation, { context: 'splitwise:consumeInvite' })
-  const updateExpense = useAppMutation(updateSplitExpenseMutation, { context: 'splitwise:updateExpense' })
-  const updateGroup = useAppMutation(updateSplitGroupMutation, { context: 'splitwise:updateGroup' })
-  const updateGroupBanner = useAppMutation(
+  const { mutateAsync: consumeGroupInviteAsync } = useAppMutation(consumeSplitGroupInviteMutation, { context: 'splitwise:consumeInvite' })
+  const { mutateAsync: updateExpenseAsync } = useAppMutation(updateSplitExpenseMutation, { context: 'splitwise:updateExpenseAsync' })
+  const { mutateAsync: updateGroupAsync } = useAppMutation(updateSplitGroupMutation, { context: 'splitwise:updateGroupAsync' })
+  const { mutateAsync: updateGroupBannerAsync } = useAppMutation(
     ({ groupId, bannerId }) => updateSplitGroupBannerMutation(groupId, bannerId), 
     { context: 'splitwise:updateBanner' }
   )
-  const setMemberRole = useAppMutation(setSplitGroupAccessRoleMutation, { context: 'splitwise:setMemberRole' })
+  const { mutateAsync: setMemberRoleAsync } = useAppMutation(setSplitGroupAccessRoleMutation, { context: 'splitwise:setMemberRoleAsync' })
 
   const [activeGroupId, setActiveGroupId] = useState('')
   const authUserId = getAuthUserId()
@@ -299,7 +299,7 @@ export function useSplitwiseLogic() {
     if (activeGroupId) {
       writeBannerToStorage(activeGroupId, id)
       try {
-        await updateGroupBanner.mutateAsync({ groupId: activeGroupId, bannerId: id })
+        await updateGroupBannerAsync({ groupId: activeGroupId, bannerId: id })
       } catch (error) {
         console.error('Could not sync banner to database', error)
       }
@@ -317,7 +317,7 @@ export function useSplitwiseLogic() {
     if (!editGroupForm.name.trim()) return pushToast('Name is required.')
     try {
       setSaving('group-edit')
-      await updateGroup.mutateAsync({ groupId: activeGroupId, name: editGroupForm.name })
+      await updateGroupAsync({ groupId: activeGroupId, name: editGroupForm.name })
       pushToast('Trip updated.')
       setShowEditGroup(false)
     } catch (error) {
@@ -331,7 +331,7 @@ export function useSplitwiseLogic() {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     setSaving('archive')
     try {
-      await toggleArchiveGroup.mutateAsync({ groupId, isArchived: !currentStatus })
+      await toggleArchiveGroupAsync({ groupId, isArchived: !currentStatus })
       if (!currentStatus) setShowEditGroup(false)
       pushToast(!currentStatus ? 'Trip archived (Read Only).' : 'Trip restored.')
     } catch (err) {
@@ -574,6 +574,8 @@ export function useSplitwiseLogic() {
   const isViewOnly = isViewingPartner || (!!activeGroup && !canManageGroup)
   const inviteTokenFromQuery = String(searchParams.get('splitInvite') || '').trim()
 
+  const previewAttemptRef = useRef('')
+
   const clearPendingSplitInviteToken = useCallback(() => {
     try {
       sessionStorage.removeItem('pendingSplitGroupInviteToken')
@@ -590,41 +592,29 @@ export function useSplitwiseLogic() {
 
   useEffect(() => {
     let inviteToken = inviteTokenFromQuery
-
     if (!inviteToken) {
-      try {
-        inviteToken = String(sessionStorage.getItem('pendingSplitGroupInviteToken') || '').trim()
-      } catch {
-        inviteToken = ''
-      }
+      try { inviteToken = String(sessionStorage.getItem('pendingSplitGroupInviteToken') || '').trim() } catch { inviteToken = '' }
     }
-
     if (!inviteToken || consumingInvite || invitePreview?.token === inviteToken) return
+    if (previewAttemptRef.current === inviteToken) return
+    previewAttemptRef.current = inviteToken
 
-    let cancelled = false
-
-    async function previewInvite() {
-      try {
-        const preview = await previewGroupInvite.mutateAsync(inviteToken)
-        if (cancelled) return
+    previewSplitGroupInviteMutation(inviteToken)
+      .then((preview) => {
+        if (previewAttemptRef.current !== inviteToken) return
         setInvitePreview({
           token: inviteToken,
           groupId: preview.group_id,
           groupName: preview.group_name,
           invitedRole: preview.invited_role || 'viewer',
         })
-      } catch (previewError) {
-        if (cancelled) return
+      })
+      .catch((previewError) => {
+        if (previewAttemptRef.current !== inviteToken) return
         pushToast(toToastMessage(previewError, 'Could not open shared group invite.'))
         clearPendingSplitInviteToken()
-      }
-    }
-
-    void previewInvite()
-    return () => {
-      cancelled = true
-    }
-  }, [inviteTokenFromQuery, searchParams, setSearchParams, consumingInvite, invitePreview?.token, clearPendingSplitInviteToken, previewGroupInvite, pushToast])
+      })
+  }, [inviteTokenFromQuery, consumingInvite, invitePreview?.token, clearPendingSplitInviteToken, pushToast])
 
   function closeSheets() {
     setShowCreateGroup(false)
@@ -647,7 +637,7 @@ export function useSplitwiseLogic() {
 
     setSaving('group')
     try {
-      const created = await createGroup.mutateAsync({ name, selfDisplayName: accountDisplayName })
+      const created = await createGroupAsync({ name, selfDisplayName: accountDisplayName })
       optimisticallyInsertSplitGroup({ ...created, my_role: 'admin' }, activeWalletUserId)
       setActiveGroupId(created.id)
       setGroupForm({ name: '' })
@@ -664,7 +654,7 @@ export function useSplitwiseLogic() {
 
     setSaving('group-invite')
     try {
-      const invite = await createGroupInvite.mutateAsync({ groupId: activeGroupId })
+      const invite = await createGroupInviteAsync({ groupId: activeGroupId })
       const url = `${window.location.origin}/splitwise/join/${invite.token}`
 
       const result = await shareLink({
@@ -707,7 +697,7 @@ export function useSplitwiseLogic() {
 
     setConsumingInvite(true)
     try {
-      const joinedGroup = await consumeGroupInvite.mutateAsync(invitePreview.token)
+      const joinedGroup = await consumeGroupInviteAsync(invitePreview.token)
       if (joinedGroup?.id) setActiveGroupId(joinedGroup.id)
       pushToast(`Joined ${joinedGroup?.name || invitePreview.groupName} as ${accountDisplayName}.`)
     } catch (consumeError) {
@@ -730,7 +720,7 @@ export function useSplitwiseLogic() {
     setSaving('group-delete')
     try {
       optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
-      await deleteGroup.mutateAsync(activeGroupId)
+      await deleteGroupAsync(activeGroupId)
       pushToast('Group deleted.')
       setActiveGroupId('')
       closeSheets()
@@ -751,7 +741,7 @@ export function useSplitwiseLogic() {
 
     setSaving(`member-role-${member.id}`)
     try {
-      await setMemberRole.mutateAsync({
+      await setMemberRoleAsync({
         groupId: activeGroupId,
         memberUserId: member.linked_user_id,
         role,
@@ -775,7 +765,7 @@ export function useSplitwiseLogic() {
 
     setSaving(`delete-${memberId}`)
     try {
-      await deleteMember.mutateAsync(memberId)
+      await deleteMemberAsync(memberId)
       pushToast('Member removed.')
     } catch (err) {
       pushToast(toToastMessage(err, 'Could not remove member.'))
@@ -797,7 +787,7 @@ export function useSplitwiseLogic() {
     setSaving('group-leave')
     try {
       optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
-      await leaveGroup.mutateAsync(activeGroupId)
+      await leaveGroupAsync(activeGroupId)
       pushToast('Left group.')
       setActiveGroupId('')
       closeSheets()
@@ -818,7 +808,7 @@ export function useSplitwiseLogic() {
 
     setSaving('add-member')
     try {
-      await addMember.mutateAsync({ groupId: activeGroupId, displayName: name })
+      await addMemberAsync({ groupId: activeGroupId, displayName: name })
       pushToast('Member added.')
       setShowAddMember(false)
       setNewMemberName('')
@@ -928,7 +918,7 @@ export function useSplitwiseLogic() {
         // linked transaction in one Postgres transaction. The old
         // delete-then-create path could permanently drop the original if the
         // re-create failed.
-        await updateExpense.mutateAsync({
+        await updateExpenseAsync({
           expenseId: editExpense.id,
           groupId: activeGroupId,
           paidByMemberId: expenseForm.paid_by_member_id,
@@ -941,7 +931,7 @@ export function useSplitwiseLogic() {
           transactionCategory: expenseForm.transaction_category,
         })
       } else {
-        await addExpense.mutateAsync({
+        await addExpenseAsync({
           groupId: activeGroupId,
           paidByMemberId: expenseForm.paid_by_member_id,
           description,
@@ -1010,7 +1000,7 @@ export function useSplitwiseLogic() {
 
     setSaving(editSettlement ? 'settlement-edit' : 'settlement')
     try {
-      await recordSettlement.mutateAsync({
+      await recordSettlementAsync({
         groupId: activeGroupId,
         payerMemberId: settlementForm.payer_member_id,
         payeeMemberId: settlementForm.payee_member_id,
@@ -1020,7 +1010,7 @@ export function useSplitwiseLogic() {
       })
 
       if (editSettlement) {
-        await deleteSettlement.mutateAsync(editSettlement.id)
+        await deleteSettlementAsync(editSettlement.id)
       }
       setSettlementForm((prev) => ({
         ...prev,
@@ -1096,7 +1086,7 @@ export function useSplitwiseLogic() {
       clearTimeout(prevPending.timerId)
       pendingExpenseDeleteRef.current = null
       try {
-        await deleteExpense.mutateAsync(prevPending.expenseId)
+        await deleteExpenseAsync(prevPending.expenseId)
       } catch (err) {
         optimisticallyInsertSplitExpense(prevPending.groupId, prevPending.expense)
         pushToast(toToastMessage(err, 'Could not delete expense.'))
@@ -1116,7 +1106,7 @@ export function useSplitwiseLogic() {
     const timerId = setTimeout(async () => {
       pendingExpenseDeleteRef.current = null
       try {
-        await deleteExpense.mutateAsync(expenseId)
+        await deleteExpenseAsync(expenseId)
       } catch (err) {
         // RPC failed — restore the item so the user doesn't lose data.
         optimisticallyInsertSplitExpense(gid, expense)
@@ -1153,7 +1143,7 @@ export function useSplitwiseLogic() {
       clearTimeout(prevPending.timerId)
       pendingSettlementDeleteRef.current = null
       try {
-        await deleteSettlement.mutateAsync(prevPending.settlementId)
+        await deleteSettlementAsync(prevPending.settlementId)
       } catch (err) {
         optimisticallyInsertSplitSettlement(prevPending.groupId, prevPending.settlement)
         pushToast(toToastMessage(err, 'Could not delete settlement.'))
@@ -1168,7 +1158,7 @@ export function useSplitwiseLogic() {
     const timerId = setTimeout(async () => {
       pendingSettlementDeleteRef.current = null
       try {
-        await deleteSettlement.mutateAsync(settlementId)
+        await deleteSettlementAsync(settlementId)
       } catch (err) {
         optimisticallyInsertSplitSettlement(gid, settlement)
         pushToast(toToastMessage(err, 'Could not delete settlement.'))

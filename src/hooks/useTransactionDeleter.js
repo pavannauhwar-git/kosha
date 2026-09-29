@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import {
   removeTransactionMutation,
   optimisticallyDeleteTransactionFromCache,
@@ -7,6 +7,7 @@ import {
 import { useAppMutation } from './useAppMutation'
 import { useAppToast } from '../context/ToastContext'
 import { readLocalStorage } from '../lib/safeStorage'
+import { useUndoableDelete } from './useUndoableDelete'
 
 const DELETE_UNDO_WINDOW_MS = 4200
 
@@ -20,51 +21,23 @@ function shouldCommitDeleteImmediately() {
 
 export function useTransactionDeleter(activeWalletUserId, data) {
   const { pushToast } = useAppToast()
-  const pendingDeleteRef = useRef(null)
-  
-  const removeTransaction = useAppMutation(removeTransactionMutation, { context: 'transactions:delete' })
-  const commitRemoveTransaction = useAppMutation(removeTransactionMutation, { context: 'transactions:deleteCommit' })
+  const { mutateAsync: removeNow } = useAppMutation(removeTransactionMutation, { context: 'transactions:delete' })
+  const { mutateAsync: commitDelete } = useAppMutation(removeTransactionMutation, { context: 'transactions:deleteCommit' })
 
-  const commitPendingDelete = useCallback(async (pendingDelete) => {
-    if (!pendingDelete?.id) return
-    try {
-      await commitRemoveTransaction.mutateAsync(pendingDelete.id)
-    } catch (e) {
-      if (pendingDelete.txn) {
-        optimisticallyUpsertTransactionInCache(pendingDelete.txn, activeWalletUserId)
-      }
-      pushToast(e.message || 'Could not delete transaction.', { duration: 4200 })
-    }
-  }, [activeWalletUserId, pushToast, commitRemoveTransaction])
-
-  useEffect(() => {
-    return () => {
-      const pendingDelete = pendingDeleteRef.current
-      if (!pendingDelete) return
-      if (pendingDelete.timeoutId) {
-        clearTimeout(pendingDelete.timeoutId)
-      }
-      pendingDeleteRef.current = null
-      void commitPendingDelete(pendingDelete)
-    }
-  }, [commitPendingDelete])
+  const { schedule, undo } = useUndoableDelete({
+    commit: (id) => commitDelete(id),
+    restore: ({ txn, walletUserId }) => optimisticallyUpsertTransactionInCache(txn, walletUserId),
+    onError: (e) => pushToast(e.message || 'Could not delete transaction.', { duration: 4200 }),
+    windowMs: DELETE_UNDO_WINDOW_MS,
+  })
 
   const handleDelete = useCallback(async (id) => {
     if (!id) return false
-
-    const pendingDelete = pendingDeleteRef.current
-    if (pendingDelete?.id && pendingDelete.id !== id) {
-      if (pendingDelete.timeoutId) {
-        clearTimeout(pendingDelete.timeoutId)
-      }
-      pendingDeleteRef.current = null
-      void commitPendingDelete(pendingDelete)
-    }
-
     const txn = data.find((row) => row?.id === id)
-    if (!txn) {
+
+    if (!txn || shouldCommitDeleteImmediately()) {
       try {
-        await removeTransaction.mutateAsync(id)
+        await removeNow(id)
         return true
       } catch (e) {
         pushToast(e.message || 'Could not delete transaction.', { duration: 4200 })
@@ -72,42 +45,15 @@ export function useTransactionDeleter(activeWalletUserId, data) {
       }
     }
 
-    const snapshot = { ...txn }
     optimisticallyDeleteTransactionFromCache(id, activeWalletUserId)
-
-    if (shouldCommitDeleteImmediately()) {
-      await commitPendingDelete({ id, txn: snapshot, timeoutId: null })
-      return true
-    }
-
-    const undoDelete = () => {
-      const pending = pendingDeleteRef.current
-      if (!pending || pending.id !== id) return
-      if (pending.timeoutId) {
-        clearTimeout(pending.timeoutId)
-      }
-      pendingDeleteRef.current = null
-      optimisticallyUpsertTransactionInCache(pending.txn, activeWalletUserId)
-      pushToast('Deletion canceled.', { duration: 2200 })
-    }
-
-    const timeoutId = setTimeout(() => {
-      const pending = pendingDeleteRef.current
-      if (!pending || pending.id !== id) return
-      pendingDeleteRef.current = null
-      void commitPendingDelete(pending)
-    }, DELETE_UNDO_WINDOW_MS)
-
-    pendingDeleteRef.current = { id, txn: snapshot, timeoutId }
-
+    schedule(id, { txn: { ...txn }, walletUserId: activeWalletUserId })
     pushToast('Transaction deleted.', {
-      action: undoDelete,
+      action: () => { if (undo(id)) pushToast('Deletion canceled.', { duration: 2200 }) },
       actionLabel: 'Undo',
       duration: DELETE_UNDO_WINDOW_MS,
     })
-
     return undefined
-  }, [data, activeWalletUserId, commitPendingDelete, pushToast, removeTransaction])
+  }, [data, activeWalletUserId, removeNow, schedule, undo, pushToast])
 
   return { handleDelete }
 }

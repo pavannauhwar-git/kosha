@@ -2635,6 +2635,7 @@ CREATE TABLE IF NOT EXISTS "public"."liabilities" (
     "is_recurring" boolean DEFAULT false NOT NULL,
     "recurrence" "text",
     "recurrence_anchor" "date",
+    "recurrence_anchor" "date",
     "paid" boolean DEFAULT false NOT NULL,
     "linked_transaction_id" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
@@ -2761,6 +2762,7 @@ CREATE TABLE IF NOT EXISTS "public"."transactions" (
     "user_id" "uuid",
     "is_recurring" boolean DEFAULT false NOT NULL,
     "recurrence" "text",
+    "recurrence_anchor" "date",
     "recurrence_anchor" "date",
     "next_run_date" "date",
     "source_transaction_id" "uuid",
@@ -3931,6 +3933,26 @@ DROP TRIGGER IF EXISTS check_bug_report_tampering ON public.bug_reports;
 CREATE TRIGGER check_bug_report_tampering
 BEFORE UPDATE ON public.bug_reports
 FOR EACH ROW EXECUTE FUNCTION public.prevent_bug_report_tampering();
+
+CREATE OR REPLACE FUNCTION "public"."ensure_group_has_admin"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+begin
+  if old.role = 'admin' and not exists (
+    select 1 from public.split_group_access where group_id = old.group_id and role = 'admin'
+  ) then
+    update public.split_group_access set role = 'admin'
+    where id = (
+      select id from public.split_group_access
+      where group_id = old.group_id
+      order by case role when 'member' then 0 else 1 end, created_at
+      limit 1
+    );
+  end if;
+  return old;
+end;
+$$;
 
 CREATE OR REPLACE FUNCTION "public"."ensure_group_has_admin"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
