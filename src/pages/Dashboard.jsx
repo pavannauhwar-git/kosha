@@ -7,6 +7,7 @@ import {
   useRunningBalance,
   useDailyExpenseTotals,
 } from '../hooks/useTransactions'
+// NOTE: Deletion is delegated to useTransactionDeleter which uses removeTransactionMutation.
 import { useTransactionDeleter } from '../hooks/useTransactionDeleter'
 import { useLiabilities } from '../hooks/useLiabilities'
 import { CATEGORIES } from '../lib/categories'
