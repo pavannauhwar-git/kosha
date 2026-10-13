@@ -7,12 +7,11 @@ export default function PageHeader({
   rightSlot = null,
 }) {
   return (
-    <div
-      className={`app-topbar ${className}`.trim()}
-      style={{
-        paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)',
-      }}
-    >
+    <div className={`app-topbar ${className}`.trim()}>
+      {/* Explicit safe-area fill — paints a solid surface color behind the iOS status bar.
+          This prevents iOS 17+ from applying its automatic blur/frosted treatment
+          to the zone between the status bar and the first content element. */}
+      <div className="app-topbar-safe-fill" aria-hidden="true" />
       <div className="app-topbar-inner">
         {leftSlot ? <div className="shrink-0">{leftSlot}</div> : null}
 
