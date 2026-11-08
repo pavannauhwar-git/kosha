@@ -8,7 +8,7 @@ import { getActiveWalletUserId, useActiveWallet } from '../../lib/walletStore'
 import { queryClient } from '../../lib/queryClient'
 import { supabase } from '../../lib/supabase'
 import { recordRuntimeRoute } from '../../lib/runtimeMonitor'
-import { fetchMonthSummary, syncRecurringTransactions } from '../../hooks/useTransactions'
+import { fetchMonthSummary, syncRecurringTransactions, balanceAsOfKey, fetchBalanceAsOf } from '../../hooks/useTransactions'
 import { ROUTE_PRELOADERS } from './AppRoutes'
 
 export const DASHBOARD_RECENT_COLUMNS =
@@ -189,15 +189,8 @@ export function DashboardWarmPrefetch() {
             staleTime: 30 * 1000,
           }),
           queryClient.prefetchQuery({
-            queryKey: ['balance', 2099, 12, targetUserId],
-            queryFn: async () => {
-              const { data: balance, error } = await supabase.rpc('get_running_balance', {
-                p_user_ids: [targetUserId],
-                p_end_date: '2099-12-31',
-              })
-              if (error) throw error
-              return Number(balance || 0)
-            },
+            queryKey: balanceAsOfKey(todayISO, targetUserId),
+            queryFn: () => fetchBalanceAsOf(todayISO, targetUserId),
             staleTime: 30 * 1000,
           }),
         ])

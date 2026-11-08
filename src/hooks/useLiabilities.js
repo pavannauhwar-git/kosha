@@ -9,7 +9,8 @@ import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog.js'
 import {
   invalidateCache as invalidateTransactionCache,
   optimisticallyUpsertTransactionInCache,
-  optimisticallyDeleteTransactionsByBillId
+  optimisticallyDeleteTransactionsByBillId,
+  balanceAsOfKey
 } from './useTransactions.js'
 import { todayStr } from '../lib/utils.js'
 import { hapticSuccess } from '../lib/haptics.js'
@@ -265,7 +266,7 @@ function snapshotLiabilityCaches(targetUserId) {
   ]
 
   // Snapshot running balance
-  const balanceKey = ['balance', 2099, 12, targetUserId]
+  const balanceKey = balanceAsOfKey(todayStr(), targetUserId)
   const balanceData = queryClient.getQueryData(balanceKey)
   if (typeof balanceData !== 'undefined') {
     snap.push([balanceKey, cloneCacheData(balanceData)])

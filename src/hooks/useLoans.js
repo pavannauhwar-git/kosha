@@ -10,7 +10,8 @@ import {
   invalidateCache as invalidateTransactionCache,
   optimisticallyUpsertTransactionInCache,
   optimisticallyDeleteTransactionsByLoanId,
-  inFlightDeletedTxnIds
+  inFlightDeletedTxnIds,
+  balanceAsOfKey
 } from './useTransactions'
 import { todayStr } from '../lib/utils'
 import { hapticSuccess } from '../lib/haptics'
@@ -255,7 +256,7 @@ function snapshotLoanCaches(targetUserId) {
   ]
 
   // Snapshot running balance
-  const balanceKey = ['balance', 2099, 12, targetUserId]
+  const balanceKey = balanceAsOfKey(todayStr(), targetUserId)
   const balanceData = queryClient.getQueryData(balanceKey)
   if (typeof balanceData !== 'undefined') {
     snap.push([balanceKey, cloneCacheData(balanceData)])

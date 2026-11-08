@@ -316,10 +316,11 @@ function adjustAggregatesForTransaction(txn, targetUserId, sign) {
     queryClient.setQueryData(monthKey, nextMonth)
   }
 
-  // 2. Global Running Balance (typically fetched with year=2099, month=12)
-  const balanceKey = ['balance', 2099, 12, targetUserId]
+  // 2. Balance as of today — future-dated entries don't move it.
+  const todayISO = todayStr()
+  const balanceKey = balanceAsOfKey(todayISO, targetUserId)
   const currentBalance = queryClient.getQueryData(balanceKey)
-  if (typeof currentBalance === 'number') {
+  if (typeof currentBalance === 'number' && String(txn.date).slice(0, 10) <= todayISO) {
     let diff = 0
     if (txn.type === 'expense' || txn.type === 'investment') diff = -impact
     if (txn.type === 'income') diff = impact
@@ -896,6 +897,36 @@ export function useTransactionYearBounds(options = {}) {
     loading: isLoading,
     error,
   }
+}
+
+export const balanceAsOfKey = (dateISO, targetUserId) => ['balance', 'asOf', dateISO, targetUserId]
+
+export async function fetchBalanceAsOf(dateISO, targetUserId) {
+  const { data: balance, error } = await supabase.rpc('get_running_balance', {
+    p_user_ids: [targetUserId],
+    p_end_date: dateISO,
+  })
+  if (error) throw error
+  return Number(balance || 0)
+}
+
+export function useBalanceAsOf(dateISO) {
+  const targetUserId = useActiveWallet()
+  const { data, isLoading, isFetching, error } = useQuery({
+    queryKey: balanceAsOfKey(dateISO, targetUserId),
+    enabled: !!targetUserId && !!dateISO,
+    refetchOnMount: true,
+    queryFn: async () => {
+      try {
+        return await fetchBalanceAsOf(dateISO, targetUserId)
+      } catch (err) {
+        logQueryError('balance as of date', err)
+        throw err
+      }
+    },
+    placeholderData: (prev, query) => (query?.queryKey?.[3] === targetUserId ? prev : undefined),
+  })
+  return { balance: data, loading: isLoading, fetching: isFetching, error }
 }
 
 export function useRunningBalance(year, month) {

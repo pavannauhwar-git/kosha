@@ -4,7 +4,7 @@ import { Plus, Wallet, TrendDown, ArrowRight } from '@phosphor-icons/react'
 import {
   useRecentTransactions,
   useMonthSummary,
-  useRunningBalance,
+  useBalanceAsOf,
   useDailyExpenseTotals,
 } from '../hooks/useTransactions'
 // NOTE: Deletion is delegated to useTransactionDeleter which uses removeTransactionMutation.
@@ -128,15 +128,12 @@ export default function Dashboard() {
     fetching: summaryFetching,
   } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(84)
-  const balanceHorizonDate = useMemo(() => new Date(2099, 11, 31), [])
+  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const {
     balance: runningBalance,
     loading: runningBalanceLoading,
     fetching: runningBalanceFetching,
-  } = useRunningBalance(
-    balanceHorizonDate.getFullYear(),
-    balanceHorizonDate.getMonth() + 1
-  )
+  } = useBalanceAsOf(todayISO)
   const { pending: bills = [], loading: billsLoading } = useLiabilities()
   const { budgets } = useBudgets()
   const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
