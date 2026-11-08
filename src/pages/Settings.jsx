@@ -20,7 +20,7 @@ import {
   requestNotificationPermission,
 } from '../lib/reminders'
 import { useSafeTimeout } from '../hooks/useSafeTimeout'
-import { buildJoinInviteUrl, createInvite, deleteInvite, inviteStatusLabel, listInvites, MAX_ACTIVE_INVITES } from '../lib/invites'
+import { buildJoinInviteUrl, createInvite, deleteInvite, inviteStatusLabel, listInvites, maskInviteUrl, MAX_ACTIVE_INVITES } from '../lib/invites'
 import { unlinkPartner } from '../lib/walletSync'
 import { getActiveWalletUserId, setActiveWalletUserId } from '../lib/walletStore'
 import { fmtDate } from '../lib/utils'
@@ -694,7 +694,7 @@ export default function Settings() {
             <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-ink">Generate link</p>
-                <p className="text-[11px] text-ink-3 mt-0.5">Invite others to sync their wallet with yours.</p>
+                <p className="text-[11px] text-ink-3 mt-0.5">Invite others to sync their wallet with yours. Your partner will see all your transactions, bills and loans, and you'll see theirs. Links work once and expire after 7 days.</p>
               </div>
               <Button
                 variant="primary"
@@ -738,9 +738,12 @@ export default function Settings() {
                           {status}
                         </span>
                       </div>
-                      <p className="text-[11px] text-ink-2 mt-1 truncate">{buildJoinInviteUrl(invite.token)}</p>
+                      <p className="text-[11px] text-ink-2 mt-1 truncate">{maskInviteUrl(invite.token)}</p>
+                      {status === 'Expired' && (
+                        <p className="text-[11px] text-ink-3 mt-1">This link has expired. Remove it to create a new one.</p>
+                      )}
                       <div className="flex items-center gap-3">
-                        {!invite.used_by && (
+                        {!invite.used_by && status !== 'Expired' && (
                           <Button
                             variant="ghost"
                             size="sm"

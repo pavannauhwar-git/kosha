@@ -1691,10 +1691,11 @@ begin
   where i.token = btrim(p_token)
     and i.revoked_at is null
     and i.consumed_by is null
+    and (i.expires_at is null or i.expires_at > now())
   for update;
 
   if not found then
-    raise exception 'Invite not found or already used';
+    raise exception 'Invite not found, already used or expired';
   end if;
 
   select * into v_group
@@ -2122,6 +2123,7 @@ CREATE TABLE IF NOT EXISTS public.split_group_invites (
     consumed_at timestamp with time zone,
     revoked_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval),
     CONSTRAINT split_group_invites_role_check CHECK ((role = ANY (ARRAY['viewer'::text, 'member'::text, 'admin'::text])))
 );
 
@@ -2134,7 +2136,10 @@ ALTER TABLE public.split_group_invites
     ADD COLUMN IF NOT EXISTS consumed_by uuid,
     ADD COLUMN IF NOT EXISTS consumed_at timestamp with time zone,
     ADD COLUMN IF NOT EXISTS revoked_at timestamp with time zone,
-    ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+    ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL,
+    ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval);
+
+ALTER TABLE public.split_group_invites ALTER COLUMN expires_at SET DEFAULT (now() + '7 days'::interval);
 
 DO $do$
 BEGIN
@@ -2268,9 +2273,13 @@ declare
   v_invite public.split_group_invites%rowtype;
   v_group public.split_groups%rowtype;
 begin
-  select * into v_invite from public.split_group_invites where token = p_token;
+  select * into v_invite from public.split_group_invites
+  where token = btrim(p_token)
+    and revoked_at is null
+    and consumed_by is null
+    and (expires_at is null or expires_at > now());
   if not found then
-    raise exception 'Invite not found';
+    raise exception 'Invite not found, already used or expired';
   end if;
 
   select * into v_group from public.split_groups where id = v_invite.group_id;
@@ -3105,7 +3114,7 @@ CREATE TABLE IF NOT EXISTS public.invites (
     used_by uuid,
     used_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    expires_at timestamp with time zone
+    expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval)
 );
 
 ALTER TABLE public.invites
@@ -3115,7 +3124,9 @@ ALTER TABLE public.invites
     ADD COLUMN IF NOT EXISTS used_by uuid,
     ADD COLUMN IF NOT EXISTS used_at timestamp with time zone,
     ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL,
-    ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone;
+    ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval);
+
+ALTER TABLE public.invites ALTER COLUMN expires_at SET DEFAULT (now() + '7 days'::interval);
 
 -- Table: public.liabilities
 CREATE TABLE IF NOT EXISTS public.liabilities (

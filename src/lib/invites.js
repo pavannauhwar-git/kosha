@@ -25,7 +25,7 @@ export async function createInvite({ supabaseClient, userId }) {
   const { data, error } = await supabaseClient
     .from('invites')
     .insert({ created_by: userId })
-    .select('id, token, created_at, used_by, used_at')
+    .select('id, token, created_at, used_by, used_at, expires_at')
     .single()
 
   if (error) {
@@ -59,7 +59,7 @@ export async function listInvites({ supabaseClient, userId, limit = MAX_ACTIVE_I
 
   const { data, error } = await supabaseClient
     .from('invites')
-    .select('id, token, created_at, used_by, used_at')
+    .select('id, token, created_at, used_by, used_at, expires_at')
     .eq('created_by', userId)
     .order('created_at', { ascending: false })
     .limit(safeLimit)
@@ -74,8 +74,15 @@ export function buildJoinInviteUrl(token, origin = undefined) {
   return `${resolvedOrigin}/join/${token}`
 }
 
+export function maskInviteUrl(token, origin = undefined) {
+  if (!token) return ''
+  const resolvedOrigin = origin ?? (typeof window !== 'undefined' ? window.location.origin : '')
+  return `${resolvedOrigin}/join/••••••${String(token).slice(-4)}`
+}
+
 export function inviteStatusLabel(inviteRow) {
   if (inviteRow?.used_by && inviteRow?.used_at) return 'Joined'
+  if (inviteRow?.expires_at && new Date(inviteRow.expires_at) <= new Date()) return 'Expired'
   return 'Pending'
 }
 
