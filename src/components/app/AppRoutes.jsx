@@ -74,7 +74,7 @@ function SafeRoute({ pathname, guard, children }) {
 // ── Auth callback ─────────────────────────────────────────────────────────
 function AuthCallback() {
   const { user, profile, loading, profileLoading } = useAuth()
-  if (loading || (user && profileLoading)) return null
+  if (loading || (user && profileLoading && !profile)) return null
   if (!user) return <Navigate to="/login" replace />
   if (!profile || !profile.onboarded) return <Navigate to="/onboarding" replace />
   return <Navigate to="/" replace />

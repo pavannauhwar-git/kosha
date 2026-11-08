@@ -262,7 +262,7 @@ export default function AuthGuard({ children }) {
   // which re-fires its internal useEffect on every render (including during
   // AnimatePresence exit animations, causing "Maximum update depth" warnings).
   useEffect(() => {
-    if (loading || (user && profileLoading)) return
+    if (loading || (user && profileLoading && !profile)) return
 
     if (!user) {
       navigate('/login', { replace: true, state: { from: location.pathname } })
@@ -278,7 +278,7 @@ export default function AuthGuard({ children }) {
   }, [loading, user, profileLoading, profile, navigate, location.pathname])
 
   // Auth initialising — show the skeleton that matches the destination route
-  if (loading || (user && profileLoading)) return (
+  if (loading || (user && profileLoading && !profile)) return (
     <div className="route-skeleton-shell">
       <RouteSkeleton pathname={location.pathname} />
     </div>

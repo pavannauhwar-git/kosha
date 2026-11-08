@@ -57,7 +57,7 @@ export function useAuthState() {
   // if a sign-out/sign-in happens mid-fetch.
   const loadGenRef = useRef(0)
 
-  const loadProfile = useCallback(async (userId) => {
+  const loadProfile = useCallback(async (userId, { silent = false } = {}) => {
     if (!userId) {
       setProfile(null)
       setProfileLoading(false)
@@ -67,7 +67,7 @@ export function useAuthState() {
     const myGen = ++loadGenRef.current
     const isStale = () => loadGenRef.current !== myGen
 
-    setProfileLoading(true)
+    if (!silent) setProfileLoading(true)
 
     try {
       const data = await queryClient.fetchQuery({
@@ -91,6 +91,7 @@ export function useAuthState() {
     } catch (err) {
       if (isStale()) return
       console.warn('[Kosha] loadProfile failed', err)
+      if (silent) return
       setProfile(null)
       setLinkedUserIds([])
       setLinkedProfiles([])
@@ -145,7 +146,7 @@ export function useAuthState() {
           lastSeenUserId = u.id
           setProfile(prev => {
             if (!prev || (Date.now() - (prev._lastFetched || 0) > 30000)) {
-              loadProfileRef.current(u.id)
+              loadProfileRef.current(u.id, { silent: true })
             }
             return prev
           })
@@ -181,6 +182,14 @@ export function useAuthState() {
           const isFirstSignIn = !!u && !lastSeenUserId
           if (userChanged || isFirstSignIn) {
             await purgeAllUserScopedState()
+          }
+          if (u && !userChanged && !isFirstSignIn) {
+            setAuthUser(u)
+            setUser(u)
+            lastSeenUserId = u.id
+            if (!initialised) { setLoading(false); initialised = true }
+            loadProfileRef.current(u.id, { silent: true })
+            return
           }
           setAuthUser(u)
           if (u) {
