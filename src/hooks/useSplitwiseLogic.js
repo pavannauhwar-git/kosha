@@ -759,11 +759,12 @@ export function useSplitwiseLogic() {
   async function handleDeleteMember(memberId) {
     if (!isGroupAdmin || activeGroup?.is_archived || saving) return
 
-    const balance = balances.find(b => b.member_id === memberId)
-    if (balance && balance.net_balance !== 0) {
-      pushToast(`This member still has an unsettled balance. Settle up first.`)
+    const balance = balances.find((b) => b?.member?.id === memberId)
+    if (balance && Math.abs(round2(balance.net || 0)) >= 0.01) {
+      pushToast('This member still has an unsettled balance. Settle up first.')
       return
     }
+    if (!window.confirm('Remove this member from the group? This cannot be undone.')) return
 
     setSaving(`delete-${memberId}`)
     try {

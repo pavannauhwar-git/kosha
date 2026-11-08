@@ -175,9 +175,9 @@ const ActiveGroupView = memo(function ActiveGroupView({
                         <button
                           type="button"
                           onClick={() => { void handleDeleteMember(member.id) }}
-                          className="rounded-full h-7 w-7 flex items-center justify-center text-danger/80 hover:bg-danger/10 hover:text-danger border border-transparent hover:border-danger/20 transition-[background-color,border-color,color] duration-150"
-                          disabled={!!saving}
-                          title="Remove member"
+                          className="rounded-full h-7 w-7 flex items-center justify-center text-danger/80 hover:bg-danger/10 hover:text-danger border border-transparent hover:border-danger/20 transition-[background-color,border-color,color] duration-150 disabled:opacity-40"
+                          disabled={!!saving || Math.abs(net) >= 0.01}
+                          title={Math.abs(net) >= 0.01 ? 'Settle this balance before removing' : 'Remove member'}
                         >
                           <Trash size={13} />
                         </button>
