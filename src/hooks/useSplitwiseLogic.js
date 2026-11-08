@@ -32,6 +32,7 @@ import {
   leaveSplitGroupMutation,
   toggleArchiveSplitGroupMutation,
   updateSplitExpenseMutation,
+  updateSplitSettlementMutation,
   updateSplitGroupMutation,
   updateSplitGroupBannerMutation,
   setSplitGroupAccessRoleMutation,
@@ -154,6 +155,7 @@ export function useSplitwiseLogic() {
 
   const { mutateAsync: consumeGroupInviteAsync } = useAppMutation(consumeSplitGroupInviteMutation, { context: 'splitwise:consumeInvite' })
   const { mutateAsync: updateExpenseAsync } = useAppMutation(updateSplitExpenseMutation, { context: 'splitwise:updateExpenseAsync' })
+  const { mutateAsync: updateSettlementAsync } = useAppMutation(updateSplitSettlementMutation, { context: 'splitwise:updateSettlementAsync' })
   const { mutateAsync: updateGroupAsync } = useAppMutation(updateSplitGroupMutation, { context: 'splitwise:updateGroupAsync' })
   const { mutateAsync: updateGroupBannerAsync } = useAppMutation(
     ({ groupId, bannerId }) => updateSplitGroupBannerMutation(groupId, bannerId), 
@@ -1002,20 +1004,28 @@ export function useSplitwiseLogic() {
     if (actionGuard.current) return
     actionGuard.current = true
 
-    setSaving(editSettlement ? 'settlement-edit' : 'settlement')
+    const isEdit = !!editSettlement
+    setSaving(isEdit ? 'settlement-edit' : 'settlement')
     try {
-      await recordSettlementAsync({
-        groupId: activeGroupId,
-        payerMemberId: settlementForm.payer_member_id,
-        payeeMemberId: settlementForm.payee_member_id,
-        amount,
-        settledAt: settlementForm.settled_at,
-        note: settlementForm.note,
-        id: crypto.randomUUID(),
-      })
-
-      if (editSettlement) {
-        await deleteSettlementAsync(editSettlement.id)
+      if (isEdit) {
+        await updateSettlementAsync({
+          settlementId: editSettlement.id,
+          payerMemberId: settlementForm.payer_member_id,
+          payeeMemberId: settlementForm.payee_member_id,
+          amount,
+          settledAt: settlementForm.settled_at,
+          note: settlementForm.note,
+        })
+      } else {
+        await recordSettlementAsync({
+          groupId: activeGroupId,
+          payerMemberId: settlementForm.payer_member_id,
+          payeeMemberId: settlementForm.payee_member_id,
+          amount,
+          settledAt: settlementForm.settled_at,
+          note: settlementForm.note,
+          id: crypto.randomUUID(),
+        })
       }
       setSettlementForm((prev) => ({
         ...prev,
@@ -1024,9 +1034,9 @@ export function useSplitwiseLogic() {
       }))
       setEditSettlement(null)
       setShowSettlement(false)
-      pushToast('Settlement recorded.')
+      pushToast(isEdit ? 'Settlement updated.' : 'Settlement recorded.')
     } catch (settlementError) {
-      pushToast(toToastMessage(settlementError, 'Could not record settlement.'))
+      pushToast(toToastMessage(settlementError, isEdit ? 'Could not update settlement.' : 'Could not record settlement.'))
     } finally {
       setSaving('')
       actionGuard.current = false

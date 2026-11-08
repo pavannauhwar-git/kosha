@@ -868,6 +868,29 @@ export async function recordSplitSettlementMutation({ groupId, payerMemberId, pa
   return rpcRow
 }
 
+export async function updateSplitSettlementMutation({ settlementId, payerMemberId, payeeMemberId, amount, settledAt, note }) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot edit settlements here.')
+  }
+  const safeAmount = round2(amount)
+  if (!settlementId) throw new Error('Settlement is required.')
+  if (!payerMemberId || !payeeMemberId) throw new Error('Both members are required.')
+  if (!Number.isFinite(safeAmount) || safeAmount <= 0) throw new Error('Settlement amount must be positive.')
+
+  const { data, error } = await supabase.rpc('split_update_settlement', {
+    p_settlement_id: settlementId,
+    p_payer_member_id: payerMemberId,
+    p_payee_member_id: payeeMemberId,
+    p_amount: safeAmount,
+    p_settled_at: settledAt || null,
+    p_note: note || null,
+  })
+  if (error) throw error
+
+  await invalidateSplitwiseCache()
+  return Array.isArray(data) ? data[0] : data
+}
+
 export async function deleteSplitSettlementMutation(settlementId) {
   if (getActiveWalletUserId() !== getAuthUserId()) {
     throw new Error('Shared wallets are view-only. You cannot delete settlements here.')
