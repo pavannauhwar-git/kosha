@@ -1,19 +1,23 @@
 import { memo, useMemo } from 'react'
 import { fmt, daysUntil } from '../../../lib/utils'
 
+function paidLagDays(bill) {
+  if (!bill?.paid_at || !bill?.due_date) return null
+  const due = new Date(`${String(bill.due_date).slice(0, 10)}T12:00:00`)
+  const paid = new Date(`${String(bill.paid_at).slice(0, 10)}T12:00:00`)
+  if (Number.isNaN(due.getTime()) || Number.isNaN(paid.getTime())) return null
+  return Math.round((due.getTime() - paid.getTime()) / (24 * 60 * 60 * 1000))
+}
+
 /**
- * Payment discipline card for the Bills page paid tab.
- * Since paid_at is not stored on liabilities, we use due_date relative
- * to today to infer which bills were likely paid on time vs late.
- * Bills with due_date in the past that are paid → on-time if due_date is recent.
- * Bills with linked_transaction_id → can be cross-referenced for exact lag.
+ * Payment discipline card for the Bills page paid tab. Bills without a
+ * recorded payment date (paid_at) are counted as cleared but left out of
+ * the early / on-time / late split.
  */
 export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
   const insights = useMemo(() => {
     if (!paidBills || paidBills.length === 0) return null
 
-    // For paid bills, if due_date is in the future → paid early,
-    // if due_date is in the past → likely paid around or after due date
     let earlyCount = 0
     let onTimeCount = 0
     let lateEstimate = 0
@@ -21,69 +25,39 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
     let totalPaidAmount = 0
 
     for (const bill of paidBills) {
-      const amt = Number(bill.amount || 0)
-      totalPaidAmount += amt
-
+      totalPaidAmount += Number(bill.amount || 0)
       if (bill.is_recurring) recurringPaidCount += 1
 
-      // Use actual paid_at, fallback to updated_at, fallback to today heuristic
-      const effectivePaidDate = bill.paid_at || bill.updated_at
-      let deltaDays
-      if (effectivePaidDate) {
-        const due = new Date(bill.due_date || 0)
-        due.setHours(12, 0, 0, 0)
-        const paid = new Date(effectivePaidDate)
-        paid.setHours(12, 0, 0, 0)
-        deltaDays = Math.round((due - paid) / (1000 * 60 * 60 * 24))
-      } else {
-        deltaDays = daysUntil(bill.due_date)
-      }
-
-      if (deltaDays > 0) {
-        earlyCount += 1
-      } else if (deltaDays >= -3) {
-        onTimeCount += 1
-      } else {
-        lateEstimate += 1
-      }
+      const deltaDays = paidLagDays(bill)
+      if (deltaDays == null) continue
+      if (deltaDays > 0) earlyCount += 1
+      else if (deltaDays >= -3) onTimeCount += 1
+      else lateEstimate += 1
     }
 
     const total = paidBills.length
-    const onTimePct = total > 0 ? Math.round(((earlyCount + onTimeCount) / total) * 100) : 100
+    const timedCount = earlyCount + onTimeCount + lateEstimate
+    const onTimePct = timedCount > 0 ? Math.round(((earlyCount + onTimeCount) / timedCount) * 100) : null
 
-    // Current streak — consecutive paid bills from most recent that were on-time
     const sorted = [...paidBills].sort((a, b) => {
       const da = new Date(a.due_date || 0).getTime()
       const db = new Date(b.due_date || 0).getTime()
-      return db - da // most recent first
+      return db - da
     })
 
     let streak = 0
     for (const bill of sorted) {
-      const effectivePaidDate = bill.paid_at || bill.updated_at
-      let deltaDays
-      if (effectivePaidDate) {
-        const due = new Date(bill.due_date || 0)
-        due.setHours(12, 0, 0, 0)
-        const paid = new Date(effectivePaidDate)
-        paid.setHours(12, 0, 0, 0)
-        deltaDays = Math.round((due - paid) / (1000 * 60 * 60 * 24))
-      } else {
-        deltaDays = daysUntil(bill.due_date)
-      }
-
-      if (deltaDays >= -3) {
-        streak += 1
-      } else {
-        break
-      }
+      const deltaDays = paidLagDays(bill)
+      if (deltaDays == null) continue
+      if (deltaDays >= -3) streak += 1
+      else break
     }
 
-    // Overdue pending count
     const overdueNow = (pendingBills || []).filter(b => daysUntil(b.due_date) < 0).length
 
     return {
       total,
+      timedCount,
       earlyCount,
       onTimeCount,
       lateEstimate,
@@ -105,13 +79,15 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
           <p className="text-caption text-ink-3 mt-0.5">Your bill payment track record</p>
         </div>
         <span className={`text-[11px] px-2 py-1 rounded-pill font-semibold ${
-          insights.onTimePct >= 90
-            ? 'bg-income-bg text-income-text'
-            : insights.onTimePct >= 70
-              ? 'bg-warning-bg text-warning-text'
-              : 'bg-expense-bg text-expense-text'
+          insights.onTimePct == null
+            ? 'bg-kosha-surface-2 text-ink-3'
+            : insights.onTimePct >= 90
+              ? 'bg-income-bg text-income-text'
+              : insights.onTimePct >= 70
+                ? 'bg-warning-bg text-warning-text'
+                : 'bg-expense-bg text-expense-text'
         }`}>
-          {insights.onTimePct}% on-time
+          {insights.onTimePct == null ? 'No payment dates yet' : `${insights.onTimePct}% on-time`}
         </span>
       </div>
 
@@ -138,7 +114,7 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
           <p className="text-[13px] font-semibold text-ink tabular-nums">{insights.onTimeCount}</p>
         </div>
         <div className={`rounded-card p-2 ${insights.lateEstimate > 0 ? 'bg-warning-bg/30 border border-warning-border' : 'bg-kosha-surface-2 border border-kosha-border'}`}>
-          <p className="text-[10px] text-ink-3">Late (est)</p>
+          <p className="text-[10px] text-ink-3">Late</p>
           <p className={`text-[13px] font-semibold tabular-nums ${insights.lateEstimate > 0 ? 'text-warning-text' : 'text-ink'}`}>
             {insights.lateEstimate}
           </p>
@@ -147,24 +123,24 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
 
       {/* Progress bar */}
       <div className="h-2 bg-kosha-border rounded-pill overflow-hidden mb-1.5">
-        {insights.total > 0 && (
+        {insights.timedCount > 0 && (
           <div className="h-full flex">
             {insights.earlyCount > 0 && (
               <div
                 className="h-full bg-income-text"
-                style={{ width: `${Math.round((insights.earlyCount / insights.total) * 100)}%` }}
+                style={{ width: `${Math.round((insights.earlyCount / insights.timedCount) * 100)}%` }}
               />
             )}
             {insights.onTimeCount > 0 && (
               <div
                 className="h-full bg-brand"
-                style={{ width: `${Math.round((insights.onTimeCount / insights.total) * 100)}%` }}
+                style={{ width: `${Math.round((insights.onTimeCount / insights.timedCount) * 100)}%` }}
               />
             )}
             {insights.lateEstimate > 0 && (
               <div
                 className="h-full bg-warning-text"
-                style={{ width: `${Math.round((insights.lateEstimate / insights.total) * 100)}%` }}
+                style={{ width: `${Math.round((insights.lateEstimate / insights.timedCount) * 100)}%` }}
               />
             )}
           </div>

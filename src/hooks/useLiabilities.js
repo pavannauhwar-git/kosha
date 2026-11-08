@@ -19,7 +19,7 @@ export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth'
 export const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending', targetUserId]
 export const LIABILITY_PAID_QUERY_KEY = (targetUserId) => ['liabilities', 'paid', targetUserId]
 const LIABILITY_COLUMNS =
-  'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode'
+  'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode, paid_at'
 export const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id, payment_mode'
 
 function runInBackground(promise, scope) {
@@ -319,9 +319,10 @@ export function optimisticallyMarkLiabilityPaid(liability, targetUserId, { optim
     )
   }
 
+  const paidAt = liability.paid_at || todayStr()
   const paidRow = optimistic
-    ? { ...liability, paid: true, __optimistic: true }
-    : { ...liability, paid: true }
+    ? { ...liability, paid: true, paid_at: paidAt, __optimistic: true }
+    : { ...liability, paid: true, paid_at: paidAt }
   const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY(targetUserId))
   if (Array.isArray(paidData)) {
     const deduped = paidData.filter((row) => row?.id !== liability.id)
