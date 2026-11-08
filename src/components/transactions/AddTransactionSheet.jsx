@@ -20,7 +20,7 @@ import { archiveUserCategory, useUserCategories } from '../../hooks/useUserCateg
 import { useAppMutation } from '../../hooks/useAppMutation'
 import CreateCategorySheet from '../categories/CreateCategorySheet'
 import Sheet from '../ui/Sheet'
-import { useSplitwise, addSplitExpenseMutation, buildEqualSplits } from '../../hooks/useSplitwise'
+import { useSplitwise, addSplitExpenseMutation, buildEqualSplits, findSelfMember } from '../../hooks/useSplitwise'
 import { supabase } from '../../lib/supabase'
 import { validateAmount } from '../../lib/validateAmount.js'
 import FormField from '../ui/FormField'
@@ -741,13 +741,14 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       if (isSplitwise && type === 'expense' && splitGroupId) {
         const { data: members, error: memErr } = await supabase
           .from('split_group_members')
-          .select('id, is_self, linked_user_id')
+          .select('id, is_self, linked_user_id, user_id')
           .eq('group_id', splitGroupId)
+          .is('archived_at', null)
 
         if (memErr) throw memErr
 
         const { data: { user } } = await supabase.auth.getUser()
-        const selfMember = members.find(m => m.is_self || m.linked_user_id === user?.id)
+        const selfMember = findSelfMember(members, user?.id)
 
         if (!selfMember) throw new Error('You must be a member of the group to add an expense.')
 

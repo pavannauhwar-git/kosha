@@ -13,6 +13,7 @@ import {
   buildExactSplits,
   buildPercentSplits,
   buildShareSplits,
+  findSelfMember,
   consumeSplitGroupInviteMutation,
   createSplitGroupMutation,
   createSplitGroupInviteMutation,
@@ -444,7 +445,7 @@ export function useSplitwiseLogic() {
   const resolveMemberAvatar = (member) => memberAvatarUrl(member, memberProfilesByUserId)
 
   const selfMember = useMemo(
-    () => members.find((member) => member.linked_user_id === authUserId) || members.find((member) => member.is_self) || null,
+    () => findSelfMember(members, authUserId),
     [members, authUserId]
   )
 

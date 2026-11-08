@@ -821,6 +821,13 @@ export async function deleteSplitExpenseMutation(expenseId) {
   return data === true
 }
 
+export function findSelfMember(members, authUserId) {
+  const rows = Array.isArray(members) ? members : []
+  return rows.find((m) => authUserId && m.linked_user_id === authUserId)
+    || rows.find((m) => m.is_self && (!m.user_id || m.user_id === authUserId))
+    || null
+}
+
 export async function recordSplitSettlementMutation({ groupId, payerMemberId, payeeMemberId, amount, settledAt, note, id }) {
   if (getActiveWalletUserId() !== getAuthUserId()) {
     throw new Error('Shared wallets are view-only. You cannot record settlements here.')
