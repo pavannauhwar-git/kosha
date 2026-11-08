@@ -19,6 +19,7 @@ import {
   RuntimeRouteTracker,
   VersionHeartbeat,
   DashboardWarmPrefetch,
+  RecurringSync,
   EagerChunkPreloader,
   QueryErrorRecovery,
   ShellStatusBanners,
@@ -127,6 +128,7 @@ export default function App() {
             >
               <GlobalRealtimeSync />
               <DashboardWarmPrefetch />
+              <RecurringSync />
               <VersionHeartbeat />
               <AppContent />
             </PersistQueryClientProvider>

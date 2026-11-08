@@ -162,6 +162,11 @@ async function ensureRecurringTransactionsReady(userId) {
   ])
 }
 
+export function syncRecurringTransactions(userId) {
+  if (!userId) return Promise.resolve(false)
+  return getRecurringSyncPromise(userId)
+}
+
 function logQueryError(scope, error) {
   // AbortErrors are expected when React Query cancels in-flight requests on
   // component unmount or during React 18 Strict Mode double-invoke. React Query

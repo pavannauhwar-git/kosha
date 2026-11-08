@@ -8,7 +8,7 @@ import { getActiveWalletUserId, useActiveWallet } from '../../lib/walletStore'
 import { queryClient } from '../../lib/queryClient'
 import { supabase } from '../../lib/supabase'
 import { recordRuntimeRoute } from '../../lib/runtimeMonitor'
-import { parseMonthSummaryRows } from '../../hooks/useTransactions'
+import { parseMonthSummaryRows, syncRecurringTransactions } from '../../hooks/useTransactions'
 import { ROUTE_PRELOADERS } from './AppRoutes'
 
 export const DASHBOARD_RECENT_COLUMNS =
@@ -99,6 +99,40 @@ export function VersionHeartbeat() {
     }, HEARTBEAT_INTERVAL)
     return () => clearInterval(interval)
   }, [qc])
+  return null
+}
+
+export function RecurringSync() {
+  const { user } = useAuth()
+  const activeWalletUserId = useActiveWallet()
+
+  useEffect(() => {
+    const authUserId = user?.id
+    if (!authUserId || activeWalletUserId !== authUserId) return undefined
+
+    let midnightTimer = null
+    const run = () => { void syncRecurringTransactions(authUserId) }
+    const scheduleMidnight = () => {
+      const now = new Date()
+      const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5)
+      midnightTimer = setTimeout(() => {
+        run()
+        scheduleMidnight()
+      }, next.getTime() - now.getTime())
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') run()
+    }
+
+    run()
+    scheduleMidnight()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      clearTimeout(midnightTimer)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [user?.id, activeWalletUserId])
+
   return null
 }
 
