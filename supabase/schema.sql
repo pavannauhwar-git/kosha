@@ -5035,6 +5035,7 @@ GRANT ALL ON FUNCTION public.split_member_net_balance(p_member_id uuid) TO servi
 
 REVOKE ALL ON FUNCTION public.split_preview_group_invite(p_token text) FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.split_preview_group_invite(p_token text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.split_preview_group_invite(p_token text) TO anon;
 GRANT ALL ON FUNCTION public.split_preview_group_invite(p_token text) TO authenticated;
 GRANT ALL ON FUNCTION public.split_preview_group_invite(p_token text) TO service_role;
 

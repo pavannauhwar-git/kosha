@@ -594,7 +594,7 @@ export async function previewSplitGroupInviteMutation(inviteToken) {
   if (error) throw error
 
   const preview = Array.isArray(data) ? data[0] : data
-  if (!preview?.group_id) {
+  if (!preview?.group_name || (getAuthUserId() && !preview.group_id)) {
     throw new Error('Invite preview unavailable.')
   }
 
