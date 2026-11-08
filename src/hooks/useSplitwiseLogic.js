@@ -368,73 +368,6 @@ export function useSplitwiseLogic() {
     const safeName = String(activeGroup?.name || 'ledger').replace(/[^a-z0-9-_]+/gi, '_').slice(0, 60)
     downloadCsv(`kosha-trip-${safeName}.csv`, toCsv(headers, rows))
   }
-  useEffect(() => {
-    if (!members.length) {
-      setExpenseForm((prev) => (prev.paid_by_member_id ? { ...prev, paid_by_member_id: '' } : prev))
-      setSettlementForm((prev) => {
-        if (!prev.payer_member_id && !prev.payee_member_id) return prev
-        return { ...prev, payer_member_id: '', payee_member_id: '' }
-      })
-      setSplitInputs((prev) => (Object.keys(prev).length ? {} : prev))
-      return
-    }
-
-    const preferredPayer = members.find((member) => member.linked_user_id === authUserId)?.id || members[0]?.id || ''
-    const preferredPayee = members.find((member) => member.linked_user_id !== authUserId)?.id || members[0]?.id || ''
-
-    setExpenseForm((prev) => {
-      const nextPaidBy = prev.paid_by_member_id && members.some((member) => member.id === prev.paid_by_member_id)
-        ? prev.paid_by_member_id
-        : preferredPayer
-      if (nextPaidBy === prev.paid_by_member_id) return prev
-      return {
-        ...prev,
-        paid_by_member_id: nextPaidBy,
-      }
-    })
-
-    setSettlementForm((prev) => {
-      const nextPayer = prev.payer_member_id && members.some((member) => member.id === prev.payer_member_id)
-        ? prev.payer_member_id
-        : preferredPayer
-      const nextPayee = prev.payee_member_id && members.some((member) => member.id === prev.payee_member_id)
-        ? prev.payee_member_id
-        : preferredPayee
-      if (nextPayer === prev.payer_member_id && nextPayee === prev.payee_member_id) return prev
-      return {
-        ...prev,
-        payer_member_id: nextPayer,
-        payee_member_id: nextPayee,
-      }
-    })
-
-    setSplitInputs((prev) => {
-      const next = {}
-      const memberIds = new Set()
-      let changed = false
-
-      for (const member of members) {
-        memberIds.add(member.id)
-        if (prev[member.id]) {
-          next[member.id] = prev[member.id]
-        } else {
-          next[member.id] = defaultSplitInput()
-          changed = true
-        }
-      }
-
-      if (!changed) {
-        for (const memberId of Object.keys(prev)) {
-          if (!memberIds.has(memberId)) {
-            changed = true
-            break
-          }
-        }
-      }
-
-      return changed ? next : prev
-    })
-  }, [members, authUserId])
 
   const memberById = useMemo(() => {
     const map = new Map()
@@ -567,6 +500,75 @@ export function useSplitwiseLogic() {
       return memberRole !== 'left'
     })
   }, [members, activeGroup?.user_id, roleByUserId])
+
+  useEffect(() => {
+    if (!members.length) {
+      setExpenseForm((prev) => (prev.paid_by_member_id ? { ...prev, paid_by_member_id: '' } : prev))
+      setSettlementForm((prev) => {
+        if (!prev.payer_member_id && !prev.payee_member_id) return prev
+        return { ...prev, payer_member_id: '', payee_member_id: '' }
+      })
+      setSplitInputs((prev) => (Object.keys(prev).length ? {} : prev))
+      return
+    }
+
+    const preferredPayer = activeMembers.find((member) => member.linked_user_id === authUserId)?.id || activeMembers[0]?.id || ''
+    const preferredPayee = activeMembers.find((member) => member.linked_user_id !== authUserId)?.id || activeMembers[0]?.id || ''
+
+    setExpenseForm((prev) => {
+      const nextPaidBy = prev.paid_by_member_id && activeMembers.some((member) => member.id === prev.paid_by_member_id)
+        ? prev.paid_by_member_id
+        : preferredPayer
+      if (nextPaidBy === prev.paid_by_member_id) return prev
+      return {
+        ...prev,
+        paid_by_member_id: nextPaidBy,
+      }
+    })
+
+    setSettlementForm((prev) => {
+      const nextPayer = prev.payer_member_id && activeMembers.some((member) => member.id === prev.payer_member_id)
+        ? prev.payer_member_id
+        : preferredPayer
+      const nextPayee = prev.payee_member_id && activeMembers.some((member) => member.id === prev.payee_member_id)
+        ? prev.payee_member_id
+        : preferredPayee
+      if (nextPayer === prev.payer_member_id && nextPayee === prev.payee_member_id) return prev
+      return {
+        ...prev,
+        payer_member_id: nextPayer,
+        payee_member_id: nextPayee,
+      }
+    })
+
+    setSplitInputs((prev) => {
+      const next = {}
+      const memberIds = new Set()
+      const activeMemberIds = new Set(activeMembers.map((member) => member.id))
+      let changed = false
+
+      for (const member of members) {
+        memberIds.add(member.id)
+        if (prev[member.id]) {
+          next[member.id] = prev[member.id]
+        } else {
+          next[member.id] = activeMemberIds.has(member.id) ? defaultSplitInput() : { ...defaultSplitInput(), enabled: false }
+          changed = true
+        }
+      }
+
+      if (!changed) {
+        for (const memberId of Object.keys(prev)) {
+          if (!memberIds.has(memberId)) {
+            changed = true
+            break
+          }
+        }
+      }
+
+      return changed ? next : prev
+    })
+  }, [members, authUserId, activeMembers])
 
   const isGroupAdmin = !!activeGroup && !isViewingPartner && (activeGroup.my_role === 'admin' || activeGroup.user_id === authUserId)
   // If a group is archived, NO ONE can manage expenses/members unless they unarchive it first
@@ -820,7 +822,10 @@ export function useSplitwiseLogic() {
   }
 
   function buildSplitsPayload(method, amount) {
+    const allowedIds = new Set(activeMembers.map((member) => member.id))
+    for (const split of editExpense?.split_expense_splits || []) allowedIds.add(split.member_id)
     const selectedMemberIds = members
+      .filter((member) => allowedIds.has(member.id))
       .filter((member) => splitInputs[member.id]?.enabled)
       .map((member) => member.id)
 
