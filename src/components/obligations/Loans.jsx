@@ -24,6 +24,7 @@ import { useActiveWallet } from '../../lib/walletStore'
 import { useUndoableDelete } from '../../hooks/useUndoableDelete'
 import { downloadCsv, toCsv } from '../../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, todayStr } from '../../lib/utils'
+import { fromRupees, toRupees } from '../../lib/paise'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
 import { FINANCIAL_EVENT_ACTIONS } from '../../lib/auditLog'
 import PageHeaderPage from '../layout/PageHeaderPage'
@@ -604,16 +605,16 @@ export default function Loans({
     actionGuard.current = true
 
     if (!payLoan) { actionGuard.current = false; return }
-    const amt = +payAmount
-    const remaining = +payLoan.amount - +payLoan.amount_settled
-    if (remaining <= 0) { setPayErr('This loan is already fully settled.'); actionGuard.current = false; return }
-    if (!Number.isFinite(amt) || amt <= 0) { setPayErr('Enter a valid positive amount'); actionGuard.current = false; return }
-    if (amt > remaining) { setPayErr(`Max payment is ${fmt(remaining)}`); actionGuard.current = false; return }
+    const amtPaise = fromRupees(payAmount)
+    const remainingPaise = fromRupees(payLoan.amount) - fromRupees(payLoan.amount_settled)
+    if (remainingPaise <= 0n) { setPayErr('This loan is already fully settled.'); actionGuard.current = false; return }
+    if (amtPaise <= 0n) { setPayErr('Enter a valid positive amount'); actionGuard.current = false; return }
+    if (amtPaise > remainingPaise) { setPayErr(`Max payment is ${fmt(toRupees(remainingPaise))}`); actionGuard.current = false; return }
 
     setPayErr('')
 
     try {
-      await recordLoanPaymentAsync({ loan: payLoan, paymentAmount: amt, id: crypto.randomUUID() })
+      await recordLoanPaymentAsync({ loan: payLoan, paymentAmount: toRupees(amtPaise), id: crypto.randomUUID() })
       closePaySheet()
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not record payment.'))
@@ -625,11 +626,11 @@ export default function Loans({
   const handleSettleFull = useCallback(async (loan) => {
     if (actionGuard.current) return
     actionGuard.current = true
-    const remaining = +loan.amount - +loan.amount_settled
-    if (remaining <= 0) { actionGuard.current = false; return }
+    const remainingPaise = fromRupees(loan.amount) - fromRupees(loan.amount_settled)
+    if (remainingPaise <= 0n) { actionGuard.current = false; return }
 
     try {
-      await settleLoanAsync({ loan, paymentAmount: remaining, id: crypto.randomUUID() })
+      await settleLoanAsync({ loan, paymentAmount: toRupees(remainingPaise), id: crypto.randomUUID() })
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not settle loan.'))
     } finally {
@@ -681,6 +682,8 @@ export default function Loans({
       pushToast(toToastMessage(e, 'Could not export CSV.'))
     }
   }
+
+  const payRemaining = toRupees(fromRupees(payLoan?.amount) - fromRupees(payLoan?.amount_settled))
 
   return (
     <PageHeaderPage
@@ -1138,7 +1141,7 @@ export default function Loans({
                   <div className="flex items-center gap-3 text-[12px] text-ink-3">
                     <span>Total: {fmt(+(payLoan?.amount || 0))}</span>
                     <span>Paid: {fmt(+(payLoan?.amount_settled || 0))}</span>
-                    <span className="font-semibold text-ink">Remaining: {fmt(+(payLoan?.amount || 0) - +(payLoan?.amount_settled || 0))}</span>
+                    <span className="font-semibold text-ink">Remaining: {fmt(payRemaining)}</span>
                   </div>
                 </div>
 
@@ -1155,16 +1158,15 @@ export default function Loans({
                 </div>
 
                 <p className="text-[11px] text-ink-3 mb-2">
-                  Maximum you can record now: {fmt(+(payLoan?.amount || 0) - +(payLoan?.amount_settled || 0))}
+                  Maximum you can record now: {fmt(payRemaining)}
                 </p>
 
                 {/* Quick fill buttons */}
                 <div className="flex gap-2 mb-3 flex-wrap">
                   {(() => {
-                    const remaining = +(payLoan?.amount || 0) - +(payLoan?.amount_settled || 0)
                     const options = [
-                      { label: 'Full', value: remaining },
-                      remaining >= 2 ? { label: 'Half', value: Math.round(remaining / 2) } : null,
+                      { label: 'Full', value: payRemaining.toFixed(2) },
+                      payRemaining >= 2 ? { label: 'Half', value: (Math.round(payRemaining * 50) / 100).toFixed(2) } : null,
                     ].filter(Boolean)
                     return options.map(o => (
                       <button key={o.label}
@@ -1174,7 +1176,7 @@ export default function Loans({
                                    bg-kosha-surface text-ink-2 border-kosha-border
                                    active:scale-[0.97] transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform"
                       >
-                        {o.label} ({fmt(o.value)})
+                        {o.label} ({fmt(Number(o.value))})
                       </button>
                     ))
                   })()}

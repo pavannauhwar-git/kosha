@@ -465,7 +465,7 @@ export async function recordLoanPaymentMutation({ loan, paymentAmount, id }) {
   if (Array.isArray(prev)) {
     queryClient.setQueryData(key, prev.map((row) =>
       row?.id === loan.id
-        ? { ...row, amount_settled: Number(row.amount_settled) + paymentAmount, __optimistic: true }
+        ? { ...row, amount_settled: (Math.round(Number(row.amount_settled) * 100) + Math.round(Number(paymentAmount) * 100)) / 100, __optimistic: true }
         : row
     ))
   }
