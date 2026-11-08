@@ -21,7 +21,7 @@ export default function Splitwise() {
   const {
     activeGroupId, setActiveGroupId, groups, members, expenses, settlements, groupsLoading,
     schemaMissing, activeGroup, activeMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
-    showCreateGroup, setShowCreateGroup, showAddExpense, setShowAddExpense, showSettlement, showAddMember, setShowAddMember,
+    showCreateGroup, setShowCreateGroup, showAddExpense, showSettlement, showAddMember, setShowAddMember,
     newMemberName, setNewMemberName, saving, consumingInvite, invitePreview, editExpense, setEditExpense, editSettlement, setEditSettlement,
     showBannerPicker, setShowBannerPicker, savedBannerId, showEditGroup, setShowEditGroup, editGroupForm, setEditGroupForm,
     showArchived, setShowArchived, groupForm, setGroupForm, expenseForm, setExpenseForm, splitInputs, setSplitInputs, settlementForm, setSettlementForm,
