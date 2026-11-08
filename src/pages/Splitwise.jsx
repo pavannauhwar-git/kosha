@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import GroupList from '../components/splitwise/GroupList'
 import ActiveGroupView from '../components/splitwise/ActiveGroupView'
 import { round2 } from '../hooks/useSplitwise'
@@ -33,6 +34,11 @@ export default function Splitwise() {
     openEditSettlement, memberSpendingStats, roleByUserId, txnsListRef, txnsTopPadding, txnsBottomPadding,
     measureTxnElement, renderedTransactions, txnsStartIndex, transactions
   } = useSplitwiseLogic()
+
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  useEffect(() => {
+    setDeleteConfirmText('')
+  }, [showEditGroup])
 
   return (
     <PageHeaderPage title="Splitwise">
@@ -665,12 +671,21 @@ export default function Splitwise() {
                     </div>
                   </button>
 
+                  <p className="text-[12px] text-ink-3">
+                    This permanently deletes every expense and settlement in this trip, and the matching entries in every member's personal transactions. It can't be undone. To keep the history, use Archive Trip instead.
+                  </p>
+                  <Input
+                    label="Type the trip name to confirm"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  />
                   <Button
                     variant="danger"
                     size="xl"
                     fullWidth
                     onClick={() => { setShowEditGroup(false); void handleDeleteGroup(); }}
                     loading={saving === 'group-delete'}
+                    disabled={deleteConfirmText.trim() !== String(activeGroup?.name || '').trim()}
                   >
                     Delete Trip Forever
                   </Button>
