@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet, getActiveWalletUserId } from '../lib/walletStore'
+import { fetchAllPages } from '../lib/fetchAllPages'
 
 const REVIEW_COLUMNS = 'transaction_id, status, statement_line, updated_at'
 
@@ -35,20 +36,20 @@ export function useReconciliationReviews(options = {}) {
     enabled: enabled && !!targetUserId,
     queryFn: async ({ signal }) => {
       const userId = targetUserId
-      const { data: rows, error: queryError } = await supabase
-        .from('reconciliation_reviews')
-        .select(REVIEW_COLUMNS)
-        .eq('user_id', userId)
-        .abortSignal(signal)
-
-      if (queryError) {
+      try {
+        const rows = await fetchAllPages(() => supabase
+          .from('reconciliation_reviews')
+          .select(REVIEW_COLUMNS)
+          .eq('user_id', userId)
+          .order('transaction_id', { ascending: true })
+          .abortSignal(signal))
+        return { rows, unavailable: false }
+      } catch (queryError) {
         if (isMissingTableError(queryError)) {
           return { rows: [], unavailable: true }
         }
         throw queryError
       }
-
-      return { rows: rows || [], unavailable: false }
     },
   })
 
