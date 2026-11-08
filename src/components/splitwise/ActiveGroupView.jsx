@@ -23,7 +23,8 @@ const ActiveGroupView = memo(function ActiveGroupView({
   handleDeleteMember,
   memberSpendingStats,
   setShowAddMember,
-  setShowAddExpense,
+  _setShowAddExpense,
+  openAddExpense,
   canManageGroup,
   handleSettleUpClick,
   suggestedTransfers,
@@ -220,7 +221,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
           variant="primary"
           size="md"
           icon={<Receipt size={14} />}
-          onClick={() => setShowAddExpense(true)}
+          onClick={openAddExpense}
           disabled={!canManageGroup}
         >
           Add Expense

@@ -29,7 +29,7 @@ export default function Splitwise() {
     handleSettleUpClick, handleConfirmInviteJoin, handleDismissInvitePreview, handleDeleteGroup, handleSetMemberRole, handleDeleteMember,
     handleLeaveGroup, handleAddMember, handleAddExpense, handleDeleteExpense, handleRecordSettlement, handleDeleteSettlement,
     resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS, authUserId,
-    balances, suggestedTransfers, loading, applySuggestedTransfer, memberById, openEditExpense,
+    balances, suggestedTransfers, loading, applySuggestedTransfer, memberById, openAddExpense, openEditExpense,
     openEditSettlement, memberSpendingStats, roleByUserId, txnsListRef, txnsTopPadding, txnsBottomPadding,
     measureTxnElement, renderedTransactions, txnsStartIndex, transactions
   } = useSplitwiseLogic()
@@ -193,6 +193,7 @@ export default function Splitwise() {
             authUserId={authUserId}
             selfNet={selfNet}
             handleSettleUpClick={handleSettleUpClick}
+            openAddExpense={openAddExpense}
             setShowAddExpense={setShowAddExpense}
             totalExpenses={totalExpenses}
             expenses={expenses}

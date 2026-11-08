@@ -682,6 +682,7 @@ export function useSplitwiseLogic() {
 
   function handleSettleUpClick() {
     if (!canManageGroup) return
+    resetSettlementForm()
 
     // Find if the current user owes something in the suggested transfers
     const myDebt = suggestedTransfers.find(t => t.from?.linked_user_id === authUserId)
@@ -1035,6 +1036,35 @@ export function useSplitwiseLogic() {
     }
   }
 
+  function openAddExpense() {
+    if (!canManageGroup) return
+    const payer = activeMembers.find((member) => member.linked_user_id === authUserId)?.id || activeMembers[0]?.id || ''
+    setEditExpense(null)
+    setExpenseForm({
+      description: '',
+      amount: '',
+      expense_date: todayStr(),
+      paid_by_member_id: payer,
+      split_method: 'equal',
+      notes: '',
+      transaction_category: 'other',
+    })
+    const activeIds = new Set(activeMembers.map((member) => member.id))
+    const nextSplits = {}
+    members.forEach((member) => {
+      nextSplits[member.id] = { ...defaultSplitInput(), enabled: activeIds.has(member.id) }
+    })
+    setSplitInputs(nextSplits)
+    setShowAddExpense(true)
+  }
+
+  function resetSettlementForm() {
+    const payer = activeMembers.find((member) => member.linked_user_id === authUserId)?.id || activeMembers[0]?.id || ''
+    const payee = activeMembers.find((member) => member.linked_user_id !== authUserId)?.id || activeMembers[0]?.id || ''
+    setEditSettlement(null)
+    setSettlementForm({ payer_member_id: payer, payee_member_id: payee, amount: '', settled_at: todayStr(), note: '' })
+  }
+
   function openEditExpense(expense) {
     if (!canManageGroup) return
     setEditExpense(expense)
@@ -1258,7 +1288,7 @@ export function useSplitwiseLogic() {
     applySuggestedTransfer,
     resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS,
     activeWalletUserId, authUserId, pendingExpenseDeleteRef, pendingSettlementDeleteRef,
-    roleByUserId, memberById, openEditExpense, openEditSettlement, memberSpendingStats, txnsListRef,
+    roleByUserId, memberById, openAddExpense, openEditExpense, openEditSettlement, memberSpendingStats, txnsListRef,
     txnsTopPadding, txnsBottomPadding, measureTxnElement, renderedTransactions, txnsStartIndex,
     transactions
   }
