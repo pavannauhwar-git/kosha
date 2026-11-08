@@ -1677,6 +1677,8 @@ declare
   v_group split_groups%rowtype;
   v_account_name text;
   v_existing_member_id uuid;
+  v_member_name text;
+  v_suffix int;
 begin
   if v_uid is null then
     raise exception 'Authentication required';
@@ -1757,6 +1759,7 @@ begin
     select m.id into v_existing_member_id
     from split_group_members m
     where m.group_id = v_invite.group_id
+      and m.linked_user_id is null
       and lower(m.display_name) = lower(v_account_name)
     limit 1
     for update;
@@ -1768,29 +1771,22 @@ begin
           linked_user_id = v_uid
       where id = v_existing_member_id;
     else
-      begin
-        insert into split_group_members (
-          group_id,
-          display_name,
-          is_self,
-          linked_user_id,
-          user_id
-        ) values (
-          v_invite.group_id,
-          v_account_name,
-          false,
-          v_uid,
-          v_uid
-        );
-      exception
-        when unique_violation then
-          -- Fallback if RLS or concurrency hid the row during select
-          update split_group_members
-          set user_id = v_uid,
-              linked_user_id = v_uid
-          where group_id = v_invite.group_id
-            and lower(display_name) = lower(v_account_name);
-      end;
+      v_member_name := v_account_name;
+      v_suffix := 1;
+      loop
+        begin
+          insert into split_group_members (group_id, display_name, is_self, linked_user_id, user_id)
+          values (v_invite.group_id, v_member_name, false, v_uid, v_uid);
+          exit;
+        exception
+          when unique_violation then
+            v_suffix := v_suffix + 1;
+            if v_suffix > 20 then
+              raise exception 'Could not add you to this group: too many members named %', v_account_name;
+            end if;
+            v_member_name := v_account_name || ' (' || v_suffix || ')';
+        end;
+      end loop;
     end if;
   end if;
 
