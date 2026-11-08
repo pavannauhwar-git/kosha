@@ -483,8 +483,20 @@ export default function Bills({
     setFormErr('')
 
     if (editBill) {
+      const updates = {
+        description: billData.description,
+        amount: billData.amount,
+        due_date: billData.due_date,
+        is_recurring: billData.is_recurring,
+        recurrence: billData.recurrence,
+        payment_mode: billData.payment_mode,
+      }
+      const scheduleChanged = billData.due_date !== editBill.due_date
+        || billData.recurrence !== (editBill.recurrence || null)
+        || billData.is_recurring !== !!editBill.is_recurring
+      if (billData.is_recurring && scheduleChanged) updates.recurrence_anchor = billData.due_date
       try {
-        await updateLiability.mutateAsync({ id: editBill.id, updates: billData })
+        await updateLiability.mutateAsync({ id: editBill.id, updates })
         setTab('pending')
         closeAddBillSheet()
       } catch (e) {

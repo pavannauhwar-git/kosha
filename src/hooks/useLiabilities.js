@@ -201,10 +201,14 @@ export async function updateLiability(id, updates) {
     .update(updates)
     .eq('id', id)
     .eq('user_id', userId)
+    .eq('paid', false)
     .select(LIABILITY_COLUMNS)
     .single()
 
-  if (error) throw error
+  if (error) {
+    if (error.code === 'PGRST116') throw new Error('This bill is already paid, so it can no longer be edited.')
+    throw error
+  }
 
   runInBackground(
     logFinancialEvent({
