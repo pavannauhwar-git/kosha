@@ -1430,13 +1430,14 @@ begin
 end;
 $$;
 
--- Function: public.mark_liability_paid(uuid,uuid,date)
-CREATE OR REPLACE FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date DEFAULT NULL::date) RETURNS json
+-- Function: public.mark_liability_paid(uuid,uuid,date,uuid)
+CREATE OR REPLACE FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date DEFAULT NULL::date, p_transaction_id uuid DEFAULT NULL::uuid) RETURNS json
     LANGUAGE plpgsql
     SET search_path TO 'public'
     AS $$
 declare
   v_liability liabilities%rowtype;
+  v_txn transactions%rowtype;
   v_txn_id uuid;
   v_next_due date;
   v_txn_mode text;
@@ -1460,19 +1461,45 @@ begin
     );
   end if;
 
-  v_txn_mode := case v_liability.payment_mode
-    when 'card' then 'credit_card'
-    when 'bank' then 'net_banking'
-    when 'upi' then 'upi'
-    when 'cash' then 'cash'
-    else 'other'
-  end;
+  if p_transaction_id is not null then
+    select * into v_txn from transactions
+    where id = p_transaction_id and user_id = p_user_id
+    for update;
+    if not found then raise exception 'Transaction not found or access denied'; end if;
+    if v_txn.type <> 'expense' then
+      raise exception 'Only an expense can be linked to a bill';
+    end if;
+    if v_txn.linked_bill_id is not null and v_txn.linked_bill_id <> p_liability_id then
+      raise exception 'This transaction is already linked to another bill';
+    end if;
+    if v_txn.linked_split_expense_id is not null
+       or v_txn.linked_split_settlement_id is not null
+       or v_txn.linked_loan_id is not null then
+      raise exception 'This transaction is managed by Splitwise or a loan and cannot be linked to a bill';
+    end if;
 
-  insert into transactions (date, type, description, amount, category, is_repayment, payment_mode, user_id, linked_bill_id)
-  values (v_paid_on, 'expense', v_liability.description, v_liability.amount, 'bills', false, v_txn_mode, p_user_id, p_liability_id)
-  returning id into v_txn_id;
+    if v_txn.linked_bill_id is distinct from p_liability_id then
+      update transactions set linked_bill_id = p_liability_id where id = p_transaction_id;
+    end if;
+    v_txn_id := p_transaction_id;
+    v_paid_on := v_txn.date;
+  else
+    v_txn_mode := case v_liability.payment_mode
+      when 'card' then 'credit_card'
+      when 'bank' then 'net_banking'
+      when 'upi' then 'upi'
+      when 'cash' then 'cash'
+      else 'other'
+    end;
 
-  update liabilities set paid = true, linked_transaction_id = v_txn_id where id = p_liability_id;
+    insert into transactions (date, type, description, amount, category, is_repayment, payment_mode, user_id, linked_bill_id)
+    values (v_paid_on, 'expense', v_liability.description, v_liability.amount, 'bills', false, v_txn_mode, p_user_id, p_liability_id)
+    returning id into v_txn_id;
+  end if;
+
+  update liabilities
+  set paid = true, linked_transaction_id = v_txn_id, paid_at = v_paid_on
+  where id = p_liability_id;
 
   if v_liability.is_recurring and v_liability.recurrence is not null then
     v_step := case v_liability.recurrence when 'quarterly' then 3 when 'yearly' then 12 else 1 end;
@@ -3329,6 +3356,7 @@ CREATE TABLE IF NOT EXISTS public.liabilities (
     user_id uuid,
     payment_mode text DEFAULT 'upi'::text,
     recurrence_anchor date,
+    paid_at date,
     CONSTRAINT liabilities_amount_check CHECK ((amount > (0)::numeric)),
     CONSTRAINT liabilities_payment_mode_check CHECK ((payment_mode = ANY (ARRAY['upi'::text, 'cash'::text, 'bank'::text, 'card'::text]))),
     CONSTRAINT liabilities_recurrence_check CHECK ((recurrence = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'yearly'::text])))
@@ -3346,7 +3374,8 @@ ALTER TABLE public.liabilities
     ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL,
     ADD COLUMN IF NOT EXISTS user_id uuid,
     ADD COLUMN IF NOT EXISTS payment_mode text DEFAULT 'upi'::text,
-    ADD COLUMN IF NOT EXISTS recurrence_anchor date;
+    ADD COLUMN IF NOT EXISTS recurrence_anchor date,
+    ADD COLUMN IF NOT EXISTS paid_at date;
 
 DO $do$
 BEGIN
@@ -4606,6 +4635,8 @@ CREATE POLICY "Users can read own monthly net changes" ON public.monthly_net_cha
 
 DROP FUNCTION IF EXISTS public.create_loan(text, numeric, text, date, text, text, boolean, uuid, uuid);
 
+DROP FUNCTION IF EXISTS public.mark_liability_paid(uuid, uuid, date);
+
 DROP POLICY IF EXISTS "invites: update own" ON public.invites;
 
 DROP POLICY IF EXISTS "bug_reports: insert own" ON public.bug_reports;
@@ -5139,10 +5170,10 @@ REVOKE ALL ON FUNCTION public.maintain_monthly_net_change() FROM PUBLIC, anon, a
 REVOKE ALL ON FUNCTION public.maintain_monthly_net_change() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.maintain_monthly_net_change() TO service_role;
 
-REVOKE ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date) FROM PUBLIC, anon, authenticated, service_role;
-GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date) TO anon;
-GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date) TO authenticated;
-GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date) TO service_role;
+REVOKE ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date, p_transaction_id uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date, p_transaction_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date, p_transaction_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date, p_transaction_id uuid) TO service_role;
 
 REVOKE ALL ON FUNCTION public.on_split_group_delete_cleanup() FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.on_split_group_delete_cleanup() FROM PUBLIC;

@@ -7,7 +7,7 @@ import Select from '../ui/Select'
 import Switch from '../ui/Switch'
 import PixelDatePicker from '../ui/PixelDatePicker'
 import { saveTransactionMutation } from '../../hooks/useTransactions'
-import { useLiabilities } from '../../hooks/useLiabilities'
+import { useLiabilities, linkTransactionToBillMutation } from '../../hooks/useLiabilities'
 import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
 import {
   CATEGORIES,
@@ -552,7 +552,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   const saveTransaction = useAppMutation(saveTransactionMutation, { context: 'transactions:save' })
   const addSplitExpense = useAppMutation(addSplitExpenseMutation, { context: 'splitwise:addExpense' })
-  const isSaving = saveTransaction.isPending || addSplitExpense.isPending
+  const linkBill = useAppMutation(linkTransactionToBillMutation, { context: 'bills:linkTransaction' })
+  const isSaving = saveTransaction.isPending || addSplitExpense.isPending || linkBill.isPending
 
   const draftIdRef = useRef(null)
   if (!draftIdRef.current) draftIdRef.current = crypto.randomUUID()
@@ -768,11 +769,17 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           id: draftIdRef.current
         })
       } else {
-        await saveTransaction.mutateAsync({
+        const saved = await saveTransaction.mutateAsync({
           id: editTxn?.id,
           clientId: editTxn ? undefined : draftIdRef.current,
           payload,
         })
+        const newlyLinkedBill = linked_bill_id && linked_bill_id !== (editTxn?.linked_bill_id || null)
+          ? pendingBills.find((bill) => bill.id === linked_bill_id)
+          : null
+        if (newlyLinkedBill && saved?.id) {
+          await linkBill.mutateAsync({ bill: newlyLinkedBill, transactionId: saved.id, paidOn: date })
+        }
       }
 
       hapticSuccess()

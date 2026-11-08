@@ -163,14 +163,15 @@ export async function addLiability(payload) {
   return data
 }
 
-export async function markPaid(liability) {
+export async function markPaid(liability, { transactionId = null, paidOn = null } = {}) {
   const userId = getActiveWalletUserId()
 
   const { data: result, error: rpcError } = await supabase
     .rpc('mark_liability_paid', {
       p_liability_id: liability.id,
       p_user_id: userId,
-      p_paid_on: todayStr(),
+      p_paid_on: paidOn || todayStr(),
+      ...(transactionId ? { p_transaction_id: transactionId } : {}),
     })
 
   if (rpcError) throw rpcError
@@ -507,6 +508,25 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       return null
     }
   })
+}
+
+export async function linkTransactionToBillMutation({ bill, transactionId, paidOn }) {
+  const authUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+    return null
+  }
+  if (!bill?.id || !transactionId) throw new Error('Bill and transaction are required.')
+
+  const result = await markPaid(bill, { transactionId, paidOn })
+  optimisticallyMarkLiabilityPaid({ ...bill, paid_at: paidOn || null }, targetUserId, { optimistic: false })
+  refreshLiabilityAndTransactionCachesInBackground({
+    invalidateLiabilityFn: invalidateLiabilityCache,
+    invalidateTransactionFn: invalidateTransactionCache,
+    scope: 'liabilities post-link refresh',
+  })
+  return result
 }
 
 export async function updateLiabilityMutation(id, updates) {
