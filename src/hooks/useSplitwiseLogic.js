@@ -38,6 +38,7 @@ import {
 } from './useSplitwise'
 import { useAppMutation } from './useAppMutation'
 import { getCategoriesForType } from '../lib/categories'
+import { clearPendingInvite, readPendingInvite, PENDING_SPLIT_INVITE_KEY } from '../lib/invites'
 import { useUserCategories } from './useUserCategories'
 import { todayStr } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
@@ -579,11 +580,7 @@ export function useSplitwiseLogic() {
   const previewAttemptRef = useRef('')
 
   const clearPendingSplitInviteToken = useCallback(() => {
-    try {
-      sessionStorage.removeItem('pendingSplitGroupInviteToken')
-    } catch {
-      // no-op
-    }
+    clearPendingInvite(PENDING_SPLIT_INVITE_KEY)
 
     if (inviteTokenFromQuery) {
       const next = new URLSearchParams(searchParams)
@@ -595,7 +592,7 @@ export function useSplitwiseLogic() {
   useEffect(() => {
     let inviteToken = inviteTokenFromQuery
     if (!inviteToken) {
-      try { inviteToken = String(sessionStorage.getItem('pendingSplitGroupInviteToken') || '').trim() } catch { inviteToken = '' }
+      inviteToken = String(readPendingInvite(PENDING_SPLIT_INVITE_KEY) || '').trim()
     }
     if (!inviteToken || consumingInvite || invitePreview?.token === inviteToken) return
     if (previewAttemptRef.current === inviteToken) return

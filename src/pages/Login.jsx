@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
+import { resolvePostAuthPath as resolveInvitePath } from '../lib/invites'
 import AboutKoshaLink from '../components/brand/AboutKoshaLink'
 import KoshaLogo from '../components/brand/KoshaLogo'
 import { C } from '../lib/colors'
@@ -52,19 +53,17 @@ export default function Login() {
   const from = location.state?.from || '/'
 
   const resolvePostAuthPath = useCallback(() => {
-    try {
-      if (sessionStorage.getItem('pendingSplitGroupInviteToken')) return '/splitwise'
-    } catch {
-      // no-op
-    }
-    return from
+    return resolveInvitePath(from)
   }, [from])
 
   useEffect(() => {
     if (user && !isRecoveryFlow) navigate(resolvePostAuthPath(), { replace: true })
   }, [user, navigate, isRecoveryFlow, resolvePostAuthPath])
 
+  const prevRecoveryRef = useRef(isRecoveryFlow)
   useEffect(() => {
+    if (prevRecoveryRef.current === isRecoveryFlow) return
+    prevRecoveryRef.current = isRecoveryFlow
     setMode(isRecoveryFlow ? 'reset' : 'signin')
     setError(null)
     setNotice(null)

@@ -17,6 +17,7 @@ import Input from '../components/ui/Input'
 import { useAppToast } from '../context/ToastContext'
 import { toToastMessage } from '../lib/errorTaxonomy'
 import { todayStr } from '../lib/utils'
+import { resolvePostAuthPath } from '../lib/invites'
 
 
 const fadeUp = createFadeUp(8, 0.2)
@@ -315,18 +316,10 @@ export default function Onboarding() {
         await finishMutation.mutateAsync({ onboarded: true })
       }
 
-      const hasPendingSplitInvite = (() => {
-        try {
-          return !!sessionStorage.getItem('pendingSplitGroupInviteToken')
-        } catch {
-          return false
-        }
-      })()
-
       // Use setTimeout(0) to step past React's batching boundary so the
       // setProfile() call inside updateProfile has committed before AuthGuard
       // evaluates the new profile state.
-      setTimeout(() => navigate(hasPendingSplitInvite ? '/splitwise' : '/', { replace: true }), 0)
+      setTimeout(() => navigate(resolvePostAuthPath('/'), { replace: true }), 0)
     } catch (e) {
       console.error('[Kosha] Onboarding finish failed', e)
       setFinishError(e.message || 'Could not save profile. Please try again.')

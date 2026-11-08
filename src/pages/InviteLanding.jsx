@@ -6,7 +6,14 @@ import { useAuth } from '../context/AuthContext'
 import { captureMutationError } from '../lib/errorReporting'
 import { supabase } from '../lib/supabase'
 import { previewSplitGroupInviteMutation, consumeSplitGroupInviteMutation } from '../hooks/useSplitwise'
-import { consumeInviteToken } from '../lib/invites'
+import {
+  consumeInviteToken,
+  PENDING_WALLET_INVITE_KEY,
+  PENDING_SPLIT_INVITE_KEY,
+  savePendingInvite,
+  readPendingInvite,
+  clearPendingInvite,
+} from '../lib/invites'
 import KoshaLogo from '../components/brand/KoshaLogo'
 import Button from '../components/ui/Button'
 import { createFadeUp, createStagger } from '../lib/animations'
@@ -30,8 +37,8 @@ export default function InviteLanding() {
   //      want the secret embedded in any of those even briefly.
   // We use a ref so re-renders never re-read the (now-empty) URL params.
   const initialTokensRef = useRef({
-    token: params.token,
-    splitToken: params.splitToken,
+    token: params.token || (!params.splitToken && location.pathname === '/join' ? readPendingInvite(PENDING_WALLET_INVITE_KEY) : undefined),
+    splitToken: params.splitToken || (location.pathname === '/splitwise/join' ? readPendingInvite(PENDING_SPLIT_INVITE_KEY) : undefined),
   })
   const { token, splitToken } = initialTokensRef.current
 
@@ -55,11 +62,11 @@ export default function InviteLanding() {
     if (typeof window === 'undefined' || !activeToken) return
     const cleanPath = isSplitwise ? '/splitwise/join' : '/join'
     try {
-      // Persist the token to sessionStorage BEFORE clearing the URL so the
+      // Persist the token before clearing the URL so the
       // login/signup flow can still recover it after redirect (Login.jsx
       // and Onboarding.jsx both read these keys).
-      const storageKey = isSplitwise ? 'pendingSplitGroupInviteToken' : 'pendingInviteToken'
-      sessionStorage.setItem(storageKey, activeToken)
+      const storageKey = isSplitwise ? PENDING_SPLIT_INVITE_KEY : PENDING_WALLET_INVITE_KEY
+      savePendingInvite(storageKey, activeToken)
       window.history.replaceState(window.history.state, '', cleanPath)
     } catch {
       // sessionStorage / replaceState can throw in private mode or sandboxed
@@ -120,8 +127,8 @@ export default function InviteLanding() {
   async function handleAccept() {
     if (!user) {
       // Save token and go to login
-      const storageKey = isSplitwise ? 'pendingSplitGroupInviteToken' : 'pendingInviteToken'
-      sessionStorage.setItem(storageKey, activeToken)
+      const storageKey = isSplitwise ? PENDING_SPLIT_INVITE_KEY : PENDING_WALLET_INVITE_KEY
+      savePendingInvite(storageKey, activeToken)
       navigate('/login', { state: { from: location.pathname } })
       return
     }
@@ -130,7 +137,7 @@ export default function InviteLanding() {
     try {
       if (isSplitwise) {
         await consumeSplitGroupInviteMutation(activeToken)
-        try { sessionStorage.removeItem('pendingSplitGroupInviteToken') } catch { /* private mode */ }
+        clearPendingInvite(PENDING_SPLIT_INVITE_KEY)
         setStatus('success')
         navTimerRef.current = setTimeout(() => { navigate('/splitwise', { replace: true }) }, 1500)
       } else {
@@ -140,7 +147,7 @@ export default function InviteLanding() {
           userId: user.id
         })
         if (!result.consumed) throw new Error(result.reason || 'Could not join wallet.')
-        try { sessionStorage.removeItem('pendingInviteToken') } catch { /* private mode */ }
+        clearPendingInvite(PENDING_WALLET_INVITE_KEY)
         setStatus('success')
         navTimerRef.current = setTimeout(() => { navigate('/', { replace: true }) }, 1500)
       }
@@ -240,8 +247,8 @@ export default function InviteLanding() {
                           size="xl"
                           fullWidth
                           onClick={() => {
-                            const storageKey = isSplitwise ? 'pendingSplitGroupInviteToken' : 'pendingInviteToken'
-                            sessionStorage.setItem(storageKey, activeToken)
+                            const storageKey = isSplitwise ? PENDING_SPLIT_INVITE_KEY : PENDING_WALLET_INVITE_KEY
+                            savePendingInvite(storageKey, activeToken)
                             navigate('/login?mode=signup', { state: { from: location.pathname } })
                           }}
                         >
@@ -249,8 +256,8 @@ export default function InviteLanding() {
                         </Button>
                         <button
                           onClick={() => {
-                            const storageKey = isSplitwise ? 'pendingSplitGroupInviteToken' : 'pendingInviteToken'
-                            sessionStorage.setItem(storageKey, activeToken)
+                            const storageKey = isSplitwise ? PENDING_SPLIT_INVITE_KEY : PENDING_WALLET_INVITE_KEY
+                            savePendingInvite(storageKey, activeToken)
                             navigate('/login', { state: { from: location.pathname } })
                           }}
                           className="text-label font-semibold text-accent-text py-2"
@@ -262,7 +269,10 @@ export default function InviteLanding() {
                   </div>
 
                   <button
-                    onClick={() => navigate(user ? '/' : '/login')}
+                    onClick={() => {
+                      clearPendingInvite(isSplitwise ? PENDING_SPLIT_INVITE_KEY : PENDING_WALLET_INVITE_KEY)
+                      navigate(user ? '/' : '/login')
+                    }}
                     className="mt-4 text-label font-semibold text-ink-3 hover:text-ink transition-colors"
                   >
                     Maybe later
@@ -290,7 +300,10 @@ export default function InviteLanding() {
                 variant="secondary"
                 size="lg"
                 fullWidth
-                onClick={() => navigate('/')}
+                onClick={() => {
+                  clearPendingInvite(isSplitwise ? PENDING_SPLIT_INVITE_KEY : PENDING_WALLET_INVITE_KEY)
+                  navigate('/')
+                }}
               >
                 Back to dashboard
               </Button>

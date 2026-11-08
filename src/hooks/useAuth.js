@@ -7,6 +7,7 @@ import { setErrorReportingUser, clearErrorReportingUser } from '../lib/errorRepo
 import { initActiveWallet } from '../lib/walletStore.js'
 import { fetchLinkedUserIds, fetchLinkedProfiles } from '../lib/walletSync.js'
 import { purgeUserScopedKeys, purgeServiceWorkerCaches } from '../lib/safeStorage.js'
+import { clearAllPendingInvites } from '../lib/invites.js'
 import { _resetRecurringSyncState } from './useTransactions.js'
 
 const USER_PROFILE_QUERY_KEY = ['user-profile']
@@ -215,6 +216,7 @@ export function useAuthState() {
           // explicitly; both call sites must wipe state or the next user to
           // sign in on the same device sees the previous user's data.
           await purgeAllUserScopedState()
+          clearAllPendingInvites()
           clearAuthUser()
           clearErrorReportingUser()
           lastSeenUserId = null
@@ -328,6 +330,7 @@ export function useAuthState() {
       console.warn('[Kosha] server sign-out failed; clearing local state anyway', err)
     } finally {
       await purgeAllUserScopedState()
+      clearAllPendingInvites()
       clearAuthUser()
       clearErrorReportingUser()
       setUser(null)

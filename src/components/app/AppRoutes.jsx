@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AuthGuard, { RouteSkeleton } from '../navigation/AuthGuard'
 import { RouteErrorBoundary } from '../errors/RouteErrorBoundary'
 import { useAuth } from '../../context/AuthContext'
+import { resolvePostAuthPath } from '../../lib/invites'
 
 // ── Eager ────────────────────────────────────────────────────────────────
 import Login from '../../pages/Login'
@@ -77,7 +78,7 @@ function AuthCallback() {
   if (loading || (user && profileLoading && !profile)) return null
   if (!user) return <Navigate to="/login" replace />
   if (!profile || !profile.onboarded) return <Navigate to="/onboarding" replace />
-  return <Navigate to="/" replace />
+  return <Navigate to={resolvePostAuthPath('/')} replace />
 }
 
 export function AnimatedRoutes() {
@@ -113,7 +114,9 @@ export function AnimatedRoutes() {
     <div>
       <Routes location={location}>
         <Route path="/login" element={<Login />} />
+        <Route path="/join" element={<InviteLanding />} />
         <Route path="/join/:token" element={<InviteLanding />} />
+        <Route path="/splitwise/join" element={<InviteLanding />} />
         <Route path="/splitwise/join/:splitToken" element={<InviteLanding />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/not-found" element={<SafeRoute pathname="/not-found"><NotFound /></SafeRoute>} />

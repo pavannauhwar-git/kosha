@@ -7,15 +7,58 @@
 // could both pass the count and both insert.
 export const MAX_ACTIVE_INVITES = 1
 
+export const PENDING_WALLET_INVITE_KEY = 'pendingInviteToken'
+export const PENDING_SPLIT_INVITE_KEY = 'pendingSplitGroupInviteToken'
+const PENDING_INVITE_MAX_AGE_MS = 24 * 60 * 60 * 1000
+
+export function savePendingInvite(key, token) {
+  if (!token) return
+  const value = JSON.stringify({ token, savedAt: Date.now() })
+  try { sessionStorage.setItem(key, value) } catch { /* private mode */ }
+  try { localStorage.setItem(key, value) } catch { /* private mode */ }
+}
+
+export function readPendingInvite(key) {
+  let raw = null
+  try { raw = sessionStorage.getItem(key) } catch { raw = null }
+  if (!raw) {
+    try { raw = localStorage.getItem(key) } catch { raw = null }
+  }
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && parsed.token) {
+      if (Date.now() - Number(parsed.savedAt || 0) > PENDING_INVITE_MAX_AGE_MS) {
+        clearPendingInvite(key)
+        return null
+      }
+      return String(parsed.token)
+    }
+  } catch { /* legacy raw string */ }
+  return String(raw)
+}
+
+export function clearPendingInvite(key) {
+  try { sessionStorage.removeItem(key) } catch { /* private mode */ }
+  try { localStorage.removeItem(key) } catch { /* private mode */ }
+}
+
+export function clearAllPendingInvites() {
+  clearPendingInvite(PENDING_WALLET_INVITE_KEY)
+  clearPendingInvite(PENDING_SPLIT_INVITE_KEY)
+}
+
+export function resolvePostAuthPath(fallback = '/') {
+  if (readPendingInvite(PENDING_WALLET_INVITE_KEY)) return '/join'
+  if (readPendingInvite(PENDING_SPLIT_INVITE_KEY)) return '/splitwise'
+  return fallback
+}
+
 export function getInviteToken(locationSearch = '') {
   const queryToken = new URLSearchParams(locationSearch || '').get('invite')
   if (queryToken) return queryToken
 
-  if (typeof sessionStorage !== 'undefined') {
-    return sessionStorage.getItem('pendingInviteToken')
-  }
-
-  return null
+  return readPendingInvite(PENDING_WALLET_INVITE_KEY)
 }
 
 export async function createInvite({ supabaseClient, userId }) {
