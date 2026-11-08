@@ -27,6 +27,7 @@ import FormField from '../ui/FormField'
 
 
 import { todayStr } from '../../lib/utils'
+import { nextRecurringDate, nextRecurringDateAfter } from '../../lib/recurrence'
 import { hapticSuccess, hapticError, hapticSelection } from '../../lib/haptics'
 import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
 
@@ -191,35 +192,6 @@ function SwipeManagePickerRow({
   )
 }
 
-function nextRecurringDate(dateStr, recurrence) {
-  if (!dateStr || !recurrence) return null
-  const d = new Date(`${dateStr}T00:00:00`)
-  if (Number.isNaN(d.getTime())) return null
-
-  const origDay = d.getDate()
-  let next = new Date(d)
-
-  if (recurrence === 'monthly') {
-    next.setMonth(next.getMonth() + 1)
-  } else if (recurrence === 'quarterly') {
-    next.setMonth(next.getMonth() + 3)
-  } else if (recurrence === 'yearly') {
-    next.setFullYear(next.getFullYear() + 1)
-  }
-
-  // Anchor logic: if we were on the 31st and the next month only has 30 days,
-  // d.setMonth(d.getMonth() + 1) naturally rolls to the next month's 1st/2nd.
-  // We force it back to the last day of the intended month.
-  if (next.getDate() !== origDay) {
-    next.setDate(0)
-  }
-
-  const year = next.getFullYear()
-  const month = String(next.getMonth() + 1).padStart(2, '0')
-  const day = String(next.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
 // ── Form state via useReducer ─────────────────────────────────────────────
 function buildInitialState(editTxn, duplicateTxn, initialType) {
   if (editTxn) {
@@ -253,7 +225,7 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
       vehicle: duplicateTxn.investment_vehicle || 'Other',
       mode: duplicateTxn.payment_mode || (duplicateTxn.type === 'investment' ? 'net_banking' : 'upi'),
       date: todayStr(),
-      isRecurring: !!duplicateTxn.is_recurring,
+      isRecurring: false,
       recurrence: duplicateTxn.recurrence || 'monthly',
       notes: duplicateTxn.notes || '',
       showNotes: !!(duplicateTxn.notes),
@@ -735,6 +707,18 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       return
     }
 
+    let nextRunDate = null
+    if (isRecurring) {
+      const unchangedSchedule = !!editTxn
+        && !!editTxn.is_recurring
+        && editTxn.date === date
+        && editTxn.recurrence === recurrence
+        && !!editTxn.next_run_date
+      if (unchangedSchedule) nextRunDate = editTxn.next_run_date
+      else if (editTxn) nextRunDate = nextRecurringDateAfter(date, recurrence, todayStr())
+      else nextRunDate = nextRecurringDate(date, recurrence)
+    }
+
     const payload = {
       type,
       description: desc.trim(),
@@ -747,7 +731,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       is_repayment: editTxn ? !!editTxn.is_repayment : false,
       is_recurring: isRecurring,
       recurrence: isRecurring ? recurrence : null,
-      next_run_date: isRecurring ? nextRecurringDate(date, recurrence) : null,
+      next_run_date: nextRunDate,
       notes: notes.trim() || null,
       linked_bill_id: linked_bill_id,
       ...(type === 'investment' ? { investment_vehicle: vehicle } : {}),

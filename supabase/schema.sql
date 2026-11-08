@@ -607,6 +607,7 @@ declare
   v_k int;
   v_run_date date;
   v_inserted int := 0;
+  v_rowcount int;
   v_guard int;
   rec record;
 begin
@@ -639,8 +640,9 @@ begin
         v_run_date, rec.type, rec.description, rec.amount, rec.category, rec.investment_vehicle,
         rec.is_repayment, rec.payment_mode, rec.notes, false, null, null,
         rec.id, true, rec.user_id
-      );
-      v_inserted := v_inserted + 1;
+      ) on conflict (source_transaction_id, date) where source_transaction_id is not null do nothing;
+      get diagnostics v_rowcount = row_count;
+      v_inserted := v_inserted + v_rowcount;
       v_guard := v_guard + 1;
       v_k := v_k + v_step;
       v_run_date := (rec.date + make_interval(months => v_k))::date;
@@ -3790,6 +3792,8 @@ CREATE INDEX IF NOT EXISTS idx_txn_desc_trgm ON public.transactions USING gin (d
 CREATE INDEX IF NOT EXISTS idx_txn_recurring_due ON public.transactions USING btree (user_id, next_run_date) WHERE (is_recurring = true);
 
 CREATE INDEX IF NOT EXISTS idx_txn_source_txn ON public.transactions USING btree (source_transaction_id) WHERE (source_transaction_id IS NOT NULL);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_txn_source_date ON public.transactions USING btree (source_transaction_id, date) WHERE (source_transaction_id IS NOT NULL);
 
 CREATE INDEX IF NOT EXISTS idx_txn_type ON public.transactions USING btree (type);
 
