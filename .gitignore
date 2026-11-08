@@ -9,3 +9,7 @@ migrated_transactions.json
 .idea/
 coverage/
 *.tsbuildinfo
+*.xlsx
+*.csv
+.env.*
+!.env.local.example

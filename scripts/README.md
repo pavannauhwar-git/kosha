@@ -6,7 +6,6 @@ This folder contains project scripts used for development, verification, release
 
 - `load_env.mjs`: Shared env loader for Node-based scripts.
 - `generate_app_icons.py`: PWA icon generator (uses Pillow + Roboto-Black.ttf).
-- `migrate.py`: CSV-to-Supabase transaction import utility.
 - `ops/`: Operational and release checks.
 	- `check_deploy_readiness.mjs`
 	- `release_candidate_check.mjs`
