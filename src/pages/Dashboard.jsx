@@ -16,7 +16,7 @@ import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, daysUntil } from '../lib/utils'
-import { savingsRate, netCashflow } from '../lib/cashflow'
+import { savingsRate, netCashflow, billsDueByMonthEnd, sumAmounts } from '../lib/cashflow'
 import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
@@ -199,15 +199,21 @@ export default function Dashboard() {
   const currentMonthParam = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const weeklyDriftSignal = useMemo(() => computeWeeklySpendDrift(dailyExpenseTotals, now), [dailyExpenseTotals, now])
 
+  const billsDueTotal = useMemo(() => sumAmounts(billsDueByMonthEnd(bills, now)), [bills, now])
+  const safeHorizonLabel = useMemo(
+    () => `till ${new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`,
+    [now]
+  )
+
   // ── Spendable today ────────────────────────────────────────────────────
   const spendableToday = useMemo(() => {
     if (heroLoading) return { daily: 0, remaining: 0, pendingBillsTotal: 0 }
     const remaining = netCashflow({ income: earned, repayments, expense: spent, investment: invested })
-    const pendingBillsTotal = bills.reduce((sum, b) => sum + Number(b.amount || 0), 0)
+    const pendingBillsTotal = billsDueTotal
     const afterBills = Math.max(0, remaining - pendingBillsTotal)
     const daily = daysRemaining > 0 ? Math.round(afterBills / daysRemaining) : 0
     return { daily, remaining: afterBills, pendingBillsTotal }
-  }, [earned, repayments, spent, invested, bills, daysRemaining, heroLoading])
+  }, [earned, repayments, spent, invested, billsDueTotal, daysRemaining, heroLoading])
 
   // ── Budget burn rate ───────────────────────────────────────────────────
   const burnRate = useMemo(() => {
@@ -598,7 +604,8 @@ export default function Dashboard() {
               earned={earned}
               spent={spent}
               invested={invested}
-              bills={bills}
+              billsDueTotal={billsDueTotal}
+              safeHorizonLabel={safeHorizonLabel}
               heroMode={heroMode}
               onSetHeroMode={handleHeroModeChange}
             />

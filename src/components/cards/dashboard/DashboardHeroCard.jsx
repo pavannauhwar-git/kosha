@@ -27,7 +27,8 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
   earned,
   spent,
   invested,
-  bills,
+  billsDueTotal = 0,
+  safeHorizonLabel = '',
   heroMode,
   onSetHeroMode,
 }) {
@@ -71,8 +72,8 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     )
   }
 
-  const safeToSpend = runningBalance !== null && bills
-    ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0))
+  const safeToSpend = typeof runningBalance === 'number'
+    ? Math.max(0, runningBalance - (Number(billsDueTotal) || 0))
     : null
 
   const mainValueNumber = heroMode === 'balance' ? runningBalance : safeToSpend
@@ -100,7 +101,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       <div className="flex items-center justify-between mb-3.5 gap-2">
         <p className="text-[10px] font-semibold tracking-[0.18em] uppercase"
           style={{ color: C.heroAccent }}>
-          {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
+          {heroMode === 'balance' ? 'Total balance' : `Safe to spend ${safeHorizonLabel}`.trim()}
         </p>
 
         <div className="inline-flex items-center rounded-pill p-0.5"
