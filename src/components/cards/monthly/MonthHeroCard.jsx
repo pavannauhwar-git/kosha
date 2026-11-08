@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { fmt, splitFmtAmount, savingsRate } from '../../../lib/utils'
+import { fmt, splitFmtAmount } from '../../../lib/utils'
+import { savingsRate, formatSavingsRate } from '../../../lib/cashflow'
 import { C } from '../../../lib/colors'
 import { MONTH_NAMES } from '../../../lib/constants'
 
@@ -28,6 +29,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
   const balanceParts = splitFmtAmount(balance)
   const balanceClass = getHeroAmountClass(balanceParts.totalLength)
   const rate = savingsRate(earned, spent)
+  const rateLabel = formatSavingsRate(rate)
   const heroAccentStrong = C.heroAccent
   const heroBadgeStyle = {
     background: 'rgba(255,255,255,0.12)',
@@ -36,7 +38,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
   }
 
 
-  const barPct = Math.max(0, Math.min(100, rate)) / 100
+  const barPct = Math.max(0, Math.min(100, rate ?? 0)) / 100
 
   return (
     <motion.div
@@ -69,7 +71,13 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
         style={heroBadgeStyle}
       >
         <span className="text-[12px] font-semibold tracking-wide text-white">
-          <span style={{ color: heroAccentStrong }}>{rate}%</span> saved this month
+          {typeof rate === 'number' && rate < 0 ? (
+            <span style={{ color: heroAccentStrong }}>Overspent this month</span>
+          ) : (
+            <>
+              <span style={{ color: heroAccentStrong }}>{rateLabel}</span> saved this month
+            </>
+          )}
         </span>
       </div>
 
@@ -106,7 +114,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
       <div className="mt-3.5">
         <div className="flex justify-between mb-2">
           <span className="text-[11px] tracking-wide" style={{ color: C.heroLabel }}>Savings rate</span>
-          <span className="text-[12px] font-semibold" style={{ color: heroAccentStrong }}>{rate}%</span>
+          <span className="text-[12px] font-semibold" style={{ color: heroAccentStrong }}>{rateLabel}</span>
         </div>
         <div className="bar-dark-track">
           <div

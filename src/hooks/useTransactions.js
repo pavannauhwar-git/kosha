@@ -7,6 +7,7 @@ import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { todayStr } from '../lib/utils'
+import { averageSavingsRate } from '../lib/cashflow'
 import { createDebouncedTask } from '../lib/debouncedTask'
 
 export const inFlightDeletedTxnIds = new Set()
@@ -784,7 +785,7 @@ export async function fetchYearSummary(year, targetUserId) {
       totalRepayments: 0,
       totalExpense: 0,
       totalInvestment: 0,
-      avgSavings: 0,
+      avgSavings: null,
       byCategory: {},
       byVehicle: {},
       top5: [],
@@ -814,14 +815,7 @@ export async function fetchYearSummary(year, targetUserId) {
   const totalExpense    = Number(totals.expense    || 0)
   const totalInvestment = Number(totals.investment || 0)
 
-  const monthsWithIncome = monthly.filter(m => m.income > 0)
-  const avgSavings = monthsWithIncome.length
-    ? Math.round(
-        monthsWithIncome.reduce(
-          (sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0
-        ) / monthsWithIncome.length
-      )
-    : 0
+  const avgSavings = averageSavingsRate(monthly)
 
   return {
     monthly, totalIncome, totalRepayments, totalExpense, totalInvestment,
