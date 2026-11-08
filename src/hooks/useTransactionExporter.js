@@ -1,9 +1,10 @@
-import { useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { buildTransactionSearchOrClause } from './useTransactions'
 import { CATEGORIES, PAYMENT_MODES } from '../lib/categories'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { todayStr } from '../lib/utils'
+import { fetchAllPages } from '../lib/fetchAllPages'
 import { useAppToast } from '../context/ToastContext'
 
 export function useTransactionExporter({
@@ -14,34 +15,48 @@ export function useTransactionExporter({
   debouncedSearch,
   startDate,
   endDate,
+  linkedLoanId,
+  linkedBillId,
+  linkedSplitExpenseId,
+  linkedSplitSettlementId,
 }) {
   const { pushToast } = useAppToast()
+  const [isExporting, setIsExporting] = useState(false)
+  const exportingRef = useRef(false)
 
   const exportCSV = useCallback(async () => {
+    if (exportingRef.current) return
+    exportingRef.current = true
+    setIsExporting(true)
     try {
       const userId = activeWalletUserId
-      let q = supabase
-        .from('transactions')
-        .select('date, type, description, amount, category, investment_vehicle, payment_mode, notes, is_recurring, recurrence, is_auto_generated, source_transaction_id')
-        .eq('user_id', userId)
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
+      const buildQuery = () => {
+        let q = supabase
+          .from('transactions')
+          .select('date, type, description, amount, category, investment_vehicle, payment_mode, notes, is_recurring, recurrence, is_auto_generated, source_transaction_id')
+          .eq('user_id', userId)
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
 
-      if (typeFilter !== 'all') q = q.eq('type', typeFilter)
-      if (catFilter) q = q.eq('category', catFilter)
-      if (paymentModeFilter) q = q.eq('payment_mode', paymentModeFilter)
-      if (debouncedSearch) {
-        const clause = buildTransactionSearchOrClause(debouncedSearch)
-        if (clause) {
-          q = q.or(clause)
+        if (typeFilter !== 'all') q = q.eq('type', typeFilter)
+        if (catFilter) q = q.eq('category', catFilter)
+        if (paymentModeFilter) q = q.eq('payment_mode', paymentModeFilter)
+        if (linkedLoanId) q = q.eq('linked_loan_id', linkedLoanId)
+        if (linkedBillId) q = q.eq('linked_bill_id', linkedBillId)
+        if (linkedSplitExpenseId) q = q.eq('linked_split_expense_id', linkedSplitExpenseId)
+        if (linkedSplitSettlementId) q = q.eq('linked_split_settlement_id', linkedSplitSettlementId)
+        if (debouncedSearch) {
+          const clause = buildTransactionSearchOrClause(debouncedSearch)
+          if (clause) q = q.or(clause)
         }
+        if (startDate) q = q.gte('date', startDate)
+        if (endDate) q = q.lte('date', endDate)
+        return q
       }
-      if (startDate) q = q.gte('date', startDate)
-      if (endDate) q = q.lte('date', endDate)
 
-      const { data: exportRows, error } = await q
-      if (error) throw error
-      if (!exportRows?.length) {
+      const exportRows = await fetchAllPages(buildQuery)
+      if (!exportRows.length) {
         pushToast('No transactions to export for current filters.', { duration: 3000 })
         return
       }
@@ -89,8 +104,11 @@ export function useTransactionExporter({
       pushToast(`Downloaded ${fileName} (${exportRows.length} rows).`)
     } catch (e) {
       pushToast(e.message || 'Could not export transactions.', { duration: 4000 })
+    } finally {
+      exportingRef.current = false
+      setIsExporting(false)
     }
-  }, [typeFilter, catFilter, paymentModeFilter, debouncedSearch, startDate, endDate, pushToast, activeWalletUserId])
+  }, [typeFilter, catFilter, paymentModeFilter, debouncedSearch, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, pushToast, activeWalletUserId])
 
-  return { exportCSV }
+  return { exportCSV, isExporting }
 }

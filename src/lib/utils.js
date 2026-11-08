@@ -110,12 +110,6 @@ export function amountClass(type, isRepayment = false) {
   return 'amt-income'
 }
 
-// ── Savings rate ──────────────────────────────────────────────────────────
-export function savingsRate(earned, spent) {
-  if (!earned || earned <= 0) return 0
-  return Math.max(0, Math.min(100, Math.round(((earned - spent) / earned) * 100)))
-}
-
 // ── Bills ─────────────────────────────────────────────────────────────────
 export function daysUntil(dateStr) {
   const d = safeParseDate(dateStr)

@@ -22,6 +22,8 @@ import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
 import { CashflowWaterfallChart } from '../components/analytics/AnalyticsCharts'
 import Button from '../components/ui/Button'
 import { readLocalJson, writeLocalJson } from '../lib/safeStorage'
+import { netCashflow, projectMonthClose, sumAmounts, PROJECTION_MIN_DAYS } from '../lib/cashflow'
+import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
 
 
 const MIN_NAV_YEAR = 1900
@@ -75,6 +77,7 @@ export default function Monthly() {
   const { data, loading } = useMonthSummary(year, month)
   const { data: previousMonthData } = useMonthSummary(previousPeriod.year, previousPeriod.month)
   const { data: monthlyExpenseDailyTotals = {}, loading: monthlyExpenseTotalsLoading } = useMonthExpenseDailyTotals(year, month)
+  const { pending: monthPendingBills } = useLiabilitiesByMonth(year, month)
   const heavyReady = !loading
   const monthStartDate = `${year}-${String(month).padStart(2, '0')}-01`
   const monthEndDate = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
@@ -296,7 +299,7 @@ export default function Monthly() {
 
   const monthCloseSummary = useMemo(() => {
     const totalOutflow = spent + invested
-    const net = inflow - totalOutflow
+    const net = netCashflow({ income: earned, repayments, expense: spent, investment: invested })
 
     const periodEnd = new Date(year, month, 0)
     periodEnd.setHours(0, 0, 0, 0)
@@ -311,17 +314,21 @@ export default function Monthly() {
     const daysInMonth = new Date(year, month, 0).getDate()
     const daysElapsed = isCurrentMonth ? Math.max(1, Math.min(today.getDate(), daysInMonth)) : daysInMonth
 
-    // Income is usually lumpy (one-time salary), so linear projection is often misleading.
-    // Expenses are usually daily/frequent, so linear pacing is more accurate.
-    const projectedInflow = isCurrentMonth ? inflow : inflow
-    const projectedOutflow = isCurrentMonth
-      ? (daysElapsed > 0 ? (totalOutflow / daysElapsed) * daysInMonth : totalOutflow)
-      : totalOutflow
+    const projection = projectMonthClose({
+      income: earned,
+      repayments,
+      expense: spent,
+      investment: invested,
+      byCategory: data?.byCategory,
+      unpaidBillsDue: sumAmounts(monthPendingBills),
+      daysElapsed,
+      daysInMonth,
+    })
+    const netAtClose = isCurrentMonth ? projection.netAtClose : net
+    const isEarly = isCurrentMonth && projection.early
+    const health = isEarly ? 'early' : (netAtClose >= 0 ? 'healthy' : 'at-risk')
 
-    const netAtClose = isCurrentMonth ? (projectedInflow - projectedOutflow) : net
-    const health = netAtClose >= 0 ? 'healthy' : 'at-risk'
-
-    let statusLabel = health === 'healthy' ? 'On track' : 'Needs correction'
+    let statusLabel = health === 'at-risk' ? 'Needs correction' : 'On track'
     let timelineLabel = 'Days left'
     let timelineValue = String(daysLeft)
     let message = 'Outcome projection and runway.'
@@ -359,7 +366,10 @@ export default function Monthly() {
         confidenceHint = 'Trend is stable enough to use for corrective planning.'
       }
 
-      if (netAtClose >= 0) {
+      if (isEarly) {
+        statusLabel = 'Too early to tell'
+        message = `Kosha projects the month close from day ${PROJECTION_MIN_DAYS}. So far: ${fmt(Math.abs(net))} ${net >= 0 ? 'ahead' : 'behind'}.`
+      } else if (netAtClose >= 0) {
         statusLabel = 'On track'
         message = `At current pace you are likely to close with +${fmt(Math.abs(netAtClose))} cash flow. Keep monitoring outflow over the next ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`
       } else {
@@ -390,7 +400,7 @@ export default function Monthly() {
       confidenceLabel,
       confidenceHint,
     }
-  }, [inflow, spent, invested, year, month])
+  }, [inflow, earned, repayments, spent, invested, year, month, data?.byCategory, monthPendingBills])
 
   const monthOverMonthSignal = useMemo(() => {
     if (!previousMonthData) return null
@@ -399,7 +409,12 @@ export default function Monthly() {
     const previousInflow = Number(previousMonthData.earned || 0) + Number(previousMonthData.repayments || 0)
     const previousOutflow = Number(previousMonthData.expense || 0) + Number(previousMonthData.investment || 0)
     const currentNet = monthCloseSummary.net
-    const previousNet = previousInflow - previousOutflow
+    const previousNet = netCashflow({
+      income: previousMonthData.earned,
+      repayments: previousMonthData.repayments,
+      expense: previousMonthData.expense,
+      investment: previousMonthData.investment,
+    })
 
     return {
       previousLabel: `${MONTH_NAMES[previousPeriod.month - 1].slice(0, 3)} ${previousPeriod.year}`,
@@ -660,7 +675,7 @@ export default function Monthly() {
               subtitle="Outcome projection and runway"
               badge={{
                 label: monthCloseSummary.statusLabel,
-                className: monthCloseSummary.health === 'healthy' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text',
+                className: monthCloseSummary.health !== 'at-risk' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text',
               }}
             />
 

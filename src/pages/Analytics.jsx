@@ -2,6 +2,7 @@ import { CATEGORIES } from '../lib/categories'
 import { lazy, Suspense, useState, useMemo, useEffect } from 'react'
 import { useYearSummary, useYearDailyExpenseTotals } from '../hooks/useTransactions'
 import { fmt } from '../lib/utils'
+import { savingsRate as computeSavingsRate, formatSavingsRate, netCashflow } from '../lib/cashflow'
 import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
 import { MONTH_SHORT } from '../lib/constants'
@@ -72,7 +73,7 @@ export default function Analytics() {
   const surplusData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
       name: MONTH_SHORT[i],
-      Net: Math.round(toFiniteNumber(m?.income) - toFiniteNumber(m?.expense) - toFiniteNumber(m?.investment)),
+      Net: Math.round(netCashflow({ income: m?.income, repayments: m?.repayments, expense: m?.expense, investment: m?.investment })),
     })), [data?.monthly])
 
   const yoyYears = useMemo(() => {
@@ -95,12 +96,13 @@ export default function Analytics() {
   })), [allCatEntries, categoryLabelById])
 
   const annualSurplus = useMemo(
-    () => Math.round(
-      toFiniteNumber(data?.totalIncome)
-      - toFiniteNumber(data?.totalExpense)
-      - toFiniteNumber(data?.totalInvestment)
-    ),
-    [data?.totalIncome, data?.totalExpense, data?.totalInvestment]
+    () => Math.round(netCashflow({
+      income: data?.totalIncome,
+      repayments: data?.totalRepayments,
+      expense: data?.totalExpense,
+      investment: data?.totalInvestment,
+    })),
+    [data?.totalIncome, data?.totalRepayments, data?.totalExpense, data?.totalInvestment]
   )
 
   const vehicleData = useMemo(
@@ -116,20 +118,21 @@ export default function Analytics() {
     const expense = toFiniteNumber(data?.totalExpense)
     const investment = toFiniteNumber(data?.totalInvestment)
     const outflow = expense + investment
-    const net = income - outflow
-    const savingsRate = income > 0 ? Math.round((net / income) * 100) : 0
+    const net = netCashflow({ income, repayments: data?.totalRepayments, expense, investment })
+    const savingsRate = computeSavingsRate(income, expense)
 
     const monthlyRows = (data?.monthly || [])
       .map((row) => ({
         income: toFiniteNumber(row?.income),
+        repayments: toFiniteNumber(row?.repayments),
         expense: toFiniteNumber(row?.expense),
         investment: toFiniteNumber(row?.investment),
       }))
-      .filter((row) => row.income > 0 || row.expense > 0 || row.investment > 0)
+      .filter((row) => row.income > 0 || row.repayments > 0 || row.expense > 0 || row.investment > 0)
 
-    const positiveMonths = monthlyRows.filter((row) => (row.income - row.expense - row.investment) >= 0).length
+    const positiveMonths = monthlyRows.filter((row) => netCashflow(row) >= 0).length
     const activeMonths = monthlyRows.length
-    const band = scoreHealthBand(savingsRate, { healthy: 20, watch: 5 })
+    const band = scoreHealthBand(savingsRate ?? 0, { healthy: 20, watch: 5 })
 
     return {
       income,
@@ -140,21 +143,22 @@ export default function Analytics() {
       activeMonths,
       band,
     }
-  }, [data?.monthly, data?.totalIncome, data?.totalExpense, data?.totalInvestment])
+  }, [data?.monthly, data?.totalIncome, data?.totalRepayments, data?.totalExpense, data?.totalInvestment])
 
   const yearHealthSignal = useMemo(() => {
     const monthlyRows = (data?.monthly || [])
       .map((row) => ({
         income: toFiniteNumber(row?.income),
+        repayments: toFiniteNumber(row?.repayments),
         expense: toFiniteNumber(row?.expense),
         investment: toFiniteNumber(row?.investment),
       }))
-      .filter((row) => row.income > 0 || row.expense > 0 || row.investment > 0)
+      .filter((row) => row.income > 0 || row.repayments > 0 || row.expense > 0 || row.investment > 0)
 
     if (!monthlyRows.length) return null
 
-    const positiveMonths = monthlyRows.filter((row) => (row.income - row.expense - row.investment) >= 0).length
-    const avgSavings = Math.round(toFiniteNumber(data?.avgSavings))
+    const positiveMonths = monthlyRows.filter((row) => netCashflow(row) >= 0).length
+    const avgSavings = data?.avgSavings ?? null
 
     const outflowSeries = monthlyRows
       .map((row) => row.expense + row.investment)
@@ -171,7 +175,7 @@ export default function Analytics() {
     const outflowCv = outflowMean > 0 ? Math.sqrt(outflowVariance) / outflowMean : 0
 
     const positiveScore = (positiveMonths / monthlyRows.length) * 50
-    const savingsScore = clampNumber((avgSavings + 10) * 1.5, 0, 30)
+    const savingsScore = clampNumber(((avgSavings ?? 0) + 10) * 1.5, 0, 30)
     const stabilityScore = clampNumber(20 - (outflowCv * 20), 0, 20)
     const score = Math.round(positiveScore + savingsScore + stabilityScore)
     const band = scoreHealthBand(score, { healthy: 74, watch: 58 })
@@ -280,7 +284,7 @@ export default function Analytics() {
                   <div className="mini-panel px-3 py-2.5">
                     <p className="text-[10px] text-ink-3 uppercase tracking-wide">Savings</p>
                     <p className={`text-[13px] font-semibold tabular-nums mt-1 ${bandTextClass(yearSummaryCard.band)}`}>
-                      {yearSummaryCard.savingsRate}%
+                      {formatSavingsRate(yearSummaryCard.savingsRate)}
                     </p>
                   </div>
                 </div>
@@ -312,7 +316,7 @@ export default function Analytics() {
                         {yearHealthSignal.positiveMonths}/{yearHealthSignal.activeMonths} months closed positive
                       </p>
                       <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
-                        Avg savings rate {yearHealthSignal.avgSavings}%
+                        Avg savings rate {formatSavingsRate(yearHealthSignal.avgSavings)}
                       </p>
                     </div>
                   )}

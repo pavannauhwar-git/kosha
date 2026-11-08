@@ -793,7 +793,7 @@ export default function Transactions() {
     setShowAdd(true)
   }, [])
 
-  const { exportCSV } = useTransactionExporter({
+  const { exportCSV, isExporting } = useTransactionExporter({
     activeWalletUserId,
     typeFilter,
     catFilter,
@@ -801,6 +801,10 @@ export default function Transactions() {
     debouncedSearch,
     startDate,
     endDate,
+    linkedLoanId: linkedLoanFilter,
+    linkedBillId: linkedBillFilter,
+    linkedSplitExpenseId: linkedSplitExpenseFilter,
+    linkedSplitSettlementId: linkedSplitSettlementFilter,
   })
 
   const dismissGuideHint = useCallback(() => {
@@ -1214,6 +1218,8 @@ export default function Transactions() {
                     size="sm"
                     icon={<DownloadSimple size={14} />}
                     onClick={exportCSV}
+                    loading={isExporting}
+                    disabled={isExporting}
                   >
                     Export CSV
                   </Button>

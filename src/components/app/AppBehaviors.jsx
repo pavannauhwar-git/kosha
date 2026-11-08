@@ -8,7 +8,7 @@ import { getActiveWalletUserId, useActiveWallet } from '../../lib/walletStore'
 import { queryClient } from '../../lib/queryClient'
 import { supabase } from '../../lib/supabase'
 import { recordRuntimeRoute } from '../../lib/runtimeMonitor'
-import { parseMonthSummaryRows } from '../../hooks/useTransactions'
+import { fetchMonthSummary, syncRecurringTransactions, balanceAsOfKey, fetchBalanceAsOf } from '../../hooks/useTransactions'
 import { ROUTE_PRELOADERS } from './AppRoutes'
 
 export const DASHBOARD_RECENT_COLUMNS =
@@ -102,6 +102,40 @@ export function VersionHeartbeat() {
   return null
 }
 
+export function RecurringSync() {
+  const { user } = useAuth()
+  const activeWalletUserId = useActiveWallet()
+
+  useEffect(() => {
+    const authUserId = user?.id
+    if (!authUserId || activeWalletUserId !== authUserId) return undefined
+
+    let midnightTimer = null
+    const run = () => { void syncRecurringTransactions(authUserId) }
+    const scheduleMidnight = () => {
+      const now = new Date()
+      const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5)
+      midnightTimer = setTimeout(() => {
+        run()
+        scheduleMidnight()
+      }, next.getTime() - now.getTime())
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') run()
+    }
+
+    run()
+    scheduleMidnight()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      clearTimeout(midnightTimer)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [user?.id, activeWalletUserId])
+
+  return null
+}
+
 export function DashboardWarmPrefetch() {
   const { user } = useAuth()
 
@@ -151,28 +185,12 @@ export function DashboardWarmPrefetch() {
           }),
           queryClient.prefetchQuery({
             queryKey: ['month', year, month, targetUserId],
-            queryFn: async () => {
-              const { data: rows, error } = await supabase.rpc('get_month_summary', {
-                p_user_ids: [targetUserId],
-                p_year: year,
-                p_month: month,
-              })
-
-              if (error) throw error
-              return parseMonthSummaryRows(rows)
-            },
+            queryFn: () => fetchMonthSummary(year, month, targetUserId),
             staleTime: 30 * 1000,
           }),
           queryClient.prefetchQuery({
-            queryKey: ['balance', 2099, 12, targetUserId],
-            queryFn: async () => {
-              const { data: balance, error } = await supabase.rpc('get_running_balance', {
-                p_user_ids: [targetUserId],
-                p_end_date: '2099-12-31',
-              })
-              if (error) throw error
-              return Number(balance || 0)
-            },
+            queryKey: balanceAsOfKey(todayISO, targetUserId),
+            queryFn: () => fetchBalanceAsOf(todayISO, targetUserId),
             staleTime: 30 * 1000,
           }),
         ])

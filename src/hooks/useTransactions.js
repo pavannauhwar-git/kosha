@@ -7,6 +7,8 @@ import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { todayStr } from '../lib/utils'
+import { averageSavingsRate } from '../lib/cashflow'
+import { createDebouncedTask } from '../lib/debouncedTask'
 
 export const inFlightDeletedTxnIds = new Set()
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
@@ -161,6 +163,11 @@ async function ensureRecurringTransactionsReady(userId) {
   ])
 }
 
+export function syncRecurringTransactions(userId) {
+  if (!userId) return Promise.resolve(false)
+  return getRecurringSyncPromise(userId)
+}
+
 function logQueryError(scope, error) {
   // AbortErrors are expected when React Query cancels in-flight requests on
   // component unmount or during React 18 Strict Mode double-invoke. React Query
@@ -231,43 +238,28 @@ function applyTransactionSearchFilter(query, search) {
 }
 
 
-let invalidateTimeout = null
+const scheduleTransactionRefresh = createDebouncedTask(() => Promise.all([
+  queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['transactionSignalAggregates'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['yearDailyExpenseTotals'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['monthly_net_changes'], refetchType: 'active' }),
+]), 80)
 
 export async function invalidateCache() {
   // Suppress the realtime double-fetch that would otherwise fire
   // ~300-500ms later for the same mutation.
   suppress('transactions')
   await evictSwCacheEntries('/transactions')
-
-  if (invalidateTimeout) {
-    clearTimeout(invalidateTimeout)
-  }
-
-  return new Promise((resolve) => {
-    invalidateTimeout = setTimeout(async () => {
-      invalidateTimeout = null
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionSignalAggregates'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['yearDailyExpenseTotals'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['monthly_net_changes'], refetchType: 'active' }),
-        ])
-        resolve()
-      } catch {
-        resolve()
-      }
-    }, 80)
-  })
+  return scheduleTransactionRefresh()
 }
 
 // ── Debounce hook ─────────────────────────────────────────────────────────
@@ -324,10 +316,11 @@ function adjustAggregatesForTransaction(txn, targetUserId, sign) {
     queryClient.setQueryData(monthKey, nextMonth)
   }
 
-  // 2. Global Running Balance (typically fetched with year=2099, month=12)
-  const balanceKey = ['balance', 2099, 12, targetUserId]
+  // 2. Balance as of today — future-dated entries don't move it.
+  const todayISO = todayStr()
+  const balanceKey = balanceAsOfKey(todayISO, targetUserId)
   const currentBalance = queryClient.getQueryData(balanceKey)
-  if (typeof currentBalance === 'number') {
+  if (typeof currentBalance === 'number' && String(txn.date).slice(0, 10) <= todayISO) {
     let diff = 0
     if (txn.type === 'expense' || txn.type === 'investment') diff = -impact
     if (txn.type === 'income') diff = impact
@@ -744,6 +737,16 @@ export function useTodayExpenses(options = {}) {
   return { todaySpend: data ?? 0, loading: isLoading, error }
 }
 
+export async function fetchMonthSummary(year, month, targetUserId) {
+  const { data: rows, error } = await supabase.rpc('get_month_summary', {
+    p_user_ids: [targetUserId],
+    p_year: Number(year),
+    p_month: Number(month),
+  })
+  if (error) throw error
+  return parseMonthSummaryRows(rows)
+}
+
 export function useMonthSummary(year, month, options = {}) {
   const { enabled = true } = options
   const targetUserId = useActiveWallet()
@@ -753,16 +756,7 @@ export function useMonthSummary(year, month, options = {}) {
     refetchOnMount: true,
     queryFn: async () => {
       try {
-        const allUserIds = [targetUserId]
-
-        const { data: rows, error: qError } = await supabase.rpc('get_month_summary', {
-          p_user_ids: allUserIds,
-          p_year:     Number(year),
-          p_month:    Number(month),
-        })
-
-        if (qError) throw qError
-        return parseMonthSummaryRows(rows)
+        return await fetchMonthSummary(year, month, targetUserId)
       } catch (err) {
         logQueryError('month summary', err)
         throw err
@@ -774,6 +768,65 @@ export function useMonthSummary(year, month, options = {}) {
   return { data, loading: isLoading, fetching: isFetching, error }
 }
 
+export async function fetchYearSummary(year, targetUserId) {
+  const { data: result, error: rpcError } = await supabase
+    .rpc('get_year_summary', { p_user_ids: [targetUserId], p_year: Number(year) })
+    .maybeSingle()
+
+  if (rpcError) throw rpcError
+  if (!result) {
+    return {
+      monthly: Array.from({ length: 12 }, (_, i) => ({
+        month: i + 1,
+        income: 0,
+        repayments: 0,
+        expense: 0,
+        investment: 0,
+      })),
+      totalIncome: 0,
+      totalRepayments: 0,
+      totalExpense: 0,
+      totalInvestment: 0,
+      avgSavings: null,
+      byCategory: {},
+      byVehicle: {},
+      top5: [],
+      count: 0,
+    }
+  }
+
+  const monthlyRaw = result.monthly_data  || []
+  const totals     = result.totals         || {}
+  const byCategory = result.category_data  || {}
+  const byVehicle  = result.vehicle_data   || {}
+  const top5       = result.top5_expenses  || []
+
+  const monthMap = Object.fromEntries(monthlyRaw.map(m => [m.month_num, m]))
+  const monthly  = Array.from({ length: 12 }, (_, i) => {
+    const m = monthMap[i + 1] || {}
+    return {
+      month:      i + 1,
+      income:     Number(m.income     || 0),
+      repayments: Number(m.repayments || 0),
+      expense:    Number(m.expense    || 0),
+      investment: Number(m.investment || 0),
+    }
+  })
+
+  const totalIncome     = Number(totals.income     || 0)
+  const totalRepayments = Number(totals.repayments || 0)
+  const totalExpense    = Number(totals.expense    || 0)
+  const totalInvestment = Number(totals.investment || 0)
+
+  const avgSavings = averageSavingsRate(monthly)
+
+  return {
+    monthly, totalIncome, totalRepayments, totalExpense, totalInvestment,
+    avgSavings, byCategory, byVehicle, top5,
+    count: Number(totals.count || 0),
+  }
+}
+
 export function useYearSummary(year, options = {}) {
   const { enabled = true } = options
   const targetUserId = useActiveWallet()
@@ -783,69 +836,7 @@ export function useYearSummary(year, options = {}) {
     placeholderData: (previousData) => previousData,
     queryFn: async () => {
       try {
-        const allUserIds = [targetUserId]
-
-        const { data: result, error: rpcError } = await supabase
-          .rpc('get_year_summary', { p_user_ids: allUserIds, p_year: Number(year) })
-          .maybeSingle()
-
-        if (rpcError) throw rpcError
-        if (!result) {
-          return {
-            monthly: Array.from({ length: 12 }, (_, i) => ({
-              month: i + 1,
-              income: 0,
-              expense: 0,
-              investment: 0,
-            })),
-            totalIncome: 0,
-            totalRepayments: 0,
-            totalExpense: 0,
-            totalInvestment: 0,
-            avgSavings: 0,
-            byCategory: {},
-            byVehicle: {},
-            top5: [],
-            count: 0,
-          }
-        }
-
-        const monthlyRaw = result.monthly_data  || []
-        const totals     = result.totals         || {}
-        const byCategory = result.category_data  || {}
-        const byVehicle  = result.vehicle_data   || {}
-        const top5       = result.top5_expenses  || []
-
-        const monthMap = Object.fromEntries(monthlyRaw.map(m => [m.month_num, m]))
-        const monthly  = Array.from({ length: 12 }, (_, i) => {
-          const m = monthMap[i + 1] || {}
-          return {
-            month:      i + 1,
-            income:     Number(m.income     || 0),
-            expense:    Number(m.expense    || 0),
-            investment: Number(m.investment || 0),
-          }
-        })
-
-        const totalIncome     = Number(totals.income     || 0)
-        const totalRepayments = Number(totals.repayments || 0)
-        const totalExpense    = Number(totals.expense    || 0)
-        const totalInvestment = Number(totals.investment || 0)
-
-        const monthsWithIncome = monthly.filter(m => m.income > 0)
-        const avgSavings = monthsWithIncome.length
-          ? Math.round(
-              monthsWithIncome.reduce(
-                (sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0
-              ) / monthsWithIncome.length
-            )
-          : 0
-
-        return {
-          monthly, totalIncome, totalRepayments, totalExpense, totalInvestment,
-          avgSavings, byCategory, byVehicle, top5,
-          count: Number(totals.count || 0),
-        }
+        return await fetchYearSummary(year, targetUserId)
       } catch (err) {
         logQueryError('year summary', err)
         throw err
@@ -906,6 +897,36 @@ export function useTransactionYearBounds(options = {}) {
     loading: isLoading,
     error,
   }
+}
+
+export const balanceAsOfKey = (dateISO, targetUserId) => ['balance', 'asOf', dateISO, targetUserId]
+
+export async function fetchBalanceAsOf(dateISO, targetUserId) {
+  const { data: balance, error } = await supabase.rpc('get_running_balance', {
+    p_user_ids: [targetUserId],
+    p_end_date: dateISO,
+  })
+  if (error) throw error
+  return Number(balance || 0)
+}
+
+export function useBalanceAsOf(dateISO) {
+  const targetUserId = useActiveWallet()
+  const { data, isLoading, isFetching, error } = useQuery({
+    queryKey: balanceAsOfKey(dateISO, targetUserId),
+    enabled: !!targetUserId && !!dateISO,
+    refetchOnMount: true,
+    queryFn: async () => {
+      try {
+        return await fetchBalanceAsOf(dateISO, targetUserId)
+      } catch (err) {
+        logQueryError('balance as of date', err)
+        throw err
+      }
+    },
+    placeholderData: (prev, query) => (query?.queryKey?.[3] === targetUserId ? prev : undefined),
+  })
+  return { balance: data, loading: isLoading, fetching: isFetching, error }
 }
 
 export function useRunningBalance(year, month) {

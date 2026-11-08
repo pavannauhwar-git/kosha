@@ -8,11 +8,9 @@ import { queryClient } from '../../lib/queryClient'
 import { supabase } from '../../lib/supabase'
 import { hapticTap } from '../../lib/haptics'
 import { ROUTE_PRELOADERS } from './AppRoutes'
-import { TRANSACTION_LIST_COLUMNS, TRANSACTION_INSIGHTS_COLUMNS, parseMonthSummaryRows } from '../../hooks/useTransactions'
-import { MONTH_LIABILITY_COLUMNS } from '../../hooks/useLiabilities'
-
-const LIABILITY_PREFETCH_COLUMNS =
-  'id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id'
+import { TRANSACTION_LIST_COLUMNS, TRANSACTION_INSIGHTS_COLUMNS, fetchMonthSummary, fetchYearSummary } from '../../hooks/useTransactions'
+import { LIABILITY_PENDING_QUERY_KEY, LIABILITY_MONTH_QUERY_KEY, fetchLiabilitiesByPaid, fetchLiabilitiesForMonth } from '../../hooks/useLiabilities'
+import { LOAN_ACTIVE_GIVEN_KEY, fetchLoans } from '../../hooks/useLoans'
 
 export const NAV = [
   { path: '/', label: 'Home', Icon: House, match: ['/'] },
@@ -115,37 +113,15 @@ export function useRouteIntentPrefetch() {
     }
 
     if (path === '/monthly') {
-      const monthStart = `${year}-${String(month).padStart(2, '0')}-01`
-      const monthEnd = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
-
       void Promise.all([
         queryClient.prefetchQuery({
           queryKey: ['month', year, month, activeUserId],
-          queryFn: async () => {
-            const { data: rows, error } = await supabase.rpc('get_month_summary', {
-              p_user_ids: [activeUserId],
-              p_year: year,
-              p_month: month,
-            })
-            if (error) throw error
-            return parseMonthSummaryRows(rows)
-          },
+          queryFn: () => fetchMonthSummary(year, month, activeUserId),
           staleTime: 30 * 1000,
         }),
         queryClient.prefetchQuery({
-          queryKey: ['liabilitiesMonth', year, month, activeUserId],
-          queryFn: async () => {
-            const { data, error } = await supabase
-              .from('liabilities')
-              .select(MONTH_LIABILITY_COLUMNS)
-              .eq('user_id', activeUserId)
-              .gte('due_date', monthStart)
-              .lte('due_date', monthEnd)
-              .order('due_date', { ascending: true })
-
-            if (error) throw error
-            return data || []
-          },
+          queryKey: LIABILITY_MONTH_QUERY_KEY(year, month, activeUserId),
+          queryFn: ({ signal }) => fetchLiabilitiesForMonth(year, month, activeUserId, signal),
           staleTime: 30 * 1000,
         }),
       ]).catch(() => { })
@@ -155,75 +131,7 @@ export function useRouteIntentPrefetch() {
     if (path === '/analytics') {
       void queryClient.prefetchQuery({
         queryKey: ['year', year, activeUserId],
-        queryFn: async () => {
-          const { data: result, error } = await supabase
-            .rpc('get_year_summary', { p_user_ids: [activeUserId], p_year: Number(year) })
-            .maybeSingle()
-          if (error) throw error
-          if (!result) {
-            return {
-              monthly: Array.from({ length: 12 }, (_, i) => ({
-                month: i + 1,
-                income: 0,
-                expense: 0,
-                investment: 0,
-              })),
-              totalIncome: 0,
-              totalRepayments: 0,
-              totalExpense: 0,
-              totalInvestment: 0,
-              avgSavings: 0,
-              byCategory: {},
-              byVehicle: {},
-              top5: [],
-              count: 0,
-            }
-          }
-
-          const monthlyRaw = result.monthly_data || []
-          const totals = result.totals || {}
-          const byCategory = result.category_data || {}
-          const byVehicle = result.vehicle_data || {}
-          const top5 = result.top5_expenses || []
-
-          const monthMap = Object.fromEntries((monthlyRaw || []).map(m => [m.month_num, m]))
-          const monthly = Array.from({ length: 12 }, (_, i) => {
-            const m = monthMap[i + 1] || {}
-            return {
-              month: i + 1,
-              income: Number(m.income || 0),
-              expense: Number(m.expense || 0),
-              investment: Number(m.investment || 0),
-            }
-          })
-
-          const totalIncome = Number(totals.income || 0)
-          const totalRepayments = Number(totals.repayments || 0)
-          const totalExpense = Number(totals.expense || 0)
-          const totalInvestment = Number(totals.investment || 0)
-
-          const monthsWithIncome = monthly.filter(m => m.income > 0)
-          const avgSavings = monthsWithIncome.length
-            ? Math.round(
-              monthsWithIncome.reduce(
-                (sum, m) => sum + ((m.income - m.expense) / m.income) * 100, 0
-              ) / monthsWithIncome.length
-            )
-            : 0
-
-          return {
-            monthly,
-            totalIncome,
-            totalRepayments,
-            totalExpense,
-            totalInvestment,
-            avgSavings,
-            byCategory,
-            byVehicle,
-            top5,
-            count: Number(totals.count || 0),
-          }
-        },
+        queryFn: () => fetchYearSummary(year, activeUserId),
         staleTime: 30 * 1000,
       }).catch(() => { })
       return
@@ -232,32 +140,13 @@ export function useRouteIntentPrefetch() {
     if (path === '/obligations' || path === '/bills' || path === '/loans') {
       void Promise.all([
         queryClient.prefetchQuery({
-          queryKey: ['liabilities', 'pending', activeUserId],
-          queryFn: async () => {
-            const { data, error } = await supabase
-              .from('liabilities')
-              .select(LIABILITY_PREFETCH_COLUMNS)
-              .eq('user_id', activeUserId)
-              .eq('paid', false)
-              .order('due_date', { ascending: true })
-            if (error) throw error
-            return data || []
-          },
+          queryKey: LIABILITY_PENDING_QUERY_KEY(activeUserId),
+          queryFn: ({ signal }) => fetchLiabilitiesByPaid(false, activeUserId, signal),
           staleTime: 30 * 1000,
         }),
         queryClient.prefetchQuery({
-          queryKey: ['loans', 'active', 'given', activeUserId],
-          queryFn: async () => {
-            const { data, error } = await supabase
-              .from('loans')
-              .select('id, direction, counterparty, amount, amount_settled, interest_rate, loan_date, due_date, note, settled, created_at')
-              .eq('user_id', activeUserId)
-              .eq('settled', false)
-              .eq('direction', 'given')
-              .order('created_at', { ascending: false })
-            if (error) throw error
-            return data || []
-          },
+          queryKey: LOAN_ACTIVE_GIVEN_KEY(activeUserId),
+          queryFn: ({ signal }) => fetchLoans('given', false, activeUserId, signal),
           staleTime: 30 * 1000,
         }),
       ]).catch(() => { })

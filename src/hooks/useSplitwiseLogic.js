@@ -13,6 +13,7 @@ import {
   buildExactSplits,
   buildPercentSplits,
   buildShareSplits,
+  findSelfMember,
   consumeSplitGroupInviteMutation,
   createSplitGroupMutation,
   createSplitGroupInviteMutation,
@@ -32,11 +33,13 @@ import {
   leaveSplitGroupMutation,
   toggleArchiveSplitGroupMutation,
   updateSplitExpenseMutation,
+  updateSplitSettlementMutation,
   updateSplitGroupMutation,
   updateSplitGroupBannerMutation,
   setSplitGroupAccessRoleMutation,
 } from './useSplitwise'
 import { useAppMutation } from './useAppMutation'
+import { useUndoableDelete } from './useUndoableDelete'
 import { getCategoriesForType } from '../lib/categories'
 import { clearPendingInvite, readPendingInvite, PENDING_SPLIT_INVITE_KEY } from '../lib/invites'
 import { useUserCategories } from './useUserCategories'
@@ -154,6 +157,7 @@ export function useSplitwiseLogic() {
 
   const { mutateAsync: consumeGroupInviteAsync } = useAppMutation(consumeSplitGroupInviteMutation, { context: 'splitwise:consumeInvite' })
   const { mutateAsync: updateExpenseAsync } = useAppMutation(updateSplitExpenseMutation, { context: 'splitwise:updateExpenseAsync' })
+  const { mutateAsync: updateSettlementAsync } = useAppMutation(updateSplitSettlementMutation, { context: 'splitwise:updateSettlementAsync' })
   const { mutateAsync: updateGroupAsync } = useAppMutation(updateSplitGroupMutation, { context: 'splitwise:updateGroupAsync' })
   const { mutateAsync: updateGroupBannerAsync } = useAppMutation(
     ({ groupId, bannerId }) => updateSplitGroupBannerMutation(groupId, bannerId), 
@@ -245,9 +249,18 @@ export function useSplitwiseLogic() {
   })
   const [splitInputs, setSplitInputs] = useState({})
   const actionGuard = useRef(false)
-  // Undo-delete state: holds the pending deletion during the 7s undo window.
-  const pendingExpenseDeleteRef = useRef(null)   // { expenseId, expense, groupId, timerId }
-  const pendingSettlementDeleteRef = useRef(null) // { settlementId, settlement, groupId, timerId }
+  const expenseUndo = useUndoableDelete({
+    commit: (id) => deleteExpenseAsync(id),
+    restore: ({ groupId, expense }) => optimisticallyInsertSplitExpense(groupId, expense),
+    onError: (err) => pushToast(toToastMessage(err, 'Could not delete expense.')),
+    windowMs: 7000,
+  })
+  const settlementUndo = useUndoableDelete({
+    commit: (id) => deleteSettlementAsync(id),
+    restore: ({ groupId, settlement }) => optimisticallyInsertSplitSettlement(groupId, settlement),
+    onError: (err) => pushToast(toToastMessage(err, 'Could not delete settlement.')),
+    windowMs: 7000,
+  })
 
 
   const [settlementForm, setSettlementForm] = useState({
@@ -258,21 +271,6 @@ export function useSplitwiseLogic() {
     note: '',
   })
 
-  // On unmount: commit any deletion that was still pending in the Undo window.
-  useEffect(() => {
-    return () => {
-      const pe = pendingExpenseDeleteRef.current
-      if (pe?.timerId) {
-        clearTimeout(pe.timerId)
-        void deleteSplitExpenseMutation(pe.expenseId)
-      }
-      const ps = pendingSettlementDeleteRef.current
-      if (ps?.timerId) {
-        clearTimeout(ps.timerId)
-        void deleteSplitSettlementMutation(ps.settlementId)
-      }
-    }
-  }, [])
 
   useEffect(() => {
     if (!groups.length) {
@@ -442,7 +440,7 @@ export function useSplitwiseLogic() {
   const resolveMemberAvatar = (member) => memberAvatarUrl(member, memberProfilesByUserId)
 
   const selfMember = useMemo(
-    () => members.find((member) => member.linked_user_id === authUserId) || members.find((member) => member.is_self) || null,
+    () => findSelfMember(members, authUserId),
     [members, authUserId]
   )
 
@@ -757,11 +755,12 @@ export function useSplitwiseLogic() {
   async function handleDeleteMember(memberId) {
     if (!isGroupAdmin || activeGroup?.is_archived || saving) return
 
-    const balance = balances.find(b => b.member_id === memberId)
-    if (balance && balance.net_balance !== 0) {
-      pushToast(`This member still has an unsettled balance. Settle up first.`)
+    const balance = balances.find((b) => b?.member?.id === memberId)
+    if (balance && Math.abs(round2(balance.net || 0)) >= 0.01) {
+      pushToast('This member still has an unsettled balance. Settle up first.')
       return
     }
+    if (!window.confirm('Remove this member from the group? This cannot be undone.')) return
 
     setSaving(`delete-${memberId}`)
     try {
@@ -1002,20 +1001,28 @@ export function useSplitwiseLogic() {
     if (actionGuard.current) return
     actionGuard.current = true
 
-    setSaving(editSettlement ? 'settlement-edit' : 'settlement')
+    const isEdit = !!editSettlement
+    setSaving(isEdit ? 'settlement-edit' : 'settlement')
     try {
-      await recordSettlementAsync({
-        groupId: activeGroupId,
-        payerMemberId: settlementForm.payer_member_id,
-        payeeMemberId: settlementForm.payee_member_id,
-        amount,
-        settledAt: settlementForm.settled_at,
-        note: settlementForm.note,
-        id: crypto.randomUUID(),
-      })
-
-      if (editSettlement) {
-        await deleteSettlementAsync(editSettlement.id)
+      if (isEdit) {
+        await updateSettlementAsync({
+          settlementId: editSettlement.id,
+          payerMemberId: settlementForm.payer_member_id,
+          payeeMemberId: settlementForm.payee_member_id,
+          amount,
+          settledAt: settlementForm.settled_at,
+          note: settlementForm.note,
+        })
+      } else {
+        await recordSettlementAsync({
+          groupId: activeGroupId,
+          payerMemberId: settlementForm.payer_member_id,
+          payeeMemberId: settlementForm.payee_member_id,
+          amount,
+          settledAt: settlementForm.settled_at,
+          note: settlementForm.note,
+          id: crypto.randomUUID(),
+        })
       }
       setSettlementForm((prev) => ({
         ...prev,
@@ -1024,9 +1031,9 @@ export function useSplitwiseLogic() {
       }))
       setEditSettlement(null)
       setShowSettlement(false)
-      pushToast('Settlement recorded.')
+      pushToast(isEdit ? 'Settlement updated.' : 'Settlement recorded.')
     } catch (settlementError) {
-      pushToast(toToastMessage(settlementError, 'Could not record settlement.'))
+      pushToast(toToastMessage(settlementError, isEdit ? 'Could not update settlement.' : 'Could not record settlement.'))
     } finally {
       setSaving('')
       actionGuard.current = false
@@ -1072,7 +1079,7 @@ export function useSplitwiseLogic() {
       paid_by_member_id: expense.paid_by_member_id || '',
       split_method: expense.split_method || 'equal',
       notes: expense.notes || '',
-      transaction_category: expense.transactions?.category || 'other',
+      transaction_category: expense.transactions?.category || '',
     })
 
     const nextSplits = {}
@@ -1113,49 +1120,14 @@ export function useSplitwiseLogic() {
     const expense = expenses.find(e => e.id === expenseId)
     if (!expense) return
 
-    // If a different expense is already pending deletion, commit it immediately
-    // so we don't silently drop an action the user hasn't undone.
-    const prevPending = pendingExpenseDeleteRef.current
-    if (prevPending?.timerId && prevPending.expenseId !== expenseId) {
-      clearTimeout(prevPending.timerId)
-      pendingExpenseDeleteRef.current = null
-      try {
-        await deleteExpenseAsync(prevPending.expenseId)
-      } catch (err) {
-        optimisticallyInsertSplitExpense(prevPending.groupId, prevPending.expense)
-        pushToast(toToastMessage(err, 'Could not delete expense.'))
-      }
-    }
-
-    // Capture current group so the closure stays correct if the user switches groups.
     const gid = activeGroupId
-
-    // Optimistic remove — UI updates instantly.
     optimisticallyDeleteSplitExpense(gid, expenseId)
+    expenseUndo.schedule(expenseId, { groupId: gid, expense })
 
-    // Build a contextual message: "Expense deleted for 3 members."
     const splitCount = expense.split_expense_splits?.length ?? 0
     const memberLabel = splitCount > 1 ? `${splitCount} members` : 'the group'
-
-    const timerId = setTimeout(async () => {
-      pendingExpenseDeleteRef.current = null
-      try {
-        await deleteExpenseAsync(expenseId)
-      } catch (err) {
-        // RPC failed — restore the item so the user doesn't lose data.
-        optimisticallyInsertSplitExpense(gid, expense)
-        pushToast(toToastMessage(err, 'Could not delete expense.'))
-      }
-    }, 7000)
-
-    pendingExpenseDeleteRef.current = { expenseId, expense, groupId: gid, timerId }
-
     pushToast(`Expense deleted for ${memberLabel}.`, {
-      action: () => {
-        clearTimeout(timerId)
-        pendingExpenseDeleteRef.current = null
-        optimisticallyInsertSplitExpense(gid, expense)
-      },
+      action: () => { expenseUndo.undo(expenseId) },
       actionLabel: 'Undo',
       duration: 7500,
     })
@@ -1171,42 +1143,12 @@ export function useSplitwiseLogic() {
     const settlement = settlements.find(s => s.id === settlementId)
     if (!settlement) return
 
-    // Commit any other pending settlement deletion first.
-    const prevPending = pendingSettlementDeleteRef.current
-    if (prevPending?.timerId && prevPending.settlementId !== settlementId) {
-      clearTimeout(prevPending.timerId)
-      pendingSettlementDeleteRef.current = null
-      try {
-        await deleteSettlementAsync(prevPending.settlementId)
-      } catch (err) {
-        optimisticallyInsertSplitSettlement(prevPending.groupId, prevPending.settlement)
-        pushToast(toToastMessage(err, 'Could not delete settlement.'))
-      }
-    }
-
     const gid = activeGroupId
-
-    // Optimistic remove.
     optimisticallyDeleteSplitSettlement(gid, settlementId)
-
-    const timerId = setTimeout(async () => {
-      pendingSettlementDeleteRef.current = null
-      try {
-        await deleteSettlementAsync(settlementId)
-      } catch (err) {
-        optimisticallyInsertSplitSettlement(gid, settlement)
-        pushToast(toToastMessage(err, 'Could not delete settlement.'))
-      }
-    }, 7000)
-
-    pendingSettlementDeleteRef.current = { settlementId, settlement, groupId: gid, timerId }
+    settlementUndo.schedule(settlementId, { groupId: gid, settlement })
 
     pushToast('Settlement deleted.', {
-      action: () => {
-        clearTimeout(timerId)
-        pendingSettlementDeleteRef.current = null
-        optimisticallyInsertSplitSettlement(gid, settlement)
-      },
+      action: () => { settlementUndo.undo(settlementId) },
       actionLabel: 'Undo',
       duration: 7500,
     })
@@ -1284,7 +1226,7 @@ export function useSplitwiseLogic() {
     handleLeaveGroup, handleAddMember, handleAddExpense, handleDeleteExpense, handleRecordSettlement, handleDeleteSettlement,
     applySuggestedTransfer,
     resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS,
-    activeWalletUserId, authUserId, pendingExpenseDeleteRef, pendingSettlementDeleteRef,
+    activeWalletUserId, authUserId,
     roleByUserId, memberById, openAddExpense, openEditExpense, openEditSettlement, memberSpendingStats, txnsListRef,
     txnsTopPadding, txnsBottomPadding, measureTxnElement, renderedTransactions, txnsStartIndex,
     transactions

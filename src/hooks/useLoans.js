@@ -10,7 +10,8 @@ import {
   invalidateCache as invalidateTransactionCache,
   optimisticallyUpsertTransactionInCache,
   optimisticallyDeleteTransactionsByLoanId,
-  inFlightDeletedTxnIds
+  inFlightDeletedTxnIds,
+  balanceAsOfKey
 } from './useTransactions'
 import { todayStr } from '../lib/utils'
 import { hapticSuccess } from '../lib/haptics'
@@ -35,7 +36,7 @@ async function invalidateLoanCache() {
   await queryClient.invalidateQueries({ queryKey: ['loans'], refetchType: 'active' })
 }
 
-async function fetchLoans(direction, settledValue, targetUserId, signal) {
+export async function fetchLoans(direction, settledValue, targetUserId, signal) {
   const label = settledValue ? 'settled' : `active:${direction}`
   return traceQuery(`loans:${label}`, async () => {
     let query = supabase
@@ -195,15 +196,20 @@ async function recordPayment(loanId, amount, id) {
 
 async function updateLoan(id, updates) {
   const userId = getActiveWalletUserId()
-  const { data, error } = await supabase
-    .from('loans')
-    .update(updates)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select(LOAN_COLUMNS)
-    .single()
+  const { data: result, error } = await supabase.rpc('update_loan', {
+    p_loan_id: id,
+    p_user_id: userId,
+    p_direction: updates.direction,
+    p_counterparty: updates.counterparty,
+    p_amount: updates.amount,
+    p_interest_rate: updates.interest_rate ?? 0,
+    p_loan_date: updates.loan_date || null,
+    p_due_date: updates.due_date || null,
+    p_note: updates.note || null,
+  })
 
   if (error) throw error
+  const data = Array.isArray(result) ? result[0] : result
 
   runInBackground(
     logFinancialEvent({
@@ -250,7 +256,7 @@ function snapshotLoanCaches(targetUserId) {
   ]
 
   // Snapshot running balance
-  const balanceKey = ['balance', 2099, 12, targetUserId]
+  const balanceKey = balanceAsOfKey(todayStr(), targetUserId)
   const balanceData = queryClient.getQueryData(balanceKey)
   if (typeof balanceData !== 'undefined') {
     snap.push([balanceKey, cloneCacheData(balanceData)])
@@ -573,7 +579,9 @@ export async function updateLoanMutation(id, updates) {
     const oldKey = cachedLoan?.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
     const newKey = updated.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
 
-    if (oldKey !== newKey) {
+    if (updated.settled) {
+      optimisticallyDeleteLoan(id, targetUserId)
+    } else if (oldKey !== newKey) {
       const oldData = queryClient.getQueryData(oldKey)
       if (Array.isArray(oldData)) queryClient.setQueryData(oldKey, oldData.filter(row => row?.id !== id))
       optimisticallyInsertLoan(updated, targetUserId)

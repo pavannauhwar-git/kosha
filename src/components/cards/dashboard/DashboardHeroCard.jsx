@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { fmt, splitFmtAmount } from '../../../lib/utils'
 import { safeNumber } from '../../../lib/safeNumber'
+import { formatSavingsRate } from '../../../lib/cashflow'
 import { C } from '../../../lib/colors'
 
 function getHeroAmountClass(length) {
@@ -26,7 +27,8 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
   earned,
   spent,
   invested,
-  bills,
+  billsDueTotal = 0,
+  safeHorizonLabel = '',
   heroMode,
   onSetHeroMode,
 }) {
@@ -70,8 +72,8 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     )
   }
 
-  const safeToSpend = runningBalance !== null && bills
-    ? Math.max(0, runningBalance - bills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0))
+  const safeToSpend = typeof runningBalance === 'number'
+    ? Math.max(0, runningBalance - (Number(billsDueTotal) || 0))
     : null
 
   const mainValueNumber = heroMode === 'balance' ? runningBalance : safeToSpend
@@ -84,9 +86,9 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
   }
 
-  const safeRate = safeNumber(rate, 0)
-  // Clamp rate to [0, 1] for CSS custom property
-  const barPct = Math.max(0, Math.min(100, safeRate)) / 100
+  const rateLabel = formatSavingsRate(rate)
+  const isOverspent = typeof rate === 'number' && rate < 0
+  const barPct = Math.max(0, Math.min(100, safeNumber(rate, 0))) / 100
 
   return (
     <motion.div
@@ -99,7 +101,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
       <div className="flex items-center justify-between mb-3.5 gap-2">
         <p className="text-[10px] font-semibold tracking-[0.18em] uppercase"
           style={{ color: C.heroAccent }}>
-          {heroMode === 'balance' ? 'Total balance' : 'Safe to spend'}
+          {heroMode === 'balance' ? 'Total balance' : `Safe to spend ${safeHorizonLabel}`.trim()}
         </p>
 
         <div className="inline-flex items-center rounded-pill p-0.5"
@@ -141,9 +143,13 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
         style={heroBadgeStyle}
       >
         <span className="text-[12px] font-semibold tracking-wide text-white">
-          <span style={{ color: C.heroAccent }}>
-            {safeRate}%
-          </span> saved this month
+          {isOverspent ? (
+            <span style={{ color: C.heroAccent }}>Overspent this month</span>
+          ) : (
+            <>
+              <span style={{ color: C.heroAccent }}>{rateLabel}</span> saved this month
+            </>
+          )}
         </span>
       </div>
 
@@ -183,7 +189,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
             Savings rate
           </span>
           <span className="text-[12px] font-semibold" style={{ color: C.heroAccent }}>
-            {safeRate}%
+            {rateLabel}
           </span>
         </div>
         <div className="bar-dark-track">

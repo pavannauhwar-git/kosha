@@ -104,5 +104,20 @@ describe('statementMatching', () => {
       // Both cannot be 'txn-1'
       expect(firstMatchId === 'txn-1' && secondMatchId === 'txn-1').toBe(false)
     })
+
+    it('scores a statement line dated after the transaction the same as one dated before', () => {
+      const later = matchStatementEntries(parseStatementLines('2024-01-18,Swiggy Food Order,450.00'), transactions)[0]
+      const earlier = matchStatementEntries(parseStatementLines('2024-01-12,Swiggy Food Order,450.00'), transactions)[0]
+      expect(later.best?.txn.id).toBe('txn-1')
+      expect(later.best?.days).toBe(3)
+      expect(later.best?.score).toBeLessThanOrEqual(1)
+      expect(later.best?.score).toBe(earlier.best?.score)
+    })
+
+    it('does not match a transaction more than 7 days before the statement line', () => {
+      const result = matchStatementEntries(parseStatementLines('2024-01-30,Swiggy Food Order,450.00'), transactions)[0]
+      expect(result.candidates).toHaveLength(0)
+      expect(result.best).toBeNull()
+    })
   })
 })

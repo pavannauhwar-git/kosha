@@ -581,6 +581,12 @@ export default function Loans({
     setFormErr('')
 
     if (editLoan) {
+      const repaid = Number(editLoan.amount_settled || 0)
+      if (loanData.amount < repaid) { setFormErr(`Amount can't be less than the ${fmt(repaid)} already repaid`); return }
+      if (repaid > 0 && loanData.direction !== editLoan.direction) { setFormErr("Direction can't change after a repayment"); return }
+    }
+
+    if (editLoan) {
       try {
         await updateLoanAsync({ id: editLoan.id, updates: loanData })
         setTab(loanData.direction)

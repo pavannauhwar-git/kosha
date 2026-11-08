@@ -356,6 +356,72 @@ begin
 end;
 $$;
 
+-- Function: public.update_loan(uuid,uuid,text,text,numeric,numeric,date,date,text)
+CREATE OR REPLACE FUNCTION public.update_loan(p_loan_id uuid, p_user_id uuid, p_direction text, p_counterparty text, p_amount numeric, p_interest_rate numeric DEFAULT 0, p_loan_date date DEFAULT CURRENT_DATE, p_due_date date DEFAULT NULL::date, p_note text DEFAULT NULL::text) RETURNS public.loans
+    LANGUAGE plpgsql
+    SET search_path TO ''
+    AS $$
+declare
+  v_loan public.loans%rowtype;
+  v_amount numeric := round(p_amount, 2);
+begin
+  perform set_config('kosha.trusted_write', 'true', true);
+  if auth.uid() is null or auth.uid() <> p_user_id then
+    raise exception 'Authentication required';
+  end if;
+  if v_amount is null or v_amount <= 0 then
+    raise exception 'Loan amount must be positive';
+  end if;
+  if p_direction not in ('given', 'taken') then
+    raise exception 'Direction must be given or taken';
+  end if;
+  if p_counterparty is null or btrim(p_counterparty) = '' then
+    raise exception 'Counterparty name is required';
+  end if;
+
+  select * into v_loan from public.loans
+  where id = p_loan_id and user_id = p_user_id
+  for update;
+  if not found then
+    raise exception 'Loan not found or access denied';
+  end if;
+
+  if v_amount < v_loan.amount_settled then
+    raise exception 'Loan amount cannot be less than the % already repaid', v_loan.amount_settled;
+  end if;
+  if v_loan.amount_settled > 0 and p_direction <> v_loan.direction then
+    raise exception 'Direction cannot change after a repayment has been recorded';
+  end if;
+
+  update public.loans
+  set direction     = p_direction,
+      counterparty  = btrim(p_counterparty),
+      amount        = v_amount,
+      interest_rate = coalesce(p_interest_rate, 0),
+      loan_date     = coalesce(p_loan_date, current_date),
+      due_date      = p_due_date,
+      note          = nullif(btrim(coalesce(p_note, '')), ''),
+      settled       = (v_loan.amount_settled >= v_amount)
+  where id = p_loan_id
+  returning * into v_loan;
+
+  update public.transactions
+  set date        = v_loan.loan_date,
+      type        = case v_loan.direction when 'given' then 'expense' else 'income' end,
+      description = case v_loan.direction
+                      when 'given' then 'Loan given to ' || v_loan.counterparty
+                      else              'Loan taken from ' || v_loan.counterparty
+                    end,
+      amount      = v_loan.amount,
+      notes       = v_loan.note
+  where linked_loan_id = p_loan_id
+    and user_id = p_user_id
+    and is_repayment = false;
+
+  return v_loan;
+end;
+$$;
+
 -- Function: public.delete_liability_with_txns(uuid)
 CREATE OR REPLACE FUNCTION public.delete_liability_with_txns(p_id uuid) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
@@ -1021,6 +1087,7 @@ CREATE OR REPLACE FUNCTION public.get_year_summary(p_user_ids uuid[], p_year int
     select
       extract(month from date)::int as month_num,
       sum(case when type = 'income' and not is_repayment then amount else 0 end) as income,
+      sum(case when type = 'income' and is_repayment     then amount else 0 end) as repayments,
       sum(case when type = 'expense'    then amount else 0 end)       as expense,
       sum(case when type = 'investment' then amount else 0 end)       as investment
     from year_data
@@ -1364,13 +1431,14 @@ begin
 end;
 $$;
 
--- Function: public.mark_liability_paid(uuid,uuid,date)
-CREATE OR REPLACE FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date DEFAULT NULL::date) RETURNS json
+-- Function: public.mark_liability_paid(uuid,uuid,date,uuid)
+CREATE OR REPLACE FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date DEFAULT NULL::date, p_transaction_id uuid DEFAULT NULL::uuid) RETURNS json
     LANGUAGE plpgsql
     SET search_path TO 'public'
     AS $$
 declare
   v_liability liabilities%rowtype;
+  v_txn transactions%rowtype;
   v_txn_id uuid;
   v_next_due date;
   v_txn_mode text;
@@ -1394,19 +1462,45 @@ begin
     );
   end if;
 
-  v_txn_mode := case v_liability.payment_mode
-    when 'card' then 'credit_card'
-    when 'bank' then 'net_banking'
-    when 'upi' then 'upi'
-    when 'cash' then 'cash'
-    else 'other'
-  end;
+  if p_transaction_id is not null then
+    select * into v_txn from transactions
+    where id = p_transaction_id and user_id = p_user_id
+    for update;
+    if not found then raise exception 'Transaction not found or access denied'; end if;
+    if v_txn.type <> 'expense' then
+      raise exception 'Only an expense can be linked to a bill';
+    end if;
+    if v_txn.linked_bill_id is not null and v_txn.linked_bill_id <> p_liability_id then
+      raise exception 'This transaction is already linked to another bill';
+    end if;
+    if v_txn.linked_split_expense_id is not null
+       or v_txn.linked_split_settlement_id is not null
+       or v_txn.linked_loan_id is not null then
+      raise exception 'This transaction is managed by Splitwise or a loan and cannot be linked to a bill';
+    end if;
 
-  insert into transactions (date, type, description, amount, category, is_repayment, payment_mode, user_id, linked_bill_id)
-  values (v_paid_on, 'expense', v_liability.description, v_liability.amount, 'bills', false, v_txn_mode, p_user_id, p_liability_id)
-  returning id into v_txn_id;
+    if v_txn.linked_bill_id is distinct from p_liability_id then
+      update transactions set linked_bill_id = p_liability_id where id = p_transaction_id;
+    end if;
+    v_txn_id := p_transaction_id;
+    v_paid_on := v_txn.date;
+  else
+    v_txn_mode := case v_liability.payment_mode
+      when 'card' then 'credit_card'
+      when 'bank' then 'net_banking'
+      when 'upi' then 'upi'
+      when 'cash' then 'cash'
+      else 'other'
+    end;
 
-  update liabilities set paid = true, linked_transaction_id = v_txn_id where id = p_liability_id;
+    insert into transactions (date, type, description, amount, category, is_repayment, payment_mode, user_id, linked_bill_id)
+    values (v_paid_on, 'expense', v_liability.description, v_liability.amount, 'bills', false, v_txn_mode, p_user_id, p_liability_id)
+    returning id into v_txn_id;
+  end if;
+
+  update liabilities
+  set paid = true, linked_transaction_id = v_txn_id, paid_at = v_paid_on
+  where id = p_liability_id;
 
   if v_liability.is_recurring and v_liability.recurrence is not null then
     v_step := case v_liability.recurrence when 'quarterly' then 3 when 'yearly' then 12 else 1 end;
@@ -2447,6 +2541,131 @@ begin
 end;
 $$;
 
+-- Function: public.split_update_settlement(uuid,uuid,uuid,numeric,date,text)
+CREATE OR REPLACE FUNCTION public.split_update_settlement(p_settlement_id uuid, p_payer_member_id uuid, p_payee_member_id uuid, p_amount numeric, p_settled_at date DEFAULT CURRENT_DATE, p_note text DEFAULT NULL::text) RETURNS public.split_settlements
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+declare
+  v_uid uuid := auth.uid();
+  v_row public.split_settlements%rowtype;
+  v_amount numeric := round(p_amount, 2);
+  v_date date := coalesce(p_settled_at, current_date);
+  v_note text := nullif(btrim(coalesce(p_note, '')), '');
+  v_payer_uid uuid;
+  v_payee_uid uuid;
+  v_payer_name text;
+  v_payee_name text;
+  v_payer_txn_id uuid;
+  v_payee_txn_id uuid;
+  v_txn record;
+begin
+  perform set_config('kosha.trusted_write', 'true', true);
+  if v_uid is null then
+    raise exception using errcode = '28000', message = 'unauthenticated';
+  end if;
+  if p_settlement_id is null then
+    raise exception using errcode = '22023', message = 'p_settlement_id is required';
+  end if;
+  if v_amount is null or v_amount <= 0 then
+    raise exception 'Settlement amount must be positive';
+  end if;
+  if p_payer_member_id is null or p_payee_member_id is null then
+    raise exception 'Payer and payee are required';
+  end if;
+  if p_payer_member_id = p_payee_member_id then
+    raise exception 'Payer and payee cannot be the same';
+  end if;
+
+  select * into v_row from public.split_settlements where id = p_settlement_id for update;
+  if not found then
+    raise exception using errcode = 'P0002', message = 'Settlement not found';
+  end if;
+
+  if not public.is_split_group_member_or_above(v_row.group_id, v_uid) then
+    raise exception using errcode = '42501', message = 'forbidden';
+  end if;
+  if exists (select 1 from public.split_groups where id = v_row.group_id and is_archived) then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
+  end if;
+
+  select linked_user_id, display_name into v_payer_uid, v_payer_name
+  from public.split_group_members
+  where id = p_payer_member_id and group_id = v_row.group_id;
+  if not found then
+    raise exception 'Payer is not in this group';
+  end if;
+
+  select linked_user_id, display_name into v_payee_uid, v_payee_name
+  from public.split_group_members
+  where id = p_payee_member_id and group_id = v_row.group_id;
+  if not found then
+    raise exception 'Payee is not in this group';
+  end if;
+
+  update public.split_settlements
+  set payer_member_id = p_payer_member_id,
+      payee_member_id = p_payee_member_id,
+      amount          = v_amount,
+      settled_at      = v_date,
+      note            = v_note
+  where id = p_settlement_id;
+
+  -- Keep the payer's expense row and the payee's income row; drop anything
+  -- that no longer belongs to the (possibly new) payer or payee.
+  for v_txn in
+    select id, user_id, type
+    from public.transactions
+    where linked_split_settlement_id = p_settlement_id
+       or id = v_row.payer_transaction_id
+       or id = v_row.payee_transaction_id
+    for update
+  loop
+    if v_txn.type = 'expense' and v_payer_uid is not null and v_txn.user_id = v_payer_uid and v_payer_txn_id is null then
+      update public.transactions
+      set date = v_date,
+          amount = v_amount,
+          description = 'Settled with ' || coalesce(v_payee_name, 'member'),
+          notes = v_note,
+          linked_split_settlement_id = p_settlement_id
+      where id = v_txn.id;
+      v_payer_txn_id := v_txn.id;
+    elsif v_txn.type = 'income' and v_payee_uid is not null and v_txn.user_id = v_payee_uid and v_payee_txn_id is null then
+      update public.transactions
+      set date = v_date,
+          amount = v_amount,
+          description = 'Received from ' || coalesce(v_payer_name, 'member'),
+          notes = v_note,
+          linked_split_settlement_id = p_settlement_id
+      where id = v_txn.id;
+      v_payee_txn_id := v_txn.id;
+    else
+      delete from public.transactions where id = v_txn.id;
+    end if;
+  end loop;
+
+  -- Same rule as split_record_settlement: only create a row in the editor's own ledger.
+  if v_payer_txn_id is null and v_payer_uid is not null and v_payer_uid = v_uid then
+    insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id, notes)
+    values (v_date, 'expense', 'Settled with ' || coalesce(v_payee_name, 'member'), v_amount, 'other', v_uid, true, p_settlement_id, v_note)
+    returning id into v_payer_txn_id;
+  end if;
+  if v_payee_txn_id is null and v_payee_uid is not null and v_payee_uid = v_uid then
+    insert into public.transactions (date, type, description, amount, category, user_id, is_repayment, linked_split_settlement_id, notes)
+    values (v_date, 'income', 'Received from ' || coalesce(v_payer_name, 'member'), v_amount, 'other', v_uid, true, p_settlement_id, v_note)
+    returning id into v_payee_txn_id;
+  end if;
+
+  update public.split_settlements
+  set payer_transaction_id = v_payer_txn_id,
+      payee_transaction_id = v_payee_txn_id
+  where id = p_settlement_id
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
 -- Table: public.split_group_access
 CREATE TABLE IF NOT EXISTS public.split_group_access (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -2675,7 +2894,7 @@ begin
         type        = 'expense',
         description = btrim(p_description),
         amount      = p_amount,
-        category    = coalesce(p_transaction_category, 'other'),
+        category    = coalesce(p_transaction_category, category, 'other'),
         notes       = nullif(btrim(coalesce(p_notes, '')), ''),
         linked_split_expense_id = p_expense_id
       where id = v_linked_txn;
@@ -3138,6 +3357,7 @@ CREATE TABLE IF NOT EXISTS public.liabilities (
     user_id uuid,
     payment_mode text DEFAULT 'upi'::text,
     recurrence_anchor date,
+    paid_at date,
     CONSTRAINT liabilities_amount_check CHECK ((amount > (0)::numeric)),
     CONSTRAINT liabilities_payment_mode_check CHECK ((payment_mode = ANY (ARRAY['upi'::text, 'cash'::text, 'bank'::text, 'card'::text]))),
     CONSTRAINT liabilities_recurrence_check CHECK ((recurrence = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'yearly'::text])))
@@ -3155,7 +3375,8 @@ ALTER TABLE public.liabilities
     ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL,
     ADD COLUMN IF NOT EXISTS user_id uuid,
     ADD COLUMN IF NOT EXISTS payment_mode text DEFAULT 'upi'::text,
-    ADD COLUMN IF NOT EXISTS recurrence_anchor date;
+    ADD COLUMN IF NOT EXISTS recurrence_anchor date,
+    ADD COLUMN IF NOT EXISTS paid_at date;
 
 DO $do$
 BEGIN
@@ -4415,6 +4636,8 @@ CREATE POLICY "Users can read own monthly net changes" ON public.monthly_net_cha
 
 DROP FUNCTION IF EXISTS public.create_loan(text, numeric, text, date, text, text, boolean, uuid, uuid);
 
+DROP FUNCTION IF EXISTS public.mark_liability_paid(uuid, uuid, date);
+
 DROP POLICY IF EXISTS "invites: update own" ON public.invites;
 
 DROP POLICY IF EXISTS "bug_reports: insert own" ON public.bug_reports;
@@ -4807,6 +5030,11 @@ REVOKE ALL ON FUNCTION public.create_loan(p_user_id uuid, p_direction text, p_co
 GRANT ALL ON FUNCTION public.create_loan(p_user_id uuid, p_direction text, p_counterparty text, p_amount numeric, p_interest_rate numeric, p_loan_date date, p_due_date date, p_note text, p_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.create_loan(p_user_id uuid, p_direction text, p_counterparty text, p_amount numeric, p_interest_rate numeric, p_loan_date date, p_due_date date, p_note text, p_id uuid) TO service_role;
 
+REVOKE ALL ON FUNCTION public.update_loan(p_loan_id uuid, p_user_id uuid, p_direction text, p_counterparty text, p_amount numeric, p_interest_rate numeric, p_loan_date date, p_due_date date, p_note text) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.update_loan(p_loan_id uuid, p_user_id uuid, p_direction text, p_counterparty text, p_amount numeric, p_interest_rate numeric, p_loan_date date, p_due_date date, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.update_loan(p_loan_id uuid, p_user_id uuid, p_direction text, p_counterparty text, p_amount numeric, p_interest_rate numeric, p_loan_date date, p_due_date date, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.update_loan(p_loan_id uuid, p_user_id uuid, p_direction text, p_counterparty text, p_amount numeric, p_interest_rate numeric, p_loan_date date, p_due_date date, p_note text) TO service_role;
+
 REVOKE ALL ON FUNCTION public.delete_liability_with_txns(p_id uuid) FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.delete_liability_with_txns(p_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.delete_liability_with_txns(p_id uuid) TO authenticated;
@@ -4943,10 +5171,10 @@ REVOKE ALL ON FUNCTION public.maintain_monthly_net_change() FROM PUBLIC, anon, a
 REVOKE ALL ON FUNCTION public.maintain_monthly_net_change() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.maintain_monthly_net_change() TO service_role;
 
-REVOKE ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date) FROM PUBLIC, anon, authenticated, service_role;
-GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date) TO anon;
-GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date) TO authenticated;
-GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date) TO service_role;
+REVOKE ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date, p_transaction_id uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date, p_transaction_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date, p_transaction_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.mark_liability_paid(p_liability_id uuid, p_user_id uuid, p_paid_on date, p_transaction_id uuid) TO service_role;
 
 REVOKE ALL ON FUNCTION public.on_split_group_delete_cleanup() FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.on_split_group_delete_cleanup() FROM PUBLIC;
@@ -5063,6 +5291,11 @@ REVOKE ALL ON FUNCTION public.split_update_expense(p_expense_id uuid, p_paid_by_
 REVOKE ALL ON FUNCTION public.split_update_expense(p_expense_id uuid, p_paid_by_member_id uuid, p_description text, p_amount numeric, p_expense_date date, p_split_method text, p_notes text, p_splits jsonb, p_sync_transaction boolean, p_transaction_category text) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.split_update_expense(p_expense_id uuid, p_paid_by_member_id uuid, p_description text, p_amount numeric, p_expense_date date, p_split_method text, p_notes text, p_splits jsonb, p_sync_transaction boolean, p_transaction_category text) TO authenticated;
 GRANT ALL ON FUNCTION public.split_update_expense(p_expense_id uuid, p_paid_by_member_id uuid, p_description text, p_amount numeric, p_expense_date date, p_split_method text, p_notes text, p_splits jsonb, p_sync_transaction boolean, p_transaction_category text) TO service_role;
+
+REVOKE ALL ON FUNCTION public.split_update_settlement(p_settlement_id uuid, p_payer_member_id uuid, p_payee_member_id uuid, p_amount numeric, p_settled_at date, p_note text) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.split_update_settlement(p_settlement_id uuid, p_payer_member_id uuid, p_payee_member_id uuid, p_amount numeric, p_settled_at date, p_note text) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.split_update_settlement(p_settlement_id uuid, p_payer_member_id uuid, p_payee_member_id uuid, p_amount numeric, p_settled_at date, p_note text) TO authenticated;
+GRANT ALL ON FUNCTION public.split_update_settlement(p_settlement_id uuid, p_payer_member_id uuid, p_payee_member_id uuid, p_amount numeric, p_settled_at date, p_note text) TO service_role;
 
 REVOKE ALL ON FUNCTION public.submit_bug_report(p_title text, p_description text, p_steps text, p_severity text, p_route text, p_app_version text, p_diagnostics jsonb, p_environment jsonb, p_screenshot_path text, p_reporter_email text, p_fingerprint text, p_tags text[]) FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.submit_bug_report(p_title text, p_description text, p_steps text, p_severity text, p_route text, p_app_version text, p_diagnostics jsonb, p_environment jsonb, p_screenshot_path text, p_reporter_email text, p_fingerprint text, p_tags text[]) FROM PUBLIC;

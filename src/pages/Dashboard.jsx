@@ -4,7 +4,7 @@ import { Plus, Wallet, TrendDown, ArrowRight } from '@phosphor-icons/react'
 import {
   useRecentTransactions,
   useMonthSummary,
-  useRunningBalance,
+  useBalanceAsOf,
   useDailyExpenseTotals,
 } from '../hooks/useTransactions'
 // NOTE: Deletion is delegated to useTransactionDeleter which uses removeTransactionMutation.
@@ -15,7 +15,8 @@ import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
-import { fmt, savingsRate, daysUntil } from '../lib/utils'
+import { fmt, daysUntil } from '../lib/utils'
+import { savingsRate, netCashflow, billsDueByMonthEnd, sumAmounts, projectMonthClose } from '../lib/cashflow'
 import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
@@ -127,15 +128,12 @@ export default function Dashboard() {
     fetching: summaryFetching,
   } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
   const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(84)
-  const balanceHorizonDate = useMemo(() => new Date(2099, 11, 31), [])
+  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const {
     balance: runningBalance,
     loading: runningBalanceLoading,
     fetching: runningBalanceFetching,
-  } = useRunningBalance(
-    balanceHorizonDate.getFullYear(),
-    balanceHorizonDate.getMonth() + 1
-  )
+  } = useBalanceAsOf(todayISO)
   const { pending: bills = [], loading: billsLoading } = useLiabilities()
   const { budgets } = useBudgets()
   const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
@@ -147,6 +145,8 @@ export default function Dashboard() {
   const earned = summary?.earned || 0
   const spent = summary?.expense || 0
   const invested = summary?.investment || 0
+  const repayments = summary?.repayments || 0
+  const inflow = earned + repayments
   const rate = savingsRate(earned, spent)
 
   const hour = now.getHours()
@@ -196,33 +196,48 @@ export default function Dashboard() {
   const currentMonthParam = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const weeklyDriftSignal = useMemo(() => computeWeeklySpendDrift(dailyExpenseTotals, now), [dailyExpenseTotals, now])
 
+  const billsDueTotal = useMemo(() => sumAmounts(billsDueByMonthEnd(bills, now)), [bills, now])
+  const safeHorizonLabel = useMemo(
+    () => `till ${new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`,
+    [now]
+  )
+
   // ── Spendable today ────────────────────────────────────────────────────
   const spendableToday = useMemo(() => {
     if (heroLoading) return { daily: 0, remaining: 0, pendingBillsTotal: 0 }
-    const totalOutflow = spent + invested
-    const remaining = earned - totalOutflow
-    const pendingBillsTotal = bills.reduce((sum, b) => sum + Number(b.amount || 0), 0)
+    const remaining = netCashflow({ income: earned, repayments, expense: spent, investment: invested })
+    const pendingBillsTotal = billsDueTotal
     const afterBills = Math.max(0, remaining - pendingBillsTotal)
     const daily = daysRemaining > 0 ? Math.round(afterBills / daysRemaining) : 0
     return { daily, remaining: afterBills, pendingBillsTotal }
-  }, [earned, spent, invested, bills, daysRemaining, heroLoading])
+  }, [earned, repayments, spent, invested, billsDueTotal, daysRemaining, heroLoading])
 
   // ── Budget burn rate ───────────────────────────────────────────────────
   const burnRate = useMemo(() => {
-    if (heroLoading || earned <= 0) return null
+    if (heroLoading || inflow <= 0) return null
     const totalOutflow = spent + invested
     const paceExpected = (dayOfMonth / daysInMonth) * 100
-    const paceActual = Math.round((totalOutflow / earned) * 100)
-    const ahead = paceActual > paceExpected + 5
+    const paceActual = Math.round((totalOutflow / inflow) * 100)
+    const projection = projectMonthClose({
+      income: earned,
+      repayments,
+      expense: spent,
+      investment: invested,
+      byCategory: summary?.byCategory,
+      unpaidBillsDue: billsDueTotal,
+      daysElapsed: dayOfMonth,
+      daysInMonth,
+    })
+    const ahead = !projection.early && projection.netAtClose < 0
     return { paceActual, paceExpected: Math.round(paceExpected), ahead }
-  }, [earned, spent, invested, dayOfMonth, daysInMonth, heroLoading])
+  }, [earned, repayments, inflow, spent, invested, summary?.byCategory, billsDueTotal, dayOfMonth, daysInMonth, heroLoading])
 
   // ── Runway balance (days left vs money left) ───────────────────────
   const runwayBalance = useMemo(() => {
-    if (heroLoading || earned <= 0) return null
+    if (heroLoading || inflow <= 0) return null
 
     const daysLeftPct = Math.round((daysRemaining / Math.max(1, daysInMonth)) * 100)
-    const moneyLeftPctRaw = Math.round((spendableToday.remaining / earned) * 100)
+    const moneyLeftPctRaw = Math.round((spendableToday.remaining / inflow) * 100)
     const moneyLeftPct = Math.max(0, Math.min(100, moneyLeftPctRaw))
     const gapPct = daysLeftPct - moneyLeftPct
     const band = scoreRiskBand(gapPct, { high: 12, watch: 4 })
@@ -233,7 +248,7 @@ export default function Dashboard() {
       gapPct,
       band,
     }
-  }, [earned, spendableToday.remaining, daysRemaining, daysInMonth, heroLoading])
+  }, [inflow, spendableToday.remaining, daysRemaining, daysInMonth, heroLoading])
 
   // ── Category pressure signal ─────────────────────────────────────────
   const categoryPressureSignal = useMemo(() => {
@@ -596,7 +611,8 @@ export default function Dashboard() {
               earned={earned}
               spent={spent}
               invested={invested}
-              bills={bills}
+              billsDueTotal={billsDueTotal}
+              safeHorizonLabel={safeHorizonLabel}
               heroMode={heroMode}
               onSetHeroMode={handleHeroModeChange}
             />
@@ -720,7 +736,7 @@ export default function Dashboard() {
         )}
 
         {/* ── Spendable today + burn rate ───────────────────────────── */}
-        {!heroLoading && earned > 0 && (
+        {!heroLoading && inflow > 0 && (
           <div className="card-spring-in fade-up-3">
             <div className="grid grid-cols-2 gap-2.5">
               <div className="card p-3.5 border-0">

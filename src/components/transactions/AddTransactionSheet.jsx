@@ -7,7 +7,7 @@ import Select from '../ui/Select'
 import Switch from '../ui/Switch'
 import PixelDatePicker from '../ui/PixelDatePicker'
 import { saveTransactionMutation } from '../../hooks/useTransactions'
-import { useLiabilities } from '../../hooks/useLiabilities'
+import { useLiabilities, linkTransactionToBillMutation } from '../../hooks/useLiabilities'
 import CategoryIcon, { ICON_MAP } from '../categories/CategoryIcon'
 import {
   CATEGORIES,
@@ -20,7 +20,7 @@ import { archiveUserCategory, useUserCategories } from '../../hooks/useUserCateg
 import { useAppMutation } from '../../hooks/useAppMutation'
 import CreateCategorySheet from '../categories/CreateCategorySheet'
 import Sheet from '../ui/Sheet'
-import { useSplitwise, addSplitExpenseMutation, buildEqualSplits } from '../../hooks/useSplitwise'
+import { useSplitwise, addSplitExpenseMutation, buildEqualSplits, findSelfMember } from '../../hooks/useSplitwise'
 import { supabase } from '../../lib/supabase'
 import { validateAmount } from '../../lib/validateAmount.js'
 import FormField from '../ui/FormField'
@@ -552,7 +552,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
   const saveTransaction = useAppMutation(saveTransactionMutation, { context: 'transactions:save' })
   const addSplitExpense = useAppMutation(addSplitExpenseMutation, { context: 'splitwise:addExpense' })
-  const isSaving = saveTransaction.isPending || addSplitExpense.isPending
+  const linkBill = useAppMutation(linkTransactionToBillMutation, { context: 'bills:linkTransaction' })
+  const isSaving = saveTransaction.isPending || addSplitExpense.isPending || linkBill.isPending
 
   const draftIdRef = useRef(null)
   if (!draftIdRef.current) draftIdRef.current = crypto.randomUUID()
@@ -741,13 +742,14 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       if (isSplitwise && type === 'expense' && splitGroupId) {
         const { data: members, error: memErr } = await supabase
           .from('split_group_members')
-          .select('id, is_self, linked_user_id')
+          .select('id, is_self, linked_user_id, user_id')
           .eq('group_id', splitGroupId)
+          .is('archived_at', null)
 
         if (memErr) throw memErr
 
         const { data: { user } } = await supabase.auth.getUser()
-        const selfMember = members.find(m => m.is_self || m.linked_user_id === user?.id)
+        const selfMember = findSelfMember(members, user?.id)
 
         if (!selfMember) throw new Error('You must be a member of the group to add an expense.')
 
@@ -767,11 +769,17 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           id: draftIdRef.current
         })
       } else {
-        await saveTransaction.mutateAsync({
+        const saved = await saveTransaction.mutateAsync({
           id: editTxn?.id,
           clientId: editTxn ? undefined : draftIdRef.current,
           payload,
         })
+        const newlyLinkedBill = linked_bill_id && linked_bill_id !== (editTxn?.linked_bill_id || null)
+          ? pendingBills.find((bill) => bill.id === linked_bill_id)
+          : null
+        if (newlyLinkedBill && saved?.id) {
+          await linkBill.mutateAsync({ bill: newlyLinkedBill, transactionId: saved.id, paidOn: date })
+        }
       }
 
       hapticSuccess()

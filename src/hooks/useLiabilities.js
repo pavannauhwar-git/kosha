@@ -9,7 +9,8 @@ import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog.js'
 import {
   invalidateCache as invalidateTransactionCache,
   optimisticallyUpsertTransactionInCache,
-  optimisticallyDeleteTransactionsByBillId
+  optimisticallyDeleteTransactionsByBillId,
+  balanceAsOfKey
 } from './useTransactions.js'
 import { todayStr } from '../lib/utils.js'
 import { hapticSuccess } from '../lib/haptics.js'
@@ -18,8 +19,9 @@ export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth'
 
 export const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending', targetUserId]
 export const LIABILITY_PAID_QUERY_KEY = (targetUserId) => ['liabilities', 'paid', targetUserId]
+export const LIABILITY_MONTH_QUERY_KEY = (year, month, targetUserId) => ['liabilitiesMonth', year, month, targetUserId]
 const LIABILITY_COLUMNS =
-  'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode'
+  'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode, paid_at'
 export const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id, payment_mode'
 
 function runInBackground(promise, scope) {
@@ -37,7 +39,7 @@ export async function invalidateLiabilityCache() {
   ])
 }
 
-async function fetchLiabilitiesByPaid(paidValue, targetUserId, signal) {
+export async function fetchLiabilitiesByPaid(paidValue, targetUserId, signal) {
   return traceQuery(`liabilities:${paidValue ? 'paid' : 'pending'}`, async () => {
     const { data: rows, error } = await supabase
       .from('liabilities')
@@ -96,28 +98,34 @@ function monthDateRange(year, month) {
   return { startDate, endDate }
 }
 
+export async function fetchLiabilitiesForMonth(year, month, targetUserId, signal) {
+  const { startDate, endDate } = monthDateRange(year, month)
+  if (!startDate || !endDate) return []
+  return traceQuery('liabilities:month', async () => {
+    let query = supabase
+      .from('liabilities')
+      .select(MONTH_LIABILITY_COLUMNS)
+      .eq('user_id', targetUserId)
+      .gte('due_date', startDate)
+      .lte('due_date', endDate)
+      .order('due_date', { ascending: true })
+    if (signal) query = query.abortSignal(signal)
+    const { data: rows, error } = await query
+    if (error) throw error
+    return rows || []
+  })
+}
+
 export function useLiabilitiesByMonth(year, month, options = {}) {
   const { enabled = true } = options
   const { startDate, endDate } = monthDateRange(year, month)
   const targetUserId = useActiveWallet()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['liabilitiesMonth', year, month, targetUserId],
+    queryKey: LIABILITY_MONTH_QUERY_KEY(year, month, targetUserId),
     enabled: enabled && !!startDate && !!endDate && !!targetUserId,
     refetchOnMount: true,
-    queryFn: async ({ signal }) => traceQuery('liabilities:month', async () => {
-      const { data: rows, error: queryError } = await supabase
-        .from('liabilities')
-        .select(MONTH_LIABILITY_COLUMNS)
-        .eq('user_id', targetUserId)
-        .gte('due_date', startDate)
-        .lte('due_date', endDate)
-        .order('due_date', { ascending: true })
-        .abortSignal(signal)
-
-      if (queryError) throw queryError
-      return rows || []
-    }),
+    queryFn: ({ signal }) => fetchLiabilitiesForMonth(year, month, targetUserId, signal),
     placeholderData: (prev, query) => (query?.queryKey?.[3] === targetUserId) ? prev : undefined,
   })
 
@@ -163,14 +171,15 @@ export async function addLiability(payload) {
   return data
 }
 
-export async function markPaid(liability) {
+export async function markPaid(liability, { transactionId = null, paidOn = null } = {}) {
   const userId = getActiveWalletUserId()
 
   const { data: result, error: rpcError } = await supabase
     .rpc('mark_liability_paid', {
       p_liability_id: liability.id,
       p_user_id: userId,
-      p_paid_on: todayStr(),
+      p_paid_on: paidOn || todayStr(),
+      ...(transactionId ? { p_transaction_id: transactionId } : {}),
     })
 
   if (rpcError) throw rpcError
@@ -200,10 +209,14 @@ export async function updateLiability(id, updates) {
     .update(updates)
     .eq('id', id)
     .eq('user_id', userId)
+    .eq('paid', false)
     .select(LIABILITY_COLUMNS)
     .single()
 
-  if (error) throw error
+  if (error) {
+    if (error.code === 'PGRST116') throw new Error('This bill is already paid, so it can no longer be edited.')
+    throw error
+  }
 
   runInBackground(
     logFinancialEvent({
@@ -253,7 +266,7 @@ function snapshotLiabilityCaches(targetUserId) {
   ]
 
   // Snapshot running balance
-  const balanceKey = ['balance', 2099, 12, targetUserId]
+  const balanceKey = balanceAsOfKey(todayStr(), targetUserId)
   const balanceData = queryClient.getQueryData(balanceKey)
   if (typeof balanceData !== 'undefined') {
     snap.push([balanceKey, cloneCacheData(balanceData)])
@@ -318,9 +331,10 @@ export function optimisticallyMarkLiabilityPaid(liability, targetUserId, { optim
     )
   }
 
+  const paidAt = liability.paid_at || todayStr()
   const paidRow = optimistic
-    ? { ...liability, paid: true, __optimistic: true }
-    : { ...liability, paid: true }
+    ? { ...liability, paid: true, paid_at: paidAt, __optimistic: true }
+    : { ...liability, paid: true, paid_at: paidAt }
   const paidData = queryClient.getQueryData(LIABILITY_PAID_QUERY_KEY(targetUserId))
   if (Array.isArray(paidData)) {
     const deduped = paidData.filter((row) => row?.id !== liability.id)
@@ -507,6 +521,25 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       return null
     }
   })
+}
+
+export async function linkTransactionToBillMutation({ bill, transactionId, paidOn }) {
+  const authUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+    return null
+  }
+  if (!bill?.id || !transactionId) throw new Error('Bill and transaction are required.')
+
+  const result = await markPaid(bill, { transactionId, paidOn })
+  optimisticallyMarkLiabilityPaid({ ...bill, paid_at: paidOn || null }, targetUserId, { optimistic: false })
+  refreshLiabilityAndTransactionCachesInBackground({
+    invalidateLiabilityFn: invalidateLiabilityCache,
+    invalidateTransactionFn: invalidateTransactionCache,
+    scope: 'liabilities post-link refresh',
+  })
+  return result
 }
 
 export async function updateLiabilityMutation(id, updates) {

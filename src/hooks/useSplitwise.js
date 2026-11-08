@@ -8,6 +8,7 @@ import { suppress } from '../lib/mutationGuard.js'
 import { traceQuery } from '../lib/queryTrace.js'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog.js'
 import { round2 } from '../lib/paise.js'
+import { createDebouncedTask } from '../lib/debouncedTask.js'
 import {
   buildEqualSplits,
   buildExactSplits,
@@ -158,38 +159,25 @@ async function fetchSettlements(groupId) {
   })
 }
 
-let invalidationTimeout = null
+const scheduleSplitwiseRefresh = createDebouncedTask(async () => {
+  suppress('splitwise')
+  await Promise.all([
+    evictSwCacheEntries('/split_groups'),
+    evictSwCacheEntries('/split_group_access'),
+    evictSwCacheEntries('/split_group_members'),
+    evictSwCacheEntries('/split_group_invites'),
+    evictSwCacheEntries('/split_expenses'),
+    evictSwCacheEntries('/split_expense_splits'),
+    evictSwCacheEntries('/split_settlements'),
+  ])
+  await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
+}, 300)
+
 export async function invalidateSplitwiseCache() {
   // Fire transactions cache invalidation immediately in parallel — don't wait for
-  // the splitwise 300 ms debounce. This cuts the worst-case stale window on
-  // Dashboard/Transactions from ~600 ms to ~300 ms.
+  // the splitwise 300 ms debounce.
   import('./useTransactions.js').then(m => m.invalidateCache()).catch(() => { })
-
-  if (invalidationTimeout) {
-    clearTimeout(invalidationTimeout)
-  }
-
-  return new Promise((resolve) => {
-    invalidationTimeout = setTimeout(async () => {
-      invalidationTimeout = null
-      suppress('splitwise')
-      try {
-        await Promise.all([
-          evictSwCacheEntries('/split_groups'),
-          evictSwCacheEntries('/split_group_access'),
-          evictSwCacheEntries('/split_group_members'),
-          evictSwCacheEntries('/split_group_invites'),
-          evictSwCacheEntries('/split_expenses'),
-          evictSwCacheEntries('/split_expense_splits'),
-          evictSwCacheEntries('/split_settlements'),
-        ])
-        await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
-        resolve()
-      } catch {
-        resolve()
-      }
-    }, 300)
-  })
+  return scheduleSplitwiseRefresh()
 }
 
 export function optimisticallyInsertSplitGroup(group, userId) {
@@ -771,7 +759,7 @@ export async function updateSplitExpenseMutation({
     p_split_method: splitMethod || 'equal',
     p_notes: notes || null,
     p_splits: payloadSplits,
-    p_transaction_category: transactionCategory || 'other',
+    p_transaction_category: transactionCategory || null,
   })
 
   if (error) throw error
@@ -833,6 +821,13 @@ export async function deleteSplitExpenseMutation(expenseId) {
   return data === true
 }
 
+export function findSelfMember(members, authUserId) {
+  const rows = Array.isArray(members) ? members : []
+  return rows.find((m) => authUserId && m.linked_user_id === authUserId)
+    || rows.find((m) => m.is_self && (!m.user_id || m.user_id === authUserId))
+    || null
+}
+
 export async function recordSplitSettlementMutation({ groupId, payerMemberId, payeeMemberId, amount, settledAt, note, id }) {
   if (getActiveWalletUserId() !== getAuthUserId()) {
     throw new Error('Shared wallets are view-only. You cannot record settlements here.')
@@ -878,6 +873,29 @@ export async function recordSplitSettlementMutation({ groupId, payerMemberId, pa
 
   await invalidateSplitwiseCache()
   return rpcRow
+}
+
+export async function updateSplitSettlementMutation({ settlementId, payerMemberId, payeeMemberId, amount, settledAt, note }) {
+  if (getActiveWalletUserId() !== getAuthUserId()) {
+    throw new Error('Shared wallets are view-only. You cannot edit settlements here.')
+  }
+  const safeAmount = round2(amount)
+  if (!settlementId) throw new Error('Settlement is required.')
+  if (!payerMemberId || !payeeMemberId) throw new Error('Both members are required.')
+  if (!Number.isFinite(safeAmount) || safeAmount <= 0) throw new Error('Settlement amount must be positive.')
+
+  const { data, error } = await supabase.rpc('split_update_settlement', {
+    p_settlement_id: settlementId,
+    p_payer_member_id: payerMemberId,
+    p_payee_member_id: payeeMemberId,
+    p_amount: safeAmount,
+    p_settled_at: settledAt || null,
+    p_note: note || null,
+  })
+  if (error) throw error
+
+  await invalidateSplitwiseCache()
+  return Array.isArray(data) ? data[0] : data
 }
 
 export async function deleteSplitSettlementMutation(settlementId) {

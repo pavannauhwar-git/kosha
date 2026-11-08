@@ -21,7 +21,7 @@ export default function Splitwise() {
   const {
     activeGroupId, setActiveGroupId, groups, members, expenses, settlements, groupsLoading,
     schemaMissing, activeGroup, activeMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
-    showCreateGroup, setShowCreateGroup, showAddExpense, setShowAddExpense, showSettlement, showAddMember, setShowAddMember,
+    showCreateGroup, setShowCreateGroup, showAddExpense, showSettlement, showAddMember, setShowAddMember,
     newMemberName, setNewMemberName, saving, consumingInvite, invitePreview, editExpense, setEditExpense, editSettlement, setEditSettlement,
     showBannerPicker, setShowBannerPicker, savedBannerId, showEditGroup, setShowEditGroup, editGroupForm, setEditGroupForm,
     showArchived, setShowArchived, groupForm, setGroupForm, expenseForm, setExpenseForm, splitInputs, setSplitInputs, settlementForm, setSettlementForm,
@@ -368,10 +368,15 @@ export default function Splitwise() {
                     label="Category"
                     value={expenseForm.transaction_category}
                     onChange={(event) => setExpenseForm((prev) => ({ ...prev, transaction_category: event.target.value }))}
-                    options={expenseCategoryOptions.map((cat) => ({
-                      value: cat.id,
-                      label: cat.label,
-                    }))}
+                    options={[
+                      ...(editExpense && !expenseForm.transaction_category
+                        ? [{ value: '', label: "Keep payer's category" }]
+                        : []),
+                      ...expenseCategoryOptions.map((cat) => ({
+                        value: cat.id,
+                        label: cat.label,
+                      })),
+                    ]}
                   />
                 </div>
 

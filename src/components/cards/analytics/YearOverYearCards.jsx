@@ -13,6 +13,7 @@ import {
 import { supabase } from '../../../lib/supabase'
 import { useActiveWallet } from '../../../lib/walletStore'
 import { fmt } from '../../../lib/utils'
+import { netCashflow } from '../../../lib/cashflow'
 import Select from '../../ui/Select'
 
 async function fetchYearSummary(year, userId) {
@@ -24,6 +25,7 @@ async function fetchYearSummary(year, userId) {
   if (!result) {
     return {
       totalIncome: 0,
+      totalRepayments: 0,
       totalExpense: 0,
       totalInvestment: 0,
     }
@@ -33,6 +35,7 @@ async function fetchYearSummary(year, userId) {
 
   return {
     totalIncome: Number(totals.income || 0),
+    totalRepayments: Number(totals.repayments || 0),
     totalExpense: Number(totals.expense || 0),
     totalInvestment: Number(totals.investment || 0),
   }
@@ -113,7 +116,7 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
         income,
         spent,
         invested,
-        net: income - spent - invested,
+        net: netCashflow({ income, repayments: payload.totalRepayments, expense: spent, investment: invested }),
       }
     })
   }, [years, yearQueries])
