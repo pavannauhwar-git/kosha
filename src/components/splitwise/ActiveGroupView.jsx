@@ -332,7 +332,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
                           <div className="text-right shrink-0 flex flex-col justify-start items-end">
                             <p className="text-[14px] font-bold text-ink tabular-nums">{fmt(t.amount)}</p>
                             {canManageGroup && (
-                              <div className="mt-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="mt-1 flex items-center gap-2">
                                 <button
                                   type="button"
                                   onClick={() => openEditExpense(t)}
@@ -343,11 +343,11 @@ const ActiveGroupView = memo(function ActiveGroupView({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => { void handleDeleteExpense(t.id) }}
+                                  onClick={() => { if (window.confirm('Delete this expense for everyone in the group?')) void handleDeleteExpense(t.id) }}
                                   className="text-[10px] font-semibold text-danger/80 hover:text-danger"
                                   disabled={!!saving}
                                 >
-                                  {isGroupAdmin ? 'Delete for all' : 'Remove'}
+                                  Delete for everyone
                                 </button>
                               </div>
                             )}
@@ -374,7 +374,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
                           <div className="text-right shrink-0 flex flex-col justify-start items-end">
                             <p className="text-[14px] font-bold text-success tabular-nums">{fmt(t.amount)}</p>
                             {canManageGroup && (
-                              <div className="mt-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="mt-1 flex items-center gap-2">
                                 <button
                                   type="button"
                                   onClick={() => openEditSettlement(t)}
@@ -385,11 +385,11 @@ const ActiveGroupView = memo(function ActiveGroupView({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => { void handleDeleteSettlement(t.id) }}
+                                  onClick={() => { if (window.confirm('Delete this settlement for everyone in the group?')) void handleDeleteSettlement(t.id) }}
                                   className="text-[10px] font-semibold text-danger/80 hover:text-danger"
                                   disabled={!!saving}
                                 >
-                                  {isGroupAdmin ? 'Delete for all' : 'Remove'}
+                                  Delete for everyone
                                 </button>
                               </div>
                             )}
