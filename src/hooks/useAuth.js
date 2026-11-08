@@ -295,6 +295,7 @@ export function useAuthState() {
   }, [])
 
   const signOut = useCallback(async () => {
+    let forceReload = false
     // Order matters here:
     //  1. Tell the server to revoke the session FIRST. If this fails
     //     (network drop) we still purge locally; the server-side session
@@ -308,7 +309,20 @@ export function useAuthState() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        await supabase.auth.signOut()
+        const { error } = await supabase.auth.signOut()
+        if (error) {
+          console.warn('[Kosha] server sign-out failed; removing the local session', error)
+          try { supabase.auth.stopAutoRefresh() } catch { /* ignore */ }
+          try {
+            const keys = []
+            for (let i = 0; i < localStorage.length; i += 1) {
+              const key = localStorage.key(i)
+              if (key && key.startsWith('sb-') && key.includes('-auth-token')) keys.push(key)
+            }
+            keys.forEach((key) => localStorage.removeItem(key))
+          } catch { /* ignore */ }
+          forceReload = true
+        }
       }
     } catch (err) {
       console.warn('[Kosha] server sign-out failed; clearing local state anyway', err)
@@ -321,6 +335,7 @@ export function useAuthState() {
       setLinkedUserIds([])
       setLinkedProfiles([])
       setProfileLoading(false)
+      if (forceReload && typeof window !== 'undefined') window.location.replace('/login')
     }
   }, [])
 
