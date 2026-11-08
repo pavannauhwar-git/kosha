@@ -264,7 +264,7 @@ async function main() {
     assertNoMissingFunctionError(error, 'split_consume_group_invite')
     const msg = String(error.message || '')
     if (
-      msg.includes('Invite not found or already used') ||
+      msg.includes('Invite not found') ||
       msg.includes('Authentication required')
     ) {
       return

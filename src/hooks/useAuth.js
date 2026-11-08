@@ -27,6 +27,18 @@ async function purgeAllUserScopedState() {
   try { await purgeServiceWorkerCaches() } catch (err) { console.warn('[Kosha] purgeServiceWorkerCaches failed', err) }
 }
 
+function removeLocalSupabaseSession() {
+  try { supabase.auth.stopAutoRefresh() } catch { /* ignore */ }
+  try {
+    const keys = []
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('sb-') && key.includes('-auth-token')) keys.push(key)
+    }
+    keys.forEach((key) => localStorage.removeItem(key))
+  } catch { /* ignore */ }
+}
+
 export function useAuthState() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -314,20 +326,14 @@ export function useAuthState() {
         const { error } = await supabase.auth.signOut()
         if (error) {
           console.warn('[Kosha] server sign-out failed; removing the local session', error)
-          try { supabase.auth.stopAutoRefresh() } catch { /* ignore */ }
-          try {
-            const keys = []
-            for (let i = 0; i < localStorage.length; i += 1) {
-              const key = localStorage.key(i)
-              if (key && key.startsWith('sb-') && key.includes('-auth-token')) keys.push(key)
-            }
-            keys.forEach((key) => localStorage.removeItem(key))
-          } catch { /* ignore */ }
+          removeLocalSupabaseSession()
           forceReload = true
         }
       }
     } catch (err) {
       console.warn('[Kosha] server sign-out failed; clearing local state anyway', err)
+      removeLocalSupabaseSession()
+      forceReload = true
     } finally {
       await purgeAllUserScopedState()
       clearAllPendingInvites()
