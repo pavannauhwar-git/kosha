@@ -126,7 +126,7 @@ export default function Dashboard() {
     loading: summaryLoading,
     fetching: summaryFetching,
   } = useMonthSummary(now.getFullYear(), now.getMonth() + 1)
-  const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(42)
+  const { data: dailyExpenseTotals = {} } = useDailyExpenseTotals(84)
   const balanceHorizonDate = useMemo(() => new Date(2099, 11, 31), [])
   const {
     balance: runningBalance,
@@ -456,7 +456,7 @@ export default function Dashboard() {
     }
   }, [])
 
-  // ── Reminders ──────────────────────────────────────────────────────────
+  // ── Reminders ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!reminderPrefs.enabled) return
 
@@ -935,8 +935,6 @@ export default function Dashboard() {
         </div>
 
       </div>
-
-
 
       {/* FAB — hidden in partner wallet view-only mode */}
       {!isViewingPartner && (
