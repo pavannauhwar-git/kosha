@@ -1082,7 +1082,7 @@ export function useSplitwiseLogic() {
       paid_by_member_id: expense.paid_by_member_id || '',
       split_method: expense.split_method || 'equal',
       notes: expense.notes || '',
-      transaction_category: expense.transactions?.category || 'other',
+      transaction_category: expense.transactions?.category || '',
     })
 
     const nextSplits = {}

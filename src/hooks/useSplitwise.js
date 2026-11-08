@@ -759,7 +759,7 @@ export async function updateSplitExpenseMutation({
     p_split_method: splitMethod || 'equal',
     p_notes: notes || null,
     p_splits: payloadSplits,
-    p_transaction_category: transactionCategory || 'other',
+    p_transaction_category: transactionCategory || null,
   })
 
   if (error) throw error

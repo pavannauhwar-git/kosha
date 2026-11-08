@@ -2866,7 +2866,7 @@ begin
         type        = 'expense',
         description = btrim(p_description),
         amount      = p_amount,
-        category    = coalesce(p_transaction_category, 'other'),
+        category    = coalesce(p_transaction_category, category, 'other'),
         notes       = nullif(btrim(coalesce(p_notes, '')), ''),
         linked_split_expense_id = p_expense_id
       where id = v_linked_txn;

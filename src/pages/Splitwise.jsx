@@ -368,10 +368,15 @@ export default function Splitwise() {
                     label="Category"
                     value={expenseForm.transaction_category}
                     onChange={(event) => setExpenseForm((prev) => ({ ...prev, transaction_category: event.target.value }))}
-                    options={expenseCategoryOptions.map((cat) => ({
-                      value: cat.id,
-                      label: cat.label,
-                    }))}
+                    options={[
+                      ...(editExpense && !expenseForm.transaction_category
+                        ? [{ value: '', label: "Keep payer's category" }]
+                        : []),
+                      ...expenseCategoryOptions.map((cat) => ({
+                        value: cat.id,
+                        label: cat.label,
+                      })),
+                    ]}
                   />
                 </div>
 
