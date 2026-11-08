@@ -18,6 +18,7 @@ export const LIABILITY_INVALIDATION_KEYS = [['liabilities'], ['liabilitiesMonth'
 
 export const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pending', targetUserId]
 export const LIABILITY_PAID_QUERY_KEY = (targetUserId) => ['liabilities', 'paid', targetUserId]
+export const LIABILITY_MONTH_QUERY_KEY = (year, month, targetUserId) => ['liabilitiesMonth', year, month, targetUserId]
 const LIABILITY_COLUMNS =
   'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode, paid_at'
 export const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id, payment_mode'
@@ -37,7 +38,7 @@ export async function invalidateLiabilityCache() {
   ])
 }
 
-async function fetchLiabilitiesByPaid(paidValue, targetUserId, signal) {
+export async function fetchLiabilitiesByPaid(paidValue, targetUserId, signal) {
   return traceQuery(`liabilities:${paidValue ? 'paid' : 'pending'}`, async () => {
     const { data: rows, error } = await supabase
       .from('liabilities')
@@ -96,28 +97,34 @@ function monthDateRange(year, month) {
   return { startDate, endDate }
 }
 
+export async function fetchLiabilitiesForMonth(year, month, targetUserId, signal) {
+  const { startDate, endDate } = monthDateRange(year, month)
+  if (!startDate || !endDate) return []
+  return traceQuery('liabilities:month', async () => {
+    let query = supabase
+      .from('liabilities')
+      .select(MONTH_LIABILITY_COLUMNS)
+      .eq('user_id', targetUserId)
+      .gte('due_date', startDate)
+      .lte('due_date', endDate)
+      .order('due_date', { ascending: true })
+    if (signal) query = query.abortSignal(signal)
+    const { data: rows, error } = await query
+    if (error) throw error
+    return rows || []
+  })
+}
+
 export function useLiabilitiesByMonth(year, month, options = {}) {
   const { enabled = true } = options
   const { startDate, endDate } = monthDateRange(year, month)
   const targetUserId = useActiveWallet()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['liabilitiesMonth', year, month, targetUserId],
+    queryKey: LIABILITY_MONTH_QUERY_KEY(year, month, targetUserId),
     enabled: enabled && !!startDate && !!endDate && !!targetUserId,
     refetchOnMount: true,
-    queryFn: async ({ signal }) => traceQuery('liabilities:month', async () => {
-      const { data: rows, error: queryError } = await supabase
-        .from('liabilities')
-        .select(MONTH_LIABILITY_COLUMNS)
-        .eq('user_id', targetUserId)
-        .gte('due_date', startDate)
-        .lte('due_date', endDate)
-        .order('due_date', { ascending: true })
-        .abortSignal(signal)
-
-      if (queryError) throw queryError
-      return rows || []
-    }),
+    queryFn: ({ signal }) => fetchLiabilitiesForMonth(year, month, targetUserId, signal),
     placeholderData: (prev, query) => (query?.queryKey?.[3] === targetUserId) ? prev : undefined,
   })
 

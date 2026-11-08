@@ -35,7 +35,7 @@ async function invalidateLoanCache() {
   await queryClient.invalidateQueries({ queryKey: ['loans'], refetchType: 'active' })
 }
 
-async function fetchLoans(direction, settledValue, targetUserId, signal) {
+export async function fetchLoans(direction, settledValue, targetUserId, signal) {
   const label = settledValue ? 'settled' : `active:${direction}`
   return traceQuery(`loans:${label}`, async () => {
     let query = supabase

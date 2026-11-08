@@ -8,7 +8,7 @@ import { getActiveWalletUserId, useActiveWallet } from '../../lib/walletStore'
 import { queryClient } from '../../lib/queryClient'
 import { supabase } from '../../lib/supabase'
 import { recordRuntimeRoute } from '../../lib/runtimeMonitor'
-import { parseMonthSummaryRows, syncRecurringTransactions } from '../../hooks/useTransactions'
+import { fetchMonthSummary, syncRecurringTransactions } from '../../hooks/useTransactions'
 import { ROUTE_PRELOADERS } from './AppRoutes'
 
 export const DASHBOARD_RECENT_COLUMNS =
@@ -185,16 +185,7 @@ export function DashboardWarmPrefetch() {
           }),
           queryClient.prefetchQuery({
             queryKey: ['month', year, month, targetUserId],
-            queryFn: async () => {
-              const { data: rows, error } = await supabase.rpc('get_month_summary', {
-                p_user_ids: [targetUserId],
-                p_year: year,
-                p_month: month,
-              })
-
-              if (error) throw error
-              return parseMonthSummaryRows(rows)
-            },
+            queryFn: () => fetchMonthSummary(year, month, targetUserId),
             staleTime: 30 * 1000,
           }),
           queryClient.prefetchQuery({
