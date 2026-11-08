@@ -43,3 +43,40 @@ export function billsDueByMonthEnd(bills, now = new Date()) {
 export function sumAmounts(rows) {
   return round2((Array.isArray(rows) ? rows : []).reduce((sum, row) => sum + (Number(row?.amount) || 0), 0))
 }
+
+export const FIXED_EXPENSE_CATEGORIES = new Set([
+  'rent', 'emi', 'insurance', 'bills', 'subscription', 'utilities',
+  'internet', 'mobile_recharge', 'taxes', 'loans', 'credit_card', 'education',
+])
+
+export const PROJECTION_MIN_DAYS = 7
+
+export function projectMonthClose({
+  income = 0,
+  repayments = 0,
+  expense = 0,
+  investment = 0,
+  byCategory = {},
+  unpaidBillsDue = 0,
+  daysElapsed = 1,
+  daysInMonth = 30,
+} = {}) {
+  const days = Math.max(1, Number(daysInMonth) || 1)
+  const elapsed = Math.min(days, Math.max(1, Number(daysElapsed) || 1))
+  let fixedSpent = 0
+  for (const [categoryId, amount] of Object.entries(byCategory || {})) {
+    if (FIXED_EXPENSE_CATEGORIES.has(categoryId)) fixedSpent += Number(amount) || 0
+  }
+  const variableSpent = Math.max(0, (Number(expense) || 0) - fixedSpent)
+  const projectedVariable = (variableSpent / elapsed) * days
+  const projectedOutflow = round2(fixedSpent + (Number(investment) || 0) + projectedVariable + (Number(unpaidBillsDue) || 0))
+  const inflow = round2((Number(income) || 0) + (Number(repayments) || 0))
+  return {
+    inflow,
+    fixedSpent: round2(fixedSpent),
+    variableSpent: round2(variableSpent),
+    projectedOutflow,
+    netAtClose: round2(inflow - projectedOutflow),
+    early: elapsed < PROJECTION_MIN_DAYS,
+  }
+}

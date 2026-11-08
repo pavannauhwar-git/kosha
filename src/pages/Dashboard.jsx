@@ -16,7 +16,7 @@ import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, daysUntil } from '../lib/utils'
-import { savingsRate, netCashflow, billsDueByMonthEnd, sumAmounts } from '../lib/cashflow'
+import { savingsRate, netCashflow, billsDueByMonthEnd, sumAmounts, projectMonthClose } from '../lib/cashflow'
 import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
@@ -221,9 +221,19 @@ export default function Dashboard() {
     const totalOutflow = spent + invested
     const paceExpected = (dayOfMonth / daysInMonth) * 100
     const paceActual = Math.round((totalOutflow / inflow) * 100)
-    const ahead = paceActual > paceExpected + 5
+    const projection = projectMonthClose({
+      income: earned,
+      repayments,
+      expense: spent,
+      investment: invested,
+      byCategory: summary?.byCategory,
+      unpaidBillsDue: billsDueTotal,
+      daysElapsed: dayOfMonth,
+      daysInMonth,
+    })
+    const ahead = !projection.early && projection.netAtClose < 0
     return { paceActual, paceExpected: Math.round(paceExpected), ahead }
-  }, [inflow, spent, invested, dayOfMonth, daysInMonth, heroLoading])
+  }, [earned, repayments, inflow, spent, invested, summary?.byCategory, billsDueTotal, dayOfMonth, daysInMonth, heroLoading])
 
   // ── Runway balance (days left vs money left) ───────────────────────
   const runwayBalance = useMemo(() => {

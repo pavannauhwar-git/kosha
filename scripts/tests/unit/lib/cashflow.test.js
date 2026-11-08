@@ -7,6 +7,7 @@ import {
   endOfMonthISO,
   billsDueByMonthEnd,
   sumAmounts,
+  projectMonthClose,
 } from '../../../../src/lib/cashflow'
 
 describe('savingsRate', () => {
@@ -49,5 +50,19 @@ describe('billsDueByMonthEnd', () => {
     expect(endOfMonthISO(now)).toBe('2026-11-30')
     expect(billsDueByMonthEnd(bills, now).map((b) => b.id)).toEqual(['overdue', 'later-this-month'])
     expect(sumAmounts(billsDueByMonthEnd(bills, now))).toBe(300)
+  })
+})
+
+describe('projectMonthClose', () => {
+  it('projects only variable spending', () => {
+    const p = projectMonthClose({
+      income: 100000, repayments: 0, expense: 30000, investment: 10000,
+      byCategory: { rent: 25000, food: 5000 }, unpaidBillsDue: 2000,
+      daysElapsed: 10, daysInMonth: 30,
+    })
+    expect(p).toEqual({ inflow: 100000, fixedSpent: 25000, variableSpent: 5000, projectedOutflow: 52000, netAtClose: 48000, early: false })
+  })
+  it('flags the first week as too early', () => {
+    expect(projectMonthClose({ income: 1000, expense: 900, byCategory: { food: 900 }, daysElapsed: 3, daysInMonth: 30 }).early).toBe(true)
   })
 })
