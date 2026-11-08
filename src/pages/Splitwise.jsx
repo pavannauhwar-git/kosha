@@ -200,7 +200,6 @@ export default function Splitwise() {
             selfNet={selfNet}
             handleSettleUpClick={handleSettleUpClick}
             openAddExpense={openAddExpense}
-            setShowAddExpense={setShowAddExpense}
             totalExpenses={totalExpenses}
             expenses={expenses}
             settlements={settlements}

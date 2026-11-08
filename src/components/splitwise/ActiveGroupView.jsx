@@ -23,7 +23,6 @@ const ActiveGroupView = memo(function ActiveGroupView({
   handleDeleteMember,
   memberSpendingStats,
   setShowAddMember,
-  _setShowAddExpense,
   openAddExpense,
   canManageGroup,
   handleSettleUpClick,
