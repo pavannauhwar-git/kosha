@@ -7,6 +7,7 @@ import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
 import { traceQuery } from '../lib/queryTrace'
 import { todayStr } from '../lib/utils'
+import { createDebouncedTask } from '../lib/debouncedTask'
 
 export const inFlightDeletedTxnIds = new Set()
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
@@ -231,43 +232,28 @@ function applyTransactionSearchFilter(query, search) {
 }
 
 
-let invalidateTimeout = null
+const scheduleTransactionRefresh = createDebouncedTask(() => Promise.all([
+  queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['transactionSignalAggregates'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['yearDailyExpenseTotals'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
+  queryClient.invalidateQueries({ queryKey: ['monthly_net_changes'], refetchType: 'active' }),
+]), 80)
 
 export async function invalidateCache() {
   // Suppress the realtime double-fetch that would otherwise fire
   // ~300-500ms later for the same mutation.
   suppress('transactions')
   await evictSwCacheEntries('/transactions')
-
-  if (invalidateTimeout) {
-    clearTimeout(invalidateTimeout)
-  }
-
-  return new Promise((resolve) => {
-    invalidateTimeout = setTimeout(async () => {
-      invalidateTimeout = null
-      try {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionSignalAggregates'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['yearDailyExpenseTotals'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
-          queryClient.invalidateQueries({ queryKey: ['monthly_net_changes'], refetchType: 'active' }),
-        ])
-        resolve()
-      } catch {
-        resolve()
-      }
-    }, 80)
-  })
+  return scheduleTransactionRefresh()
 }
 
 // ── Debounce hook ─────────────────────────────────────────────────────────

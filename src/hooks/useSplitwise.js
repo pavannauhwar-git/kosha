@@ -8,6 +8,7 @@ import { suppress } from '../lib/mutationGuard.js'
 import { traceQuery } from '../lib/queryTrace.js'
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog.js'
 import { round2 } from '../lib/paise.js'
+import { createDebouncedTask } from '../lib/debouncedTask.js'
 import {
   buildEqualSplits,
   buildExactSplits,
@@ -158,38 +159,25 @@ async function fetchSettlements(groupId) {
   })
 }
 
-let invalidationTimeout = null
+const scheduleSplitwiseRefresh = createDebouncedTask(async () => {
+  suppress('splitwise')
+  await Promise.all([
+    evictSwCacheEntries('/split_groups'),
+    evictSwCacheEntries('/split_group_access'),
+    evictSwCacheEntries('/split_group_members'),
+    evictSwCacheEntries('/split_group_invites'),
+    evictSwCacheEntries('/split_expenses'),
+    evictSwCacheEntries('/split_expense_splits'),
+    evictSwCacheEntries('/split_settlements'),
+  ])
+  await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
+}, 300)
+
 export async function invalidateSplitwiseCache() {
   // Fire transactions cache invalidation immediately in parallel — don't wait for
-  // the splitwise 300 ms debounce. This cuts the worst-case stale window on
-  // Dashboard/Transactions from ~600 ms to ~300 ms.
+  // the splitwise 300 ms debounce.
   import('./useTransactions.js').then(m => m.invalidateCache()).catch(() => { })
-
-  if (invalidationTimeout) {
-    clearTimeout(invalidationTimeout)
-  }
-
-  return new Promise((resolve) => {
-    invalidationTimeout = setTimeout(async () => {
-      invalidationTimeout = null
-      suppress('splitwise')
-      try {
-        await Promise.all([
-          evictSwCacheEntries('/split_groups'),
-          evictSwCacheEntries('/split_group_access'),
-          evictSwCacheEntries('/split_group_members'),
-          evictSwCacheEntries('/split_group_invites'),
-          evictSwCacheEntries('/split_expenses'),
-          evictSwCacheEntries('/split_expense_splits'),
-          evictSwCacheEntries('/split_settlements'),
-        ])
-        await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
-        resolve()
-      } catch {
-        resolve()
-      }
-    }, 300)
-  })
+  return scheduleSplitwiseRefresh()
 }
 
 export function optimisticallyInsertSplitGroup(group, userId) {

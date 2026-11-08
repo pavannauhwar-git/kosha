@@ -1,5 +1,6 @@
 import { QueryClient, MutationCache, QueryCache } from '@tanstack/react-query'
 import { captureError, isExpectedMutationError } from './errorReporting'
+import { createDebouncedTask } from './debouncedTask'
 
 
 const queryCache = new QueryCache({
@@ -64,30 +65,17 @@ export const queryClient = new QueryClient({
 })
 
 let invalidationQueue = []
-let invalidationTimeout = null
+
+const scheduleFamilyInvalidation = createDebouncedTask(() => {
+  const keysToInvalidate = [...new Set(invalidationQueue.map(k => JSON.stringify(k)))].map(k => JSON.parse(k))
+  invalidationQueue = []
+  return Promise.all(keysToInvalidate.map(queryKey => queryClient.invalidateQueries({ queryKey })))
+}, 50)
 
 export function invalidateQueryFamilies(queryKeys) {
   if (!Array.isArray(queryKeys)) return Promise.resolve()
-  
-  return new Promise((resolve) => {
-    invalidationQueue.push(...queryKeys)
-    
-    if (invalidationTimeout) {
-      clearTimeout(invalidationTimeout)
-    }
-    
-    invalidationTimeout = setTimeout(() => {
-      const keysToInvalidate = [...new Set(invalidationQueue.map(k => JSON.stringify(k)))].map(k => JSON.parse(k))
-      invalidationQueue = []
-      invalidationTimeout = null
-      
-      Promise.all(
-        keysToInvalidate.map(queryKey =>
-          queryClient.invalidateQueries({ queryKey })
-        )
-      ).then(resolve)
-    }, 50)
-  })
+  invalidationQueue.push(...queryKeys)
+  return scheduleFamilyInvalidation()
 }
 
 // Map API routes to query prefixes for targeted Service Worker cache invalidation
