@@ -778,6 +778,7 @@ export async function fetchYearSummary(year, targetUserId) {
       monthly: Array.from({ length: 12 }, (_, i) => ({
         month: i + 1,
         income: 0,
+        repayments: 0,
         expense: 0,
         investment: 0,
       })),
@@ -805,6 +806,7 @@ export async function fetchYearSummary(year, targetUserId) {
     return {
       month:      i + 1,
       income:     Number(m.income     || 0),
+      repayments: Number(m.repayments || 0),
       expense:    Number(m.expense    || 0),
       investment: Number(m.investment || 0),
     }

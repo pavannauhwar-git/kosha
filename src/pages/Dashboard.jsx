@@ -16,7 +16,7 @@ import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 import { useAuth } from '../context/AuthContext'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import { fmt, daysUntil } from '../lib/utils'
-import { savingsRate } from '../lib/cashflow'
+import { savingsRate, netCashflow } from '../lib/cashflow'
 import { bandTextClass, scoreRiskBand } from '../lib/insightBands'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
@@ -148,6 +148,8 @@ export default function Dashboard() {
   const earned = summary?.earned || 0
   const spent = summary?.expense || 0
   const invested = summary?.investment || 0
+  const repayments = summary?.repayments || 0
+  const inflow = earned + repayments
   const rate = savingsRate(earned, spent)
 
   const hour = now.getHours()
@@ -200,30 +202,29 @@ export default function Dashboard() {
   // ── Spendable today ────────────────────────────────────────────────────
   const spendableToday = useMemo(() => {
     if (heroLoading) return { daily: 0, remaining: 0, pendingBillsTotal: 0 }
-    const totalOutflow = spent + invested
-    const remaining = earned - totalOutflow
+    const remaining = netCashflow({ income: earned, repayments, expense: spent, investment: invested })
     const pendingBillsTotal = bills.reduce((sum, b) => sum + Number(b.amount || 0), 0)
     const afterBills = Math.max(0, remaining - pendingBillsTotal)
     const daily = daysRemaining > 0 ? Math.round(afterBills / daysRemaining) : 0
     return { daily, remaining: afterBills, pendingBillsTotal }
-  }, [earned, spent, invested, bills, daysRemaining, heroLoading])
+  }, [earned, repayments, spent, invested, bills, daysRemaining, heroLoading])
 
   // ── Budget burn rate ───────────────────────────────────────────────────
   const burnRate = useMemo(() => {
-    if (heroLoading || earned <= 0) return null
+    if (heroLoading || inflow <= 0) return null
     const totalOutflow = spent + invested
     const paceExpected = (dayOfMonth / daysInMonth) * 100
-    const paceActual = Math.round((totalOutflow / earned) * 100)
+    const paceActual = Math.round((totalOutflow / inflow) * 100)
     const ahead = paceActual > paceExpected + 5
     return { paceActual, paceExpected: Math.round(paceExpected), ahead }
-  }, [earned, spent, invested, dayOfMonth, daysInMonth, heroLoading])
+  }, [inflow, spent, invested, dayOfMonth, daysInMonth, heroLoading])
 
   // ── Runway balance (days left vs money left) ───────────────────────
   const runwayBalance = useMemo(() => {
-    if (heroLoading || earned <= 0) return null
+    if (heroLoading || inflow <= 0) return null
 
     const daysLeftPct = Math.round((daysRemaining / Math.max(1, daysInMonth)) * 100)
-    const moneyLeftPctRaw = Math.round((spendableToday.remaining / earned) * 100)
+    const moneyLeftPctRaw = Math.round((spendableToday.remaining / inflow) * 100)
     const moneyLeftPct = Math.max(0, Math.min(100, moneyLeftPctRaw))
     const gapPct = daysLeftPct - moneyLeftPct
     const band = scoreRiskBand(gapPct, { high: 12, watch: 4 })
@@ -234,7 +235,7 @@ export default function Dashboard() {
       gapPct,
       band,
     }
-  }, [earned, spendableToday.remaining, daysRemaining, daysInMonth, heroLoading])
+  }, [inflow, spendableToday.remaining, daysRemaining, daysInMonth, heroLoading])
 
   // ── Category pressure signal ─────────────────────────────────────────
   const categoryPressureSignal = useMemo(() => {
@@ -721,7 +722,7 @@ export default function Dashboard() {
         )}
 
         {/* ── Spendable today + burn rate ───────────────────────────── */}
-        {!heroLoading && earned > 0 && (
+        {!heroLoading && inflow > 0 && (
           <div className="card-spring-in fade-up-3">
             <div className="grid grid-cols-2 gap-2.5">
               <div className="card p-3.5 border-0">

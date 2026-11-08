@@ -22,6 +22,7 @@ import MerchantIntelCard from '../components/cards/monthly/MerchantIntelCard'
 import { CashflowWaterfallChart } from '../components/analytics/AnalyticsCharts'
 import Button from '../components/ui/Button'
 import { readLocalJson, writeLocalJson } from '../lib/safeStorage'
+import { netCashflow } from '../lib/cashflow'
 
 
 const MIN_NAV_YEAR = 1900
@@ -296,7 +297,7 @@ export default function Monthly() {
 
   const monthCloseSummary = useMemo(() => {
     const totalOutflow = spent + invested
-    const net = inflow - totalOutflow
+    const net = netCashflow({ income: earned, repayments, expense: spent, investment: invested })
 
     const periodEnd = new Date(year, month, 0)
     periodEnd.setHours(0, 0, 0, 0)
@@ -390,7 +391,7 @@ export default function Monthly() {
       confidenceLabel,
       confidenceHint,
     }
-  }, [inflow, spent, invested, year, month])
+  }, [inflow, earned, repayments, spent, invested, year, month])
 
   const monthOverMonthSignal = useMemo(() => {
     if (!previousMonthData) return null
@@ -399,7 +400,12 @@ export default function Monthly() {
     const previousInflow = Number(previousMonthData.earned || 0) + Number(previousMonthData.repayments || 0)
     const previousOutflow = Number(previousMonthData.expense || 0) + Number(previousMonthData.investment || 0)
     const currentNet = monthCloseSummary.net
-    const previousNet = previousInflow - previousOutflow
+    const previousNet = netCashflow({
+      income: previousMonthData.earned,
+      repayments: previousMonthData.repayments,
+      expense: previousMonthData.expense,
+      investment: previousMonthData.investment,
+    })
 
     return {
       previousLabel: `${MONTH_NAMES[previousPeriod.month - 1].slice(0, 3)} ${previousPeriod.year}`,

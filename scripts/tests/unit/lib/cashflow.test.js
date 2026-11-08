@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { savingsRate, formatSavingsRate, averageSavingsRate } from '../../../../src/lib/cashflow'
+import { savingsRate, formatSavingsRate, averageSavingsRate, netCashflow } from '../../../../src/lib/cashflow'
 
 describe('savingsRate', () => {
   it('is (income − expenses) ÷ income', () => {
@@ -19,5 +19,12 @@ describe('savingsRate', () => {
   it('averages only months with income', () => {
     expect(averageSavingsRate([{ income: 100, expense: 50 }, { income: 0, expense: 10 }, { income: 100, expense: 120 }])).toBe(15)
     expect(averageSavingsRate([])).toBeNull()
+  })
+})
+
+describe('netCashflow', () => {
+  it('counts repayments received as inflow', () => {
+    expect(netCashflow({ income: 0, repayments: 4000, expense: 6000, investment: 0 })).toBe(-2000)
+    expect(netCashflow({ income: 100000, repayments: 2000, expense: 30000, investment: 10000 })).toBe(62000)
   })
 })

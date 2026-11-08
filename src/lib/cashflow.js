@@ -21,3 +21,8 @@ export function averageSavingsRate(monthlyRows) {
   if (!rates.length) return null
   return Math.round(rates.reduce((sum, rate) => sum + rate, 0) / rates.length)
 }
+
+// Net = income + repayments received − expenses − investments.
+export function netCashflow({ income = 0, repayments = 0, expense = 0, investment = 0 } = {}) {
+  return round2((Number(income) || 0) + (Number(repayments) || 0) - (Number(expense) || 0) - (Number(investment) || 0))
+}

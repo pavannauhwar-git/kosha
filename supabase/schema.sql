@@ -1087,6 +1087,7 @@ CREATE OR REPLACE FUNCTION public.get_year_summary(p_user_ids uuid[], p_year int
     select
       extract(month from date)::int as month_num,
       sum(case when type = 'income' and not is_repayment then amount else 0 end) as income,
+      sum(case when type = 'income' and is_repayment     then amount else 0 end) as repayments,
       sum(case when type = 'expense'    then amount else 0 end)       as expense,
       sum(case when type = 'investment' then amount else 0 end)       as investment
     from year_data
