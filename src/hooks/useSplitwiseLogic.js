@@ -39,6 +39,7 @@ import {
   setSplitGroupAccessRoleMutation,
 } from './useSplitwise'
 import { useAppMutation } from './useAppMutation'
+import { useUndoableDelete } from './useUndoableDelete'
 import { getCategoriesForType } from '../lib/categories'
 import { clearPendingInvite, readPendingInvite, PENDING_SPLIT_INVITE_KEY } from '../lib/invites'
 import { useUserCategories } from './useUserCategories'
@@ -248,9 +249,18 @@ export function useSplitwiseLogic() {
   })
   const [splitInputs, setSplitInputs] = useState({})
   const actionGuard = useRef(false)
-  // Undo-delete state: holds the pending deletion during the 7s undo window.
-  const pendingExpenseDeleteRef = useRef(null)   // { expenseId, expense, groupId, timerId }
-  const pendingSettlementDeleteRef = useRef(null) // { settlementId, settlement, groupId, timerId }
+  const expenseUndo = useUndoableDelete({
+    commit: (id) => deleteExpenseAsync(id),
+    restore: ({ groupId, expense }) => optimisticallyInsertSplitExpense(groupId, expense),
+    onError: (err) => pushToast(toToastMessage(err, 'Could not delete expense.')),
+    windowMs: 7000,
+  })
+  const settlementUndo = useUndoableDelete({
+    commit: (id) => deleteSettlementAsync(id),
+    restore: ({ groupId, settlement }) => optimisticallyInsertSplitSettlement(groupId, settlement),
+    onError: (err) => pushToast(toToastMessage(err, 'Could not delete settlement.')),
+    windowMs: 7000,
+  })
 
 
   const [settlementForm, setSettlementForm] = useState({
@@ -261,21 +271,6 @@ export function useSplitwiseLogic() {
     note: '',
   })
 
-  // On unmount: commit any deletion that was still pending in the Undo window.
-  useEffect(() => {
-    return () => {
-      const pe = pendingExpenseDeleteRef.current
-      if (pe?.timerId) {
-        clearTimeout(pe.timerId)
-        void deleteSplitExpenseMutation(pe.expenseId)
-      }
-      const ps = pendingSettlementDeleteRef.current
-      if (ps?.timerId) {
-        clearTimeout(ps.timerId)
-        void deleteSplitSettlementMutation(ps.settlementId)
-      }
-    }
-  }, [])
 
   useEffect(() => {
     if (!groups.length) {
@@ -1125,49 +1120,14 @@ export function useSplitwiseLogic() {
     const expense = expenses.find(e => e.id === expenseId)
     if (!expense) return
 
-    // If a different expense is already pending deletion, commit it immediately
-    // so we don't silently drop an action the user hasn't undone.
-    const prevPending = pendingExpenseDeleteRef.current
-    if (prevPending?.timerId && prevPending.expenseId !== expenseId) {
-      clearTimeout(prevPending.timerId)
-      pendingExpenseDeleteRef.current = null
-      try {
-        await deleteExpenseAsync(prevPending.expenseId)
-      } catch (err) {
-        optimisticallyInsertSplitExpense(prevPending.groupId, prevPending.expense)
-        pushToast(toToastMessage(err, 'Could not delete expense.'))
-      }
-    }
-
-    // Capture current group so the closure stays correct if the user switches groups.
     const gid = activeGroupId
-
-    // Optimistic remove — UI updates instantly.
     optimisticallyDeleteSplitExpense(gid, expenseId)
+    expenseUndo.schedule(expenseId, { groupId: gid, expense })
 
-    // Build a contextual message: "Expense deleted for 3 members."
     const splitCount = expense.split_expense_splits?.length ?? 0
     const memberLabel = splitCount > 1 ? `${splitCount} members` : 'the group'
-
-    const timerId = setTimeout(async () => {
-      pendingExpenseDeleteRef.current = null
-      try {
-        await deleteExpenseAsync(expenseId)
-      } catch (err) {
-        // RPC failed — restore the item so the user doesn't lose data.
-        optimisticallyInsertSplitExpense(gid, expense)
-        pushToast(toToastMessage(err, 'Could not delete expense.'))
-      }
-    }, 7000)
-
-    pendingExpenseDeleteRef.current = { expenseId, expense, groupId: gid, timerId }
-
     pushToast(`Expense deleted for ${memberLabel}.`, {
-      action: () => {
-        clearTimeout(timerId)
-        pendingExpenseDeleteRef.current = null
-        optimisticallyInsertSplitExpense(gid, expense)
-      },
+      action: () => { expenseUndo.undo(expenseId) },
       actionLabel: 'Undo',
       duration: 7500,
     })
@@ -1183,42 +1143,12 @@ export function useSplitwiseLogic() {
     const settlement = settlements.find(s => s.id === settlementId)
     if (!settlement) return
 
-    // Commit any other pending settlement deletion first.
-    const prevPending = pendingSettlementDeleteRef.current
-    if (prevPending?.timerId && prevPending.settlementId !== settlementId) {
-      clearTimeout(prevPending.timerId)
-      pendingSettlementDeleteRef.current = null
-      try {
-        await deleteSettlementAsync(prevPending.settlementId)
-      } catch (err) {
-        optimisticallyInsertSplitSettlement(prevPending.groupId, prevPending.settlement)
-        pushToast(toToastMessage(err, 'Could not delete settlement.'))
-      }
-    }
-
     const gid = activeGroupId
-
-    // Optimistic remove.
     optimisticallyDeleteSplitSettlement(gid, settlementId)
-
-    const timerId = setTimeout(async () => {
-      pendingSettlementDeleteRef.current = null
-      try {
-        await deleteSettlementAsync(settlementId)
-      } catch (err) {
-        optimisticallyInsertSplitSettlement(gid, settlement)
-        pushToast(toToastMessage(err, 'Could not delete settlement.'))
-      }
-    }, 7000)
-
-    pendingSettlementDeleteRef.current = { settlementId, settlement, groupId: gid, timerId }
+    settlementUndo.schedule(settlementId, { groupId: gid, settlement })
 
     pushToast('Settlement deleted.', {
-      action: () => {
-        clearTimeout(timerId)
-        pendingSettlementDeleteRef.current = null
-        optimisticallyInsertSplitSettlement(gid, settlement)
-      },
+      action: () => { settlementUndo.undo(settlementId) },
       actionLabel: 'Undo',
       duration: 7500,
     })
@@ -1296,7 +1226,7 @@ export function useSplitwiseLogic() {
     handleLeaveGroup, handleAddMember, handleAddExpense, handleDeleteExpense, handleRecordSettlement, handleDeleteSettlement,
     applySuggestedTransfer,
     resolveMemberName, resolveMemberAvatar, memberInitial, BANNERS, SPLIT_METHOD_OPTIONS,
-    activeWalletUserId, authUserId, pendingExpenseDeleteRef, pendingSettlementDeleteRef,
+    activeWalletUserId, authUserId,
     roleByUserId, memberById, openAddExpense, openEditExpense, openEditSettlement, memberSpendingStats, txnsListRef,
     txnsTopPadding, txnsBottomPadding, measureTxnElement, renderedTransactions, txnsStartIndex,
     transactions
