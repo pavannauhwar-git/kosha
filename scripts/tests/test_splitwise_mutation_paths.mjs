@@ -154,15 +154,14 @@ async function main() {
     const splitTotal = round2((splitRows || []).reduce((sum, row) => sum + Number(row.share || 0), 0))
     assert(splitTotal === 120, `Split total mismatch. Expected 120, got ${splitTotal}`)
 
-    const { data: balancesAfterExpense, error: balanceExpenseError } = await client.rpc('split_group_balances', {
-      p_group_id: groupId,
-      p_user_id: user.id,
-    })
+    const memberNet = async (memberId, label) => {
+      const { data, error } = await client.rpc('split_member_net_balance', { p_member_id: memberId })
+      if (error) throw new Error(`split_member_net_balance ${label} failed: ${error.message}`)
+      return round2(Number(data || 0))
+    }
 
-    if (balanceExpenseError) throw new Error(`split_group_balances after expense failed: ${balanceExpenseError.message}`)
-
-    const selfAfterExpense = round2((balancesAfterExpense || []).find((row) => row.member_id === selfMemberId)?.net || 0)
-    const friendAfterExpense = round2((balancesAfterExpense || []).find((row) => row.member_id === friendMemberId)?.net || 0)
+    const selfAfterExpense = await memberNet(selfMemberId, 'after expense')
+    const friendAfterExpense = await memberNet(friendMemberId, 'after expense')
     assert(selfAfterExpense === 60, `Expected self balance +60 after expense, got ${selfAfterExpense}`)
     assert(friendAfterExpense === -60, `Expected friend balance -60 after expense, got ${friendAfterExpense}`)
 
@@ -179,15 +178,8 @@ async function main() {
     if (settlementError) throw new Error(`split_record_settlement failed: ${settlementError.message}`)
     assert(!!settlementRow?.id, 'split_record_settlement did not return settlement id')
 
-    const { data: balancesAfterSettlement, error: balanceSettlementError } = await client.rpc('split_group_balances', {
-      p_group_id: groupId,
-      p_user_id: user.id,
-    })
-
-    if (balanceSettlementError) throw new Error(`split_group_balances after settlement failed: ${balanceSettlementError.message}`)
-
-    const selfAfterSettlement = round2((balancesAfterSettlement || []).find((row) => row.member_id === selfMemberId)?.net || 0)
-    const friendAfterSettlement = round2((balancesAfterSettlement || []).find((row) => row.member_id === friendMemberId)?.net || 0)
+    const selfAfterSettlement = await memberNet(selfMemberId, 'after settlement')
+    const friendAfterSettlement = await memberNet(friendMemberId, 'after settlement')
     assert(selfAfterSettlement === 30, `Expected self balance +30 after settlement, got ${selfAfterSettlement}`)
     assert(friendAfterSettlement === -30, `Expected friend balance -30 after settlement, got ${friendAfterSettlement}`)
 
