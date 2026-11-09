@@ -7,6 +7,9 @@ on:
       - master
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -14,6 +17,7 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,9 +30,12 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
   unit-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       VITE_SUPABASE_URL: "http://localhost:54321"
       VITE_SUPABASE_ANON_KEY: "dummy-key"
@@ -49,6 +56,7 @@ jobs:
 
   version-changelog-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,6 +70,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -77,10 +86,15 @@ jobs:
 
   deploy-readiness:
     runs-on: ubuntu-latest
-    needs: build
+    timeout-minutes: 10
+    needs: [lint, unit-tests, build]
+    concurrency:
+      group: live-supabase-readiness
+      cancel-in-progress: false
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      E2E_EXPECTED_PROJECT_REF: ${{ secrets.E2E_EXPECTED_PROJECT_REF }}
       E2E_SESSION_EMAIL: ${{ secrets.E2E_SESSION_EMAIL }}
       E2E_SESSION_PASSWORD: ${{ secrets.E2E_SESSION_PASSWORD }}
     steps:
@@ -99,6 +113,7 @@ jobs:
           missing=0
           [[ -z "$VITE_SUPABASE_URL" ]] && missing=1
           [[ -z "$VITE_SUPABASE_ANON_KEY" ]] && missing=1
+          [[ -z "$E2E_EXPECTED_PROJECT_REF" ]] && missing=1
           [[ -z "$E2E_SESSION_EMAIL" ]] && missing=1
           [[ -z "$E2E_SESSION_PASSWORD" ]] && missing=1
 
@@ -119,10 +134,17 @@ jobs:
 
   runtime-verification:
     runs-on: ubuntu-latest
-    needs: [build, deploy-readiness]
+    timeout-minutes: 20
+    needs: [lint, unit-tests, build, deploy-readiness]
+    # The live tests share one set of accounts, so runs from different
+    # branches must queue instead of overlapping.
+    concurrency:
+      group: live-supabase-runtime
+      cancel-in-progress: false
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      E2E_EXPECTED_PROJECT_REF: ${{ secrets.E2E_EXPECTED_PROJECT_REF }}
       APP_BASE_URL: http://localhost:5173
       E2E_CREATOR_EMAIL: ${{ secrets.E2E_CREATOR_EMAIL }}
       E2E_CREATOR_PASSWORD: ${{ secrets.E2E_CREATOR_PASSWORD }}
@@ -146,6 +168,7 @@ jobs:
           missing=0
           [[ -z "$VITE_SUPABASE_URL" ]] && missing=1
           [[ -z "$VITE_SUPABASE_ANON_KEY" ]] && missing=1
+          [[ -z "$E2E_EXPECTED_PROJECT_REF" ]] && missing=1
           [[ -z "$E2E_CREATOR_EMAIL" ]] && missing=1
           [[ -z "$E2E_CREATOR_PASSWORD" ]] && missing=1
           [[ -z "$E2E_JOINER_EMAIL" ]] && missing=1
@@ -167,6 +190,15 @@ jobs:
       - name: 'Runtime test: join flow'
         if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
         run: npm run test:join-flow
+      - name: 'Runtime test: RLS partner isolation'
+        if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
+        run: npm run test:rls-partner-isolation
+      - name: 'Runtime test: splitwise mutation paths'
+        if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
+        run: npm run lint:splitwise-mutation-paths
+      - name: 'Runtime test: splitwise viewer invite flow'
+        if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
+        run: npm run test:splitwise-viewer-invite-flow
       - name: 'Runtime test: liabilities realtime'
         if: ${{ steps.runtime-secrets.outputs.skip != 'true' }}
         run: npm run test:liabilities-realtime

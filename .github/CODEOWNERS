@@ -1,9 +1,9 @@
 # Default owner for all files
-* @pavannauhwar
+* @pavannauhwar-git
 
 # Critical delivery and data-safety surfaces
-/.github/workflows/ @pavannauhwar
-/scripts/ @pavannauhwar
-/supabase/ @pavannauhwar
-/src/hooks/ @pavannauhwar
-/src/lib/ @pavannauhwar
+/.github/workflows/ @pavannauhwar-git
+/scripts/ @pavannauhwar-git
+/supabase/ @pavannauhwar-git
+/src/hooks/ @pavannauhwar-git
+/src/lib/ @pavannauhwar-git
