@@ -1696,6 +1696,20 @@ ALTER TABLE public.split_group_members
     ADD COLUMN IF NOT EXISTS user_id uuid,
     ADD COLUMN IF NOT EXISTS archived_at timestamp with time zone;
 
+-- Function: public.shares_split_group_with(uuid)
+CREATE OR REPLACE FUNCTION public.shares_split_group_with(p_other uuid) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+  select exists (
+    select 1
+    from public.split_group_members m
+    join public.split_group_access a on a.group_id = m.group_id
+    where m.linked_user_id = p_other
+      and a.user_id = auth.uid()
+  );
+$$;
+
 -- Function: public.split_archive_member(uuid)
 CREATE OR REPLACE FUNCTION public.split_archive_member(p_member_id uuid) RETURNS public.split_group_members
     LANGUAGE plpgsql SECURITY DEFINER
@@ -2339,6 +2353,43 @@ begin
   set linked_user_id = null
   where group_id = p_group_id
     and linked_user_id = v_uid;
+
+  -- The leaver's own ledger rows stay theirs. Unlink them so later edits or
+  -- deletes in the group can't rewrite or remove them.
+  update split_expenses e
+  set linked_transaction_id = null
+  from transactions t
+  where e.group_id = p_group_id
+    and t.id = e.linked_transaction_id
+    and t.user_id = v_uid;
+
+  update transactions t
+  set linked_split_expense_id = null
+  from split_expenses e
+  where e.group_id = p_group_id
+    and t.linked_split_expense_id = e.id
+    and t.user_id = v_uid;
+
+  update split_settlements s
+  set payer_transaction_id = null
+  from transactions t
+  where s.group_id = p_group_id
+    and t.id = s.payer_transaction_id
+    and t.user_id = v_uid;
+
+  update split_settlements s
+  set payee_transaction_id = null
+  from transactions t
+  where s.group_id = p_group_id
+    and t.id = s.payee_transaction_id
+    and t.user_id = v_uid;
+
+  update transactions t
+  set linked_split_settlement_id = null
+  from split_settlements s
+  where s.group_id = p_group_id
+    and t.linked_split_settlement_id = s.id
+    and t.user_id = v_uid;
 end;
 $$;
 
@@ -2760,7 +2811,7 @@ declare
   v_group_id uuid;
   v_linked_txn uuid;
   v_existing_owner uuid;
-  v_effective_owner uuid;
+  v_keep_txn boolean := false;
   v_payer_uid uuid;
   v_sum numeric := 0;
   v_item jsonb;
@@ -2822,6 +2873,34 @@ begin
     raise exception 'Payer must be a member of the group';
   end if;
 
+  -- The linked ledger row belongs to whoever paid. Decide its fate before the
+  -- expense row changes, because the sync trigger on split_expenses rewrites
+  -- any row that is still linked. Someone else's row is only kept in sync
+  -- while they are still the payer and still in the group, and only its owner
+  -- can delete it; otherwise it is unlinked and left in their ledger.
+  if v_linked_txn is not null then
+    select user_id into v_existing_owner
+    from public.transactions
+    where id = v_linked_txn and linked_split_expense_id = p_expense_id;
+  end if;
+
+  v_keep_txn := v_existing_owner is not null
+    and v_existing_owner = v_payer_uid
+    and public.has_split_group_access(v_group_id, v_existing_owner)
+    and (v_existing_owner <> v_uid or coalesce(p_sync_transaction, true));
+
+  if v_linked_txn is not null and not v_keep_txn then
+    if v_existing_owner = v_uid then
+      delete from public.transactions where id = v_linked_txn and linked_split_expense_id = p_expense_id;
+    elsif v_existing_owner is not null then
+      update public.transactions
+      set linked_split_expense_id = null
+      where id = v_linked_txn and linked_split_expense_id = p_expense_id;
+    end if;
+    update public.split_expenses set linked_transaction_id = null where id = p_expense_id;
+    v_linked_txn := null;
+  end if;
+
   -- Update the expense row. Preserve the original owner (user_id) and id.
   update public.split_expenses
   set
@@ -2869,62 +2948,32 @@ begin
     raise exception 'Split total (%) does not match amount (%)', v_sum, p_amount;
   end if;
 
-  -- Reconcile the linked personal-ledger transaction. The transaction belongs
-  -- to the payer's app user. To avoid spawning a transaction into a third
-  -- party's ledger (which split_create_expense never does), we only create or
-  -- keep a transaction for the payer when the payer is the editor OR a
-  -- transaction already exists for that payer (i.e. the payer is unchanged).
-  if v_linked_txn is not null then
-    select user_id into v_existing_owner from public.transactions where id = v_linked_txn and linked_split_expense_id = p_expense_id;
-  end if;
-
-  if coalesce(p_sync_transaction, true)
-     and v_payer_uid is not null
-     and (v_payer_uid = v_uid or v_payer_uid = v_existing_owner) then
-    v_effective_owner := v_payer_uid;
-  else
-    v_effective_owner := null;
-  end if;
-
-  if v_effective_owner is not null then
-    if v_linked_txn is not null and v_existing_owner = v_effective_owner then
-      update public.transactions
-      set
-        date        = coalesce(p_expense_date, current_date),
-        type        = 'expense',
-        description = btrim(p_description),
-        amount      = p_amount,
-        category    = coalesce(p_transaction_category, category, 'other'),
-        notes       = nullif(btrim(coalesce(p_notes, '')), ''),
-        linked_split_expense_id = p_expense_id
-      where id = v_linked_txn;
-    else
-      -- Payer moved to the editor while a txn existed for someone else, or no
-      -- txn existed yet: drop the stale one (if any) and create a fresh one.
-      if v_linked_txn is not null then
-        delete from public.transactions where id = v_linked_txn and linked_split_expense_id = p_expense_id;
-      end if;
-      insert into public.transactions (
-        date, type, description, amount, category, user_id, linked_split_expense_id, notes
-      ) values (
-        coalesce(p_expense_date, current_date),
-        'expense',
-        btrim(p_description),
-        p_amount,
-        coalesce(p_transaction_category, 'other'),
-        v_effective_owner,
-        p_expense_id,
-        nullif(btrim(coalesce(p_notes, '')), '')
-      ) returning id into v_linked_txn;
-      update public.split_expenses set linked_transaction_id = v_linked_txn where id = p_expense_id;
-    end if;
-  else
-    -- No txn should exist (sync off, external payer, or payer reassigned away
-    -- from both the editor and the existing owner): remove any stale txn.
-    if v_linked_txn is not null then
-      delete from public.transactions where id = v_linked_txn and linked_split_expense_id = p_expense_id;
-      update public.split_expenses set linked_transaction_id = null where id = p_expense_id;
-    end if;
+  if v_keep_txn then
+    update public.transactions
+    set
+      date        = coalesce(p_expense_date, current_date),
+      type        = 'expense',
+      description = btrim(p_description),
+      amount      = p_amount,
+      category    = coalesce(p_transaction_category, category, 'other'),
+      notes       = nullif(btrim(coalesce(p_notes, '')), ''),
+      linked_split_expense_id = p_expense_id
+    where id = v_linked_txn;
+  elsif coalesce(p_sync_transaction, true) and v_payer_uid = v_uid then
+    -- Only ever create a row in the editor's own ledger.
+    insert into public.transactions (
+      date, type, description, amount, category, user_id, linked_split_expense_id, notes
+    ) values (
+      coalesce(p_expense_date, current_date),
+      'expense',
+      btrim(p_description),
+      p_amount,
+      coalesce(p_transaction_category, 'other'),
+      v_uid,
+      p_expense_id,
+      nullif(btrim(coalesce(p_notes, '')), '')
+    ) returning id into v_linked_txn;
+    update public.split_expenses set linked_transaction_id = v_linked_txn where id = p_expense_id;
   end if;
 
   select * into v_expense from public.split_expenses where id = p_expense_id;
@@ -2956,6 +3005,34 @@ BEGIN
 
   IF p_description IS NULL OR btrim(p_description) = '' THEN
     RAISE EXCEPTION 'Bug description is required.';
+  END IF;
+
+  IF char_length(p_title) > 160 THEN
+    RAISE EXCEPTION 'Bug title must be 160 characters or fewer.';
+  END IF;
+  IF char_length(p_description) > 4000 THEN
+    RAISE EXCEPTION 'Bug description must be 4000 characters or fewer.';
+  END IF;
+  IF char_length(coalesce(p_steps, '')) > 4000 THEN
+    RAISE EXCEPTION 'Steps must be 4000 characters or fewer.';
+  END IF;
+  IF char_length(coalesce(p_route, '')) > 500
+     OR char_length(coalesce(p_app_version, '')) > 64
+     OR char_length(coalesce(p_reporter_email, '')) > 254
+     OR char_length(coalesce(p_fingerprint, '')) > 128 THEN
+    RAISE EXCEPTION 'Bug report details are too long.';
+  END IF;
+  IF octet_length(coalesce(p_diagnostics::text, '')) > 4000
+     OR octet_length(coalesce(p_environment::text, '')) > 4000 THEN
+    RAISE EXCEPTION 'Bug report diagnostics are too large.';
+  END IF;
+  IF coalesce(array_length(v_tags, 1), 0) > 10
+     OR EXISTS (SELECT 1 FROM unnest(v_tags) AS t WHERE char_length(t) > 40) THEN
+    RAISE EXCEPTION 'Use at most 10 tags of up to 40 characters each.';
+  END IF;
+  IF p_screenshot_path IS NOT NULL
+     AND (char_length(p_screenshot_path) > 300 OR p_screenshot_path NOT LIKE v_uid::text || '/%') THEN
+    RAISE EXCEPTION 'Invalid screenshot path.';
   END IF;
 
   -- 2. Anti-Spam (Max 5 reports per 2 minutes)
@@ -5075,7 +5152,6 @@ REVOKE ALL ON FUNCTION public.ensure_split_group_user_id() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.ensure_split_group_user_id() TO service_role;
 
 REVOKE ALL ON FUNCTION public.generate_recurring_transactions(p_user_id uuid, p_today date) FROM PUBLIC, anon, authenticated, service_role;
-GRANT ALL ON FUNCTION public.generate_recurring_transactions(p_user_id uuid, p_today date) TO anon;
 GRANT ALL ON FUNCTION public.generate_recurring_transactions(p_user_id uuid, p_today date) TO authenticated;
 GRANT ALL ON FUNCTION public.generate_recurring_transactions(p_user_id uuid, p_today date) TO service_role;
 
@@ -5189,7 +5265,6 @@ REVOKE ALL ON FUNCTION public.prevent_immutable_update() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.prevent_immutable_update() TO service_role;
 
 REVOKE ALL ON FUNCTION public.record_loan_payment(p_loan_id uuid, p_user_id uuid, p_amount numeric, p_id uuid, p_paid_on date) FROM PUBLIC, anon, authenticated, service_role;
-GRANT ALL ON FUNCTION public.record_loan_payment(p_loan_id uuid, p_user_id uuid, p_amount numeric, p_id uuid, p_paid_on date) TO anon;
 GRANT ALL ON FUNCTION public.record_loan_payment(p_loan_id uuid, p_user_id uuid, p_amount numeric, p_id uuid, p_paid_on date) TO authenticated;
 GRANT ALL ON FUNCTION public.record_loan_payment(p_loan_id uuid, p_user_id uuid, p_amount numeric, p_id uuid, p_paid_on date) TO service_role;
 
@@ -5201,6 +5276,10 @@ REVOKE ALL ON TABLE public.split_group_members FROM PUBLIC, anon, authenticated,
 GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE public.split_group_members TO anon;
 GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE public.split_group_members TO authenticated;
 GRANT ALL ON TABLE public.split_group_members TO service_role;
+
+REVOKE ALL ON FUNCTION public.shares_split_group_with(p_other uuid) FROM PUBLIC, anon, authenticated, service_role;
+GRANT ALL ON FUNCTION public.shares_split_group_with(p_other uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.shares_split_group_with(p_other uuid) TO service_role;
 
 REVOKE ALL ON FUNCTION public.split_archive_member(p_member_id uuid) FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.split_archive_member(p_member_id uuid) FROM PUBLIC;
@@ -5390,7 +5469,8 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENC
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO postgres;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO authenticated;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO postgres;
@@ -5491,19 +5571,34 @@ using (
   and (
     -- Owner can read their own avatar.
     name like ((select auth.uid())::text || '-%')
-    -- Linked partner can read each other's avatar (needed by ProfileMenu
-    -- and any partner-view UI). The first 36 chars of the avatar filename
-    -- are the owner's UUID — see the upload policy above. We validate the
-    -- UUID shape with a regex BEFORE casting so a malformed filename
-    -- cannot throw a SQL error and fail the policy evaluation in an
-    -- unpredictable way.
+    -- A linked partner, or anyone who shares a split group with the owner,
+    -- can read it. The first 36 chars of the avatar filename are the owner's
+    -- UUID (see the upload policy above); the regex runs BEFORE the cast so a
+    -- malformed filename can't make the policy throw.
     or (
       length(name) >= 37
       and substring(name from 1 for 36) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-      and public.is_linked((substring(name from 1 for 36))::uuid)
+      and (
+        public.is_linked((substring(name from 1 for 36))::uuid)
+        or public.shares_split_group_with((substring(name from 1 for 36))::uuid)
+      )
     )
   )
 );
+
+-- The older "avatars: ..." policies expect photos inside a per-user folder.
+-- The app stores them at the bucket root, so drop the old policies once no
+-- photo uses a folder path.
+DO $do$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'avatars' AND name LIKE '%/%') THEN
+    DROP POLICY IF EXISTS "avatars: read own" ON storage.objects;
+    DROP POLICY IF EXISTS "avatars: upload own" ON storage.objects;
+    DROP POLICY IF EXISTS "avatars: update own" ON storage.objects;
+    DROP POLICY IF EXISTS "avatars: delete own" ON storage.objects;
+  END IF;
+END
+$do$;
 
 drop policy if exists "avatars_storage: delete own" on storage.objects;
 
