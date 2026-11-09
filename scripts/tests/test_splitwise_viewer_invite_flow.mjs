@@ -228,12 +228,12 @@ async function main() {
     if (coOwnerInviteError) throw new Error(`Co-owner failed to create invite: ${coOwnerInviteError.message}`)
     assert(!!coOwnerInvite?.token, 'Co-owner invite did not return token')
 
-    const { error: coOwnerDeleteError } = await joinerClient
-      .from('split_expenses')
-      .delete()
-      .eq('id', seededExpenseId)
-
+    // Split tables reject direct writes; deletes go through the same RPC the app uses.
+    const { data: coOwnerDeleted, error: coOwnerDeleteError } = await joinerClient.rpc('delete_split_expense_atomic', {
+      p_id: seededExpenseId,
+    })
     if (coOwnerDeleteError) throw new Error(`Co-owner failed to delete expense: ${coOwnerDeleteError.message}`)
+    assert(coOwnerDeleted === true, 'Co-owner delete did not remove the expense')
 
     console.log('PASS: splitwise invite roles are healthy (viewer read-only + admin promotion + scoped visibility).')
   } finally {
