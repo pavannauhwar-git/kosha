@@ -1,11 +1,18 @@
 // @ts-ignore
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.99.1'
 
 declare const Deno: any;
 
 // Maximum payload size we accept. The endpoint only expects a `reportId`
 // (~50 bytes) — 16 KB is generous and protects against accidental floods.
 const MAX_BODY_BYTES = 16 * 1024
+const WEBHOOK_TIMEOUT_MS = 5000
+
+// Slack treats `<…>` as links and mentions (`<!channel>`); escaping the
+// three control characters makes user text render as plain text.
+function escapeSlack(value: unknown): string {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
 
 // CORS — pin allowed origins via the `ALLOWED_ORIGINS` function secret
 // (comma-separated list, e.g. "https://app.example.com,https://staging.example.com").
@@ -157,7 +164,8 @@ Deno.serve(async (req: Request) => {
     }
 
     let screenshotUrl: string | null = null
-    if (report?.screenshot_path) {
+    // Only sign files inside the reporter's own folder.
+    if (typeof report?.screenshot_path === 'string' && report.screenshot_path.startsWith(`${user.id}/`)) {
       // Shorter signed URL — the previous 7-day TTL outlived the average
       // bug-triage cycle and persisted in Slack/Discord history. 48h is
       // long enough to triage but short enough to age out of public chat
@@ -171,21 +179,25 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const isDiscord = webhookUrl.includes('discord.com/api/webhooks')
+    const clean = (value: unknown) => (isDiscord ? String(value ?? '') : escapeSlack(value))
+
     const textLines = [
       `New bug report (#${report.id})`,
-      `Title: ${report.title}`,
+      `Title: ${clean(report.title)}`,
       `Severity/Priority: ${report.severity} / ${report.priority}`,
-      `Route: ${report.route || 'n/a'}`,
+      `Route: ${clean(report.route || 'n/a')}`,
       `Occurrences: ${report.occurrence_count || 1}`,
-      `App: ${report.app_version || 'n/a'}`,
+      `App: ${clean(report.app_version || 'n/a')}`,
       screenshotUrl ? `Screenshot: ${screenshotUrl}` : null,
-      `Description: ${report.description}`,
+      `Description: ${clean(report.description)}`,
     ].filter(Boolean)
 
     const text = textLines.join('\n')
 
-    const payload = webhookUrl.includes('discord.com/api/webhooks')
-      ? { content: text }
+    const payload = isDiscord
+      // `parse: []` stops "@everyone", "@here" and role/user pings in report text.
+      ? { content: text.slice(0, 2000), allowed_mentions: { parse: [] } }
       : {
         text,
         reportId: report.id,
@@ -218,21 +230,32 @@ Deno.serve(async (req: Request) => {
       return json(req, { ok: true, skipped: true, reason: 'already_notified' })
     }
 
-    const webhookRes = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
+    const releaseClaim = () => admin
+      .from('bug_reports')
+      .update({ notified_at: null })
+      .eq('id', report.id)
+      .eq('notified_at', claimedAt)
+
+    let webhookRes: Response
+    try {
+      webhookRes = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+      })
+    } catch (fetchError) {
+      // Timeout or network failure: roll back the claim so a retry can fire.
+      console.error('[bug-report-notify] webhook request failed', fetchError)
+      await releaseClaim()
+      return json(req, { ok: false, error: 'internal' }, 502)
+    }
 
     if (!webhookRes.ok) {
       // Roll back the claim so a future retry can fire the webhook.
       const body = await webhookRes.text().catch(() => '')
       console.error(`[bug-report-notify] webhook returned ${webhookRes.status}`, body)
-      await admin
-        .from('bug_reports')
-        .update({ notified_at: null })
-        .eq('id', report.id)
-        .eq('notified_at', claimedAt)
+      await releaseClaim()
       return json(req, { ok: false, error: 'internal' }, 502)
     }
 
