@@ -373,6 +373,7 @@ export default function ReportBug() {
                 placeholder="What happened?"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
+                maxLength={4000}
                 style={{ minHeight: '112px' }}
               />
 
@@ -384,6 +385,7 @@ export default function ReportBug() {
                 placeholder="Steps to reproduce (optional)"
                 value={steps}
                 onChange={e => setSteps(e.target.value)}
+                maxLength={4000}
                 style={{ minHeight: '86px' }}
               />
 
