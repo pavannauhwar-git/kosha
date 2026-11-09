@@ -12,7 +12,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src scripts",
+    "lint": "eslint src scripts --max-warnings 41",
     "lint:fix": "eslint src scripts --fix",
     "lint:mutation-integration": "node scripts/tests/test_mutation_integration_paths.mjs",
     "lint:splitwise-mutation-paths": "node scripts/tests/test_splitwise_mutation_paths.mjs",

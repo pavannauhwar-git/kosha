@@ -694,7 +694,7 @@ export default function Settings() {
             <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-ink">Generate link</p>
-                <p className="text-[11px] text-ink-3 mt-0.5">Invite others to sync their wallet with yours. Your partner will see all your transactions, bills and loans, and you'll see theirs. Links work once and expire after 7 days.</p>
+                <p className="text-[11px] text-ink-3 mt-0.5">Invite others to sync their wallet with yours. Your partner will see all your transactions, bills and loans, and you&apos;ll see theirs. Links work once and expire after 7 days.</p>
               </div>
               <Button
                 variant="primary"

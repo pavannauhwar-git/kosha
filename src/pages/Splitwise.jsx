@@ -676,7 +676,7 @@ export default function Splitwise() {
                   </button>
 
                   <p className="text-[12px] text-ink-3">
-                    This permanently deletes every expense and settlement in this trip, and the matching entries in every member's personal transactions. It can't be undone. To keep the history, use Archive Trip instead.
+                    This permanently deletes every expense and settlement in this trip, and the matching entries in every member&apos;s personal transactions. It can&apos;t be undone. To keep the history, use Archive Trip instead.
                   </p>
                   <Input
                     label="Type the trip name to confirm"
