@@ -118,9 +118,9 @@ jobs:
           [[ -z "$E2E_SESSION_PASSWORD" ]] && missing=1
 
           if [[ "$missing" -eq 1 ]]; then
-            if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+            if [[ "${{ github.actor }}" == "dependabot[bot]" || ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ) ]]; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "Deploy readiness checks skipped on fork because required secrets are not configured."
+              echo "Deploy readiness checks skipped on forks and Dependabot PRs because required secrets are not configured."
             else
               echo "Required secrets are missing on a same-repo push/PR. Failing."
               exit 1
@@ -177,9 +177,9 @@ jobs:
           [[ -z "$E2E_SESSION_PASSWORD" ]] && missing=1
 
           if [[ "$missing" -eq 1 ]]; then
-            if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+            if [[ "${{ github.actor }}" == "dependabot[bot]" || ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ) ]]; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "Runtime verification skipped on fork because required secrets are not configured."
+              echo "Runtime verification skipped on forks and Dependabot PRs because required secrets are not configured."
             else
               echo "Required secrets are missing on a same-repo push/PR. Failing."
               exit 1
