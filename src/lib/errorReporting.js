@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react'
 import { isExpectedError } from './errorTaxonomy'
+import { sanitizeUrl, sanitizeUrlsInText } from './urlSanitizer'
 import { useEffect } from 'react'
 import {
   useLocation,
@@ -21,43 +22,10 @@ const SENSITIVE_KEY_PATTERNS = [
   'invite', 'splittoken', 'split_token',
 ]
 
-// Query / URL fragment params that often carry auth material. Stripped from
-// any URL we serialize into the event.
-const SENSITIVE_URL_PARAMS = new Set([
-  'token', 'access_token', 'refresh_token', 'invite', 'splittoken', 'split_token',
-  'code', 'state', 'id_token', 'apikey',
-])
-
 function isSensitiveKey(key) {
   if (typeof key !== 'string') return false
   const lower = key.toLowerCase()
   return SENSITIVE_KEY_PATTERNS.some((p) => lower.includes(p))
-}
-
-function scrubUrl(rawUrl) {
-  if (typeof rawUrl !== 'string') return rawUrl
-  const isRelative = !/^https?:\/\//i.test(rawUrl)
-  try {
-    // Relative URLs (react-router breadcrumbs like `/auth/callback#token=…`)
-    // throw in `new URL()` without a base. Parse against a placeholder origin
-    // so query/hash scrubbing always runs, then strip the placeholder back off.
-    const base = 'http://kosha.local/'
-    const url = new URL(rawUrl, base)
-    const params = url.searchParams
-    for (const key of Array.from(params.keys())) {
-      if (SENSITIVE_URL_PARAMS.has(key.toLowerCase())) {
-        params.set(key, '[redacted]')
-      }
-    }
-    // The hash can carry tokens too (OAuth implicit flow, our own
-    // `#kosha-uid=...` per-user cache key, etc). Drop it wholesale.
-    if (url.hash) url.hash = ''
-    const out = url.toString()
-    return isRelative ? out.slice(base.length - 1) : out
-  } catch {
-    // Last-ditch: guarantee the hash never escapes even if parsing fails.
-    return String(rawUrl).split('#')[0]
-  }
 }
 
 // Recursively walk an arbitrary object graph and redact any value whose key
@@ -80,7 +48,7 @@ function redactInPlace(obj, depth = 0) {
       // (e.g. extras.url = "https://...?invite=abc"). Only run URL scrub when
       // the string looks like a URL — avoids accidentally rewriting prose.
       if (/^https?:\/\//i.test(value) || value.startsWith('/')) {
-        obj[key] = scrubUrl(value)
+        obj[key] = sanitizeUrl(value)
       }
     } else if (value && typeof value === 'object') {
       redactInPlace(value, depth + 1)
@@ -91,12 +59,38 @@ function redactInPlace(obj, depth = 0) {
 function scrubBreadcrumb(crumb) {
   if (!crumb) return crumb
   if (crumb.data) redactInPlace(crumb.data)
+  if (typeof crumb.message === 'string') crumb.message = sanitizeUrlsInText(crumb.message)
   if (typeof crumb.message === 'string' && crumb.message.length > 500) {
     // Truncate freeform breadcrumb messages so a debug log full of a JWT
     // body can't get exfiltrated whole.
     crumb.message = crumb.message.slice(0, 500) + '…'
   }
   return crumb
+}
+
+export function scrubTransaction(event) {
+  if (!event) return event
+  if (typeof event.transaction === 'string') {
+    event.transaction = event.transaction.startsWith('/')
+      ? sanitizeUrl(event.transaction)
+      : sanitizeUrlsInText(event.transaction)
+  }
+  if (event.request?.url) event.request.url = sanitizeUrl(event.request.url)
+  if (event.request?.headers) redactInPlace(event.request.headers)
+  if (event.contexts) redactInPlace(event.contexts)
+  if (event.tags) redactInPlace(event.tags)
+  if (Array.isArray(event.spans)) {
+    for (const span of event.spans) {
+      if (typeof span.description === 'string') span.description = sanitizeUrlsInText(span.description)
+      if (span.data) {
+        // Fetch spans keep the query string and hash apart from the URL.
+        delete span.data['http.query']
+        delete span.data['http.fragment']
+        redactInPlace(span.data)
+      }
+    }
+  }
+  return event
 }
 
 if (DSN) {
@@ -112,20 +106,21 @@ if (DSN) {
         createRoutesFromChildren,
         matchRoutes,
       }),
-      Sentry.replayIntegration({
-        maskAllText: true,     // financial data — always mask
-        blockAllMedia: true,
-      }),
     ],
     tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
-    replaysOnErrorSampleRate: 1.0,   // capture replay on every error in prod
-    replaysSessionSampleRate: 0.0,   // no session replays — privacy first
     beforeBreadcrumb(crumb) {
       return scrubBreadcrumb(crumb)
     },
+    beforeSendTransaction(event) {
+      try {
+        return scrubTransaction(event)
+      } catch {
+        return null
+      }
+    },
     beforeSend(event) {
       try {
-        if (event.request?.url) event.request.url = scrubUrl(event.request.url)
+        if (event.request?.url) event.request.url = sanitizeUrl(event.request.url)
         if (event.request?.headers) redactInPlace(event.request.headers)
         if (event.request?.data) redactInPlace(event.request.data)
         if (event.extra) redactInPlace(event.extra)
