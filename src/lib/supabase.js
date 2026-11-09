@@ -25,10 +25,10 @@ if (!url || !key) {
 //
 // To make leaks mechanically impossible, we inject the active wallet user
 // id into the URL fragment (`#kosha-uid=<id>`) before calling fetch. The
-// fragment IS part of the URL object Workbox sees as `request.url`, so the
-// cache key naturally namespaces per user. The fragment is NOT sent to the
-// server (HTTP strips it), so Supabase receives the exact same URL it
-// always has.
+// Cache API ignores fragments, so the Workbox plugin in `vite.config.js`
+// copies the id into a query param of the cache key. The fragment is NOT
+// sent to the server (HTTP strips it), so Supabase receives the exact same
+// URL it always has.
 //
 // Falls back to `anon` when no wallet is known (boot window). Any request
 // made then will fail at the server with 401 anyway, so the `anon`

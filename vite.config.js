@@ -131,13 +131,13 @@ export default defineConfig(({ mode }) => {
             {
               // Supabase data endpoints — StaleWhileRevalidate (instant + fresh)
               //
-              // Cache key includes the URL fragment that `customFetch` in
-              // `src/lib/supabase.js` adds (e.g. `…#kosha-uid=<id>`). This
-              // makes the cache mechanically per-user: user A and user B
-              // produce different cache keys even for identical Supabase
-              // URLs (e.g. the RLS-only `GET /rest/v1/split_groups`). The
-              // fragment is stripped by the browser before the network
-              // request, so the server sees the same URL it always has.
+              // `customFetch` in `src/lib/supabase.js` adds `#kosha-uid=<id>`
+              // to every data URL. The Cache API ignores fragments when it
+              // matches, so the plugin below moves the id into a query param
+              // of the cache key. User A and user B then get different cache
+              // entries even for identical RLS-only URLs (e.g.
+              // `GET /rest/v1/split_groups`). The network request still goes
+              // out without the fragment.
               urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
               handler: 'StaleWhileRevalidate',
               options: {
@@ -149,12 +149,14 @@ export default defineConfig(({ mode }) => {
                 cacheableResponse: { statuses: [200] },
                 plugins: [
                   {
-                    // Be explicit: include the URL fragment in the cache key.
-                    // Workbox's default behaviour already uses `request.url`
-                    // which preserves the fragment, but spelling it out here
-                    // documents intent and protects against future internal
-                    // normalisation changes in Workbox.
-                    cacheKeyWillBeUsed: async ({ request }) => request.url,
+                    // Serialised into sw.js: must not reference outer variables.
+                    cacheKeyWillBeUsed: async ({ request }) => {
+                      const url = new URL(request.url)
+                      const uid = new URLSearchParams(url.hash.slice(1)).get('kosha-uid') || 'anon'
+                      url.hash = ''
+                      url.searchParams.set('__kosha_uid', uid)
+                      return url.href
+                    },
                   },
                 ],
               },
