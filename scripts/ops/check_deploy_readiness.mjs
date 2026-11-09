@@ -171,6 +171,30 @@ async function main() {
     throw error
   }))
 
+  checks.push(await runCheck('record_loan_payment RPC available', async () => {
+    const { error } = await client.rpc('record_loan_payment', {
+      p_loan_id: '00000000-0000-0000-0000-000000000000',
+      p_user_id: user.id,
+      p_amount: 1,
+    })
+
+    if (!error) throw new Error('record_loan_payment accepted a loan that does not exist')
+    assertNoMissingFunctionError(error, 'record_loan_payment')
+    if (String(error.message || '').includes('Loan not found')) return
+    throw error
+  }))
+
+  checks.push(await runCheck('split_archive_member RPC available', async () => {
+    const { error } = await client.rpc('split_archive_member', {
+      p_member_id: '00000000-0000-0000-0000-000000000000',
+    })
+
+    if (!error) throw new Error('split_archive_member accepted a member that does not exist')
+    assertNoMissingFunctionError(error, 'split_archive_member')
+    if (String(error.message || '').includes('Member not found')) return
+    throw error
+  }))
+
   checks.push(await runCheck('generate_recurring_transactions RPC available', async () => {
     const { error } = await client.rpc('generate_recurring_transactions', {
       p_user_id: user.id,
