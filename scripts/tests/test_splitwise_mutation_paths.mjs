@@ -44,28 +44,8 @@ async function cleanupSplitwiseGroup(client, userId, groupId, prefix) {
     .eq('user_id', userId)
   if (txError) console.warn(`WARN: transaction cleanup failed: ${txError.message}`)
 
-  // 2. Purge Splitwise-specific records
-  const { error: settlementsError } = await client
-    .from('split_settlements')
-    .delete()
-    .eq('group_id', groupId)
-    .eq('user_id', userId)
-  if (settlementsError) throw new Error(`Splitwise cleanup (settlements) failed: ${settlementsError.message}`)
-
-  const { error: expensesError } = await client
-    .from('split_expenses')
-    .delete()
-    .eq('group_id', groupId)
-    .eq('user_id', userId)
-  if (expensesError) throw new Error(`Splitwise cleanup (expenses) failed: ${expensesError.message}`)
-
-  const { error: membersError } = await client
-    .from('split_group_members')
-    .delete()
-    .eq('group_id', groupId)
-    .eq('user_id', userId)
-  if (membersError) throw new Error(`Splitwise cleanup (members) failed: ${membersError.message}`)
-
+  // 2. Delete the group; its expenses, settlements and members go with it.
+  // (Split tables reject direct deletes, so they can't be removed one by one.)
   const { error: groupError } = await client
     .from('split_groups')
     .delete()
