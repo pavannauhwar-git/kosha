@@ -13,7 +13,7 @@ vi.mock('framer-motion', () => ({
   useDragControls: () => ({ start: vi.fn() }),
 }))
 
-vi.mock('../../hooks/useOverlayFocusTrap', () => ({
+vi.mock('../../../../src/hooks/useOverlayFocusTrap', () => ({
   default: () => ({ current: null }),
 }))
 

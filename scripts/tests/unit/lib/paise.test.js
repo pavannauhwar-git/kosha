@@ -8,9 +8,11 @@ describe('paise', () => {
       expect(fromRupees('12.34')).toBe(1234n)
     })
 
-    it('rounds half away from zero correctly', () => {
-      expect(fromRupees(1.235)).toBe(124n)
-      expect(fromRupees(-1.235)).toBe(-124n)
+    it('rounds an exact half-paisa tie away from zero', () => {
+      // 0.125 * 100 is exactly 12.5, so this is a true tie (Math.round(-12.5) is -12)
+      expect(fromRupees(0.125)).toBe(13n)
+      expect(fromRupees(-0.125)).toBe(-13n)
+      expect(fromRupees(-0.005)).toBe(-1n)
     })
 
     it('handles empty or invalid inputs', () => {
