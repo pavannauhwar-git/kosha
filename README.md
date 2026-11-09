@@ -186,7 +186,7 @@ Edit `.env.local` and fill in your Supabase project credentials. See [Environmen
 
 Open the **Supabase SQL Editor** and run the contents of `supabase/schema.sql`. The schema is fully idempotent — safe to re-run on an existing database.
 
-This creates all required tables (`transactions`, `liabilities`, `loans`, `user_categories`, `financial_events`, `invites`, `reconciliation_reviews`), RLS policies, RPCs, and Realtime publication.
+This creates all 19 tables, their RLS policies, the RPCs and the Realtime publication. See [Database setup](#database-setup) for the table list.
 
 ### 5. Create test users (optional)
 
@@ -215,8 +215,15 @@ All variables go in `.env.local` (git-ignored). See `.env.local.example` for the
 ```env
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<supabase-anon-key>
-SENTRY_DSN=<sentry-dsn>
+```
+
+### Optional — monitoring
+
+```env
+VITE_SENTRY_DSN=<sentry-dsn>
 SENTRY_AUTH_TOKEN=<sentry-auth-token>
+SENTRY_ORG=<org-slug>
+SENTRY_PROJECT=<project-slug>
 ```
 
 ### Required — E2E integration scripts
@@ -232,16 +239,27 @@ E2E_JOINER_PASSWORD=<password>
 
 E2E_SESSION_EMAIL=<email>
 E2E_SESSION_PASSWORD=<password>
+
+# The <project-ref> part of VITE_SUPABASE_URL. Live tests refuse to run
+# against any other project.
+E2E_EXPECTED_PROJECT_REF=<project-ref>
 ```
 
-> `scripts/load_env.mjs` auto-loads `.env` and `.env.local` for all scripts. Never commit `.env.local`.
+The three E2E accounts must be three different users.
+
+> `scripts/load_env.mjs` auto-loads `.env.local` and `.env` for all scripts; `.env.local` wins. Never commit `.env.local`.
 
 ## Database setup
 
 1. Create a Supabase project at [supabase.com](https://supabase.com).
 2. Open **SQL Editor** and paste the contents of `supabase/schema.sql`. Run it.
-3. Verify tables are created: `transactions`, `liabilities`, `loans`, `user_categories`, `financial_events`, `invites`, `reconciliation_reviews`.
-4. Confirm **Realtime** is enabled for `transactions`, `liabilities`, `loans`, and `financial_events` (the schema handles this via `ALTER PUBLICATION`).
+3. Verify the 19 tables are created:
+   - Personal finance: `transactions`, `liabilities`, `loans`, `budgets`, `category_budgets`, `user_categories`, `monthly_net_changes`
+   - Accounts and sharing: `profiles`, `invites`
+   - Splitwise: `split_groups`, `split_group_members`, `split_group_access`, `split_group_invites`, `split_expenses`, `split_expense_splits`, `split_settlements`
+   - Other: `financial_events` (audit log), `reconciliation_reviews`, `bug_reports`
+4. Confirm **Realtime** is enabled for `transactions`, `liabilities`, `loans` and the seven `split_*` tables (the schema handles this via `ALTER PUBLICATION`).
+5. Later schema changes ship as files in `supabase/migrations/`. Run each new file once, in filename order.
 
 > **Note:** Supabase SQL Editor does not support psql meta-commands like `\d`. Use `information_schema` or `pg_catalog` queries to inspect the schema.
 
@@ -285,7 +303,9 @@ npm run preview
 | `npm run test:unit` | Run Vitest in watch mode (local dev) |
 | `npm run test:unit -- --run` | Run all unit tests once (CI mode) |
 | `npm run test:money` | Legacy money math script |
-| `npm run test:no-network` | All offline tests (money math + mutation path checks) |
+| `npm run test:no-network` | Offline scripts outside Vitest (money math) |
+| `npm run test:statement-matching` | Statement parsing and match scoring |
+| `npm run lint:mutation-integration` | Static check that pages use the shared mutation helpers |
 
 ### Integration / E2E tests (require live Supabase)
 
@@ -294,17 +314,11 @@ npm run preview
 | `npm run test:join-flow` | Invite token creation and consumption |
 | `npm run test:liabilities-realtime` | Realtime INSERT delivery across sessions |
 | `npm run test:mutation-stress` | Rapid transaction + liability mutation consistency |
-| `npm run test:mutation-paths` | CRUD mutation path coverage |
-| `npm run test:mutation-integration` | Cross-module mutation integration |
-| `npm run test:mutation-rollback` | Optimistic rollback contract verification |
-| `npm run test:statement-matching` | Statement parsing and match scoring |
+| `npm run lint:splitwise-mutation-paths` | Splitwise expense + settlement RPCs and balances |
+| `npm run test:splitwise-viewer-invite-flow` | Viewer-role invite and read-only access |
 | `npm run test:reconciliation-flow` | Reconciliation persist + alias-reset paths |
-| `npm run test:reconciliation-metrics` | Reconciliation telemetry counters |
 | `npm run test:reconciliation-schema-live` | Live schema validation for reconciliation tables |
-| `npm run test:reconciliation-insights` | Monthly insights generation telemetry |
-| `npm run test:wallet-cache-scoping` | Cache scoping and invalidation predicates |
-| `npm run test:rls-partner-isolation` | RLS isolation rules between partners |
-| `npm run test:splitwise-math` | Splitwise math verification against live data |
+| `npm run test:rls-partner-isolation` | RLS isolation between owner, partner and stranger |
 
 ## Testing
 
@@ -318,19 +332,15 @@ Fast, offline, run in jsdom. No network access needed.
 npm run test:unit -- --run
 ```
 
-Tests live in `scripts/tests/unit/` and cover:
+Tests live in `scripts/tests/unit/`:
 
-| File | What it tests |
-|------|---------------|
-| `lib/paise.test.js` | BigInt money conversion, symmetric rounding, `divEvenly` |
-| `lib/validateAmount.test.js` | Input validation, Indian number format, min/max, zero guards |
-| `lib/splitwiseMath.test.js` | Equal, exact, percent, and share splitting; balance computation |
-| `lib/statementMatching.test.js` | CSV parsing, date formats, direction inference, confidence scoring, one-to-one matching |
-| `components/Button.test.jsx` | Variant rendering, click handling, disabled/loading state |
-| `components/Card.test.jsx` | Static vs pressable, keyboard navigation (Enter/Space), button role |
-| `components/Input.test.jsx` | Value binding, native event bubbling, error/helper text, disabled |
-| `components/Select.test.jsx` | Option rendering, placeholder, change event, error state |
-| `components/Sheet.test.jsx` | Open/close, title, close button, ARIA dialog semantics |
+| Folder | What it tests |
+|--------|---------------|
+| `lib/` | Pure logic: money (`paise`), amount validation, splits and balances, statement matching, reconciliation, cashflow, weekly drift, recurrence, URL scrubbing, wallet cache keys |
+| `hooks/` | Mutation flows, including optimistic updates and rollback on failure |
+| `components/` | Shared UI components (Button, Card, Input, Select, Sheet) |
+| `pages/` | Page-level behaviour for Transactions and Splitwise |
+| `schema/` | Every RPC the app calls exists in `supabase/schema.sql` and is granted to signed-in users |
 
 ### Layer 2 — Integration & E2E Scripts
 
@@ -353,14 +363,14 @@ GitHub Actions (`.github/workflows/ci.yml`) runs automatically on every push to 
 
 | Job | Triggers | What it does |
 |-----|----------|--------------|
-| `lint` | Always | ESLint strict pass |
+| `lint` | Always | ESLint (no new warnings allowed) + `npm audit` of production dependencies |
 | `unit-tests` | Always | `npm run test:unit -- --run` + `npm run test:no-network` |
 | `version-changelog-check` | Always | Asserts `package.json` version exists in `changelog.js` |
 | `build` | Always | Full Vite production build |
-| `deploy-readiness` | After build (needs secrets) | Live Supabase schema + RPC validation |
-| `runtime-verification` | After deploy-readiness (needs secrets) | Live join flow, realtime, mutation stress |
+| `deploy-readiness` | After lint, unit tests and build (needs secrets) | Live Supabase schema + RPC validation |
+| `runtime-verification` | After deploy-readiness (needs secrets) | Live join flow, RLS isolation, Splitwise viewer and mutation paths, realtime, mutation stress |
 
-> All jobs run in parallel where possible. The build gate is required before deploy-readiness runs.
+> Each live job has its own concurrency group, so runs from different branches queue instead of using the test accounts at the same time. Both need the `E2E_EXPECTED_PROJECT_REF` secret.
 
 ## Deployment
 
@@ -477,4 +487,4 @@ If the webhook URL is not configured, bug submissions still succeed — the noti
 - **Service role keys** must stay server-side (Edge Functions only)
 - All database access is gated by Row Level Security (RLS) policies
 - Financial mutations are logged to an immutable audit trail
-- **Linked Integrity**: Automated transactions (Bills, Loans, Splitwise) are cryptographically linked to their sources and guarded against manual modifications to prevent ledger drift
+- **Linked Integrity**: Automated transactions (Bills, Loans, Splitwise) carry a database link to their source row, and triggers block manual edits to those links to prevent ledger drift

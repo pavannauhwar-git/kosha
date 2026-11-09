@@ -40,22 +40,7 @@
 
   <title>Kosha — Your Financial Sheath</title>
   <!-- Instant Theme Application to prevent FOUC -->
-  <script>
-    (function () {
-      try {
-        var stored = localStorage.getItem('kosha-theme');
-        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        var isDark = stored === 'dark' || (!stored && prefersDark);
-        if (isDark) {
-          document.documentElement.classList.add('dark');
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#1E1F20');
-        } else {
-          document.documentElement.classList.add('light');
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#FFFFFF');
-        }
-      } catch (e) { }
-    })();
-  </script>
+  <script src="/theme-init.js"></script>
 
   <style>
     /* ── Instant-paint branded splash shell ────────────────────────── */

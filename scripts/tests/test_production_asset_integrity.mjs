@@ -18,7 +18,7 @@ async function fetchText(url) {
 async function main() {
   const html = await fetchText(APP_URL)
 
-  const assetMatches = [...html.matchAll(/(?:src|href)=\"([^\"]*\/assets\/[^\"]+\.(?:js|css))\"/g)]
+  const assetMatches = [...html.matchAll(/(?:src|href)="([^"]*\/assets\/[^"]+\.(?:js|css))"/g)]
   const assetPaths = [...new Set(assetMatches.map((m) => m[1]))]
 
   assert(assetPaths.length > 0, '[production-assets] No bundled assets found in app HTML')

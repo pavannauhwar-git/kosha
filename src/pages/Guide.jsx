@@ -499,7 +499,7 @@ export default function Guide() {
               <Sparkle size={16} />
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-body font-bold text-ink">Today's Tip</p>
+              <p className="text-body font-bold text-ink">Today&apos;s Tip</p>
               <p className="text-label text-ink-2 mt-1 leading-relaxed">{todayTip}</p>
             </div>
           </div>

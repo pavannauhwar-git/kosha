@@ -66,13 +66,20 @@ async function main() {
   console.log('Signing in Stranger...')
   const strangerUser = await signIn(strangerClient, strangerEmail, strangerPassword, 'Stranger')
 
-  console.log('\nEnsuring Owner and Partner are linked...')
-  const inviteToken = await linkWallets(ownerClient, partnerClient, ownerUser, partnerUser)
+  if (new Set([ownerUser.id, partnerUser.id, strangerUser.id]).size !== 3) {
+    throw new Error('E2E_CREATOR_EMAIL, E2E_JOINER_EMAIL and E2E_SESSION_EMAIL must be three different accounts')
+  }
 
   const testTxnId = crypto.randomUUID()
   const testDesc = `RLS Test ${testTxnId}`
+  const testLiabilityId = crypto.randomUUID()
+  const testLoanId = crypto.randomUUID()
+  let inviteToken = null
 
   try {
+    console.log('\nEnsuring Owner and Partner are linked...')
+    inviteToken = await linkWallets(ownerClient, partnerClient, ownerUser, partnerUser)
+
     // 1. Owner writes data
     console.log('\n[TEST] Owner inserts transaction...')
     const { error: insertErr } = await ownerClient.from('transactions').insert({
@@ -97,18 +104,61 @@ async function main() {
     console.log('  ✓ Success (Partner read allowed)')
 
     // 3. Stranger reads data
-    if (strangerUser.id !== ownerUser.id && strangerUser.id !== partnerUser.id) {
-      console.log('[TEST] Stranger attempts to read Owner\'s transaction...')
-      const { data: strangerRead, error: strangerReadErr } = await strangerClient
-        .from('transactions')
-        .select('id, amount')
-        .eq('id', testTxnId)
-      if (strangerReadErr) throw new Error(`Stranger read failed: ${strangerReadErr.message}`)
-      if (strangerRead?.length > 0) throw new Error('SECURITY FAILURE: Stranger was able to read Owner data!')
-      console.log('  ✓ Success (Stranger read blocked)')
-    } else {
-      console.log('[TEST] Skipping Stranger read test (E2E_SESSION_EMAIL is not a 3rd distinct account)')
+    console.log('[TEST] Stranger attempts to read Owner\'s transaction...')
+    const { data: strangerRead, error: strangerReadErr } = await strangerClient
+      .from('transactions')
+      .select('id, amount')
+      .eq('id', testTxnId)
+    if (strangerReadErr) throw new Error(`Stranger read failed: ${strangerReadErr.message}`)
+    if (strangerRead?.length > 0) throw new Error('SECURITY FAILURE: Stranger was able to read Owner data!')
+    console.log('  ✓ Success (Stranger read blocked)')
+
+    // 3b. Partner attempts INSERT into Owner's wallet
+    console.log('[TEST] Partner attempts to insert a transaction into Owner\'s wallet...')
+    const partnerInsertId = crypto.randomUUID()
+    const { error: partnerInsertErr } = await partnerClient.from('transactions').insert({
+      id: partnerInsertId,
+      user_id: ownerUser.id,
+      amount: 1,
+      type: 'expense',
+      date: new Date().toISOString().split('T')[0],
+      description: `${testDesc} partner insert`,
+    })
+    if (!partnerInsertErr) {
+      await ownerClient.from('transactions').delete().eq('id', partnerInsertId)
+      throw new Error('SECURITY FAILURE: Partner was able to insert into Owner\'s wallet!')
     }
+    console.log('  ✓ Success (Partner insert blocked)')
+
+    // 3c. Stranger calls the payment RPCs on Owner's bill and loan
+    const today = new Date().toISOString().split('T')[0]
+    const { error: liabilityErr } = await ownerClient.from('liabilities').insert({
+      id: testLiabilityId, user_id: ownerUser.id, description: `${testDesc} bill`, amount: 10, due_date: today,
+    })
+    if (liabilityErr) throw new Error(`Owner liability insert failed: ${liabilityErr.message}`)
+    const { error: loanErr } = await ownerClient.from('loans').insert({
+      id: testLoanId, user_id: ownerUser.id, direction: 'given', counterparty: `${testDesc} loan`, amount: 10,
+    })
+    if (loanErr) throw new Error(`Owner loan insert failed: ${loanErr.message}`)
+
+    console.log('[TEST] Stranger attempts mark_liability_paid on Owner\'s bill...')
+    const { error: strangerPayErr } = await strangerClient.rpc('mark_liability_paid', {
+      p_liability_id: testLiabilityId, p_user_id: ownerUser.id,
+    })
+    if (!strangerPayErr) throw new Error('SECURITY FAILURE: Stranger was able to mark Owner\'s bill paid!')
+    console.log('  ✓ Success (mark_liability_paid blocked)')
+
+    console.log('[TEST] Stranger attempts record_loan_payment on Owner\'s loan...')
+    const { error: strangerLoanErr } = await strangerClient.rpc('record_loan_payment', {
+      p_loan_id: testLoanId, p_user_id: ownerUser.id, p_amount: 5,
+    })
+    if (!strangerLoanErr) throw new Error('SECURITY FAILURE: Stranger was able to record a payment on Owner\'s loan!')
+    console.log('  ✓ Success (record_loan_payment blocked)')
+
+    const { data: billAfter } = await ownerClient.from('liabilities').select('paid').eq('id', testLiabilityId).single()
+    const { data: loanAfter } = await ownerClient.from('loans').select('amount_settled').eq('id', testLoanId).single()
+    if (billAfter?.paid !== false) throw new Error('SECURITY FAILURE: Owner\'s bill changed after stranger RPC call!')
+    if (Number(loanAfter?.amount_settled) !== 0) throw new Error('SECURITY FAILURE: Owner\'s loan changed after stranger RPC call!')
 
     // 4. Partner attempts UPDATE
     console.log('[TEST] Partner attempts to update Owner\'s transaction...')
@@ -136,11 +186,15 @@ async function main() {
     // 6. Owner cleans up
     console.log('\n[CLEANUP] Owner deletes transaction...')
     await ownerClient.from('transactions').delete().eq('id', testTxnId)
+    await ownerClient.from('liabilities').delete().eq('id', testLiabilityId)
+    await ownerClient.from('loans').delete().eq('id', testLoanId)
     console.log('  ✓ Done')
-    
-    console.log('[CLEANUP] Owner unlinks partner...')
-    await ownerClient.from('invites').delete().eq('token', inviteToken)
-    console.log('  ✓ Done')
+
+    if (inviteToken) {
+      console.log('[CLEANUP] Owner unlinks partner...')
+      await ownerClient.from('invites').delete().eq('token', inviteToken)
+      console.log('  ✓ Done')
+    }
   }
 
   console.log('\nPASS: RLS partner isolation test complete. Data is fully isolated and secure.')

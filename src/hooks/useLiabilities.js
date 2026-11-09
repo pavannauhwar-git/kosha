@@ -139,16 +139,21 @@ export function useLiabilitiesByMonth(year, month, options = {}) {
   }
 }
 
-export async function addLiability(payload) {
+export async function addLiability(payload, clientId = null) {
   const userId = getActiveWalletUserId()
 
   // 1. Strict Server Write
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('liabilities')
-    .insert([{ ...payload, user_id: userId }])
+    .insert([{ ...payload, user_id: userId, ...(clientId ? { id: clientId } : {}) }])
     .select(LIABILITY_COLUMNS)
     .single()
 
+  if (error?.code === '23505' && clientId) {
+    // Retry of an insert that already committed: return the existing row.
+    ;({ data, error } = await supabase.from('liabilities')
+      .select(LIABILITY_COLUMNS).eq('id', clientId).eq('user_id', userId).single())
+  }
   if (error) throw error
 
   runInBackground(
@@ -420,7 +425,7 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
       const addFn = __testOverrides?.addLiability || addLiability
       const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
 
-      const created = await addFn(payload)
+      const created = await addFn(payload, optimisticId)
       // Lock already handled by withOptimisticGuard, no need for cancelQueries here
 
       optimisticallyDeleteLiabilityFromCache(optimisticId, targetUserId)

@@ -11,7 +11,8 @@ const queryCache = new QueryCache({
     captureError(error, {
       tags: {
         source: 'react-query',
-        queryKey: JSON.stringify(query.queryKey).slice(0, 200),
+        // Only the key's name: later parts can hold search text.
+        queryKey: String(query.queryKey?.[0] ?? '').slice(0, 80),
       },
     })
   },

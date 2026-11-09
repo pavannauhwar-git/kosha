@@ -21,7 +21,7 @@ export function buildFingerprint({ route, severity, title, description }) {
 export function parseTags(input) {
   return String(input || '')
     .split(',')
-    .map(t => t.trim().toLowerCase().replace(/[^a-z0-9_-]/g, ''))
+    .map(t => t.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40))
     .filter(Boolean)
     .slice(0, 6)
 }

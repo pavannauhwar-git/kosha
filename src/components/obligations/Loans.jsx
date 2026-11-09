@@ -749,7 +749,7 @@ export default function Loans({
             <div className="grid grid-cols-1 gap-3">
               {tab === 'given' ? (
                 <div className="mini-panel px-3 py-2.5">
-                  <p className="text-caption text-ink-3 mb-1">You're owed</p>
+                  <p className="text-caption text-ink-3 mb-1">You&apos;re owed</p>
                   <p className="text-base font-semibold amt-income tabular-nums leading-none">{fmt(totalGiven)}</p>
                   <p className="text-caption text-ink-3 mt-1">{visibleGiven.length} loan{visibleGiven.length !== 1 ? 's' : ''}</p>
                 </div>

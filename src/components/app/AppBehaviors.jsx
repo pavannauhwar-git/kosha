@@ -279,7 +279,7 @@ export function QueryErrorRecovery() {
       aria-atomic="true"
       className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg max-w-[398px] mx-auto" style={{ zIndex: "var(--ds-z-toast)" }}
     >
-      <span className="text-[13px] font-medium flex-1">Something didn't load correctly.</span>
+      <span className="text-[13px] font-medium flex-1">Something didn&apos;t load correctly.</span>
       <button
         type="button"
         onClick={() => {
@@ -494,7 +494,7 @@ export function ShellStatusBanners() {
               aria-live="polite"
               className="pointer-events-auto flex items-center gap-2 rounded-card border border-warning-border bg-warning-bg px-3 py-2.5 text-warning-text shadow-card"
             >
-              <span className="text-[12px] font-semibold">You're offline. You can browse, but changes need a connection.</span>
+              <span className="text-[12px] font-semibold">You&apos;re offline. You can browse, but changes need a connection.</span>
             </motion.div>
           )}
           {showUpdatePrompt && (

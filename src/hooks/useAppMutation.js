@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query'
-import { MUTATION_RETRY } from '../lib/mutationRetry'
 import { assertOnline } from '../lib/offlineError'
 
 /**
@@ -27,7 +26,10 @@ export function useAppMutation(mutationFn, { context, meta, mutationKey, ...opti
     // 'always': never pause. Offline is handled explicitly by assertOnline() so the
     // caller gets an error immediately instead of a mutation stuck in isPending.
     networkMode: 'always',
-    retry: MUTATION_RETRY,
+    // A write whose response was lost may already have committed, so a blind
+    // retry can insert it twice. Callers whose write is idempotent can opt in
+    // with `retry: MUTATION_RETRY` from src/lib/mutationRetry.js.
+    retry: false,
     mutationFn: async (args) => {
       // Writes are NOT queued offline. Offline saves fail fast with a clear message.
       assertOnline()

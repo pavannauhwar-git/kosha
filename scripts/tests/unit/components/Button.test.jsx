@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 import Button from '../../../../src/components/ui/Button'
 
 // Mock haptics to prevent import errors during testing
-vi.mock('../../lib/haptics', () => ({
+vi.mock('../../../../src/lib/haptics', () => ({
   hapticTap: vi.fn(),
 }))
 

@@ -18,6 +18,7 @@ import Input from '../components/ui/Input'
 import Switch from '../components/ui/Switch'
 import { useAppToast } from '../context/ToastContext'
 import { copyToClipboard } from '../lib/share'
+import { sanitizeRoute } from '../lib/urlSanitizer'
 import { useAppMutation } from '../hooks/useAppMutation'
 
 const SEVERITIES = [
@@ -164,7 +165,7 @@ export default function ReportBug() {
       return setError('Please enter a valid contact email or leave it empty.')
     }
 
-    const routeForReport = contextRoute || `${location.pathname}${location.search || ''}`
+    const routeForReport = sanitizeRoute(contextRoute || `${location.pathname}${location.search || ''}`)
     const appVersion = import.meta.env.VITE_APP_VERSION || `web-${import.meta.env.MODE || 'prod'}`
     const fingerprint = buildFingerprint({
       route: routeForReport,
@@ -373,6 +374,7 @@ export default function ReportBug() {
                 placeholder="What happened?"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
+                maxLength={4000}
                 style={{ minHeight: '112px' }}
               />
 
@@ -384,6 +386,7 @@ export default function ReportBug() {
                 placeholder="Steps to reproduce (optional)"
                 value={steps}
                 onChange={e => setSteps(e.target.value)}
+                maxLength={4000}
                 style={{ minHeight: '86px' }}
               />
 

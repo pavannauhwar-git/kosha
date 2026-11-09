@@ -1,3 +1,4 @@
+import js from '@eslint/js'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
@@ -31,6 +32,19 @@ export default [
       },
     },
     rules: {
+      ...js.configs.recommended.rules,
+      ...react.configs.flat.recommended.rules,
+      ...reactHooks.configs.flat.recommended.rules,
+      'react/prop-types': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      // React Compiler rules: existing code predates them, so they warn and
+      // `--max-warnings` in package.json stops the count from growing.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/purity': 'warn',
+
       // ── Accessibility (jsx-a11y recommended) ──────────────────────────────
       // The plugin is registered above; here we activate every recommended
       // rule. Rules that fire broadly across component-rich React UIs are

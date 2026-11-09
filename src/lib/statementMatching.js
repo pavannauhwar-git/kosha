@@ -9,7 +9,7 @@ const NOISE_TOKENS = new Set([
 
 function cleanMerchantText(value) {
   const normalized = normalizeText(value)
-    .replace(/[\[\]()]/g, ' ')
+    .replace(/[[\]()]/g, ' ')
     .replace(/\b(?:upi|imps|neft|rtgs)\/[^\s]+/g, ' ')
     .replace(/\b[a-z]*\d{8,}[a-z\d]*\b/g, ' ')
     .replace(/[|,:;]+/g, ' ')

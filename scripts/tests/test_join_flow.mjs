@@ -64,47 +64,51 @@ async function main() {
     console.warn(`WARN: Pre-cleanup of invites failed: ${preCleanupError.message}`)
   }
 
-  console.log('Creating invite token...')
-  const { error: createError } = await creatorClient
-    .from('invites')
-    .insert({ token: inviteToken, created_by: creatorUser.id })
+  try {
+    console.log('Creating invite token...')
+    const { error: createError } = await creatorClient
+      .from('invites')
+      .insert({ token: inviteToken, created_by: creatorUser.id })
 
-  if (createError) throw new Error(`Invite insert failed: ${createError.message}`)
+    if (createError) throw new Error(`Invite insert failed: ${createError.message}`)
 
-  console.log(`Join URL generated: ${joinUrl}`)
-  console.log('Simulating onboarding invite consumption with joiner session...')
+    console.log(`Join URL generated: ${joinUrl}`)
+    console.log('Simulating onboarding invite consumption with joiner session...')
 
-  const consumeResult = await consumeInviteToken({
-    supabaseClient: joinerClient,
-    inviteToken,
-    userId: joinerUser.id,
-  })
+    const consumeResult = await consumeInviteToken({
+      supabaseClient: joinerClient,
+      inviteToken,
+      userId: joinerUser.id,
+    })
 
-  if (!consumeResult.consumed) {
-    throw new Error(`Invite token was not consumed: ${consumeResult.reason}`)
+    if (!consumeResult.consumed) {
+      throw new Error(`Invite token was not consumed: ${consumeResult.reason}`)
+    }
+
+    const { data: inviteRow, error: verifyError } = await joinerClient
+      .from('invites')
+      .select('token, used_by, used_at')
+      .eq('token', inviteToken)
+      .single()
+
+    if (verifyError) throw new Error(`Invite verification failed: ${verifyError.message}`)
+    if (inviteRow.used_by !== joinerUser.id) {
+      throw new Error(`Invite used_by mismatch. Expected ${joinerUser.id}, got ${inviteRow.used_by}`)
+    }
+    if (!inviteRow.used_at) {
+      throw new Error('Invite used_at was not set')
+    }
+  } finally {
+    // Deleting the used invite is what removes the partner link.
+    console.log('Cleaning up invite record...')
+    const { error: cleanupError } = await creatorClient.from('invites').delete().eq('token', inviteToken)
+    if (cleanupError) console.warn(`WARN: invite cleanup failed: ${cleanupError.message}`)
+
+    await Promise.all([
+      creatorClient.auth.signOut(),
+      joinerClient.auth.signOut(),
+    ])
   }
-
-  const { data: inviteRow, error: verifyError } = await joinerClient
-    .from('invites')
-    .select('token, used_by, used_at')
-    .eq('token', inviteToken)
-    .single()
-
-  if (verifyError) throw new Error(`Invite verification failed: ${verifyError.message}`)
-  if (inviteRow.used_by !== joinerUser.id) {
-    throw new Error(`Invite used_by mismatch. Expected ${joinerUser.id}, got ${inviteRow.used_by}`)
-  }
-  if (!inviteRow.used_at) {
-    throw new Error('Invite used_at was not set')
-  }
-
-  console.log('Cleaning up invite record...')
-  await creatorClient.from('invites').delete().eq('token', inviteToken)
-
-  await Promise.all([
-    creatorClient.auth.signOut(),
-    joinerClient.auth.signOut(),
-  ])
 
   console.log('PASS: Join flow invite was consumed, marked used, and cleaned up.')
 }
