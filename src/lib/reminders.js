@@ -60,11 +60,33 @@ function markSent(id) {
   writeLocalStorage(reminderStorageKey(id), String(Date.now()))
 }
 
-export function maybeNotify({ id, title, body, cooldownMs = 24 * 60 * 60 * 1000 }) {
+async function getServiceWorkerRegistration() {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.serviceWorker) return null
+    return (await navigator.serviceWorker.getRegistration()) || null
+  } catch {
+    return null
+  }
+}
+
+export async function maybeNotify({ id, title, body, cooldownMs = 24 * 60 * 60 * 1000 }) {
   if (!canUseNotifications()) return false
   if (Notification.permission !== 'granted') return false
   if (!id || !title || !body) return false
   if (wasSentWithin(id, cooldownMs)) return false
+
+  // Android Chrome and installed PWAs only allow notifications through the
+  // service worker; the page constructor throws there.
+  const registration = await getServiceWorkerRegistration()
+  if (registration?.showNotification) {
+    try {
+      await registration.showNotification(title, { body, tag: `kosha-${id}` })
+      markSent(id)
+      return true
+    } catch {
+      // fall through to the page notification
+    }
+  }
 
   try {
     const note = new Notification(title, { body })
