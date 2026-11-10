@@ -15,6 +15,7 @@ import { GlobalErrorBoundary } from './components/errors/GlobalErrorBoundary'
 import { startRuntimeMonitor } from './lib/runtimeMonitor'
 import { readLocalStorage } from './lib/safeStorage'
 import { reloadForChunkError } from './lib/chunkReload'
+import { initErrorReporting } from './lib/errorReporting'
 
 // Defensive: the avatar URL cache is keyed by storage path, not by user. Clear
 // it on every cold start so a previous user's signed URLs can never be read by
@@ -38,8 +39,10 @@ window.addEventListener('vite:preloadError', (event) => {
     document.head.appendChild(metaTheme)
   }
 
-  const applyThemeColor = (isDark) => {
-    metaTheme.content = isDark ? '#0B0C0F' : '#FFFFFF'
+  // The status bar matches the page surface defined in index.css.
+  const applyThemeColor = () => {
+    const surface = getComputedStyle(document.documentElement).getPropertyValue('--ds-surface').trim()
+    if (surface) metaTheme.content = surface
   }
 
   const stored = readLocalStorage('kosha-theme', null)
@@ -49,12 +52,12 @@ window.addEventListener('vite:preloadError', (event) => {
   if (isDark) {
     document.documentElement.classList.add('dark')
   }
-  applyThemeColor(isDark)
+  applyThemeColor()
 
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.attributeName === 'class') {
-        applyThemeColor(document.documentElement.classList.contains('dark'))
+        applyThemeColor()
         break
       }
     }
@@ -69,3 +72,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </GlobalErrorBoundary>
   </React.StrictMode>
 )
+
+// Sentry loads once the first screen is up, so it isn't in the start-up download.
+if ('requestIdleCallback' in window) {
+  window.requestIdleCallback(() => { void initErrorReporting() }, { timeout: 4000 })
+} else {
+  window.setTimeout(() => { void initErrorReporting() }, 2000)
+}
+
+// Older builds cached Supabase responses in the service worker. Nothing reads
+// that cache any more, so remove it from phones that still have it.
+if ('caches' in window) {
+  void caches.delete('supabase-data').catch(() => {})
+}
