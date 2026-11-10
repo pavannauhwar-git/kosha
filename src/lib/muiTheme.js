@@ -18,7 +18,7 @@ export const getMuiTheme = (mode) => {
         container: isDark ? '#333538' : '#E1E3E1',
       },
       background: {
-        default: isDark ? '#0F0F11' : '#F0F4F9',
+        default: isDark ? '#1E1F20' : '#FFFFFF',
         paper: isDark ? '#1E1F20' : '#FFFFFF',
       },
       text: {
@@ -40,7 +40,7 @@ export const getMuiTheme = (mode) => {
     },
     typography: {
       fontFamily: [
-        'InterVariable',
+        '"Inter Variable"',
         'Inter',
         'system-ui',
         '-apple-system',
@@ -55,6 +55,15 @@ export const getMuiTheme = (mode) => {
       borderRadius: 16,
     },
     components: {
+      // Page colours come from the --ds-* variables in index.css only.
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            backgroundColor: 'var(--ds-surface)',
+            color: 'var(--ds-text)',
+          },
+        },
+      },
       MuiButton: {
         defaultProps: {
           disableElevation: true,

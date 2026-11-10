@@ -36,12 +36,12 @@
   --ds-accent-dark: #F4B400;
   --ds-accent-container: #FEF7E0;
   --ds-on-accent: #1F1F1F;
-  --ds-accent-text: #B06000;
+  --ds-accent-text: #9A5300;
 
   /* ── Surfaces ───────────────────────── */
   --ds-surface: #FFFFFF;
   --ds-surface-dim: #F0F4F9;
-  --ds-surface-bright: #FFFFFF;
+  --ds-surface-bright: #F3F6FA;
   --ds-surface-container: #E9EEF6;
   --ds-surface-container-high: #DEE3EB;
   --ds-surface-container-highest: #D3D8E0;
@@ -50,7 +50,7 @@
   --ds-text: #1F1F1F;
   --ds-text-secondary: #444746;
   --ds-text-tertiary: #5F6368;
-  --ds-text-disabled: #8E918F;
+  --ds-text-disabled: #676A69;
   --ds-text-rgb: 31, 31, 31;
   
   /* Legacy text aliases used by charts */
@@ -78,11 +78,11 @@
   --ds-invest-border: #D7AEFB;
   --ds-repay: #B06000;
   --ds-repay-bg: #FEEFC3;
-  --ds-repay-text: #B06000;
+  --ds-repay-text: #9A5300;
   --ds-repay-border: #FDE293;
 
   /* ── Warning / Danger ───────────────── */
-  --ds-warning: #B06000;
+  --ds-warning: #9A5300;
   --ds-warning-bg: #FEEFC3;
   --ds-warning-border: #FDE293;
   --ds-danger: #C5221F;
@@ -193,8 +193,8 @@
   --md-sys-color-surface-container-highest: var(--ds-surface-container-highest);
 
   /* ── Typography reference mapping ── */
-  --md-ref-typeface-brand: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
-  --md-ref-typeface-plain: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+  --md-ref-typeface-brand: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --md-ref-typeface-plain: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
 
   /* ── Material 3 Shape Scale Tokens ── */
   --md-sys-shape-none: 0px;
@@ -212,7 +212,7 @@
   --ds-primary-dark: #7AB4FF;
   --ds-primary-light: #0B57D0;
   --ds-primary-container: #003F8A;
-  --ds-on-primary: #FFFFFF;
+  --ds-on-primary: #001A41;
   --ds-on-primary-container: #D6E8FF;
   --ds-primary-rgb: 58, 139, 255;
   --ds-accent: #FDE293;
@@ -231,7 +231,7 @@
   --ds-text: #E3E3E3;
   --ds-text-secondary: #C4C7C5;
   --ds-text-tertiary: #A1A3A1;
-  --ds-text-disabled: #747775;
+  --ds-text-disabled: #939694;
   --ds-text-rgb: 227, 227, 227;
 
   --ds-border: rgba(255, 255, 255, 0.08);
@@ -310,8 +310,8 @@
   --md-sys-color-surface-container-highest: var(--ds-surface-container-highest);
 
   /* ── Typography reference mapping ── */
-  --md-ref-typeface-brand: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
-  --md-ref-typeface-plain: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+  --md-ref-typeface-brand: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --md-ref-typeface-plain: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
 
   /* ── Material 3 Shape Scale Tokens ── */
   --md-sys-shape-none: 0px;
@@ -341,7 +341,7 @@
 }
 
 html {
-  font-family: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -352,7 +352,6 @@ html {
 }
 
 body {
-  background-color: var(--ds-surface-dim);
   color: var(--ds-text);
   width: 100%;
   max-width: 100%;
@@ -379,20 +378,32 @@ body {
 }
 
 /* ── Focus Ring ─────────────────────────────────────────────────────── */
-:focus-visible {
+:focus-visible,
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 2px;
+}
+
+/* Fields show focus with their border; containers focused by code need no ring;
+   Material elements draw their own focus ring. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: none;
   box-shadow: var(--ds-focus-ring);
 }
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-[role="button"]:focus-visible {
+[tabindex="-1"]:focus-visible,
+md-filled-button:focus-visible,
+md-filled-tonal-button:focus-visible,
+md-outlined-button:focus-visible,
+md-text-button:focus-visible,
+md-outlined-text-field:focus-visible,
+md-outlined-select:focus-visible,
+md-switch:focus-visible {
   outline: none;
-  box-shadow: var(--ds-focus-ring);
-  border-radius: inherit;
 }
 
 button,
@@ -473,7 +484,7 @@ a,
   }
 
   html {
-    font-family: 'InterVariable', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 90%;
     width: 100%;
     max-width: 100%;
@@ -493,10 +504,6 @@ a,
     min-height: 100dvh;
     overscroll-behavior-y: none;
     overflow-x: clip;
-  }
-
-  .dark html, .dark body {
-    background-color: var(--ds-surface);
   }
 
   html, body, #root, .bg-kosha-bg, .card, .mini-panel, .app-topbar, .nav-float-wrap {
@@ -672,7 +679,7 @@ a,
 
   .sticky-toolbar {
     @apply sticky z-10 px-0.5 py-2;
-    background-color: var(--ds-surface-dim);
+    background-color: var(--ds-surface);
     top: var(--sticky-top-offset);
     margin-bottom: 1rem;
     border-bottom: 1px solid var(--ds-border);
@@ -834,7 +841,7 @@ a,
 
   /* -- Section label — CRED-style uppercase tracking ──────────────── */
   .section-label {
-    @apply text-[10px] font-semibold text-ink-4 leading-none;
+    @apply text-[11px] font-semibold text-ink-4 leading-none;
     letter-spacing: 0.14em;
     text-transform: uppercase;
   }
@@ -917,7 +924,7 @@ a,
   }
 
   .chip-control {
-    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border focus-visible:outline-none focus-visible:ring-2;
+    @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3.5 rounded-pill text-[11px] font-semibold border;
     transition:
       transform var(--ds-dur-spring-fast) var(--ds-spring-fast),
       background-color 180ms var(--ds-ease-standard),
@@ -925,6 +932,14 @@ a,
       opacity 180ms var(--ds-ease-standard),
       box-shadow 200ms var(--ds-spring-effects);
     --tw-ring-color: rgba(17, 19, 24, 0.10);
+    position: relative;
+  }
+
+  /* Invisible hit area so the tap target reaches 44px without a taller chip. */
+  .chip-control::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
   }
 
   .chip-control:active {
@@ -949,7 +964,7 @@ a,
   }
 
   .chip-control-sm {
-    @apply h-8 px-2.5 text-[10.5px] gap-1;
+    @apply h-8 px-2.5 text-[11px] gap-1;
   }
 
   /* -- Amount colours ──────────────────────────────────────────────── */
@@ -1170,7 +1185,7 @@ a,
   .nav-label {
     font-size: 11px;
     line-height: 1.1;
-    font-family: 'InterVariable', 'Inter', system-ui, sans-serif;
+    font-family: 'Inter Variable', 'Inter', system-ui, sans-serif;
     letter-spacing: 0.008em;
     white-space: nowrap;
     user-select: none;
@@ -1504,6 +1519,14 @@ a,
     -webkit-appearance: none;
     touch-action: manipulation;
     transition: transform 100ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms cubic-bezier(0.2, 0, 0, 1);
+    position: relative;
+  }
+
+  .close-btn::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 9999px;
   }
 
   .close-btn:active {
@@ -1593,7 +1616,6 @@ a,
   }
 
   .section-label {
-    font-size: 9.5px;
     letter-spacing: 0.12em;
   }
 
@@ -1607,7 +1629,7 @@ a,
     min-height: 2.1rem;
     padding-left: 0.6rem;
     padding-right: 0.6rem;
-    font-size: 10px;
+    font-size: 11px;
     gap: 0.2rem;
   }
 
@@ -1657,7 +1679,6 @@ a,
   }
 
   .nav-label {
-    font-size: 9px;
     line-height: 1.05;
   }
 
@@ -1775,6 +1796,19 @@ a,
   .chip-control:active {
     transform: scale(0.96);
     transition: transform 80ms cubic-bezier(0.2, 0, 0, 1);
+  }
+}
+
+/* iOS zooms into any field whose text is under 16px when it gets focus. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  md-outlined-text-field {
+    --md-outlined-text-field-input-text-size: 16px;
   }
 }
 
