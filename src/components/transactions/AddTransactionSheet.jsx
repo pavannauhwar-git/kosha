@@ -22,7 +22,7 @@ import CreateCategorySheet from '../categories/CreateCategorySheet'
 import Sheet from '../ui/Sheet'
 import { useSplitwise, addSplitExpenseMutation, buildEqualSplits, findSelfMember } from '../../hooks/useSplitwise'
 import { supabase } from '../../lib/supabase'
-import { validateAmount } from '../../lib/validateAmount.js'
+import { sanitizeAmountInput, validateAmount } from '../../lib/validateAmount.js'
 import FormField from '../ui/FormField'
 
 
@@ -245,9 +245,9 @@ function buildInitialState(editTxn, duplicateTxn, initialType) {
 
   let defaultExpenseCat = 'other'
   if (date <= 3) {
-    defaultExpenseCat = 'bills_utilities'
+    defaultExpenseCat = 'bills'
   } else if ((hour >= 6 && hour <= 10) || (hour >= 12 && hour <= 14)) {
-    defaultExpenseCat = 'food_dining'
+    defaultExpenseCat = 'food'
   }
 
   return {
@@ -582,7 +582,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   }
 
   const { groups } = useSplitwise({ enabled: type === 'expense' })
-  const { pending: pendingBills } = useLiabilities()
+  const { pending: pendingBills } = useLiabilities({ includePaid: false })
   const [matchingBill, setMatchingBill] = useState(null)
 
   // Auto-detect matching bills
@@ -712,6 +712,13 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       return
     }
 
+    if (isSplitwise && type === 'expense' && !splitGroupId) {
+      hapticError()
+      dispatch({ type: 'SAVING_ERROR', value: 'Pick a group to split with, or turn off “Split this expense”.' })
+      isSubmitting.current = false
+      return
+    }
+
     let nextRunDate = null
     if (isRecurring) {
       const unchangedSchedule = !!editTxn
@@ -724,13 +731,23 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       else nextRunDate = nextRecurringDate(date, recurrence)
     }
 
+    // An edit that didn't touch the category keeps it as stored, even if that
+    // category has since been archived or renamed.
+    const keepStoredCategory = !!editTxn && editTxn.type === type && (
+      type === 'investment'
+        ? vehicle === (editTxn.investment_vehicle || 'Other')
+        : category === (editTxn.category || 'other')
+    )
+
     const payload = {
       type,
       description: desc.trim(),
       amount: Number(amountValidation.paise) / 100,
-      category: type === 'investment' 
-        ? (investmentOptions.find(v => v.label === vehicle)?.id || 'other').toLowerCase()
-        : normalizeCategoryForType(type, category).toLowerCase(),
+      category: keepStoredCategory
+        ? (editTxn.category || 'other')
+        : type === 'investment'
+          ? (investmentOptions.find(v => v.label === vehicle)?.id || 'other').toLowerCase()
+          : normalizeCategoryForType(type, category).toLowerCase(),
       date,
       payment_mode: mode.toLowerCase(),
       is_repayment: editTxn ? !!editTxn.is_repayment : false,
@@ -769,7 +786,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           splitMethod: 'equal',
           notes: notes.trim() || null,
           splits,
-          transactionCategory: category,
+          transactionCategory: normalizeCategoryForType('expense', category),
           id: draftIdRef.current
         })
       } else {
@@ -862,10 +879,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   enterKeyHint="next"
                   value={amount}
                   onChange={e => {
-                    let raw = e.target.value;
-                    if (raw.startsWith('+')) raw = raw.slice(1);
-                    if (raw.toLowerCase().includes('e')) return;
-                    if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) set('amount', raw);
+                    const clean = sanitizeAmountInput(e.target.value)
+                    if (clean !== null) set('amount', clean)
                   }}
                   onPointerUp={() => {
                     // Bypass Safari 2-tap swallow
@@ -949,7 +964,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 <CategoryIcon categoryId={category} size={16} />
                 <span className="flex-1 text-[15px] text-ink text-left">Category</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[13px] text-ink-3">{selectedCat?.label}</span>
+                  <span className="text-[13px] text-ink-3">{selectedCat?.label || 'Archived category'}</span>
                   <CaretRight size={14} className="text-ink-4" />
                 </div>
               </button>
@@ -1041,7 +1056,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                 <Switch
                   checked={isRecurring}
                   onChange={(e) => set('isRecurring', e.target.checked)}
-                  disabled={isSaving}
+                  disabled={isSaving || (isSplitwise && type === 'expense')}
                 />
               </div>
 
@@ -1119,7 +1134,10 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                   </div>
                   <Switch
                     checked={isSplitwise}
-                    onChange={(e) => set('isSplitwise', e.target.checked)}
+                    onChange={(e) => {
+                      set('isSplitwise', e.target.checked)
+                      if (e.target.checked) set('isRecurring', false)
+                    }}
                     disabled={isSaving}
                   />
                 </div>
@@ -1136,6 +1154,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
                         label: g.name,
                       }))}
                     />
+                    <p className="mt-2 text-[12px] text-ink-3">
+                      Split expenses don’t repeat, and their payment mode and bill link aren’t saved.
+                    </p>
                   </div>
                 )}
               </div>

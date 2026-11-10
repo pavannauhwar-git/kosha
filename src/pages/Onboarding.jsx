@@ -18,6 +18,7 @@ import { useAppToast } from '../context/ToastContext'
 import { toToastMessage } from '../lib/errorTaxonomy'
 import { todayStr } from '../lib/utils'
 import { resolvePostAuthPath } from '../lib/invites'
+import { sanitizeAmountInput, validateAmount } from '../lib/validateAmount.js'
 
 
 const fadeUp = createFadeUp(8, 0.2)
@@ -77,7 +78,6 @@ function StepName({ onNext }) {
             // eslint-disable-next-line jsx-a11y/no-autofocus -- wizard step: user actively navigated here, single-input screen
             autoFocus
             enterKeyHint="next"
-            onKeyDown={e => e.key === 'Enter' && name.trim() && onNext(name.trim())}
           />
         </form>
       </motion.div>
@@ -113,6 +113,11 @@ function StepFirstTransaction({ onFinish, onSkip }) {
 
   async function handleSave() {
     if (!amount || !desc.trim() || isSubmitting.current) return
+    const amountValidation = validateAmount(amount, { allowZero: false })
+    if (!amountValidation.ok) {
+      setError(amountValidation.error)
+      return
+    }
     isSubmitting.current = true
     setError(null)
     try {
@@ -122,7 +127,7 @@ function StepFirstTransaction({ onFinish, onSkip }) {
           date:         todayStr(),
           type:         txnType,
           description:  desc.trim(),
-          amount:       parseFloat(amount),
+          amount:       Number(amountValidation.paise) / 100,
           category:     txnType === 'expense' ? category : 'salary',
           is_repayment: false,
           payment_mode: 'upi',
@@ -190,8 +195,8 @@ function StepFirstTransaction({ onFinish, onSkip }) {
             placeholder="Amount"
             value={amount}
             onChange={e => {
-              const raw = e.target.value;
-              if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) setAmount(raw);
+              const clean = sanitizeAmountInput(e.target.value)
+              if (clean !== null) setAmount(clean)
             }}
             // eslint-disable-next-line jsx-a11y/no-autofocus -- wizard step: user actively navigated here, single-input screen
             autoFocus
