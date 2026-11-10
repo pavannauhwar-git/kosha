@@ -47,4 +47,45 @@ describe('Input component', () => {
     const el = container.querySelector('md-outlined-text-field')
     expect(el).toHaveAttribute('disabled', '')
   })
+
+  it('submits the surrounding form on Enter', () => {
+    const handleSubmit = vi.fn((e) => e.preventDefault())
+    const { container } = render(
+      <form onSubmit={handleSubmit}>
+        <Input value="" enterKeyHint="done" />
+      </form>
+    )
+    const el = container.querySelector('md-outlined-text-field')
+    fireEvent.keyDown(el, { key: 'Enter' })
+    expect(handleSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('moves to the next field instead of submitting when the hint is "next"', () => {
+    const handleSubmit = vi.fn((e) => e.preventDefault())
+    const { container } = render(
+      <form onSubmit={handleSubmit}>
+        <Input value="" enterKeyHint="next" />
+        <Input value="" enterKeyHint="done" />
+      </form>
+    )
+    const [first, second] = container.querySelectorAll('md-outlined-text-field')
+    const focusSpy = vi.spyOn(second, 'focus')
+    fireEvent.keyDown(first, { key: 'Enter' })
+    expect(focusSpy).toHaveBeenCalled()
+    expect(handleSubmit).not.toHaveBeenCalled()
+  })
+
+  it('ignores Enter outside a form and other keys', () => {
+    const handleSubmit = vi.fn((e) => e.preventDefault())
+    const { container } = render(
+      <>
+        <Input value="" />
+        <form onSubmit={handleSubmit}><Input value="" /></form>
+      </>
+    )
+    const [outside, inside] = container.querySelectorAll('md-outlined-text-field')
+    fireEvent.keyDown(outside, { key: 'Enter' })
+    fireEvent.keyDown(inside, { key: 'a' })
+    expect(handleSubmit).not.toHaveBeenCalled()
+  })
 })

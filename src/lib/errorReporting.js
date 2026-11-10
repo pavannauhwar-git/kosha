@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react'
 import { isExpectedError } from './errorTaxonomy'
 import { sanitizeUrl, sanitizeUrlsInText } from './urlSanitizer'
 import { useEffect } from 'react'
@@ -93,77 +92,125 @@ export function scrubTransaction(event) {
   return event
 }
 
-if (DSN) {
-  Sentry.init({
-    dsn: DSN,
-    environment: import.meta.env.MODE,            // 'development' | 'production'
-    release: import.meta.env.VITE_APP_VERSION,    // optional — set in vite.config.js define block
-    integrations: [
-      Sentry.reactRouterV6BrowserTracingIntegration({
-        useEffect,
-        useLocation,
-        useNavigationType,
-        createRoutesFromChildren,
-        matchRoutes,
-      }),
-    ],
-    tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
-    beforeBreadcrumb(crumb) {
-      return scrubBreadcrumb(crumb)
-    },
-    beforeSendTransaction(event) {
-      try {
-        return scrubTransaction(event)
-      } catch {
-        return null
-      }
-    },
-    beforeSend(event) {
-      try {
-        if (event.request?.url) event.request.url = sanitizeUrl(event.request.url)
-        if (event.request?.headers) redactInPlace(event.request.headers)
-        if (event.request?.data) redactInPlace(event.request.data)
-        if (event.extra) redactInPlace(event.extra)
-        if (event.contexts) redactInPlace(event.contexts)
-        if (event.tags) redactInPlace(event.tags)
-        if (Array.isArray(event.breadcrumbs)) {
-          event.breadcrumbs = event.breadcrumbs.map(scrubBreadcrumb)
-        }
-        // User identity is set explicitly by setErrorReportingUser to only
-        // the user id — defensively strip anything else that might have
-        // crept in (email, ip, username).
-        if (event.user) {
-          event.user = { id: event.user.id }
-        }
-      } catch {
-        // If scrubbing itself throws, drop the event rather than risk
-        // leaking the unscrubbed version.
-        return null
-      }
-      return event
-    },
-  })
+let sentry = null
+let sentryLoad = null
+const pendingCalls = []
+const MAX_PENDING_CALLS = 30
+
+function withSentry(fn) {
+  if (!DSN) return
+  if (sentry) {
+    fn(sentry)
+    return
+  }
+  if (pendingCalls.length < MAX_PENDING_CALLS) pendingCalls.push(fn)
+}
+
+// Loads and starts Sentry. main.jsx calls this once the first screen has
+// rendered, so the SDK isn't part of the start-up download. Reports made
+// before then are queued and sent once it loads.
+export function initErrorReporting() {
+  if (!DSN || sentryLoad) return sentryLoad
+  sentryLoad = import('@sentry/react')
+    .then((Sentry) => {
+      Sentry.init({
+        dsn: DSN,
+        environment: import.meta.env.MODE,            // 'development' | 'production'
+        release: import.meta.env.VITE_APP_VERSION,    // optional — set in vite.config.js define block
+        integrations: [
+          Sentry.reactRouterV6BrowserTracingIntegration({
+            useEffect,
+            useLocation,
+            useNavigationType,
+            createRoutesFromChildren,
+            matchRoutes,
+          }),
+        ],
+        tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
+        beforeBreadcrumb(crumb) {
+          return scrubBreadcrumb(crumb)
+        },
+        beforeSendTransaction(event) {
+          try {
+            return scrubTransaction(event)
+          } catch {
+            return null
+          }
+        },
+        beforeSend(event) {
+          try {
+            if (event.request?.url) event.request.url = sanitizeUrl(event.request.url)
+            if (event.request?.headers) redactInPlace(event.request.headers)
+            if (event.request?.data) redactInPlace(event.request.data)
+            if (event.extra) redactInPlace(event.extra)
+            if (event.contexts) redactInPlace(event.contexts)
+            if (event.tags) redactInPlace(event.tags)
+            if (Array.isArray(event.breadcrumbs)) {
+              event.breadcrumbs = event.breadcrumbs.map(scrubBreadcrumb)
+            }
+            // User identity is set explicitly by setErrorReportingUser to only
+            // the user id — defensively strip anything else that might have
+            // crept in (email, ip, username).
+            if (event.user) {
+              event.user = { id: event.user.id }
+            }
+          } catch {
+            // If scrubbing itself throws, drop the event rather than risk
+            // leaking the unscrubbed version.
+            return null
+          }
+          return event
+        },
+      })
+      sentry = Sentry
+      for (const fn of pendingCalls.splice(0)) fn(Sentry)
+    })
+    .catch((err) => {
+      console.warn('[Kosha] Error reporting failed to load', err)
+    })
+  return sentryLoad
+}
+
+// Supabase can hand back plain objects ({ message, code, details, hint }).
+// Wrap them so Sentry shows the message and code instead of "[object Object]".
+export function toReportableError(error) {
+  if (error instanceof Error) return error
+  if (error && typeof error === 'object') {
+    const wrapped = new Error(String(error.message || error.error_description || error.error || 'Unknown error'))
+    for (const field of ['code', 'status', 'details', 'hint']) {
+      if (error[field] != null) wrapped[field] = error[field]
+    }
+    return wrapped
+  }
+  return new Error(String(error ?? 'Unknown error'))
 }
 
 export function captureError(error, { context = 'unknown', extra = {}, tags = {} } = {}) {
-  if (!(error instanceof Error)) {
-    error = new Error(String(error ?? 'Unknown error'))
-  }
+  const reportable = toReportableError(error)
+  const code = reportable.code ?? reportable.status
 
   if (DSN) {
-    Sentry.withScope((scope) => {
-      scope.setTag('context', context)
-      scope.setExtras(extra)
-      if (tags && typeof tags === 'object') {
-        scope.setTags(tags)
-      }
-      Sentry.captureException(error)
+    withSentry((Sentry) => {
+      Sentry.withScope((scope) => {
+        scope.setTag('context', context)
+        if (code != null) {
+          scope.setTag('error_code', String(code))
+          // Backend failures share a stack inside supabase-js, so group them
+          // by where they happened and their code instead.
+          scope.setFingerprint([String(context), String(code)])
+        }
+        scope.setExtras(extra)
+        if (tags && typeof tags === 'object') {
+          scope.setTags(tags)
+        }
+        Sentry.captureException(reportable)
+      })
     })
     return
   }
 
   // Fallback — structured console output in dev
-  console.error(`[Kosha] Error in ${context}:`, error.message, { extra, tags })
+  console.error(`[Kosha] Error in ${context}:`, reportable.message, { extra, tags })
 }
 
 /**
@@ -211,13 +258,9 @@ export function captureMutationError(error, { context = 'mutation', extra = {}, 
 
 export function setErrorReportingUser(user) {
   if (!user?.id) return
-  if (DSN) {
-    Sentry.setUser({ id: user.id })
-  }
+  withSentry((Sentry) => Sentry.setUser({ id: user.id }))
 }
 
 export function clearErrorReportingUser() {
-  if (DSN) {
-    Sentry.setUser(null)
-  }
+  withSentry((Sentry) => Sentry.setUser(null))
 }

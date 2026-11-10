@@ -71,7 +71,7 @@ export default {
       },
 
       fontFamily: {
-        sans: ['InterVariable', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['"Inter Variable"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
 
       fontSize: {

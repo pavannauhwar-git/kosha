@@ -1,8 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { X } from '@phosphor-icons/react'
 import useOverlayFocusTrap from '../../hooks/useOverlayFocusTrap'
+
+// While a sheet is open the keyboard handling pins the page at the top (see
+// useKeyboardInset), so remember where the list was and go back there after.
+let savedPageScroll = null
+
+function savePageScroll() {
+  savedPageScroll = { y: window.scrollY, path: window.location.pathname }
+}
+
+function restorePageScroll() {
+  const saved = savedPageScroll
+  savedPageScroll = null
+  if (!saved || saved.path !== window.location.pathname) return
+  window.requestAnimationFrame(() => {
+    if (Math.abs(window.scrollY - saved.y) > 1) window.scrollTo(0, saved.y)
+  })
+}
 
 /**
  * Sheet — the single overlay primitive for the app.
@@ -64,20 +81,40 @@ export default function Sheet({
   }, [open])
 
   useEffect(() => {
-    if (open) {
-      document.documentElement.classList.add('sheet-open')
-    } else {
-      const otherSheets = document.querySelectorAll('.sheet-panel')
-      if (otherSheets.length <= 1) {
-        document.documentElement.classList.remove('sheet-open')
-      }
-    }
+    if (!open) return undefined
+    const root = document.documentElement
+    if (!root.classList.contains('sheet-open')) savePageScroll()
+    root.classList.add('sheet-open')
     return () => {
+      // The closing panel is still in the DOM while it animates out.
       const otherSheets = document.querySelectorAll('.sheet-panel')
       if (otherSheets.length <= 1) {
-        document.documentElement.classList.remove('sheet-open')
+        root.classList.remove('sheet-open')
+        restorePageScroll()
       }
     }
+  }, [open])
+
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+
+  // Android back (and Escape before the focus trap is active) closes the
+  // topmost sheet instead of leaving the page. Browsers keep their own stack
+  // of watchers, so a nested picker closes before its parent sheet.
+  useEffect(() => {
+    if (!open || typeof window === 'undefined' || typeof window.CloseWatcher !== 'function') return undefined
+    let watcher
+    try {
+      watcher = new window.CloseWatcher()
+    } catch {
+      return undefined
+    }
+    watcher.onclose = () => {
+      onCloseRef.current?.()
+    }
+    return () => watcher.destroy()
   }, [open])
 
   const sheetRef = useOverlayFocusTrap(open && trapFocus && animationComplete, { onClose, initialFocusSelector })

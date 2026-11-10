@@ -14,7 +14,6 @@ vi.mock('../../../../src/lib/queryClient', () => ({
     setQueryData: vi.fn(),
     getQueryData: vi.fn(),
   },
-  evictSwCacheEntries: vi.fn(),
 }))
 
 describe('useSplitwise optimistic updates', () => {

@@ -53,6 +53,14 @@ const REVIEW_STATE_FILTERS = [
   { id: 'reviewed', label: 'Reviewed' },
 ]
 
+const STATEMENT_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'unlinked', label: 'Needs review' },
+  { id: 'unmatched', label: 'No match' },
+  { id: 'invalid', label: 'Can’t read' },
+]
+const STATEMENT_PAGE_SIZE = 20
+
 export default function Reconciliation() {
   const navigate = useNavigate()
   const targetUserId = useActiveWallet()
@@ -189,6 +197,23 @@ export default function Reconciliation() {
   }, [statementInput, statementEntries])
 
   const canUseStatementMatches = statementValidationMessage === '' && statementSummary.valid > 0
+
+  const [statementFilter, setStatementFilter] = useState('all')
+  // The row limit resets whenever the filter or the pasted text changes.
+  const statementPageKey = `${statementFilter}:${debouncedStatementInput}`
+  const [statementPage, setStatementPage] = useState({ key: '', limit: STATEMENT_PAGE_SIZE })
+  const statementLimit = statementPage.key === statementPageKey ? statementPage.limit : STATEMENT_PAGE_SIZE
+
+  const statementRowsByFilter = useMemo(() => {
+    const unlinked = statementMatches.filter((row) => row.best?.txn?.id && !linkedIdSet.has(row.best.txn.id))
+    return {
+      all: statementMatches,
+      unlinked,
+      unmatched: statementMatches.filter((row) => row.entry.isValid && !row.best),
+      invalid: statementMatches.filter((row) => !row.entry.isValid),
+    }
+  }, [statementMatches, linkedIdSet])
+  const filteredStatementRows = statementRowsByFilter[statementFilter] || statementMatches
 
   const recentLinkDecisions = useMemo(() => {
     if (!needsMatchingInsights) return []
@@ -930,18 +955,54 @@ export default function Reconciliation() {
             )}
 
             {canUseStatementMatches && (
-              <div className="space-y-2 mt-3">
-                {statementMatches.slice(0, 6).map((row) => (
-                  <StatementMatchRow
-                    key={row.entry.id}
-                    row={row}
-                    onOpen={(id) => navigate(`/transactions?focus=${id}`)}
-                    linkedIdSet={linkedIdSet}
-                    onLink={(id, line) => markLinked(id, line)}
-                    onReject={(id, line) => reportFalsePositive(id, line)}
-                  />
-                ))}
-              </div>
+              <>
+                <FilterRow className="mt-3">
+                  {STATEMENT_FILTERS.map((chip) => {
+                    const active = chip.id === statementFilter
+                    return (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={() => setStatementFilter(chip.id)}
+                        aria-pressed={active}
+                        className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
+                      >
+                        {chip.label}
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-black/10 text-current' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                          {statementRowsByFilter[chip.id].length}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </FilterRow>
+                <div className="space-y-2 mt-3">
+                  {filteredStatementRows.slice(0, statementLimit).map((row) => (
+                    <StatementMatchRow
+                      key={row.entry.id}
+                      row={row}
+                      onOpen={(id) => navigate(`/transactions?focus=${id}`)}
+                      linkedIdSet={linkedIdSet}
+                      onLink={(id, line) => markLinked(id, line)}
+                      onReject={(id, line) => reportFalsePositive(id, line)}
+                    />
+                  ))}
+                  {filteredStatementRows.length === 0 && (
+                    <p className="text-caption text-ink-3 px-1">No lines in this view.</p>
+                  )}
+                </div>
+                {filteredStatementRows.length > statementLimit && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    fullWidth
+                    className="mt-2"
+                    onClick={() => setStatementPage({ key: statementPageKey, limit: statementLimit + STATEMENT_PAGE_SIZE })}
+                  >
+                    {`Show ${Math.min(STATEMENT_PAGE_SIZE, filteredStatementRows.length - statementLimit)} more of ${filteredStatementRows.length - statementLimit} remaining`}
+                  </Button>
+                )}
+              </>
             )}
           </div>
 

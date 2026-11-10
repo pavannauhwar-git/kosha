@@ -6,7 +6,7 @@ import { upsertBudget as upsertBudgetApi, deleteBudget as deleteBudgetApi } from
 import { useAppMutation } from '../../hooks/useAppMutation'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
-import { validateAmount } from '../../lib/validateAmount.js'
+import { sanitizeAmountInput, validateAmount } from '../../lib/validateAmount.js'
 import FormField from '../ui/FormField'
 import Sheet from '../ui/Sheet'
 
@@ -51,8 +51,9 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
   )
 
   function handleDraftChange(catId, value) {
-    if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
-      setDrafts((prev) => ({ ...prev, [catId]: value }))
+    const clean = sanitizeAmountInput(value)
+    if (clean !== null) {
+      setDrafts((prev) => ({ ...prev, [catId]: clean }))
     }
   }
 
@@ -204,12 +205,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                       name={`budget-${cat.id}`}
                       placeholder="—"
                       value={draft}
-                      onChange={(e) => {
-                        let raw = e.target.value
-                        if (raw.startsWith('+')) raw = raw.slice(1)
-                        if (raw.toLowerCase().includes('e')) return
-                        handleDraftChange(cat.id, raw)
-                      }}
+                      onChange={(e) => handleDraftChange(cat.id, e.target.value)}
                       disabled={isSaving}
                       className="w-[72px] h-7 rounded-chip border border-kosha-border bg-kosha-surface
                                  text-[12px] font-semibold text-ink tabular-nums text-right px-2

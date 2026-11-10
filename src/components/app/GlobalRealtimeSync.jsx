@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useActiveWallet } from '../../lib/walletStore'
-import { queryClient, evictSwCacheEntries, invalidateQueryFamilies } from '../../lib/queryClient'
+import { queryClient, invalidateQueryFamilies } from '../../lib/queryClient'
 import { supabase } from '../../lib/supabase'
 import { isSuppressed } from '../../lib/mutationGuard'
 import { TRANSACTION_INVALIDATION_KEYS } from '../../hooks/useTransactions'
@@ -145,22 +145,17 @@ export function GlobalRealtimeSync() {
       }
     }
 
-    function enqueuePolicyInvalidation(policy, tablePath = `/${policy.table}`) {
+    function enqueuePolicyInvalidation(policy) {
       if (!policy?.key || isSuppressed(policy.key)) return
 
       let entry = pendingInvalidations.get(policy.key)
       if (!entry) {
         entry = {
           timerId: null,
-          tablePaths: new Set(),
           queryKeys: [],
           queryKeySignatures: new Set(),
         }
         pendingInvalidations.set(policy.key, entry)
-      }
-
-      if (tablePath) {
-        entry.tablePaths.add(tablePath)
       }
 
       for (const queryKey of policy.queryKeys || []) {
@@ -179,16 +174,12 @@ export function GlobalRealtimeSync() {
           return
         }
 
-        const tablePaths = Array.from(entry.tablePaths)
         const queryKeys = [...entry.queryKeys]
         pendingInvalidations.delete(policy.key)
 
-        void Promise.all(tablePaths.map((path) => evictSwCacheEntries(path)))
-          .finally(() => {
-            if (queryKeys.length > 0) {
-              void invalidateQueryFamilies(queryKeys)
-            }
-          })
+        if (queryKeys.length > 0) {
+          void invalidateQueryFamilies(queryKeys)
+        }
       }, 300)
     }
 

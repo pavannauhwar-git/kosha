@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateAmount } from '../../../../src/lib/validateAmount'
+import { MAX_AMOUNT, sanitizeAmountInput, validateAmount } from '../../../../src/lib/validateAmount'
 
 describe('validateAmount', () => {
   it('rejects null or undefined', () => {
@@ -55,5 +55,35 @@ describe('validateAmount', () => {
   it('correctly converts valid amounts to paise', () => {
     expect(validateAmount('12.50')).toEqual({ ok: true, paise: 1250n })
     expect(validateAmount('-5.00')).toEqual({ ok: true, paise: -500n })
+  })
+
+  it('rejects amounts that do not fit numeric(12,2)', () => {
+    expect(validateAmount(String(MAX_AMOUNT)).ok).toBe(true)
+    expect(validateAmount('10000000000')).toEqual({ ok: false, error: 'Amount is too large (the limit is ₹999 crore)' })
+  })
+})
+
+describe('sanitizeAmountInput', () => {
+  it('strips rupee prefixes, grouping commas and spaces from pasted amounts', () => {
+    expect(sanitizeAmountInput('1,23,456.50')).toBe('123456.50')
+    expect(sanitizeAmountInput('₹1,250')).toBe('1250')
+    expect(sanitizeAmountInput('₹ 1,250.00')).toBe('1250.00')
+    expect(sanitizeAmountInput('Rs. 999')).toBe('999')
+    expect(sanitizeAmountInput('INR 45')).toBe('45')
+    expect(sanitizeAmountInput(' 1 250 ')).toBe('1250')
+    expect(sanitizeAmountInput('+75')).toBe('75')
+  })
+
+  it('keeps partial input the user is still typing', () => {
+    expect(sanitizeAmountInput('')).toBe('')
+    expect(sanitizeAmountInput('12.')).toBe('12.')
+    expect(sanitizeAmountInput('.5')).toBe('.5')
+  })
+
+  it('returns null for anything that is not a plain amount', () => {
+    expect(sanitizeAmountInput('1e5')).toBeNull()
+    expect(sanitizeAmountInput('-50')).toBeNull()
+    expect(sanitizeAmountInput('12.3.4')).toBeNull()
+    expect(sanitizeAmountInput('abc')).toBeNull()
   })
 })

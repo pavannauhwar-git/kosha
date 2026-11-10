@@ -17,6 +17,7 @@ const Input = forwardRef(function Input(
     icon,
     iconRight,
     autoFocus,
+    enterKeyHint,
     className = '',
     style = {},
     _sx, // MUI-specific styling, mapped if needed
@@ -50,6 +51,57 @@ const Input = forwardRef(function Input(
     }
   }, [value, resolvedRef])
 
+  // The real <input> lives in the shadow root, has no form owner and never
+  // sees enterkeyhint, so the keyboard's Go/Next key does nothing by default.
+  useEffect(() => {
+    const el = resolvedRef.current
+    if (!el || type === 'textarea') return undefined
+
+    const handleKeyDown = (e) => {
+      if (e.key !== 'Enter' || e.isComposing || e.defaultPrevented) return
+      const form = el.closest('form')
+      if (!form) return
+      e.preventDefault()
+      if (enterKeyHint === 'next') {
+        const fields = Array.from(form.querySelectorAll('md-outlined-text-field:not([disabled])'))
+        const next = fields[fields.indexOf(el) + 1]
+        if (next) {
+          next.focus()
+          return
+        }
+      }
+      if (typeof form.requestSubmit === 'function') form.requestSubmit()
+      else form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    }
+
+    el.addEventListener('keydown', handleKeyDown)
+    return () => el.removeEventListener('keydown', handleKeyDown)
+  }, [enterKeyHint, type, resolvedRef])
+
+  useEffect(() => {
+    const el = resolvedRef.current
+    if (!el) return undefined
+    let cancelled = false
+    Promise.resolve(el.updateComplete).then(() => {
+      if (cancelled) return
+      const inner = el.shadowRoot?.querySelector('input, textarea')
+      if (!inner) return
+      if (enterKeyHint) inner.setAttribute('enterkeyhint', enterKeyHint)
+      else inner.removeAttribute('enterkeyhint')
+    })
+    return () => { cancelled = true }
+  }, [enterKeyHint, type, resolvedRef])
+
+  useEffect(() => {
+    const el = resolvedRef.current
+    if (!el || !autoFocus) return undefined
+    let cancelled = false
+    Promise.resolve(el.updateComplete).then(() => {
+      if (!cancelled) el.focus()
+    })
+    return () => { cancelled = true }
+  }, [autoFocus, resolvedRef])
+
   const hasError = Boolean(error)
   const resolvedHelperText = error || helperText
 
@@ -61,7 +113,6 @@ const Input = forwardRef(function Input(
       value={value ?? ''}
       type={type}
       disabled={disabled ? '' : undefined}
-      autofocus={autoFocus ? '' : undefined}
       error={hasError ? '' : undefined}
       error-text={hasError ? resolvedHelperText : undefined}
       supporting-text={!hasError ? resolvedHelperText : undefined}

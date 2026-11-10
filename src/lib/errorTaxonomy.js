@@ -48,8 +48,11 @@ export function classifyError(error) {
   // A backend error carrying a status/code we didn't special-case above.
   if (error?.status != null || error?.code != null) return ERROR_KIND.UNKNOWN
 
-  // Plain client-thrown Error with no backend signature → our own validation.
-  return ERROR_KIND.VALIDATION
+  // A plain Error with no backend signature is one of our own validation
+  // messages. ReferenceError, RangeError and anything that isn't an Error
+  // at all are bugs, so they get reported.
+  if (error instanceof Error && error.name === 'Error') return ERROR_KIND.VALIDATION
+  return ERROR_KIND.UNKNOWN
 }
 
 export function isExpectedError(error) {

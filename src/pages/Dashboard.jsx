@@ -134,7 +134,7 @@ export default function Dashboard() {
     loading: runningBalanceLoading,
     fetching: runningBalanceFetching,
   } = useBalanceAsOf(todayISO)
-  const { pending: bills = [], loading: billsLoading } = useLiabilities()
+  const { pending: bills = [], loading: billsLoading } = useLiabilities({ includePaid: false })
   const { budgets } = useBudgets()
   const bMap = useMemo(() => buildBudgetMap(budgets), [budgets])
 
