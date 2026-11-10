@@ -13,3 +13,6 @@ coverage/
 *.csv
 .env.*
 !.env.local.example
+
+# Supabase CLI local state
+supabase/.temp/
