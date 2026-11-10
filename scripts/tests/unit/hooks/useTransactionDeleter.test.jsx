@@ -19,6 +19,16 @@ vi.mock('../../../../src/hooks/useTransactions', () => ({
   removeTransactionMutation: vi.fn(),
 }))
 
+function mockToast() {
+  const toast = { action: null, dismissToast: vi.fn() }
+  toast.pushToast = vi.fn((msg, opts) => {
+    if (opts?.action) toast.action = opts.action
+    return 7
+  })
+  ToastContext.useAppToast.mockReturnValue({ pushToast: toast.pushToast, dismissToast: toast.dismissToast })
+  return toast
+}
+
 describe('useTransactionDeleter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -26,12 +36,7 @@ describe('useTransactionDeleter', () => {
   })
 
   it('undos a pending delete and does not call mutateAsync', async () => {
-    let pushedToastAction = null
-    ToastContext.useAppToast.mockReturnValue({
-      pushToast: vi.fn((msg, opts) => {
-        if (opts?.action) pushedToastAction = opts.action
-      }),
-    })
+    const toast = mockToast()
 
     const mutateAsyncSpy = vi.fn()
     UseAppMutation.useAppMutation.mockReturnValue({
@@ -45,7 +50,7 @@ describe('useTransactionDeleter', () => {
     await act(async () => {
       result.current.handleDelete('txn-1')
     })
-    
+
     expect(UseTransactions.optimisticallyDeleteTransactionFromCache).toHaveBeenCalledWith('txn-1', 'wallet-1')
     expect(mutateAsyncSpy).not.toHaveBeenCalled()
 
@@ -54,11 +59,11 @@ describe('useTransactionDeleter', () => {
 
     // 3. Undo
     act(() => {
-      if (pushedToastAction) pushedToastAction()
+      if (toast.action) toast.action()
     })
 
     expect(UseTransactions.optimisticallyUpsertTransactionInCache).toHaveBeenCalledWith(data[0], 'wallet-1')
-    
+
     // 4. Advance time
     act(() => {
       vi.runAllTimers()
@@ -66,5 +71,44 @@ describe('useTransactionDeleter', () => {
 
     // Mutate should never have been called
     expect(mutateAsyncSpy).not.toHaveBeenCalled()
+    expect(toast.dismissToast).not.toHaveBeenCalled()
+  })
+
+  it('closes its own Undo toast when the delete commits', async () => {
+    const toast = mockToast()
+    const mutateAsyncSpy = vi.fn().mockResolvedValue(true)
+    UseAppMutation.useAppMutation.mockReturnValue({ mutateAsync: mutateAsyncSpy })
+
+    const { result } = renderHook(() => useTransactionDeleter('wallet-1', [{ id: 'txn-1' }]))
+    await act(async () => {
+      result.current.handleDelete('txn-1')
+    })
+
+    await act(async () => {
+      vi.runAllTimers()
+    })
+
+    expect(mutateAsyncSpy).toHaveBeenCalledWith('txn-1')
+    expect(toast.dismissToast).toHaveBeenCalledWith(7)
+  })
+
+  it('closes the Undo toast when the app is hidden and the delete commits early', async () => {
+    const toast = mockToast()
+    const mutateAsyncSpy = vi.fn().mockResolvedValue(true)
+    UseAppMutation.useAppMutation.mockReturnValue({ mutateAsync: mutateAsyncSpy })
+
+    const { result } = renderHook(() => useTransactionDeleter('wallet-1', [{ id: 'txn-1' }]))
+    await act(async () => {
+      result.current.handleDelete('txn-1')
+    })
+
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    visibility.mockRestore()
+
+    expect(mutateAsyncSpy).toHaveBeenCalledWith('txn-1')
+    expect(toast.dismissToast).toHaveBeenCalledWith(7)
   })
 })

@@ -9,6 +9,7 @@ import {
 import TransactionItem from '../components/transactions/TransactionItem'
 import AddTransactionSheet from '../components/transactions/AddTransactionSheet'
 import EmptyState from '../components/common/EmptyState'
+import LoadErrorCard from '../components/common/LoadErrorCard'
 
 
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
@@ -224,7 +225,7 @@ export default function Transactions() {
     setDisplayCount(50)
   }
 
-  const { data, total, loading: txnLoading, fetching: txnFetching } = useTransactions({
+  const { data, total, loading: txnLoading, fetching: txnFetching, error: txnError, refetch: refetchTxns } = useTransactions({
     type: typeFilter === 'all' ? undefined : typeFilter,
     category: catFilter || undefined,
     paymentMode: paymentModeFilter || undefined,
@@ -643,6 +644,11 @@ export default function Transactions() {
 
 
   const focusExpandCountRef = useRef(0)
+  // Held outside the effect: removing ?focus= re-runs it straight away, and the
+  // scroll and highlight timers must survive that.
+  const focusTimersRef = useRef([])
+
+  useEffect(() => () => focusTimersRef.current.forEach(clearTimeout), [])
 
   useEffect(() => {
     if (!focusTxnId) return
@@ -669,23 +675,24 @@ export default function Transactions() {
     }
 
     setHighlightedTxnId(focusTxnId)
-    const scrollTimeoutId = setTimeout(() => {
-      const el = document.getElementById(`txn-${focusTxnId}`)
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 70)
-
-    const timeoutId = setTimeout(() => setHighlightedTxnId(null), 2400)
+    focusTimersRef.current.forEach(clearTimeout)
+    focusTimersRef.current = [
+      setTimeout(() => {
+        const el = document.getElementById(`txn-${focusTxnId}`)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 70),
+      setTimeout(() => setHighlightedTxnId(null), 2400),
+    ]
 
     setSearchParams((prev) => {
+      if (!prev.has('focus')) return prev
       const next = new URLSearchParams(prev)
       next.delete('focus')
+      // Our own edit: don't re-read filters from the URL, which would reset
+      // the list length and drop the row we just scrolled to.
+      internalUrlUpdateRef.current = true
       return next
     }, { replace: true })
-
-    return () => {
-      clearTimeout(scrollTimeoutId)
-      clearTimeout(timeoutId)
-    }
   }, [focusTxnId, data, hasMore, groups, scrollTimelineRowToIndex, setSearchParams])
 
   // Phase 1: when loan filter activates, reset to All time so all repayments load
@@ -851,7 +858,8 @@ export default function Transactions() {
   }, [location.state, location.pathname, location.search, navigate])
 
   const isInitialLoad = txnLoading && data.length === 0
-  const isNewUser = !txnLoading && total === 0 && !hasActiveFilters
+  const loadFailed = !txnLoading && !!txnError && data.length === 0
+  const isNewUser = !txnLoading && !loadFailed && total === 0 && !hasActiveFilters
   const showWorkspace = !isInitialLoad && !isNewUser
 
   return (
@@ -981,7 +989,9 @@ export default function Transactions() {
 
         {/* Transaction groups */}
         {!isInitialLoad && (
-          groups.length === 0 ? (
+          loadFailed ? (
+            <LoadErrorCard title="Couldn’t load your transactions" onRetry={refetchTxns} />
+          ) : groups.length === 0 ? (
             <EmptyState
               imageUrl={hasActiveFilters ? "/illustrations/search_empty.webp" : "/illustrations/empty_transactions.webp"}
               title={hasActiveFilters ? 'No transactions match these filters' : 'No transactions yet'}

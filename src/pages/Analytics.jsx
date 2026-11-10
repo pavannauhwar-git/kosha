@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import PickerNavigator from '../components/common/PickerNavigator'
 import EmptyState from '../components/common/EmptyState'
+import LoadErrorCard from '../components/common/LoadErrorCard'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import { useSafeTimeout } from '../hooks/useSafeTimeout'
@@ -58,7 +59,7 @@ export default function Analytics() {
     setSafeTimeout(() => setHeavyReady(true), 260)
   }, [setSafeTimeout])
 
-  const { data, loading } = useYearSummary(year)
+  const { data, loading, error: yearError, refetch: refetchYear } = useYearSummary(year)
   const { data: yearDailyTotals, loading: yearDailyLoading } = useYearDailyExpenseTotals(year)
 
   const flowTrendData = useMemo(() => (data?.monthly || [])
@@ -251,6 +252,8 @@ export default function Analytics() {
             { type: 'block', height: 'h-[180px]' },
           ]}
         />
+      ) : yearError && !data ? (
+        <LoadErrorCard title={`Couldn’t load ${year}`} onRetry={refetchYear} />
       ) : (
         <div key={year} className="page-stack">
           {hasYearData ? (

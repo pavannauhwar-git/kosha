@@ -7,6 +7,7 @@ import { useActiveWallet } from '../lib/walletStore'
 import PageBackHeaderPage from '../components/layout/PageBackHeaderPage'
 import SkeletonLayout from '../components/common/SkeletonLayout'
 import EmptyState from '../components/common/EmptyState'
+import LoadErrorCard from '../components/common/LoadErrorCard'
 import FilterRow from '../components/common/FilterRow'
 import { useAppToast } from '../context/ToastContext'
 import { toToastMessage } from '../lib/errorTaxonomy'
@@ -91,7 +92,7 @@ export default function Reconciliation() {
     return () => clearTimeout(t)
   }, [statementInput])
 
-  const { data, loading } = useTransactions({
+  const { data, loading, error: txnError, refetch: refetchTxns } = useTransactions({
     limit: 250,
     paymentMode: paymentModeFilter || undefined,
     columns: TRANSACTION_INSIGHTS_COLUMNS,
@@ -716,6 +717,8 @@ export default function Reconciliation() {
                 { type: 'block', height: 'h-[160px]' },
               ]}
             />
+          ) : txnError && data.length === 0 ? (
+            <LoadErrorCard title="Couldn’t load your transactions" onRetry={refetchTxns} />
           ) : !hasTransactions && !hasActiveFilters ? (
             <EmptyState
               className="py-6"

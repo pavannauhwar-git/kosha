@@ -1,5 +1,6 @@
 import React from 'react'
 import { captureError } from '../../lib/errorReporting'
+import { isChunkLoadError, reloadForChunkError } from '../../lib/chunkReload'
 
 /**
  * Per-route error boundary — catches render errors on individual pages
@@ -16,6 +17,7 @@ export class RouteErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
+    if (isChunkLoadError(error) && reloadForChunkError()) return
     captureError(error, {
       context: 'RouteErrorBoundary',
       extra: {
@@ -26,6 +28,11 @@ export class RouteErrorBoundary extends React.Component {
   }
 
   handleRetry = () => {
+    // A failed lazy import is cached by React; only a reload fetches it again.
+    if (isChunkLoadError(this.state.error)) {
+      window.location.reload()
+      return
+    }
     this.setState({ hasError: false, error: null })
   }
 
@@ -36,7 +43,7 @@ export class RouteErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       const isChunkError =
-        this.state.error?.message?.toLowerCase().includes('loading chunk') ||
+        isChunkLoadError(this.state.error) ||
         this.state.error?.message?.toLowerCase().includes('failed to fetch') ||
         this.state.error?.message?.toLowerCase().includes('network error')
 

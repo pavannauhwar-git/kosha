@@ -9,6 +9,7 @@ import { traceQuery } from '../lib/queryTrace'
 import { todayStr } from '../lib/utils'
 import { averageSavingsRate } from '../lib/cashflow'
 import { createDebouncedTask } from '../lib/debouncedTask'
+import { countsTowardWeeklyDrift } from '../lib/weeklyDrift'
 
 export const inFlightDeletedTxnIds = new Set()
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
@@ -69,7 +70,16 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['todayExpenses'],
   ['transactionYearBounds'],
   ['liabilities'],
+  ['monthly_net_changes'],
 ]
+
+// One list for every path that changes transactions (own saves, recurring
+// sync, realtime), so no screen is left showing old totals.
+function refreshTransactionQueries() {
+  return Promise.all(TRANSACTION_INVALIDATION_KEYS.map((queryKey) =>
+    queryClient.invalidateQueries({ queryKey, refetchType: 'active' })
+  ))
+}
 
 export const TRANSACTION_LIST_COLUMNS =
   'id, user_id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, is_recurring, recurrence, next_run_date, source_transaction_id, is_auto_generated, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
@@ -129,16 +139,7 @@ function getRecurringSyncPromise(userId) {
 
     // If recurring entries were generated after the initial list query started,
     // refresh only active financial surfaces in the background.
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['month'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['year'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['balance'], refetchType: 'active' }),
-      queryClient.invalidateQueries({ queryKey: ['todayExpenses'], refetchType: 'active' }),
-    ])
+    await refreshTransactionQueries()
 
     return true
   })()
@@ -238,21 +239,7 @@ function applyTransactionSearchFilter(query, search) {
 }
 
 
-const scheduleTransactionRefresh = createDebouncedTask(() => Promise.all([
-  queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['transactionsRecent'], refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['transactionsDigest'], refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['transactionSignalAggregates'], refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['dailyExpenseTotals'], refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['txnCount'],        refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['month'],           refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['year'],            refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['yearDailyExpenseTotals'], refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['balance'],         refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['todayExpenses'],   refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['transactionYearBounds'], refetchType: 'active' }),
-  queryClient.invalidateQueries({ queryKey: ['monthly_net_changes'], refetchType: 'active' }),
-]), 80)
+const scheduleTransactionRefresh = createDebouncedTask(refreshTransactionQueries, 80)
 
 export async function invalidateCache() {
   // Suppress the realtime double-fetch that would otherwise fire
@@ -427,6 +414,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
         return 0
       }
     }),
+    refetchOnMount: true,
     placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
   })
 
@@ -476,6 +464,7 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
       }
     }),
     gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
   })
 
   return { data, loading: isLoading, error }
@@ -484,6 +473,7 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
 const RECENT_TXN_COLUMNS = 'id, user_id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 const DIGEST_TXN_COLUMNS = 'id, date, created_at, type, amount, category, is_repayment'
 const DAILY_EXPENSE_TOTAL_COLUMNS = 'date, amount'
+const DRIFT_EXPENSE_COLUMNS = 'date, amount, category, is_repayment'
 
 export function useRecentTransactions(limit = 5) {
   const safeLimit = Math.max(1, Number(limit) || 5)
@@ -540,6 +530,7 @@ export function useTransactionDigest(days = 14, limit = 200, options = {}) {
       return rows || []
     }),
     gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
   })
 
   return { data: data || [], loading: isLoading, error }
@@ -569,7 +560,7 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
 
         const { data: rows, error: qError } = await supabase
           .from('transactions')
-          .select(DAILY_EXPENSE_TOTAL_COLUMNS)
+          .select(DRIFT_EXPENSE_COLUMNS)
           .eq('user_id', userId)
           .eq('type', 'expense')
           .gte('date', startISO)
@@ -580,6 +571,7 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
 
         const batch = rows || []
         for (const row of batch) {
+          if (!countsTowardWeeklyDrift(row)) continue
           const key = String(row?.date || '').slice(0, 10)
           if (!key) continue
           const amount = Number(row?.amount || 0)
@@ -614,6 +606,7 @@ export function useMonthExpenseDailyTotals(year, month, options = {}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['monthExpenseDailyTotals', validYear, validMonth, targetUserId],
     enabled: enabled && !!targetUserId,
+    refetchOnMount: true,
     queryFn: () => traceQuery('transactions:month-expense-daily-totals', async () => {
       const userId = targetUserId
       const pageSize = 1000
@@ -665,6 +658,7 @@ export function useYearDailyExpenseTotals(year, options = {}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['yearDailyExpenseTotals', safeYear, targetUserId],
     enabled: enabled && !!targetUserId,
+    refetchOnMount: true,
     queryFn: () => traceQuery('transactions:year-daily-expense-totals', async () => {
       const userId = targetUserId
       const pageSize = 1000
@@ -830,10 +824,11 @@ export async function fetchYearSummary(year, targetUserId) {
 export function useYearSummary(year, options = {}) {
   const { enabled = true } = options
   const targetUserId = useActiveWallet()
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isPlaceholderData, error, refetch } = useQuery({
     queryKey: ['year', year, targetUserId],
     enabled: enabled && !!targetUserId,
-    placeholderData: (previousData) => previousData,
+    refetchOnMount: true,
+    placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId ? prev : undefined),
     queryFn: async () => {
       try {
         return await fetchYearSummary(year, targetUserId)
@@ -844,7 +839,9 @@ export function useYearSummary(year, options = {}) {
     },
   })
 
-  return { data, loading: isLoading, error }
+  // A placeholder is the previous year's figures; report it as loading so the
+  // page doesn't show them under the new year.
+  return { data, loading: isLoading || isPlaceholderData, error, refetch }
 }
 
 export function useTransactionYearBounds(options = {}) {
@@ -931,7 +928,7 @@ export function useBalanceAsOf(dateISO) {
 
 export function useRunningBalance(year, month) {
   const targetUserId = useActiveWallet()
-  const { data, isLoading, isFetching, error } = useQuery({
+  const { data, isLoading, isFetching, isPlaceholderData, error } = useQuery({
     queryKey: ['balance', year, month, targetUserId],
     enabled: !!targetUserId,
     refetchOnMount: true,
@@ -954,10 +951,10 @@ export function useRunningBalance(year, month) {
         throw err
       }
     },
-    placeholderData: (previousData) => previousData,
+    placeholderData: (prev, query) => (query?.queryKey?.[3] === targetUserId ? prev : undefined),
   })
 
-  return { balance: data, loading: isLoading, fetching: isFetching, error }
+  return { balance: data, loading: isLoading || isPlaceholderData, fetching: isFetching, error }
 }
 
 // ── Mutations — centralized pipeline ──────────────────────────────────────

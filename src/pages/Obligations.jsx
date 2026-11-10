@@ -8,6 +8,7 @@ import { fmt, daysUntil } from '../lib/utils'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
+import LoadErrorCard from '../components/common/LoadErrorCard'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 
@@ -24,8 +25,8 @@ export default function Obligations() {
   const activeWalletUserId = useActiveWallet()
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
 
-  const { pending, paid, loading: billsLoading } = useLiabilities({ includePaid: true })
-  const { given, taken, settled, loading: loansLoading } = useLoans()
+  const { pending, paid, loading: billsLoading, loadError: billsLoadError, refetch: refetchBills } = useLiabilities({ includePaid: true })
+  const { given, taken, settled, loading: loansLoading, loadError: loansLoadError, refetch: refetchLoans } = useLoans()
 
   // ── Bills metrics ─────────────────────────────────────────────────────
   const { totalPending, overdueCount, dueSoonCount, recurringCount, billsUrgent, billsAllClear } = useMemo(() => {
@@ -67,8 +68,10 @@ export default function Obligations() {
   }, [given, taken])
 
   const isLoading = billsLoading || loansLoading
+  const loadFailed = !isLoading && !!(billsLoadError || loansLoadError)
   const hasHistory = paid.length > 0 || settled.length > 0
-  const allEmpty = !isLoading && pending.length === 0 && given.length === 0 && taken.length === 0 && !hasHistory
+  const allEmpty = !isLoading && !loadFailed && pending.length === 0 && given.length === 0 && taken.length === 0 && !hasHistory
+  const showCards = !isLoading && !loadFailed && !allEmpty
 
   function go(path) {
     import('../lib/haptics').then(m => m.hapticTap())
@@ -78,7 +81,7 @@ export default function Obligations() {
   return (
     <PageHeaderPage title="Obligations">
       <div className="page-stack">
-        {!isLoading && !isViewingPartner && (
+        {!isLoading && !loadFailed && !isViewingPartner && (
           <div className="fade-up fade-up-1 px-0.5">
             <p className="section-label mb-1">Your Journey</p>
             <p className="text-[13px] text-ink-3 leading-relaxed">
@@ -127,6 +130,14 @@ export default function Obligations() {
           </div>
         )}
 
+        {loadFailed && (
+          <LoadErrorCard
+            className="fade-up fade-up-2"
+            title="Couldn’t load your bills and loans"
+            onRetry={() => Promise.all([refetchBills(), refetchLoans()])}
+          />
+        )}
+
         {/* ── All-empty hero state ───────────────────────────────────── */}
         {allEmpty && (
           <div className="fade-up fade-up-2 card p-6 flex flex-col items-center text-center">
@@ -157,7 +168,7 @@ export default function Obligations() {
         )}
 
         {/* ── Bills card ─────────────────────────────────────────────── */}
-        {!isLoading && !allEmpty && (
+        {showCards && (
           <div className="fade-up fade-up-2">
             <Card
               variant="elevated"
@@ -253,7 +264,7 @@ export default function Obligations() {
         )}
 
         {/* ── Loans card ─────────────────────────────────────────────── */}
-        {!isLoading && !allEmpty && (
+        {showCards && (
           <div className="fade-up fade-up-3">
             <Card
               variant="elevated"
