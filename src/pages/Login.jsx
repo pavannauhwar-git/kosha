@@ -23,6 +23,25 @@ function GoogleLogo() {
   )
 }
 
+// Supabase reports failed sign-ins and dead email links in the query string
+// or the hash (`error`, `error_code`, `error_description`).
+function readAuthUrlError(search, hash) {
+  const query = new URLSearchParams(search || '')
+  const fragment = new URLSearchParams(String(hash || '').replace(/^#/, ''))
+  const pick = (key) => query.get(key) || fragment.get(key) || ''
+  const code = pick('error_code') || pick('error')
+  if (!code) return null
+  return { code, description: pick('error_description').replace(/\+/g, ' ') }
+}
+
+function authUrlErrorMessage({ code, description }, isRecoveryFlow) {
+  if (code === 'otp_expired' || (isRecoveryFlow && /expired|invalid/i.test(description))) {
+    return 'This link has expired or was already used. Request a new reset link below.'
+  }
+  if (code === 'access_denied') return 'Sign-in was cancelled. Try again when you’re ready.'
+  return description ? `Sign-in failed: ${description}` : 'Sign-in failed. Try again.'
+}
+
 export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -38,7 +57,10 @@ export default function Login() {
   } = useAuth()
 
   const isRecoveryFlow = searchParams.get('reset') === '1'
-  const initialMode = searchParams.get('mode') || (isRecoveryFlow ? 'reset' : 'signin')
+  const [initialUrlError] = useState(() => readAuthUrlError(location.search, location.hash))
+  const initialMode = searchParams.get('mode')
+    || (initialUrlError && (isRecoveryFlow || initialUrlError.code === 'otp_expired') ? 'forgot' : null)
+    || (isRecoveryFlow ? 'reset' : 'signin')
 
   const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState('')
@@ -46,9 +68,21 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [notice, setNotice] = useState(null)
   const [resetCountdown, setResetCountdown] = useState(null)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState(() => (initialUrlError ? authUrlErrorMessage(initialUrlError, isRecoveryFlow) : null))
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+
+  // Coming back with the browser's Back button can restore this page from the
+  // back-forward cache with the Google button still spinning.
+  useEffect(() => {
+    const onPageShow = (event) => {
+      if (!event.persisted) return
+      setGoogleLoading(false)
+      setLoading(false)
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
 
   const from = location.state?.from || '/'
 
@@ -131,7 +165,14 @@ export default function Login() {
         setConfirmPassword('')
         setResetCountdown(2)
       } catch (e) {
-        setError(e.message || 'Could not update password. Open the reset link again.')
+        if (/session/i.test(String(e?.message || ''))) {
+          setMode('forgot')
+          setPassword('')
+          setConfirmPassword('')
+          setError('This reset link has expired or was already used. Request a new reset link below.')
+        } else {
+          setError(e.message || 'Could not update password. Open the reset link again.')
+        }
       } finally {
         setLoading(false)
       }
@@ -432,8 +473,15 @@ export default function Login() {
             </motion.div>
 
             {/* ── Footer ─────────────────────────────────────────────────── */}
-            <motion.div variants={fadeUp}>
-              <AboutKoshaLink className="text-center pt-1" />
+            <motion.div variants={fadeUp} className="flex items-center justify-center gap-4 pt-1">
+              <AboutKoshaLink className="text-center" />
+              <button
+                type="button"
+                onClick={() => navigate('/about#privacy')}
+                className="text-caption text-ink-2 active:text-brand transition-colors"
+              >
+                Privacy
+              </button>
             </motion.div>
         </motion.div>
       </div>

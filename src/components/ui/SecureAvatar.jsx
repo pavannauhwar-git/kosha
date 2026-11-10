@@ -3,7 +3,10 @@ import { supabase } from '../../lib/supabase';
 
 const AVATAR_CACHE_KEY = 'kosha:avatar-urls';
 const AVATAR_CACHE_MAX = 50;
-const AVATAR_CACHE_TTL_MS = 6 * 24 * 60 * 60 * 1000; // 6 days (less than 7-day signed URL TTL)
+// Short-lived links: a link copied out of the app (or kept by a former
+// partner) stops working within the hour.
+const AVATAR_SIGNED_URL_TTL_S = 60 * 60;
+const AVATAR_CACHE_TTL_MS = 50 * 60 * 1000; // less than the signed URL TTL
 
 function readAvatarCache() {
   try {
@@ -69,7 +72,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial, ver
   const retryCountRef = useRef(0);
   // Cache key includes an optional version (e.g. profile.avatar_url or an
   // updated_at timestamp) so a re-upload to the same storage path busts the
-  // cached signed URL instead of showing the stale image for up to 6 days.
+  // cached signed URL instead of showing the stale image.
   const cacheSrc = version ? `${src}::${version}` : src;
 
   useEffect(() => {
@@ -100,7 +103,7 @@ export default function SecureAvatar({ src, alt, className, fallbackInitial, ver
       try {
         const { data, error } = await supabase.storage
           .from('avatars')
-          .createSignedUrl(src, 60 * 60 * 24 * 7); // 7 days expiry
+          .createSignedUrl(src, AVATAR_SIGNED_URL_TTL_S);
 
         if (error) {
           console.error('Error fetching signed avatar url:', error);

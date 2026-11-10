@@ -4,6 +4,7 @@ import AuthGuard, { RouteSkeleton } from '../navigation/AuthGuard'
 import { RouteErrorBoundary } from '../errors/RouteErrorBoundary'
 import { useAuth } from '../../context/AuthContext'
 import { resolvePostAuthPath } from '../../lib/invites'
+import LoadErrorCard from '../common/LoadErrorCard'
 
 // ── Eager ────────────────────────────────────────────────────────────────
 import Login from '../../pages/Login'
@@ -74,9 +75,18 @@ function SafeRoute({ pathname, guard, children }) {
 
 // ── Auth callback ─────────────────────────────────────────────────────────
 function AuthCallback() {
-  const { user, profile, loading, profileLoading } = useAuth()
+  const { user, profile, loading, profileLoading, profileError, reloadLinkedData } = useAuth()
+  const location = useLocation()
   if (loading || (user && profileLoading && !profile)) return null
-  if (!user) return <Navigate to="/login" replace />
+  // Keep `?error=…` / `#error=…` so Login can explain a cancelled or failed sign-in.
+  if (!user) return <Navigate to={`/login${location.search}${location.hash}`} replace />
+  if (!profile && profileError) {
+    return (
+      <div className="route-skeleton-shell">
+        <LoadErrorCard title="Couldn’t load your account" onRetry={reloadLinkedData} className="mt-10" />
+      </div>
+    )
+  }
   if (!profile || !profile.onboarded) return <Navigate to="/onboarding" replace />
   return <Navigate to={resolvePostAuthPath('/')} replace />
 }

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import LoadErrorCard from '../common/LoadErrorCard'
 
 // ── Shimmer block primitives ──────────────────────────────────────────────
 function S({ className, delay = 0 }) {
@@ -254,7 +255,7 @@ export function RouteSkeleton({ pathname }) {
 
 // ── AuthGuard ─────────────────────────────────────────────────────────────
 export default function AuthGuard({ children }) {
-  const { user, profile, loading, profileLoading } = useAuth()
+  const { user, profile, loading, profileLoading, profileError, reloadLinkedData } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -291,6 +292,13 @@ export default function AuthGuard({ children }) {
     return (
       <div className="route-skeleton-shell">
         <RouteSkeleton pathname={location.pathname} />
+      </div>
+    )
+  }
+  if (user && !profile && profileError) {
+    return (
+      <div className="route-skeleton-shell">
+        <LoadErrorCard title="Couldn’t load your account" onRetry={reloadLinkedData} className="mt-10" />
       </div>
     )
   }

@@ -46,6 +46,9 @@ export function useAuthState() {
   const [profileLoading, setProfileLoading] = useState(true)
   const [linkedUserIds, setLinkedUserIds] = useState([])
   const [linkedProfiles, setLinkedProfiles] = useState([])
+  const [profileError, setProfileError] = useState(null)
+  const profileRef = useRef(null)
+  useEffect(() => { profileRef.current = profile }, [profile])
 
   const profileQueryKey = useCallback(
     (userId) => [...USER_PROFILE_QUERY_KEY, userId],
@@ -73,6 +76,7 @@ export function useAuthState() {
   const loadProfile = useCallback(async (userId, { silent = false } = {}) => {
     if (!userId) {
       setProfile(null)
+      setProfileError(null)
       setProfileLoading(false)
       return
     }
@@ -82,30 +86,54 @@ export function useAuthState() {
 
     if (!silent) setProfileLoading(true)
 
+    // Partner links are optional: if they fail, keep whatever we had (or
+    // none) instead of failing the whole profile.
+    const linksPromise = (async () => {
+      const ids = await fetchLinkedUserIds(userId)
+      const lp = ids.length > 0 ? await fetchLinkedProfiles(userId, ids) : []
+      return { ids, lp }
+    })().catch((err) => {
+      console.warn('[Kosha] partner links failed to load', err)
+      return null
+    })
+
     try {
       const data = await queryClient.fetchQuery({
         queryKey: profileQueryKey(userId),
         queryFn: () => fetchProfileByUserId(userId),
       })
       if (isStale()) return
-      const ids = await fetchLinkedUserIds(userId)
-      if (isStale()) return
-      const lp = ids.length > 0 ? await fetchLinkedProfiles(userId) : []
+      const previous = profileRef.current?.id === userId ? profileRef.current : null
+      const links = (await linksPromise) || {
+        ids: previous?.linkedUserIds || [],
+        lp: previous?.linkedProfiles || [],
+      }
       if (isStale()) return
 
-      const fullData = { ...data, linkedUserIds: ids, linkedProfiles: lp, _lastFetched: Date.now() }
+      const fullData = { ...data, linkedUserIds: links.ids, linkedProfiles: links.lp, _lastFetched: Date.now() }
 
       setProfile(fullData)
-      setLinkedUserIds(ids)
-      setLinkedProfiles(lp)
+      setProfileError(null)
+      setLinkedUserIds(links.ids)
+      setLinkedProfiles(links.lp)
 
       // Update cache with the full enriched profile
       queryClient.setQueryData(profileQueryKey(userId), fullData)
     } catch (err) {
       if (isStale()) return
       console.warn('[Kosha] loadProfile failed', err)
-      if (silent) return
+      // A failed refresh keeps the profile already on screen, or the last
+      // cached copy.
+      if (silent || profileRef.current?.id === userId) return
+      const cached = queryClient.getQueryData(profileQueryKey(userId))
+      if (cached?.id === userId) {
+        setProfile(cached)
+        setLinkedUserIds(cached.linkedUserIds || [])
+        setLinkedProfiles(cached.linkedProfiles || [])
+        return
+      }
       setProfile(null)
+      setProfileError(err)
       setLinkedUserIds([])
       setLinkedProfiles([])
     } finally {
@@ -120,6 +148,22 @@ export function useAuthState() {
   // profile → null and trigger a profile-loading flash).
   const loadProfileRef = useRef(loadProfile)
   useEffect(() => { loadProfileRef.current = loadProfile }, [loadProfile])
+
+  // After a failed first load, try again when the device reconnects or the
+  // app comes back to the foreground.
+  useEffect(() => {
+    if (!profileError || !user?.id || typeof window === 'undefined') return undefined
+    const retry = () => {
+      if (document.visibilityState === 'hidden') return
+      loadProfileRef.current(user.id)
+    }
+    window.addEventListener('online', retry)
+    document.addEventListener('visibilitychange', retry)
+    return () => {
+      window.removeEventListener('online', retry)
+      document.removeEventListener('visibilitychange', retry)
+    }
+  }, [profileError, user?.id])
 
   useEffect(() => {
     let initialised = false
@@ -234,6 +278,7 @@ export function useAuthState() {
           lastSeenUserId = null
           setUser(null)
           setProfile(null)
+          setProfileError(null)
           setLinkedUserIds([])
           setLinkedProfiles([])
           setProfileLoading(false)
@@ -341,6 +386,7 @@ export function useAuthState() {
       clearErrorReportingUser()
       setUser(null)
       setProfile(null)
+      setProfileError(null)
       setLinkedUserIds([])
       setLinkedProfiles([])
       setProfileLoading(false)
@@ -392,7 +438,7 @@ export function useAuthState() {
   }, [profileQueryKey])
 
   return {
-    user, profile, loading, profileLoading,
+    user, profile, loading, profileLoading, profileError,
     linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,

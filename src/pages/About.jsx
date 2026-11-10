@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useCallback, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowSquareOut, House, ShieldCheck, Sparkle } from '@phosphor-icons/react'
 import {
@@ -85,7 +85,16 @@ function ConnectRow({ href, icon, label, sublabel, tone = 'neutral' }) {
 
 export default function About() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (location.hash !== '#privacy') return undefined
+    const timer = setTimeout(() => {
+      document.getElementById('privacy')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [location.hash])
   const [upiCopied, setUpiCopied] = useState(false)
   const { setSafeTimeout } = useSafeTimeout()
   const [showAllVersions, setShowAllVersions] = useState(false)
@@ -166,8 +175,8 @@ export default function About() {
                 <p className="text-[10px] text-ink-3 mt-1">Improvements</p>
               </div>
               <div className="mini-panel px-2.5 py-2 text-center bg-brand-container/40 border-brand/15">
-                <p className="text-[16px] font-semibold text-brand leading-none">100%</p>
-                <p className="text-[10px] text-brand/80 mt-1">Self-hosted</p>
+                <p className="text-[16px] font-semibold text-brand leading-none">0</p>
+                <p className="text-[10px] text-brand/80 mt-1">Ad trackers</p>
               </div>
             </div>
 
@@ -312,16 +321,30 @@ export default function About() {
           </div>
         </motion.div>
 
-        <motion.div variants={fadeUp}>
+        <motion.div variants={fadeUp} id="privacy" className="scroll-mt-20">
           <SectionLabel>Privacy And Stack</SectionLabel>
           <div className="card p-4 space-y-3">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-expense-bg border border-expense-border flex items-center justify-center shrink-0 mt-0.5">
                 <LockIcon size={17} weight="duotone" color={C.expense} />
               </div>
-              <p className="text-[13px] text-ink-2 leading-relaxed flex-1">
-                Your data stays in your own Supabase project, protected by row-level security. No telemetry, no ad tracking, no third-party sharing.
-              </p>
+              <div className="text-[13px] text-ink-2 leading-relaxed flex-1 space-y-2">
+                <p>
+                  <span className="font-semibold text-ink">What is stored.</span> Your email, name and photo, and the money data you enter (transactions, bills, loans, budgets and trips). It lives in a Supabase cloud database where row-level security lets only you, partners you link, and members of trips you share read it. The app itself is served by Vercel.
+                </p>
+                <p>
+                  <span className="font-semibold text-ink">Crash reports.</span> When something breaks, Kosha sends the error and the page you were on to Sentry, with a small sample of performance timings. Reports carry an anonymous account ID, never your email, password or sign-in tokens.
+                </p>
+                <p>
+                  <span className="font-semibold text-ink">Bug reports.</span> A bug report you send (and its screenshot) is stored with your account and posted to the developer&apos;s private chat channel.
+                </p>
+                <p>
+                  No ads, no ad trackers, and your data is never sold.
+                </p>
+                <p>
+                  <span className="font-semibold text-ink">Deleting your data.</span> Settings → Delete account removes your account, ledger, photo and bug reports. In shared trips, other members keep their own entries and your name is removed.
+                </p>
+              </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-invest-bg border border-invest-border flex items-center justify-center shrink-0 mt-0.5">
