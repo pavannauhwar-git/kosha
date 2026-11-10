@@ -7,7 +7,21 @@ const FOCUSABLE_SELECTOR = [
   'select:not([disabled])',
   'textarea:not([disabled])',
   '[tabindex]:not([tabindex="-1"])',
+  'md-outlined-text-field:not([disabled])',
+  'md-outlined-select:not([disabled])',
+  'md-switch:not([disabled])',
+  'md-filled-button:not([disabled])',
+  'md-filled-tonal-button:not([disabled])',
+  'md-outlined-button:not([disabled])',
+  'md-text-button:not([disabled])',
 ].join(',')
+
+// Sheets are portalled to <body> in the order they open, so the last modal
+// dialog in the document is the one on top.
+function isTopmostDialog(container) {
+  const dialogs = document.querySelectorAll('[role="dialog"][aria-modal="true"]')
+  return dialogs.length === 0 || dialogs[dialogs.length - 1] === container
+}
 
 function isFocusableVisible(element) {
   if (!(element instanceof HTMLElement)) return false
@@ -98,6 +112,7 @@ export default function useOverlayFocusTrap(open, options = {}) {
       const insideContainer = active instanceof HTMLElement && container.contains(active)
 
       if (event.key === 'Escape') {
+        if (!isTopmostDialog(container)) return
         const currentOnClose = onCloseRef.current
         if (typeof currentOnClose === 'function') {
           event.preventDefault()
@@ -106,7 +121,7 @@ export default function useOverlayFocusTrap(open, options = {}) {
         return
       }
 
-      if (event.key !== 'Tab') return
+      if (event.key !== 'Tab' || !isTopmostDialog(container)) return
 
       const focusable = getFocusableElements(container)
       if (!focusable.length) {

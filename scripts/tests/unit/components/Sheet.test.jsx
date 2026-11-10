@@ -52,6 +52,31 @@ describe('Sheet component', () => {
     expect(handleClose).toHaveBeenCalledTimes(1)
   })
 
+  it('closes on the Android back gesture through CloseWatcher', () => {
+    const watchers = []
+    class FakeCloseWatcher {
+      constructor() {
+        this.onclose = null
+        this.destroy = vi.fn()
+        watchers.push(this)
+      }
+    }
+    vi.stubGlobal('CloseWatcher', FakeCloseWatcher)
+    try {
+      const handleClose = vi.fn()
+      const { rerender } = render(<Sheet open={true} onClose={handleClose} title="Back"><span /></Sheet>)
+      expect(watchers).toHaveLength(1)
+
+      watchers[0].onclose()
+      expect(handleClose).toHaveBeenCalledTimes(1)
+
+      rerender(<Sheet open={false} onClose={handleClose} title="Back"><span /></Sheet>)
+      expect(watchers[0].destroy).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('sets correct dialog semantics for accessibility', () => {
     render(<Sheet open={true} onClose={vi.fn()} title="Accessible Sheet"><span /></Sheet>)
     const dialog = screen.getByRole('dialog')
