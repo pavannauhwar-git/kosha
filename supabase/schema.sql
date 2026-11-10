@@ -422,6 +422,31 @@ begin
 end;
 $$;
 
+-- Function: public.delete_account_data(uuid)
+-- Run by the delete-account Edge Function just before it deletes the auth user.
+-- Trips nobody else can open are deleted; in shared trips the member row stays
+-- so balances still add up, but the name is removed.
+CREATE OR REPLACE FUNCTION public.delete_account_data(p_user_id uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+begin
+  if p_user_id is null then
+    raise exception using errcode = '22023', message = 'p_user_id is required';
+  end if;
+
+  delete from public.split_groups g
+  where exists (select 1 from public.split_group_access a where a.group_id = g.id and a.user_id = p_user_id)
+    and not exists (select 1 from public.split_group_access a where a.group_id = g.id and a.user_id <> p_user_id);
+
+  update public.split_group_members
+  set display_name = 'Former member'
+  where linked_user_id = p_user_id;
+
+  delete from public.bug_reports where user_id = p_user_id;
+end;
+$$;
+
 -- Function: public.delete_liability_with_txns(uuid)
 CREATE OR REPLACE FUNCTION public.delete_liability_with_txns(p_id uuid) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
@@ -484,6 +509,7 @@ end;
 $$;
 
 -- Function: public.delete_split_expense_atomic(uuid)
+-- Deletes only the caller's ledger entry; other members keep theirs, unlinked, with a note.
 CREATE OR REPLACE FUNCTION public.delete_split_expense_atomic(p_id uuid) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO ''
@@ -491,7 +517,8 @@ CREATE OR REPLACE FUNCTION public.delete_split_expense_atomic(p_id uuid) RETURNS
 declare
   v_uid uuid := auth.uid();
   v_group_id uuid;
-  v_linked_txn uuid;
+  v_group_name text;
+  v_note text;
   v_rows integer;
 begin
   if v_uid is null then
@@ -501,10 +528,12 @@ begin
     raise exception using errcode = '22023', message = 'p_id is required';
   end if;
 
-  select group_id, linked_transaction_id
-    into v_group_id, v_linked_txn
-  from public.split_expenses
-  where id = p_id;
+  select e.group_id, g.name
+    into v_group_id, v_group_name
+  from public.split_expenses e
+  join public.split_groups g on g.id = e.group_id
+  where e.id = p_id
+  for update of e;
 
   if v_group_id is null then return false; end if;
 
@@ -512,7 +541,15 @@ begin
     raise exception using errcode = '42501', message = 'forbidden';
   end if;
 
-  delete from public.transactions where linked_split_expense_id = p_id;
+  delete from public.transactions
+  where linked_split_expense_id = p_id and user_id = v_uid;
+
+  v_note := format('This shared expense was deleted from "%s" by %s. The entry stays in your ledger.',
+                   v_group_name, public.split_actor_name(v_group_id, v_uid));
+  update public.transactions
+  set linked_split_expense_id = null,
+      notes = concat_ws(E'\n', nullif(btrim(notes), ''), v_note)
+  where linked_split_expense_id = p_id;
 
   delete from public.split_expenses where id = p_id;
   get diagnostics v_rows = row_count;
@@ -521,6 +558,7 @@ end;
 $$;
 
 -- Function: public.delete_split_settlement_atomic(uuid)
+-- Deletes only the caller's ledger entries; other members keep theirs, unlinked, with a note.
 CREATE OR REPLACE FUNCTION public.delete_split_settlement_atomic(p_id uuid) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO ''
@@ -528,8 +566,10 @@ CREATE OR REPLACE FUNCTION public.delete_split_settlement_atomic(p_id uuid) RETU
 declare
   v_uid uuid := auth.uid();
   v_group_id uuid;
+  v_group_name text;
   v_payer_txn uuid;
   v_payee_txn uuid;
+  v_note text;
   v_rows integer;
 begin
   if v_uid is null then
@@ -539,10 +579,12 @@ begin
     raise exception using errcode = '22023', message = 'p_id is required';
   end if;
 
-  select group_id, payer_transaction_id, payee_transaction_id
-    into v_group_id, v_payer_txn, v_payee_txn
-  from public.split_settlements
-  where id = p_id;
+  select s.group_id, g.name, s.payer_transaction_id, s.payee_transaction_id
+    into v_group_id, v_group_name, v_payer_txn, v_payee_txn
+  from public.split_settlements s
+  join public.split_groups g on g.id = s.group_id
+  where s.id = p_id
+  for update of s;
 
   if v_group_id is null then return false; end if;
 
@@ -550,14 +592,16 @@ begin
     raise exception using errcode = '42501', message = 'forbidden';
   end if;
 
-  if v_payer_txn is not null then
-    delete from public.transactions where id = v_payer_txn;
-  end if;
-  if v_payee_txn is not null then
-    delete from public.transactions where id = v_payee_txn;
-  end if;
+  delete from public.transactions
+  where user_id = v_uid
+    and (linked_split_settlement_id = p_id or id = v_payer_txn or id = v_payee_txn);
 
-  delete from public.transactions where linked_split_settlement_id = p_id;
+  v_note := format('This settlement was deleted from "%s" by %s. The entry stays in your ledger.',
+                   v_group_name, public.split_actor_name(v_group_id, v_uid));
+  update public.transactions
+  set linked_split_settlement_id = null,
+      notes = concat_ws(E'\n', nullif(btrim(notes), ''), v_note)
+  where linked_split_settlement_id = p_id or id = v_payer_txn or id = v_payee_txn;
 
   delete from public.split_settlements where id = p_id;
   get diagnostics v_rows = row_count;
@@ -1442,7 +1486,7 @@ declare
   v_txn_id uuid;
   v_next_due date;
   v_txn_mode text;
-  v_paid_on date := least(greatest(coalesce(p_paid_on, current_date), current_date - 1), current_date + 1);
+  v_paid_on date := least(greatest(coalesce(p_paid_on, current_date), current_date - 366), current_date + 1);
   v_anchor date;
   v_step int;
   v_k int;
@@ -1523,18 +1567,31 @@ CREATE OR REPLACE FUNCTION public.on_split_group_delete_cleanup() RETURNS trigge
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO ''
     AS $$
+declare
+  v_uid uuid := auth.uid();
+  v_note text;
 begin
-  -- Delete all transactions linked to expenses in the group being deleted
-  delete from public.transactions
-  where linked_split_expense_id in (
-    select id from public.split_expenses where group_id = old.id
-  );
+  -- The person deleting the trip loses their own linked entries; everyone else
+  -- keeps theirs, unlinked, with a note.
+  if v_uid is not null then
+    delete from public.transactions
+    where user_id = v_uid
+      and (linked_split_expense_id in (select id from public.split_expenses where group_id = old.id)
+        or linked_split_settlement_id in (select id from public.split_settlements where group_id = old.id));
+  end if;
 
-  -- Delete all transactions linked to settlements in the group being deleted
-  delete from public.transactions
-  where linked_split_settlement_id in (
-    select id from public.split_settlements where group_id = old.id
-  );
+  v_note := format('The trip "%s" was deleted by %s. The entry stays in your ledger.',
+                   old.name, public.split_actor_name(old.id, v_uid));
+
+  update public.transactions
+  set linked_split_expense_id = null,
+      notes = concat_ws(E'\n', nullif(btrim(notes), ''), v_note)
+  where linked_split_expense_id in (select id from public.split_expenses where group_id = old.id);
+
+  update public.transactions
+  set linked_split_settlement_id = null,
+      notes = concat_ws(E'\n', nullif(btrim(notes), ''), v_note)
+  where linked_split_settlement_id in (select id from public.split_settlements where group_id = old.id);
 
   return old;
 end;
@@ -1602,7 +1659,7 @@ declare
   v_new_settled numeric;
   v_fully_settled boolean;
   v_txn_type text;
-  v_paid_on date := least(greatest(coalesce(p_paid_on, current_date), current_date - 1), current_date + 1);
+  v_paid_on date := least(greatest(coalesce(p_paid_on, current_date), current_date - 366), current_date + 1);
 begin
   perform set_config('kosha.trusted_write', 'true', true);
   p_amount := round(p_amount, 2);
@@ -1707,6 +1764,21 @@ CREATE OR REPLACE FUNCTION public.shares_split_group_with(p_other uuid) RETURNS 
     join public.split_group_access a on a.group_id = m.group_id
     where m.linked_user_id = p_other
       and a.user_id = auth.uid()
+  );
+$$;
+
+-- Function: public.split_actor_name(uuid,uuid)
+-- Name used in the notes left on other members' entries when something is deleted.
+CREATE OR REPLACE FUNCTION public.split_actor_name(p_group_id uuid, p_user_id uuid) RETURNS text
+    LANGUAGE sql STABLE
+    SET search_path TO ''
+    AS $$
+  select coalesce(
+    (select m.display_name from public.split_group_members m
+      where m.group_id = p_group_id and m.linked_user_id = p_user_id
+      order by m.created_at limit 1),
+    (select nullif(btrim(p.display_name), '') from public.profiles p where p.id = p_user_id),
+    'a group member'
   );
 $$;
 
@@ -2307,6 +2379,20 @@ CREATE OR REPLACE FUNCTION public.split_group_member_profiles(p_group_id uuid) R
   join profiles p on p.id = m.linked_user_id
   where m.group_id = p_group_id
     and public.has_split_group_access(p_group_id, auth.uid());
+$$;
+
+-- Function: public.split_group_others_entry_count(uuid)
+-- How many ledger entries other people keep if the caller deletes this trip.
+CREATE OR REPLACE FUNCTION public.split_group_others_entry_count(p_group_id uuid) RETURNS integer
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO ''
+    AS $$
+  select case when public.is_split_group_member_or_above(p_group_id, auth.uid()) then (
+    select count(*)::int from public.transactions t
+    where t.user_id <> auth.uid()
+      and (t.linked_split_expense_id in (select e.id from public.split_expenses e where e.group_id = p_group_id)
+        or t.linked_split_settlement_id in (select s.id from public.split_settlements s where s.group_id = p_group_id))
+  ) else 0 end;
 $$;
 
 -- Function: public.split_leave_group(uuid)
@@ -5122,6 +5208,19 @@ REVOKE ALL ON FUNCTION public.delete_loan_with_txns(p_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.delete_loan_with_txns(p_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.delete_loan_with_txns(p_id uuid) TO service_role;
 
+REVOKE ALL ON FUNCTION public.delete_account_data(p_user_id uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.delete_account_data(p_user_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.delete_account_data(p_user_id uuid) TO service_role;
+
+REVOKE ALL ON FUNCTION public.split_actor_name(p_group_id uuid, p_user_id uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.split_actor_name(p_group_id uuid, p_user_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.split_actor_name(p_group_id uuid, p_user_id uuid) TO service_role;
+
+REVOKE ALL ON FUNCTION public.split_group_others_entry_count(p_group_id uuid) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.split_group_others_entry_count(p_group_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.split_group_others_entry_count(p_group_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.split_group_others_entry_count(p_group_id uuid) TO service_role;
+
 REVOKE ALL ON FUNCTION public.delete_split_expense_atomic(p_id uuid) FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.delete_split_expense_atomic(p_id uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.delete_split_expense_atomic(p_id uuid) TO authenticated;
@@ -5226,7 +5325,6 @@ GRANT ALL ON FUNCTION public.is_linked(target_user_id uuid) TO authenticated;
 
 REVOKE ALL ON FUNCTION public.is_linked(target_user_id uuid, p_user_id uuid) FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.is_linked(target_user_id uuid, p_user_id uuid) FROM PUBLIC;
-GRANT ALL ON FUNCTION public.is_linked(target_user_id uuid, p_user_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.is_linked(target_user_id uuid, p_user_id uuid) TO service_role;
 
 REVOKE ALL ON FUNCTION public.is_split_group_member_or_above(p_group_id uuid, p_user_id uuid) FROM PUBLIC, anon, authenticated, service_role;
@@ -5599,6 +5697,11 @@ BEGIN
   END IF;
 END
 $do$;
+
+-- Dashboard template policies that are not bucket-scoped (one allowed any upload).
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON storage.objects;
+DROP POLICY IF EXISTS "Enable insert for users based on user_id" ON storage.objects;
+DROP POLICY IF EXISTS "Enable delete for users based on user_id" ON storage.objects;
 
 drop policy if exists "avatars_storage: delete own" on storage.objects;
 
