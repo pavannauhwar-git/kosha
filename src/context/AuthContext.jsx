@@ -5,7 +5,7 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const {
-    user, profile, loading, profileLoading,
+    user, profile, loading, profileLoading, profileError,
     linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
@@ -14,14 +14,14 @@ export function AuthProvider({ children }) {
   } = useAuthState()
 
   const value = useMemo(() => ({
-    user, profile, loading, profileLoading,
+    user, profile, loading, profileLoading, profileError,
     linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,
     signOut, updateProfile, updateDisplayName,
     reloadLinkedData,
   }), [
-    user, profile, loading, profileLoading,
+    user, profile, loading, profileLoading, profileError,
     linkedUserIds, linkedProfiles,
     signInWithGoogle, signInWithEmail, signUpWithEmail,
     requestPasswordReset, updatePassword,

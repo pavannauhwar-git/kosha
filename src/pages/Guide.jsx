@@ -486,7 +486,7 @@ export default function Guide() {
           <div className="card p-4 space-y-2.5">
             <div className="flex items-start gap-2">
               <ShieldCheck size={16} className="text-ink mt-0.5" />
-              <p className="text-label text-ink-2">Your app data stays within your Supabase project under row-level security policies.</p>
+              <p className="text-label text-ink-2">Your data is stored in Supabase under row-level security, so only you, linked partners and trip members can read it. Crash reports go to Sentry without your email; see About → Privacy for the full notice.</p>
             </div>
             <p className="text-label text-ink-3">Use monthly CSV export as a simple external backup ritual.</p>
             <p className="text-label text-ink-3">If network conditions are unstable, sync may slow down, but data can still be refreshed safely.</p>

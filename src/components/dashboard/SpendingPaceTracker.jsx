@@ -31,7 +31,7 @@ function WeeklyDriftTooltip({ active, payload }) {
         {baseline > 0 && (
           <>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-ink-3">4W median</span>
+              <span className="text-ink-3">{row?.isCurrent ? 'Usual so far' : '4W median'}</span>
               <span className="font-semibold tabular-nums text-ink">{fmt(baseline)}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
@@ -87,7 +87,7 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
           <p className="section-label">Weekly spend drift</p>
-          <p className="text-caption text-ink-3 mt-0.5">Current week vs rolling 4-week median.</p>
+          <p className="text-caption text-ink-3 mt-0.5">This week so far vs your usual pace. Rent, EMIs, bills and repayments are left out.</p>
         </div>
         <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${statusTone}`}>
           {driftData.statusLabel}

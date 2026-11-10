@@ -408,7 +408,7 @@ export default function Dashboard() {
         priority: 75,
         tone: 'high',
         title: 'Weekly spend drift is high',
-        message: `This week is ${weeklyDriftSignal.driftPct}% above your 4-week baseline.`,
+        message: `This week is ${weeklyDriftSignal.driftPct}% above your usual pace.`,
         actionLabel: 'Review transactions',
         route: expenseMonthRoute,
       })
@@ -418,7 +418,7 @@ export default function Dashboard() {
         priority: 60,
         tone: 'watch',
         title: 'Weekly spend drift is rising',
-        message: `This week is ${weeklyDriftSignal.driftPct}% above baseline.`,
+        message: `This week is ${weeklyDriftSignal.driftPct}% above your usual pace.`,
         actionLabel: 'Inspect outflows',
         route: expenseMonthRoute,
       })
@@ -473,7 +473,8 @@ export default function Dashboard() {
 
   // ── Reminders ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!reminderPrefs.enabled) return
+    // Reminders are about your own money; a partner's wallet never triggers them.
+    if (!reminderPrefs.enabled || isViewingPartner) return
 
     if (reminderPrefs.bill_due && dueSoonCount > 0) {
       maybeNotify({
@@ -489,12 +490,12 @@ export default function Dashboard() {
         id: 'spending-pace',
         title: 'Kosha reminder: weekly spend drift is high',
         body: weeklyDriftSignal.driftPct != null
-          ? `This week is ${weeklyDriftSignal.driftPct}% above your 4-week baseline.`
-          : 'This week is above your baseline spend pattern.',
+          ? `This week is ${weeklyDriftSignal.driftPct}% above your usual pace.`
+          : 'This week is above your usual spending pace.',
         cooldownMs: 12 * 60 * 60 * 1000,
       })
     }
-  }, [dueSoonCount, weeklyDriftSignal, reminderPrefs.enabled, reminderPrefs.bill_due, reminderPrefs.spending_pace])
+  }, [dueSoonCount, weeklyDriftSignal, isViewingPartner, reminderPrefs.enabled, reminderPrefs.bill_due, reminderPrefs.spending_pace])
 
   const { handleDelete } = useTransactionDeleter(activeWalletUserId, recent)
 

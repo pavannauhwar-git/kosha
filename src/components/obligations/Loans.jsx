@@ -25,11 +25,13 @@ import { useUndoableDelete } from '../../hooks/useUndoableDelete'
 import { downloadCsv, toCsv } from '../../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, todayStr } from '../../lib/utils'
 import { fromRupees, toRupees } from '../../lib/paise'
+import { paidOnError } from '../../lib/paidOn'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
 import { FINANCIAL_EVENT_ACTIONS } from '../../lib/auditLog'
 import PageHeaderPage from '../layout/PageHeaderPage'
 import SkeletonLayout from '../common/SkeletonLayout'
 import EmptyState from '../common/EmptyState'
+import LoadErrorCard from '../common/LoadErrorCard'
 
 import Button from '../ui/Button'
 import Input from '../ui/Input'
@@ -55,7 +57,7 @@ export default function Loans({
   const navigate = useNavigate()
   const isViewingPartner = isViewingPartnerProp ?? (!!activeWalletUserId && activeWalletUserId !== getAuthUserId())
 
-  const { given, taken, settled, loading, settledLoading } = useLoans()
+  const { given, taken, settled, loading, settledLoading, loadError: loansLoadError, refetch: refetchLoans } = useLoans()
   const [searchParams, setSearchParams] = useSearchParams()
   const deepLinkTxnId = searchParams.get('repaymentTxn')
   const deepLinkLoanId = searchParams.get('repaymentLoan')
@@ -80,7 +82,7 @@ export default function Loans({
   const [editLoan, setEditLoan] = useState(null)
   const [payLoan, setPayLoan] = useState(null)      // loan object being paid
   const [deletingId] = useState(null)
-  const { pushToast } = useAppToast()
+  const { pushToast, dismissToast } = useAppToast()
   const actionGuard = useRef(false)
   const [overflowLoanId, setOverflowLoanId] = useState(null)
   const overflowLoanRef = useRef(null)
@@ -143,12 +145,12 @@ export default function Loans({
     optimisticallyDeleteLoan(id, activeWalletUserId)
     const m = await import('../../hooks/useTransactions')
     const txnIds = m.optimisticallyDeleteTransactionsByLoanId(id, activeWalletUserId) || new Set()
-    schedule(id, { loan: { ...loan }, walletUserId: activeWalletUserId, txnIds })
-    pushToast('Loan deleted.', {
+    const toastId = pushToast('Loan deleted.', {
       action: () => { if (undo(id)) pushToast('Deletion canceled.', { duration: 2200 }) },
       actionLabel: 'Undo',
       duration: 4200,
     })
+    schedule(id, { loan: { ...loan }, walletUserId: activeWalletUserId, txnIds }, () => dismissToast(toastId))
     return true
   }
 
@@ -177,7 +179,15 @@ export default function Loans({
 
   // ── Payment form state ──────────────────────────────────────────────
   const [payAmount, setPayAmount] = useState('')
+  const [payDate, setPayDate] = useState(() => todayStr())
   const [payErr, setPayErr] = useState('')
+
+  const openPaySheet = useCallback((loan, amount = '') => {
+    setPayLoan(loan)
+    setPayAmount(amount)
+    setPayDate(todayStr())
+    setPayErr('')
+  }, [])
 
   const closePaySheet = useCallback(() => {
     setPayLoan(null)
@@ -616,33 +626,22 @@ export default function Loans({
     if (remainingPaise <= 0n) { setPayErr('This loan is already fully settled.'); actionGuard.current = false; return }
     if (amtPaise <= 0n) { setPayErr('Enter a valid positive amount'); actionGuard.current = false; return }
     if (amtPaise > remainingPaise) { setPayErr(`Max payment is ${fmt(toRupees(remainingPaise))}`); actionGuard.current = false; return }
+    const dateErr = paidOnError(payDate)
+    if (dateErr) { setPayErr(dateErr); actionGuard.current = false; return }
 
     setPayErr('')
 
+    const settlesInFull = amtPaise === remainingPaise
+    const save = settlesInFull ? settleLoanAsync : recordLoanPaymentAsync
     try {
-      await recordLoanPaymentAsync({ loan: payLoan, paymentAmount: toRupees(amtPaise), id: crypto.randomUUID() })
+      await save({ loan: payLoan, paymentAmount: toRupees(amtPaise), id: crypto.randomUUID(), paidOn: payDate })
       closePaySheet()
     } catch (e) {
-      pushToast(toToastMessage(e, 'Could not record payment.'))
+      pushToast(toToastMessage(e, settlesInFull ? 'Could not settle loan.' : 'Could not record payment.'))
     } finally {
       actionGuard.current = false
     }
   }
-
-  const handleSettleFull = useCallback(async (loan) => {
-    if (actionGuard.current) return
-    actionGuard.current = true
-    const remainingPaise = fromRupees(loan.amount) - fromRupees(loan.amount_settled)
-    if (remainingPaise <= 0n) { actionGuard.current = false; return }
-
-    try {
-      await settleLoanAsync({ loan, paymentAmount: toRupees(remainingPaise), id: crypto.randomUUID() })
-    } catch (e) {
-      pushToast(toToastMessage(e, 'Could not settle loan.'))
-    } finally {
-      actionGuard.current = false
-    }
-  }, [settleLoanAsync, pushToast])
 
   function openEditLoan(loan) {
     setEditLoan(loan)
@@ -835,6 +834,8 @@ export default function Loans({
               { type: 'block', height: 'h-[100px]' },
             ]}
           />
+        ) : loansLoadError ? (
+          <LoadErrorCard title="Couldn’t load your loans" onRetry={refetchLoans} />
         ) : (
           <div className="space-y-3">
             {tab !== 'settled' && activeLoans.length === 0 && (
@@ -978,7 +979,7 @@ export default function Loans({
                             Edit
                           </Button>
                           <Button
-                            onClick={() => { setPayLoan(loan); setPayAmount(''); setPayErr('') }}
+                            onClick={() => openPaySheet(loan)}
                             disabled={!!deletingId || isOptimistic}
                             variant="success"
                             size="sm"
@@ -987,7 +988,7 @@ export default function Loans({
                             Payment
                           </Button>
                           <Button
-                            onClick={() => { void handleSettleFull(loan) }}
+                            onClick={() => openPaySheet(loan, toRupees(fromRupees(loan.amount) - fromRupees(loan.amount_settled)).toFixed(2))}
                             disabled={!!deletingId || isOptimistic || remaining <= 0}
                             variant="tonal"
                             size="sm"
@@ -1166,6 +1167,23 @@ export default function Loans({
                 <p className="text-[11px] text-ink-3 mb-2">
                   Maximum you can record now: {fmt(payRemaining)}
                 </p>
+
+                {/* Paid-on date */}
+                <div className="list-card mb-3">
+                  <div className="list-row w-full">
+                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 flex items-center justify-center shrink-0 border border-kosha-border">
+                      <Calendar size={14} className="text-ink-3" />
+                    </div>
+                    <span className="flex-1 text-[15px] text-ink">Paid on</span>
+                    <PixelDatePicker
+                      name="payment-date"
+                      value={payDate}
+                      onChange={(nextDate) => { setPayDate(nextDate); setPayErr('') }}
+                      sheetTitle="When was it paid?"
+                      disabled={isPaySaving}
+                    />
+                  </div>
+                </div>
 
                 {/* Quick fill buttons */}
                 <div className="flex gap-2 mb-3 flex-wrap">

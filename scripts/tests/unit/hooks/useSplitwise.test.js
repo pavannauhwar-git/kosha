@@ -12,6 +12,7 @@ import { queryClient } from '../../../../src/lib/queryClient'
 vi.mock('../../../../src/lib/queryClient', () => ({
   queryClient: {
     setQueryData: vi.fn(),
+    getQueryData: vi.fn(),
   },
   evictSwCacheEntries: vi.fn(),
 }))
@@ -65,6 +66,14 @@ describe('useSplitwise optimistic updates', () => {
       const [[, updater]] = queryClient.setQueryData.mock.calls
       const updated = updater(undefined)
       expect(updated).toEqual([])
+    })
+
+    it('returns a rollback that restores the previous list', () => {
+      const existing = [{ id: '1' }, { id: '2' }]
+      queryClient.getQueryData.mockReturnValueOnce(existing)
+      const rollback = optimisticallyDeleteSplitGroup('1', 'user1')
+      rollback()
+      expect(queryClient.setQueryData).toHaveBeenLastCalledWith(['splitwise', 'groups', 'user1'], existing)
     })
   })
 

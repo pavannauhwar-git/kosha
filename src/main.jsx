@@ -14,6 +14,7 @@ import './index.css'
 import { GlobalErrorBoundary } from './components/errors/GlobalErrorBoundary'
 import { startRuntimeMonitor } from './lib/runtimeMonitor'
 import { readLocalStorage } from './lib/safeStorage'
+import { reloadForChunkError } from './lib/chunkReload'
 
 // Defensive: the avatar URL cache is keyed by storage path, not by user. Clear
 // it on every cold start so a previous user's signed URLs can never be read by
@@ -21,6 +22,12 @@ import { readLocalStorage } from './lib/safeStorage'
 try { localStorage.removeItem('kosha:avatar-urls') } catch { /* storage unavailable */ }
 
 startRuntimeMonitor()
+
+// A chunk from an older deploy failed to preload: reload once to get the new
+// build. If we already reloaded, let the error reach the route error screen.
+window.addEventListener('vite:preloadError', (event) => {
+  if (reloadForChunkError()) event.preventDefault()
+})
 
 // ── Restore dark mode preference & init theme color ──────────────────
 ;(() => {

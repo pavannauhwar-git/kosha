@@ -650,6 +650,10 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
     setLastCategoryByType(prev => ({ ...prev, [type]: category }))
     
     set('type', nextType)
+    // Only an expense can pay a bill: drop a link made in this edit.
+    if (nextType !== 'expense' && linked_bill_id && linked_bill_id !== (editTxn?.linked_bill_id || null)) {
+      set('linked_bill_id', null)
+    }
     if (nextType !== 'investment') {
       const normalized = normalizeCategoryForType(nextType, lastCategoryByType[nextType])
       set('category', normalized)
@@ -774,7 +778,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           clientId: editTxn ? undefined : draftIdRef.current,
           payload,
         })
-        const newlyLinkedBill = linked_bill_id && linked_bill_id !== (editTxn?.linked_bill_id || null)
+        const newlyLinkedBill = type === 'expense' && linked_bill_id && linked_bill_id !== (editTxn?.linked_bill_id || null)
           ? pendingBills.find((bill) => bill.id === linked_bill_id)
           : null
         if (newlyLinkedBill && saved?.id) {

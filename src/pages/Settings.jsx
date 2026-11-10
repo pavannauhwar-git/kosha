@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Camera, Trash, PencilSimple, BellRinging, ShieldWarning, Users, User, Copy, Moon, Sun, House, LinkBreak } from '@phosphor-icons/react'
+import { Camera, Trash, PencilSimple, BellRinging, ShieldWarning, ShieldCheck, Users, User, Copy, Moon, Sun, House, LinkBreak } from '@phosphor-icons/react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import EditProfileNameDialog from '../components/dialogs/EditProfileNameDialog'
@@ -28,6 +28,7 @@ import { shareLink } from '../lib/share'
 import { CHANGELOG } from '../lib/changelog'
 import { writeLocalStorage } from '../lib/safeStorage'
 import { isValidImageMagicBytes } from '../lib/bugReportUtils'
+import { downscaleImage } from '../lib/imageResize'
 import { useAppMutation } from '../hooks/useAppMutation'
 const fadeUp = createFadeUp(6, 0.18)
 const stagger = createStagger(0.05, 0.04)
@@ -82,7 +83,7 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { user, profile, updateProfile, updatePassword, linkedProfiles, reloadLinkedData } = useAuth()
+  const { user, profile, updateProfile, updatePassword, linkedProfiles, reloadLinkedData, signOut } = useAuth()
   const fileInputRef = useRef(null)
   const { setSafeTimeout } = useSafeTimeout()
 
@@ -114,6 +115,10 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [passwordMsg, setPasswordMsg] = useState('')
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false)
+  const [deleteAccountText, setDeleteAccountText] = useState('')
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [deleteAccountError, setDeleteAccountError] = useState('')
   const remindersPaused = !reminderPrefs.enabled
   const reminderMasterSwitchStyle = {
     '--md-switch-selected-track-color': 'var(--ds-primary)',
@@ -202,7 +207,9 @@ export default function Settings() {
     }
 
     try {
-      const ext = file.name.split('.').pop() || 'jpg'
+      const previousPath = profile?.avatar_url || null
+      const upload = await downscaleImage(file, 512)
+      const ext = upload === file ? (file.name.split('.').pop() || 'jpg') : 'jpg'
       // Path is relative to the bucket root. Storage RLS policies check
       // `name like (auth.uid()::text || '-%')`, so the file must start
       // with the user's UUID — no leading folder prefix.
@@ -210,10 +217,11 @@ export default function Settings() {
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(path, file, { cacheControl: '3600', upsert: true })
+        .upload(path, upload, { cacheControl: '3600', upsert: true, contentType: upload.type || undefined })
       if (uploadError) throw uploadError
 
       await updateProfileMutation.mutateAsync({ avatar_url: path })
+      removeOwnAvatarFile(previousPath)
     } catch (e) {
       setPhotoError(e.message || 'Could not update photo. Try again.')
     } finally {
@@ -221,10 +229,20 @@ export default function Settings() {
     }
   }
 
+  // Old photos stay readable by partners until the file itself is deleted.
+  function removeOwnAvatarFile(path) {
+    if (!path || !user?.id || !path.startsWith(`${user.id}-`)) return
+    supabase.storage.from('avatars').remove([path])
+      .then(({ error }) => { if (error) throw error })
+      .catch((error) => console.warn('[Kosha] could not delete old avatar file', error))
+  }
+
   async function handleDeletePhoto() {
     setPhotoError('')
     try {
+      const previousPath = profile?.avatar_url || null
       await updateProfileMutation.mutateAsync({ avatar_url: null })
+      removeOwnAvatarFile(previousPath)
     } catch (e) {
       setPhotoError(e.message || 'Could not remove photo. Try again.')
     }
@@ -283,7 +301,7 @@ export default function Settings() {
     setWalletError('')
     try {
       const row = await createInviteMutation.mutateAsync({ supabaseClient: supabase, userId: user.id })
-      setWalletInvites((prev) => [row, ...prev].slice(0, MAX_ACTIVE_INVITES))
+      setWalletInvites((prev) => [row, ...prev])
       await copyInviteLink(row.token)
     } catch (error) {
       setWalletError(error?.message || 'Could not create invite link.')
@@ -306,17 +324,42 @@ export default function Settings() {
     }
   }
 
-  async function handleRevokeInvite(inviteId) {
+  async function handleRevokeInvite(invite) {
+    const inviteId = invite?.id
     if (!inviteId || revokingId) return
+    const partnerId = invite.used_by || null
+    if (partnerId && !confirm('Remove this invite and unlink the wallet? You will no longer see each other’s transactions.')) return
     setRevokingId(inviteId)
     setWalletError('')
     try {
       await deleteInviteMutation.mutateAsync({ supabaseClient: supabase, inviteId })
       setWalletInvites((prev) => prev.filter(i => i.id !== inviteId))
+      if (partnerId) {
+        if (getActiveWalletUserId() === partnerId) setActiveWalletUserId(user.id)
+        await reloadLinkedData()
+      }
     } catch (error) {
       setWalletError(error?.message || 'Could not revoke invite link.')
     } finally {
       setRevokingId('')
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteAccountText.trim() !== 'DELETE' || deletingAccount) return
+    setDeletingAccount(true)
+    setDeleteAccountError('')
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        body: { confirm: 'DELETE' },
+      })
+      if (error || !data?.ok) throw error || new Error('Account deletion failed')
+      await signOut()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      console.warn('[Kosha] delete account failed', error)
+      setDeleteAccountError('Could not delete your account. Check your connection and try again.')
+      setDeletingAccount(false)
     }
   }
 
@@ -556,7 +599,7 @@ export default function Settings() {
             <div className="px-4 py-3 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-2">
               <div>
                 <p className="text-[13px] font-semibold text-ink">Reminder engine</p>
-                <p className="text-[11px] text-ink-3 mt-0.5">Controls for due alerts and pace warnings</p>
+                <p className="text-[11px] text-ink-3 mt-0.5">Alerts appear while Kosha is open on this device</p>
               </div>
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${reminderPrefs.enabled ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
                 {reminderPrefs.enabled ? 'Active' : 'Paused'}
@@ -582,7 +625,7 @@ export default function Settings() {
             <SettingRow
               icon={<BellRinging size={16} className="text-accent-text" />}
               label="Bills due alerts"
-              sublabel={remindersPaused ? 'Daily reminder when bills are near due (paused while reminder engine is off)' : 'Daily reminder when bills are near due'}
+              sublabel={remindersPaused ? 'Alert while Kosha is open when bills are near due (paused while reminder engine is off)' : 'Alert while Kosha is open when bills are near due'}
               onClick={() => toggleReminderField('bill_due')}
               muted={remindersPaused}
               toggleState={reminderPrefs.bill_due}
@@ -599,7 +642,7 @@ export default function Settings() {
             <SettingRow
               icon={<ShieldWarning size={16} className="text-accent-text" />}
               label="Spending pace alerts"
-              sublabel={remindersPaused ? 'Warn when spending runs above month pace (paused while reminder engine is off)' : 'Warn when spending runs above month pace'}
+              sublabel={remindersPaused ? 'Alert while Kosha is open when spending runs above month pace (paused while reminder engine is off)' : 'Alert while Kosha is open when spending runs above month pace'}
               onClick={() => toggleReminderField('spending_pace')}
               muted={remindersPaused}
               toggleState={reminderPrefs.spending_pace}
@@ -759,7 +802,7 @@ export default function Settings() {
                           size="sm"
                           className="mt-1.5 px-0 h-auto text-[11px] text-expense-text font-semibold"
                           icon={<Trash size={12} />}
-                          onClick={() => { void handleRevokeInvite(invite.id) }}
+                          onClick={() => { void handleRevokeInvite(invite) }}
                           loading={revokingId === invite.id}
                         >
                           {invite.used_by ? 'Remove & Unlink' : 'Remove'}
@@ -811,6 +854,64 @@ export default function Settings() {
             </Button>
           </div>
         </motion.div>
+        {/* ── Privacy and account section ─────────────────────────── */}
+        <motion.div variants={fadeUp}>
+          <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-[0.08em] mb-2 px-1">
+            Privacy and account
+          </p>
+          <div className="card overflow-hidden p-0">
+            <SettingRow
+              icon={<ShieldCheck size={16} className="text-brand" />}
+              label="Privacy notice"
+              sublabel="What Kosha stores, where, and how to delete it"
+              onClick={() => navigate('/about#privacy')}
+            />
+            <Divider />
+            <SettingRow
+              icon={<Trash size={16} className="text-expense-text" />}
+              label="Delete account"
+              sublabel="Permanently erase your account and data"
+              onClick={() => {
+                setShowDeleteAccount((prev) => !prev)
+                setDeleteAccountText('')
+                setDeleteAccountError('')
+              }}
+              destructive
+            />
+            {showDeleteAccount && (
+              <>
+                <Divider />
+                <div className="px-4 py-3 space-y-3">
+                  <p className="text-[12px] text-ink-2 leading-relaxed">
+                    This permanently deletes your account, transactions, bills, loans, budgets, profile photo and bug reports, and unlinks every partner. Trips only you can open are deleted. In shared trips, other members keep their own entries and your name is removed. This can&apos;t be undone — export a CSV first if you want a copy.
+                  </p>
+                  <Input
+                    label="Type DELETE to confirm"
+                    name="delete-account-confirm"
+                    value={deleteAccountText}
+                    onChange={(e) => setDeleteAccountText(e.target.value)}
+                    autoComplete="off"
+                    disabled={deletingAccount}
+                  />
+                  <Button
+                    variant="danger"
+                    size="md"
+                    fullWidth
+                    onClick={() => { void handleDeleteAccount() }}
+                    loading={deletingAccount}
+                    disabled={deleteAccountText.trim() !== 'DELETE'}
+                  >
+                    Delete my account forever
+                  </Button>
+                  {deleteAccountError && (
+                    <p className="text-[12px] text-expense-text">{deleteAccountError}</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </motion.div>
+
         <motion.div variants={fadeUp} className="py-6 flex flex-col items-center gap-1 opacity-50">
           <p className="text-[10px] font-bold text-ink-3 uppercase tracking-widest">Kosha Finance</p>
           <p className="text-[11px] text-ink-4">Version {APP_VERSION}</p>

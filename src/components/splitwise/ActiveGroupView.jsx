@@ -342,11 +342,11 @@ const ActiveGroupView = memo(function ActiveGroupView({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => { if (window.confirm('Delete this expense for everyone in the group?')) void handleDeleteExpense(t.id) }}
+                                  onClick={() => { if (window.confirm('Delete this expense from the group? It is also removed from your own transactions. Other members keep their entry, with a note that you deleted it.')) void handleDeleteExpense(t.id) }}
                                   className="text-[10px] font-semibold text-danger/80 hover:text-danger"
                                   disabled={!!saving}
                                 >
-                                  Delete for everyone
+                                  Delete
                                 </button>
                               </div>
                             )}
@@ -384,11 +384,11 @@ const ActiveGroupView = memo(function ActiveGroupView({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => { if (window.confirm('Delete this settlement for everyone in the group?')) void handleDeleteSettlement(t.id) }}
+                                  onClick={() => { if (window.confirm('Delete this settlement from the group? It is also removed from your own transactions. The other person keeps their entry, with a note that you deleted it.')) void handleDeleteSettlement(t.id) }}
                                   className="text-[10px] font-semibold text-danger/80 hover:text-danger"
                                   disabled={!!saving}
                                 >
-                                  Delete for everyone
+                                  Delete
                                 </button>
                               </div>
                             )}

@@ -27,7 +27,8 @@ export function useBudgets({ enabled = true } = {}) {
         if (queryError) throw queryError
         return rows || []
       }),
-    placeholderData: (previousData) => previousData,
+    // No placeholder: the key is only the wallet, so the previous data would
+    // always be another wallet's budgets.
   })
 
   return {

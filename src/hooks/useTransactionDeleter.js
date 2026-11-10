@@ -20,7 +20,7 @@ function shouldCommitDeleteImmediately() {
 }
 
 export function useTransactionDeleter(activeWalletUserId, data) {
-  const { pushToast } = useAppToast()
+  const { pushToast, dismissToast } = useAppToast()
   const { mutateAsync: removeNow } = useAppMutation(removeTransactionMutation, { context: 'transactions:delete' })
   const { mutateAsync: commitDelete } = useAppMutation(removeTransactionMutation, { context: 'transactions:deleteCommit' })
 
@@ -46,14 +46,14 @@ export function useTransactionDeleter(activeWalletUserId, data) {
     }
 
     optimisticallyDeleteTransactionFromCache(id, activeWalletUserId)
-    schedule(id, { txn: { ...txn }, walletUserId: activeWalletUserId })
-    pushToast('Transaction deleted.', {
+    const toastId = pushToast('Transaction deleted.', {
       action: () => { if (undo(id)) pushToast('Deletion canceled.', { duration: 2200 }) },
       actionLabel: 'Undo',
       duration: DELETE_UNDO_WINDOW_MS,
     })
+    schedule(id, { txn: { ...txn }, walletUserId: activeWalletUserId }, () => dismissToast(toastId))
     return undefined
-  }, [data, activeWalletUserId, removeNow, schedule, undo, pushToast])
+  }, [data, activeWalletUserId, removeNow, schedule, undo, pushToast, dismissToast])
 
   return { handleDelete }
 }

@@ -1,5 +1,14 @@
 import { dayKey as toDateKey } from './dayKey.js'
 
+// Fixed outgoings that land on one day a month. Left out of weekly drift so a
+// rent or EMI week doesn't read as overspending.
+export const FIXED_SPEND_CATEGORIES = new Set(['rent', 'emi', 'bills', 'insurance', 'loans', 'credit_card', 'taxes'])
+
+export function countsTowardWeeklyDrift(row) {
+  if (!row || row.is_repayment) return false
+  return !FIXED_SPEND_CATEGORIES.has(String(row.category || ''))
+}
+
 function addDays(date, days) {
   const next = new Date(date)
   next.setDate(next.getDate() + days)
@@ -37,6 +46,7 @@ export function computeWeeklySpendDrift(dailyExpenseTotals, now, options = {}) {
   const baselineWeeks = Math.max(2, Number(options.baselineWeeks) || 4)
   const currentWeekStart = startOfWeekMonday(today)
   const weeks = []
+  let currentWeekDays = 7
 
   for (let offset = weeksToShow - 1; offset >= 0; offset -= 1) {
     const weekStart = addDays(currentWeekStart, -offset * 7)
@@ -46,6 +56,7 @@ export function computeWeeklySpendDrift(dailyExpenseTotals, now, options = {}) {
       1,
       Math.floor((countedEnd.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000)) + 1
     )
+    if (offset === 0) currentWeekDays = Math.min(7, daysToCount)
 
     let total = 0
     for (let dayIndex = 0; dayIndex < daysToCount; dayIndex += 1) {
@@ -73,13 +84,17 @@ export function computeWeeklySpendDrift(dailyExpenseTotals, now, options = {}) {
     .filter((value) => value > 0)
 
   const median4w = Math.round(median(baselineWindow))
+  // Compare the days so far with the same share of a normal week, so a
+  // Monday isn't measured against seven days of spending.
+  const expectedSoFar = Math.round((median4w * currentWeekDays) / 7)
+  const expectedLastWeekSoFar = Math.round((previousWeek.total * currentWeekDays) / 7)
 
-  const driftPct = median4w > 0
-    ? Math.round(((currentWeek.total - median4w) / median4w) * 100)
+  const driftPct = expectedSoFar > 0
+    ? Math.round(((currentWeek.total - expectedSoFar) / expectedSoFar) * 100)
     : null
 
-  const wowPct = previousWeek.total > 0
-    ? Math.round(((currentWeek.total - previousWeek.total) / previousWeek.total) * 100)
+  const wowPct = expectedLastWeekSoFar > 0
+    ? Math.round(((currentWeek.total - expectedLastWeekSoFar) / expectedLastWeekSoFar) * 100)
     : null
 
   let status = 'healthy'
@@ -92,18 +107,25 @@ export function computeWeeklySpendDrift(dailyExpenseTotals, now, options = {}) {
       ? 'Slightly high'
       : 'Within baseline'
 
+  const soFar = currentWeekDays < 7 ? ' so far' : ''
   const guidance = driftPct == null
     ? 'Build a few active weeks to establish a reliable weekly baseline.'
     : status === 'high'
-      ? `This week is ${driftPct}% above your 4-week median. Freeze optional spend to avoid end-of-month pressure.`
+      ? `This week${soFar} is ${driftPct}% above your usual pace. Hold back on optional spend to avoid end-of-month pressure.`
       : status === 'watch'
-        ? `This week is ${driftPct}% above baseline. Keep the next few days lighter to realign.`
-        : `This week is ${Math.abs(driftPct)}% below baseline. Current weekly rhythm is controlled.`
+        ? `This week${soFar} is ${driftPct}% above your usual pace. Keep the next few days lighter to realign.`
+        : driftPct > 0
+          ? `This week${soFar} is ${driftPct}% above your usual pace, which is within your normal range.`
+          : driftPct === 0
+            ? `This week${soFar} is right on your usual pace.`
+            : `This week${soFar} is ${Math.abs(driftPct)}% below your usual pace.`
 
   return {
     hasData: true,
     currentWeekTotal: currentWeek.total,
+    currentWeekDays,
     median4w,
+    expectedSoFar,
     driftPct,
     wowPct,
     status,
@@ -111,7 +133,7 @@ export function computeWeeklySpendDrift(dailyExpenseTotals, now, options = {}) {
     guidance,
     weeks: weeks.map((row) => ({
       ...row,
-      baseline: median4w,
+      baseline: row.isCurrent ? expectedSoFar : median4w,
     })),
   }
 }

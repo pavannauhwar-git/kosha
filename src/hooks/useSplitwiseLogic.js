@@ -46,7 +46,7 @@ import { useUserCategories } from './useUserCategories'
 import { todayStr } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { shareLink } from '../lib/share'
-import { readLocalStorage, writeLocalStorage } from '../lib/safeStorage'
+import { readLocalStorage, writeLocalStorage, removeLocalStorage } from '../lib/safeStorage'
 import { round2 } from '../lib/paise'
 import useWindowedList from './useWindowedList'
 
@@ -70,22 +70,6 @@ const SPLIT_METHOD_OPTIONS = [
   { key: 'percent', label: 'Percent' },
   { key: 'shares', label: 'Shares' },
 ]
-
-function extractErrorMessage(error) {
-  return String(error?.message || '').toLowerCase()
-}
-
-function isSplitwiseSchemaMissing(error) {
-  const message = extractErrorMessage(error)
-  return (
-    message.includes('split_groups') ||
-    message.includes('split_group_members') ||
-    message.includes('split_expenses') ||
-    message.includes('split_expense_splits') ||
-    message.includes('split_settlements') ||
-    message.includes('does not exist')
-  )
-}
 
 function memberName(member, profilesByUserId = null) {
   const direct = String(member?.display_name || '').trim()
@@ -120,13 +104,23 @@ export function defaultSplitInput() {
   }
 }
 
+// `kosha:` prefix so sign-out's purgeUserScopedKeys() clears it.
 function bannerStorageKey(groupId) {
-  return `kosha-trip-banner-${groupId}`
+  return `kosha:trip-banner:${groupId}`
 }
+
+const legacyBannerStorageKey = (groupId) => `kosha-trip-banner-${groupId}`
 
 export function readBannerFromStorage(groupId) {
   if (!groupId || typeof window === 'undefined') return null
-  return readLocalStorage(bannerStorageKey(groupId), null)
+  const current = readLocalStorage(bannerStorageKey(groupId), null)
+  if (current) return current
+  const legacy = readLocalStorage(legacyBannerStorageKey(groupId), null)
+  if (legacy) {
+    writeLocalStorage(bannerStorageKey(groupId), legacy)
+    removeLocalStorage(legacyBannerStorageKey(groupId))
+  }
+  return legacy
 }
 
 function writeBannerToStorage(groupId, bannerId) {
@@ -181,6 +175,8 @@ export function useSplitwiseLogic() {
     loading,
     groupsLoading,
     error,
+    loadError: splitwiseLoadError,
+    refetch: retryLoad,
   } = useSplitwise({ groupId: activeGroupId, enabled: true })
 
   useUserCategories()
@@ -215,7 +211,7 @@ export function useSplitwiseLogic() {
   const [showAddMember, setShowAddMember] = useState(false)
   const [newMemberName, setNewMemberName] = useState('')
 
-  const { pushToast } = useAppToast()
+  const { pushToast, dismissToast } = useAppToast()
   const [saving, setSaving] = useState('')
   const [consumingInvite, setConsumingInvite] = useState(false)
   const [invitePreview, setInvitePreview] = useState(null)
@@ -475,7 +471,7 @@ export function useSplitwiseLogic() {
     return { adminActive, adminArchived, memberActive, memberArchived }
   }, [groups, authUserId])
 
-  const schemaMissing = isSplitwiseSchemaMissing(error)
+  const loadError = splitwiseLoadError || null
   const activeGroup = useMemo(
     () => groups.find((group) => group.id === activeGroupId) || null,
     [groups, activeGroupId]
@@ -656,17 +652,16 @@ export function useSplitwiseLogic() {
 
       const result = await shareLink({
         title: 'Join Trip on Kosha',
+        text: 'This invite link works for one person. Ask me for another if someone else needs to join.',
         url: url,
       })
 
       if (result.success) {
-        if (result.method === 'share') {
-          // Already shared via native sheet
-        } else {
-          pushToast('Invite link copied.')
-        }
+        pushToast(result.method === 'share'
+          ? 'One-time link shared. Tap Invite again for each person.'
+          : 'One-time link copied. Tap Invite again for each person.')
       } else if (!result.aborted) {
-        pushToast(url)
+        pushToast(`One-time link (one person only): ${url}`)
       }
     } catch (inviteError) {
       pushToast(toToastMessage(inviteError, 'Could not create group invite.'))
@@ -715,14 +710,16 @@ export function useSplitwiseLogic() {
   async function handleDeleteGroup() {
     if (!activeGroupId || !isGroupAdmin || saving) return
 
+    const groupId = activeGroupId
     setSaving('group-delete')
+    const restoreGroup = optimisticallyDeleteSplitGroup(groupId, activeWalletUserId)
     try {
-      optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
-      await deleteGroupAsync(activeGroupId)
-      pushToast('Group deleted.')
+      await deleteGroupAsync(groupId)
+      pushToast('Trip deleted.')
       setActiveGroupId('')
       closeSheets()
     } catch (deleteError) {
+      restoreGroup()
       pushToast(toToastMessage(deleteError, 'Could not delete group.'))
     } finally {
       setSaving('')
@@ -774,7 +771,7 @@ export function useSplitwiseLogic() {
   }
 
   async function handleLeaveGroup() {
-    if (!activeGroupId || saving) return
+    if (!activeGroupId || saving || isViewingPartner) return
 
     if (activeMembers.length <= 1) {
       if (window.confirm('You are the last member in this group. Would you like to delete the group entirely?')) {
@@ -783,14 +780,24 @@ export function useSplitwiseLogic() {
       return
     }
 
+    const otherAdmins = groupAccessRows.filter((row) => row.role === 'admin' && row.user_id !== authUserId)
+    if (isGroupAdmin && otherAdmins.length === 0) {
+      pushToast('You’re the only admin. Tap “Make Admin” next to another member first, or delete the trip.', { duration: 6000 })
+      return
+    }
+
+    if (!window.confirm(`Leave “${activeGroup?.name || 'this trip'}”? Your own entries stay in your transactions, but you won’t see this trip any more.`)) return
+
+    const groupId = activeGroupId
     setSaving('group-leave')
+    const restoreGroup = optimisticallyDeleteSplitGroup(groupId, activeWalletUserId)
     try {
-      optimisticallyDeleteSplitGroup(activeGroupId, activeWalletUserId)
-      await leaveGroupAsync(activeGroupId)
+      await leaveGroupAsync(groupId)
       pushToast('Left group.')
       setActiveGroupId('')
       closeSheets()
     } catch (err) {
+      restoreGroup()
       pushToast(toToastMessage(err, 'Could not leave group.'))
     } finally {
       setSaving('')
@@ -1122,15 +1129,14 @@ export function useSplitwiseLogic() {
 
     const gid = activeGroupId
     optimisticallyDeleteSplitExpense(gid, expenseId)
-    expenseUndo.schedule(expenseId, { groupId: gid, expense })
 
     const splitCount = expense.split_expense_splits?.length ?? 0
-    const memberLabel = splitCount > 1 ? `${splitCount} members` : 'the group'
-    pushToast(`Expense deleted for ${memberLabel}.`, {
+    const toastId = pushToast(splitCount > 1 ? 'Expense deleted. Other members keep their own entries.' : 'Expense deleted.', {
       action: () => { expenseUndo.undo(expenseId) },
       actionLabel: 'Undo',
       duration: 7500,
     })
+    expenseUndo.schedule(expenseId, { groupId: gid, expense }, () => dismissToast(toastId))
   }
 
   async function handleDeleteSettlement(settlementId) {
@@ -1145,13 +1151,13 @@ export function useSplitwiseLogic() {
 
     const gid = activeGroupId
     optimisticallyDeleteSplitSettlement(gid, settlementId)
-    settlementUndo.schedule(settlementId, { groupId: gid, settlement })
 
-    pushToast('Settlement deleted.', {
+    const toastId = pushToast('Settlement deleted.', {
       action: () => { settlementUndo.undo(settlementId) },
       actionLabel: 'Undo',
       duration: 7500,
     })
+    settlementUndo.schedule(settlementId, { groupId: gid, settlement }, () => dismissToast(toastId))
   }
 
 
@@ -1215,7 +1221,7 @@ export function useSplitwiseLogic() {
 
   return {
     activeGroupId, setActiveGroupId, groups, members, expenses, settlements, balances, suggestedTransfers, loading, groupsLoading, error,
-    schemaMissing, activeGroup, activeMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
+    loadError, retryLoad, activeGroup, activeMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
     showCreateGroup, setShowCreateGroup, showAddExpense, setShowAddExpense, showSettlement, setShowSettlement, showAddMember, setShowAddMember,
     newMemberName, setNewMemberName, saving, consumingInvite, invitePreview, editExpense, setEditExpense, editSettlement, setEditSettlement,
     showBannerPicker, setShowBannerPicker, savedBannerId, setSavedBannerId, showEditGroup, setShowEditGroup, editGroupForm, setEditGroupForm,

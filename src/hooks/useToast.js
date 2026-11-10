@@ -6,14 +6,18 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * delete their local copies WITHOUT changing a single call site.
  *  - pushToast(message, { action, actionLabel = 'Undo', duration = 3600 })
  *  - duration <= 0 keeps the toast until dismissed (Transactions relies on this).
+ *  - pushToast returns an id; dismissToast(id) closes the toast only if it is
+ *    still the one on screen. dismissToast() with no id closes whatever is shown.
  */
 export default function useToast() {
   const [toast, setToast] = useState(null)
   const [toastAction, setToastAction] = useState(null)
   const [toastActionLabel, setToastActionLabel] = useState(null)
   const toastTimeoutRef = useRef(null)
+  const toastIdRef = useRef(0)
 
-  const dismissToast = useCallback(() => {
+  const dismissToast = useCallback((id) => {
+    if (typeof id === 'number' && id !== toastIdRef.current) return
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current)
       toastTimeoutRef.current = null
@@ -45,6 +49,8 @@ export default function useToast() {
         toastTimeoutRef.current = null
       }, duration)
     }
+    toastIdRef.current += 1
+    return toastIdRef.current
   }, [])
 
   useEffect(() => () => { if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current) }, [])

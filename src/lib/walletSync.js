@@ -8,34 +8,28 @@ import { supabase } from './supabase.js'
 export async function fetchLinkedUserIds(userId) {
   if (!userId) return []
 
-  // 1. Fetch invites created by me that were joined by someone else
-  const { data: createdByMe, error: err1 } = await supabase
+  const { data, error } = await supabase
     .from('invites')
-    .select('used_by')
-    .eq('created_by', userId)
+    .select('created_by, used_by')
+    .or(`created_by.eq.${userId},used_by.eq.${userId}`)
     .not('used_by', 'is', null)
 
-  // 2. Fetch invites I joined that were created by someone else
-  const { data: joinedByMe, error: err2 } = await supabase
-    .from('invites')
-    .select('created_by')
-    .eq('used_by', userId)
-
-  if (err1) throw err1
-  if (err2) throw err2
+  if (error) throw error
 
   const ids = new Set()
-  createdByMe?.forEach(row => ids.add(row.used_by))
-  joinedByMe?.forEach(row => ids.add(row.created_by))
-
+  for (const row of data || []) {
+    const other = row.created_by === userId ? row.used_by : row.created_by
+    if (other && other !== userId) ids.add(other)
+  }
   return Array.from(ids)
 }
 
 /**
- * Fetches profile information for all linked users.
+ * Fetches profile information for all linked users. Pass `linkedIds` when
+ * they are already known to skip a second invites lookup.
  */
-export async function fetchLinkedProfiles(userId) {
-  const linkedIds = await fetchLinkedUserIds(userId)
+export async function fetchLinkedProfiles(userId, linkedIds) {
+  if (!linkedIds) linkedIds = await fetchLinkedUserIds(userId)
   if (linkedIds.length === 0) return []
 
   const { data, error } = await supabase
