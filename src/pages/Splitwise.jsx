@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import GroupList from '../components/splitwise/GroupList'
 import ActiveGroupView from '../components/splitwise/ActiveGroupView'
-import { round2 } from '../hooks/useSplitwise'
+import { round2, fetchSplitGroupOthersEntryCount } from '../hooks/useSplitwise'
+import LoadErrorCard from '../components/common/LoadErrorCard'
 import { useSplitwiseLogic, readBannerFromStorage, defaultSplitInput } from '../hooks/useSplitwiseLogic'
 import { fmtDate, fmt } from '../lib/utils'
 
@@ -20,7 +21,7 @@ import PartnerViewBanner from '../components/common/PartnerViewBanner'
 export default function Splitwise() {
   const {
     activeGroupId, setActiveGroupId, groups, members, expenses, settlements, groupsLoading,
-    schemaMissing, activeGroup, activeMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
+    loadError, retryLoad, activeGroup, activeMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
     showCreateGroup, setShowCreateGroup, showAddExpense, showSettlement, showAddMember, setShowAddMember,
     newMemberName, setNewMemberName, saving, consumingInvite, invitePreview, editExpense, setEditExpense, editSettlement, setEditSettlement,
     showBannerPicker, setShowBannerPicker, savedBannerId, showEditGroup, setShowEditGroup, editGroupForm, setEditGroupForm,
@@ -36,13 +37,23 @@ export default function Splitwise() {
   } = useSplitwiseLogic()
 
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [othersEntryCount, setOthersEntryCount] = useState(null)
   useEffect(() => {
     setDeleteConfirmText('')
-  }, [showEditGroup])
+    setOthersEntryCount(null)
+    if (!showEditGroup || !activeGroupId) return undefined
+    let cancelled = false
+    fetchSplitGroupOthersEntryCount(activeGroupId)
+      .then((count) => { if (!cancelled) setOthersEntryCount(count) })
+      .catch(() => { })
+    return () => { cancelled = true }
+  }, [showEditGroup, activeGroupId])
+
+  const showLoadError = !!loadError
 
   return (
     <PageHeaderPage title="Splitwise">
-      {!schemaMissing && (
+      {!(showLoadError && !activeGroup) && (
         <div className="mb-3">
           {activeGroup ? (
             <div className="space-y-2">
@@ -85,7 +96,7 @@ export default function Splitwise() {
                     </Button>
                   )}
 
-                  {!!activeGroupId && !activeGroup?.is_archived && (
+                  {!!activeGroupId && !activeGroup?.is_archived && !isViewingPartner && (
                     <Button
                       variant="danger"
                       size="sm"
@@ -140,13 +151,8 @@ export default function Splitwise() {
         </p>
       )}
 
-      {schemaMissing ? (
-        <div className="card p-4">
-          <p className="text-sm font-semibold text-ink">Splitwise schema is not enabled yet.</p>
-          <p className="mt-1 text-[12px] text-ink-3">
-            Run the latest SQL migration in Supabase to create splitwise tables and RPC functions.
-          </p>
-        </div>
+      {showLoadError ? (
+        <LoadErrorCard title={activeGroup ? 'Couldn’t load this trip' : 'Couldn’t load your trips'} onRetry={retryLoad} />
       ) : groupsLoading ? (
         <SkeletonLayout
           className="space-y-3"
@@ -676,7 +682,14 @@ export default function Splitwise() {
                   </button>
 
                   <p className="text-[12px] text-ink-3">
-                    This permanently deletes every expense and settlement in this trip, and the matching entries in every member&apos;s personal transactions. It can&apos;t be undone. To keep the history, use Archive Trip instead.
+                    This permanently deletes the trip with every expense and settlement, and removes the matching entries from your own transactions. It can&apos;t be undone. To keep the history, use Archive Trip instead.
+                  </p>
+                  <p className="text-[12px] text-ink-3">
+                    {othersEntryCount === null
+                      ? 'Other members keep their own entries, with a note that you deleted the trip.'
+                      : othersEntryCount === 0
+                        ? 'No other member has entries from this trip in their transactions.'
+                        : `Other members keep ${othersEntryCount} ${othersEntryCount === 1 ? 'entry' : 'entries'} in their own transactions, with a note that you deleted the trip.`}
                   </p>
                   <Input
                     label="Type the trip name to confirm"

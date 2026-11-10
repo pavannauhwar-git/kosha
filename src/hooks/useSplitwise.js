@@ -190,13 +190,18 @@ export function optimisticallyInsertSplitGroup(group, userId) {
   })
 }
 
+// Returns a function that puts the group back if the server call fails.
 export function optimisticallyDeleteSplitGroup(groupId, userId) {
-  if (!userId) return
+  if (!userId) return () => { }
   const key = splitGroupsKey(userId)
+  const previous = queryClient.getQueryData(key)
   queryClient.setQueryData(key, (old) => {
     if (!old) return []
     return old.filter(g => g.id !== groupId)
   })
+  return () => {
+    if (previous !== undefined) queryClient.setQueryData(key, previous)
+  }
 }
 
 export function optimisticallyDeleteSplitExpense(groupId, expenseId) {
@@ -245,6 +250,8 @@ export function optimisticallyInsertSplitSettlement(groupId, settlement) {
 export function useSplitwise({ groupId, enabled = true } = {}) {
   const userId = useActiveWallet()
 
+  // No previous-data placeholders: every key is per wallet or per trip, so a
+  // placeholder would show another wallet's or trip's balances under this one.
   const [groupsQuery, accessQuery, groupAccessQuery, membersQuery, expensesQuery, settlementsQuery] = useQueries({
     queries: [
       {
@@ -252,42 +259,36 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
         queryFn: fetchGroups,
         enabled: enabled && !!userId,
         refetchOnMount: true,
-        placeholderData: (prev) => prev,
       },
       {
         queryKey: splitGroupAccessKey(userId),
         queryFn: fetchGroupAccess,
         enabled: enabled && !!userId,
         refetchOnMount: true,
-        placeholderData: (prev) => prev,
       },
       {
         queryKey: splitGroupMembersAccessKey(groupId),
         queryFn: () => fetchGroupMemberAccess(groupId),
         enabled: enabled && !!groupId,
         refetchOnMount: true,
-        placeholderData: (prev) => prev,
       },
       {
         queryKey: splitMembersKey(groupId),
         queryFn: () => fetchMembers(groupId),
         enabled: enabled && !!groupId,
         refetchOnMount: true,
-        placeholderData: (prev) => prev,
       },
       {
         queryKey: splitExpensesKey(groupId),
         queryFn: () => fetchExpenses(groupId),
         enabled: enabled && !!groupId,
         refetchOnMount: true,
-        placeholderData: (prev) => prev,
       },
       {
         queryKey: splitSettlementsKey(groupId),
         queryFn: () => fetchSettlements(groupId),
         enabled: enabled && !!groupId,
         refetchOnMount: true,
-        placeholderData: (prev) => prev,
       },
     ],
   })
@@ -352,7 +353,19 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
     expensesLoading: expensesQuery.isLoading,
     settlementsLoading: settlementsQuery.isLoading,
     error: groupsQuery.error || accessQuery.error || groupAccessQuery.error || membersQuery.error || expensesQuery.error || settlementsQuery.error || null,
+    // Set only when a query failed and has nothing to show.
+    loadError: [groupsQuery, accessQuery, groupAccessQuery, membersQuery, expensesQuery, settlementsQuery]
+      .find((query) => query.error && query.data === undefined)?.error || null,
+    refetch: () => queryClient.refetchQueries({ queryKey: ['splitwise'], type: 'active' }),
   }
+}
+
+// Ledger entries other members keep (unlinked) if the caller deletes this trip.
+export async function fetchSplitGroupOthersEntryCount(groupId) {
+  if (!groupId) return 0
+  const { data, error } = await supabase.rpc('split_group_others_entry_count', { p_group_id: groupId })
+  if (error) throw error
+  return Number(data) || 0
 }
 
 export async function createSplitGroupMutation({ name, selfDisplayName = 'You', id }) {
@@ -465,14 +478,14 @@ export async function deleteSplitGroupMutation(groupId) {
   const userId = getAuthUserId()
   if (!groupId) throw new Error('Group is required.')
 
-  optimisticallyDeleteSplitGroup(groupId, userId)
-
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('split_groups')
     .delete()
     .eq('id', groupId)
+    .select('id')
 
   if (error) throw error
+  if (!data?.length) throw new Error('Only a trip admin can delete this trip.')
 
   runInBackground(
     logFinancialEvent({
@@ -796,16 +809,8 @@ export async function deleteSplitExpenseMutation(expenseId) {
   }
   if (!expenseId) throw new Error('Expense is required.')
 
-  // Migration 004: a single SECURITY DEFINER RPC deletes the expense AND
-  // its linked transaction (if any) in one Postgres transaction. The
-  // previous two-step client delete could leave an orphan transaction if
-  // the second statement failed — split_expenses.linked_transaction_id
-  // has ON DELETE SET NULL, which is the WRONG direction for clean-up.
-
-  // NOTE: We don't have groupId in scope to call optimisticallyDeleteSplitExpense 
-  // directly without fetching it from cache or passing it in.
-  // We'll let the user pass it in as a second argument, or we can look it up.
-  // Wait! If we look it up in cache:
+  // The RPC deletes the expense and the caller's own ledger entry in one
+  // transaction. Other members keep theirs, unlinked, with a note.
   const queries = queryClient.getQueriesData({ queryKey: ['splitwise', 'expenses'] })
   for (const [key, expenses] of queries) {
     if (Array.isArray(expenses) && expenses.some(e => e.id === expenseId)) {
@@ -904,10 +909,8 @@ export async function deleteSplitSettlementMutation(settlementId) {
   }
   if (!settlementId) throw new Error('Settlement is required.')
 
-  // Migration 004: atomic delete of the settlement AND both linked
-  // transactions (payer + payee) in one server-side transaction.
-  // Replaces a three-step client flow that could leak an orphan
-  // transaction on either side if the second/third step failed.
+  // The RPC deletes the settlement and the caller's own ledger entries in one
+  // transaction. The other side keeps theirs, unlinked, with a note.
   const { data, error } = await supabase.rpc('delete_split_settlement_atomic', { p_id: settlementId })
   if (error) throw error
 
