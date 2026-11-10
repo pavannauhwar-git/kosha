@@ -20,6 +20,7 @@ import { useUndoableDelete } from '../../hooks/useUndoableDelete'
 import PageHeaderPage from '../layout/PageHeaderPage'
 import SkeletonLayout from '../common/SkeletonLayout'
 import EmptyState from '../common/EmptyState'
+import LoadErrorCard from '../common/LoadErrorCard'
 
 import BillPaymentInsights from '../cards/bills/BillPaymentInsights'
 import Button from '../ui/Button'
@@ -29,6 +30,7 @@ import Sheet from '../ui/Sheet'
 import { useAppToast } from '../../context/ToastContext'
 import { toToastMessage } from '../../lib/errorTaxonomy'
 import Input from '../ui/Input'
+import { paidOnError } from '../../lib/paidOn'
 import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
@@ -95,13 +97,16 @@ export default function Bills({
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [tab, setTab] = useState(() => resolveBillsTabQuery(searchParams, tabParam).value)
-  const { pending, paid, loading, pendingLoading, paidLoading } = useLiabilities({ includePaid: true })
+  const { pending, paid, loading, pendingLoading, paidLoading, loadError: billsLoadError, refetch: refetchBills } = useLiabilities({ includePaid: true })
   const [showAddInternal, setShowAddInternal] = useState(false)
   const showAdd = showAddExternal !== undefined ? showAddExternal : showAddInternal
   const setShowAdd = onShowAddChange || setShowAddInternal
 
   const [editBill, setEditBill] = useState(null)
   const [payingId, setPayingId] = useState(null)
+  const [payBill, setPayBill] = useState(null)
+  const [payDate, setPayDate] = useState(() => todayStr())
+  const [payErr, setPayErr] = useState('')
   const [deletingId] = useState(null)
   const [highlightedBillId, setHighlightedBillId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
@@ -109,7 +114,7 @@ export default function Bills({
 
   const [form, setForm] = useState(() => createInitialBillForm())
   const [formErr, setFormErr] = useState('')
-  const { pushToast } = useAppToast()
+  const { pushToast, dismissToast } = useAppToast()
   const [overflowBillId, setOverflowBillId] = useState(null)
   const overflowBillRef = useRef(null)
   const focusRanForRef = useRef(null)
@@ -169,13 +174,12 @@ export default function Bills({
     const m = await import('../../hooks/useTransactions')
     const txnIds = m.optimisticallyDeleteTransactionsByBillId(id, activeWalletUserId) || new Set()
     
-    schedule(id, { bill: { ...bill }, walletUserId: activeWalletUserId, txnIds })
-
-    pushToast('Bill deleted.', {
+    const toastId = pushToast('Bill deleted.', {
       action: () => { if (undo(id)) pushToast('Deletion canceled.', { duration: 2200 }) },
       actionLabel: 'Undo',
       duration: 4200,
     })
+    schedule(id, { bill: { ...bill }, walletUserId: activeWalletUserId, txnIds }, () => dismissToast(toastId))
 
     return true
   }
@@ -514,17 +518,31 @@ export default function Bills({
       pushToast(toToastMessage(e, 'Could not add bill. Check your connection.'))
     }
   }
-  async function handleMarkPaid(bill) {
+  function openPayBill(bill) {
+    setPayBill(bill)
+    setPayDate(todayStr())
+    setPayErr('')
+  }
+
+  function dismissPayBill() {
+    if (payingId) return
+    setPayBill(null)
+  }
+
+  async function handleMarkPaid() {
+    const bill = payBill
     if (!bill?.id || payingId || actionGuard.current) return
+    const dateErr = paidOnError(payDate)
+    if (dateErr) { setPayErr(dateErr); return }
     actionGuard.current = true
     setPayingId(bill.id)
     try {
-      await markLiabilityPaid.mutateAsync(bill)
-      setPayingId(null)
+      await markLiabilityPaid.mutateAsync({ liability: bill, paidOn: payDate })
+      setPayBill(null)
     } catch (e) {
-      setPayingId(null)
       pushToast(toToastMessage(e, 'Could not mark bill as paid. Check your connection.'))
     } finally {
+      setPayingId(null)
       actionGuard.current = false
     }
   }
@@ -731,6 +749,8 @@ export default function Bills({
               { type: 'block', height: 'h-[92px]' },
             ]}
           />
+        ) : billsLoadError ? (
+          <LoadErrorCard title="Couldn’t load your bills" onRetry={refetchBills} />
         ) : (
           <div className="space-y-3">
 
@@ -877,7 +897,7 @@ export default function Bills({
                                   Edit
                                 </Button>
                                 <Button
-                                  onClick={() => handleMarkPaid(bill)}
+                                  onClick={() => openPayBill(bill)}
                                   disabled={!!payingId || !!deletingId || !!bill.__optimistic}
                                   variant="success"
                                   size="sm"
@@ -1052,6 +1072,61 @@ export default function Bills({
                     loading={isSaving}
                   >
                     {isSaving ? (editBill ? 'Saving…' : 'Adding…') : (editBill ? 'Save Changes' : 'Add Bill')}
+                  </Button>
+                </div>
+      </Sheet>
+
+      {/* ── Mark Paid Sheet ───────────────────────────────────────────── */}
+      <Sheet
+        open={!!payBill}
+        onClose={dismissPayBill}
+        title="Mark bill as paid"
+        contentClassName="px-5 pt-2 overflow-x-hidden"
+      >
+                <div className="mini-panel p-3 mb-4">
+                  <p className="text-[13px] font-semibold text-ink">{payBill?.description}</p>
+                  <div className="flex flex-wrap items-center gap-3 text-[12px] text-ink-3 mt-1">
+                    <span className="font-semibold text-ink tabular-nums">{fmt(+(payBill?.amount || 0))}</span>
+                    <span>{PAYMENT_MODES.find(m => m.id === payBill?.payment_mode)?.label || 'Other'}</span>
+                    {payBill?.due_date && <span>Due {fmtDate(payBill.due_date)}</span>}
+                  </div>
+                </div>
+
+                <div className="list-card mb-3">
+                  <div className="list-row w-full">
+                    <div className="w-8 h-8 rounded-chip bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
+                      <CalendarDots size={14} className="text-brand" />
+                    </div>
+                    <span className="flex-1 text-[15px] text-ink">Paid on</span>
+                    <PixelDatePicker
+                      name="bill-paid-on"
+                      value={payDate}
+                      onChange={(nextDate) => { setPayDate(nextDate); setPayErr('') }}
+                      sheetTitle="When did you pay?"
+                      disabled={!!payingId}
+                    />
+                  </div>
+                </div>
+
+                <p className="text-[12px] text-ink-3 mb-3 leading-relaxed">
+                  This adds a {fmt(+(payBill?.amount || 0))} expense to your transactions on the date above. To change the amount or payment mode, edit the bill first.
+                </p>
+
+                {payErr && (
+                  <p className="text-expense-text text-sm mb-3" role="alert" aria-live="polite">
+                    {payErr}
+                  </p>
+                )}
+
+                <div className="sticky bottom-0 pt-2 pb-2 bg-gradient-to-t from-kosha-surface via-kosha-surface to-transparent">
+                  <Button
+                    variant="primary"
+                    size="xl"
+                    fullWidth
+                    onClick={handleMarkPaid}
+                    loading={!!payingId}
+                  >
+                    {payingId ? 'Saving…' : 'Mark as paid'}
                   </Button>
                 </div>
       </Sheet>

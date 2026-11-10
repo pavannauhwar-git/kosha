@@ -83,6 +83,11 @@ export function useLiabilities({ includePaid = true, enabled = true } = {}) {
     pendingLoading: pendingQuery.isLoading,
     paidLoading: includePaid ? paidQuery.isLoading : false,
     error: pendingQuery.error || (includePaid && paidQuery.error) || null,
+    // Set only when a list failed and there is nothing cached to show.
+    loadError: (pendingQuery.data === undefined && pendingQuery.error)
+      || (includePaid && paidQuery.data === undefined && paidQuery.error)
+      || null,
+    refetch: () => Promise.all([pendingQuery.refetch(), includePaid ? paidQuery.refetch() : null]),
   }
 }
 
@@ -446,7 +451,9 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
   })
 }
 
-export async function markLiabilityPaidMutation(liability, __testOverrides = null) {
+// Accepts the bill itself, or `{ liability, paidOn }` to date the payment.
+export async function markLiabilityPaidMutation(input, __testOverrides = null) {
+  const { liability, paidOn = null } = input?.liability ? input : { liability: input }
   return withOptimisticGuard(['liabilities'], async (tempId) => {
     const authUserId = getAuthUserId()
     const targetUserId = getActiveWalletUserId()
@@ -465,14 +472,14 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
       const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
       const invalidateTransactionFn = __testOverrides?.invalidateTransactionCache || invalidateTransactionCache
 
-      const result = await markPaidFn(liability)
+      const result = await markPaidFn(liability, { paidOn })
       serverCommitted = true
       suppress('liabilities')
       suppress('transactions')
       await queryClient.cancelQueries({ queryKey: ['transactions'] })
       await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
-      optimisticallyMarkLiabilityPaid(liability, targetUserId, { optimistic: false })
+      optimisticallyMarkLiabilityPaid(paidOn ? { ...liability, paid_at: paidOn } : liability, targetUserId, { optimistic: false })
 
       const rpcRow = Array.isArray(result) ? result[0] : result
       const txnId = rpcRow?.transaction_id || tempId
@@ -481,7 +488,7 @@ export async function markLiabilityPaidMutation(liability, __testOverrides = nul
 
       optimisticallyUpsertTransactionInCache({
         id: txnId,
-        date: todayStr(),
+        date: paidOn || todayStr(),
         created_at: new Date().toISOString(),
         type: 'expense',
         amount: Number(liability.amount || 0),

@@ -96,6 +96,10 @@ export function useLoans({ enabled = true } = {}) {
     loading: givenQuery.isLoading || takenQuery.isLoading,
     settledLoading: settledQuery.isLoading,
     error: givenQuery.error || takenQuery.error || settledQuery.error || null,
+    // Set only when a list failed and there is nothing cached to show.
+    loadError: [givenQuery, takenQuery, settledQuery]
+      .find((q) => q.data === undefined && q.error)?.error || null,
+    refetch: () => Promise.all([givenQuery.refetch(), takenQuery.refetch(), settledQuery.refetch()]),
   }
 }
 
@@ -166,7 +170,7 @@ async function addLoan(payload) {
   return data
 }
 
-async function recordPayment(loanId, amount, id) {
+async function recordPayment(loanId, amount, id, paidOn = null) {
   const userId = getActiveWalletUserId()
   if (!id) console.warn('[Kosha] recordPayment called without an idempotency id')
   const rpcId = id ?? crypto.randomUUID()
@@ -175,7 +179,7 @@ async function recordPayment(loanId, amount, id) {
     p_loan_id: loanId,
     p_user_id: userId,
     p_amount: amount,
-    p_paid_on: todayStr(),
+    p_paid_on: paidOn || todayStr(),
   })
 
   if (error) throw error
@@ -455,7 +459,7 @@ export async function addLoanMutation(payload) {
   }
 }
 
-export async function recordLoanPaymentMutation({ loan, paymentAmount, id }) {
+export async function recordLoanPaymentMutation({ loan, paymentAmount, id, paidOn = null }) {
   const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
 
@@ -477,7 +481,7 @@ export async function recordLoanPaymentMutation({ loan, paymentAmount, id }) {
   }
 
   try {
-    const result = await recordPayment(loan.id, paymentAmount, id)
+    const result = await recordPayment(loan.id, paymentAmount, id, paidOn)
     suppress('loans')
     suppress('transactions')
     await queryClient.cancelQueries({ queryKey: ['loans'] })
@@ -516,7 +520,7 @@ export async function recordLoanPaymentMutation({ loan, paymentAmount, id }) {
     const txnId = rpcRow?.transaction_id || `optimistic-txn-loan-${Date.now()}`
     optimisticallyUpsertTransactionInCache({
       id: txnId,
-      date: todayStr(),
+      date: paidOn || todayStr(),
       created_at: new Date().toISOString(),
       type: loan.direction === 'given' ? 'income' : 'expense',
       linked_loan_id: loan.id,
