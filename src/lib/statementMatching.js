@@ -5,12 +5,16 @@ const NOISE_TOKENS = new Set([
   'upi', 'imps', 'neft', 'rtgs', 'txn', 'ref', 'utr', 'vpa', 'bank',
   'debit', 'credit', 'dr', 'cr', 'purchase', 'payment', 'card', 'pos',
   'merchant', 'to', 'from', 'transfer', 'x', 'xx', 'xxx', 'xxxx',
+  // UPI handle suffixes left over from "name@okicici".
+  'ybl', 'ibl', 'axl', 'apl', 'okicici', 'okaxis', 'oksbi', 'okhdfcbank',
 ])
 
 function cleanMerchantText(value) {
   const normalized = normalizeText(value)
     .replace(/[[\]()]/g, ' ')
-    .replace(/\b(?:upi|imps|neft|rtgs)\/[^\s]+/g, ' ')
+    // UPI and IMPS narrations pack the merchant between separators, e.g.
+    // "UPI/412345678901/SWIGGY/swiggy@icici/Payment".
+    .replace(/[/@\\_-]+/g, ' ')
     .replace(/\b[a-z]*\d{8,}[a-z\d]*\b/g, ' ')
     .replace(/[|,:;]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -50,9 +54,12 @@ function inferDirection(text) {
   return 'unknown'
 }
 
-function parseDate(text) {
+// Returns { date, raw } where raw is the matched text, so callers can remove
+// the date before looking for the description and amount.
+function matchDate(text) {
   if (!text) return null
   const value = String(text).trim()
+  const toIso = (year, month, day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
   const iso = value.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
   if (iso) {
@@ -60,7 +67,7 @@ function parseDate(text) {
     const month = Number(iso[2])
     const day = Number(iso[3])
     if (year > 1990 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      return { date: toIso(year, month, day), raw: iso[0] }
     }
   }
 
@@ -71,7 +78,7 @@ function parseDate(text) {
     const yearRaw = Number(dmy[3])
     const year = yearRaw < 100 ? 2000 + yearRaw : yearRaw
     if (year > 1990 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      return { date: toIso(year, month, day), raw: dmy[0] }
     }
   }
 
@@ -84,7 +91,7 @@ function parseDate(text) {
     const yearRaw = Number(dMmY[3])
     const year = yearRaw < 100 ? 2000 + yearRaw : yearRaw
     if (month && year > 1990 && day >= 1 && day <= 31) {
-      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      return { date: toIso(year, month, day), raw: dMmY[0] }
     }
   }
 
@@ -126,10 +133,107 @@ function parseCsvLine(line) {
     }
   }
   parts.push(current.trim());
-  if (parts.length <= 1 && (line.includes('\t') || line.includes('|'))) {
-    return line.split(/[\t|]/).map(p => p.trim()).filter(Boolean);
-  }
   return parts.filter(Boolean);
+}
+
+// An unquoted "1,23,456.50" in a comma-separated line splits into "1", "23",
+// "456.50". Join such runs back into one amount field.
+const SPLIT_AMOUNT_LEAD = /^(?:₹|rs\.?|inr)?\s*[-−(]?\d{1,3}$/i
+const SPLIT_AMOUNT_MIDDLE = /^\d{2,3}$/
+const SPLIT_AMOUNT_LAST = /^\d{3}(?:\.\d{1,2})?\)?(?:\s*(?:dr|cr)\.?)?$/i
+
+function mergeSplitAmounts(fields) {
+  const out = []
+  for (let i = 0; i < fields.length; i++) {
+    if (SPLIT_AMOUNT_LEAD.test(fields[i])) {
+      let end = -1
+      for (let k = i + 1; k < fields.length; k++) {
+        if (SPLIT_AMOUNT_LAST.test(fields[k])) end = k
+        if (!SPLIT_AMOUNT_MIDDLE.test(fields[k])) break
+      }
+      if (end > i) {
+        out.push(fields.slice(i, end + 1).join(','))
+        i = end
+        continue
+      }
+    }
+    out.push(fields[i])
+  }
+  return out
+}
+
+// A comma that isn't between two digits separates fields; "1,250" doesn't.
+const FIELD_COMMA = /(?<!\d),|,(?!\d)/
+
+// Returns the line's fields, or null when it has no field separator and
+// should be read as space-separated words.
+function splitFields(line) {
+  if (line.includes('\t')) return line.split('\t').map((part) => part.trim())
+  if (line.includes('|')) return line.split('|').map((part) => part.trim())
+  if (line.includes('"') || FIELD_COMMA.test(line)) return mergeSplitAmounts(parseCsvLine(line))
+  return null
+}
+
+const AMOUNT_FIELD = /^\(?\s*[-−+]?\s*(?:₹|rs\.?|inr)?\s*[-−]?\d[\d,]*(?:\.\d{1,2})?\s*\)?\s*(?:(?:dr|cr)\.?)?$/i
+const DRCR_FIELD = /^(?:dr|cr)\.?$/i
+const CURRENCY_FIELD = /^(?:₹|rs\.?|inr)$/i
+
+function parseStatementLine(line) {
+  let fields = splitFields(line)
+  let date = null
+
+  if (fields) {
+    const dateIdx = fields.findIndex((field) => matchDate(field))
+    if (dateIdx >= 0) {
+      const found = matchDate(fields[dateIdx])
+      date = found.date
+      fields[dateIdx] = fields[dateIdx].replace(found.raw, ' ').trim()
+    }
+  } else {
+    const found = matchDate(line)
+    let rest = line
+    if (found) {
+      date = found.date
+      rest = line.replace(found.raw, ' ')
+    }
+    fields = rest.split(/\s+/).map((word) => word.replace(/^,+|,+$/g, ''))
+  }
+
+  fields = fields.map((field) => field.trim()).filter((field) => field && !CURRENCY_FIELD.test(field))
+
+  // The amount is the right-most amount-like field. A Dr/Cr column right
+  // after it gives the direction.
+  let amountIdx = -1
+  let drcrIdx = -1
+  let seenOther = false
+  for (let i = fields.length - 1; i >= 0; i--) {
+    if (!seenOther && drcrIdx < 0 && DRCR_FIELD.test(fields[i])) {
+      drcrIdx = i
+      continue
+    }
+    if (AMOUNT_FIELD.test(fields[i])) {
+      amountIdx = i
+      break
+    }
+    seenOther = true
+  }
+
+  const parsedAmount = amountIdx >= 0 ? parseAmount(fields[amountIdx]) : null
+  const description = fields.filter((_, i) => i !== amountIdx && i !== drcrIdx).join(' ')
+
+  let signedHint = parsedAmount?.signedHint || 'unknown'
+  if (signedHint === 'unknown' && drcrIdx >= 0) {
+    signedHint = /^d/i.test(fields[drcrIdx]) ? 'debit' : 'credit'
+  }
+
+  return {
+    date,
+    amount: parsedAmount?.amount ?? null,
+    description,
+    // Prefer the amount notation (brackets, sign, Dr/Cr); fall back to
+    // keywords anywhere in the line.
+    direction: signedHint !== 'unknown' ? signedHint : inferDirection(line),
+  }
 }
 
 export function parseStatementLines(rawText) {
@@ -139,21 +243,7 @@ export function parseStatementLines(rawText) {
     .filter(Boolean)
 
   return lines.map((line, idx) => {
-    const parts = parseCsvLine(line)
-    const date = parseDate(parts[0] || line)
-    const parsedAmount = parseAmount(parts[parts.length - 1] || line)
-    const amount = parsedAmount?.amount ?? null
-
-    let description = ''
-    if (parts.length >= 3) description = parts.slice(1, -1).join(' ')
-    else if (parts.length === 2) description = parts[1]
-    else description = line
-
-    // Prefer the signed hint from the amount notation (brackets / DR / CR);
-    // fall back to keyword inference from the whole line.
-    const direction = parsedAmount && parsedAmount.signedHint !== 'unknown'
-      ? parsedAmount.signedHint
-      : inferDirection(line)
+    const { date, amount, description, direction } = parseStatementLine(line)
 
     return {
       id: `stmt-${idx + 1}`,
