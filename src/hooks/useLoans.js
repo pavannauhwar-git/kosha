@@ -1,6 +1,6 @@
 import { useQueries } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient, evictSwCacheEntries } from '../lib/queryClient'
+import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore';
 import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
@@ -32,7 +32,6 @@ function runInBackground(promise, scope) {
 
 async function invalidateLoanCache() {
   suppress('loans')
-  await evictSwCacheEntries('/loans')
   await queryClient.invalidateQueries({ queryKey: ['loans'], refetchType: 'active' })
 }
 
@@ -338,7 +337,6 @@ function getLoanFromCacheById(id, targetUserId) {
 function refreshLoanAndTransactionCachesInBackground({ invalidateLoanFn, invalidateTransactionFn, scope }) {
   runInBackground(
     Promise.all([
-      evictSwCacheEntries('/transactions'),
       invalidateLoanFn(),
       invalidateTransactionFn(),
     ]),

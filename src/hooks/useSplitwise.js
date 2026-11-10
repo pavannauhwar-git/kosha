@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
-import { queryClient, evictSwCacheEntries } from '../lib/queryClient.js'
+import { queryClient } from '../lib/queryClient.js'
 import { getAuthUserId } from '../lib/authStore.js'
 import { useActiveWallet, getActiveWalletUserId } from '../lib/walletStore.js'
 import { suppress } from '../lib/mutationGuard.js'
@@ -161,15 +161,6 @@ async function fetchSettlements(groupId) {
 
 const scheduleSplitwiseRefresh = createDebouncedTask(async () => {
   suppress('splitwise')
-  await Promise.all([
-    evictSwCacheEntries('/split_groups'),
-    evictSwCacheEntries('/split_group_access'),
-    evictSwCacheEntries('/split_group_members'),
-    evictSwCacheEntries('/split_group_invites'),
-    evictSwCacheEntries('/split_expenses'),
-    evictSwCacheEntries('/split_expense_splits'),
-    evictSwCacheEntries('/split_settlements'),
-  ])
   await queryClient.invalidateQueries({ queryKey: ['splitwise'], refetchType: 'active' })
 }, 300)
 

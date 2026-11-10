@@ -26,10 +26,6 @@ function manualChunks(id) {
   if (id.includes('/node_modules/@tanstack/react-query/')) return 'query-vendor'
   if (id.includes('/node_modules/@supabase/')) return 'supabase-vendor'
 
-  if (id.includes('/node_modules/@phosphor-icons/react/')) {
-    return 'icon-vendor'
-  }
-
   if (id.includes('/node_modules/recharts/')) return 'charts-vendor'
   if (id.includes('/node_modules/@radix-ui/')) return 'radix-vendor'
   if (
@@ -39,7 +35,9 @@ function manualChunks(id) {
     return 'mui-vendor'
   }
 
-  return 'vendor'
+  // Everything else (icons, chart helpers, Sentry) stays with the chunk that
+  // imports it, so the first screen only downloads what it uses.
+  return undefined
 }
 
 export default defineConfig(({ mode }) => {
@@ -96,69 +94,32 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
+          // Code, fonts and icons are pre-cached on install. Images are cached
+          // the first time they're shown, except the two shown when offline or
+          // after a crash, which must already be there.
           globPatterns: [
-            '**/*.{js,css,html,ico,png,svg,woff,woff2,PNG,SVG,WEBP,webp}',
-            'illustrations/*.{webp,WEBP,svg,SVG}'
+            '**/*.{js,css,html,ico,png,svg,woff,woff2,PNG,SVG}',
+            'illustrations/{no_internet,error_hero}.webp',
           ],
-          // ── Caching strategy ──────────────────────────────────────────────
-          // StaleWhileRevalidate: serve cached response INSTANTLY, then update
-          // cache in the background. This is what makes return visits feel
-          // native — the user never waits for the network on content they've
-          // seen before.
-          //
-          // NetworkFirst is only used for auth — sessions must always be
-          // validated against the server to prevent stale credential issues.
-          //
-          // CROSS-USER SAFETY: Workbox keys cache entries by URL only, ignoring
-          // the Authorization header. For queries that include `user_id` in the
-          // URL (transactions, liabilities, loans, etc.), user A and user B
-          // produce different URLs and there is no leak. For Splitwise queries
-          // that rely on RLS without an explicit `user_id` filter, the URL is
-          // identical across users — so we MUST purge the `supabase-data`
-          // cache on every auth boundary. That purge lives in
-          // `src/hooks/useAuth.js#purgeAllUserScopedState()` and runs on:
-          //   • imperative signOut()
-          //   • passive SIGNED_OUT auth event
-          //   • first SIGNED_IN of any session (catches "previous user closed
-          //     the tab without signing out, new user opened a fresh browser")
-          // If those purges ever stop firing, this rule will leak again.
+          // Supabase data is never cached here: React Query's saved cache
+          // (src/lib/queryPersister.js) already gives instant and offline
+          // reads, is keyed by user, and is cleared on every sign-in and
+          // sign-out.
           runtimeCaching: [
             {
-              // Supabase auth endpoints — NetworkFirst (always validate session)
               urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
               handler: 'NetworkOnly',
             },
             {
-              // Supabase data endpoints — StaleWhileRevalidate (instant + fresh)
-              //
-              // `customFetch` in `src/lib/supabase.js` adds `#kosha-uid=<id>`
-              // to every data URL. The Cache API ignores fragments when it
-              // matches, so the plugin below moves the id into a query param
-              // of the cache key. User A and user B then get different cache
-              // entries even for identical RLS-only URLs (e.g.
-              // `GET /rest/v1/split_groups`). The network request still goes
-              // out without the fragment.
-              urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
-              handler: 'StaleWhileRevalidate',
+              urlPattern: ({ request, sameOrigin }) => sameOrigin && request.destination === 'image',
+              handler: 'CacheFirst',
               options: {
-                cacheName: 'supabase-data',
+                cacheName: 'images',
                 expiration: {
-                  maxEntries: 100,
-                  maxAgeSeconds: 12 * 60 * 60, // 12 hours — robust offline support
+                  maxEntries: 60,
+                  maxAgeSeconds: 30 * 24 * 60 * 60,
                 },
                 cacheableResponse: { statuses: [200] },
-                plugins: [
-                  {
-                    // Serialised into sw.js: must not reference outer variables.
-                    cacheKeyWillBeUsed: async ({ request }) => {
-                      const url = new URL(request.url)
-                      const uid = new URLSearchParams(url.hash.slice(1)).get('kosha-uid') || 'anon'
-                      url.hash = ''
-                      url.searchParams.set('__kosha_uid', uid)
-                      return url.href
-                    },
-                  },
-                ],
               },
             },
           ],

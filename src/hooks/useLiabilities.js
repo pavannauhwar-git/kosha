@@ -1,6 +1,6 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase.js'
-import { queryClient, evictSwCacheEntries } from '../lib/queryClient.js'
+import { queryClient } from '../lib/queryClient.js'
 import { getAuthUserId } from '../lib/authStore.js';
 import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore.js'
 import { suppress, withOptimisticGuard } from '../lib/mutationGuard.js'
@@ -32,7 +32,6 @@ function runInBackground(promise, scope) {
 
 export async function invalidateLiabilityCache() {
   suppress('liabilities')
-  await evictSwCacheEntries('/liabilities')
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ['liabilities'], refetchType: 'active' }),
     queryClient.invalidateQueries({ queryKey: ['liabilitiesMonth'], refetchType: 'active' }),
@@ -394,7 +393,6 @@ export function optimisticallyDeleteLiabilityFromCache(id, targetUserId) {
 function refreshLiabilityAndTransactionCachesInBackground({ invalidateLiabilityFn, invalidateTransactionFn, scope }) {
   runInBackground(
     Promise.all([
-      evictSwCacheEntries('/transactions'),
       invalidateLiabilityFn(),
       invalidateTransactionFn(),
     ]),

@@ -1,18 +1,20 @@
 import { QueryClient, MutationCache, QueryCache } from '@tanstack/react-query'
 import { captureError, isExpectedMutationError } from './errorReporting'
+import { ERROR_KIND, classifyError } from './errorTaxonomy'
 import { createDebouncedTask } from './debouncedTask'
 
 
 const queryCache = new QueryCache({
   onError: (error, query) => {
-    const status = error?.status || error?.code
     // Auth failures are handled by AuthGuard redirect — don't spam Sentry.
-    if (status === 401 || status === 403) return
+    if (classifyError(error) === ERROR_KIND.PERMISSION) return
+    // Only the key's name: later parts can hold search text.
+    const queryKey = String(query.queryKey?.[0] ?? '').slice(0, 80)
     captureError(error, {
+      context: `query:${queryKey}`,
       tags: {
         source: 'react-query',
-        // Only the key's name: later parts can hold search text.
-        queryKey: String(query.queryKey?.[0] ?? '').slice(0, 80),
+        queryKey,
       },
     })
   },
@@ -77,26 +79,4 @@ export function invalidateQueryFamilies(queryKeys) {
   if (!Array.isArray(queryKeys)) return Promise.resolve()
   invalidationQueue.push(...queryKeys)
   return scheduleFamilyInvalidation()
-}
-
-// Map API routes to query prefixes for targeted Service Worker cache invalidation
-const CACHE_INVALIDATION_MAP = {
-  '/transactions': ['/transactions'],
-  '/liabilities': ['/liabilities', '/transactions'], // Bills touch transactions
-  '/loans': ['/loans', '/transactions'],             // Loans touch transactions
-  '/splitwise': ['/splitwise'],
-}
-
-export async function evictSwCacheEntries(pathPrefix) {
-  const pathsToEvict = CACHE_INVALIDATION_MAP[pathPrefix] || [pathPrefix]
-  
-  try {
-    const cache = await caches.open('supabase-data')
-    const keys = await cache.keys()
-    await Promise.all(
-      keys
-        .filter(req => pathsToEvict.some(p => req.url.includes(p)))
-        .map(req => cache.delete(req))
-    )
-  } catch { /* Cache API unavailable */ }
 }
