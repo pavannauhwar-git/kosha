@@ -266,7 +266,7 @@ export default function AuthGuard({ children }) {
     if (loading || (user && profileLoading && !profile)) return
 
     if (!user) {
-      navigate('/login', { replace: true, state: { from: location.pathname } })
+      navigate('/login', { replace: true, state: { from: `${location.pathname}${location.search}` } })
     } else if (profile && !profile.onboarded && location.pathname !== '/onboarding') {
       // Only redirect to onboarding when we KNOW the profile is not onboarded.
       // A null profile here means the fetch failed transiently — do not bounce
@@ -276,7 +276,7 @@ export default function AuthGuard({ children }) {
       // Already onboarded — send to dashboard instead of re-showing onboarding
       navigate('/', { replace: true })
     }
-  }, [loading, user, profileLoading, profile, navigate, location.pathname])
+  }, [loading, user, profileLoading, profile, navigate, location.pathname, location.search])
 
   // Auth initialising — show the skeleton that matches the destination route
   if (loading || (user && profileLoading && !profile)) return (

@@ -9,10 +9,6 @@ import { useActiveWallet } from '../lib/walletStore'
 import {
   addSplitExpenseMutation,
   addSplitMemberMutation,
-  buildEqualSplits,
-  buildExactSplits,
-  buildPercentSplits,
-  buildShareSplits,
   findSelfMember,
   consumeSplitGroupInviteMutation,
   createSplitGroupMutation,
@@ -45,6 +41,7 @@ import { clearPendingInvite, readPendingInvite, PENDING_SPLIT_INVITE_KEY } from 
 import { useUserCategories } from './useUserCategories'
 import { todayStr } from '../lib/utils'
 import { downloadCsv, toCsv } from '../lib/csv'
+import { buildSplitsFromInputs } from '../lib/splitwiseMath'
 import { shareLink } from '../lib/share'
 import { readLocalStorage, writeLocalStorage, removeLocalStorage } from '../lib/safeStorage'
 import { round2 } from '../lib/paise'
@@ -474,7 +471,7 @@ export function useSplitwiseLogic() {
     let memberArchived = 0
 
     groups.forEach((group) => {
-      const isAdmin = group.my_role === 'admin' || group.user_id === authUserId
+      const isAdmin = group.my_role === 'admin'
       if (isAdmin) {
         if (group.is_archived) adminArchived++
         else adminActive++
@@ -485,7 +482,7 @@ export function useSplitwiseLogic() {
     })
 
     return { adminActive, adminArchived, memberActive, memberArchived }
-  }, [groups, authUserId])
+  }, [groups])
 
   const loadError = splitwiseLoadError || null
   const activeGroup = useMemo(
@@ -569,9 +566,9 @@ export function useSplitwiseLogic() {
     })
   }, [members, authUserId, activeMembers, expenseMembers, settlementMembers])
 
-  const isGroupAdmin = !!activeGroup && !isViewingPartner && (activeGroup.my_role === 'admin' || activeGroup.user_id === authUserId)
+  const isGroupAdmin = !!activeGroup && !isViewingPartner && activeGroup.my_role === 'admin'
   // If a group is archived, NO ONE can manage expenses/members unless they unarchive it first
-  const canManageGroup = !!activeGroup && !activeGroup.is_archived && !isViewingPartner && (activeGroup.my_role === 'admin' || activeGroup.my_role === 'member' || activeGroup.user_id === authUserId)
+  const canManageGroup = !!activeGroup && !activeGroup.is_archived && !isViewingPartner && (activeGroup.my_role === 'admin' || activeGroup.my_role === 'member')
   const isViewOnly = isViewingPartner || (!!activeGroup && !canManageGroup)
   const inviteTokenFromQuery = String(searchParams.get('splitInvite') || '').trim()
 
@@ -842,57 +839,10 @@ export function useSplitwiseLogic() {
 
   function buildSplitsPayload(method, amount) {
     const allowedIds = new Set(expenseMembers.map((member) => member.id))
-    const selectedMemberIds = members
+    const memberIds = members
       .filter((member) => allowedIds.has(member.id))
-      .filter((member) => splitInputs[member.id]?.enabled)
       .map((member) => member.id)
-
-    if (!selectedMemberIds.length) {
-      throw new Error('Select at least one participant for this expense.')
-    }
-
-    if (method === 'equal') {
-      return buildEqualSplits(selectedMemberIds, amount)
-    }
-
-    if (method === 'exact') {
-      const sumPaise = selectedMemberIds.reduce((sum, memberId) => sum + Math.round(Number(splitInputs[memberId]?.exact || 0) * 100), 0)
-      const totalPaise = Math.round(amount * 100)
-      if (sumPaise !== totalPaise) {
-        throw new Error(`Exact splits must add up to the full amount. (Sum: ${sumPaise / 100}, Total: ${totalPaise / 100})`)
-      }
-
-      return buildExactSplits(
-        selectedMemberIds.map((memberId) => ({
-          member_id: memberId,
-          share: Number(splitInputs[memberId]?.exact || 0),
-        })),
-        amount
-      )
-    }
-
-    if (method === 'percent') {
-      const sumBasisPoints = selectedMemberIds.reduce((sum, memberId) => sum + Math.round(Number(splitInputs[memberId]?.percent || 0) * 100), 0)
-      if (sumBasisPoints !== 10000) {
-        throw new Error(`Percentage splits must total exactly 100%. (Current: ${sumBasisPoints / 100}%)`)
-      }
-
-      return buildPercentSplits(
-        selectedMemberIds.map((memberId) => ({
-          member_id: memberId,
-          percent: Number(splitInputs[memberId]?.percent || 0),
-        })),
-        amount
-      )
-    }
-
-    return buildShareSplits(
-      selectedMemberIds.map((memberId) => ({
-        member_id: memberId,
-        shares: Number(splitInputs[memberId]?.shares || 0),
-      })),
-      amount
-    )
+    return buildSplitsFromInputs(method, amount, memberIds, splitInputs)
   }
 
   async function handleAddExpense() {

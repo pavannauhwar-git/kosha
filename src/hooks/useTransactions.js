@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { queryClient } from '../lib/queryClient'
+import { queryClient, SEARCH_QUERY_GC_TIME } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore';
 import { getActiveWalletUserId, useActiveWallet } from '../lib/walletStore'
 import { suppress } from '../lib/mutationGuard'
@@ -373,10 +373,7 @@ export function useTransactions({ type, category, vehicle, paymentMode, search, 
         throw err
       }
     }),
-    // Short gc window keeps old filter-variant queries (e.g. type:'expense',
-    // search:'coffee') from piling up in cache. refetchType:'all' above would
-    // otherwise re-request every combination the user tried this session.
-    gcTime: 5 * 60 * 1000,
+    ...(search ? { gcTime: SEARCH_QUERY_GC_TIME } : {}),
     // Refetch on mount so that mutations from other pages (e.g. Splitwise expense
     // delete) that mark this cache stale are picked up when navigating here.
     refetchOnMount: true,
@@ -419,19 +416,25 @@ export function useTransactions({ type, category, vehicle, paymentMode, search, 
         if (err) throw err
         return count || 0
       } catch (err) {
+        // Rethrown: a cached 0 would hide the list behind the new-user state.
         logQueryError('transactions count', err)
-        return 0
+        throw err
       }
     }),
+    ...(search ? { gcTime: SEARCH_QUERY_GC_TIME } : {}),
     refetchOnMount: true,
     placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
   })
 
-  const total = withCount
-    ? (shouldFetchCount ? (countData ?? safeRows.length) : safeRows.length)
-    : safeRows.length
+  // While the count is loading or has failed, a full page means there may be
+  // more: report one extra row so "Show more" stays, and flag it as unknown.
+  const totalKnown = !(withCount && shouldFetchCount && countData === undefined)
+  let total = safeRows.length
+  if (withCount && shouldFetchCount) {
+    total = countData ?? (hasLimit && safeRows.length >= numericLimit ? safeRows.length + 1 : safeRows.length)
+  }
 
-  return { data: safeRows, total, loading: isLoading, fetching: isFetching, error, refetch }
+  return { data: safeRows, total, totalKnown, loading: isLoading, fetching: isFetching, error, refetch }
 }
 
 export function useTransactionSignalAggregates({ type, category, paymentMode, search, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, enabled = true } = {}) {
@@ -472,7 +475,7 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
         expenseCategoryCounts: result?.expenseCategoryCounts        || {},
       }
     }),
-    gcTime: 5 * 60 * 1000,
+    ...(search ? { gcTime: SEARCH_QUERY_GC_TIME } : {}),
     refetchOnMount: true,
   })
 
@@ -521,9 +524,7 @@ export function useRecentTransactions(limit = 5) {
 
       if (qError) throw qError
       return (rows || []).filter(r => !inFlightDeletedTxnIds.has(r.id))
-    }),
-    gcTime: 5 * 60 * 1000,
-    refetchOnMount: true,
+    }),    refetchOnMount: true,
     placeholderData: (prev, query) => (query?.queryKey?.[2] === targetUserId) ? prev : undefined,
   })
 
@@ -556,9 +557,7 @@ export function useTransactionDigest(days = 14, limit = 200, options = {}) {
 
       if (qError) throw qError
       return rows || []
-    }),
-    gcTime: 5 * 60 * 1000,
-    refetchOnMount: true,
+    }),    refetchOnMount: true,
   })
 
   return { data: data || [], loading: isLoading, error }
@@ -579,9 +578,7 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
     refetchOnMount: true,
     queryFn: () => traceQuery('transactions:daily-expense-totals', () =>
       fetchDailyExpenseTotals(targetUserId, startISO, todayStr(), 'flexible_total')
-    ),
-    gcTime: 5 * 60 * 1000,
-  })
+    ),  })
 
   return { data: data || {}, loading: isLoading, error }
 }
@@ -605,9 +602,7 @@ export function useMonthExpenseDailyTotals(year, month, options = {}) {
     refetchOnMount: true,
     queryFn: () => traceQuery('transactions:month-expense-daily-totals', () =>
       fetchDailyExpenseTotals(targetUserId, startISO, endISO)
-    ),
-    gcTime: 5 * 60 * 1000,
-  })
+    ),  })
 
   return { data: data || {}, loading: isLoading, error }
 }
@@ -625,9 +620,7 @@ export function useYearDailyExpenseTotals(year, options = {}) {
     refetchOnMount: true,
     queryFn: () => traceQuery('transactions:year-daily-expense-totals', () =>
       fetchDailyExpenseTotals(targetUserId, startISO, endISO)
-    ),
-    gcTime: 5 * 60 * 1000,
-  })
+    ),  })
 
   return { data: data || {}, loading: isLoading, error }
 }
@@ -1068,15 +1061,23 @@ function getTransactionFromCacheById(id) {
   return null
 }
 
+// Optimistic rows whose amount is in the month and balance caches. Such a row
+// can be missing from every loaded list (a backdated add from the Dashboard
+// falls outside the recent list), and its impact must still be removed when
+// the saved row replaces it.
+const optimisticAggregateRows = new Map()
+
 export function optimisticallyUpsertTransactionInCache(txn, targetUserId) {
   if (!txn?.id || !targetUserId) return
   inFlightDeletedTxnIds.delete(txn.id)
 
-  const existingTxn = findTransactionInCache(txn.id, targetUserId)
+  const existingTxn = optimisticAggregateRows.get(txn.id) || findTransactionInCache(txn.id, targetUserId)
   if (existingTxn) {
     adjustAggregatesForTransaction(existingTxn, targetUserId, -1) // remove old impact
   }
   adjustAggregatesForTransaction(txn, targetUserId, 1) // apply new impact
+  if (txn.__optimistic) optimisticAggregateRows.set(txn.id, txn)
+  else optimisticAggregateRows.delete(txn.id)
 
   // Only lists that are already loaded are patched. Creating a list here would
   // hold just this one row, and a page opened next would show it as the
@@ -1105,7 +1106,8 @@ export function optimisticallyDeleteTransactionFromCache(id, targetUserId) {
   if (!id || !targetUserId) return
   inFlightDeletedTxnIds.add(id)
 
-  const txn = findTransactionInCache(id, targetUserId)
+  const txn = optimisticAggregateRows.get(id) || findTransactionInCache(id, targetUserId)
+  optimisticAggregateRows.delete(id)
   if (txn) {
     adjustAggregatesForTransaction(txn, targetUserId, -1)
   }
@@ -1261,7 +1263,10 @@ function applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowI
 
 function updateTodayExpenseCache({ id, payload, existingTxn, targetUserId }) {
   const todayISO = todayStr()
-  const affectsTodayAfter = payload?.type === 'expense' && payload?.date === todayISO
+  // An edit can send only the changed fields (Reconciliation sends just the
+  // category), so the after-state is the existing row plus the payload.
+  const after = id ? { ...existingTxn, ...payload } : payload
+  const affectsTodayAfter = after?.type === 'expense' && after?.date === todayISO
   const affectsTodayBefore = existingTxn?.type === 'expense' && existingTxn?.date === todayISO
 
   if (!affectsTodayAfter && !affectsTodayBefore) return
@@ -1274,7 +1279,7 @@ function updateTodayExpenseCache({ id, payload, existingTxn, targetUserId }) {
     if (key?.[1] !== todayISO || key?.[2] !== targetUserId) continue
     if (id) {
       const oldAmt = affectsTodayBefore ? Number(existingTxn?.amount || 0) : 0
-      const newAmt = affectsTodayAfter ? Number(payload?.amount || 0) : 0
+      const newAmt = affectsTodayAfter ? Number(after?.amount || 0) : 0
       queryClient.setQueryData(key, currentTotal - oldAmt + newAmt)
     } else {
       queryClient.setQueryData(key, currentTotal + Number(payload?.amount || 0))
@@ -1352,6 +1357,7 @@ export async function saveTransactionMutation({ id, clientId, payload, __testOve
     return savedTxn
   } catch (error) {
     restoreCacheSnapshot(snapshot)
+    optimisticAggregateRows.delete(optimisticId)
     throw error
   }
 }

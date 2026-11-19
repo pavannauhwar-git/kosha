@@ -10,6 +10,7 @@ import {
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
 import { outflowSharePct, parseAmountText, positiveMonthCount, runwayMonths } from '../../lib/analyticsMetrics'
+import { netCashflow } from '../../lib/cashflow'
 import Select from '../ui/Select'
 
 function toFiniteNumber(value) {
@@ -121,7 +122,11 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
     Spent: toFiniteNumber(point?.Spent),
     Invested: toFiniteNumber(point?.Invested),
     Outflow: toFiniteNumber(point?.Outflow || (toFiniteNumber(point?.Spent) + toFiniteNumber(point?.Invested))),
-    Pulse: toFiniteNumber(point?.Income) - toFiniteNumber(point?.Outflow || (toFiniteNumber(point?.Spent) + toFiniteNumber(point?.Invested))),
+    Pulse: netCashflow({
+      income: point?.Income,
+      repayments: point?.Repayments,
+      expense: toFiniteNumber(point?.Outflow || (toFiniteNumber(point?.Spent) + toFiniteNumber(point?.Invested))),
+    }),
   })), [chartData])
 
   if (!safeData.length) return null
@@ -287,6 +292,7 @@ const WaterfallTooltip = ({ active, payload, label }) => {
 export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
   flowData,
   totalIncome,
+  totalRepayments,
   totalExpense,
   totalInvestment,
   periodLabel = 'Period',
@@ -294,10 +300,11 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
   const safeData = useMemo(() => Array.isArray(flowData) ? flowData : [], [flowData])
 
   const income = toFiniteNumber(totalIncome) || safeData.reduce((sum, row) => sum + toFiniteNumber(row?.Income), 0)
+  const repayments = toFiniteNumber(totalRepayments) || safeData.reduce((sum, row) => sum + toFiniteNumber(row?.Repayments), 0)
   const expense = toFiniteNumber(totalExpense) || safeData.reduce((sum, row) => sum + toFiniteNumber(row?.Spent), 0)
   const investment = toFiniteNumber(totalInvestment) || safeData.reduce((sum, row) => sum + toFiniteNumber(row?.Invested), 0)
 
-  if (income <= 0 && expense <= 0 && investment <= 0) return null
+  if (income <= 0 && repayments <= 0 && expense <= 0 && investment <= 0) return null
 
   const steps = [
     {
@@ -307,6 +314,13 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
       value: income,
       color: C.brand,
     },
+    ...(repayments > 0 ? [{
+      key: 'repayments',
+      name: 'Repaid',
+      type: 'delta',
+      value: repayments,
+      color: C.income,
+    }] : []),
     {
       key: 'expense',
       name: 'Expenses',
@@ -353,7 +367,7 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
     }
   })
 
-  const net = running
+  const net = netCashflow({ income, repayments, expense, investment })
   waterfallRows.push({
     key: 'net',
     name: 'Net',

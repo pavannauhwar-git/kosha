@@ -17,14 +17,9 @@ function makeClient(url, anonKey) {
   })
 }
 
-async function ensureWebSocket() {
-  if (typeof WebSocket !== 'undefined') return
-
-  try {
-    const wsModule = await import('ws')
-    globalThis.WebSocket = wsModule.WebSocket || wsModule.default
-  } catch {
-    throw new Error('WebSocket is not available. Use Node 22+ or add the ws package.')
+function ensureWebSocket() {
+  if (typeof WebSocket === 'undefined') {
+    throw new Error('WebSocket is not available. Use Node 22.')
   }
 }
 
@@ -75,7 +70,7 @@ function waitForSubscribed(channel, timeoutMs = 30000) {
 async function main() {
   loadLocalEnv()
 
-  await ensureWebSocket()
+  ensureWebSocket()
 
   const MAX_ATTEMPTS = 5
   const EVENT_TIMEOUT_MS = 30000

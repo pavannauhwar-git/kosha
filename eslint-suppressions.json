@@ -1,0 +1,118 @@
+{
+  "src/components/analytics/AnalyticsCharts.jsx": {
+    "react-hooks/immutability": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/app/AppBehaviors.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 2
+    }
+  },
+  "src/components/cards/analytics/YearOverYearCards.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/common/PickerNavigator.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/dashboard/SpendingPaceTracker.jsx": {
+    "react-hooks/preserve-manual-memoization": {
+      "count": 1
+    }
+  },
+  "src/components/dialogs/EditProfileNameDialog.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/obligations/Bills.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 4
+    }
+  },
+  "src/components/transactions/AddTransactionSheet.jsx": {
+    "react-hooks/refs": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 3
+    }
+  },
+  "src/components/ui/PixelDatePicker.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/ui/SecureAvatar.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/ui/Sheet.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/hooks/useSplitwiseLogic.js": {
+    "react-hooks/set-state-in-effect": {
+      "count": 4
+    }
+  },
+  "src/hooks/useWindowedList.js": {
+    "react-hooks/refs": {
+      "count": 1
+    }
+  },
+  "src/pages/Guide.jsx": {
+    "react-hooks/purity": {
+      "count": 1
+    }
+  },
+  "src/pages/InviteLanding.jsx": {
+    "react-hooks/refs": {
+      "count": 2
+    }
+  },
+  "src/pages/Login.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/pages/Monthly.jsx": {
+    "react-hooks/preserve-manual-memoization": {
+      "count": 1
+    }
+  },
+  "src/pages/Onboarding.jsx": {
+    "react-hooks/refs": {
+      "count": 1
+    }
+  },
+  "src/pages/Reconciliation.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 3
+    }
+  },
+  "src/pages/ReportBug.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 2
+    }
+  },
+  "src/pages/Splitwise.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/pages/Transactions.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 6
+    }
+  }
+}

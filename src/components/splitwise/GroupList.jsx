@@ -7,7 +7,6 @@ const GroupList = memo(function GroupList({
   showArchived,
   setShowArchived,
   visibleGroups,
-  authUserId,
   setActiveGroupId,
   readBannerFromStorage,
   BANNERS,
@@ -56,7 +55,7 @@ const GroupList = memo(function GroupList({
               description={showArchived ? "You don't have any archived groups." : "Create or join a new group."}
             />
           ) : visibleGroups.map((group) => {
-            const isAdmin = group.my_role === 'admin' || group.user_id === authUserId
+            const isAdmin = group.my_role === 'admin'
             const bgBannerId = group.banner_id || readBannerFromStorage(group.id) || 'goa'
             const bgBanner = BANNERS.find(b => b.id === bgBannerId) || BANNERS[0]
             return (

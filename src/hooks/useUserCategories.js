@@ -101,7 +101,6 @@ export function useUserCategories({ enabled = true } = {}) {
         }
         return (rows || []).map(toCategory)
       }),
-    placeholderData: (prev) => prev,
     // Don't retry if the table simply doesn't exist
     retry: false,
   })

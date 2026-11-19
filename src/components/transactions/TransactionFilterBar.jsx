@@ -140,7 +140,10 @@ export default function TransactionFilterBar({
             name="transaction-search"
             placeholder="Search transactions..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setDisplayCount(50)
+            }}
             icon={<MagnifyingGlass size={14} className="text-ink-3 pointer-events-none" />}
             iconRight={
               isSearchDebouncing ? (
@@ -148,7 +151,10 @@ export default function TransactionFilterBar({
               ) : search ? (
                 <button
                   type="button"
-                  onClick={() => setSearch('')}
+                  onClick={() => {
+                    setSearch('')
+                    setDisplayCount(50)
+                  }}
                   className="text-ink-3"
                 >
                   <X size={13} />

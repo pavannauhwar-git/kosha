@@ -265,6 +265,12 @@ export function setErrorReportingUser(user) {
   withSentry((Sentry) => Sentry.setUser({ id: user.id }))
 }
 
+// Breadcrumbs live on the scopes, not the user, so they are cleared too;
+// otherwise the previous user's trail rides along on the next user's errors.
 export function clearErrorReportingUser() {
-  withSentry((Sentry) => Sentry.setUser(null))
+  withSentry((Sentry) => {
+    Sentry.setUser(null)
+    Sentry.getCurrentScope().clearBreadcrumbs()
+    Sentry.getIsolationScope().clearBreadcrumbs()
+  })
 }

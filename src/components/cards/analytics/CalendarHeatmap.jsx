@@ -21,8 +21,8 @@ const CELL_SIZE    = 13  // px — slightly bigger than the old 11px
 const CELL_GAP     = 3   // px
 
 /* ── HeatmapCell ──────────────────────────────────────────────────────── */
-/* Cells are hover-only; screen readers get the grid summary and month list
-   instead of ~365 tab stops. */
+/* Cells respond to hover and tap only; screen readers get the grid summary
+   and month list instead of ~365 tab stops. */
 const HeatmapCell = memo(function HeatmapCell({ day, onHover, onLeave }) {
   const { bg, border } = CELL_STYLES[day.level]
   return (
@@ -41,6 +41,7 @@ const HeatmapCell = memo(function HeatmapCell({ day, onHover, onLeave }) {
       className="hover:scale-125 hover:z-10 relative"
       onMouseEnter={(e) => onHover(day, e)}
       onMouseLeave={onLeave}
+      onClick={(e) => onHover(day, e)}
     />
   )
 })
@@ -216,7 +217,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
         <div>
           <p className="section-label">Spend calendar</p>
           <p className="text-[11px] text-ink-3 mt-0.5">
-            Daily spending intensity across {year}. Darker = higher spend.
+            Daily spending intensity across {year}. Darker = higher spend. Tap a day to see its amount.
           </p>
         </div>
         <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-ink-2 shrink-0">

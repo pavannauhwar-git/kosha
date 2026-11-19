@@ -68,6 +68,7 @@ export default function Analytics() {
     .map((m, i) => ({
       name: MONTH_SHORT[i],
       Income: Math.round(toFiniteNumber(m?.income)),
+      Repayments: Math.round(toFiniteNumber(m?.repayments)),
       Spent: Math.round(toFiniteNumber(m?.expense)),
       Invested: Math.round(toFiniteNumber(m?.investment)),
       Outflow: Math.round(toFiniteNumber(m?.expense) + toFiniteNumber(m?.investment)),
@@ -361,6 +362,7 @@ export default function Analytics() {
                   <CashflowWaterfallChart
                     flowData={flowTrendData}
                     totalIncome={data?.totalIncome}
+                    totalRepayments={data?.totalRepayments}
                     totalExpense={data?.totalExpense}
                     totalInvestment={data?.totalInvestment}
                     periodLabel="Yearly"

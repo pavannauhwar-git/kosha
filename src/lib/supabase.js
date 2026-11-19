@@ -54,4 +54,7 @@ export const supabase = createClient(url ?? '', key ?? '', {
   global: {
     fetch: customFetch,
   },
+  // PKCE ties each sign-in link to the browser that started it, so a crafted
+  // link carrying someone else's tokens can't sign you into their account.
+  auth: { flowType: 'pkce' },
 })

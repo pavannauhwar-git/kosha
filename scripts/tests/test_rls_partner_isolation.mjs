@@ -160,6 +160,29 @@ async function main() {
     if (billAfter?.paid !== false) throw new Error('SECURITY FAILURE: Owner\'s bill changed after stranger RPC call!')
     if (Number(loanAfter?.amount_settled) !== 0) throw new Error('SECURITY FAILURE: Owner\'s loan changed after stranger RPC call!')
 
+    // 3d. Stranger reads every wallet-owned table. Split tables are left out
+    // because the test accounts may share a trip.
+    const ownerScopedTables = [
+      ['transactions', 'user_id'],
+      ['liabilities', 'user_id'],
+      ['loans', 'user_id'],
+      ['category_budgets', 'user_id'],
+      ['user_categories', 'user_id'],
+      ['financial_events', 'user_id'],
+      ['monthly_net_changes', 'user_id'],
+      ['reconciliation_reviews', 'user_id'],
+      ['bug_reports', 'user_id'],
+      ['profiles', 'id'],
+      ['invites', 'created_by'],
+    ]
+    for (const [table, column] of ownerScopedTables) {
+      console.log(`[TEST] Stranger attempts to read Owner's ${table}...`)
+      const { data: rows, error: readErr } = await strangerClient.from(table).select(column).eq(column, ownerUser.id).limit(1)
+      if (readErr) throw new Error(`Stranger read of ${table} failed: ${readErr.message}`)
+      if (rows?.length > 0) throw new Error(`SECURITY FAILURE: Stranger was able to read Owner's ${table}!`)
+      console.log('  ✓ Success (Stranger read blocked)')
+    }
+
     // 4. Partner attempts UPDATE
     console.log('[TEST] Partner attempts to update Owner\'s transaction...')
     const { data: partnerUpdate, error: partnerUpdateErr } = await partnerClient

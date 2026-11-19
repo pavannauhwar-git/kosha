@@ -10,14 +10,15 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
+# Only the quick jobs cancel when a pull request gets a new push. Cancelling
+# a live job would skip its clean-up and leave test data behind.
 jobs:
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    concurrency:
+      group: ci-${{ github.ref }}-lint
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -32,10 +33,16 @@ jobs:
         run: npm run lint
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
+      - name: Audit all dependencies (report only)
+        continue-on-error: true
+        run: npm audit --audit-level=high
 
   unit-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    concurrency:
+      group: ci-${{ github.ref }}-unit-tests
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     env:
       VITE_SUPABASE_URL: "http://localhost:54321"
       VITE_SUPABASE_ANON_KEY: "dummy-key"
@@ -57,6 +64,9 @@ jobs:
   version-changelog-check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    concurrency:
+      group: ci-${{ github.ref }}-version-changelog-check
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -71,6 +81,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: ci-${{ github.ref }}-build
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -105,8 +118,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # The job env holds live credentials, so package install scripts must not run.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Check readiness secret availability
         id: readiness-secrets
         run: |
@@ -120,7 +134,7 @@ jobs:
           if [[ "$missing" -eq 1 ]]; then
             if [[ "${{ github.actor }}" == "dependabot[bot]" || ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ) ]]; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "Deploy readiness checks skipped on forks and Dependabot PRs because required secrets are not configured."
+              echo "::warning title=Live checks skipped::Deploy readiness checks did not run because secrets are not available to forks and Dependabot."
             else
               echo "Required secrets are missing on a same-repo push/PR. Failing."
               exit 1
@@ -160,8 +174,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # The job env holds live credentials, so package install scripts must not run.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Check runtime secret availability
         id: runtime-secrets
         run: |
@@ -179,7 +194,7 @@ jobs:
           if [[ "$missing" -eq 1 ]]; then
             if [[ "${{ github.actor }}" == "dependabot[bot]" || ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ) ]]; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "Runtime verification skipped on forks and Dependabot PRs because required secrets are not configured."
+              echo "::warning title=Live tests skipped::Runtime verification did not run because secrets are not available to forks and Dependabot."
             else
               echo "Required secrets are missing on a same-repo push/PR. Failing."
               exit 1

@@ -18,11 +18,12 @@ export function memberStatusSuffix(member) {
   return ''
 }
 
-export function memberRole(member, { ownerUserId, roleByUserId } = {}) {
+// The trip creator has no special role: a demoted or removed creator is
+// whatever their access row says.
+export function memberRole(member, { roleByUserId } = {}) {
   const status = memberStatus(member)
   if (status !== 'active') return status
   if (!member?.linked_user_id) return 'guest'
-  if (member.linked_user_id === ownerUserId) return 'admin'
   return roleByUserId?.get(member.linked_user_id) || 'left'
 }
 

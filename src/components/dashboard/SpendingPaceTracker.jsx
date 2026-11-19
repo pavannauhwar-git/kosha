@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import { fmt } from '../../lib/utils'
 import { computeWeeklySpendDrift } from '../../lib/weeklyDrift'
+import { compactTick } from '../../lib/compactTick'
 
 function WeeklyDriftTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
@@ -47,13 +48,6 @@ function WeeklyDriftTooltip({ active, payload }) {
   )
 }
 
-function compactTick(value) {
-  const n = Number(value || 0)
-  const abs = Math.abs(n)
-  if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
-  if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
-  return `${Math.round(n)}`
-}
 export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, driftData: driftDataInput }) {
   const driftData = useMemo(() => {
     if (driftDataInput) return driftDataInput

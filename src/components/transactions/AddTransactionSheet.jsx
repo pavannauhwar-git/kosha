@@ -664,9 +664,9 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   }
 
 
-  const [showCatPicker, setShowCatPicker] = useReducer(v => !v, false)
-  const [showModePicker, setShowModePicker] = useReducer(v => !v, false)
-  const [showVehPicker, setShowVehPicker] = useReducer(v => !v, false)
+  const [showCatPicker, setShowCatPicker] = useState(false)
+  const [showModePicker, setShowModePicker] = useState(false)
+  const [showVehPicker, setShowVehPicker] = useState(false)
   const [showCreateCat, setShowCreateCat] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -974,7 +974,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <button
                 type="button"
                 className="list-row w-full disabled:opacity-50"
-                onClick={() => setShowCatPicker()}
+                onClick={() => setShowCatPicker(true)}
                 disabled={isSaving}
               >
                 <CategoryIcon categoryId={category} size={16} />
@@ -991,7 +991,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
               <button
                 type="button"
                 className="list-row w-full disabled:opacity-50"
-                onClick={() => setShowVehPicker()}
+                onClick={() => setShowVehPicker(true)}
                 disabled={isSaving}
               >
                 {(() => {
@@ -1029,7 +1029,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             <button
               type="button"
               className="list-row w-full disabled:opacity-50"
-              onClick={() => setShowModePicker()}
+              onClick={() => setShowModePicker(true)}
               disabled={isSaving}
             >
               {(() => {
@@ -1231,36 +1231,36 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           <CategoryPicker
             selected={category}
             onSelect={v => set('category', v)}
-            onClose={() => { setShowCatPicker(); handleAdvanceFocus() }}
+            onClose={() => { setShowCatPicker(false); handleAdvanceFocus() }}
             categories={categoryOptions}
             title={type === 'income' ? 'Income Source' : 'Expense Category'}
             onCreateNew={() => {
-              setShowCatPicker()
+              setShowCatPicker(false)
               setEditingCategory(null)
               setShowCreateCat(true)
             }}
             onEditCustom={(customCategory) => {
-              setShowCatPicker()
+              setShowCatPicker(false)
               setEditingCategory(customCategory)
               setShowCreateCat(true)
             }}
             onDeleteCustom={handleDeleteCustomCategory}
           />
         )}
-        {showModePicker && <ModePicker selected={mode} onSelect={v => set('mode', v)} onClose={() => { setShowModePicker(); handleAdvanceFocus() }} />}
+        {showModePicker && <ModePicker selected={mode} onSelect={v => set('mode', v)} onClose={() => { setShowModePicker(false); handleAdvanceFocus() }} />}
         {showVehPicker && (
           <VehiclePicker
             selected={vehicle}
             onSelect={v => set('vehicle', v)}
-            onClose={() => { setShowVehPicker(); handleAdvanceFocus() }}
+            onClose={() => { setShowVehPicker(false); handleAdvanceFocus() }}
             vehicles={investmentOptions}
             onCreateNew={() => {
-              setShowVehPicker()
+              setShowVehPicker(false)
               setEditingCategory(null)
               setShowCreateCat(true)
             }}
             onEditCustom={(customCategory) => {
-              setShowVehPicker()
+              setShowVehPicker(false)
               setEditingCategory(customCategory)
               setShowCreateCat(true)
             }}

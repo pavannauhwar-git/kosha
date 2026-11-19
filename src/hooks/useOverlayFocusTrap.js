@@ -92,7 +92,8 @@ export default function useOverlayFocusTrap(open, options = {}) {
       const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator && navigator.maxTouchPoints > 0));
       if (isTouchDevice && nextTarget instanceof HTMLElement) {
         const tagName = nextTarget.tagName.toLowerCase();
-        const isInput = tagName === 'input' || tagName === 'textarea' || tagName === 'select' || nextTarget.isContentEditable;
+        const isInput = tagName === 'input' || tagName === 'textarea' || tagName === 'select'
+          || tagName === 'md-outlined-text-field' || nextTarget.isContentEditable;
         if (isInput) {
           nextTarget = container;
         }

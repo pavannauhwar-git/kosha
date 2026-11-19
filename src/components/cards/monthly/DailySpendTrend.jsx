@@ -10,9 +10,10 @@ import {
   ReferenceLine,
   Cell,
 } from 'recharts'
-import { fmt } from '../../../lib/utils'
+import { fmt, todayStr } from '../../../lib/utils'
 import { C } from '../../../lib/colors'
 import { dayKey } from '../../../lib/dayKey'
+import { compactTick } from '../../../lib/compactTick'
 import Button from '../../ui/Button'
 
 function DailySpendTooltip({ active, payload, label }) {
@@ -33,15 +34,6 @@ function DailySpendTooltip({ active, payload, label }) {
       </div>
     </div>
   )
-}
-
-function compactTick(value) {
-  const n = Number(value || 0)
-  const abs = Math.abs(n)
-  if (abs >= 10_000_000) return `${Math.round((n / 10_000_000) * 10) / 10}Cr`
-  if (abs >= 100_000) return `${Math.round((n / 100_000) * 10) / 10}L`
-  if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
-  return `${Math.round(n)}`
 }
 
 export default memo(function DailySpendTrend({ dailyTotals, year, month, onReviewExpenses, onReviewPeakDay }) {
@@ -91,7 +83,13 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
       ? dayKey(new Date(year, month - 1, peakDay.day))
       : null
     const spendDays = activeDays.length
-    const zeroDays = daysInMonth - spendDays
+    // Only days that have happened count as zero-spend days.
+    const today = todayStr()
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`
+    const elapsedDays = monthKey < today.slice(0, 7)
+      ? daysInMonth
+      : monthKey === today.slice(0, 7) ? Number(today.slice(8, 10)) : 0
+    const zeroDays = series.filter((row) => row.day <= elapsedDays && row.amount <= 0).length
 
     return {
       seriesWithFlags,

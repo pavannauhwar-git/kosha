@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -43,13 +44,16 @@ function manualChunks(id) {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const isProd = mode === 'production'
+  const uploadSourceMaps = isProd && !!env.SENTRY_AUTH_TOKEN
+  // The SDK release and the uploaded source maps must use the same name.
+  const appVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version || '0.0.0'
 
   return {
     esbuild: {
       drop: isProd ? ['console', 'debugger'] : [],
     },
     define: {
-      'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version || '0.0.0'),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
     },
     test: {
       globals: true,
@@ -66,7 +70,7 @@ export default defineConfig(({ mode }) => {
       cssCodeSplit: true,
       chunkSizeWarningLimit: 600,
       reportCompressedSize: false,
-      sourcemap: isProd && !!env.SENTRY_AUTH_TOKEN,
+      sourcemap: uploadSourceMaps ? 'hidden' : false,
       rollupOptions: {
         output: {
           manualChunks,
@@ -125,11 +129,12 @@ export default defineConfig(({ mode }) => {
           ],
         },
       }),
-      ...(isProd && env.SENTRY_AUTH_TOKEN ? [
+      ...(uploadSourceMaps ? [
         sentryVitePlugin({
           org: env.SENTRY_ORG,
           project: env.SENTRY_PROJECT,
           authToken: env.SENTRY_AUTH_TOKEN,
+          release: { name: appVersion },
           sourcemaps: {
             assets: './dist/**',
             ignore: ['node_modules'],

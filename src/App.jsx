@@ -6,7 +6,7 @@ import { getMuiTheme } from './lib/muiTheme'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { queryPersister } from './lib/queryPersister'
-import { queryClient } from './lib/queryClient'
+import { queryClient, PERSISTED_CACHE_MAX_AGE, isSearchQueryKey } from './lib/queryClient'
 import { useUserCategories } from './hooks/useUserCategories'
 import useKeyboardInset from './hooks/useKeyboardInset'
 import { ToastProvider } from './context/ToastContext'
@@ -113,13 +113,14 @@ export default function App() {
               client={queryClient}
               persistOptions={{
                 persister: queryPersister,
-                maxAge: 12 * 60 * 60 * 1000, // 12h
+                maxAge: PERSISTED_CACHE_MAX_AGE,
                 buster: import.meta.env.VITE_APP_VERSION,
                 dehydrateOptions: {
                   shouldDehydrateMutation: () => false,
                   shouldDehydrateQuery: (query) => {
                     const key0 = Array.isArray(query.queryKey) ? query.queryKey[0] : null
                     if (key0 === 'kosha-active-wallet') return false
+                    if (isSearchQueryKey(query.queryKey)) return false
                     return query.state.status === 'success'
                   },
                 },

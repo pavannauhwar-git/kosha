@@ -105,7 +105,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
               const net = round2(netRow?.net || 0)
               const isSelfMember = member.linked_user_id === authUserId
 
-              const memberRole = getMemberRole(member, { ownerUserId: activeGroup?.user_id, roleByUserId })
+              const memberRole = getMemberRole(member, { roleByUserId })
               const isFormer = memberRole === 'left' || memberRole === 'removed'
 
               const roleBusy = saving === `member-role-${member.id}`

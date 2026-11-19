@@ -4,7 +4,7 @@
   "version": "3.1.2",
   "description": "Kosha — Your financial sheath. Personal finance PWA.",
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   },
   "type": "module",
   "scripts": {
@@ -12,11 +12,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src scripts --max-warnings 41",
+    "lint": "eslint src scripts --max-warnings 0",
     "lint:fix": "eslint src scripts --fix",
+    "lint:prune": "eslint src scripts --prune-suppressions",
     "lint:mutation-integration": "node scripts/tests/test_mutation_integration_paths.mjs",
     "lint:splitwise-mutation-paths": "node scripts/tests/test_splitwise_mutation_paths.mjs",
-    "test:no-network": "npm run test:money",
+    "test:no-network": "npm run test:money && npm run test:statement-matching && npm run lint:mutation-integration",
     "release:candidate-check": "node scripts/ops/release_candidate_check.mjs",
     "test:deploy-readiness": "node scripts/ops/check_deploy_readiness.mjs",
     "test:money": "node scripts/tests/test_money_math.mjs",
@@ -67,9 +68,7 @@
     "postcss": "^8.5.32",
     "tailwindcss": "^3.4.0",
     "vite": "^5.0.8",
-    "vite-node": "^1.6.1",
     "vite-plugin-pwa": "^0.21.2",
-    "vitest": "^2.1.8",
-    "ws": "^8.23.0"
+    "vitest": "^2.1.8"
   }
 }

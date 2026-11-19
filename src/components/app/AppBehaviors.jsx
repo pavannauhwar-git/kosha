@@ -316,10 +316,9 @@ export function ShellStatusBanners() {
   }, [])
 
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false)
-      queryClient.invalidateQueries()
-    }
+    // refetchOnReconnect: 'always' (queryClient.js) refreshes the screens in
+    // view; invalidating everything here fetched them twice.
+    const handleOnline = () => setIsOffline(false)
     const handleOffline = () => setIsOffline(true)
 
     window.addEventListener('online', handleOnline)

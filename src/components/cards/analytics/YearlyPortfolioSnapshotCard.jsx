@@ -147,7 +147,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [], is
           <PortfolioMixDonut
             rows={mixRows}
             centerTop="Yearly"
-            centerValue={fmt(totalPortfolio)}
+            centerValue={fmt(totalPortfolio, true)}
             centerBottom={`${safeVehicleData.length} vehicle${safeVehicleData.length !== 1 ? 's' : ''}`}
             ringSize={120}
             innerInset={10}

@@ -80,6 +80,8 @@ export default function Reconciliation() {
   }, [targetUserId])
 
   const [savingId, setSavingId] = useState(null)
+  const [statementActionBusy, setStatementActionBusy] = useState(false)
+  const statementActionRef = useRef(false)
   const [resettingAliases, setResettingAliases] = useState(false)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const { pushToast } = useAppToast()
@@ -209,7 +211,7 @@ export default function Reconciliation() {
     const trimmed = String(statementInput || '').trim()
     if (!trimmed) return ''
     if (trimmed.length < 10) {
-      return 'Paste at least one valid transaction line (format: description, amount, date).'
+      return 'Paste at least one valid transaction line (format: date, description, amount).'
     }
     if (!statementEntries.some((row) => row?.isValid)) {
       return 'No valid statement lines detected. Use format like: 24/03/2026, Swiggy, 542.00'
@@ -509,16 +511,30 @@ export default function Reconciliation() {
     }
   }, [persistReview, pushToast])
 
-  const markLinked = useCallback(async (id, statementLine) => {
+  // One statement action at a time: a double tap would otherwise send the
+  // mutation twice before the button re-renders as disabled.
+  const runStatementAction = useCallback(async (action) => {
+    if (statementActionRef.current) return
+    statementActionRef.current = true
+    setStatementActionBusy(true)
+    try {
+      await action()
+    } finally {
+      statementActionRef.current = false
+      setStatementActionBusy(false)
+    }
+  }, [])
+
+  const markLinked = useCallback((id, statementLine) => runStatementAction(async () => {
     try {
       await persistReview(id, 'linked', statementLine || null)
       pushToast('Linked to statement line.')
     } catch (error) {
       pushToast(toToastMessage(error, 'Could not save linked state.'))
     }
-  }, [persistReview, pushToast])
+  }), [persistReview, pushToast, runStatementAction])
 
-  const reportFalsePositive = useCallback(async (id, statementLine) => {
+  const reportFalsePositive = useCallback((id, statementLine) => runStatementAction(async () => {
     try {
       const result = await reportFalsePositiveMutation.mutateAsync({
         transactionId: id,
@@ -533,7 +549,7 @@ export default function Reconciliation() {
     } catch (error) {
       pushToast(toToastMessage(error, 'Could not report mismatch.'))
     }
-  }, [refetchReviews, reportFalsePositiveMutation, pushToast])
+  }), [refetchReviews, reportFalsePositiveMutation, pushToast, runStatementAction])
 
   const setCategory = useCallback(async (id, category) => {
     if (!id || !category || savingId || reviewsLoading) return
@@ -1016,6 +1032,7 @@ export default function Reconciliation() {
                       linkedIdSet={linkedIdSet}
                       onLink={(id, line) => markLinked(id, line)}
                       onReject={(id, line) => reportFalsePositive(id, line)}
+                      busy={statementActionBusy}
                     />
                   ))}
                   {filteredStatementRows.length === 0 && (
@@ -1182,7 +1199,7 @@ function ConfidenceBadge({ confidence }) {
   )
 }
 
-function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
+function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet, busy = false }) {
   const best    = row.best
   const entry   = row.entry
   const isLinked = !!(best?.txn?.id && linkedIdSet?.has(best.txn.id))
@@ -1262,6 +1279,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
               onClick={() => { if (best?.txn?.id) void onLink(best.txn.id, entry.line) }}
               variant="secondary"
               size="xs"
+              disabled={busy}
             >
               {isLinked ? 'Linked' : 'Mark linked'}
             </Button>
@@ -1271,6 +1289,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
                 onClick={() => { if (best?.txn?.id) void onReject(best.txn.id, entry.line) }}
                 variant="ghost"
                 size="xs"
+                disabled={busy}
                 className="text-expense-text hover:bg-expense-bg"
               >
                 Report mismatch

@@ -738,6 +738,9 @@ CREATE OR REPLACE FUNCTION public.ensure_group_has_admin() RETURNS trigger
     SET search_path TO ''
     AS $$
 begin
+  if old.role = 'admin' then
+    perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('kosha.split_admins:' || old.group_id::text, 0));
+  end if;
   if old.role = 'admin' and not exists (
     select 1 from public.split_group_access where group_id = old.group_id and role = 'admin'
   ) then
@@ -1112,11 +1115,14 @@ begin
       message = 'Only a member''s role can be changed.';
   end if;
 
-  if old.role = 'admin' and new.role is distinct from 'admin' and not exists (
-    select 1 from public.split_group_access a
-    where a.group_id = old.group_id and a.role = 'admin' and a.id <> old.id
-  ) then
-    raise exception using errcode = '42501', message = 'At least one admin is required';
+  if old.role = 'admin' and new.role is distinct from 'admin' then
+    perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('kosha.split_admins:' || old.group_id::text, 0));
+    if not exists (
+      select 1 from public.split_group_access a
+      where a.group_id = old.group_id and a.role = 'admin' and a.id <> old.id
+    ) then
+      raise exception using errcode = '42501', message = 'At least one admin is required';
+    end if;
   end if;
 
   return new;
@@ -1193,6 +1199,13 @@ begin
   end if;
 
   if tg_op = 'UPDATE'
+     and old.linked_bill_id is not null
+     and new.linked_bill_id is distinct from old.linked_bill_id then
+    raise exception using errcode = '42501',
+      message = 'This entry is a bill payment. Change it from Bills.';
+  end if;
+
+  if tg_op = 'UPDATE'
      and (old.linked_loan_id is not null or old.linked_bill_id is not null)
      and (new.amount is distinct from old.amount or new.type is distinct from old.type) then
     raise exception using errcode = '42501',
@@ -1206,6 +1219,15 @@ begin
        where l.id = new.linked_bill_id and l.user_id = new.user_id
      ) then
     raise exception using errcode = '42501', message = 'Bill does not belong to this user';
+  end if;
+
+  if new.source_transaction_id is not null
+     and (tg_op = 'INSERT' or new.source_transaction_id is distinct from old.source_transaction_id)
+     and not exists (
+       select 1 from public.transactions s
+       where s.id = new.source_transaction_id and s.user_id = new.user_id
+     ) then
+    raise exception using errcode = '42501', message = 'Recurring entry does not belong to this user';
   end if;
 
   return new;
@@ -1235,6 +1257,7 @@ CREATE OR REPLACE FUNCTION public.has_split_group_access(p_group_id uuid, p_user
     from split_group_access a
     where a.group_id = p_group_id
       and a.user_id = p_user_id
+      and (auth.uid() is null or p_user_id = auth.uid())
   );
 $$;
 
@@ -1273,6 +1296,7 @@ CREATE OR REPLACE FUNCTION public.is_split_group_member_or_above(p_group_id uuid
     where a.group_id = p_group_id
       and a.user_id = p_user_id
       and a.role in ('admin', 'member')
+      and (auth.uid() is null or p_user_id = auth.uid())
   );
 $$;
 
@@ -1287,6 +1311,7 @@ CREATE OR REPLACE FUNCTION public.is_split_group_owner(p_group_id uuid, p_user_i
     where a.group_id = p_group_id
       and a.user_id = p_user_id
       and a.role = 'admin'
+      and (auth.uid() is null or p_user_id = auth.uid())
   );
 $$;
 
@@ -1892,10 +1917,7 @@ begin
   ) values (
     v_invite.group_id,
     v_uid,
-    case
-      when v_group.user_id = v_uid then 'admin'
-      else coalesce(v_invite.role, 'member')
-    end
+    coalesce(v_invite.role, 'member')
   )
   on conflict (group_id, user_id) do update
     set role = case
@@ -2840,7 +2862,10 @@ begin
     for update
   loop
     if v_txn.type = 'expense' and v_payer_uid is not null and v_txn.user_id = v_payer_uid and v_payer_txn_id is null
-       and (v_txn.user_id = v_uid or public.has_split_group_access(v_row.group_id, v_txn.user_id)) then
+       and (v_txn.user_id = v_uid or exists (
+         select 1 from public.split_group_access a
+         where a.group_id = v_row.group_id and a.user_id = v_txn.user_id
+       )) then
       update public.transactions
       set date = v_date,
           amount = v_amount,
@@ -2850,7 +2875,10 @@ begin
       where id = v_txn.id;
       v_payer_txn_id := v_txn.id;
     elsif v_txn.type = 'income' and v_payee_uid is not null and v_txn.user_id = v_payee_uid and v_payee_txn_id is null
-       and (v_txn.user_id = v_uid or public.has_split_group_access(v_row.group_id, v_txn.user_id)) then
+       and (v_txn.user_id = v_uid or exists (
+         select 1 from public.split_group_access a
+         where a.group_id = v_row.group_id and a.user_id = v_txn.user_id
+       )) then
       update public.transactions
       set date = v_date,
           amount = v_amount,
@@ -3068,7 +3096,10 @@ begin
 
   v_keep_txn := v_existing_owner is not null
     and v_existing_owner = v_payer_uid
-    and public.has_split_group_access(v_group_id, v_existing_owner)
+    and exists (
+      select 1 from public.split_group_access a
+      where a.group_id = v_group_id and a.user_id = v_existing_owner
+    )
     and (v_existing_owner <> v_uid or coalesce(p_sync_transaction, true));
 
   -- A row that paid a bill is never deleted or given a new amount here.

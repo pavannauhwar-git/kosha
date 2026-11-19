@@ -138,6 +138,28 @@ export default function Sheet({
     }
   }
 
+  // The close button and backdrop act on pointer-up (Safari can swallow the
+  // click), and the browser then fires a click for the same tap. Handle the
+  // tap once; a keyboard click has no pointer-up before it and still works.
+  const lastPointerUpRef = useRef(0)
+  const handleClosePointerUp = (e) => {
+    e.stopPropagation()
+    lastPointerUpRef.current = Date.now()
+    onClose()
+  }
+  const handleCloseClick = () => {
+    if (Date.now() - lastPointerUpRef.current < 700) return
+    onClose()
+  }
+  const handleBackdropPointerUp = () => {
+    lastPointerUpRef.current = Date.now()
+    handleBackdropClick()
+  }
+  const handleBackdropTap = () => {
+    if (Date.now() - lastPointerUpRef.current < 700) return
+    handleBackdropClick()
+  }
+
   const shakeAnimation = shakeTrigger > 0
     ? (isCenter ? { x: [0, -6, 6, -6, 6, 0] } : { y: [0, -8, 4, -4, 0] })
     : {}
@@ -194,12 +216,8 @@ export default function Sheet({
             {showClose && (
               <button
                 type="button"
-                onClick={onClose}
-                onPointerUp={(e) => {
-                  e.stopPropagation()
-                  // Bypass Safari blur/hover click swallow but wait for finger release
-                  onClose()
-                }}
+                onClick={handleCloseClick}
+                onPointerUp={handleClosePointerUp}
                 className="close-btn"
                 aria-label="Close"
               >
@@ -224,11 +242,8 @@ export default function Sheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, pointerEvents: 'none' }}
-            onClick={handleBackdropClick}
-            onPointerUp={(e) => {
-              // Bypass Safari blur/hover click swallow but wait for finger release
-              handleBackdropClick(e)
-            }}
+            onClick={handleBackdropTap}
+            onPointerUp={handleBackdropPointerUp}
           />
           {isCenter ? (
             <motion.div
