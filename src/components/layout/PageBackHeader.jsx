@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { ArrowLeft } from '@phosphor-icons/react'
+import { trackTopBar } from '../../lib/themeColor'
 
 export default function PageBackHeader({
   title,
@@ -6,6 +8,8 @@ export default function PageBackHeader({
   rightSlot = null,
   className = '',
 }) {
+  useEffect(() => trackTopBar(), [])
+
   return (
     <div
       className={`app-topbar ${className}`.trim()}

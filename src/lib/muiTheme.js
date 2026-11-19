@@ -18,7 +18,7 @@ export const getMuiTheme = (mode) => {
         container: isDark ? '#333538' : '#E1E3E1',
       },
       background: {
-        default: isDark ? '#1E1F20' : '#FFFFFF',
+        default: isDark ? '#0F0F11' : '#F0F4F9',
         paper: isDark ? '#1E1F20' : '#FFFFFF',
       },
       text: {
@@ -59,7 +59,7 @@ export const getMuiTheme = (mode) => {
       MuiCssBaseline: {
         styleOverrides: {
           body: {
-            backgroundColor: 'var(--ds-surface)',
+            backgroundColor: 'var(--ds-surface-dim)',
             color: 'var(--ds-text)',
           },
         },

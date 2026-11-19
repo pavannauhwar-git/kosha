@@ -16,6 +16,7 @@ import { startRuntimeMonitor } from './lib/runtimeMonitor'
 import { readLocalStorage } from './lib/safeStorage'
 import { reloadForChunkError } from './lib/chunkReload'
 import { initErrorReporting } from './lib/errorReporting'
+import { applyThemeColor } from './lib/themeColor'
 
 // Defensive: the avatar URL cache is keyed by storage path, not by user. Clear
 // it on every cold start so a previous user's signed URLs can never be read by
@@ -32,19 +33,6 @@ window.addEventListener('vite:preloadError', (event) => {
 
 // ── Restore dark mode preference & init theme color ──────────────────
 ;(() => {
-  let metaTheme = document.querySelector('meta[name="theme-color"]')
-  if (!metaTheme) {
-    metaTheme = document.createElement('meta')
-    metaTheme.name = 'theme-color'
-    document.head.appendChild(metaTheme)
-  }
-
-  // The status bar matches the page surface defined in index.css.
-  const applyThemeColor = () => {
-    const surface = getComputedStyle(document.documentElement).getPropertyValue('--ds-surface').trim()
-    if (surface) metaTheme.content = surface
-  }
-
   const stored = readLocalStorage('kosha-theme', null)
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   const isDark = stored === 'dark' || (!stored && prefersDark)
