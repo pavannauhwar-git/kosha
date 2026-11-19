@@ -49,7 +49,7 @@ export default function PortfolioMixDonut({
         const total = rows.reduce((s, r) => s + Number(r?.value || 0), 0) || 1
         const shares = rows
           .filter(r => r != null && Number(r.value || 0) > 0)
-          .map(r => `${r.label || 'Unknown'} ${Math.round((Number(r.value) / total) * 100)}%`)
+          .map(r => `${r.label ?? r.name ?? 'Unknown'} ${Math.round((Number(r.value) / total) * 100)}%`)
           .join(', ')
         return `Portfolio allocation donut chart: ${shares}`
       }, [rows, hasData])}

@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { buildTransactionSearchOrClause } from './useTransactions'
-import { CATEGORIES, PAYMENT_MODES } from '../lib/categories'
+import { getCategory, PAYMENT_MODES } from '../lib/categories'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { todayStr } from '../lib/utils'
 import { fetchAllPages } from '../lib/fetchAllPages'
@@ -63,7 +63,13 @@ export function useTransactionExporter({
         return
       }
 
-      const CATEGORY_LABELS = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]))
+      // getCategory also knows custom categories; it falls back to 'other'
+      // for unknown ids, so only trust a match on the same id.
+      const categoryLabel = (id) => {
+        if (!id) return ''
+        const found = getCategory(id)
+        return found?.id === id ? found.label : id
+      }
       const PAYMENT_MODE_LABELS = Object.fromEntries(PAYMENT_MODES.map((mode) => [mode.id, mode.label]))
       const headers = [
         'Date',
@@ -84,7 +90,7 @@ export function useTransactionExporter({
         t.type,
         t.description || '',
         t.amount,
-        CATEGORY_LABELS[t.category] || t.category || '',
+        categoryLabel(t.category),
         t.investment_vehicle || '',
         t.payment_mode || '',
         t.notes || '',
@@ -97,7 +103,7 @@ export function useTransactionExporter({
       const csv = toCsv(headers, rows)
       const filters = [
         typeFilter !== 'all' ? typeFilter : '',
-        catFilter ? (CATEGORY_LABELS[catFilter] || catFilter) : '',
+        categoryLabel(catFilter),
         vehicleFilter || '',
         paymentModeFilter ? (PAYMENT_MODE_LABELS[paymentModeFilter] || paymentModeFilter) : '',
       ].filter(Boolean).join('-')

@@ -14,6 +14,7 @@ import { supabase } from '../../../lib/supabase'
 import { useActiveWallet } from '../../../lib/walletStore'
 import { fmt } from '../../../lib/utils'
 import { netCashflow } from '../../../lib/cashflow'
+import { compactTick } from '../../../lib/compactTick'
 import Select from '../../ui/Select'
 
 async function fetchYearSummary(year, userId) {
@@ -39,14 +40,6 @@ async function fetchYearSummary(year, userId) {
     totalExpense: Number(totals.expense || 0),
     totalInvestment: Number(totals.investment || 0),
   }
-}
-
-function tickCompact(value) {
-  const n = Number(value || 0)
-  const abs = Math.abs(n)
-  if (abs >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`
-  if (abs >= 1_000) return `${Math.round(n / 1_000)}k`
-  return `${Math.round(n)}`
 }
 
 function deltaPct(current, previous) {
@@ -99,6 +92,9 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
       queryFn: () => fetchYearSummary(year, targetUserId),
       enabled: enabled && !!targetUserId,
       staleTime: 5 * 60 * 1000,
+      // Adding an entry invalidates these while Analytics is closed, and they
+      // are left out of focus refetch (GlobalRealtimeSync), so refetch here.
+      refetchOnMount: true,
     })),
   })
 
@@ -271,7 +267,7 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
               tickLine={false}
             />
             <YAxis
-              tickFormatter={tickCompact}
+              tickFormatter={compactTick}
               tick={{ fontSize: 11, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
@@ -296,7 +292,7 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
               tickLine={false}
             />
             <YAxis
-              tickFormatter={tickCompact}
+              tickFormatter={compactTick}
               tick={{ fontSize: 11, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}

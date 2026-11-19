@@ -75,6 +75,44 @@ describe('optimistic transaction cache', () => {
     expect(queryClient.getQueryData(staleKey)).toBe(100)
   })
 
+  it('counts a backdated add once even when no loaded list holds it', async () => {
+    const monthKey = ['month', 2026, 2, UID]
+    queryClient.setQueryData(monthKey, { expense: 1000 })
+    const newer = { ...TXN, id: 'txn-newer', date: '2026-03-01', created_at: '2026-03-01T10:00:00.000Z' }
+    queryClient.setQueryData(['transactionsRecent', 1, UID], [newer])
+
+    const payload = { ...TXN, id: undefined, amount: 200 }
+    await saveTransactionMutation({
+      clientId: 'client-12',
+      payload,
+      __testOverrides: {
+        addTransaction: vi.fn().mockResolvedValue({ ...payload, id: 'txn-12' }),
+        invalidateCache: vi.fn(),
+      },
+    })
+
+    expect(queryClient.getQueryData(monthKey).expense).toBe(1200)
+  })
+
+  it('keeps a category-only edit in the total spent today', async () => {
+    const today = todayStr()
+    const todayKey = ['todayExpenses', today, UID]
+    const existing = { ...TXN, date: today, amount: 80 }
+    queryClient.setQueryData(['transactions', { limit: 50 }, UID], [existing])
+    queryClient.setQueryData(todayKey, 80)
+
+    await saveTransactionMutation({
+      id: existing.id,
+      payload: { category: 'transport' },
+      __testOverrides: {
+        updateTransaction: vi.fn().mockResolvedValue({ ...existing, category: 'transport' }),
+        invalidateCache: vi.fn(),
+      },
+    })
+
+    expect(queryClient.getQueryData(todayKey)).toBe(80)
+  })
+
   it('searches custom categories added after the first search, archived ones included', () => {
     registerCustomCategories([])
     expect(buildTransactionSearchOrClause('gym')).not.toContain('category.eq.custom_gym')

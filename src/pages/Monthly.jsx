@@ -685,7 +685,8 @@ export default function Monthly() {
           {heavyReady && (inflow > 0 || spent > 0 || invested > 0) && (
             <div className="fade-up fade-up-5">
               <CashflowWaterfallChart
-                totalIncome={inflow}
+                totalIncome={earned}
+                totalRepayments={repayments}
                 totalExpense={spent}
                 totalInvestment={invested}
                 periodLabel="Monthly"

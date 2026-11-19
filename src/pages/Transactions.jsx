@@ -232,7 +232,7 @@ export default function Transactions() {
 
   const categoryQueryFilter = (!filterByVehicle && catFilter) || undefined
   const vehicleQueryFilter = (filterByVehicle && catFilter) || undefined
-  const { data, total, loading: txnLoading, fetching: txnFetching, error: txnError, refetch: refetchTxns } = useTransactions({
+  const { data, total, totalKnown = true, loading: txnLoading, fetching: txnFetching, error: txnError, refetch: refetchTxns } = useTransactions({
     type: typeFilter === 'all' ? undefined : typeFilter,
     category: categoryQueryFilter,
     vehicle: vehicleQueryFilter,
@@ -932,7 +932,7 @@ export default function Transactions() {
             linkedSplitExpenseFilter={linkedSplitExpenseFilter}
             linkedSplitSettlementFilter={linkedSplitSettlementFilter}
             clearLinkedFilters={clearLinkedFilters}
-            total={total}
+            total={totalKnown ? total : data.length}
             datePreset={datePreset}
             handleDatePreset={handleDatePreset}
             selectedMonth={selectedMonth}
@@ -1096,7 +1096,7 @@ export default function Transactions() {
                 Loading older transactions...
               </span>
             ) : (
-              `Show more (${total - data.length} remaining)`
+              totalKnown ? `Show more (${total - data.length} remaining)` : 'Show more'
             )}
           </Button>
         )}
@@ -1124,7 +1124,7 @@ export default function Transactions() {
                 <div className="mini-panel px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-wide text-ink-3">Rows</p>
                   <p className="text-[15px] font-semibold tabular-nums text-ink mt-1">
-                    {data.length}/{total}
+                    {data.length}/{totalKnown ? total : `${data.length}+`}
                   </p>
                   <p className="text-[11px] text-ink-3 mt-0.5">Loaded / matching</p>
                 </div>

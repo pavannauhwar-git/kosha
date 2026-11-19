@@ -124,17 +124,20 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
               {hoveredBar.invested ? ` (${hoveredBar.deployRate}%)` : ''}
             </p>
           ) : (
-            <p className="text-[11px] text-ink-3">Hover a month to see invested amount.</p>
+            <p className="text-[11px] text-ink-3">Tap a month to see the amount invested.</p>
           )}
         </div>
 
         <div className="flex items-end gap-1 h-16">
           {analysis.bars.map((bar, index) => (
-            // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- onMouseEnter is a hover event, not a user interaction
-            <div
+            <button
+              type="button"
               key={bar.label}
+              aria-label={`${bar.label}: ${fmt(bar.amount)} invested`}
               className="flex-1 h-full flex flex-col items-center justify-end gap-0.5 cursor-pointer"
               onMouseEnter={() => setHoveredMonth(index)}
+              onFocus={() => setHoveredMonth(index)}
+              onClick={() => setHoveredMonth(index)}
             >
               {bar.invested ? (
                 <div
@@ -148,7 +151,7 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
                   title={`${bar.label}: ${fmt(0)} invested`}
                 />
               )}
-            </div>
+            </button>
           ))}
         </div>
         <div className="flex gap-1 mt-1">
