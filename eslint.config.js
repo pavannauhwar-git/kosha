@@ -4,6 +4,16 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import globals from 'globals'
 
+// Every rule is an error. Violations that predate this are frozen in
+// eslint-suppressions.json; after fixing one, run `npm run lint:prune`.
+function asError(setting) {
+  if (setting === 'warn' || setting === 1) return 'error'
+  if (Array.isArray(setting) && (setting[0] === 'warn' || setting[0] === 1)) return ['error', ...setting.slice(1)]
+  return setting
+}
+
+const allErrors = (rules) => Object.fromEntries(Object.entries(rules).map(([name, setting]) => [name, asError(setting)]))
+
 export default [
   {
     files: ['**/*.{js,jsx,mjs,cjs}'],
@@ -31,14 +41,14 @@ export default [
         version: 'detect',
       },
     },
-    rules: {
+    rules: allErrors({
       ...js.configs.recommended.rules,
       ...react.configs.flat.recommended.rules,
       ...reactHooks.configs.flat.recommended.rules,
       'react/prop-types': 'off',
       'no-empty': ['error', { allowEmptyCatch: true }],
-      // React Compiler rules: existing code predates them, so they warn and
-      // `--max-warnings` in package.json stops the count from growing.
+      // React Compiler rules. Like every 'warn' entry here, allErrors()
+      // raises them to errors.
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/refs': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
@@ -47,12 +57,11 @@ export default [
 
       // ── Accessibility (jsx-a11y recommended) ──────────────────────────────
       // The plugin is registered above; here we activate every recommended
-      // rule. Rules that fire broadly across component-rich React UIs are
-      // downgraded to 'warn' so existing patterns surface incrementally
-      // rather than instantly failing CI. All ARIA/semantic rules stay 'error'.
+      // rule.
       ...jsxA11y.flatConfigs.recommended.rules,
 
-      // Downgrade high-volume interaction rules to warn for staged adoption
+      // Interaction rules without the preset's handler lists, so mouse-leave
+      // and similar handlers count too.
       'jsx-a11y/click-events-have-key-events':          'warn',
       'jsx-a11y/no-static-element-interactions':        'warn',
       'jsx-a11y/no-noninteractive-element-interactions': 'warn',
@@ -66,7 +75,7 @@ export default [
       'react/jsx-uses-react': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/jsx-uses-vars': 'error', // marks JSX component refs as "used" so imports aren't false-positives
-    },
+    }),
   },
   {
     // Apply UI primitive guardrails everywhere except the primitives themselves
