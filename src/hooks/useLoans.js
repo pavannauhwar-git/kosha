@@ -9,6 +9,7 @@ import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
 import {
   invalidateCache as invalidateTransactionCache,
   optimisticallyUpsertTransactionInCache,
+  optimisticallyDeleteTransactionFromCache,
   optimisticallyDeleteTransactionsByLoanId,
   inFlightDeletedTxnIds,
   balanceAsOfKey
@@ -169,7 +170,7 @@ async function addLoan(payload) {
   return data
 }
 
-async function recordPayment(loanId, amount, id, paidOn = null) {
+async function recordPayment(loanId, amount, id, paidOn = null, paymentMode = null) {
   const userId = getActiveWalletUserId()
   if (!id) console.warn('[Kosha] recordPayment called without an idempotency id')
   const rpcId = id ?? crypto.randomUUID()
@@ -179,6 +180,7 @@ async function recordPayment(loanId, amount, id, paidOn = null) {
     p_user_id: userId,
     p_amount: amount,
     p_paid_on: paidOn || todayStr(),
+    ...(paymentMode ? { p_payment_mode: paymentMode } : {}),
   })
 
   if (error) throw error
@@ -457,7 +459,7 @@ export async function addLoanMutation(payload) {
   }
 }
 
-export async function recordLoanPaymentMutation({ loan, paymentAmount, id, paidOn = null }) {
+export async function recordLoanPaymentMutation({ loan, paymentAmount, id, paidOn = null, paymentMode = null }) {
   const authUserId = getAuthUserId()
   const targetUserId = getActiveWalletUserId()
 
@@ -479,7 +481,7 @@ export async function recordLoanPaymentMutation({ loan, paymentAmount, id, paidO
   }
 
   try {
-    const result = await recordPayment(loan.id, paymentAmount, id, paidOn)
+    const result = await recordPayment(loan.id, paymentAmount, id, paidOn, paymentMode)
     suppress('loans')
     suppress('transactions')
     await queryClient.cancelQueries({ queryKey: ['loans'] })
@@ -527,7 +529,7 @@ export async function recordLoanPaymentMutation({ loan, paymentAmount, id, paidO
       category: 'loans',
       investment_vehicle: null,
       is_repayment: true,
-      payment_mode: 'other',
+      payment_mode: paymentMode || 'other',
       notes: null,
       is_recurring: false,
       recurrence: null,
@@ -549,6 +551,33 @@ export async function recordLoanPaymentMutation({ loan, paymentAmount, id, paidO
     restoreLoanSnapshot(snapshot)
     throw error
   }
+}
+
+// Removes one repayment entry and takes its amount off what has been repaid.
+export async function undoLoanPaymentMutation(transactionId) {
+  const authUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Loan payment undo blocked: Shared wallets are view-only.')
+    return null
+  }
+  if (!transactionId) throw new Error('Payment is required.')
+
+  const { data: result, error } = await supabase.rpc('undo_loan_payment', {
+    p_transaction_id: transactionId,
+    p_user_id: targetUserId,
+  })
+  if (error) throw error
+
+  suppress('loans')
+  suppress('transactions')
+  optimisticallyDeleteTransactionFromCache(transactionId, targetUserId)
+  refreshLoanAndTransactionCachesInBackground({
+    invalidateLoanFn: invalidateLoanCache,
+    invalidateTransactionFn: invalidateTransactionCache,
+    scope: 'loans post-undo refresh',
+  })
+  return result
 }
 
 export async function updateLoanMutation(id, updates) {

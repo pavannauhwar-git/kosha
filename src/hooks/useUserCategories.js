@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet, getActiveWalletUserId } from '../lib/walletStore'
 import { traceQuery } from '../lib/queryTrace'
-import { registerCustomCategories } from '../lib/categories'
+import { getCategory, registerCustomCategories } from '../lib/categories'
+import { buildCategorySlug, categoryLabelError, categoryLabelKey, normalizeCategoryLabel } from '../lib/categorySlug'
 
 const categoryQueryKey = (userId) => ['userCategories', userId]
 const COLUMNS = 'id, type, label, slug, icon, color, bg, archived, created_at'
 const MAX_CUSTOM_CATEGORIES = 15
+const NO_CATEGORIES = []
+
+const isActive = (category) => !category?.archived
 
 // Type-aware palettes keep custom categories aligned with semantic color intent.
 const CUSTOM_COLORS_BY_TYPE = {
@@ -55,23 +59,16 @@ function toCategory(row) {
     bg: row.bg || '#F3F4F6',
     type: row.type,
     isCustom: true,
+    archived: !!row.archived,
     dbId: row.id,
   }
-}
-
-function generateSlug(label) {
-  return 'custom_' + label
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\s+/g, '_')
-    .slice(0, 30)
 }
 
 /**
  * Fetches the current user's custom categories and registers them
  * into the module-level store so getCategory() / getCategoriesForType()
- * resolve them everywhere in the app.
+ * resolve them everywhere in the app. Archived categories are loaded too, so
+ * older entries still show their name; pickers only offer active ones.
  */
 export function useUserCategories({ enabled = true } = {}) {
   const activeUserId = useActiveWallet()
@@ -85,7 +82,6 @@ export function useUserCategories({ enabled = true } = {}) {
           .from('user_categories')
           .select(COLUMNS)
           .eq('user_id', userId)
-          .eq('archived', false)
           .order('created_at', { ascending: true })
 
         if (queryError) {
@@ -110,7 +106,8 @@ export function useUserCategories({ enabled = true } = {}) {
     retry: false,
   })
 
-  const categories = data || []
+  const allCategories = data || NO_CATEGORIES
+  const customCategories = useMemo(() => allCategories.filter(isActive), [allCategories])
 
   // Keep module-level store in sync so getCategory() works outside React
   useEffect(() => {
@@ -121,7 +118,16 @@ export function useUserCategories({ enabled = true } = {}) {
     registerCustomCategories(data || [])
   }, [data, activeUserId])
 
-  return { customCategories: categories, loading: isLoading, error }
+  return { customCategories, allCategories, loading: isLoading, error }
+}
+
+// Label for any stored category id, built-in or custom (archived included).
+// Changes identity when custom categories load, so memos that use it recompute.
+export function useCategoryLabel() {
+  const { allCategories } = useUserCategories()
+  return useCallback((id) => (
+    allCategories.find((category) => category.id === id)?.label || getCategory(id)?.label || id
+  ), [allCategories])
 }
 
 export const USER_CATEGORIES_QUERY_KEY = categoryQueryKey // factory: USER_CATEGORIES_QUERY_KEY(userId)
@@ -138,28 +144,23 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
     throw new Error('Shared wallets are view-only. You cannot create categories here.')
   }
 
-  const trimmed = label.trim()
-
-  if (trimmed.length < 2 || trimmed.length > 30) {
-    throw new Error('Category name must be 2–30 characters')
-  }
-
-  const slug = generateSlug(trimmed)
-  if (!slug || slug === 'custom_') {
-    throw new Error('Invalid category name')
-  }
+  const labelError = categoryLabelError(label)
+  if (labelError) throw new Error(labelError)
+  const trimmed = normalizeCategoryLabel(label)
+  const slug = buildCategorySlug(trimmed)
 
   const prev = queryClient.getQueryData(categoryQueryKey(userId)) || []
-  if (prev.some(c => c.id === slug)) {
+  const active = prev.filter(isActive)
+  if (active.some(c => categoryLabelKey(c.label) === categoryLabelKey(trimmed))) {
     throw new Error('A category with this name already exists')
   }
 
-  if (prev.length >= MAX_CUSTOM_CATEGORIES) {
+  if (active.length >= MAX_CUSTOM_CATEGORIES) {
     throw new Error(`Maximum ${MAX_CUSTOM_CATEGORIES} custom categories allowed`)
   }
 
   const palette = CUSTOM_COLORS_BY_TYPE[type] || FALLBACK_CUSTOM_COLORS
-  const sameTypeCount = prev.filter((cat) => cat?.type === type).length
+  const sameTypeCount = active.filter((cat) => cat?.type === type).length
   const colorIndex = sameTypeCount % palette.length
   const { color, bg } = palette[colorIndex]
 
@@ -172,6 +173,7 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
     bg,
     type,
     isCustom: true,
+    archived: false,
     dbId: `temp-${slug}`,
   }
   const optimisticList = [...prev, optimistic]
@@ -179,9 +181,11 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
   registerCustomCategories(optimisticList)
 
   try {
+    // Insert, never upsert: the slug is new each time, so an archived
+    // category with a similar name is left as it is.
     const { data, error } = await supabase
       .from('user_categories')
-      .upsert({
+      .insert({
         user_id: userId,
         type,
         label: trimmed,
@@ -190,7 +194,7 @@ export async function createUserCategory({ label, type, icon = 'Tag' }) {
         color,
         bg,
         archived: false,
-      }, { onConflict: 'user_id, slug' })
+      })
       .select(COLUMNS)
       .single()
 
@@ -234,17 +238,18 @@ export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
     throw new Error('Shared wallets are view-only. You cannot edit categories here.')
   }
 
-  const trimmed = label.trim()
-
   if (!dbId) {
     throw new Error('Category id is required')
   }
 
-  if (trimmed.length < 2 || trimmed.length > 30) {
-    throw new Error('Category name must be 2–30 characters')
-  }
+  const labelError = categoryLabelError(label)
+  if (labelError) throw new Error(labelError)
+  const trimmed = normalizeCategoryLabel(label)
 
   const prev = queryClient.getQueryData(categoryQueryKey(userId)) || []
+  if (prev.some(c => isActive(c) && c.dbId !== dbId && categoryLabelKey(c.label) === categoryLabelKey(trimmed))) {
+    throw new Error('A category with this name already exists')
+  }
   const optimistic = prev.map((cat) => (
     cat.dbId === dbId
       ? { ...cat, label: trimmed, icon: icon || cat.icon || 'Tag' }
@@ -290,35 +295,57 @@ export async function updateUserCategory({ dbId, label, icon = 'Tag' }) {
   }
 }
 
-/**
- * Soft-delete (archive) a custom category. Existing transactions keep their
- * category value; the category just stops appearing in pickers.
- */
-export async function archiveUserCategory(dbId) {
+async function setCategoryArchived(dbId, archived) {
   const authUserId = getAuthUserId()
   const userId = getActiveWalletUserId()
 
   if (userId !== authUserId) {
-    throw new Error('Shared wallets are view-only. You cannot archive categories here.')
+    throw new Error('Shared wallets are view-only. You cannot change categories here.')
   }
 
   const prev = queryClient.getQueryData(categoryQueryKey(userId)) || []
-  const next = prev.filter(c => c.dbId !== dbId)
+  const target = prev.find(c => c.dbId === dbId)
+  if (!archived && target) {
+    const active = prev.filter(isActive)
+    if (active.length >= MAX_CUSTOM_CATEGORIES) {
+      throw new Error(`Maximum ${MAX_CUSTOM_CATEGORIES} custom categories allowed`)
+    }
+    if (active.some(c => categoryLabelKey(c.label) === categoryLabelKey(target.label))) {
+      throw new Error('Another category already uses this name. Rename it first.')
+    }
+  }
+
+  const next = prev.map(c => (c.dbId === dbId ? { ...c, archived } : c))
   queryClient.setQueryData(categoryQueryKey(userId), next)
   registerCustomCategories(next)
 
   try {
     const { error } = await supabase
       .from('user_categories')
-      .update({ archived: true })
+      .update({ archived })
       .eq('id', dbId)
       .eq('user_id', userId)
 
     if (error) throw error
-
+    return target ? { ...target, archived } : null
   } catch (e) {
     queryClient.setQueryData(categoryQueryKey(userId), prev)
     registerCustomCategories(prev)
+    if (!archived && (String(e?.message || '').includes('duplicate') || String(e?.code || '') === '23505')) {
+      throw new Error('Another category already uses this name. Rename it first.')
+    }
     throw e
   }
+}
+
+/**
+ * Soft-delete (archive) a custom category. Existing transactions keep their
+ * category value and name; the category just stops appearing in pickers.
+ */
+export function archiveUserCategory(dbId) {
+  return setCategoryArchived(dbId, true)
+}
+
+export function restoreUserCategory(dbId) {
+  return setCategoryArchived(dbId, false)
 }

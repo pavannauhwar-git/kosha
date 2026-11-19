@@ -9,6 +9,7 @@ import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog.js'
 import {
   invalidateCache as invalidateTransactionCache,
   optimisticallyUpsertTransactionInCache,
+  optimisticallyDeleteTransactionFromCache,
   optimisticallyDeleteTransactionsByBillId,
   balanceAsOfKey
 } from './useTransactions.js'
@@ -180,7 +181,7 @@ export async function addLiability(payload, clientId = null) {
   return data
 }
 
-export async function markPaid(liability, { transactionId = null, paidOn = null } = {}) {
+export async function markPaid(liability, { transactionId = null, paidOn = null, amount = null, paymentMode = null } = {}) {
   const userId = getActiveWalletUserId()
 
   const { data: result, error: rpcError } = await supabase
@@ -189,6 +190,8 @@ export async function markPaid(liability, { transactionId = null, paidOn = null 
       p_user_id: userId,
       p_paid_on: paidOn || todayStr(),
       ...(transactionId ? { p_transaction_id: transactionId } : {}),
+      ...(amount != null ? { p_amount: amount } : {}),
+      ...(paymentMode ? { p_payment_mode: paymentMode } : {}),
     })
 
   if (rpcError) throw rpcError
@@ -201,13 +204,22 @@ export async function markPaid(liability, { transactionId = null, paidOn = null 
       entityId: liability.id,
       metadata: {
         description: liability.description,
-        amount: liability.amount,
+        amount: amount ?? liability.amount,
         rpc_result: result || null,
       },
     }),
     'liabilities markPaid audit'
   )
   return result;
+}
+
+export async function undoLiabilityPayment(liabilityId) {
+  const { data, error } = await supabase.rpc('undo_liability_payment', {
+    p_liability_id: liabilityId,
+    p_user_id: getActiveWalletUserId(),
+  })
+  if (error) throw error
+  return data
 }
 
 export async function updateLiability(id, updates) {
@@ -449,9 +461,12 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
   })
 }
 
-// Accepts the bill itself, or `{ liability, paidOn }` to date the payment.
+export const LIABILITY_TO_TXN_MODE = { card: 'credit_card', bank: 'net_banking', upi: 'upi', cash: 'cash' }
+
+// Accepts the bill itself, or `{ liability, paidOn, amount, paymentMode }` when
+// the payment differs from the bill. The bill's own amount stays for next time.
 export async function markLiabilityPaidMutation(input, __testOverrides = null) {
-  const { liability, paidOn = null } = input?.liability ? input : { liability: input }
+  const { liability, paidOn = null, amount = null, paymentMode = null } = input?.liability ? input : { liability: input }
   return withOptimisticGuard(['liabilities'], async (tempId) => {
     const authUserId = getAuthUserId()
     const targetUserId = getActiveWalletUserId()
@@ -470,7 +485,7 @@ export async function markLiabilityPaidMutation(input, __testOverrides = null) {
       const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
       const invalidateTransactionFn = __testOverrides?.invalidateTransactionCache || invalidateTransactionCache
 
-      const result = await markPaidFn(liability, { paidOn })
+      const result = await markPaidFn(liability, { paidOn, amount, paymentMode })
       serverCommitted = true
       suppress('liabilities')
       suppress('transactions')
@@ -482,17 +497,15 @@ export async function markLiabilityPaidMutation(input, __testOverrides = null) {
       const rpcRow = Array.isArray(result) ? result[0] : result
       const txnId = rpcRow?.transaction_id || tempId
 
-      const LIABILITY_TO_TXN_MODE = { card: 'credit_card', bank: 'net_banking', upi: 'upi', cash: 'cash' }
-
       optimisticallyUpsertTransactionInCache({
         id: txnId,
         date: paidOn || todayStr(),
         created_at: new Date().toISOString(),
         type: 'expense',
-        amount: Number(liability.amount || 0),
+        amount: Number(amount ?? liability.amount ?? 0),
         description: liability.description || 'Bill Payment',
         category: liability.category || 'bills',
-        payment_mode: LIABILITY_TO_TXN_MODE[liability.payment_mode] || 'other',
+        payment_mode: paymentMode || LIABILITY_TO_TXN_MODE[liability.payment_mode] || 'other',
         linked_bill_id: liability.id,
         notes: `Paid bill: ${liability.description}`,
         investment_vehicle: null,
@@ -548,6 +561,38 @@ export async function linkTransactionToBillMutation({ bill, transactionId, paidO
     invalidateLiabilityFn: invalidateLiabilityCache,
     invalidateTransactionFn: invalidateTransactionCache,
     scope: 'liabilities post-link refresh',
+  })
+  return result
+}
+
+// Moves a paid bill back to pending. The server removes the payment entry it
+// created (an expense you linked yourself is kept) and the next bill it added.
+export async function undoLiabilityPaymentMutation(liabilityId) {
+  const authUserId = getAuthUserId()
+  const targetUserId = getActiveWalletUserId()
+  if (targetUserId !== authUserId) {
+    console.warn('[Kosha] Mutation blocked: Shared wallets are view-only.')
+    return null
+  }
+  if (!liabilityId) throw new Error('Bill is required.')
+
+  const result = await undoLiabilityPayment(liabilityId)
+  suppress('liabilities')
+  suppress('transactions')
+
+  if (result?.transaction_deleted && result?.transaction_id) {
+    optimisticallyDeleteTransactionFromCache(result.transaction_id, targetUserId)
+  }
+  const cached = getLiabilityFromCacheById(liabilityId, targetUserId)
+  if (cached && !result?.already_unpaid) {
+    optimisticallyDeleteLiabilityFromCache(liabilityId, targetUserId)
+    optimisticallyInsertPendingLiability({ ...cached, paid_at: null, linked_transaction_id: null }, targetUserId)
+  }
+
+  refreshLiabilityAndTransactionCachesInBackground({
+    invalidateLiabilityFn: invalidateLiabilityCache,
+    invalidateTransactionFn: invalidateTransactionCache,
+    scope: 'liabilities post-undo refresh',
   })
   return result
 }
