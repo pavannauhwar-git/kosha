@@ -27,7 +27,7 @@ function DailySpendTooltip({ active, payload, label }) {
           <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row.amount || 0))}</span>
         </div>
         {row.isAboveAvg && (
-          <p className="text-[10px] text-warning-text mt-0.5">Above daily average</p>
+          <p className="text-[10px] text-warning-text mt-0.5">Above spend-day average</p>
         )}
       </div>
     </div>
@@ -110,7 +110,7 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
           <p className="section-label">Daily spend pattern</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Expense distribution across the month with daily average</p>
+          <p className="text-[11px] text-ink-3 mt-0.5">Expense distribution across the month, averaged over days you spent</p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
@@ -131,7 +131,7 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Daily average</p>
+          <p className="text-[10px] text-ink-3">Avg per spend day</p>
           <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(dailyAvg)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">

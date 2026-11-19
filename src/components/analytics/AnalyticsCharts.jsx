@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 import { fmt } from '../../lib/utils'
 import { C } from '../../lib/colors'
+import { outflowSharePct, parseAmountText, positiveMonthCount, runwayMonths } from '../../lib/analyticsMetrics'
 import Select from '../ui/Select'
 
 function toFiniteNumber(value) {
@@ -240,10 +241,11 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
     if (!worst || point.Pulse < worst.pulse) return { name: point.name, pulse: point.Pulse }
     return worst
   }, null)
-  const positivePulseMonths = safeData.filter((point) => point.Pulse >= 0).length
-  const spendVelocity = totalIncomeSafe > 0
-    ? Math.round((totalOutflow / totalIncomeSafe) * 100)
-    : 0
+  const pulseMonths = positiveMonthCount(safeData.map((point) => ({
+    income: point.Income,
+    expense: point.Outflow,
+  })))
+  const spendVelocity = outflowSharePct(totalOutflow, totalIncomeSafe)
   const pulseAxisMax = Math.max(
     1000,
     Math.ceil(Math.max(...safeData.map((point) => Math.abs(toFiniteNumber(point.Pulse))), 0) * 1.15)
@@ -288,12 +290,14 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Positive months</p>
-          <p className="text-[13px] font-semibold tabular-nums text-ink">{positivePulseMonths}/{safeData.length}</p>
+          <p className="text-[13px] font-semibold tabular-nums text-ink">
+            {pulseMonths.active ? `${pulseMonths.positive}/${pulseMonths.active}` : '—'}
+          </p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
           <p className="text-[10px] text-ink-3">Spend velocity</p>
-          <p className={`text-[13px] font-semibold tabular-nums ${spendVelocity <= 85 ? 'text-income-text' : 'text-warning-text'}`}>
-            {spendVelocity}%
+          <p className={`text-[13px] font-semibold tabular-nums ${spendVelocity == null ? 'text-ink-3' : spendVelocity <= 85 ? 'text-income-text' : 'text-warning-text'}`}>
+            {spendVelocity == null ? '—' : `${spendVelocity}%`}
           </p>
         </div>
       </div>
@@ -703,8 +707,8 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
   )
 
   const outflow = expense + investment
-  const burnRate = income > 0 ? Math.round((outflow / income) * 100) : 0
-  const investShare = income > 0 ? Math.round((investment / income) * 100) : 0
+  const burnRate = outflowSharePct(outflow, income)
+  const investShare = outflowSharePct(investment, income)
 
   return (
     <div className="card p-3.5 border-0">
@@ -719,11 +723,11 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
       </div>
 
       <div className="mb-2.5 flex flex-wrap gap-1.5">
-        <span className={`chip-control chip-control-sm ${burnRate <= 85 ? 'bg-income-bg text-income-text border-income-border' : 'bg-warning-bg text-warning-text border-warning-border'}`}>
-          Burn {burnRate}%
+        <span className={`chip-control chip-control-sm ${burnRate == null ? 'bg-kosha-surface-2 text-ink-3 border-kosha-border' : burnRate <= 85 ? 'bg-income-bg text-income-text border-income-border' : 'bg-warning-bg text-warning-text border-warning-border'}`}>
+          Burn {burnRate == null ? '—' : `${burnRate}%`}
         </span>
         <span className="chip-control chip-control-sm bg-invest-bg text-invest-text border-invest-border">
-          Invest {investShare}%
+          Invest {investShare == null ? '—' : `${investShare}%`}
         </span>
         <span className={`chip-control chip-control-sm ${net >= 0 ? 'bg-income-bg text-income-text border-income-border' : 'bg-warning-bg text-warning-text border-warning-border'}`}>
           Net {net >= 0 ? '+' : '-'}{fmt(Math.abs(net), true)}
@@ -1212,7 +1216,7 @@ const RunwayTooltip = ({ active, payload, label }) => {
   )
 }
 
-export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData, annualSurplus }) {
+export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData, currentBalance }) {
   const outflowSeries = useMemo(() => (Array.isArray(flowData) ? flowData : [])
     .map((row) => toFiniteNumber(row?.Outflow || (toFiniteNumber(row?.Spent) + toFiniteNumber(row?.Invested))))
     .filter((value) => value > 0), [flowData])
@@ -1222,10 +1226,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
   const recentOutflow = hasOutflowData ? mean(outflowSeries.slice(-3)) : 0
   const trendOutflow = recentOutflow > 0 ? (recentOutflow * 0.6) + (avgOutflow * 0.4) : avgOutflow
 
-  const baselineReserve = Math.max(
-    0,
-    Math.round(Math.max(toFiniteNumber(annualSurplus), trendOutflow * 2))
-  )
+  const baselineReserve = Math.max(0, Math.round(toFiniteNumber(currentBalance)))
 
   const [reserveCorpusInput, setReserveCorpusInput] = useState(() => String(baselineReserve))
   const isDirtyRef = useRef(false)
@@ -1250,14 +1251,14 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
     )
   }
 
-  const reserveAmount = Math.max(0, toFiniteNumber(reserveCorpusInput))
+  const reserveAmount = Math.max(0, parseAmountText(reserveCorpusInput))
 
   const scenarioData = [
     { name: 'Current trend', short: 'Trend', multiplier: 1, color: C.brand },
     { name: '+10% outflow', short: '+10%', multiplier: 1.1, color: C.brandMid },
     { name: '+20% stress', short: '+20%', multiplier: 1.2, color: C.accent },
   ].map((scenario) => {
-    const months = trendOutflow > 0 ? reserveAmount / (trendOutflow * scenario.multiplier) : 0
+    const months = runwayMonths(reserveAmount, trendOutflow, scenario.multiplier)
     return {
       ...scenario,
       months: Number(months.toFixed(1)),
@@ -1299,10 +1300,10 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
           <p className="text-[10px] uppercase tracking-[0.06em] text-ink-3">Adjust runway corpus</p>
           <span className="text-[12px] font-semibold text-accent-text">{fmt(reserveAmount, true)}</span>
         </div>
+        <p className="text-[11px] text-ink-3 mb-1.5">Starts at your current balance. Change it to try another amount.</p>
         <input
           type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
+          inputMode="decimal"
           name="runway-corpus"
           min={0}
           step={1000}

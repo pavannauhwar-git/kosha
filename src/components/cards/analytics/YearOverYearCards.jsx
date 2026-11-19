@@ -106,25 +106,29 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
 
   const points = useMemo(() => {
     return years.map((year, idx) => {
+      const loaded = yearQueries[idx]?.data != null
       const payload = yearQueries[idx]?.data || {}
       const income = Number(payload.totalIncome || 0)
       const spent = Number(payload.totalExpense || 0)
       const invested = Number(payload.totalInvestment || 0)
+      const repayments = Number(payload.totalRepayments || 0)
 
       return {
         year,
+        loaded,
+        active: loaded && (income !== 0 || spent !== 0 || invested !== 0 || repayments !== 0),
         income,
         spent,
         invested,
-        net: netCashflow({ income, repayments: payload.totalRepayments, expense: spent, investment: invested }),
+        net: netCashflow({ income, repayments, expense: spent, investment: invested }),
       }
     })
   }, [years, yearQueries])
 
   const selectableYears = useMemo(
     () => points
-      .map((row) => row.year)
-      .filter((year) => year !== currentYear),
+      .filter((row) => row.active && row.year !== currentYear)
+      .map((row) => row.year),
     [points, currentYear]
   )
 
@@ -142,16 +146,16 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
   }, [selectableYears, compareYear])
 
   const currentPoint = useMemo(
-    () => points.find((row) => row.year === currentYear) || null,
+    () => points.find((row) => row.year === currentYear && row.loaded) || null,
     [points, currentYear]
   )
 
   const comparePoint = useMemo(() => {
     if (compareYear == null) return null
-    return points.find((row) => row.year === compareYear) || null
+    return points.find((row) => row.year === compareYear && row.active) || null
   }, [points, compareYear])
 
-  if (isLoading && !currentPoint) {
+  if (isLoading && (!currentPoint || !comparePoint)) {
     return (
       <div className="card p-4 border-0">
         <div className="flex items-center justify-between mb-2">

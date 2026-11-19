@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { fmt, splitFmtAmount } from '../../../lib/utils'
+import { fmt, splitFmtAmount, toDisplayAmount } from '../../../lib/utils'
 import { savingsRate, formatSavingsRate } from '../../../lib/cashflow'
 import { C } from '../../../lib/colors'
 import { MONTH_NAMES } from '../../../lib/constants'
@@ -25,7 +25,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
   const earned = data?.earned || 0
   const spent = data?.expense || 0
   const invested = data?.investment || 0
-  const balance = data?.balance || 0
+  const balance = toDisplayAmount(data?.balance || 0)
   const balanceParts = splitFmtAmount(balance)
   const balanceClass = getHeroAmountClass(balanceParts.totalLength)
   const rate = savingsRate(earned, spent)

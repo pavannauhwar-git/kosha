@@ -2,7 +2,9 @@ import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMonthSummary, useTransactions, useMonthExpenseDailyTotals } from '../hooks/useTransactions'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
-import { CATEGORIES } from '../lib/categories'
+import { repeatMerchants } from '../lib/merchants'
+import { rankedCategoryShare } from '../lib/analyticsMetrics'
+import { useCategoryLabel } from '../hooks/useUserCategories'
 import CategorySpendingChart from '../components/categories/CategorySpendingChart'
 import BudgetSheet from '../components/categories/BudgetSheet'
 import { fmt } from '../lib/utils'
@@ -28,7 +30,7 @@ import { useLiabilitiesByMonth } from '../hooks/useLiabilities'
 
 const MIN_NAV_YEAR = 1900
 const MAX_NAV_YEAR = 2100
-const MONTHLY_MERCHANT_COLUMNS = 'id, date, type, amount, description'
+const MONTHLY_MERCHANT_COLUMNS = 'id, date, type, amount, description, is_repayment'
 
 function toPctDelta(current, previous) {
   const currentValue = Number(current || 0)
@@ -50,10 +52,6 @@ function deltaToneClass(value, { inverse = false } = {}) {
   if (value == null || value === 0) return 'text-ink-2'
   if (inverse) return value > 0 ? 'text-expense-text' : 'text-income-text'
   return value > 0 ? 'text-income-text' : 'text-expense-text'
-}
-
-function normalizeMerchantQuery(value) {
-  return String(value || '').trim().replace(/\s+/g, ' ')
 }
 
 export default function Monthly() {
@@ -124,35 +122,34 @@ export default function Monthly() {
     () => allCatEntries.reduce((s, [, v]) => s + v, 0) || 1,
     [allCatEntries]
   )
-  const categoryLabelById = useMemo(
-    () => new Map(CATEGORIES.map((category) => [category.id, category.label])),
-    []
-  )
+  const categoryLabel = useCategoryLabel()
 
   const daysInSelectedMonth = new Date(year, month, 0).getDate()
   const isCurrentMonthView = year === now.getFullYear() && month === now.getMonth() + 1
 
   const categoryVelocitySignal = useMemo(() => {
-    if (!allCatEntries.length || spent <= 0) return null
+    if (spent <= 0) return null
+    const top = rankedCategoryShare(data?.byCategory)
+    if (!top) return null
 
     const daysElapsed = isCurrentMonthView
       ? Math.max(1, Math.min(currentDayOfMonth, daysInSelectedMonth))
       : daysInSelectedMonth
 
-    const [categoryId, categorySpend] = allCatEntries[0]
+    const { categoryId, amount: categorySpend } = top
     const topDaily = categorySpend / Math.max(1, daysElapsed)   // keep — used by `daily` field below
-    const avgCategorySpend = spent / Math.max(1, allCatEntries.length)
+    const avgCategorySpend = spent / Math.max(1, top.rows.length)
     const ratio = avgCategorySpend > 0 ? categorySpend / avgCategorySpend : 0
     const tone = scoreRiskBand(ratio, { high: 1.4, watch: 1.15 })
 
     return {
-      label: categoryLabelById.get(categoryId) || categoryId,
+      label: categoryLabel(categoryId) || categoryId,
       spend: categorySpend,
       daily: topDaily,
       sharePct: Math.round((categorySpend / spent) * 100),
       tone,
     }
-  }, [allCatEntries, spent, isCurrentMonthView, currentDayOfMonth, daysInSelectedMonth, categoryLabelById])
+  }, [data?.byCategory, spent, isCurrentMonthView, currentDayOfMonth, daysInSelectedMonth, categoryLabel])
 
   const budgetPressureSignal = useMemo(() => {
     const budgetRows = [...(bMap?.entries?.() || [])]
@@ -172,7 +169,7 @@ export default function Monthly() {
           ...row,
           spentValue,
           utilization,
-          label: categoryLabelById.get(row.categoryId) || row.categoryId,
+          label: categoryLabel(row.categoryId) || row.categoryId,
         }
       })
       .sort((a, b) => b.utilization - a.utilization)
@@ -191,7 +188,7 @@ export default function Monthly() {
       warningCount,
       tone,
     }
-  }, [bMap, data?.byCategory, categoryLabelById])
+  }, [bMap, data?.byCategory, categoryLabel])
 
   const dailyVariabilitySignal = useMemo(() => {
     const values = Object.values(monthlyExpenseDailyTotals)
@@ -233,43 +230,8 @@ export default function Monthly() {
   const merchantConcentrationSignal = useMemo(() => {
     if (!merchantRows.length) return null
 
-    const merchants = new Map()
-    let totalExpense = 0
-
-    for (const row of merchantRows) {
-      if (row?.type !== 'expense') continue
-      const amount = Number(row?.amount || 0)
-      if (!Number.isFinite(amount) || amount <= 0) continue
-
-      const queryText = normalizeMerchantQuery(row?.description)
-      if (!queryText) continue
-
-      totalExpense += amount
-
-      const key = queryText.toLowerCase()
-      const existing = merchants.get(key)
-      if (existing) {
-        existing.total += amount
-        existing.count += 1
-        continue
-      }
-
-      merchants.set(key, {
-        key,
-        label: queryText,
-        queryText,
-        total: amount,
-        count: 1,
-      })
-    }
-
-    if (!merchants.size || totalExpense <= 0) return null
-
-    const ranked = [...merchants.values()]
-      .filter((merchant) => merchant.count >= 2)
-      .sort((a, b) => b.total - a.total)
-
-    if (!ranked.length) return null
+    const { repeats: ranked, totalExpense } = repeatMerchants(merchantRows)
+    if (!ranked.length || totalExpense <= 0) return null
 
     const top = ranked[0]
     const sharePct = Math.round((top.total / totalExpense) * 100)
@@ -743,7 +705,7 @@ export default function Monthly() {
                     {categoryVelocitySignal.sharePct}% of spend · {fmt(categoryVelocitySignal.spend)}
                   </p>
                   <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
-                    {fmt(categoryVelocitySignal.daily)} per active day
+                    {fmt(categoryVelocitySignal.daily)} per day
                   </p>
                 </div>
               )}
