@@ -268,6 +268,19 @@ export function BottomNav() {
 
   const [prevActive, setPrevActive] = useState(active)
 
+  // Tabs act on finger-lift because Safari can swallow the click that follows
+  // a tap. The click from the same tap is then ignored; a keyboard click has
+  // no pointer-up before it and still works.
+  const lastPointerUpRef = useRef(0)
+  const goTo = (path, isActive) => {
+    hapticTap()
+    if (isActive) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    navigate(path, { replace: true })
+  }
+
   useEffect(() => {
     if (active !== prevActive) {
       const timer = setTimeout(() => {
@@ -294,15 +307,21 @@ export function BottomNav() {
             <button
               key={item.path}
               className="nav-float-item"
-              onClick={() => {
-                hapticTap()
-                if (isActive) {
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                  return
-                }
-                navigate(item.path, { replace: true })
+              onPointerUp={(e) => {
+                if (e.pointerType === 'mouse' && e.button !== 0) return
+                const r = e.currentTarget.getBoundingClientRect()
+                if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return
+                lastPointerUpRef.current = Date.now()
+                goTo(item.path, isActive)
               }}
-              onMouseEnter={() => prefetchRoute(item.path)}
+              onClick={() => {
+                if (Date.now() - lastPointerUpRef.current < 700) return
+                goTo(item.path, isActive)
+              }}
+              onPointerDown={() => prefetchRoute(item.path)}
+              onPointerEnter={(e) => {
+                if (e.pointerType === 'mouse') prefetchRoute(item.path)
+              }}
               onFocus={(e) => {
                 if (!e.currentTarget.matches(':focus-visible')) return
                 prefetchRoute(item.path)
