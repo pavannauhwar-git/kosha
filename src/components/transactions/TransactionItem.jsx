@@ -8,6 +8,12 @@ import { fmt, amountClass, amountPrefix, fmtDate } from '../../lib/utils'
 import { getCategory, INVESTMENT_VEHICLES } from '../../lib/categories'
 import { supabase } from '../../lib/supabase'
 import { getAuthUserId } from '../../lib/authStore'
+import { getActiveWalletUserId } from '../../lib/walletStore'
+import { useAppMutation } from '../../hooks/useAppMutation'
+import { undoLiabilityPaymentMutation } from '../../hooks/useLiabilities'
+import { undoLoanPaymentMutation } from '../../hooks/useLoans'
+import { useAppToast } from '../../context/ToastContext'
+import { toToastMessage } from '../../lib/errorTaxonomy'
 import Sheet from '../ui/Sheet'
 
 const PEEK_X = 140
@@ -28,11 +34,18 @@ const MODE_LABEL = {
 // ─── Splitwise Info Sheet ──────────────────────────────────────────────────────
 function LinkedTransactionInfoSheet({ txn, onClose }) {
   const navigate = useNavigate()
+  const { pushToast } = useAppToast()
   const [navigating, setNavigating] = useState(false)
+  const [confirmUndo, setConfirmUndo] = useState(false)
 
   const isSplitwise = Boolean(txn.linked_split_expense_id || txn.linked_split_settlement_id)
   const isBill = Boolean(txn.linked_bill_id)
   const isLoan = Boolean(txn.linked_loan_id)
+  const isOwnWallet = getActiveWalletUserId() === getAuthUserId()
+
+  const undoBill = useAppMutation(undoLiabilityPaymentMutation, { context: 'bills:undoPayment' })
+  const undoLoan = useAppMutation(undoLoanPaymentMutation, { context: 'loans:undoPayment' })
+  const undoing = undoBill.isPending || undoLoan.isPending
 
   const handleGoToSource = useCallback(async () => {
     setNavigating(true)
@@ -110,6 +123,27 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
 
   const buttonLabel = isSplitwise ? 'Go to Splitwise Group' : isBill ? 'Go to Bills & Dues' : 'Go to Loans'
 
+  const canUndo = isOwnWallet && (isBill || isLoanRepayment)
+  const undoLabel = isBill ? 'Undo bill payment' : 'Undo repayment'
+  const undoConfirmText = isBill
+    ? (isSplitwise
+      ? 'The bill goes back to pending. This entry stays in Splitwise.'
+      : 'The bill goes back to pending and this entry is removed.')
+    : 'This entry is removed and the loan’s repaid amount goes down by the same amount.'
+
+  async function handleUndo() {
+    if (!confirmUndo) { setConfirmUndo(true); return }
+    try {
+      if (isBill) await undoBill.mutateAsync(txn.linked_bill_id)
+      else await undoLoan.mutateAsync(txn.id)
+      pushToast(isBill ? 'Bill moved back to pending.' : 'Repayment removed.', { duration: 2600 })
+      onClose()
+    } catch (e) {
+      pushToast(toToastMessage(e, 'Could not undo this payment.'), { duration: 4200 })
+      setConfirmUndo(false)
+    }
+  }
+
   return (
     <Sheet
       open={true}
@@ -160,6 +194,24 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
         )}
         {navigating ? 'Opening…' : buttonLabel}
       </button>
+
+      {canUndo && (
+        <>
+          {confirmUndo && (
+            <p className="text-[12px] text-ink-3 mt-3 text-left leading-relaxed" role="status">
+              {undoConfirmText}
+            </p>
+          )}
+          <button
+            onClick={handleUndo}
+            disabled={undoing || navigating}
+            className="w-full h-12 mt-3 rounded-2xl border border-expense-border bg-kosha-surface text-expense-text font-semibold text-[15px] flex items-center justify-center gap-2 active:opacity-80 disabled:opacity-60 transition-opacity"
+          >
+            {undoing ? <CircleNotch size={18} className="animate-spin" /> : <ArrowUDownLeft size={18} weight="bold" />}
+            {undoing ? 'Undoing…' : confirmUndo ? 'Tap again to undo' : undoLabel}
+          </button>
+        </>
+      )}
     </Sheet>
   )
 }

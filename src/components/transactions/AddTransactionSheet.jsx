@@ -16,7 +16,8 @@ import {
   getCategoriesForType,
   normalizeCategoryForType,
 } from '../../lib/categories'
-import { archiveUserCategory, useUserCategories } from '../../hooks/useUserCategories'
+import { archiveUserCategory, restoreUserCategory, useUserCategories } from '../../hooks/useUserCategories'
+import { useAppToast } from '../../context/ToastContext'
 import { useAppMutation } from '../../hooks/useAppMutation'
 import CreateCategorySheet from '../categories/CreateCategorySheet'
 import Sheet from '../ui/Sheet'
@@ -671,6 +672,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
   const [showSuccess, setShowSuccess] = useState(false)
 
   const archiveCategoryMutation = useAppMutation(archiveUserCategory, { context: 'categories:delete' })
+  const restoreCategoryMutation = useAppMutation(restoreUserCategory, { context: 'categories:restore' })
+  const { pushToast } = useAppToast()
 
 
   async function handleDeleteCustomCategory(customCategory) {
@@ -687,6 +690,16 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
       if (type !== 'investment' && category === customCategory.id) {
         set('category', type === 'income' ? 'salary' : 'other')
       }
+
+      pushToast(`“${customCategory.label}” removed. Past entries keep the name.`, {
+        actionLabel: 'Undo',
+        duration: 5000,
+        action: () => {
+          restoreCategoryMutation.mutateAsync(dbId).catch((e) => {
+            pushToast(e?.message || 'Could not bring the category back.', { duration: 4200 })
+          })
+        },
+      })
     } catch (e) {
       dispatch({ type: 'SAVING_ERROR', value: e?.message || 'Could not delete category' })
     }
@@ -787,6 +800,8 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           notes: notes.trim() || null,
           splits,
           transactionCategory: normalizeCategoryForType('expense', category),
+          paymentMode: mode.toLowerCase(),
+          linkedBillId: linked_bill_id || null,
           id: draftIdRef.current
         })
       } else {

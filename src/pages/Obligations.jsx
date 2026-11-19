@@ -7,6 +7,7 @@ import { useLoans } from '../hooks/useLoans'
 import { fmt, daysUntil } from '../lib/utils'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
+import { summarizeBillBuckets } from '../lib/billBuckets'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import LoadErrorCard from '../components/common/LoadErrorCard'
 import Button from '../components/ui/Button'
@@ -30,21 +31,11 @@ export default function Obligations() {
 
   // ── Bills metrics ─────────────────────────────────────────────────────
   const { totalPending, overdueCount, dueSoonCount, recurringCount, billsUrgent, billsAllClear } = useMemo(() => {
-    let totalPending = 0
-    let overdueCount = 0
-    let dueSoonCount = 0
-    let recurringCount = 0
-
-    for (let i = 0; i < pending.length; i++) {
-      const b = pending[i]
-      totalPending += Number(b.amount || 0)
-      if (b.is_recurring) recurringCount++
-      const d = safeDays(b.due_date)
-      if (d !== null) {
-        if (d < 0) overdueCount++
-        else if (d <= 7) dueSoonCount++
-      }
-    }
+    const buckets = summarizeBillBuckets(pending, (bill) => safeDays(bill.due_date))
+    const totalPending = buckets.total.amount
+    const overdueCount = buckets.overdue.count
+    const dueSoonCount = buckets.dueSoon.count
+    const recurringCount = pending.filter((bill) => bill.is_recurring).length
 
     const billsUrgent = overdueCount > 0
     const billsAllClear = pending.length > 0 && overdueCount === 0 && dueSoonCount === 0
