@@ -489,7 +489,9 @@ a,
     width: 100%;
     max-width: 100%;
     overflow-x: clip;
-    background-color: var(--ds-surface);
+    /* Same colour as the pages (bg-kosha-bg), so pulling past the top or
+       bottom doesn't reveal a different colour behind the app. */
+    background-color: var(--ds-surface-dim);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -498,7 +500,7 @@ a,
 
   body {
     @apply text-ink font-sans;
-    background-color: var(--ds-surface);
+    background-color: var(--ds-surface-dim);
     width: 100%;
     max-width: 100%;
     min-height: 100dvh;
@@ -679,7 +681,7 @@ a,
 
   .sticky-toolbar {
     @apply sticky z-10 px-0.5 py-2;
-    background-color: var(--ds-surface);
+    background-color: var(--ds-surface-dim);
     top: var(--sticky-top-offset);
     margin-bottom: 1rem;
     border-bottom: 1px solid var(--ds-border);

@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import ProfileMenu from '../navigation/ProfileMenu'
+import { trackTopBar } from '../../lib/themeColor'
 
 export default function PageHeader({
   title,
@@ -6,6 +8,8 @@ export default function PageHeader({
   leftSlot = null,
   rightSlot = null,
 }) {
+  useEffect(() => trackTopBar(), [])
+
   return (
     <div className={`app-topbar ${className}`.trim()}>
       {/* Explicit safe-area fill — paints a solid surface color behind the iOS status bar.
