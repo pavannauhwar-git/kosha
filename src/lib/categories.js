@@ -80,12 +80,23 @@ const EXPENSE_CATEGORY_IDS = new Set(EXPENSE_CATEGORIES.map(c => c.id))
 const INCOME_CATEGORY_IDS = new Set(INCOME_CATEGORIES.map(c => c.id))
 
 // ── Custom category registry (populated by useUserCategories hook) ────────
+// `_allCustomCategories` includes archived ones so getCategory() can still
+// name old entries; `_customCategories` (active only) feeds pickers and the
+// allow-list for new entries.
+let _allCustomCategories = []
 let _customCategories = []
 let _customCategoriesLoaded = false
 
 export function registerCustomCategories(cats) {
-  _customCategories = cats
+  _allCustomCategories = Array.isArray(cats) ? cats : []
+  _customCategories = _allCustomCategories.filter(c => !c?.archived)
   _customCategoriesLoaded = true
+}
+
+// Every registered custom category, archived included. The array is replaced
+// on each registration, so callers can cache against its identity.
+export function getAllCustomCategories() {
+  return _allCustomCategories
 }
 
 export function getCategoriesForType(type) {
@@ -126,7 +137,7 @@ export function getCategory(id) {
   const c = CATEGORY_MAP[id] 
          || INVESTMENT_VEHICLES.find(x => x.id === id)
          || PAYMENT_MODES.find(x => x.id === id)
-         || _customCategories.find(c => c.id === id) 
+         || _allCustomCategories.find(c => c.id === id) 
          || CATEGORY_MAP['other']
   return c
 }

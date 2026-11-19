@@ -1,7 +1,8 @@
-import { CATEGORIES } from '../lib/categories'
+import { useCategoryLabel } from '../hooks/useUserCategories'
 import { lazy, Suspense, useState, useMemo, useEffect } from 'react'
-import { useYearSummary, useYearDailyExpenseTotals } from '../hooks/useTransactions'
-import { fmt } from '../lib/utils'
+import { useYearSummary, useYearDailyExpenseTotals, useBalanceAsOf } from '../hooks/useTransactions'
+import { fmt, todayStr } from '../lib/utils'
+import { isActiveMonth, positiveMonthCount, rankedCategoryShare } from '../lib/analyticsMetrics'
 import { savingsRate as computeSavingsRate, formatSavingsRate, netCashflow } from '../lib/cashflow'
 import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
 import PageHeaderPage from '../components/layout/PageHeaderPage'
@@ -61,6 +62,7 @@ export default function Analytics() {
 
   const { data, loading, error: yearError, refetch: refetchYear } = useYearSummary(year)
   const { data: yearDailyTotals, loading: yearDailyLoading } = useYearDailyExpenseTotals(year)
+  const { balance: currentBalance } = useBalanceAsOf(todayStr())
 
   const flowTrendData = useMemo(() => (data?.monthly || [])
     .map((m, i) => ({
@@ -87,24 +89,12 @@ export default function Analytics() {
     .map(([key, value]) => [key, toFiniteNumber(value)])
     .filter(([, value]) => value > 0)
     .sort((a, b) => b[1] - a[1]), [data?.byCategory])
-  const categoryLabelById = useMemo(() => {
-    return new Map(CATEGORIES.map((category) => [category.id, category.label]))
-  }, [])
+  const categoryLabel = useCategoryLabel()
   const scenarioCategories = useMemo(() => allCatEntries.map(([id, value]) => ({
     id,
-    label: categoryLabelById.get(id) || id,
+    label: categoryLabel(id),
     value: toFiniteNumber(value),
-  })), [allCatEntries, categoryLabelById])
-
-  const annualSurplus = useMemo(
-    () => Math.round(netCashflow({
-      income: data?.totalIncome,
-      repayments: data?.totalRepayments,
-      expense: data?.totalExpense,
-      investment: data?.totalInvestment,
-    })),
-    [data?.totalIncome, data?.totalRepayments, data?.totalExpense, data?.totalInvestment]
-  )
+  })), [allCatEntries, categoryLabel])
 
   const vehicleData = useMemo(
     () => Object.entries(data?.byVehicle || {})
@@ -129,10 +119,8 @@ export default function Analytics() {
         expense: toFiniteNumber(row?.expense),
         investment: toFiniteNumber(row?.investment),
       }))
-      .filter((row) => row.income > 0 || row.repayments > 0 || row.expense > 0 || row.investment > 0)
 
-    const positiveMonths = monthlyRows.filter((row) => netCashflow(row) >= 0).length
-    const activeMonths = monthlyRows.length
+    const { positive: positiveMonths, active: activeMonths } = positiveMonthCount(monthlyRows)
     const band = scoreHealthBand(savingsRate ?? 0, { healthy: 20, watch: 5 })
 
     return {
@@ -154,11 +142,11 @@ export default function Analytics() {
         expense: toFiniteNumber(row?.expense),
         investment: toFiniteNumber(row?.investment),
       }))
-      .filter((row) => row.income > 0 || row.repayments > 0 || row.expense > 0 || row.investment > 0)
+      .filter(isActiveMonth)
 
     if (!monthlyRows.length) return null
 
-    const positiveMonths = monthlyRows.filter((row) => netCashflow(row) >= 0).length
+    const { positive: positiveMonths } = positiveMonthCount(monthlyRows)
     const avgSavings = data?.avgSavings ?? null
 
     const outflowSeries = monthlyRows
@@ -192,22 +180,22 @@ export default function Analytics() {
 
   const expenseConcentrationSignal = useMemo(() => {
     const totalExpense = toFiniteNumber(data?.totalExpense)
-    if (totalExpense <= 0 || !allCatEntries.length) return null
+    if (totalExpense <= 0) return null
 
-    const topThree = allCatEntries.slice(0, 3)
-    const topThreeAmount = topThree.reduce((sum, [, amount]) => sum + amount, 0)
+    // The top three of three or fewer categories is always 100%.
+    const top = rankedCategoryShare(data?.byCategory, { minCategories: 4, top: 3 })
+    if (!top) return null
+    const topThreeAmount = top.rows.slice(0, 3).reduce((sum, [, amount]) => sum + amount, 0)
     const topThreePct = Math.round((topThreeAmount / totalExpense) * 100)
-    const topCategoryId = topThree[0]?.[0]
-    const topCategoryAmount = topThree[0]?.[1] || 0
     const band = scoreRiskBand(topThreePct, { high: 65, watch: 45 })
 
     return {
       topThreePct,
-      topCategoryLabel: categoryLabelById.get(topCategoryId) || topCategoryId || '—',
-      topCategoryAmount,
+      topCategoryLabel: categoryLabel(top.categoryId),
+      topCategoryAmount: top.amount,
       band,
     }
-  }, [data?.totalExpense, allCatEntries, categoryLabelById])
+  }, [data?.totalExpense, data?.byCategory, categoryLabel])
 
   const hasYearData = useMemo(() => {
     return (
@@ -397,7 +385,7 @@ export default function Analytics() {
                 <Suspense fallback={<ChartSkeleton height="h-[200px]" />}>
                   <RunwayCoverageChart
                     flowData={flowTrendData}
-                    annualSurplus={annualSurplus}
+                    currentBalance={currentBalance}
                   />
                 </Suspense>
               </div>

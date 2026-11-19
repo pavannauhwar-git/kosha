@@ -29,6 +29,7 @@ import {
   buildLearnedStatementAliases,
   matchStatementEntries,
   parseStatementLines,
+  statementDateRange,
 } from '../lib/statementMatching'
 import {
   buildReconciliationInsights,
@@ -60,6 +61,7 @@ const STATEMENT_FILTERS = [
   { id: 'invalid', label: 'Can’t read' },
 ]
 const STATEMENT_PAGE_SIZE = 20
+const NO_ROWS = []
 
 export default function Reconciliation() {
   const navigate = useNavigate()
@@ -79,6 +81,7 @@ export default function Reconciliation() {
 
   const [savingId, setSavingId] = useState(null)
   const [resettingAliases, setResettingAliases] = useState(false)
+  const [confirmingReset, setConfirmingReset] = useState(false)
   const { pushToast } = useAppToast()
   const [statementInput, setStatementInput] = useState('')
   const [debouncedStatementInput, setDebouncedStatementInput] = useState('')
@@ -137,9 +140,27 @@ export default function Reconciliation() {
     [debouncedStatementInput, needsMatchingInsights]
   )
 
+  // The queue list above is the latest 250 rows and follows the payment-mode
+  // chip. Matching needs every entry around the statement's dates instead.
+  const statementRange = useMemo(() => statementDateRange(statementEntries), [statementEntries])
+  const { data: statementRangeRows } = useTransactions({
+    startDate: statementRange?.from,
+    endDate: statementRange?.to,
+    columns: TRANSACTION_INSIGHTS_COLUMNS,
+    enabled: needsMatchingInsights && !!statementRange,
+  })
+  const rangeRows = statementRange && statementRangeRows.length ? statementRangeRows : NO_ROWS
+  const matchingPool = useMemo(() => {
+    if (!rangeRows.length) return data
+    const byId = new Map()
+    for (const txn of data || []) byId.set(txn.id, txn)
+    for (const txn of rangeRows) byId.set(txn.id, txn)
+    return [...byId.values()]
+  }, [data, rangeRows])
+
   const demotedMerchants = useMemo(
-    () => (needsMatchingInsights ? identifyDemotedAliases(reviewRows, data, 2, 30) : new Set()),
-    [reviewRows, data, needsMatchingInsights]
+    () => (needsMatchingInsights ? identifyDemotedAliases(reviewRows, matchingPool, 2, 30) : new Set()),
+    [reviewRows, matchingPool, needsMatchingInsights]
   )
 
   const merchantsInCooldown = useMemo(
@@ -148,13 +169,13 @@ export default function Reconciliation() {
   )
 
   const aliasQualities = useMemo(
-    () => (needsMatchingInsights ? calculateAliasQuality(reviewRows, data, 30) : []),
-    [reviewRows, data, needsMatchingInsights]
+    () => (needsMatchingInsights ? calculateAliasQuality(reviewRows, matchingPool, 30) : []),
+    [reviewRows, matchingPool, needsMatchingInsights]
   )
 
   const learnedAliases = useMemo(
-    () => (needsMatchingInsights ? buildLearnedStatementAliases(reviewRows, data, demotedMerchants) : []),
-    [reviewRows, data, demotedMerchants, needsMatchingInsights]
+    () => (needsMatchingInsights ? buildLearnedStatementAliases(reviewRows, matchingPool, demotedMerchants) : []),
+    [reviewRows, matchingPool, demotedMerchants, needsMatchingInsights]
   )
 
   const learnedAliasCount = learnedAliases.length
@@ -170,8 +191,8 @@ export default function Reconciliation() {
   )
 
   const statementMatches = useMemo(
-    () => (needsMatchingInsights ? matchStatementEntries(statementEntries, data, { aliases: learnedAliases }) : []),
-    [statementEntries, data, learnedAliases, needsMatchingInsights]
+    () => (needsMatchingInsights ? matchStatementEntries(statementEntries, matchingPool, { aliases: learnedAliases }) : []),
+    [statementEntries, matchingPool, learnedAliases, needsMatchingInsights]
   )
 
   const statementSummary = useMemo(() => {
@@ -224,7 +245,7 @@ export default function Reconciliation() {
       .slice(0, 5)
 
     return linkedRows.map((row) => {
-      const txn = (data || []).find((item) => item.id === row.transaction_id)
+      const txn = (matchingPool || []).find((item) => item.id === row.transaction_id)
       const parsed = parseStatementLines(row.statement_line || '')
       return {
         transactionId: row.transaction_id,
@@ -234,7 +255,7 @@ export default function Reconciliation() {
         date: txn?.date || null,
       }
     })
-  }, [reviewRows, data, needsMatchingInsights])
+  }, [reviewRows, matchingPool, needsMatchingInsights])
 
   const visibleItems = useMemo(() => {
     let base = insights.candidates
@@ -503,6 +524,10 @@ export default function Reconciliation() {
         transactionId: id,
         statementLine: statementLine || null,
       })
+      if (result?.skipped) {
+        pushToast('This entry is already reviewed, so its review was kept.')
+        return
+      }
       if (!result?.unavailable) await refetchReviews()
       pushToast('Marked as mismatch for future tuning.')
     } catch (error) {
@@ -526,6 +551,13 @@ export default function Reconciliation() {
 
   const resetLearnedAliases = useCallback(async () => {
     if (resettingAliases || reviewTableUnavailable) return
+    if (!confirmingReset) {
+      setConfirmingReset(true)
+      pushToast(`This forgets ${learnedAliasCount} learned match${learnedAliasCount === 1 ? '' : 'es'}. Tap Confirm to reset.`)
+      setTimeout(() => setConfirmingReset(false), 5000)
+      return
+    }
+    setConfirmingReset(false)
     setResettingAliases(true)
     try {
       await resetLearnedAliasesMutation.mutateAsync()
@@ -536,7 +568,7 @@ export default function Reconciliation() {
     } finally {
       setResettingAliases(false)
     }
-  }, [resettingAliases, reviewTableUnavailable, refetchReviews, resetLearnedAliasesMutation, pushToast])
+  }, [resettingAliases, reviewTableUnavailable, confirmingReset, learnedAliasCount, refetchReviews, resetLearnedAliasesMutation, pushToast])
 
   const TABS = [
     { id: 'queue', label: 'Queue', count: reviewProgress.queue },
@@ -889,7 +921,7 @@ export default function Reconciliation() {
                   onClick={() => { void resetLearnedAliases() }}
                   disabled={learnedAliasCount === 0 || resettingAliases || reviewTableUnavailable}
                 >
-                  {resettingAliases ? 'Resetting' : 'Reset'}
+                  {resettingAliases ? 'Resetting' : confirmingReset ? 'Confirm' : 'Reset'}
                 </Button>
                 <div className="w-9 h-9 rounded-full bg-ink/[0.06] text-ink flex items-center justify-center">
                   <LinkSimple size={16} />

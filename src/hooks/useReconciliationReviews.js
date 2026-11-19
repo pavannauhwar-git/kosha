@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet, getActiveWalletUserId } from '../lib/walletStore'
 import { fetchAllPages } from '../lib/fetchAllPages'
+import { queryClient } from '../lib/queryClient'
+import { isRejected, reviewIdSets } from '../lib/reconciliationMetrics'
 
 const REVIEW_COLUMNS = 'transaction_id, status, statement_line, updated_at'
 
@@ -56,17 +58,7 @@ export function useReconciliationReviews(options = {}) {
   const rows = useMemo(() => data?.rows || [], [data?.rows])
   const unavailable = !!data?.unavailable
 
-  const { reviewedIdSet, linkedIdSet } = useMemo(() => {
-    const reviewed = new Set()
-    const linked = new Set()
-    for (const row of rows) {
-      if (row?.transaction_id) {
-        reviewed.add(row.transaction_id)
-        if (row.status === 'linked') linked.add(row.transaction_id)
-      }
-    }
-    return { reviewedIdSet: reviewed, linkedIdSet: linked }
-  }, [rows])
+  const { reviewedIdSet, linkedIdSet } = useMemo(() => reviewIdSets(rows), [rows])
 
   return {
     rows,
@@ -138,6 +130,13 @@ export async function reportReconciliationFalsePositive({ transactionId, stateme
 
   if (userId !== authUserId) {
     throw new Error('Shared wallets are view-only. You cannot report false positives here.')
+  }
+
+  // One row per entry: a rejection must not overwrite a real review or link.
+  const existing = (queryClient.getQueryData(reviewListKey(userId))?.rows || [])
+    .find((row) => row?.transaction_id === transactionId)
+  if (existing && !isRejected(existing)) {
+    return { unavailable: false, skipped: true, row: existing }
   }
 
   const payload = {

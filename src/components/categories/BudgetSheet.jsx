@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { Wallet } from '@phosphor-icons/react'
 import { useUserCategories } from '../../hooks/useUserCategories'
-import { getCategoriesForType } from '../../lib/categories'
+import { getCategoriesForType, getCategory } from '../../lib/categories'
 import { upsertBudget as upsertBudgetApi, deleteBudget as deleteBudgetApi } from '../../hooks/useBudgets'
 import { useAppMutation } from '../../hooks/useAppMutation'
 import CategoryIcon from './CategoryIcon'
@@ -33,8 +33,18 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
 
   const categories = useMemo(() => {
     void customCategories
-    const allExpenses = getCategoriesForType('expense')
-    return allExpenses.filter((c) => c.id !== 'other').map((cat) => {
+    const allExpenses = getCategoriesForType('expense').filter((c) => c.id !== 'other')
+    const shown = new Set(allExpenses.map((c) => c.id))
+    // A budget can outlive its category (archived later). List it so it can
+    // still be changed or removed instead of counting silently.
+    const orphaned = [...budgetMap.keys()]
+      .filter((id) => id && id !== 'other' && !shown.has(id))
+      .map((id) => {
+        const known = getCategory(id)
+        const label = known?.id === id ? known.label : 'Removed category'
+        return { ...known, id, label: `${label} (archived)`, archived: true }
+      })
+    return [...allExpenses, ...orphaned].map((cat) => {
       const existing = budgetMap.get(cat.id)
       const spent = Number(byCategory[cat.id] || 0)
       return { ...cat, budget: existing, spent }

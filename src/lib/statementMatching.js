@@ -30,6 +30,36 @@ function tokenize(value) {
     .filter((token) => token.length >= 3 && !NOISE_TOKENS.has(token))
 }
 
+export const STATEMENT_MATCH_WINDOW_DAYS = 7
+
+function shiftIsoDate(iso, days) {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
+
+// Dates a pasted statement can match: its first to last valid line, widened
+// by the match window on both sides. Null when no line has a usable date.
+export function statementDateRange(entries, padDays = STATEMENT_MATCH_WINDOW_DAYS) {
+  const dates = (Array.isArray(entries) ? entries : [])
+    .filter((entry) => entry?.isValid && /^\d{4}-\d{2}-\d{2}$/.test(String(entry.date || '')))
+    .map((entry) => entry.date)
+    .sort()
+  if (!dates.length) return null
+  return { from: shiftIsoDate(dates[0], -padDays), to: shiftIsoDate(dates[dates.length - 1], padDays) }
+}
+
+// One merchant name per narration, from its first two meaningful words, so
+// "UPI/4123.../SWIGGY/swiggy@icici" and "UPI/9876.../SWIGGY/..." group as "Swiggy".
+export function statementMerchantKey(description) {
+  const words = []
+  for (const token of tokenize(description)) {
+    if (!words.includes(token)) words.push(token)
+    if (words.length === 2) break
+  }
+  if (!words.length) return String(description || '').trim()
+  return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}
+
 // Returns { amount, signedHint } where amount is always positive and
 // signedHint is 'debit' | 'credit' | 'unknown' derived from bracket/DR/CR
 // notation. Callers decide how to use the hint.
@@ -290,8 +320,7 @@ export function buildLearnedStatementAliases(reviewRows, transactions, demotedMe
     const statementDescription = parsed?.[0]?.description || row.statement_line
     
     // Skip demoted aliases — they failed repeatedly in recent period
-    const merchant = statementDescription.split(/[,|]/)[0]?.trim() || statementDescription
-    if (demotedMerchants.has(merchant)) continue
+    if (demotedMerchants.has(statementMerchantKey(statementDescription))) continue
 
     const entry = parsed?.[0]
     if (entry) {
@@ -335,7 +364,7 @@ function scoreCandidate(entry, candidate, aliasHints = new Map()) {
   if (amountDiff > 2) return null
 
   const days = Math.abs(dateDistanceDays(entry.date, candidate.txn?.date))
-  if (!Number.isFinite(days) || days > 7) return null
+  if (!Number.isFinite(days) || days > STATEMENT_MATCH_WINDOW_DAYS) return null
 
   const descriptionScore = overlapScore(entry.tokens, candidate.tokens)
   const expandedTokens = new Set(entry.tokens)
@@ -345,7 +374,7 @@ function scoreCandidate(entry, candidate, aliasHints = new Map()) {
     for (const synonym of linked) expandedTokens.add(synonym)
   }
   const aliasBoostScore = overlapScore(expandedTokens, candidate.tokens)
-  const dateScore = Math.max(0, 1 - days / 7)
+  const dateScore = Math.max(0, 1 - days / STATEMENT_MATCH_WINDOW_DAYS)
   const amountScore = Math.max(0, 1 - amountDiff / 2)
   const txnTypeScore = typeCompatibility(entry.direction, candidate.type)
   const finalScore = Number((

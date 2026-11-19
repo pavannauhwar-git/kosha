@@ -1,7 +1,34 @@
 import { describe, it, expect } from 'vitest'
-import { parseStatementLines, matchStatementEntries } from '../../../../src/lib/statementMatching'
+import { parseStatementLines, matchStatementEntries, statementMerchantKey, statementDateRange } from '../../../../src/lib/statementMatching'
 
 describe('statementMatching', () => {
+  describe('statementDateRange', () => {
+    it('covers the first to last line plus the 7-day match window', () => {
+      const entries = parseStatementLines('2024-03-02,Swiggy,450.00\n2024-02-27,Uber,120.00\nnot a line')
+      expect(statementDateRange(entries)).toEqual({ from: '2024-02-20', to: '2024-03-09' })
+    })
+
+    it('returns null when no line has a date', () => {
+      expect(statementDateRange([])).toBeNull()
+      expect(statementDateRange(parseStatementLines('garbage'))).toBeNull()
+    })
+  })
+
+  describe('statementMerchantKey', () => {
+    it('gives the same key to narrations from the same merchant', () => {
+      expect(statementMerchantKey('Swiggy Food Order')).toBe(statementMerchantKey('SWIGGY food order 2'))
+    })
+
+    it('uses at most two distinct words, title-cased', () => {
+      expect(statementMerchantKey('uber uber trip mumbai')).toBe('Uber Trip')
+    })
+
+    it('falls back to the trimmed text when nothing is left', () => {
+      expect(statementMerchantKey('  ##  ')).toBe('##')
+      expect(statementMerchantKey('')).toBe('')
+    })
+  })
+
   describe('parseStatementLines', () => {
     it('parses a valid CSV line into a statement entry', () => {
       const lines = parseStatementLines('2024-01-15,Swiggy Order Payment,450.00')

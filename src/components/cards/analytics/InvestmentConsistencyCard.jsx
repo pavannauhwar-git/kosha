@@ -1,5 +1,6 @@
 import { memo, useMemo, useState } from 'react'
 import { fmt } from '../../../lib/utils'
+import { investmentStreaks } from '../../../lib/analyticsMetrics'
 
 export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
   const [hoveredMonth, setHoveredMonth] = useState(null)
@@ -28,37 +29,20 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
 
     if (activeMonths.length === 0) return null
 
+    const { current: streak, best: bestStreak, pendingLast } = investmentStreaks(activeMonths, {
+      lastMonthInProgress: year === currentYear,
+    })
+    const settledMonths = pendingLast ? activeMonths.slice(0, -1) : activeMonths
+
     const monthsWithInvestment = activeMonths.filter((m) => m.investment > 0)
-    const monthsWithActivity = activeMonths.filter((m) => m.hasActivity)
+    const monthsWithActivity = settledMonths.filter((m) => m.hasActivity)
 
     const adherenceCount = monthsWithInvestment.length
-    const totalMonths = monthsWithActivity.length > 0 ? monthsWithActivity.length : activeMonths.length
+    const totalMonths = monthsWithActivity.length > 0 ? monthsWithActivity.length : settledMonths.length
     const adherencePct = totalMonths > 0 ? Math.round((adherenceCount / totalMonths) * 100) : 0
 
     const totalInvested = monthsWithInvestment.reduce((s, m) => s + m.investment, 0)
     const avgMonthlyInvestment = adherenceCount > 0 ? Math.round(totalInvested / adherenceCount) : 0
-
-    // Calculate current streak (from most recent month backwards)
-    let streak = 0
-    for (let i = activeMonths.length - 1; i >= 0; i--) {
-      if (activeMonths[i].investment > 0) {
-        streak += 1
-      } else {
-        break
-      }
-    }
-
-    // Best streak
-    let bestStreak = 0
-    let currentRun = 0
-    for (const m of activeMonths) {
-      if (m.investment > 0) {
-        currentRun += 1
-        if (currentRun > bestStreak) bestStreak = currentRun
-      } else {
-        currentRun = 0
-      }
-    }
 
     // Per-month deploy rates for the bar display
     const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

@@ -9,11 +9,11 @@ import { traceQuery } from '../lib/queryTrace'
 import { todayStr } from '../lib/utils'
 import { averageSavingsRate } from '../lib/cashflow'
 import { createDebouncedTask } from '../lib/debouncedTask'
-import { countsTowardWeeklyDrift } from '../lib/weeklyDrift'
+import { FIXED_SPEND_CATEGORIES } from '../lib/weeklyDrift'
 
 export const inFlightDeletedTxnIds = new Set()
 import { FINANCIAL_EVENT_ACTIONS, logFinancialEvent } from '../lib/auditLog'
-import { CATEGORIES, getCategoriesForType } from '../lib/categories'
+import { CATEGORIES, getAllCustomCategories, getCategoriesForType } from '../lib/categories'
 // ── Query key factories ───────────────────────────────────────────────────
 export const txnListKey  = (filters, targetUserId) => ['transactions', filters, targetUserId]
 export const txnCountKey = (filters, targetUserId) => ['txnCount', filters, targetUserId]
@@ -63,6 +63,7 @@ export const TRANSACTION_INVALIDATION_KEYS = [
   ['dailyExpenseTotals'],
   ['monthExpenseDailyTotals'],
   ['yearDailyExpenseTotals'],
+  ['yearYoy'],
   ['txnCount'],
   ['month'],
   ['year'],
@@ -179,11 +180,13 @@ function logQueryError(scope, error) {
 
 const POSTGREST_RESERVED_CHARS_RE = /[,%().:"\\_*]/g
 
-// Lazily built once at first search — categories are static module-level constants
-// so there's no need to rebuild this Map on every keystroke.
+// Rebuilt only when the custom category list changes, not on every keystroke.
+// Archived categories stay searchable because past entries still use them.
 let _categoryLabelById = null
+let _categoryLabelSource = null
 function getCategoryLabelById() {
-  if (_categoryLabelById) return _categoryLabelById
+  const customs = getAllCustomCategories()
+  if (_categoryLabelById && _categoryLabelSource === customs) return _categoryLabelById
 
   const map = new Map()
   const categories = [
@@ -191,6 +194,7 @@ function getCategoryLabelById() {
     ...getCategoriesForType('expense'),
     ...getCategoriesForType('income'),
     ...getCategoriesForType('investment'),
+    ...customs,
   ]
 
   for (const category of categories) {
@@ -201,6 +205,7 @@ function getCategoryLabelById() {
   }
 
   _categoryLabelById = map
+  _categoryLabelSource = customs
   return map
 }
 
@@ -471,8 +476,27 @@ export function useTransactionSignalAggregates({ type, category, paymentMode, se
 
 const RECENT_TXN_COLUMNS = 'id, user_id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
 const DIGEST_TXN_COLUMNS = 'id, date, created_at, type, amount, category, is_repayment'
-const DAILY_EXPENSE_TOTAL_COLUMNS = 'date, amount'
-const DRIFT_EXPENSE_COLUMNS = 'date, amount, category, is_repayment'
+
+// One row per day from the database, so a heavy year stays one small request.
+// `flexible_total` leaves out repayments and fixed categories (weekly drift).
+async function fetchDailyExpenseTotals(userId, startISO, endISO, field = 'total') {
+  const { data: rows, error } = await supabase.rpc('get_daily_expense_totals', {
+    p_user_id: userId,
+    p_start_date: startISO,
+    p_end_date: endISO,
+    p_fixed_categories: [...FIXED_SPEND_CATEGORIES],
+  })
+  if (error) throw error
+
+  const totalsByDate = {}
+  for (const row of rows || []) {
+    const key = String(row?.day || '').slice(0, 10)
+    const amount = Number(row?.[field] || 0)
+    if (!key || !Number.isFinite(amount) || amount === 0) continue
+    totalsByDate[key] = amount
+  }
+  return totalsByDate
+}
 
 export function useRecentTransactions(limit = 5) {
   const safeLimit = Math.max(1, Number(limit) || 5)
@@ -548,41 +572,9 @@ export function useDailyExpenseTotals(days = 42, options = {}) {
     queryKey: ['dailyExpenseTotals', safeDays, startISO, targetUserId],
     enabled: enabled && !!targetUserId,
     refetchOnMount: true,
-    queryFn: () => traceQuery('transactions:daily-expense-totals', async () => {
-      const userId = targetUserId
-      const pageSize = 1000
-      const MAX_PAGES = 50
-      const totalsByDate = {}
-
-      for (let from = 0, page = 0; page < MAX_PAGES; from += pageSize, page++) {
-        const to = from + pageSize - 1
-
-        const { data: rows, error: qError } = await supabase
-          .from('transactions')
-          .select(DRIFT_EXPENSE_COLUMNS)
-          .eq('user_id', userId)
-          .eq('type', 'expense')
-          .gte('date', startISO)
-          .order('date', { ascending: false })
-          .range(from, to)
-
-        if (qError) throw qError
-
-        const batch = rows || []
-        for (const row of batch) {
-          if (!countsTowardWeeklyDrift(row)) continue
-          const key = String(row?.date || '').slice(0, 10)
-          if (!key) continue
-          const amount = Number(row?.amount || 0)
-          if (!Number.isFinite(amount)) continue
-          totalsByDate[key] = (totalsByDate[key] || 0) + amount
-        }
-
-        if (batch.length < pageSize) break
-      }
-
-      return totalsByDate
-    }),
+    queryFn: () => traceQuery('transactions:daily-expense-totals', () =>
+      fetchDailyExpenseTotals(targetUserId, startISO, todayStr(), 'flexible_total')
+    ),
     gcTime: 5 * 60 * 1000,
   })
 
@@ -606,41 +598,9 @@ export function useMonthExpenseDailyTotals(year, month, options = {}) {
     queryKey: ['monthExpenseDailyTotals', validYear, validMonth, targetUserId],
     enabled: enabled && !!targetUserId,
     refetchOnMount: true,
-    queryFn: () => traceQuery('transactions:month-expense-daily-totals', async () => {
-      const userId = targetUserId
-      const pageSize = 1000
-      const MAX_PAGES = 50
-      const totalsByDate = {}
-
-      for (let from = 0, page = 0; page < MAX_PAGES; from += pageSize, page++) {
-        const to = from + pageSize - 1
-
-        const { data: rows, error: qError } = await supabase
-          .from('transactions')
-          .select(DAILY_EXPENSE_TOTAL_COLUMNS)
-          .eq('user_id', userId)
-          .eq('type', 'expense')
-          .gte('date', startISO)
-          .lte('date', endISO)
-          .order('date', { ascending: false })
-          .range(from, to)
-
-        if (qError) throw qError
-
-        const batch = rows || []
-        for (const row of batch) {
-          const key = String(row?.date || '').slice(0, 10)
-          if (!key) continue
-          const amount = Number(row?.amount || 0)
-          if (!Number.isFinite(amount)) continue
-          totalsByDate[key] = (totalsByDate[key] || 0) + amount
-        }
-
-        if (batch.length < pageSize) break
-      }
-
-      return totalsByDate
-    }),
+    queryFn: () => traceQuery('transactions:month-expense-daily-totals', () =>
+      fetchDailyExpenseTotals(targetUserId, startISO, endISO)
+    ),
     gcTime: 5 * 60 * 1000,
   })
 
@@ -658,41 +618,9 @@ export function useYearDailyExpenseTotals(year, options = {}) {
     queryKey: ['yearDailyExpenseTotals', safeYear, targetUserId],
     enabled: enabled && !!targetUserId,
     refetchOnMount: true,
-    queryFn: () => traceQuery('transactions:year-daily-expense-totals', async () => {
-      const userId = targetUserId
-      const pageSize = 1000
-      const MAX_PAGES = 50
-      const totalsByDate = {}
-
-      for (let from = 0, page = 0; page < MAX_PAGES; from += pageSize, page++) {
-        const to = from + pageSize - 1
-
-        const { data: rows, error: qError } = await supabase
-          .from('transactions')
-          .select(DAILY_EXPENSE_TOTAL_COLUMNS)
-          .eq('user_id', userId)
-          .eq('type', 'expense')
-          .gte('date', startISO)
-          .lte('date', endISO)
-          .order('date', { ascending: false })
-          .range(from, to)
-
-        if (qError) throw qError
-
-        const batch = rows || []
-        for (const row of batch) {
-          const key = String(row?.date || '').slice(0, 10)
-          if (!key) continue
-          const amount = Number(row?.amount || 0)
-          if (!Number.isFinite(amount)) continue
-          totalsByDate[key] = (totalsByDate[key] || 0) + amount
-        }
-
-        if (batch.length < pageSize) break
-      }
-
-      return totalsByDate
-    }),
+    queryFn: () => traceQuery('transactions:year-daily-expense-totals', () =>
+      fetchDailyExpenseTotals(targetUserId, startISO, endISO)
+    ),
     gcTime: 5 * 60 * 1000,
   })
 
@@ -1044,6 +972,10 @@ function matchesTransactionFilters(txn, filters = {}) {
   if (filters.paymentMode && txn.payment_mode !== filters.paymentMode) return false
   if (filters.startDate && String(txn.date || '') < String(filters.startDate)) return false
   if (filters.endDate && String(txn.date || '') > String(filters.endDate)) return false
+  if (filters.linkedLoanId && txn.linked_loan_id !== filters.linkedLoanId) return false
+  if (filters.linkedBillId && txn.linked_bill_id !== filters.linkedBillId) return false
+  if (filters.linkedSplitExpenseId && txn.linked_split_expense_id !== filters.linkedSplitExpenseId) return false
+  if (filters.linkedSplitSettlementId && txn.linked_split_settlement_id !== filters.linkedSplitSettlementId) return false
 
   if (filters.search) {
     const needle = sanitizeTransactionSearchNeedle(filters.search)
@@ -1069,36 +1001,18 @@ function applyTxnLimit(rows, limit) {
   return rows.slice(0, safeLimit)
 }
 
-function defaultTxnListFilters() {
-  return {
-    type: undefined,
-    category: undefined,
-    paymentMode: undefined,
-    search: undefined,
-    limit: 50,
-    startDate: undefined,
-    endDate: undefined,
-    columns: TRANSACTION_LIST_COLUMNS,
-  }
-}
-
 function upsertRecentTransactionCaches(txn, targetUserId) {
   if (!targetUserId) return
   const recentEntries = queryClient.getQueriesData({ queryKey: ['transactionsRecent'] })
 
-  if (recentEntries.length === 0) {
-    queryClient.setQueryData(['transactionsRecent', 5, targetUserId], applyTxnLimit([txn], 5))
-    return
-  }
-
   for (const [key, rows] of recentEntries) {
     const queryTargetId = key?.[2]
     if (queryTargetId && queryTargetId !== targetUserId) continue
+    if (!Array.isArray(rows)) continue
 
-    const base = Array.isArray(rows) ? rows : []
     const limit = Number(key?.[1]) || 5
     const next = applyTxnLimit(
-      [...base.filter((row) => row?.id !== txn.id), txn].sort(compareTxnDesc),
+      [...rows.filter((row) => row?.id !== txn.id), txn].sort(compareTxnDesc),
       limit
     )
     queryClient.setQueryData(key, next)
@@ -1158,24 +1072,19 @@ export function optimisticallyUpsertTransactionInCache(txn, targetUserId) {
   }
   adjustAggregatesForTransaction(txn, targetUserId, 1) // apply new impact
 
+  // Only lists that are already loaded are patched. Creating a list here would
+  // hold just this one row, and a page opened next would show it as the
+  // whole list until the real fetch lands.
   const listEntries = queryClient.getQueriesData({ queryKey: ['transactions'] })
-
-  if (listEntries.length === 0) {
-    const filters = defaultTxnListFilters()
-    const seededRows = matchesTransactionFilters(txn, filters)
-      ? applyTxnLimit([txn], filters.limit)
-      : []
-    queryClient.setQueryData(txnListKey(filters, targetUserId), seededRows)
-  }
   for (const [key, rows] of listEntries) {
-    const baseRows = Array.isArray(rows) ? rows : []
+    if (!Array.isArray(rows)) continue
     const filters = key?.[1] || {}
     const queryTargetId = key?.[2]
 
     // Ownership Guard: only inject if the query belongs to the active wallet
     if (queryTargetId && queryTargetId !== targetUserId) continue
 
-    const base = baseRows.filter((row) => row?.id !== txn.id)
+    const base = rows.filter((row) => row?.id !== txn.id)
     const next = matchesTransactionFilters(txn, filters)
       ? applyTxnLimit([...base, txn].sort(compareTxnDesc), filters.limit)
       : base
@@ -1334,16 +1243,19 @@ function applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowI
   }, targetUserId)
 }
 
-function updateTodayExpenseCache({ id, payload, existingTxn }) {
+function updateTodayExpenseCache({ id, payload, existingTxn, targetUserId }) {
   const todayISO = todayStr()
   const affectsTodayAfter = payload?.type === 'expense' && payload?.date === todayISO
   const affectsTodayBefore = existingTxn?.type === 'expense' && existingTxn?.date === todayISO
 
   if (!affectsTodayAfter && !affectsTodayBefore) return
 
-  const todayEntries = queryClient.getQueriesData({ queryKey: ['todayExpenses'] })
+  // Keys are ['todayExpenses', date, userId]: only touch today's total for
+  // the wallet the entry belongs to.
+  const todayEntries = queryClient.getQueriesData({ queryKey: ['todayExpenses', todayISO, targetUserId] })
   for (const [key, currentTotal] of todayEntries) {
     if (typeof currentTotal !== 'number') continue
+    if (key?.[1] !== todayISO || key?.[2] !== targetUserId) continue
     if (id) {
       const oldAmt = affectsTodayBefore ? Number(existingTxn?.amount || 0) : 0
       const newAmt = affectsTodayAfter ? Number(payload?.amount || 0) : 0
@@ -1398,7 +1310,7 @@ export async function saveTransactionMutation({ id, clientId, payload, __testOve
   const existingTxn = id ? getTransactionFromCacheById(id) : null
 
   applyOptimisticSaveCache({ id, payload, existingTxn, optimisticId, nowIso, targetUserId })
-  updateTodayExpenseCache({ id, payload, existingTxn })
+  updateTodayExpenseCache({ id, payload, existingTxn, targetUserId })
 
   try {
     const updateFn = __testOverrides?.updateTransaction || updateTransaction

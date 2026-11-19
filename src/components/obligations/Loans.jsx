@@ -28,6 +28,7 @@ import { fromRupees, toRupees } from '../../lib/paise'
 import { paidOnError } from '../../lib/paidOn'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
 import { FINANCIAL_EVENT_ACTIONS } from '../../lib/auditLog'
+import { PAYMENT_MODES } from '../../lib/categories'
 import PageHeaderPage from '../layout/PageHeaderPage'
 import SkeletonLayout from '../common/SkeletonLayout'
 import EmptyState from '../common/EmptyState'
@@ -180,12 +181,14 @@ export default function Loans({
   // ── Payment form state ──────────────────────────────────────────────
   const [payAmount, setPayAmount] = useState('')
   const [payDate, setPayDate] = useState(() => todayStr())
+  const [payMode, setPayMode] = useState('upi')
   const [payErr, setPayErr] = useState('')
 
   const openPaySheet = useCallback((loan, amount = '') => {
     setPayLoan(loan)
     setPayAmount(amount)
     setPayDate(todayStr())
+    setPayMode('upi')
     setPayErr('')
   }, [])
 
@@ -634,7 +637,7 @@ export default function Loans({
     const settlesInFull = amtPaise === remainingPaise
     const save = settlesInFull ? settleLoanAsync : recordLoanPaymentAsync
     try {
-      await save({ loan: payLoan, paymentAmount: toRupees(amtPaise), id: crypto.randomUUID(), paidOn: payDate })
+      await save({ loan: payLoan, paymentAmount: toRupees(amtPaise), id: crypto.randomUUID(), paidOn: payDate, paymentMode: payMode })
       closePaySheet()
     } catch (e) {
       pushToast(toToastMessage(e, settlesInFull ? 'Could not settle loan.' : 'Could not record payment.'))
@@ -799,7 +802,7 @@ export default function Loans({
                     {settlementVelocitySignal.settlementPct}% settled
                   </p>
                   <p className="text-caption text-ink-2 mt-1 tabular-nums">
-                    Accrued interest {fmt(settlementVelocitySignal.accruedTotal)}
+                    Interest ≈ {fmt(settlementVelocitySignal.accruedTotal)} on current balances
                   </p>
                   <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(settlementVelocitySignal.tone, 'text-ink-3')}`}>
                     {settlementVelocitySignal.accrualLoadPct == null
@@ -912,7 +915,7 @@ export default function Loans({
                           {/* Interest if applicable */}
                           {interest > 0 && (
                             <p className="text-[11px] text-ink-3 mb-1">
-                              +{fmt(Math.round(interest * 100) / 100)} interest ({loan.interest_rate}%/yr)
+                              ≈ +{fmt(Math.round(interest * 100) / 100)} interest on the current balance ({loan.interest_rate}%/yr, simple)
                             </p>
                           )}
 
@@ -1062,22 +1065,6 @@ export default function Loans({
                             <span className={`text-[15px] font-semibold tabular-nums ${
                               loan.direction === 'given' ? 'amt-income' : 'amt-expense'
                             }`}>{fmt(+loan.amount)}</span>
-                            {(() => {
-                              const start = new Date(`${loan.loan_date}T00:00:00`)
-                              if (Number.isNaN(start.getTime())) return null
-                              const totalDays = Math.round((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24))
-                              const label = totalDays < 30 ? `${totalDays}d` : `~${Math.round(totalDays / 30.44)}mo`
-                              return <span className="text-[11px] text-ink-3">· {label}</span>
-                            })()}
-                            {accruedInterest(loan.amount - (loan.amount_settled || 0), loan.interest_rate, loan.loan_date) > 0 && (
-                              <span className="text-[11px] text-ink-3">· +{fmt(Math.round(accruedInterest(loan.amount - (loan.amount_settled || 0), loan.interest_rate, loan.loan_date) * 100) / 100)} interest</span>
-                            )}
-                            {loan.due_date && (() => {
-                              const diffDays = Math.round((new Date(`${loan.due_date}T00:00:00`).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-                              if (diffDays > 3) return <span className="text-[11px] font-medium text-income-text">· Early ↑</span>
-                              if (diffDays >= -3) return <span className="text-[11px] font-medium text-ink-3">· On time</span>
-                              return <span className="text-[11px] font-medium text-expense-text">· Late {Math.abs(diffDays)}d</span>
-                            })()}
                           </div>
 
                           {/* Date + interest chips */}
@@ -1204,6 +1191,25 @@ export default function Loans({
                       </button>
                     ))
                   })()}
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-wide mb-2">Paid with</p>
+                  <div className="flex flex-wrap gap-2">
+                    {PAYMENT_MODES.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setPayMode(m.id)}
+                        disabled={isPaySaving}
+                        aria-pressed={payMode === m.id}
+                        className={`min-h-[36px] px-3 py-1.5 rounded-pill text-xs font-semibold border transition-all
+                          ${payMode === m.id
+                            ? 'bg-brand-container text-brand border-brand/20'
+                            : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
+                      >{m.label}</button>
+                    ))}
+                  </div>
                 </div>
 
                 {payErr && (

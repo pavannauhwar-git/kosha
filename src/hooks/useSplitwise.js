@@ -654,6 +654,8 @@ export async function addSplitExpenseMutation({
   notes,
   splits,
   transactionCategory,
+  paymentMode = null,
+  linkedBillId = null,
   id,
 }) {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -691,6 +693,8 @@ export async function addSplitExpenseMutation({
     p_notes: notes || null,
     p_splits: payloadSplits,
     p_transaction_category: transactionCategory || 'other',
+    ...(paymentMode ? { p_payment_mode: paymentMode } : {}),
+    ...(linkedBillId ? { p_linked_bill_id: linkedBillId } : {}),
   })
 
   if (error) throw error

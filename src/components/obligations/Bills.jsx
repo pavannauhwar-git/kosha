@@ -1,13 +1,15 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, X, Check, Repeat, CircleNotch, DownloadSimple, BookOpen, ArrowRight, PencilSimple, CalendarDots, DotsThreeVertical, Trash, ArrowUpRight } from '@phosphor-icons/react'
+import { Plus, X, Check, Repeat, CircleNotch, DownloadSimple, BookOpen, ArrowRight, PencilSimple, CalendarDots, DotsThreeVertical, Trash, ArrowUpRight, ArrowCounterClockwise } from '@phosphor-icons/react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useLiabilities,
   addLiabilityMutation,
   updateLiabilityMutation,
   markLiabilityPaidMutation,
+  undoLiabilityPaymentMutation,
   deleteLiabilityMutation,
+  LIABILITY_TO_TXN_MODE,
 } from '../../hooks/useLiabilities'
 import { useAppMutation } from '../../hooks/useAppMutation'
 import { supabase } from '../../lib/supabase'
@@ -32,6 +34,10 @@ import { toToastMessage } from '../../lib/errorTaxonomy'
 import Input from '../ui/Input'
 import { paidOnError } from '../../lib/paidOn'
 import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
+import { PAYMENT_MODES as TXN_PAYMENT_MODES } from '../../lib/categories'
+import { sanitizeAmountInput, validateAmount } from '../../lib/validateAmount'
+import { toRupees } from '../../lib/paise'
+import { billBucket, duePressureScore, summarizeBillBuckets } from '../../lib/billBuckets'
 
 const RECURRENCE = ['monthly', 'quarterly', 'yearly']
 const PAYMENT_MODES = [
@@ -106,7 +112,10 @@ export default function Bills({
   const [payingId, setPayingId] = useState(null)
   const [payBill, setPayBill] = useState(null)
   const [payDate, setPayDate] = useState(() => todayStr())
+  const [payAmount, setPayAmount] = useState('')
+  const [payMode, setPayMode] = useState('upi')
   const [payErr, setPayErr] = useState('')
+  const [undoingId, setUndoingId] = useState(null)
   const [deletingId] = useState(null)
   const [highlightedBillId, setHighlightedBillId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
@@ -141,6 +150,7 @@ export default function Bills({
     { context: 'bills:update' }
   )
   const markLiabilityPaid = useAppMutation(markLiabilityPaidMutation, { context: 'bills:markPaid' })
+  const undoLiabilityPayment = useAppMutation(undoLiabilityPaymentMutation, { context: 'bills:undoPayment' })
   const deleteLiability = useAppMutation(deleteLiabilityMutation, { context: 'bills:delete' })
 
   const isSaving = addLiability.isPending || updateLiability.isPending
@@ -201,17 +211,15 @@ export default function Bills({
   const visiblePaid = useMemo(() => paid.filter((bill) => !hiddenBillIds.has(bill.id)), [paid, hiddenBillIds])
 
   const totalPending = useMemo(() => round2(visiblePending.reduce((s, b) => s + +b.amount, 0)), [visiblePending])
-  const dueSoonAmount = useMemo(() => round2(visiblePending
-    .filter((bill) => {
-      const days = safeDaysUntilDate(bill.due_date)
-      return days !== null && days <= 7
-    })
-    .reduce((s, b) => s + +b.amount, 0)), [visiblePending])
-  const dueSoonCount = useMemo(() => visiblePending
-    .filter((bill) => {
-      const days = safeDaysUntilDate(bill.due_date)
-      return days !== null && days <= 7
-    }).length, [visiblePending])
+  const buckets = useMemo(
+    () => summarizeBillBuckets(visiblePending, (bill) => safeDaysUntilDate(bill.due_date)),
+    [visiblePending]
+  )
+  const dueSoonAmount = buckets.dueSoon.amount
+  const dueSoonCount = buckets.dueSoon.count
+  const overdueSummary = buckets.overdue
+  const urgentAmount = round2(buckets.overdue.amount + buckets.dueSoon.amount)
+  const urgentCount = buckets.overdue.count + buckets.dueSoon.count
   const dueThisMonth = useMemo(() => {
     const now = new Date()
     const y = now.getFullYear()
@@ -227,24 +235,11 @@ export default function Bills({
     }
   }, [visiblePending])
 
-  const overdueSummary = useMemo(() => {
-    const rows = visiblePending.filter((bill) => {
-      const days = safeDaysUntilDate(bill.due_date)
-      return days !== null && days < 0
-    })
-
-    return {
-      count: rows.length,
-      amount: rows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
-    }
-  }, [visiblePending])
-
-  const duePressureIndex = useMemo(() => {
-    if (!visiblePending.length) return 0
-    const weightedPressure = (overdueSummary.count * 2) + dueSoonCount
-    const maxWeightedPressure = visiblePending.length * 2
-    return Math.round((weightedPressure / Math.max(1, maxWeightedPressure)) * 100)
-  }, [visiblePending.length, overdueSummary.count, dueSoonCount])
+  const duePressureIndex = duePressureScore({
+    overdue: buckets.overdue.count,
+    dueSoon: buckets.dueSoon.count,
+    total: buckets.total.count,
+  })
 
   const duePressureBand = useMemo(
     () => scoreRiskBand(duePressureIndex, { high: 35, watch: 15 }),
@@ -298,8 +293,7 @@ export default function Bills({
     return visiblePending
       .map((bill) => {
         const days = safeDaysUntilDate(bill.due_date)
-        const bucket = days < 0 ? 'overdue' : days <= 7 ? 'dueSoon' : 'later'
-        return { ...bill, _days: days ?? 9999, _bucket: bucket }
+        return { ...bill, _days: days ?? 9999, _bucket: billBucket(days) }
       })
       .sort((a, b) => {
         const rankDiff = bucketRank[a._bucket] - bucketRank[b._bucket]
@@ -352,7 +346,7 @@ export default function Bills({
     return due.getTime() <= today.getTime()
   }, [form.is_recurring, form.due_date])
 
-  const barPct = totalPending > 0 ? Math.round((dueSoonAmount / totalPending) * 100) : 0
+  const barPct = totalPending > 0 ? Math.min(100, Math.round((urgentAmount / totalPending) * 100)) : 0
   const totalBills = visiblePending.length + visiblePaid.length
   const focusBillId = searchParams.get('focus')
   const { value: tabFromQuery, source: tabSource } = resolveBillsTabQuery(searchParams, tabParam)
@@ -521,7 +515,22 @@ export default function Bills({
   function openPayBill(bill) {
     setPayBill(bill)
     setPayDate(todayStr())
+    setPayAmount(String(bill?.amount ?? ''))
+    setPayMode(LIABILITY_TO_TXN_MODE[bill?.payment_mode] || 'other')
     setPayErr('')
+  }
+
+  async function handleUndoPayment(bill) {
+    if (!bill?.id || undoingId) return
+    setUndoingId(bill.id)
+    try {
+      await undoLiabilityPayment.mutateAsync(bill.id)
+      pushToast('Bill moved back to pending.', { duration: 2600 })
+    } catch (e) {
+      pushToast(toToastMessage(e, 'Could not undo this payment.'), { duration: 4200 })
+    } finally {
+      setUndoingId(null)
+    }
   }
 
   function dismissPayBill() {
@@ -534,10 +543,18 @@ export default function Bills({
     if (!bill?.id || payingId || actionGuard.current) return
     const dateErr = paidOnError(payDate)
     if (dateErr) { setPayErr(dateErr); return }
+    const amountCheck = validateAmount(payAmount, { allowZero: false, min: 0 })
+    if (!amountCheck.ok) { setPayErr(amountCheck.error); return }
+    const amount = toRupees(amountCheck.paise)
     actionGuard.current = true
     setPayingId(bill.id)
     try {
-      await markLiabilityPaid.mutateAsync({ liability: bill, paidOn: payDate })
+      await markLiabilityPaid.mutateAsync({
+        liability: bill,
+        paidOn: payDate,
+        amount: amount === Number(bill.amount) ? null : amount,
+        paymentMode: payMode,
+      })
       setPayBill(null)
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not mark bill as paid. Check your connection.'))
@@ -666,14 +683,14 @@ export default function Bills({
             <div className="mt-3.5">
               <div className="h-1.5 bg-kosha-border rounded-pill overflow-hidden mb-1.5">
                 <motion.div
-                  className={`h-full rounded-pill ${dueSoonCount > 0 ? 'bg-warning-text' : 'bg-income-text'}`}
+                  className={`h-full rounded-pill ${urgentCount > 0 ? 'bg-warning-text' : 'bg-income-text'}`}
                   initial={{ width: 0 }} animate={{ width: `${barPct || 100}%` }}
                   transition={{ duration: 0.4, ease: [0.05, 0.7, 0.1, 1] }}
                 />
               </div>
               <div className="flex justify-between">
                 <span className="text-caption text-ink-3">
-                  {dueSoonCount > 0 ? `${fmt(dueSoonAmount)} due this week` : 'All bills on schedule'}
+                  {urgentCount > 0 ? `${fmt(urgentAmount)} overdue or due this week` : 'All bills on schedule'}
                 </span>
                 <span className={`text-caption font-semibold ${barPct > 0 ? 'text-warning-text' : 'text-income-text'}`}>
                   {barPct > 0 ? `${barPct}% urgent` : 'Stable'}
@@ -921,16 +938,29 @@ export default function Bills({
                               <div className="relative" ref={overflowBillId === bill.id ? overflowBillRef : null}>
                                 <button
                                   onClick={() => setOverflowBillId(overflowBillId === bill.id ? null : bill.id)}
-                                  disabled={!!payingId || !!deletingId || !!bill.__optimistic}
+                                  disabled={!!payingId || !!deletingId || !!undoingId || !!bill.__optimistic}
                                   className="w-8 h-8 flex items-center justify-center rounded-full text-ink-3 active:bg-kosha-surface-2 transition-colors disabled:opacity-40"
                                   aria-label="More options"
                                 >
-                                  {deletingId === bill.id
+                                  {deletingId === bill.id || undoingId === bill.id
                                     ? <CircleNotch size={14} className="animate-spin" />
                                     : <DotsThreeVertical size={16} />}
                                 </button>
                                 {overflowBillId === bill.id && (
                                   <div className="absolute right-0 top-full mt-1 z-30 bg-kosha-surface rounded-2xl border border-kosha-border shadow-apple-card min-w-[200px] overflow-hidden">
+                                    <button
+                                      onClick={() => { setOverflowBillId(null); handleUndoPayment(bill) }}
+                                      disabled={!!undoingId}
+                                      className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left border-b border-kosha-border active:bg-kosha-surface-2 transition-colors disabled:opacity-50"
+                                    >
+                                      <ArrowCounterClockwise size={14} className="text-ink-2 mt-0.5 shrink-0" />
+                                      <div>
+                                        <p className="text-[13px] font-semibold text-ink leading-snug">Undo payment</p>
+                                        <p className="text-[11px] text-ink-3 mt-0.5 leading-snug">
+                                          Moves the bill back to pending and removes its payment entry
+                                        </p>
+                                      </div>
+                                    </button>
                                     <button
                                       onClick={() => { setOverflowBillId(null); handleDelete(bill.id) }}
                                       className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left active:bg-kosha-surface-2 transition-colors"
@@ -1108,8 +1138,47 @@ export default function Bills({
                   </div>
                 </div>
 
+                <div className="mb-3">
+                  <Input
+                    label="Amount paid"
+                    name="bill-paid-amount"
+                    icon={<span className="text-brand font-bold">₹</span>}
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={payAmount}
+                    disabled={!!payingId}
+                    onChange={(e) => {
+                      const next = sanitizeAmountInput(e.target.value)
+                      if (next === null) return
+                      setPayAmount(next)
+                      setPayErr('')
+                    }}
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-[11px] font-semibold text-ink-3 uppercase tracking-wide mb-2">Paid with</p>
+                  <div className="flex flex-wrap gap-2">
+                    {TXN_PAYMENT_MODES.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setPayMode(m.id)}
+                        disabled={!!payingId}
+                        aria-pressed={payMode === m.id}
+                        className={`min-h-[36px] px-3 py-1.5 rounded-pill text-xs font-semibold border transition-all
+                          ${payMode === m.id
+                            ? 'bg-brand-container text-brand border-brand/20'
+                            : 'bg-kosha-surface text-ink-2 border-kosha-border'}`}
+                      >{m.label}</button>
+                    ))}
+                  </div>
+                </div>
+
                 <p className="text-[12px] text-ink-3 mb-3 leading-relaxed">
-                  This adds a {fmt(+(payBill?.amount || 0))} expense to your transactions on the date above. To change the amount or payment mode, edit the bill first.
+                  This adds the amount above as an expense on the date you paid.
+                  {payBill?.is_recurring ? ` The next bill stays at ${fmt(+(payBill?.amount || 0))}.` : ''}
                 </p>
 
                 {payErr && (

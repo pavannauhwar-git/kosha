@@ -1,20 +1,7 @@
 import { memo, useMemo } from 'react'
 import { fmt } from '../../../lib/utils'
+import { repeatMerchants } from '../../../lib/merchants'
 import Button from '../../ui/Button'
-
-/**
- * Normalize a transaction description to a merchant-like key.
- * Strip common noise words, lowercase, collapse whitespace.
- */
-function normalizeMerchant(desc) {
-  if (!desc) return ''
-  return String(desc)
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\b(paid|for|to|at|from|via|on|in|the|and|of|with)\b/g, '')
-    .trim()
-    .replace(/\s+/g, ' ')
-}
 
 function capitalize(str) {
   if (!str) return ''
@@ -23,50 +10,10 @@ function capitalize(str) {
 
 export default memo(function MerchantIntelCard({ txnRows = [], onReviewExpenses, onReviewMerchant }) {
   const analysis = useMemo(() => {
-    const merchants = new Map()
-
-    for (const row of txnRows) {
-      if (row.type !== 'expense') continue
-      const amt = Number(row.amount || 0)
-      if (!Number.isFinite(amt) || amt <= 0) continue
-
-      const rawDesc = String(row.description || '').trim()
-      if (!rawDesc) continue
-
-      const key = normalizeMerchant(rawDesc)
-      if (!key || key.length < 2) continue
-
-      const existing = merchants.get(key)
-      if (existing) {
-        existing.total += amt
-        existing.count += 1
-        if (amt > existing.maxTxn) existing.maxTxn = amt
-        // Keep the first raw description as display name
-      } else {
-        merchants.set(key, {
-          key,
-          displayName: capitalize(rawDesc.length > 28 ? rawDesc.slice(0, 28).trim() : rawDesc),
-          queryText: rawDesc,
-          total: amt,
-          count: 1,
-          maxTxn: amt,
-        })
-      }
-    }
-
-    // Only show merchants with 2+ transactions (true repeats)
-    const repeating = [...merchants.values()]
-      .filter((m) => m.count >= 2)
-      .sort((a, b) => b.total - a.total)
-
-    if (repeating.length === 0) return null
-
-    const totalExpense = txnRows
-      .filter((r) => r.type === 'expense')
-      .reduce((s, r) => s + Number(r.amount || 0), 0)
+    const { repeats, merchants: allMerchants, totalExpense } = repeatMerchants(txnRows)
+    if (repeats.length === 0) return null
 
     if (totalExpense > 0) {
-      const allMerchants = [...merchants.values()]
       const sumMerchants = allMerchants.reduce((sum, m) => sum + m.total, 0)
       const otherTotal = totalExpense - sumMerchants
 
@@ -96,8 +43,9 @@ export default memo(function MerchantIntelCard({ txnRows = [], onReviewExpenses,
       })
     }
 
-    const top5 = repeating.slice(0, 5).map((m) => ({
+    const top5 = repeats.slice(0, 5).map((m) => ({
       ...m,
+      displayName: capitalize(m.label.length > 28 ? m.label.slice(0, 28).trim() : m.label),
       sharePct: m.sharePct || 0,
       avgTicket: Math.round(m.total / m.count),
     }))
@@ -106,7 +54,7 @@ export default memo(function MerchantIntelCard({ txnRows = [], onReviewExpenses,
 
     return {
       top5,
-      totalMerchants: repeating.length,
+      totalMerchants: repeats.length,
       topMerchantShare,
       totalExpense,
     }

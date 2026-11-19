@@ -10,7 +10,7 @@ import {
 // NOTE: Deletion is delegated to useTransactionDeleter which uses removeTransactionMutation.
 import { useTransactionDeleter } from '../hooks/useTransactionDeleter'
 import { useLiabilities } from '../hooks/useLiabilities'
-import { CATEGORIES } from '../lib/categories'
+import { useCategoryLabel } from '../hooks/useUserCategories'
 import { useBudgets, budgetMap as buildBudgetMap } from '../hooks/useBudgets'
 
 import { useAuth } from '../context/AuthContext'
@@ -30,6 +30,7 @@ import { useActiveWallet } from '../lib/walletStore'
 import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import { getReminderPrefs, maybeNotify, REMINDER_PREFS_EVENT } from '../lib/reminders'
 import { computeWeeklySpendDrift } from '../lib/weeklyDrift'
+import { rankedCategoryShare } from '../lib/analyticsMetrics'
 
 function DashboardRecentSkeleton() {
   return (
@@ -185,10 +186,7 @@ export default function Dashboard() {
     [profile?.display_name]
   )
 
-  const categoryLabelById = useMemo(
-    () => new Map(CATEGORIES.map((category) => [category.id, category.label])),
-    []
-  )
+  const categoryLabel = useCategoryLabel()
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const dayOfMonth = now.getDate()
@@ -252,15 +250,11 @@ export default function Dashboard() {
 
   // ── Category pressure signal ─────────────────────────────────────────
   const categoryPressureSignal = useMemo(() => {
-    if (heroLoading) return null
-    const categoryRows = Object.entries(summary?.byCategory || {})
-      .map(([categoryId, amount]) => [categoryId, Number(amount || 0)])
-      .filter(([, amount]) => Number.isFinite(amount) && amount > 0)
-      .sort((a, b) => b[1] - a[1])
+    if (heroLoading || spent <= 0) return null
+    const top = rankedCategoryShare(summary?.byCategory)
+    if (!top) return null
 
-    if (!categoryRows.length || spent <= 0) return null
-
-    const [categoryId, amount] = categoryRows[0]
+    const { categoryId, amount } = top
     const sharePct = Math.round((amount / spent) * 100)
     const budgetLimit = Number(bMap?.get(categoryId)?.monthly_limit || 0)
     const budgetPct = budgetLimit > 0 ? Math.round((amount / budgetLimit) * 100) : null
@@ -268,14 +262,14 @@ export default function Dashboard() {
 
     return {
       categoryId,
-      label: categoryLabelById.get(categoryId) || categoryId,
-      topCategoryLabel: categoryLabelById.get(categoryId) || categoryId,
+      label: categoryLabel(categoryId) || categoryId,
+      topCategoryLabel: categoryLabel(categoryId) || categoryId,
       amount,
       sharePct,
       budgetPct,
       band,
     }
-  }, [summary?.byCategory, spent, bMap, categoryLabelById, heroLoading])
+  }, [summary?.byCategory, spent, bMap, categoryLabel, heroLoading])
 
   // ── Bill clustering signal ───────────────────────────────────────────
   const billClusterSignal = useMemo(() => {
